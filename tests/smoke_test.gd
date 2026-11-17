@@ -33,6 +33,7 @@ var _corpse_n := 0
 var _place_voxel := Vector3i.ZERO
 var _place_sel := 0
 var _place0 := 0
+var _lava_target := Vector3i.ZERO
 var _click_pending := false
 var _click_state := false
 var _armed := false
@@ -61,6 +62,8 @@ func _ready() -> void:
 		["soltar o botao", 12, _check_click_release],
 		["guarda de colocacao", 20, _check_place_guard],
 		["tecla 3 no hotbar", 3, _check_hotbar_key],
+		["construir enquanto lava", 0, _check_build_setup],
+		["lavra + clique direito", 20, _check_build_while_mining],
 		["memoria muda comportamento", 0, _check_memory],
 		["hud, morte e renascer", 0, _check_hud],
 		["salvar e carregar", 0, _check_save],
@@ -80,7 +83,11 @@ func _physics_process(_delta: float) -> void:
 	if _armed and Input.is_action_just_pressed("place_block"):
 		var p: Player = main.player
 		_armed = false
-		_tick_player = false
+		# A borda chega num quadro em que o jogador NAO foi tickado de proposito: era
+		# assim que o clique se perdia (medido na janela real: 163 quadros/s contra
+		# 59,8 ticks -> 63,3% dos quadros sem tick). Do proximo frame em diante o
+		# passo volta e o buffer de 0,22 s e obrigado a produzir o bloco.
+		_tick_player = true
 		_click_frame = _frame
 		_click_detail = "frame=%d  alvo=%s  place=%s  no_corpo=%s  cooldown=%.3f" % [
 			_frame, p.target_voxel, p.place_voxel,
@@ -245,6 +252,16 @@ func _winding_bad(w: VoxelWorld) -> int:
 	return bad
 
 
+## Caixas do avatar: conta a arvore de nodes, sem depender de nomes internos.
+func _mesh_count(n: Node) -> int:
+	var total := 0
+	if n is MeshInstance3D:
+		total += 1
+	for c in n.get_children():
+		total += _mesh_count(c)
+	return total
+
+
 func _chunk_triangles(c: VoxelChunk) -> int:
 	var n := 0
 	if c.mesh_instance == null or c.mesh_instance.mesh == null:
@@ -343,8 +360,12 @@ func _check_mechanics() -> void:
 	var p: Player = main.player
 	var w: VoxelWorld = main.world
 	# Congela o mundo: um lobo que atravesse a mira entre o minerar e o colocar
-	# trocaria o alvo, e o passo passaria a medir a IA em vez da mecanica.
-	main.process_mode = Node.PROCESS_MODE_DISABLED
+	# trocaria o alvo, e o passo passaria a medir a IA em vez da mecanica. Pause,
+	# e nao process_mode DISABLED em main: congelado assim o node nao recebe input
+	# nenhum, e e no `_input` do jogador que a borda do clique agora nasce.
+	self.process_mode = Node.PROCESS_MODE_ALWAYS
+	p.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	get_tree().paused = true
 	p.feet_to_spawn(_spawn)
 	p.yaw = 0.0
 	_aim(p, -0.9)
@@ -370,11 +391,29 @@ func _check_mechanics() -> void:
 			"dureza=%.3f  medido=%.3f" % [h, float(n) / 60.0])
 		_check("voxel virou ar", w.get_block(tgt) == BlockDefs.Block.AIR, "voxel=%s" % tgt)
 
-	# Colocar exige o pipeline real de input: `Input.action_press()` so escreve o
-	# estado da acao, enquanto `_apply_actions` procura a borda
-	# (`is_action_just_pressed`). Minerar pode continuar sintetico porque le o
-	# nivel, nao a borda. O mundo segue congelado e o clique arma a maquina de
-	# espera: a assercao vive em _check_place.
+	# Corpo do jogador: em 1a pessoa a camera mora dentro da cabeca, entao so a
+	# cabeca sai de cena; na 3a o corpo inteiro tem que estar nos pes e girar com o
+	# yaw. Medido sem janela, contando as malhas do avatar na arvore de nodes.
+	p.yaw = 0.62
+	p.third_person = true
+	p.update_local(1.0 / 60.0)
+	var head_tp := p.avatar.head_shown()
+	var drift := p.avatar.global_position.distance_to(p.body.feet_pos)
+	var facing := rad_to_deg(p.avatar.rotation.y)
+	var parts := _mesh_count(p.avatar)
+	p.third_person = false
+	p.update_local(1.0 / 60.0)
+	_check("corpo do jogador tem malhas", parts >= 20, "caixas=%d" % parts)
+	_check("avatar cola nos pes", drift < 0.002, "desvio=%.5f" % drift)
+	_check("avatar gira com o yaw", absf(facing - rad_to_deg(0.62)) < 0.01,
+		"corpo=%.2fdeg  esperado=%.2fdeg" % [facing, rad_to_deg(0.62)])
+	_check("cabeca aparece na 3a pessoa", head_tp)
+	_check("cabeca sai de cena na 1a pessoa", not p.avatar.head_shown())
+
+	# Colocar exige o pipeline real de input: a borda do clique nasce em `_input` e
+	# vira bloco no tick seguinte. Minerar pode continuar sintetico porque le o
+	# nivel da acao, nao a borda. O mundo segue congelado e o clique arma a maquina
+	# de espera: a assercao vive em _check_place.
 	_aim(p, -0.9)
 	_place_voxel = p.place_voxel
 	_place_sel = p.selected_block()
@@ -411,13 +450,14 @@ func _click(pressed: bool) -> void:
 	Input.parse_input_event(ev)
 
 
-## Enfileira um clique e passa a girar o jogador ate a borda aparecer no input do
-## `player`. `soltar` nao arma: sem borda para esperar, basta o proximo frame.
+## Enfileira um clique e congela o passo do jogador ate a borda aparecer no input
+## do engine: e o quadro em que o jogo real nao tinha tick de fisica. A assercao
+## vive em _check_place. `soltar` nao arma: sem borda para esperar, basta o frame.
 func _arm_click(pressed: bool) -> void:
 	_click_frame = -1
 	_click_detail = ""
 	_armed = pressed
-	_tick_player = true
+	_tick_player = false
 	_click_pending = true
 	_click_state = pressed
 
@@ -474,7 +514,9 @@ func _check_place_guard() -> void:
 		"voxel=%s  la em cima=%d  dentro do corpo=%s  colocados=%d"
 		% [_place_voxel, w.get_block(_place_voxel), over_body, int(main.stats["placed"])])
 	_release_click()
-	main.process_mode = Node.PROCESS_MODE_INHERIT
+	get_tree().paused = false
+	self.process_mode = Node.PROCESS_MODE_INHERIT
+	p.process_mode = Node.PROCESS_MODE_INHERIT
 	# Tecla 3 pela fila do viewport: entrega o evento ao `_unhandled_input` do
 	# jogador. A assercao vive em _check_hotbar_key, tres frames adiante.
 	var press := InputEventKey.new()
@@ -492,6 +534,55 @@ func _check_hotbar_key() -> void:
 	release.physical_keycode = KEY_3
 	release.pressed = false
 	get_viewport().push_input(release)
+
+
+## Construir no meio de uma lavra. O botao esquerdo preso e a dureza da pedra
+## (0,95 s) deixam uma janela larga; o clique direito cai nela e tem que virar
+## bloco mesmo assim. Prepara o alvo e arma o clique; a assercao vive 20 frames
+## adiante, em _check_build_while_mining.
+func _check_build_setup() -> void:
+	var p: Player = main.player
+	var w: VoxelWorld = main.world
+	self.process_mode = Node.PROCESS_MODE_ALWAYS
+	p.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	get_tree().paused = true
+	p.yaw = 0.0
+	_aim(p, -0.9)
+	if not p.target_valid:
+		_check("mira para lavar um bloco", false, "sem alvo em reach")
+		return
+	_lava_target = p.target_voxel
+	w.set_block(_lava_target, BlockDefs.Block.STONE)
+	_aim(p, -0.9)
+	Input.action_press("break_block")
+	for i in 20:
+		p.update_local(1.0 / 60.0)
+	_place_voxel = p.place_voxel
+	_place_sel = p.selected_block()
+	_place0 = int(main.stats["placed"])
+	print("       lavar=%s  place=%s  dureza=%.2f  progresso=%.2f  bloco=%d  colocados=%d"
+		% [_lava_target, _place_voxel, p.target_hardness, p.mining_progress, _place_sel, _place0])
+	_arm_click(true)
+
+
+func _check_build_while_mining() -> void:
+	var p: Player = main.player
+	var w: VoxelWorld = main.world
+	Input.action_release("break_block")
+	_release_click()
+	get_tree().paused = false
+	self.process_mode = Node.PROCESS_MODE_INHERIT
+	p.process_mode = Node.PROCESS_MODE_INHERIT
+	_check("clique direito chegou durante a lavra", _click_frame > 0,
+		_click_detail if _click_frame > 0 else "a borda nunca chegou (frame %d)" % _frame)
+	_check("construiu com o ESQ segurado",
+		_click_frame > 0 and int(main.stats["placed"]) == _place0 + 1
+			and w.get_block(_place_voxel) == _place_sel,
+		"voxel=%s  bloco=%d  achado=%d  colocados=%d->%d"
+		% [_place_voxel, _place_sel, w.get_block(_place_voxel), _place0, int(main.stats["placed"])])
+	_check("a lavra ainda nao tinha comido o alvo",
+		w.get_block(_lava_target) == BlockDefs.Block.STONE,
+		"voxel=%s  achado=%d  progresso=%.2f" % [_lava_target, w.get_block(_lava_target), p.mining_progress])
 
 
 # --------------------------------------------------------------------- memoria
@@ -628,7 +719,15 @@ func _check_hud() -> void:
 	var p: Player = main.player
 	_check("hotbar de 7 slots no hud", hud._slots.size() == 7, "slots=%d" % hud._slots.size())
 	_check("overlay de morte comecou escondido", not hud._death.visible)
-	_check("painel de binds comecou escondido", not hud._binds.visible)
+	# O painel de binds agora abre sozinho no spawn (o `DIR colocar` nao aparece em
+	# lugar nenhum ate o jogador achar o botao direito) e fecha sozinho. Testado
+	# pelo mecanismo, nao pelo estado do boot: o estado do boot depende de quanto
+	# tempo de relogio ja passou desde o _ready do main.
+	hud.preview_binds(0.5)
+	_check("previsa de binds abre o painel", hud._binds.visible and hud._binds_cd > 0.0,
+		"visivel=%s  cd=%.2f" % [hud._binds.visible, hud._binds_cd])
+	hud._process(0.6)
+	_check("previsa de binds fecha sozinha", not hud._binds.visible)
 	p.toggle_debug.emit()
 	_check("F3 via sinal liga o debug", hud.debug_visible())
 	hud._process(0.2)
@@ -638,8 +737,11 @@ func _check_hud() -> void:
 	_check("debug mostra o relogio", dbg.contains("tick"), "linhas=%d" % dbg.split("\n").size())
 	p.toggle_debug.emit()
 	_check("F3 via sinal desliga o debug", not hud.debug_visible())
+	hud.preview_binds(0.5)
 	hud.show_binds(true)
 	_check("F2 abre o painel de binds", hud._binds.visible and dbg.length() > 0)
+	hud._process(0.6)
+	_check("F2 pinha o painel contra a previsa", hud._binds.visible, "cd=%.2f" % hud._binds_cd)
 	hud.show_binds(false)
 
 	var d0 := int(main.stats["deaths"])

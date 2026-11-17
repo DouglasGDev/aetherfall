@@ -52,7 +52,7 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **106 checagens, 0 falhas, 29,0 s**. O que ela cobre:
+nesta máquina: **116 checagens, 0 falhas, 31,4 s**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -64,7 +64,10 @@ nesta máquina: **106 checagens, 0 falhas, 29,0 s**. O que ela cobre:
   passos por frame, nenhum tick perdido durante o teste inteiro;
 - mecânicas: mineração com o tempo igual à dureza do bloco, colocação por
   clique real do mouse passando pelo InputMap, recusa de colocar dentro do
-  próprio corpo, troca de hotbar por tecla;
+  próprio corpo, construção com o botão esquerdo ainda pressionado (lavar um
+  bloco não engole o clique direito), troca de hotbar por tecla;
+- corpo do jogador em 3ª pessoa: 23 caixas montadas em pivôs, coladas nos pés,
+  girando com o yaw, com a cabeça fora de cena na 1ª pessoa;
 - IA: a mesma memória (`Mind`) muda a decisão do lobo entre os braços com e sem
   episódios gravados, e a fuga aparece depois de levar dano;
 - campo de Éter: imprint, difusão para a célula vizinha e meia-vida por canal;
@@ -95,8 +98,9 @@ docs/design/     design completo (pitch, IA, progressão, arquitetura, roadmap)
 Implementado neste repositório: mundo voxel procedural (relevo com planície,
 lago e praia de areia no nível do mar, monte nevado, árvores, blocos de pedra,
 cavernas e túneis por ruído), malha com face-culling e oclusão ambiental por
-vértice, texturas geradas em runtime (atlas 8×8), jogador em 1ª/3ª pessoa,
-quebrar e colocar blocos, combate corpo a corpo, vida/dano/morte/renascer,
+vértice, texturas geradas em runtime (atlas 8×8), jogador em 1ª/3ª pessoa com
+corpo animado (andar, agachar, pular, minerar, socar, morrer), quebrar e colocar
+blocos, combate corpo a corpo, vida/dano/morte/renascer,
 hotbar, HUD, 5 lobos com Behavior Tree + Utilidade + memória episódica e
 confiança no jogador, campo de Éter com 3 canais (work, blood, fear) que difunde
 e decai, relógio de simulação desacoplado, save/load atômico e a suíte headless

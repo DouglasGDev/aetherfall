@@ -29,6 +29,7 @@ var _toast_cd: float = 0.0
 var _death: Control = null
 var _debug: Label = null
 var _binds: Label = null
+var _binds_cd: float = 0.0
 var _debug_on: bool = false
 var _refresh_cd: float = 0.0
 
@@ -132,7 +133,17 @@ func debug_visible() -> bool:
 
 
 func show_binds(v: bool) -> void:
+	# Qualquer chamada explicita (F2) cancela a prévia do spawn: quem abriu o
+	# painel quer vê-lo, não quer que ele feche sozinho.
+	_binds_cd = 0.0
 	_binds.visible = v
+
+
+## Abre o painel de binds por um tempo no spawn: `DIR colocar` e a mecânica que
+## nao aparece em lugar nenhum ate o jogador descobrir o botao direito.
+func preview_binds(seconds: float) -> void:
+	_binds.visible = true
+	_binds_cd = seconds
 
 
 func _process(delta: float) -> void:
@@ -151,6 +162,10 @@ func _process(delta: float) -> void:
 	if _toast_cd > 0.0:
 		_toast_cd -= delta
 		_toast.modulate.a = clampf(_toast_cd / 0.6, 0.0, 1.0)
+	if _binds_cd > 0.0:
+		_binds_cd -= delta
+		if _binds_cd <= 0.0:
+			_binds.visible = false
 
 
 func _refresh_slots() -> void:

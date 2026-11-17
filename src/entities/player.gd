@@ -33,10 +33,12 @@ const COYOTE_TIME: float = 0.12
 const JUMP_BUFFER: float = 0.15
 const ATTACK_DAMAGE: float = 14.0
 const MOUSE_SENS: float = 0.0026
+const PLACE_BUFFER: float = 0.22
 
 var world: VoxelWorld = null
 var body: VoxelBody = VoxelBody.new()
 var camera: Camera3D = Camera3D.new()
+var avatar: PlayerAvatar = PlayerAvatar.new()
 var entity_provider: Callable
 
 var yaw: float = 0.0
@@ -61,6 +63,7 @@ var look_target_name: String = ""
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
 var _place_cd: float = 0.0
+var _place_buffer: float = 0.0
 var _attack_cd: float = 0.0
 var _bob_phase: float = 0.0
 var _punch: float = 0.0
@@ -76,6 +79,8 @@ func _ready() -> void:
 	camera.name = "Camera3D"
 	add_child(camera)
 	camera.current = true
+	avatar.name = "Avatar"
+	add_child(avatar)
 	_highlight_mat = StandardMaterial3D.new()
 	_highlight_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_highlight_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -137,6 +142,19 @@ func selected_block() -> int:
 	return hotbar[clampi(hotbar_index, 0, hotbar.size() - 1)]
 
 
+## Bordas de input nascem aqui, no callback do evento, e viram acao no proximo
+## tick. Lidas dentro de _physics_process elas se perdem: medido nesta maquina,
+## 163 quadros desenhados por segundo contra 59,8 ticks -> 63,3% dos quadros nao
+## tem tick nenhum, e o clique que cai num deles nunca e visto.
+func _input(event: InputEvent) -> void:
+	if not _cursor_captured or not alive:
+		return
+	if event.is_action_pressed("place_block"):
+		_place_buffer = PLACE_BUFFER
+	elif event.is_action_pressed("jump"):
+		_jump_buffer = JUMP_BUFFER
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and _cursor_captured and alive:
 		yaw -= event.relative.x * MOUSE_SENS
@@ -188,6 +206,8 @@ func take_damage(amount: float, from: Vector3) -> void:
 func die() -> void:
 	deaths += 1
 	alive = false
+	_place_buffer = 0.0
+	_jump_buffer = 0.0
 	died.emit(body.feet_pos)
 
 
@@ -203,8 +223,10 @@ func respawn_at(p: Vector3) -> void:
 func update_local(delta: float) -> void:
 	if not alive:
 		_update_camera(delta)
+		_update_avatar(delta)
 		return
 	_place_cd = maxf(_place_cd - delta, 0.0)
+	_place_buffer = maxf(_place_buffer - delta, 0.0)
 	_attack_cd = maxf(_attack_cd - delta, 0.0)
 	_coyote = _coyote + delta if body.on_ground else 0.0
 
@@ -215,6 +237,24 @@ func update_local(delta: float) -> void:
 	_update_target()
 	_apply_actions(delta)
 	_update_camera(delta)
+	_update_avatar(delta)
+
+
+## O no do Player fica parado (quem anda e body.feet_pos), entao o avatar e
+## reposicionado a cada tick e gira com o yaw: -Z local = para frente.
+func _update_avatar(delta: float) -> void:
+	avatar.third_person = third_person
+	avatar.walk_speed = Vector3(body.velocity.x, 0.0, body.velocity.z).length()
+	avatar.vertical = body.velocity.y
+	avatar.on_ground = body.on_ground
+	avatar.in_water = body.in_water
+	avatar.crouching = crouching
+	avatar.pitching = pitch
+	avatar.mining = _mining_accum > 0.0
+	avatar.dead = not alive
+	avatar.global_position = body.feet_pos
+	avatar.global_rotation = Vector3(0.0, yaw, 0.0)
+	avatar.advance(delta)
 
 
 func _wish_direction() -> Vector3:
@@ -264,8 +304,6 @@ func _apply_horizontal(wish: Vector3, delta: float) -> void:
 
 func _apply_vertical(wish: Vector3, delta: float) -> void:
 	_jump_buffer = maxf(_jump_buffer - delta, 0.0)
-	if Input.is_action_just_pressed("jump"):
-		_jump_buffer = JUMP_BUFFER
 	_coyote = minf(_coyote, COYOTE_TIME)
 
 	if body.in_water:
@@ -344,6 +382,7 @@ func _apply_actions(delta: float) -> void:
 		if _target_entity != null and _attack_cd <= 0.0:
 			_attack_cd = 0.42
 			_punch = minf(_punch + 0.10, 0.5)
+			avatar.swing()
 			attacked.emit(_target_entity, ATTACK_DAMAGE)
 		elif target_valid:
 			_mining_accum += delta
@@ -351,9 +390,13 @@ func _apply_actions(delta: float) -> void:
 				_mining_accum = 0.0
 				var b := world.get_block(target_voxel)
 				if world.set_block(target_voxel, BlockDefs.Block.AIR):
+					avatar.swing()
 					block_broken.emit(target_voxel, b)
 					acted.emit("break", Vector3(target_voxel) + Vector3(0.5, 0.5, 0.5))
-	elif Input.is_action_just_pressed("place_block") and _place_cd <= 0.0:
+	# Construir e uma intencao separada da de minerar: segurar o botao esquerdo
+	# (lavrando um bloco duro) nao engole o clique direito do meio da obra.
+	if _place_buffer > 0.0 and _place_cd <= 0.0:
+		_place_buffer = 0.0
 		_try_place()
 
 

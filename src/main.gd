@@ -93,6 +93,7 @@ func _ready() -> void:
 	add_child(hud)
 	hud.build_hotbar(player.hotbar)
 	hud.show_message("vale reconstruido  seed %d" % SEED, 3.4)
+	hud.preview_binds(7.0)
 
 	_spawn_wolves(WOLF_COUNT)
 
