@@ -1,0 +1,12 @@
+# Normaliza finais de linha no repositorio: os .gd/.tscn/.md sao LF no disco e
+# Git para Windows converte no checkout sem esta linha.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.svg text
+*.glb binary
+*.gltf text
+*.wav binary
+*.ogg binary
+*.res binary

@@ -1,0 +1,31 @@
+; Engine configuration file.
+; Aetherfall - slice P0/P1: mundo voxel basico jogavel, 3D, com mecanicas e IA local.
+config_version=5
+
+[application]
+
+config/name="Aetherfall"
+config/description="Open-world voxel RPG com IA 100% local. Slice jogavel: terreno procedural, quebrar/colocar, combate, memoria do mundo (Eter)."
+run/main_scene="res://src/main.tscn"
+config/features=PackedStringArray("4.7")
+config/icon="res://icon.svg"
+
+[debug]
+
+settings/gdscript/max_output_lines_cached=2048
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="disabled"
+
+[physics]
+
+common/enable_object_picking=false
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+anti_aliasing/quality/msaa_3d=2
+textures/vram_compression/import_etc2_astc=true

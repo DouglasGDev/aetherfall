@@ -1,0 +1,17 @@
+# Engine
+.godot/
+
+# Ferramentas locais (Godot portavel baixado para validar/CI local)
+.tools/
+
+# Artefatos de build e saves
+bin/
+saves/
+*.tmp
+
+# Modelos de IA local nunca entram no repositorio (licenca por modelo, ver docs/design/08)
+models/
+
+# Sistema
+.DS_Store
+Thumbs.db
