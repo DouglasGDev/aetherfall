@@ -74,14 +74,21 @@ há assets para baixar). As medições deste README foram feitas no
 ```sh
 git clone https://github.com/DouglasGDev/aetherfall.git
 cd aetherfall
-godot --path .                     # Linux/macOS
+godot --headless --path . --import   # UMA VEZ: monta o .godot/ e o cache de classes
+godot --path .                       # Linux/macOS
 # Windows: .\Godot_v4.7.2-stable_win64.exe --path .
 ```
 
+Esse `--import` não é burocracia: acabado de clonar, o projeto não tem `.godot/`
+e por isso não tem o registro dos `class_name`. Pular a linha faz o run abrir
+com `Could not find type "VoxelWorld" in the current scope` em tudo que depende
+de `src/world/` — reproduzido aqui num clone limpo, e some depois do import. Se
+você abrir o `project.godot` no editor em vez de usar a linha de comando, o
+próprio editor faz o import e o passo acima é desnecessário.
+
 Ou, pelo editor: **Importar** → selecionar `project.godot` → **F5**. Não há build
-step nem `npm install` da vida: na primeira abertura o próprio Godot importa os
-recursos (atlas e texturas são desenhados em runtime — os PNG de `docs/media/`
-são capturas de tela, não assets do jogo).
+step nem `npm install` da vida: atlas e texturas são desenhados em runtime — os
+PNG de `docs/media/` são capturas de tela, não assets do jogo.
 
 O primeiro boot gera o mundo e malha os 64 chunks antes de entregar o controle ao
 jogador: ~0,9 s de geração e ~4,3 s de malharia nesta máquina (medido; veja
@@ -116,11 +123,13 @@ A suíte roda a sessão real (`src/main.tscn`) sem janela e só conta como prova
 que foi medido naquela execução:
 
 ```sh
+godot --headless --path . --import            # só no clone ainda não importado
 godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **116 checagens, 0 falhas, 27,8 s**. O que ela cobre:
+nesta máquina: **116 checagens, 0 falhas, 27,8 s** — e no clone limpo, depois
+do import: **116 checagens, 0 falhas, 27,5 s**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -244,6 +253,9 @@ godot --headless --path . --check-only --script res://src/world/world_gen.gd
 # suíte completa: ~28 s, sai com código 1 em qualquer falha
 godot --headless --path . tests/smoke_test.tscn
 ```
+
+Ambos assumem o projeto já importado (`.godot/` existe) — num clone recém-feito,
+rode o `--import` da seção *Rodando a partir do clone* primeiro.
 
 ### Onde há trabalho aberto de verdade
 
