@@ -21,7 +21,7 @@ godot --path .
 
 Ou abra `project.godot` no editor e pressione **F5**. O primeiro boot gera o
 mundo e malha os 64 chunks antes de entregar o controle ao jogador: ~1,1 s de
-geração e ~7,5 s de malharia nesta máquina (medido; veja *Limites*).
+geração e ~4,7 s de malharia nesta máquina (medido; veja *Limites*).
 
 ## Controles
 
@@ -52,11 +52,14 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **105 checagens, 0 falhas, 37,9 s**. O que ela cobre:
+nesta máquina: **106 checagens, 0 falhas, 29,0 s**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
-  mundos criados com a mesma seed) e face-culling exato (cubo 3×3×3 soma
-  exatamente 108 triângulos; sem culling seriam 324);
+  mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
+  exatamente 108 triângulos; sem culling seriam 324) e winding dos triângulos
+  na convenção de face frontal do Godot — com o índice em (0,1,2) o
+  rasterizador descartava todas as faces de topo e o terreno aparecia
+  transparente;
 - relógio de simulação: 60 Hz de locomoção contra 20 Hz de lógica, teto de 5
   passos por frame, nenhum tick perdido durante o teste inteiro;
 - mecânicas: mineração com o tempo igual à dureza do bloco, colocação por
@@ -107,10 +110,11 @@ P0/P1 do roadmap.
 
 ## Limites conhecidos (medidos nesta máquina)
 
-- Boot: ~1,1 s de geração + ~7,5 s de malharia dos 64 chunks, com a janela
-  congelada. Os ~16 s originais caíram pela metade quando as consultas de
-  vizinhança do mesher passaram a ler uma cópia linear do mundo em vez do
-  dicionário de chunks; o custo que sobra é do laço GDScript de malharia.
+- Boot: ~1,1 s de geração + ~4,7 s de malharia dos 64 chunks (230.932
+  triângulos), com a janela congelada. Os ~16 s originais caíram para ~7,5 s
+  quando as consultas de vizinhança do mesher passaram a ler uma cópia linear
+  do mundo em vez do dicionário de chunks; a medição acima é do relevo atual
+  (`GEN_VERSION` 3), que escava cavernas e portanto tem menos faces por chunk.
 - Mundo fixo em 128×64×128 (8×8 chunks de 16×64×16), sem streaming de chunks.
 - Uma criatura (lobo) e um NPC conceitual: a memória existe, mas não há
   aldeia nem facções.

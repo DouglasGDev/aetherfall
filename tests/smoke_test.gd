@@ -212,8 +212,37 @@ func _check_meshing() -> void:
 	var real := _chunk_triangles(c)
 	_check("culling dentro de um chunk", real > 0 and real < naive,
 		"voxel solido=%d  malha=%d  sem culling=%d  (%.1f%%)" % [solid, real, naive, 100.0 * real / float(naive)])
+	# Winding: o Godot (Vulkan inverte o Y do framebuffer) trata como frontal o
+	# triangulo horario visto de fora, entao a normal geometrica do indice tem de
+	# apontar CONTRA a normal do vertice. Com o indice em (0,1,2) todo topo era
+	# descartado e o terreno aparecia transparente.
+	var wn := _winding_bad(_scratch)
+	_check("winding = face frontal do Godot", wn == 0, "triangulos contra=%d" % wn)
 	_scratch_root.queue_free()
 	_scratch = null
+
+
+## Triangulos cuja normal geometrica (ordem dos indices) concorda com a normal do
+# vertice: winding invertido, ou seja, a face e descartada como traseira.
+func _winding_bad(w: VoxelWorld) -> int:
+	var bad := 0
+	for key in w.chunks:
+		var c: VoxelChunk = w.chunks[key]
+		if c.mesh_instance == null or c.mesh_instance.mesh == null:
+			continue
+		for s in c.mesh_instance.mesh.get_surface_count():
+			var arr: Array = c.mesh_instance.mesh.surface_get_arrays(s)
+			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var nr: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+			for t in int(idx.size() / 3):
+				var a := v[idx[t * 3]]
+				var geo := (v[idx[t * 3 + 1]] - a).cross(v[idx[t * 3 + 2]] - a)
+				if geo.length_squared() < 1e-8:
+					continue
+				if geo.normalized().dot(nr[idx[t * 3]]) > 0.0:
+					bad += 1
+	return bad
 
 
 func _chunk_triangles(c: VoxelChunk) -> int:

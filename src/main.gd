@@ -355,7 +355,7 @@ func _build_environment() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
 	sun.rotation_degrees = Vector3(-42.0, 55.0, 0.0)
-	sun.light_energy = 1.25
+	sun.light_energy = 1.60
 	sun.light_color = Color(1.0, 0.96, 0.88)
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 80.0
@@ -376,8 +376,10 @@ func _build_environment() -> void:
 	env.ambient_light_energy = 0.85
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.70, 0.78, 0.86)
-	env.fog_density = 0.010
+	# Neblina mais densa e mais escura que o ceu: A/B na pose do spawn (bandas de
+	# luminancia) mostrou mais contraste no terreno sem lavar o horizonte.
+	env.fog_light_color = Color(0.55, 0.65, 0.78)
+	env.fog_density = 0.006
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = env

@@ -3,13 +3,28 @@ class_name WorldGen
 ## Nota de determinismo: features (arvores, blocos) so escrevem dentro do chunk de origem,
 ## com inset de 3, para que a ordem de geracao de vizinhos nao altere o resultado.
 
-const GEN_VERSION: int = 1
+const GEN_VERSION: int = 3
 const TREE_DENSITY: float = 0.018
 const BOULDER_DENSITY: float = 0.004
 const FEATURE_INSET: int = 3
 const SPAWN_RADIUS_CLEAR: int = 4
-const CAVE_THRESHOLD: float = 0.58
-const TUNNEL_THRESHOLD: float = 0.035
+const CAVE_THRESHOLD: float = 0.80
+# Espessura de cada folha que, intersecada com a outra, forma o tubo. Medido na
+# varredura (mundo inteiro, ruido amostrado 1 de 2 colunas): 0,035 dava 2,9% de
+# ar e so 2,0% das colunas com corredor >= 4 -- tunel quase inexistente; 0,110
+# da 6,0% de ar e 11,0% com corredor >= 4, que e o diametro de uma caverna onde
+# se anda, com 1,8% de pocilgas grandes e 0% de pilar flutuante.
+const TUNNEL_THRESHOLD: float = 0.110
+# Blocos solidos minimos entre o topo da coluna e qualquer vazio. Com 1 (a regra
+# antiga parava em y < h-1) 25% das colunas ficavam com crosta de 1-2 blocos e
+# 42% com buraco a 2-4 blocos do chao: o terreno virava casca sobre queijo suico
+# e o jogador via atraves do proprio chao.
+const CARVE_CRUST: int = 5
+# Profundidade minima de escavacao, medida do topo da coluna. Crosta de 5 so
+# garante o piso imediato; com 5 a escavacao ainda comia 21,5% do volume abaixo
+# do chao e 95,8% das colunas tinham buraco embaixo -- o horizonte inteiro
+# virava grade, e e isso que a camera mostrava como "bloco transparente".
+const CAVE_MIN_DEPTH: int = 12
 
 
 var world_seed: int = 0
@@ -19,6 +34,7 @@ var _moist := FastNoiseLite.new()
 var _temp := FastNoiseLite.new()
 var _cave := FastNoiseLite.new()
 var _tunnel := FastNoiseLite.new()
+var _tunnel_b := FastNoiseLite.new()
 
 
 func setup(p_seed: int) -> void:
@@ -36,6 +52,10 @@ func setup(p_seed: int) -> void:
 	_tunnel.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	_tunnel.fractal_type = FastNoiseLite.FRACTAL_NONE
 	_tunnel.frequency = 0.021
+	_tunnel_b.seed = p_seed + 7
+	_tunnel_b.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	_tunnel_b.fractal_type = FastNoiseLite.FRACTAL_NONE
+	_tunnel_b.frequency = 0.021
 
 
 static func _noise(n: FastNoiseLite, s: int, freq: float, fractal: int, oct: int) -> void:
@@ -100,7 +120,7 @@ func generate_chunk(c: VoxelChunk) -> void:
 					b = sub
 				else:
 					b = BlockDefs.Block.STONE
-				if y > 1 and y < h - 1 and not _near_spawn(gx, gz) and _carved(gx, y, gz, h):
+				if y > 1 and y <= h - CARVE_CRUST and not _near_spawn(gx, gz) and _carved(gx, y, gz, h):
 					b = BlockDefs.Block.AIR
 				c.set_block(x, y, z, b)
 			for y in range(h + 1, VoxelConfig.SEA_LEVEL + 1):
@@ -115,11 +135,16 @@ func _near_spawn(x: int, z: int) -> bool:
 
 
 func _carved(x: int, y: int, z: int, h: int) -> bool:
-	if h <= VoxelConfig.SEA_LEVEL + 2 and y > h - 6:
+	if y > h - CAVE_MIN_DEPTH:
 		return false
-	var tn: float = _tunnel.get_noise_3d(float(x), float(y) * 1.4, float(z))
-	if absf(tn) < TUNNEL_THRESHOLD:
-		return true
+	# Tuneis vermes: a intersecao de duas folhas finas de ruido independente e uma
+	# curva com secao de poucos blocos. Uma folha so (absf(n) < t) e uma superficie
+	# 2D: ela atravessa o mundo inteiro e o fatia em lajes soltas.
+	var a: float = _tunnel.get_noise_3d(float(x), float(y) * 1.5, float(z))
+	if absf(a) < TUNNEL_THRESHOLD:
+		var b: float = _tunnel_b.get_noise_3d(float(x), float(y) * 1.5, float(z))
+		if absf(b) < TUNNEL_THRESHOLD:
+			return true
 	return _cave.get_noise_3d(float(x), float(y), float(z)) > CAVE_THRESHOLD
 
 

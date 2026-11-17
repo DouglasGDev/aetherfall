@@ -19,6 +19,8 @@ const DIMS_CROUCH := Vector3(0.62, 1.15, 0.62)
 const EYE_STAND: float = 1.62
 const EYE_CROUCH: float = 0.98
 const REACH: float = 5.5
+const HIGHLIGHT_IDLE := Color(0.05, 0.05, 0.06, 0.9)
+const HIGHLIGHT_MINING := Color(1.0, 0.62, 0.16, 1.0)
 const WALK_SPEED: float = 4.3
 const SPRINT_SPEED: float = 6.9
 const CROUCH_SPEED: float = 2.1
@@ -77,15 +79,33 @@ func _ready() -> void:
 	_highlight_mat = StandardMaterial3D.new()
 	_highlight_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_highlight_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_highlight_mat.albedo_color = Color(1.0, 1.0, 1.0, 0.22)
-	_highlight_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var box := BoxMesh.new()
-	box.size = Vector3(1.02, 1.02, 1.02)
-	box.material = _highlight_mat
+	_highlight_mat.albedo_color = HIGHLIGHT_IDLE
 	_highlight = MeshInstance3D.new()
-	_highlight.mesh = box
+	_highlight.mesh = _wire_cube(0.502)
+	_highlight.mesh.surface_set_material(0, _highlight_mat)
 	_highlight.visible = false
 	add_child(_highlight)
+
+
+## As 12 arestas do cubo como PRIMITIVE_LINES. Um BoxMesh com alfa era um painel
+## leitoso sobre o alvo: parecia bloco transparente, nao contorno de selecao.
+static func _wire_cube(h: float) -> ArrayMesh:
+	var c := [
+		Vector3(-h, -h, -h), Vector3(h, -h, -h), Vector3(h, -h, h), Vector3(-h, -h, h),
+		Vector3(-h, h, -h), Vector3(h, h, -h), Vector3(h, h, h), Vector3(-h, h, h),
+	]
+	var e := [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4],
+		[0, 4], [1, 5], [2, 6], [3, 7]]
+	var v := PackedVector3Array()
+	for p in e:
+		v.append(c[p[0]])
+		v.append(c[p[1]])
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = v
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_LINES, arr)
+	return m
 
 
 func setup(p_world: VoxelWorld, p_spawn: Vector3, p_blocks: Array[int]) -> void:
@@ -296,7 +316,7 @@ func _update_target() -> void:
 	_highlight.visible = target_valid
 	if target_valid:
 		_highlight.global_position = Vector3(target_voxel) + Vector3(0.5, 0.5, 0.5)
-		_highlight_mat.albedo_color = Color(1.0, 1.0, 1.0, 0.18 + 0.62 * mining_progress)
+		_highlight_mat.albedo_color = HIGHLIGHT_IDLE.lerp(HIGHLIGHT_MINING, mining_progress)
 
 
 func _progress_of(v: Vector3i) -> float:

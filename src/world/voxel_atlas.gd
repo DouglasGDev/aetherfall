@@ -24,6 +24,12 @@ static func build_texture() -> Texture2D:
 	_leaves(img, BlockDefs.TILE_LEAVES, rng)
 	_water(img, BlockDefs.TILE_WATER, rng)
 
+	# O engine nao tem formato sRGB em runtime (4.7): a textura e amostrada como
+	# linear, entao os colores escritos acima (valores sRGB de tela) precisam virar
+	# lineares aqui. Sem isso o tonemap devolve tudo estourado e sem saturacao --
+	# o mundo cinza-claro das primeiras capturas.
+	img.srgb_to_linear()
+	img.generate_mipmaps(false)
 	var tex := ImageTexture.create_from_image(img)
 	return tex
 

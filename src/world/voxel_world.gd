@@ -9,7 +9,8 @@ const FACE_NORMALS: Array = [
 	Vector3i(1, 0, 0), Vector3i(-1, 0, 0), Vector3i(0, 0, 1),
 	Vector3i(0, 0, -1), Vector3i(0, 1, 0), Vector3i(0, -1, 0),
 ]
-# Vertices por face: triangulos (0,1,2) e (0,2,3) com normal externa verificada.
+# Vertices por face em ordem CCW vista de fora (normal externa verificada);
+# _emit_face os indexa em CW porque o Godot trata horario-visto-de-fora como frontal.
 const FACE_CORNERS: Array = [
 	[Vector3i(1, 0, 0), Vector3i(1, 1, 0), Vector3i(1, 1, 1), Vector3i(1, 0, 1)],   # +X
 	[Vector3i(0, 0, 1), Vector3i(0, 1, 1), Vector3i(0, 1, 0), Vector3i(0, 0, 0)],   # -X
@@ -74,6 +75,7 @@ func _build_materials() -> void:
 	_atlas = VoxelAtlas.build_texture()
 	_mat_opaque = StandardMaterial3D.new()
 	_mat_opaque.albedo_texture = _atlas
+	_mat_opaque.vertex_color_use_as_albedo = true
 	_mat_opaque.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 	_mat_opaque.roughness = 0.92
 	_mat_opaque.metallic = 0.0
@@ -531,12 +533,15 @@ func _emit_face(
 			tv + inset + face_uvs[k].y * (span - 2.0 * inset)))
 		var bright: float = clampf(tint * ao[k], 0.05, 1.2)
 		cols.append(Color(bright, bright, bright, 1.0))
+	# CW visto de fora = face frontal no Godot (Vulkan inverte o Y no framebuffer):
+	# com (0,1,2)/(0,2,3) o rasterizador descartava todo topo e os blocos
+	# apareciam transparentes.
 	idx.append(base)
+	idx.append(base + 2)
 	idx.append(base + 1)
-	idx.append(base + 2)
 	idx.append(base)
-	idx.append(base + 2)
 	idx.append(base + 3)
+	idx.append(base + 2)
 
 
 static func _hash3(x: int, y: int, z: int) -> int:
