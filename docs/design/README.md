@@ -1,8 +1,9 @@
 # Aetherfall — Design completo
 
 Documento de visão e arquitetura. Este é o **design target**, não a documentação do
-que já existe em código: ainda não há `project.godot` no repositório, portanto tudo
-aqui é especificação (ver legenda de status abaixo).
+que já existe em código: o repositório tem o slice P0/P1 jogável (`project.godot` na
+raiz, `src/`), e tudo aqui especifica o que ainda será construído em cima dele. Para o
+que está implementado hoje, veja o [`README.md`](../../README.md) da raiz.
 
 ## Legenda de status (usada em todos os documentos)
 

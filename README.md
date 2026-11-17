@@ -10,18 +10,86 @@ com mecânicas de quebra/colocação, combate, memória do mundo (campo de Éter
 lobos guiados por Behavior Tree + Utilidade + memória. O design completo do jogo
 está em [`docs/design/`](docs/design/).
 
-## Rodando
+## O mundo
 
-Pré-requisito: Godot 4.7 (std ou .NET) — não há build step, não há dependências
-externas.
+Todos os frames abaixo saíram do próprio RenderingServer do jogo rodando em
+janela, 1920×1080, na seed padrão `20261116` — sem captura de desktop, sem
+mockup, sem render de outra engine.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/01-3a-pessoa-planicie.png" alt="Planície em terceira pessoa"></td>
+    <td width="50%"><img src="docs/media/02-1a-pessoa-planicie.png" alt="Planície em primeira pessoa"></td>
+  </tr>
+  <tr>
+    <th>Planície, 3ª pessoa</th>
+    <th>Planície, 1ª pessoa</th>
+  </tr>
+  <tr>
+    <td><img src="docs/media/03-floresta.png" alt="Orla de mata"></td>
+    <td><img src="docs/media/04-lago-e-praia.png" alt="Lago e praia"></td>
+  </tr>
+  <tr>
+    <th>Orla de mata — o dossel a poucos blocos</th>
+    <th>Lago e praia de areia no <code>SEA_LEVEL 26</code></th>
+  </tr>
+  <tr>
+    <td><img src="docs/media/06-monte-nevado.png" alt="Monte nevado"></td>
+    <td><img src="docs/media/07-mirante-do-pico.png" alt="Mirante nevado"></td>
+  </tr>
+  <tr>
+    <th>Monte nevado, 3ª pessoa</th>
+    <th>Mirante: a neve descendo até o vale</th>
+  </tr>
+  <tr>
+    <td><img src="docs/media/05-lavrando.png" alt="Minerando um bloco"></td>
+    <td><img src="docs/media/09-construcao.png" alt="Muro de pedra construído"></td>
+  </tr>
+  <tr>
+    <th>Minerando — a barra é progresso real, só existe lavrando</th>
+    <th>Construção — muro 5×2 de pedra, bloco por bloco pelo clique direito</th>
+  </tr>
+  <tr>
+    <td><img src="docs/media/08-corpo-no-ar.png" alt="Salto no ápice"></td>
+    <td><img src="docs/media/10-lobo.png" alt="Lobo sob a mira"></td>
+  </tr>
+  <tr>
+    <th>Salto no ápice — 1,33 m de elevação medida</th>
+    <th>Lobo sob a mira, com a intenção da mente no rótulo do alvo</th>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/media/11-visao-do-eter.png" alt="Visão do Éter"></td>
+  </tr>
+  <tr>
+    <th colspan="2">Visão do Éter (<code>B</code>) — o mapa de calor da memória do mundo; aqui o canal de trabalho, aceso por lavrar blocos. Sangue e medo entram quando um lobo faz parte da cena</th>
+  </tr>
+</table>
+
+## Rodando a partir do clone
+
+Pré-requisito único: **Godot 4.7** (o padrão serve; não há C#, não há addons, não
+há assets para baixar). As medições deste README foram feitas no
+**4.7.2-stable** com Vulkan Forward+. Renderiza em qualquer GPU com Vulkan 1.0.
 
 ```sh
-godot --path .
+git clone https://github.com/DouglasGDev/aetherfall.git
+cd aetherfall
+godot --path .                     # Linux/macOS
+# Windows: .\Godot_v4.7.2-stable_win64.exe --path .
 ```
 
-Ou abra `project.godot` no editor e pressione **F5**. O primeiro boot gera o
-mundo e malha os 64 chunks antes de entregar o controle ao jogador: ~1,1 s de
-geração e ~4,7 s de malharia nesta máquina (medido; veja *Limites*).
+Ou, pelo editor: **Importar** → selecionar `project.godot` → **F5**. Não há build
+step nem `npm install` da vida: na primeira abertura o próprio Godot importa os
+recursos (atlas e texturas são desenhados em runtime — os PNG de `docs/media/`
+são capturas de tela, não assets do jogo).
+
+O primeiro boot gera o mundo e malha os 64 chunks antes de entregar o controle ao
+jogador: ~0,9 s de geração e ~4,3 s de malharia nesta máquina (medido; veja
+*Limites*). O save vai para `user://saves/world_alpha.json` — no Windows,
+`%APPDATA%\Godot\app_userdata\Aetherfall\saves\`. `F5` salva, `F9` carrega.
+
+Um save antigo é recusado de propósito quando o gerador muda (`GEN_VERSION`): a
+mensagem manda recriar o mundo em vez de interpretar mal o relevo.
 
 ## Controles
 
@@ -52,7 +120,7 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **116 checagens, 0 falhas, 31,4 s**. O que ela cobre:
+nesta máquina: **116 checagens, 0 falhas, 27,8 s**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -96,7 +164,8 @@ docs/design/     design completo (pitch, IA, progressão, arquitetura, roadmap)
 ## O que existe e o que é alvo de design
 
 Implementado neste repositório: mundo voxel procedural (relevo com planície,
-lago e praia de areia no nível do mar, monte nevado, árvores, blocos de pedra,
+lago e praia de areia no nível do mar — 12,5% das colunas caem abaixo de
+`SEA_LEVEL 26` na seed padrão, monte nevado, árvores, blocos de pedra,
 cavernas e túneis por ruído), malha com face-culling e oclusão ambiental por
 vértice, texturas geradas em runtime (atlas 8×8), jogador em 1ª/3ª pessoa com
 corpo animado (andar, agachar, pular, minerar, socar, morrer), quebrar e colocar
@@ -114,16 +183,88 @@ P0/P1 do roadmap.
 
 ## Limites conhecidos (medidos nesta máquina)
 
-- Boot: ~1,1 s de geração + ~4,7 s de malharia dos 64 chunks (230.932
+- Boot: ~0,9 s de geração + ~4,3 s de malharia dos 64 chunks (214.480
   triângulos), com a janela congelada. Os ~16 s originais caíram para ~7,5 s
   quando as consultas de vizinhança do mesher passaram a ler uma cópia linear
   do mundo em vez do dicionário de chunks; a medição acima é do relevo atual
-  (`GEN_VERSION` 3), que escava cavernas e portanto tem menos faces por chunk.
+  (`GEN_VERSION` 4), que escava cavernas e alaga cubas e portanto tem menos
+  faces sólidas por chunk.
 - Mundo fixo em 128×64×128 (8×8 chunks de 16×64×16), sem streaming de chunks.
 - Uma criatura (lobo) e um NPC conceitual: a memória existe, mas não há
   aldeia nem facções.
 - Single-player. O código separa o passo local do passo de simulação para
   permitir o dedicado, mas não há rede implementada.
+
+## Contribuindo
+
+O projeto é aberto e a fatia atual é pequena de propósito: dá para ler o inteiro
+em uma tarde. Comece pelo [design](docs/design/README.md) — os documentos usam a
+legenda `[TARGET]` / `[MEASURED]` / `[DECIDED]` / `[OPEN]`, e nada aqui promete
+número que não tenha sido medido.
+
+### Mapa do código
+
+| Caminho | O que faz |
+| --- | --- |
+| `src/main.gd` | composição da cena: mundo, jogador, lobos, Éter, HUD, save |
+| `src/world/` | `voxel_world` (chunks + raycast DDA), `world_gen` (relevo, cubas, cavernas, árvores), `voxel_atlas` (texturas desenhadas em runtime), `aether_field` |
+| `src/entities/` | `player` (mira, minerar, colocar, golpe), `voxel_body` (colisão AABB-contra-voxel), `player_avatar` (corpo em 3ª pessoa), `wolf` |
+| `src/ai/` | `bt_tree`/`bt_status` (Behavior Tree), `response_curve` + `utility_scorer` (utilidade), `mind` (personalidade, memória episódica, confiança) |
+| `src/core/sim_clock.gd` | relógio de simulação a 20 Hz, desacoplado do frame |
+| `src/persistence/` | `save_manager` (escrita atômica: `.tmp` + rename, schema versionado) |
+| `src/ui/`, `src/rendering/`, `src/input/` | HUD, visão do Éter, registro de ações |
+| `tests/smoke_test.gd` | a suíte headless que roda a sessão real |
+
+### Regras que o código já segue
+
+- **GDScript tipado, sem C# e sem addons.** `class_name` PascalCase, um por
+  arquivo, arquivo `snake_case` ASCII puro (a convenção completa está em
+  [`docs/design/07`](docs/design/07-project-structure.md)).
+- **Dependência só desce.** Nada em `src/world/` ou `src/ai/` referencia
+  `src/ui/`: HUD e rede são *consumidores de eventos*, nunca produtores de
+  estado. É isso que mantém o `--headless` funcionando e o dedicado idêntico ao
+  host de um jogador.
+- **Determinismo em primeiro lugar.** Ruído e RNG derivam da seed do mundo;
+  features escrevem só dentro do chunk de origem (`FEATURE_INSET 3`), para que a
+  ordem de geração dos vizinhos não mude o resultado. Mudou o gerador, suba
+  `GEN_VERSION` — o save antigo é recusado com mensagem em vez de ser lido torto.
+- **Segurar botão se mede em tick de física, não em frame.** Os cooldowns de
+  colocar (0,16 s) e golpear (0,42 s) decaem em `player.update_local()`, chamada
+  por `_physics_process`; nesta máquina o render mede ~163 fps contra ~60 Hz de
+  física (2,7× de diferença), então cronometrar uma ação segurada contando
+  `_process` conta o relógio errado e o teste passa por sorte.
+- **Nada de número sem medição.** PR que afirma custo, taxa ou tempo traz o
+  comando e a revisão em que rodou.
+
+### Gates antes de abrir o PR
+
+```sh
+# porta de compilação por arquivo alterado (roda em segundos)
+godot --headless --path . --check-only --script res://src/world/world_gen.gd
+# suíte completa: ~28 s, sai com código 1 em qualquer falha
+godot --headless --path . tests/smoke_test.tscn
+```
+
+### Onde há trabalho aberto de verdade
+
+Coisas que faltam e que dá para atacar hoje, cada uma com o critério de "pronto"
+medível no `--headless`:
+
+- **Bloco que emite luz.** As cavernas existem (`CAVE_THRESHOLD 0.80`,
+  `CAVE_MIN_DEPTH 12`) mas nenhum dos 8 blocos é emissivo — dentro de uma
+  cavidade a luminância medida do quadro é ~0,15, ou seja, não há o que mostrar.
+- **Bioma deserto.** `SAND` abaixo de `SEA_LEVEL` vira praia; acima dele a
+  varredura da seed padrão conta **0** colunas. Falta o clima, não a areia.
+- **Streaming de chunks.** O mundo é fixo em 128×64×128; o mesher já tem índice
+  linear, então o corte é por região.
+- **Rebinder com persistência.** `src/input/input_actions.gd` grava as teclas no
+  código; a estrutura de ações já é a que permite rebinding.
+- **Mais espécies.** A máquina de IA (`src/ai/`) é genérica — só existe lobo. Uma
+  segunda espécie é o teste real de que o `Mind` não é específico de um bicho.
+- **Co-op 1–4.** O passo de simulação já separado do passo local é o gancho.
+
+Dúvida de arquitetura antes de escrever código? Abra uma issue apontando o
+documento de design: é mais barato do que refazer o PR.
 
 ## Licença
 

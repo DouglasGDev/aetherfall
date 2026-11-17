@@ -3,7 +3,7 @@ class_name WorldGen
 ## Nota de determinismo: features (arvores, blocos) so escrevem dentro do chunk de origem,
 ## com inset de 3, para que a ordem de geracao de vizinhos nao altere o resultado.
 
-const GEN_VERSION: int = 3
+const GEN_VERSION: int = 4
 const TREE_DENSITY: float = 0.018
 const BOULDER_DENSITY: float = 0.004
 const FEATURE_INSET: int = 3
@@ -32,6 +32,7 @@ var _height := FastNoiseLite.new()
 var _mountain := FastNoiseLite.new()
 var _moist := FastNoiseLite.new()
 var _temp := FastNoiseLite.new()
+var _basin := FastNoiseLite.new()
 var _cave := FastNoiseLite.new()
 var _tunnel := FastNoiseLite.new()
 var _tunnel_b := FastNoiseLite.new()
@@ -43,6 +44,7 @@ func setup(p_seed: int) -> void:
 	_noise(_mountain, p_seed + 2, 0.0035, FastNoiseLite.FRACTAL_FBM, 3)
 	_noise(_moist, p_seed + 3, 0.0045, FastNoiseLite.FRACTAL_NONE, 1)
 	_noise(_temp, p_seed + 4, 0.0030, FastNoiseLite.FRACTAL_NONE, 1)
+	_noise(_basin, p_seed + 8, 0.0055, FastNoiseLite.FRACTAL_NONE, 1)
 	_cave.seed = p_seed + 5
 	_cave.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	_cave.fractal_type = FastNoiseLite.FRACTAL_RIDGED
@@ -71,7 +73,14 @@ func surface_height(x: int, z: int) -> int:
 	var m: float = (_mountain.get_noise_2d(float(x), float(z)) + 1.0) * 0.5
 	var mask: float = clampf((m - 0.42) / 0.58, 0.0, 1.0)
 	mask = mask * mask * (3.0 - 2.0 * mask)
-	var h: float = 27.0 + n1 * 10.0 + mask * 23.0
+	# Cubas largas. Sem este termo o fundo do vale ficava sempre acima do mar:
+	# medido no gen v3, altura minima 30 contra SEA_LEVEL 26, agua = 0 no mundo
+	# inteiro, e nem lago nem praia de areia existiam apesar do codigo deles.
+	# O canal tem amplitude medida de -0,91..0,91, entao so a cauda negativa vira
+	# cuba: ate 22 blocos de fundo, o bastante para alagar a baixada de verdade.
+	var bs: float = _basin.get_noise_2d(float(x), float(z))
+	var cuba: float = clampf((-bs - 0.18) / 0.60, 0.0, 1.0)
+	var h: float = 27.0 + n1 * 10.0 + mask * 23.0 - cuba * 22.0
 	h = _spawn_flatten(x, z, h)
 	return int(h)
 

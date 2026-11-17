@@ -23,6 +23,7 @@ var _slots: Array = []
 var _hp_fill: ColorRect = null
 var _hp_text: Label = null
 var _target_label: Label = null
+var _mine_bg: ColorRect = null
 var _mine_fill: ColorRect = null
 var _toast: Label = null
 var _toast_cd: float = 0.0
@@ -152,7 +153,10 @@ func _process(delta: float) -> void:
 	var ratio := clampf(player.hp / player.max_hp, 0.0, 1.0)
 	_hp_fill.size.x = HP_W * ratio
 	_hp_text.text = "%d / %d" % [int(round(player.hp)), int(player.max_hp)]
-	_mine_fill.size.x = MINE_W * clampf(player.mining_progress, 0.0, 1.0)
+	var mining := clampf(player.mining_progress, 0.0, 1.0)
+	_mine_bg.visible = mining > 0.0
+	_mine_fill.visible = mining > 0.0
+	_mine_fill.size.x = MINE_W * mining
 	_target_label.text = player.look_target_name
 	_refresh_cd -= delta
 	if _refresh_cd <= 0.0:
@@ -241,6 +245,10 @@ func _build_target() -> void:
 	bg.offset_top = 64.0
 	bg.offset_bottom = 69.0
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A trilha vazia nao e informacao: sem lavrar nada, a barra e um risco preto
+	# no ceu. So aparece com progresso real de mineracao.
+	bg.visible = false
+	_mine_bg = bg
 	_root.add_child(bg)
 	_mine_fill = ColorRect.new()
 	_mine_fill.color = Color(0.95, 0.85, 0.35, 0.95)
