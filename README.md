@@ -196,7 +196,12 @@ nunca decide: só explica o que já foi decidido (docs/design/04, camada 5).
 ```sh
 powershell -ExecutionPolicy Bypass -File tools\fetch_models.ps1    # baixa runtime + mind-small com SHA256 conferido
 powershell -ExecutionPolicy Bypass -File tools\run_mind_server.ps1 # sobe llama-server em 127.0.0.1:8741
+godot --headless --path . tests/live_oracle_probe.tscn             # probe de ponta a ponta: sessao real + servidor
 ```
+
+Medido na 9060 XT (Vulkan): boot do modelo em 9,5 s; prompt 52,7 tok/s e
+geração 45,1 tok/s; a primeira frase do lobo aparece ~1,4 s depois do mundo
+carregado e a segunda ~0,7 s depois (round-robin pela matilha).
 
 Os pacotes ficam fora do repositório (`models/` e `.tools/` no `.gitignore`);
 licenças e origens em [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md):
