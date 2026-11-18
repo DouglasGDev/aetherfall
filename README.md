@@ -281,6 +281,7 @@ tests/           smoke test headless
 tools/           fetch de packs de IA local + servidor do oráculo (PowerShell)
 docs/design/     design completo (pitch, IA, progressão, arquitetura, roadmap)
 docs/melhorias-status.md  o que está feito, o que falta e o que foi medido
+AGENTS.md        as regras de trabalho: escopo, medição, atomicidade, comentário
 ```
 
 ## IA local (opcional)
@@ -352,7 +353,10 @@ em uma tarde. Comece pelo [design](docs/design/README.md) — os documentos usam
 legenda `[TARGET]` / `[MEASURED]` / `[DECIDED]` / `[OPEN]`, e nada aqui promete
 número que não tenha sido medido. O estado do trabalho, fila e débitos está em
 [`docs/melhorias-status.md`](docs/melhorias-status.md): cada linha ou cita código,
-ou cita o log da medição.
+ou cita o log da medição. As regras com que qualquer mudança entra no repositório —
+princípios, escopo autorizado, como reproduzir antes de corrigir, o que conta como
+número publicado — estão em [`AGENTS.md`](AGENTS.md), e valem igual para humano e
+para agente.
 
 ### Mapa do código
 

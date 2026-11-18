@@ -2,8 +2,12 @@
 
 Arquivo de trabalho. **Não é design**: cada linha abaixo ou cita código que existe, ou
 cita um log medido, ou declara explicitamente que não existe ainda. A fonte das cobranças
-é o "Prompt Master de Correção de Furos e Fechamento de Gates"; a primeira seção diz onde
-ele está certo e onde ele descreve um projeto que ainda não é este.
+são dois prompts que se completam: o "Prompt Master de Correção de Furos e Fechamento de
+Gates", que é o que esta primeira seção audita, e as "Instruções de Trabalho (obrigatórias)",
+que viraram [`AGENTS.md`](../AGENTS.md) na raiz — o prompt master responde *o que falta*,
+o `AGENTS.md` responde *como* mexer sem quebrar as propriedades do projeto. A segunda tabela
+abaixo audita as afirmações de escopo e estado desse segundo prompt, que também descrevem
+peças que este repositório ainda não tem.
 
 Revisão de referência: `9c6b722` — a premissa montada no passo de golpe (furo #6 abaixo).
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
@@ -22,6 +26,23 @@ Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 | "reduza o acoplamento de `main.gd` / `wolf.gd` / memória" | Os números reais hoje: `main.gd` 451 linhas, `wolf.gd` 601, `player.gd` 762, `voxel_world.gd` 636, `mind.gd` 167, `aether_field.gd` 214, `smoke_test.gd` 1963. O acoplamento é estrutural, não de tamanho: `main.gd` é dono de mundo, relógio, matilha, HUD, oráculo e visualização ao mesmo tempo — [main.gd:18-24](../src/main.gd#L18-L24) | **válido**; medir por linhas é proxy, o que importa é o dono único |
 | "zero derivação GPL do Veloren" | Verificado por ausência: nenhum `.rs` e nenhum `.ron` no repositório. As menções a Veloren são comentários de idéia e de origem em 12 pontos de `src/` (ex.: [inventory.gd:5-17](../src/items/inventory.gd#L5-L17), que inclusive separa "o que não veio do Veloren") e o link do §09 | **correto**; nada a corrigir |
 | "números medidos, gates subtrativos, docs derivados de código" | Já é a prática da casa: §08 tem a tabela "Estado real do roadmap" com o que existe e o que falta por fase — [08-roadmap-risks-licensing.md:20-38](design/08-roadmap-risks-licensing.md) | **correto**; o §08 já carrega o estado real, não precisa de nova edição |
+
+### O prompt de instruções de trabalho × o código
+
+O segundo mandato chegou como texto de colaboração ("Instruções de Trabalho (obrigatórias)") e
+virou [`AGENTS.md`](../AGENTS.md) na raiz, para valer em toda sessão que abrir o repositório.
+As regras de comportamento estão lá; o que segue é a auditoria das **afirmações de estado** que
+o mesmo texto traz, no mesmo espírito da tabela acima.
+
+| O que o prompt afirma | O que está em `src/` hoje | Veredicto |
+|---|---|---|
+| "Estamos em P0/P1" | O §08 diz outra coisa, e a suíte confirma: o projeto está **antes** de P1 e **sem nenhum gate fechado** — [08-roadmap-risks-licensing.md:36-38](design/08-roadmap-risks-licensing.md). Existe um slice P0/P1 jogável, não uma fase encerrada | **verdade como ponto de partida, falso como fase**; ler "P0/P1" como "o que existe", nunca como "o que está aprovado" |
+| "Não quebrar determinismo ou a capacidade de hash/journal sem avisar" | Não há capacidade instalada para quebrar: nem hash de estado por tick nem journal de tick existem (linha 4 da tabela acima). O que dá para quebrar de verdade é o acesso serializável ao estado autoritativo — `main.diagnostics()` em [main.gd:404](../src/main.gd#L404) e o carimbo de versão do gerador recusando save velho em [:351](../src/main.gd#L351) — que é justamente o que o primitivo vai consumir | **falso como salvaguarda**; vale como restrição de design: nada de esconder estado atrás de interface opaca |
+| "A mente propõe, as regras dispõem — LLM nunca decide movimento, dano, posição ou estado" | Verdade hoje por fiação, não por verifier: a única saída de `MindOracle` é `_narrations` — [mind_oracle.gd:27](../src/ai/mind_oracle.gd#L27), [:120](../src/ai/mind_oracle.gd#L120) — lida por `narration_of()` ([:59-60](../src/ai/mind_oracle.gd#L59-L60)) e entregue só ao HUD ([main.gd:109](../src/main.gd#L109) → [hud.gd:270-271](../src/ui/hud.gd#L270-L271)). Grep de `oracle`/`narration` em `src/` não acha nenhum outro consumidor: nem `Mind`, nem `Wolf`, nem o mundo leem o oráculo | **correto hoje**; o dia em que o oráculo *sugerir*, a sugestão entra como crença em quarentena (§04), não como intenção escrita |
+| "Completar o mínimo de P1: AetherField, Mind, consolidação, observabilidade, testes de hash, budget" | Três dos seis existem: `AetherField` (com 3 dos 6 canais), `Mind` e a **consolidação** — mas esta vive dentro de `Mind`, não num `MindStore` à parte. Observabilidade há em texto (F3), inspector não; "testes de hash" pressupõem a peça ausente; "budget" tem mecanismo e nenhuma colheita em log | **metade feito**; item por item nas linhas acima e na fila "Falta" |
+| "Melhorar a degradação e a robustez do oráculo atual (ainda HTTP)" | Correto no diagnóstico, e a degradação já é checada sem rede — sonda apontada para a porta 1 em [smoke_test.gd:1647-1651](../tests/smoke_test.gd#L1647-L1651). O caminho feliz depende de `llama-server` de fora e não é testável em headless | **correto**; está dentro do escopo autorizado |
+| "Repositório: github.com/DouglasGDev/aetherfall" | `origin` confere. O que está publicado é `00538b3` (`git ls-remote --heads origin`, lido em 2026-11-18); `88d1c19`, `9c6b722` e `53eba15` são locais até o push ser pedido | **correto**; publicação se confirma por `ls-remote`, nunca pelo código 0 do `push` |
+| "Ao final de um bloco, atualize ou proponha atualização de `docs/melhorias-status.md`" | É este arquivo, com as seções que o prompt pede (feito / em andamento / falta / backlog / débitos / furos / notas) | **correto**; já é a prática da casa, e agora está escrita em [`AGENTS.md`](../AGENTS.md) |
 
 ## Feito nesta sessão
 
@@ -58,6 +79,19 @@ Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
   `mira travada no lobo do passo` ([smoke_test.gd:1442-1447](../tests/smoke_test.gd#L1442-L1447))
   diz em voz alta se algum dia a mira não estiver no lobo do passo, com a distância do rival mais
   próximo. A suíte passou de 219 para **220 checagens**.
+- **Clone limpo re-medido e publicado.** O README prometia o número do clone para a árvore
+  anterior; re-medido no commit que carrega o conserto (`9c6b722`), clonado sem `.godot/` nem
+  `.tools/`, `--import` e suíte: **220 checagens / 0 falhas / 35,4 s**, exit 0, zero `ERROR` nos
+  dois logs, com a mira do passo nos mesmos 2,98 m e o rival a 8,02 m
+  (`.tools/pub-import.log`, `.tools/pub-suite.log`). Aproveitou e trouxe os logs dos braços do
+  furo #6 da pasta temporária para `.tools/` — linha de tabela que aponta para arquivo apagado
+  não é evidência.
+- **Os dois mandatos viraram uma coisa só lida por quem chega.** As "Instruções de Trabalho
+  (obrigatórias)" estão em [`AGENTS.md`](../AGENTS.md), na raiz, auditadas na segunda tabela
+  acima. O que aquele texto dava por existente — capacidade de hash/journal a preservar, "estamos
+  em P0/P1" — não existe ou não é fase encerrada, e está escrito lá com a linha de código que
+  mostra; o que ele manda (a mente propõe e as regras dispõem) foi conferido por fiação, não por
+  suposição.
 
 ## Em andamento
 

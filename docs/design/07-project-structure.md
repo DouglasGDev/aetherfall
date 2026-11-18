@@ -28,6 +28,7 @@ Aetherfall/
 ├─ LICENSE-ASSETS.md               # CC-BY-SA 4.0 (assets)
 ├─ THIRD_PARTY_LICENSES.md         # gerado: voxel tools, llama.cpp, sqlite, GUT, fontes, modelos
 ├─ README.md                       # pitch, como rodar, como contribuir, status do projeto
+├─ AGENTS.md                       # existe hoje: contrato de trabalho (princípios, escopo, medição)
 ├─ CONTRIBUTING.md  CHANGELOG.md  VERSION
 │
 ├─ .github/
