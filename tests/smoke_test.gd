@@ -48,6 +48,7 @@ var _swim_min_y := 999.0
 var _swim_max_leg := 0.0
 var _swim_seek := false
 var _lake := Vector3i.ZERO
+var _oracle_probe: MindOracle = null
 
 
 func _ready() -> void:
@@ -81,6 +82,8 @@ func _ready() -> void:
 		["planar e queda", 0, _check_glide_fall],
 		["respiracao e afogamento", 0, _check_breath],
 		["regeneracao fora de combate", 0, _check_regen],
+		["oraculo: sonda em porta fechada", 0, _check_oracle_arm],
+		["oraculo degrada sem servidor", 90, _check_oracle],
 		["hud, morte e renascer", 0, _check_hud],
 		["salvar e carregar", 0, _check_save],
 		["cadaver no chao", 0, _check_corpse],
@@ -978,6 +981,32 @@ func _check_regen() -> void:
 	_check("combate recente trava a regeneracao", p.hp < hp1 + 0.05,
 		"hp %.1f -> %.1f apos 2 s" % [hp1, p.hp])
 	_unpause_after(p)
+
+
+## Contrato do docs/design/04 (camada 5): sem llama-server o oraculo entra em
+## recuo, a narrativa fica vazia e a utilidade/arvore seguem decidindo sozinhas.
+## A porta 1 e fechada de proposito — deterministicas mesmo com um servidor
+## real na maquina.
+func _check_oracle_arm() -> void:
+	_oracle_probe = MindOracle.new()
+	_oracle_probe.name = "OracleProbe"
+	_oracle_probe.server_url = "http://127.0.0.1:1"
+	_oracle_probe.request_timeout = 1.0
+	_oracle_probe.roster_provider = Callable(main, "wolves_roster")
+	add_child(_oracle_probe)
+
+
+func _check_oracle() -> void:
+	var oracle := _oracle_probe
+	_oracle_probe = null
+	var w: Wolf = main.wolves[0]
+	_check("narrativa vazia sem servidor", oracle.narration_of(w.identity) == "",
+		"narr='%s'" % oracle.narration_of(w.identity))
+	_check("recuo global apos falha", oracle._server_cd > 0.0,
+		"recuo=%.1f s" % oracle._server_cd)
+	_check("mente segue decidindo sem narrador", w.mind != null and w.intent != "",
+		"intento=%s" % w.intent)
+	oracle.queue_free()
 
 
 ## Um braco do experimento. A posicao, o hp, o campo de Eter ao redor e a ameaca

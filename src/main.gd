@@ -21,6 +21,7 @@ var clock: SimClock = null
 var player: Player = null
 var viz: AetherViz = null
 var hud: Hud = null
+var oracle: MindOracle = null
 var wolves: Array = []
 var elapsed: float = 0.0
 var stats := {"mined": 0, "placed": 0, "wolves_felled": 0, "deaths": 0}
@@ -94,6 +95,12 @@ func _ready() -> void:
 	hud.build_hotbar(player.hotbar)
 	hud.show_message("vale reconstruido  seed %d" % SEED, 3.4)
 	hud.preview_binds(7.0)
+
+	oracle = MindOracle.new()
+	oracle.name = "MindOracle"
+	oracle.roster_provider = Callable(self, "wolves_roster")
+	add_child(oracle)
+	hud.narration_provider = Callable(oracle, "narration_of")
 
 	_spawn_wolves(WOLF_COUNT)
 
@@ -196,6 +203,10 @@ func targets_under_crosshair() -> Array:
 		if w.alive:
 			out.append(w)
 	return out
+
+
+func wolves_roster() -> Array:
+	return wolves
 
 
 func _reap_corpses() -> void:

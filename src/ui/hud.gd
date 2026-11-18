@@ -17,6 +17,7 @@ var aether: AetherField = null
 var clock: SimClock = null
 var stats_provider: Callable = Callable()
 var wolf_provider: Callable = Callable()
+var narration_provider: Callable = Callable()
 
 var _root: Control = null
 var _slots: Array = []
@@ -213,7 +214,12 @@ func _refresh_state() -> void:
 		lines.append(String(stats_provider.call()))
 	if wolf_provider.is_valid():
 		for w in wolf_provider.call():
-			lines.append(w.debug_line())
+			var line := String(w.debug_line())
+			if narration_provider.is_valid():
+				var narr := String(narration_provider.call(w.identity))
+				if not narr.is_empty():
+					line += "  ia: " + narr
+			lines.append(line)
 	_debug.text = "\n".join(lines)
 
 

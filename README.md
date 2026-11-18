@@ -129,8 +129,8 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **149 checagens, 0 falhas, 34,1 s** — e no clone limpo, depois
-do import: **149 checagens, 0 falhas**. O que ela cobre:
+nesta máquina: **152 checagens, 0 falhas, 35,2 s** — e no clone limpo, depois
+do import: **152 checagens, 0 falhas**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -151,6 +151,9 @@ do import: **149 checagens, 0 falhas**. O que ela cobre:
   cap de queda medido no próprio ângulo), queda livre que machuca acima da
   velocidade segura, respiração com afogamento por período e regeneração fora
   de combate;
+- IA local opcional (oráculo): com a porta do llama-server fechada, o pedido
+  estoura o timeout, o oráculo entra em recuo (30 s medidos) e a narrativa no
+  debug fica vazia — utilidade e árvore seguem decidindo sozinhas;
 - corpo do jogador em 3ª pessoa: 23 caixas montadas em pivôs, coladas nos pés,
   girando com o yaw, com a cabeça fora de cena na 1ª pessoa;
 - IA: a mesma memória (`Mind`) muda a decisão do lobo entre os braços com e sem
@@ -165,7 +168,7 @@ do import: **149 checagens, 0 falhas**. O que ela cobre:
 
 ```
 src/
-  ai/            behavior tree, curvas de resposta, utilidade, mente do NPC
+  ai/            behavior tree, curvas de resposta, utilidade, mente do NPC, oráculo
   core/          relógio de simulação (20 Hz)
   entities/      jogador, corpo voxel (colisão AABB-contra-voxel), lobo
   input/         registro de ações (sai para rebinder com persistência no P2)
@@ -175,8 +178,26 @@ src/
   world/         mundo voxel, chunks, gerador, blocos, atlas, campo de Éter
   main.gd        composição do slice
 tests/           smoke test headless
+tools/           fetch de packs de IA local + servidor do oráculo (PowerShell)
 docs/design/     design completo (pitch, IA, progressão, arquitetura, roadmap)
 ```
+
+## IA local (opcional)
+
+A linha `ia:` no debug (F3) narra o estado interno do lobo sob a mira em uma
+frase gerada por um modelo local. Sem o servidor o jogo roda completo — a
+narrativa fica vazia e a utilidade/árvore decidem sempre sozinhas. O modelo
+nunca decide: só explica o que já foi decidido (docs/design/04, camada 5).
+
+```sh
+powershell -ExecutionPolicy Bypass -File tools\fetch_models.ps1    # baixa runtime + mind-small com SHA256 conferido
+powershell -ExecutionPolicy Bypass -File tools\run_mind_server.ps1 # sobe llama-server em 127.0.0.1:8741
+```
+
+Os pacotes ficam fora do repositório (`models/` e `.tools/` no `.gitignore`);
+licenças e origens em [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md):
+Qwen3.5-4B Q4_K_M (Apache-2.0, 2,55 GB, quantização unsloth) e llama.cpp
+b12499 Vulkan (MIT).
 
 ## O que existe e o que é alvo de design
 
@@ -190,8 +211,9 @@ quebrar e colocar blocos, combate corpo a corpo com vigor, rolamento e
 planar, respiração e dano de queda, vida/dano/morte/renascer,
 hotbar, HUD, 5 lobos com Behavior Tree + Utilidade + memória episódica e
 confiança no jogador, campo de Éter com 3 canais (work, blood, fear) que difunde
-e decai, relógio de simulação desacoplado, save/load atômico e a suíte headless
-acima.
+e decai, relógio de simulação desacoplado, save/load atômico, o oráculo de IA
+local opcional (llama-server + Qwen3.5-4B em localhost, narração no debug) e a
+suíte headless acima.
 
 Ainda **alvo de design** (descrito em `docs/design/`, sem código aqui): NPCs de
 aldeia com objetivos próprios, facções e evolução de assentamentos, progressão
