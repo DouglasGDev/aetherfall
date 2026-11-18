@@ -36,6 +36,9 @@ var _corpse_cd: float = 0.0
 var _gen_ms: float = 0.0
 var _mesh_ms: float = 0.0
 var _binds_on: bool = false
+# Bancadas colocadas, em blocos. E a lista que o Veloren varreria por sprite
+# proximo; o mundo nao e varrido porque a consulta roda a cada frame do painel.
+var _benches: Array[Vector3i] = []
 
 
 func _ready() -> void:
@@ -69,8 +72,9 @@ func _ready() -> void:
 	player = Player.new()
 	player.name = "Player"
 	add_child(player)
-	player.setup(world, spawn_point(), BlockDefs.placeable_blocks())
+	player.setup(world, spawn_point())
 	player.entity_provider = Callable(self, "targets_under_crosshair")
+	player.bench_provider = Callable(self, "bench_positions")
 	player.block_broken.connect(_on_block_broken)
 	player.block_placed.connect(_on_block_placed)
 	player.acted.connect(_on_acted)
@@ -81,6 +85,8 @@ func _ready() -> void:
 	player.toggle_ether.connect(_toggle_ether)
 	player.request_save.connect(save_game)
 	player.request_load.connect(load_game)
+	player.notice.connect(_on_notice)
+	player.panel_changed.connect(hud_panel_changed)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	hud = Hud.new()
@@ -92,7 +98,7 @@ func _ready() -> void:
 	hud.stats_provider = Callable(self, "stats_line")
 	hud.wolf_provider = Callable(self, "targets_under_crosshair")
 	add_child(hud)
-	hud.build_hotbar(player.hotbar)
+	hud.build_hotbar()
 	hud.show_message("vale reconstruido  seed %d" % SEED, 3.4)
 	hud.preview_binds(7.0)
 
@@ -228,12 +234,29 @@ func _on_acted(kind: String, pos: Vector3) -> void:
 			aether.imprint(pos, AetherField.Channel.WORK, 0.20)
 
 
-func _on_block_broken(_pos: Vector3i, _block: int) -> void:
+func _on_block_broken(pos: Vector3i, block: int) -> void:
 	stats["mined"] += 1
+	if block == BlockDefs.Block.BENCH:
+		_benches.erase(pos)
 
 
-func _on_block_placed(_pos: Vector3i, _block: int) -> void:
+func _on_block_placed(pos: Vector3i, block: int) -> void:
 	stats["placed"] += 1
+	if block == BlockDefs.Block.BENCH and not _benches.has(pos):
+		_benches.append(pos)
+
+
+## As bancadas do jogador, em blocos: a lista que `Player.bench_near()` varre.
+func bench_positions() -> Array[Vector3i]:
+	return _benches
+
+
+func _on_notice(text: String) -> void:
+	hud.show_message(text)
+
+
+func hud_panel_changed(open: bool) -> void:
+	hud.show_panel(open)
 
 
 func _on_attacked(target: Node3D, amount: float) -> void:
@@ -292,10 +315,11 @@ func save_game() -> void:
 		"stats": stats,
 		"edits": edit_list,
 		"aether": aether.to_dict(),
+		"inv": player.inv.to_dict(),
 		"player": {
 			"feet": [player.body.feet_pos.x, player.body.feet_pos.y, player.body.feet_pos.z],
 			"yaw": player.yaw, "pitch": player.pitch, "hp": player.hp,
-			"deaths": player.deaths, "slot": player.hotbar_index,
+			"deaths": player.deaths,
 		},
 		"wolves": minds,
 	}
@@ -331,7 +355,13 @@ func load_game() -> void:
 	player.alive = true
 	hud.set_death(false)
 	player.spawn_point = player.position3()
-	player.select_slot(int(p.get("slot", 0)))
+	# `inv` e aditivo: save de antes nao tem o campo, e quem nao tem fica com o kit
+	# em vez de um inventario vazio (o jogador nao acordaria sem blocos).
+	if d.has("inv"):
+		player.inv.from_dict(d["inv"])
+	else:
+		player.inv.reset_default()
+	_rebuild_benches()
 	aether.from_dict(d.get("aether", {}))
 	var saved: Array = d.get("wolves", [])
 	for i in mini(saved.size(), wolves.size()):
@@ -342,9 +372,20 @@ func load_game() -> void:
 	hud.show_message("mundo reload  tick %d  %.1f ms" % [clock.tick, res["ms"]])
 
 
+## Revarre as edicoes atrás das bancadas depois de um load: a lista e derivada do
+## mundo, e um mundo recarregado sem ela deixaria o jogador craftar "na mao" do
+## outro lado do mapa.
+func _rebuild_benches() -> void:
+	_benches.clear()
+	for k in world.edits:
+		if int(world.edits[k]) == BlockDefs.Block.BENCH:
+			_benches.append(k)
+
+
 func stats_line() -> String:
-	return "jogador  minerado %d  colocado %d  mortes %d   lobos vivos %d/%d   recriacoes %d" % [
+	return "jogador  minerado %d  colocado %d  mortes %d   inventario %d itens  %d bancadas   lobos vivos %d/%d   recriacoes %d" % [
 		stats["mined"], stats["placed"], stats["deaths"],
+		player.inv.item_count(), _benches.size(),
 		targets_under_crosshair().size(), wolves.size(), _respawn_queue.size()]
 
 

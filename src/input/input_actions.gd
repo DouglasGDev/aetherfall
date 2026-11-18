@@ -5,7 +5,13 @@ class_name InputActions
 
 const HOTBAR_ACTIONS: Array = [
 	"hotbar_1", "hotbar_2", "hotbar_3", "hotbar_4",
-	"hotbar_5", "hotbar_6", "hotbar_7",
+	"hotbar_5", "hotbar_6", "hotbar_7", "hotbar_8", "hotbar_9", "hotbar_0",
+]
+# A fileira de cima do numero e a de baixo do teclado: `0` e a decima tecla, como
+# no hotbar de 10 do Veloren (voxygen/src/hud/hotbar.rs).
+const HOTBAR_KEYS: Array = [
+	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5,
+	KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,
 ]
 
 
@@ -31,7 +37,18 @@ static func install() -> void:
 	_key_action("respawn", [KEY_R])
 	_key_action("toggle_binds", [KEY_F2])
 	for i in HOTBAR_ACTIONS.size():
-		_key_action(HOTBAR_ACTIONS[i], [KEY_1 + i])
+		_key_action(HOTBAR_ACTIONS[i], [HOTBAR_KEYS[i]])
+	# painel de inventario: o cursor anda na grade com o mesmo teclado que anda o
+	# personagem, e o Player segura o movimento enquanto a tela esta aberta
+	_key_action("toggle_inventory", [KEY_I])
+	_key_action("inv_take", [KEY_E])
+	_key_action("inv_split", [KEY_Q])
+	_key_action("inv_up", [KEY_W, KEY_UP])
+	_key_action("inv_down", [KEY_S, KEY_DOWN])
+	_key_action("inv_left", [KEY_A, KEY_LEFT])
+	_key_action("inv_right", [KEY_D, KEY_RIGHT])
+	_key_action("craft_next", [KEY_TAB])
+	_key_action("craft_do", [KEY_ENTER, KEY_KP_ENTER])
 	_mouse_action("break_block", MOUSE_BUTTON_LEFT)
 	_mouse_action("place_block", MOUSE_BUTTON_RIGHT)
 	_mouse_action("roll", MOUSE_BUTTON_MIDDLE)

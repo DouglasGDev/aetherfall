@@ -5,15 +5,25 @@ extends Node3D
 ## caixa por segmento; o Player escreve o estado e chama advance(delta).
 ##
 ## A silhueta fecha em 1,82 m contra 1,80 m da AABB do corpo. Em 1a pessoa o rig
-## continua em cena e e o unico corpo no quadro: cabeca e tronco de camisa saem
-## (a camera mora dentro do cranio e o tronco virava slab na frente da camera);
-## bracos, pernas, cinto e mochila ficam visiveis e animados.
+## continua em cena e e o unico corpo no quadro: cabeca, tronco de camisa,
+## emblemas de Eter e mochila saem (a camera mora dentro do cranio, o tronco
+## virava slab na frente da lente e a mochila tapava o proprio corpo); bracos,
+## ombro incluso, estreitado e colado na linha do tronco, pernas e cinto ficam
+## visiveis e animados.
 
 const PACE := 4.3
 const HIP_Y := 0.80
 const THIGH := 0.40
 const SHIN := 0.32
 const CROUCH_DROP := 0.40
+## Ombro: 0,30 e a linha do deltoide fora do tronco de 0,46 de largura. Em 1a
+## pessoa a camera mora 0,60 m atras do olho e o tronco some de cena, entao o
+## mesmo 0,30 deixa o braco pendurado ao lado de um corpo invisivel: ele vem
+## para dentro da linha do tronco e a manga assume o vao do ombro ocultado.
+const SHOULDER_X := 0.30
+const SHOULDER_X_FP := 0.235
+const SHOULDER_SPLAY := 0.07
+const SHOULDER_SPLAY_FP := 0.02
 
 var walk_speed := 0.0
 var vertical := 0.0
@@ -31,6 +41,7 @@ var _rig: Node3D = null
 var _chest: Node3D = null
 var _head: Node3D = null
 var _fp_hidden: Array[MeshInstance3D] = []
+var _sleeves: Array[MeshInstance3D] = []
 var _thighs: Array[Node3D] = []
 var _knees: Array[Node3D] = []
 var _shoulders: Array[Node3D] = []
@@ -52,12 +63,19 @@ func swing() -> void:
 	_swing = 1.0
 
 
-## 1a pessoa: cabeca e tronco saem de cena, o resto do rig fica e anima.
+## 1a pessoa: cabeca e tronco saem de cena, o resto do rig fica e anima. O ombro
+## nao sai junto: ele estreita e vem para dentro, porque ocultar o ombro deixava o
+## antebraco e a mao pendurados num corpo invisivel, com um vao entre o cotovelo
+## e o ombro.
 func set_first_person(fp: bool) -> void:
 	first_person = fp
 	_head.visible = not fp
 	for mi in _fp_hidden:
 		mi.visible = not fp
+	for i in 2:
+		var s := -1.0 if i == 0 else 1.0
+		_shoulders[i].position.x = s * (SHOULDER_X_FP if fp else SHOULDER_X)
+		_sleeves[i].scale = Vector3(0.76, 1.0, 0.83) if fp else Vector3.ONE
 
 
 func head_shown() -> bool:
@@ -180,7 +198,7 @@ func _pose() -> void:
 		_thighs[i].rotation.z = 0.0
 		_knees[i].rotation.x = knee[i]
 		_shoulders[i].rotation.x = sh[i]
-		_shoulders[i].rotation.z = s * 0.07
+		_shoulders[i].rotation.z = s * (SHOULDER_SPLAY_FP if first_person else SHOULDER_SPLAY)
 		_elbows[i].rotation.x = el[i]
 	_rig.rotation.z = roll
 	_rig.position.y = -CROUCH_DROP * _crouch + bob + breath * 0.01
@@ -246,11 +264,12 @@ func _ready() -> void:
 
 	for side in [-1.0, 1.0]:
 		var sh := Node3D.new()
-		sh.position = Vector3(0.30 * side, 0.48, 0.0)
+		sh.position = Vector3(SHOULDER_X * side, 0.48, 0.0)
 		_chest.add_child(sh)
-		# o ombro de camisa vira slab gigante na camera de 1a pessoa; sai de
-		# cena la junto com o tronco, e o antebraco/mao seguem visiveis
-		_fp_hidden.append(_box(sh, Vector3(0.17, 0.32, 0.18), Vector3(0.0, -0.16, 0.0), shirt))
+		# deltoides de camisa: largo em 3a pessoa, estreito em 1a (ver
+		# set_first_person). Fica na cena nos dois modos para o braco ser um
+		# membro continuo ate o ombro.
+		_sleeves.append(_box(sh, Vector3(0.17, 0.32, 0.18), Vector3(0.0, -0.16, 0.0), shirt))
 		var el := Node3D.new()
 		el.position = Vector3(0.0, -0.32, 0.0)
 		sh.add_child(el)

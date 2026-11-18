@@ -33,6 +33,8 @@ suíte headless, latência e throughput do oráculo local, e as constantes de me
 | 07 | [Estrutura de pastas](07-project-structure.md) | Árvore completa e convenções |
 | 08 | [Roadmap, riscos e licenças](08-roadmap-risks-licensing.md) | Fases com gates, riscos, MIT × GPL |
 | 09 | [Mecânicas do Veloren adaptadas](09-veloren-mechanics-adaptation.md) | O que veio de lá como idéia, o que existe em código, o que foi rejeitado |
+| 10 | [Camadas verticais e física de blocos](10-world-layers-and-block-physics.md) | Y −64..319, tabela de propriedades dos blocos, gravidade por evento, geração em camadas |
+| 11 | [Inventário, pilhas e craft](11-inventory-crafting.md) | 36 slots com quantidade por bloco, hotbar de 10 pinos, estação por distância, receitas em lista, blocos 19..22 |
 
 ## Glossário canônico
 

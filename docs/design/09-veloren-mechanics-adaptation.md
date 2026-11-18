@@ -76,14 +76,27 @@ Eles exigem ferramenta por minério e dão XP de mineração `[CLAIMED]`. Aqui a
 bloco, sem ferramenta e sem XP:
 
 - `STONE 0,95 · WOOD 0,55 · GRASS 0,38 · DIRT 0,35 · SAND 0,30 · SNOW 0,25 · LEAVES 0,22`,
-  padrão `0,4` [player.gd:544-554](../../src/entities/player.gd);
+  padrão `0,4`. A tabela é o registro de blocos, não do jogador
+  ([block_defs.gd:93,114-122](../../src/world/block_defs.gd)); o `Player` pergunta
+  `BlockDefs.hardness()` [player.gd:587](../../src/entities/player.gd). Os materiais de
+  craft do documento 11 já chegam com dureza própria (bruta `0,85` · tabua `0,45` ·
+  bancada `0,50` · vidro `0,10`);
 - o acumulador anda em segundos reais: `≈1 s` por unidade de dureza, então pedra leva
-  `0,95 s` e folha `0,22 s` [player.gd:567-568](../../src/entities/player.gd);
-- progresso por voxel guardado ao trocar de alvo [player.gd:537-541](../../src/entities/player.gd);
+  `0,95 s` e folha `0,22 s` [player.gd:605-616](../../src/entities/player.gd);
+- progresso por voxel guardado ao trocar de alvo [player.gd:595-599](../../src/entities/player.gd);
 - colocar bloco: buffer de `0,22 s`, recarga `0,16 s`, recusa se o bloco cair dentro do
-  próprio corpo [player.gd:36,577-597](../../src/entities/player.gd);
-- hotbar de 7 slots `grama/terra/pedra/areia/neve/madeira/folhas`, teclas `1-7`
-  [input_actions.gd:33-34](../../src/input/input_actions.gd).
+  próprio corpo [player.gd:41,619-621,659](../../src/entities/player.gd);
+- **lava tem drop e o drop tem número**: o que sai do mundo é o que o registro diz
+  (pedra → bruta, grama → terra, folha → nada)
+  [block_defs.gd:140-144](../../src/world/block_defs.gd), e entra como **1 item** no
+  inventário — que recusou antes, quando não havia onde pôr
+  [player.gd:628-641](../../src/entities/player.gd);
+- inventário de 36 slots com pilha por bloco, e a hotbar são **10 teclas** (`1-9,0`)
+  pinadas nesses slots, não um depósito separado
+  [inventory.gd:24-33](../../src/items/inventory.gd),
+  [input_actions.gd:6-15](../../src/input/input_actions.gd). O resto da mecânica —
+  quantidade, teto por bloco, partir, craft — está no
+  [documento 11](11-inventory-crafting.md).
 
 Cada bloco lavrado injeta **0,42 no canal de trabalho** do Éter e cada colocação `0,20`
 [main.gd:226-228](../../src/main.gd) — nada disso existe no Veloren; é a nossa trilha
@@ -131,13 +144,15 @@ superfície de comportamento por uma rota diferente — utilidade escolhe a inte
 
 ## 9. Não adaptado — lista explícita
 
-Nada aqui está em código. Cada linha é `[TARGET]` com destino, ou rejeitada:
+Nada aqui está em código — menos as linhas que o
+[documento 11](11-inventory-crafting.md) já pagou, marcadas em cada caso. Cada uma é
+`[TARGET]` com destino, ou rejeitada:
 
 | Mecânica Veloren `[CLAIMED]` | Situação aqui |
 |---|---|
-| Estações de craft (bigorna, caldeirão, tear, forja) e receitas por pergaminho | `[TARGET]` P6 — sem crafting hoje; §05 trata da progressão que ele serviria |
+| Estações de craft (bigorna, caldeirão, tear, forja) e receitas por pergaminho | em parte: **uma** estação existe — a bancada, um bloco casado por distância como o sprite do Veloren — com quatro receitas em lista (§4 do doc 11). Pergaminho de conhecimento e estações de calor continuam `[TARGET]` P6 |
 | Ferramenta por minério + XP de mineração e árvore de habilidades | `[TARGET]` P6; a dureza atual é absoluta (§4) |
-| Armaduras com raridade, bolsas, grade de inventário | `[TARGET]` P6; só existe hotbar de 7 |
+| Armaduras com raridade e bolsas que acrescente slots | `[TARGET]` P6; a **grade** saiu do "não adaptado": 36 slots com pilha por bloco e 10 pinos de hotbar existem no doc 11 |
 | Comida, buff de comida, fogueira que cura | **não adaptado** — cura aqui é regeneração por tempo (§7) |
 | Domesticar com coleira, montaria em `F` | `[TARGET]` P3 — depende de mentes aliadas, não de item |
 | Mercadores (`T`) em cidades, economia de aldeia | `[TARGET]` P2 (`SlowSim`) |
@@ -157,9 +172,11 @@ esse rastro. Essa inversão é a inovação §02, não uma adaptação.
 ## 10. Teclas hoje
 
 `WASD` mover · `Space` pular/nadar · `Shift` correr · `Ctrl` agachar/planar ·
-`LMB` lavrar/golpear · `RMB` construir · `MMB` rolamento · `1-7` hotbar · `V` câmera
+`LMB` lavrar/golpear · `RMB` construir · `MMB` rolamento · `1-9,0` pinos da hotbar ·
+`I` inventário e craft (por dentro dele: `WASD` cursor, `E` pegar/soltar, `Q` partir,
+`1-9,0` repinar, `TAB` receita, `ENTER` craftar) · `V` câmera
 1ª/3ª · `B` visão do Éter · `R` renascer · `F5/F9` salvar/carregar · `F3` debug ·
-`F2` binds · `Esc` soltar cursor
+`F2` binds · `Esc` soltar cursor (e fechar o painel)
 [actions](../../src/input/input_actions.gd).
 
 ## 11. Como validar
@@ -170,10 +187,11 @@ godot --headless --path . tests/smoke_test.tscn
 
 Os passos que cobrem este documento, por nome na suíte: `minerar e colocar`,
 `colocar com clique`, `guarda de colocacao`, `construir enquanto lava`,
-`tecla 3 no hotbar`, `sistema de coordenadas`, `golpe no lobo: dano e empurrada`,
+`tecla 3 no hotbar`, `inventario, pilhas e receitas`, `hud, morte e renascer`,
+`salvar e carregar`, `sistema de coordenadas`, `golpe no lobo: dano e empurrada`,
 `rolamento e invencibilidade`, `vigor: dreno, recupero e trava`, `planar e queda`,
 `respiracao e afogamento`, `regeneracao fora de combate`, `lobo nada e busca margem`,
-`memoria muda comportamento`, `salvar e carregar`
-[smoke_test.gd:63-91](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
+`memoria muda comportamento`
+[smoke_test.gd:63-94](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
 publicados no [`README.md`](../../README.md) da raiz, derivados da corrida — não deste
 documento.

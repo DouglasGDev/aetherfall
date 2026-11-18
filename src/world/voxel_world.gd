@@ -52,6 +52,7 @@ var _flat_ready: bool = false
 var _atlas: Texture2D = null
 var _mat_opaque: StandardMaterial3D = null
 var _mat_water: StandardMaterial3D = null
+var _mat_glass: StandardMaterial3D = null
 var _dirty: Array = []
 var _last_mesh_ms: float = 0.0
 var _meshes_built: int = 0
@@ -85,6 +86,16 @@ func _build_materials() -> void:
 	_mat_water.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_mat_water.roughness = 0.3
 	_mat_water.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	# O vidro e amostrado como a agua mas sem o recuo de topo, e com o filtro
+	# NEAREST da pedra: linear em cima de um tile que e quase todo alpha deixa a
+	# chapa borrada em vez de limpa.
+	_mat_glass = StandardMaterial3D.new()
+	_mat_glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_mat_glass.albedo_texture = _atlas
+	_mat_glass.vertex_color_use_as_albedo = true
+	_mat_glass.roughness = 0.25
+	_mat_glass.metallic = 0.0
+	_mat_glass.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 
 
 func generate(p_seed: int) -> void:
@@ -429,6 +440,12 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 	var wc := PackedColorArray()
 	var wi := PackedInt32Array()
 
+	var gv := PackedVector3Array()
+	var gn := PackedVector3Array()
+	var guv := PackedVector2Array()
+	var gc := PackedColorArray()
+	var gi := PackedInt32Array()
+
 	for y in CHUNK_SIZE_Y:
 		for z in CHUNK_SIZE_Z:
 			var gz: int = oz + z
@@ -437,19 +454,27 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 				if b == BlockDefs.Block.AIR:
 					continue
 				var gx: int = ox + x
-				var liquid: bool = b == BlockDefs.Block.WATER
+				var dr: int = BlockDefs.draw_of(b)
 				for f in 6:
 					var n: Vector3i = FACE_NORMALS[f]
 					var nb: int = get_block_xyz(gx + n.x, y + n.y, gz + n.z)
-					if liquid:
+					if dr == BlockDefs.Draw.LIQUID:
 						if nb != BlockDefs.Block.AIR:
+							continue
+					elif dr == BlockDefs.Draw.ALPHA:
+						# panos contra panos nao tem face: a emenda de dois vidros
+						# identicos e uma superficie so na janela do jogador
+						if nb == b or BlockDefs.is_opaque(nb):
 							continue
 					elif BlockDefs.is_opaque(nb):
 						continue
 					var tile: int = BlockDefs.tile_for(b, FACE_TILE[f])
-					if liquid:
+					if dr == BlockDefs.Draw.LIQUID:
 						_emit_face(wv, wn, wuv, wc, wi, gx, y, gz, f, tile,
 							PackedFloat32Array([1.0, 1.0, 1.0, 1.0]), FACE_TINT[f], WATER_TOP_DROP)
+					elif dr == BlockDefs.Draw.ALPHA:
+						_emit_face(gv, gn, guv, gc, gi, gx, y, gz, f, tile,
+							_corner_ao_array(gx, y, gz, f), FACE_TINT[f], 0.0)
 					else:
 						var ao := _corner_ao_array(gx, y, gz, f)
 						var jitter: float = float(_hash3(gx, y, gz) % 5) * 0.012
@@ -463,6 +488,9 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 	if not wv.is_empty():
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(wv, wn, wuv, wc, wi))
 		mesh.surface_set_material(1, _mat_water)
+	if not gv.is_empty():
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(gv, gn, guv, gc, gi))
+		mesh.surface_set_material(2, _mat_glass)
 
 	if c.mesh_instance == null:
 		c.mesh_instance = MeshInstance3D.new()

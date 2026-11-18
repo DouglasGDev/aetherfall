@@ -32,6 +32,7 @@ var _spawn_pos: Array = []
 var _corpse_n := 0
 var _place_voxel := Vector3i.ZERO
 var _place_sel := 0
+var _place_n0 := 0
 var _place0 := 0
 var _lava_target := Vector3i.ZERO
 var _click_pending := false
@@ -74,6 +75,7 @@ func _ready() -> void:
 		["tecla 3 no hotbar", 3, _check_hotbar_key],
 		["construir enquanto lava", 0, _check_build_setup],
 		["lavra + clique direito", 20, _check_build_while_mining],
+		["inventario, pilhas e receitas", 0, _check_items],
 		["memoria muda comportamento", 0, _check_memory],
 		["lobo na agua", 0, _check_swim_setup],
 		["lobo nada e busca margem", 280, _check_swim_assert],
@@ -236,6 +238,33 @@ func _check_meshing() -> void:
 	var delta := _scratch.triangle_count() - before
 	_check("face-culling exato (cubo 3x3x3)", delta == 108,
 		"delta=%d  esperado=108  sem culling=324" % delta)
+
+	# Vidro: a unica face ALPHA do registro. Um pano sozinho mantem as 6 faces e o
+	# pano colado ao lado nao acrescenta a de contato -- 20 triangulos no par, nao
+	# 24. E assim que a classe de desenho e medida, nao de olho.
+	var gx := cx + 6
+	var glass_air := true
+	for dy in 3:
+		for dz in 3:
+			for dx in 4:
+				if _scratch.get_block(Vector3i(gx - 1 + dx, base - 1 + dy, cz - 1 + dz)) \
+						!= BlockDefs.Block.AIR:
+					glass_air = false
+	_check("regiao do vidro estava em ar", glass_air, "voxel=(%d,%d,%d)" % [gx, base, cz])
+	var pane := -1
+	var pair := -1
+	if glass_air:
+		var g0 := _scratch.triangle_count()
+		_scratch.set_block(Vector3i(gx, base, cz), BlockDefs.Block.GLASS, false)
+		_scratch.generate_meshes_all()
+		pane = _scratch.triangle_count() - g0
+		_scratch.set_block(Vector3i(gx + 1, base, cz), BlockDefs.Block.GLASS, false)
+		_scratch.generate_meshes_all()
+		pair = _scratch.triangle_count() - g0
+	_check("pano de vidro sozinho tem 6 faces", glass_air and pane == 12,
+		"triangulos=%d  esperado=12" % pane)
+	_check("vidro colado nao desenha a face de contato", glass_air and pair == 20,
+		"par=%d  esperado=20  sem culling alfa=24" % pair)
 
 	var c: VoxelChunk = _scratch.chunks[Vector2i(3, 3)]
 	var solid := 0
@@ -460,7 +489,11 @@ func _check_mechanics() -> void:
 	if p.target_valid:
 		var tgt := p.target_voxel
 		var h := p.target_hardness
+		var was := w.get_block(tgt)
+		var drop := BlockDefs.drop_of(was)
+		var drop0 := p.inv.count_of(drop)
 		var mined0 := int(main.stats["mined"])
+		var items0 := p.inv.item_count()
 		Input.action_press("break_block")
 		var n := 0
 		while int(main.stats["mined"]) == mined0 and n < 400:
@@ -472,11 +505,20 @@ func _check_mechanics() -> void:
 		_check("tempo de mineracao == dureza", absf(float(n) / 60.0 - h) < 0.034,
 			"dureza=%.3f  medido=%.3f" % [h, float(n) / 60.0])
 		_check("voxel virou ar", w.get_block(tgt) == BlockDefs.Block.AIR, "voxel=%s" % tgt)
+		# o que entra no inventario e o drop do registro, nao o id que estava la:
+		# pedra vira bruta, grama vira terra, folha nao vira nada
+		var want := 1 if drop != BlockDefs.Block.AIR else 0
+		_check("lavra entrou no inventario como drop",
+			p.inv.count_of(drop) == drop0 + want and p.inv.item_count() == items0 + want,
+			"bloco=%d  drop=%d  pilha=%d->%d" % [was, drop, drop0, p.inv.count_of(drop)])
 
 	# Corpo do jogador: o rig e o unico corpo no quadro nas duas vistas. Em 1a
-	# pessoa cabeca e tronco saem (a camera mora dentro do cranio; o tronco
-	# virava slab na frente da camera) e bracos/pernas/cinto/mochila ficam; na
-	# 3a tudo em cena, nos pes e girando com o yaw.
+	# pessoa cabeca, tronco, emblemas e mochila saem (a camera mora dentro do
+	# cranio; o tronco virava slab na frente da lente e a mochila tapava o
+	# proprio corpo no olhar para baixo) e bracos, pernas e cinto ficam — o
+	# ombro nao sai junto, so estreita, porque ocultar o deltoides deixava o
+	# antebraco pendurado sem ligacao ao corpo. Na 3a tudo em cena, nos pes e
+	# girando com o yaw.
 	p.yaw = 0.62
 	p.third_person = true
 	p.update_local(1.0 / 60.0)
@@ -509,13 +551,27 @@ func _check_mechanics() -> void:
 	_aim(p, -0.9)
 	_place_voxel = p.place_voxel
 	_place_sel = p.selected_block()
+	_place_n0 = p.inv.selected_count()
 	_place0 = int(main.stats["placed"])
-	print("       alvo do place: valid=%s  voxel=%s  place=%s  pos=%s  bloco=%d"
-		% [p.target_valid, p.target_voxel, _place_voxel, p.body.feet_pos, _place_sel])
+	print("       alvo do place: valid=%s  voxel=%s  place=%s  pos=%s  bloco=%d  pilha=%d"
+		% [p.target_valid, p.target_voxel, _place_voxel, p.body.feet_pos, _place_sel, _place_n0])
 	_arm_click(true)
 
-	_check("hotbar comeca no capim", p.hotbar[0] == BlockDefs.Block.GRASS,
-		"slots=%d" % p.hotbar.size())
+	# kit: a hotbar de antes (7 blocos infinitos) sao os mesmos blocos com
+	# quantidade, mais os dois slots de craft que comecam a 0 de proposito
+	_check("tecla 1 comeca no capim com 32",
+		p.inv.slot_block(p.inv.pin_of(0)) == BlockDefs.Block.GRASS
+			and p.inv.slot_count(p.inv.pin_of(0)) == 32,
+		"bloco=%d  qtd=%d  slots=%d" % [p.inv.slot_block(p.inv.pin_of(0)),
+			p.inv.slot_count(p.inv.pin_of(0)), Inventory.SLOTS])
+	_check("hotbar tem 10 teclas pinadas nos slots",
+		Inventory.HOTBAR == 10 and p.inv.pin_of(9) == 9 and p.inv.pin_of(0) == 0,
+		"pino9=%d  pino0=%d" % [p.inv.pin_of(9), p.inv.pin_of(0)])
+	_check("pilha maxima vem do registro",
+		BlockDefs.stack_max(BlockDefs.Block.GRASS) == 64
+			and BlockDefs.stack_max(BlockDefs.Block.BENCH) == 16,
+		"grama=%d  bancada=%d" % [BlockDefs.stack_max(BlockDefs.Block.GRASS),
+			BlockDefs.stack_max(BlockDefs.Block.BENCH)])
 
 	var ray := w.ray_voxel(p.eye_position(), Vector3(0.0, -1.0, 0.0), 8.0)
 	_check("raycast DDA acerta o chao", ray.valid and ray.distance < 3.0,
@@ -570,6 +626,11 @@ func _check_place() -> void:
 		% [_place_voxel, _place_sel, w.get_block(_place_voxel), _place0, int(main.stats["placed"])])
 	_check("bloco certo no voxel certo", w.get_block(_place_voxel) == _place_sel,
 		"esperado=%d  achado=%d" % [_place_sel, w.get_block(_place_voxel)])
+	# A quantidade e o preco de colocar: sem o decremento o bloco seria criativo.
+	var p: Player = main.player
+	_check("colocar gastou um da pilha",
+		_click_frame > 0 and p.inv.selected_count() == _place_n0 - 1,
+		"pilha=%d->%d  bloco=%d" % [_place_n0, p.inv.selected_count(), _place_sel])
 	_release_click()
 
 
@@ -620,8 +681,14 @@ func _check_place_guard() -> void:
 func _check_hotbar_key() -> void:
 	var p: Player = main.player
 	var read := Input.is_action_pressed("hotbar_3")
-	_check("tecla 3 troca o slot", p.hotbar_index == 2,
-		"slot=%d  acao lida=%s  bloco=%d" % [p.hotbar_index, read, p.selected_block()])
+	_check("tecla 3 troca o pino", p.inv.hotbar_index == 2,
+		"slot=%d  acao lida=%s  bloco=%d" % [p.inv.hotbar_index, read, p.selected_block()])
+	# A tecla nao e um deposito proprio: ela aponta para um slot, e o que muda e a
+	# leitura. O bloco lido tem que ser o do slot 2 com a quantidade do slot 2.
+	_check("tecla 3 mostra o bloco do slot 2",
+		p.inv.pin_of(2) == 2 and p.selected_block() == p.inv.slot_block(2)
+			and p.inv.selected_count() == p.inv.slot_count(2),
+		"pino2=%d  selected=%d  qtd=%d" % [p.inv.pin_of(2), p.selected_block(), p.inv.selected_count()])
 	var release := InputEventKey.new()
 	release.physical_keycode = KEY_3
 	release.pressed = false
@@ -675,6 +742,182 @@ func _check_build_while_mining() -> void:
 	_check("a lavra ainda nao tinha comido o alvo",
 		w.get_block(_lava_target) == BlockDefs.Block.STONE,
 		"voxel=%s  achado=%d  progresso=%.2f" % [_lava_target, w.get_block(_lava_target), p.mining_progress])
+
+
+# ------------------------------------------------------------------ inventario
+
+## Logica pura de pilha e de receita sobre um Inventory novo: nao depende do
+## mundo, dos lobos nem do relogio, entao as regras que o jogador pediu
+## (quantidade, teto por bloco, mesclar, partir, craft) sao medidas sem o ruido de
+## uma simulacao rodando. O inventario do jogador fica intacto.
+func _check_items() -> void:
+	var inv := Inventory.new()
+	var dirt := BlockDefs.Block.DIRT
+	var grass := BlockDefs.Block.GRASS
+	var sand := BlockDefs.Block.SAND
+	var snow := BlockDefs.Block.SNOW
+	var wood := BlockDefs.Block.WOOD
+	var leaves := BlockDefs.Block.LEAVES
+	var cobble := BlockDefs.Block.COBBLESTONE
+	var plank := BlockDefs.Block.PLANK
+	var bench := BlockDefs.Block.BENCH
+	var stone := BlockDefs.Block.STONE
+	var glass := BlockDefs.Block.GLASS
+
+	# kit: os mesmos blocos da hotbar de 7, agora com numero, e os dois slots de
+	# craft comecando vazios de proposito
+	_check("kit = hotbar antiga com quantidade",
+		inv.count_of(grass) == 32 and inv.count_of(wood) == 8
+			and inv.count_of(plank) == 0 and inv.count_of(bench) == 0,
+		"grama=%d  madeira=%d  tabua=%d  bancada=%d"
+			% [inv.count_of(grass), inv.count_of(wood), inv.count_of(plank), inv.count_of(bench)])
+
+	# teto por pilha vem do registro, e um bloco pode ter teto proprio
+	inv.reset_default()
+	var left_bench := inv.add(bench, 100)
+	var max_bench := 0
+	for i in Inventory.SLOTS:
+		if inv.slot_block(i) == bench:
+			max_bench = maxi(max_bench, inv.slot_count(i))
+	_check("bancada tem teto menor que bloco comun",
+		BlockDefs.stack_max(bench) == 16 and left_bench == 0
+			and max_bench == 16 and inv.count_of(bench) == 100,
+		"maior pilha=%d  total=%d  sobra=%d" % [max_bench, inv.count_of(bench), left_bench])
+	inv.reset_default()
+	var left_dirt := inv.add(dirt, 400)
+	var max_dirt := 0
+	for i in Inventory.SLOTS:
+		if inv.slot_block(i) == dirt:
+			max_dirt = maxi(max_dirt, inv.slot_count(i))
+	_check("400 de terra viram 64 em cada slot",
+		BlockDefs.stack_max(dirt) == 64 and left_dirt == 0 and max_dirt == 64,
+		"maior pilha=%d  total=%d" % [max_dirt, inv.count_of(dirt)])
+
+	# inventario cheio: o que nao coube volta, e o que nao tem buraco nao entra
+	inv.reset_default()
+	var left_stone := inv.add(stone, 100000)
+	_check("cheio devolve a sobra e nao cria pilha fora do teto",
+		left_stone > 0 and inv.count_of(stone) == 100000 - left_stone
+			and inv.space_for(stone) == 0,
+		"entrou=%d  sobrou=%d  espaco=%d" % [100000 - left_stone, left_stone, inv.space_for(stone)])
+	_check("bloco sem pilha nenhuma nao entra em lugar nenhum",
+		inv.add(glass, 1) == 1 and inv.count_of(glass) == 0,
+		"espaco p/ vidro=%d" % inv.space_for(glass))
+
+	# coleta do Veloren: enche TODA pilha parcial antes de abrir a primeira vazia
+	inv.reset_default()
+	inv.take(sand, 6)
+	var left_sand := inv.add(sand, 100)
+	_check("enche a pilha parcial ate o teto antes da vazia",
+		inv.slot_count(3) == 64 and inv.slot_block(7) == sand and inv.slot_count(7) == 46
+			and left_sand == 0,
+		"slot3=%d  slot7=%d:%d" % [inv.slot_count(3), inv.slot_block(7), inv.slot_count(7)])
+	_check("tirar esvazia de tras para frente",
+		inv.take(sand, 50) == 50 and inv.slot_count(7) == 0 and inv.slot_count(3) == 60,
+		"slot3=%d  slot7=%d" % [inv.slot_count(3), inv.slot_count(7)])
+
+	# partir = metade por divisao inteira, e a mao precisa estar vazia
+	inv.reset_default()
+	_check("partir da metade inteira para a mao",
+		inv.split(0) and inv.held_count == 16 and inv.slot_count(0) == 16,
+		"mao=%d  slot0=%d" % [inv.held_count, inv.slot_count(0)])
+	_check("mao ocupada nao parte outra pilha", not inv.split(1))
+	_check("guardar a mao devolve para a mesma pilha",
+		inv.stash_hand() and inv.held_count == 0 and inv.slot_count(0) == 32,
+		"slot0=%d  mao=%d" % [inv.slot_count(0), inv.held_count])
+	inv.take(grass, 31)
+	_check("pilha de 1 nao parte", not inv.split(0) and inv.held_count == 0,
+		"slot0=%d" % inv.slot_count(0))
+
+	# pegar/soltar: pilha inteira para cima, mesclar se for o mesmo bloco e couber,
+	# senao trocar (inventory_manip.rs:814)
+	inv.reset_default()
+	_check("pegar sobe a pilha inteira",
+		inv.pick_drop(0) and inv.held_count == 32 and inv.held_id == grass
+			and inv.slot_count(0) == 0,
+		"mao=%d  slot0=%d" % [inv.held_count, inv.slot_count(0)])
+	_check("soltar em buraco desce tudo",
+		inv.pick_drop(0) and inv.held_count == 0 and inv.slot_block(0) == grass
+			and inv.slot_count(0) == 32, "slot0=%d" % inv.slot_count(0))
+	_check("mesmo bloco mescla ate o teto e o resto fica na mao",
+		inv.pick_drop(0) and inv.add(grass, 40) == 0 and inv.slot_count(0) == 40
+			and inv.pick_drop(0) and inv.slot_count(0) == 64 and inv.held_count == 8,
+		"slot0=%d  mao=%d" % [inv.slot_count(0), inv.held_count])
+	_check("bloco diferente troca",
+		inv.pick_drop(1) and inv.slot_block(1) == grass and inv.held_id == dirt
+			and inv.held_count == 32,
+		"slot1=%d  mao=%d:%d" % [inv.slot_block(1), inv.held_id, inv.held_count])
+	_check("guardar antes de fechar o painel devolve a mao",
+		inv.stash_hand() and inv.held_count == 0, "slot0=%d" % inv.slot_count(0))
+
+	# hotbar = dez pinos sobre os proprios slots: a tecla muda a leitura, nunca a
+	# pilha
+	inv.reset_default()
+	inv.select(3)
+	_check("pino aponta para outro slot sem mover pilha",
+		inv.pin(3, 6) and inv.selected_slot() == 6 and inv.selected_block() == leaves
+			and inv.selected_count() == 8 and inv.slot_count(3) == 16,
+		"slot=%d  bloco=%d  qtd=%d  areia slot3=%d"
+			% [inv.selected_slot(), inv.selected_block(), inv.selected_count(), inv.slot_count(3)])
+	inv.select(12)
+	_check("tecla depois da decima da a volta na hotbar", inv.hotbar_index == 2,
+		"sel=%d" % inv.hotbar_index)
+
+	# receitas: lista, nao grade. Estacao filtra; insumo e espaco de saida sao
+	# portao antes de qualquer consumo.
+	var plank_r := _recipe_for(plank)
+	var bench_r := _recipe_for(bench)
+	var stone_r := _recipe_for(stone)
+	var hand_n := 0
+	for r in Recipes.list():
+		if int(r["station"]) == Recipes.Station.HAND:
+			hand_n += 1
+	_check("sem bancada a lista so mostra as de mao",
+		Recipes.visible(false).size() == hand_n
+			and Recipes.visible(true).size() == Recipes.list().size(),
+		"mao=%d  com bancada=%d  total=%d"
+			% [Recipes.visible(false).size(), Recipes.visible(true).size(), Recipes.list().size()])
+	inv.reset_default()
+	_check("1 madeira -> 4 tabuas, com o preco cobrado",
+		Recipes.can_craft(plank_r, inv) and Recipes.craft(plank_r, inv)
+			and inv.count_of(plank) == 4 and inv.count_of(wood) == 7,
+		"tabua=%d  madeira=%d" % [inv.count_of(plank), inv.count_of(wood)])
+	_check("a cadeia ate a bancada fecha",
+		Recipes.can_craft(bench_r, inv) and Recipes.craft(bench_r, inv)
+			and inv.count_of(bench) == 1 and inv.count_of(plank) == 0,
+		"bancada=%d  tabua=%d" % [inv.count_of(bench), inv.count_of(plank)])
+	_check("receita sem insumo nao abre", not Recipes.can_craft(stone_r, inv),
+		"bruta=%d" % inv.count_of(cobble))
+
+	# o espaco de saida tambem e preco: sem ele o craft nao comeca, porque nao ha
+	# como desfazer um craft meio-aplicado
+	var inv2 := Inventory.new()
+	inv2.take(stone, 99)
+	_check("sobra 4 de bruta e entope o resto",
+		inv2.add(cobble, 4) == 0 and inv2.add(snow, 100000) > 0
+			and inv2.count_of(cobble) == 4 and inv2.space_for(stone) == 0,
+		"bruta=%d  espaco p/ pedra=%d" % [inv2.count_of(cobble), inv2.space_for(stone)])
+	_check("craft recusado nao toca em nada",
+		not Recipes.craft(stone_r, inv2) and inv2.count_of(cobble) == 4
+			and inv2.count_of(stone) == 0,
+		"bruta=%d  pedra=%d" % [inv2.count_of(cobble), inv2.count_of(stone)])
+	inv2.take(dirt, 99)
+	_check("aberto um buraco o mesmo craft passa",
+		Recipes.can_craft(stone_r, inv2) and Recipes.craft(stone_r, inv2)
+			and inv2.count_of(stone) == 1 and inv2.count_of(cobble) == 0,
+		"pedra=%d  bruta=%d" % [inv2.count_of(stone), inv2.count_of(cobble)])
+	_check("vidro na bancada come 2 de areia",
+		Recipes.can_craft(_recipe_for(glass), inv2)
+			and Recipes.craft(_recipe_for(glass), inv2)
+			and inv2.count_of(glass) == 1 and inv2.count_of(sand) == 14,
+		"areia=%d  vidro=%d" % [inv2.count_of(sand), inv2.count_of(glass)])
+
+
+func _recipe_for(out: int) -> Dictionary:
+	for r in Recipes.list():
+		if int(r["out"]) == out:
+			return r
+	return {}
 
 
 # --------------------------------------------------------------------- memoria
@@ -1129,7 +1372,29 @@ func _experiment_spot(w: Wolf, p: Player) -> Vector3:
 func _check_hud() -> void:
 	var hud = main.hud
 	var p: Player = main.player
-	_check("hotbar de 7 slots no hud", hud._slots.size() == 7, "slots=%d" % hud._slots.size())
+	_check("hotbar com 10 pinos no hud", hud._slots.size() == Inventory.HOTBAR,
+		"slots=%d" % hud._slots.size())
+	_check("painel com 36 celulas", hud._cells.size() == Inventory.SLOTS \
+		and Inventory.ROWS * Inventory.COLS == Inventory.SLOTS,
+		"celulas=%d" % hud._cells.size())
+	# O painel abre por sinal do jogador, nao por decisao do HUD: quem abre e o
+	# `toggle_inventory` do Player, o HUD so empresta a visibilidade.
+	p._set_panel(true)
+	_check("abrir o inventario mostra o painel", hud.panel_visible() and p.panel_open)
+	_check("cabecalho mostra a contagem real", String(hud._head_label.text).contains("INVENTARIO") \
+		and String(hud._head_label.text).contains(str(p.inv.item_count())),
+		"'%s'" % hud._head_label.text)
+	_check("quantidade aparece na celula do slot",
+		(hud._cells[0]["ct"] as Label).text == str(p.inv.slot_count(0)),
+		"celula0='%s'  slot0=%d" % [(hud._cells[0]["ct"] as Label).text, p.inv.slot_count(0)])
+	# Sem bancada por perto a lista encolhe: e o filtro por estacao do Veloren (o
+	# sprite a 5,0 m) aplicado ao bloco de bancada.
+	_check("sem bancada so mostra as receitas de mao", not p.bench_near() \
+		and Recipes.visible(false).size() < Recipes.list().size() \
+		and String(hud._head_label.text).contains("sem bancada"),
+		"visiveis=%d de %d" % [Recipes.visible(false).size(), Recipes.list().size()])
+	p._set_panel(false)
+	_check("fechar o inventario esconde o painel", not hud.panel_visible() and not p.panel_open)
 	_check("overlay de morte comecou escondido", not hud._death.visible)
 	# O painel de binds agora abre sozinho no spawn (o `DIR colocar` nao aparece em
 	# lugar nenhum ate o jogador achar o botao direito) e fecha sozinho. Testado
@@ -1186,6 +1451,7 @@ func _check_save() -> void:
 		"feet": p.body.feet_pos, "pitch": p.pitch, "yaw": p.yaw,
 		"wolf_hp": wolf0.hp, "wolf_mem": wolf0.mind.episodic.size(),
 		"wolf_belief": wolf0.mind.belief(BELIEF), "wolf_trust": wolf0.mind.trust(Wolf.ACTOR_PLAYER),
+		"inv": _inv_signature(p), "items": p.inv.item_count(),
 	}
 	var before_feet: Vector3 = before["feet"]
 	main.save_game()
@@ -1203,6 +1469,14 @@ func _check_save() -> void:
 	_check("save com corpo", bytes > 1000, "%d bytes" % bytes)
 	_check("save guarda o diario, nao os voxels",
 		int(data["edits"].size()) == before["edits"], "edicoes=%d" % data["edits"].size())
+	# `inv` e aditivo no mesmo schema: um save antigo nao tem a chave e o load cai
+	# no kit, um save novo tem as 36 pilhas, os 10 pinos e a tecla ativa.
+	var inv_saved: Dictionary = data.get("inv", {})
+	_check("save guarda as pilhas e os pinos",
+		int(inv_saved.get("slots", []).size()) > 0 \
+		and (inv_saved.get("pins", []) as Array).size() == Inventory.HOTBAR,
+		"slots=%d  pins=%d" % [inv_saved.get("slots", []).size(),
+			(inv_saved.get("pins", []) as Array).size()])
 	main.save_game()
 	_check("segunda escrita sobrescreve atomicamente", bool(SaveManager.read_slot(SLOT)["ok"]),
 		"%d bytes" % bytes)
@@ -1212,9 +1486,17 @@ func _check_save() -> void:
 	p.take_damage(20.0, Vector3.ZERO)
 	wolf0.take_damage(10.0, Wolf.ACTOR_PLAYER, p.position3())
 	p.feet_to_spawn(_spawn + Vector3(4.0, 0.0, 4.0))
+	# Inventario mutado de proposito junto com o resto: gasta a pilha da tecla
+	# ativa, recebe um bloco novo e troca de tecla. Nada disso voltaria se o load
+	# ignorasse a chave `inv`.
+	p.inv.consume_selected(3)
+	p.inv.add(BlockDefs.Block.GLASS, 5)
+	p.inv.select(6)
 	_check("mundo foi mutado de proposito",
 		w.edits.size() == before["edits"] + 1 and wolf0.hp != before["wolf_hp"],
 		"edicoes=%d  hp lobo=%.1f" % [w.edits.size(), wolf0.hp])
+	_check("inventario foi mutado de proposito",
+		_inv_signature(p) != String(before["inv"]), "assinatura mudou")
 	main.load_game()
 	_check("diario de edicoes restaurado", w.edits.size() == int(before["edits"]),
 		"%d -> %d" % [w.edits.size(), before["edits"]])
@@ -1240,6 +1522,22 @@ func _check_save() -> void:
 		and is_equal_approx(wolf0.mind.trust(Wolf.ACTOR_PLAYER), float(before["wolf_trust"])),
 		"episodios=%d  confianca=%.2f" % [wolf0.mind.episodic.size(), wolf0.mind.trust(Wolf.ACTOR_PLAYER)])
 	_check("hp do lobo voltou", is_equal_approx(wolf0.hp, float(before["wolf_hp"])), "hp=%.1f" % wolf0.hp)
+	_check("inventario restaurado pilha por pilha",
+		_inv_signature(p) == String(before["inv"]) and p.inv.item_count() == int(before["items"]),
+		"itens=%d->%d" % [p.inv.item_count(), before["items"]])
+
+
+## Assinatura das 36 pilhas, dos 10 pinos e da tecla ativa. Comparar a assinatura
+## em vez de um total pega pilha movida e hotbar reordenada, que um `item_count`
+## identico esconderia.
+func _inv_signature(p: Player) -> String:
+	var parts: Array = []
+	for i in Inventory.SLOTS:
+		parts.append("%d:%d" % [p.inv.slot_block(i), p.inv.slot_count(i)])
+	for k in Inventory.HOTBAR:
+		parts.append("p%d" % p.inv.pin_of(k))
+	parts.append("s%d" % p.inv.hotbar_index)
+	return ",".join(parts)
 
 
 # --------------------------------------------------------------------- ciclo de vida

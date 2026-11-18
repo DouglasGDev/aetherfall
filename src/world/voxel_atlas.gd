@@ -23,6 +23,10 @@ static func build_texture() -> Texture2D:
 	_wood_top(img, BlockDefs.TILE_WOOD_TOP, rng)
 	_leaves(img, BlockDefs.TILE_LEAVES, rng)
 	_water(img, BlockDefs.TILE_WATER, rng)
+	_cobble(img, BlockDefs.TILE_COBBLE, rng)
+	_plank(img, BlockDefs.TILE_PLANK, rng)
+	_glass(img, BlockDefs.TILE_GLASS, rng)
+	_bench(img, BlockDefs.TILE_BENCH, rng)
 
 	# O engine nao tem formato sRGB em runtime (4.7): a textura e amostrada como
 	# linear, entao os colores escritos acima (valores sRGB de tela) precisam virar
@@ -165,3 +169,82 @@ static func _water(img: Image, tile: int, rng: RandomNumberGenerator) -> void:
 		for x in TILE:
 			var d: float = (rng.randf() - 0.5) * 0.04
 			_px(img, tile, x, y, Color(0.16 + d, 0.38 + d + band, 0.62 + band, 0.72))
+
+
+## Pedra bruta: a mesma pedra lavada em lascas soltas. A base escura e a argamassa
+## entre os cacos; sem ela o tile vira o tile de pedra e o jogador nao distingue
+## o material que da trabalho do que ja esta pronto.
+static func _cobble(img: Image, tile: int, rng: RandomNumberGenerator) -> void:
+	_noise_fill(img, tile, Color(0.33, 0.33, 0.36), 0.04, rng)
+	for i in 11:
+		var cx: int = rng.randi_range(1, TILE - 2)
+		var cy: int = rng.randi_range(1, TILE - 2)
+		var r: int = rng.randi_range(1, 3)
+		var tone: float = 0.50 + rng.randf() * 0.14
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if dx * dx + dy * dy > r * r:
+					continue
+				var x: int = clampi(cx + dx, 0, TILE - 1)
+				var y: int = clampi(cy + dy, 0, TILE - 1)
+				var d: float = (rng.randf() - 0.5) * 0.07
+				_px(img, tile, x, y, Color(tone + d, tone + d * 0.95, tone + 0.02 + d, 1.0))
+
+
+## Tabua: sarrafiado horizontal com a emenda de cada fila deslocada, como a
+## madeira cortada em prancha (a lateral do tronco e o tile de madeira).
+static func _plank(img: Image, tile: int, rng: RandomNumberGenerator) -> void:
+	_noise_fill(img, tile, Color(0.58, 0.44, 0.26), 0.035, rng)
+	for row in 4:
+		var y0: int = row * 4
+		for x in TILE:
+			_px(img, tile, x, clampi(y0 + 3, 0, TILE - 1), Color(0.36, 0.25, 0.13, 1.0))
+		var seam: int = (row * 5 + 3) % TILE
+		for y in 3:
+			_px(img, tile, seam, clampi(y0 + y, 0, TILE - 1), Color(0.40, 0.28, 0.15, 1.0))
+		var grain: int = rng.randi_range(0, TILE - 4)
+		for x in 4:
+			_px(img, tile, clampi(grain + x, 0, TILE - 1), clampi(y0 + rng.randi_range(0, 2), 0, TILE - 1),
+				Color(0.50, 0.37, 0.20, 1.0))
+
+
+## Vidro: quase nada de cor e um fio de borda. O alpha do pixel e o que faz a
+## face ser desenhada pelo material ALPHA; sem o quadro ela desapareceria no
+## mundo e o jogador construiria paredes invisiveis.
+static func _glass(img: Image, tile: int, rng: RandomNumberGenerator) -> void:
+	for y in TILE:
+		for x in TILE:
+			var edge: bool = x == 0 or y == 0 or x == TILE - 1 or y == TILE - 1
+			var inner: bool = x <= 1 or y <= 1 or x >= TILE - 2 or y >= TILE - 2
+			var a: float = 0.85 if edge else (0.30 if inner else 0.10)
+			var c := Color(0.80, 0.90, 0.95, a) if not edge else Color(0.88, 0.95, 0.98, a)
+			_px(img, tile, x, y, c)
+	for i in 3:
+		var o: int = rng.randi_range(2, 9)
+		for k in 6:
+			var x: int = clampi(o + k, 0, TILE - 2)
+			var y: int = clampi(k + 1, 0, TILE - 2)
+			_px(img, tile, x, y, Color(0.94, 0.98, 1.0, 0.42))
+
+
+## Bancada: tampo de tabua com a marca de trabalho (esquadro e morso) desenhada
+## em escuro. E o unico tile lido de cima, e precisa dizer "superficie" a 5 m.
+static func _bench(img: Image, tile: int, rng: RandomNumberGenerator) -> void:
+	_plank(img, tile, rng)
+	for x in TILE:
+		_px(img, tile, x, 0, Color(0.30, 0.20, 0.11, 1.0))
+		_px(img, tile, x, TILE - 1, Color(0.30, 0.20, 0.11, 1.0))
+	for y in TILE:
+		_px(img, tile, 0, y, Color(0.30, 0.20, 0.11, 1.0))
+		_px(img, tile, TILE - 1, y, Color(0.30, 0.20, 0.11, 1.0))
+	# esquadro
+	for k in 9:
+		_px(img, tile, 3 + k, 4, Color(0.24, 0.16, 0.09, 1.0))
+	for k in 5:
+		_px(img, tile, 3, 4 + k, Color(0.24, 0.16, 0.09, 1.0))
+	# morso na borda
+	for dy in 4:
+		for dx in 3:
+			_px(img, tile, 10 + dx, 9 + dy, Color(0.42, 0.30, 0.16, 1.0))
+	for dx in 3:
+		_px(img, tile, 10 + dx, 8, Color(0.20, 0.13, 0.07, 1.0))
