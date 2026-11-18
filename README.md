@@ -185,20 +185,22 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado medido em quatro
-corridas seguidas nesta máquina, na árvore deste README: **219 checagens,
-0 falhas, 35,4 / 35,8 / 35,5 / 35,7 s** — e numa cópia limpa dessa mesma árvore
-(29 `.gd`, sem `.godot/`), recém-importada com o `--import` logo acima:
-**219 checagens, 0 falhas, 35,5 s**, com os dois logs sem nenhuma linha
+corridas seguidas nesta máquina, na árvore deste README: **220 checagens,
+0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s**, os quatro logs sem nenhuma linha
 `ERROR` do engine. A contagem é sempre da revisão medida, nunca do texto: a
 rodada de inventário, pilhas e craft acrescentou passos (`inventario, pilhas e
 receitas` e as checagens de quantidade dentro de `minerar e colocar`,
 `colocar com clique`, `tecla 3 no hotbar`, `malha e face-culling` (os dois panos
 de vidro e o censo de material por surface), `hud, morte e renascer` e
 `salvar e carregar`), a rodada de corpo acrescentou `corpo encaixado se solta`
-e o gate de `steering e colisao movem o lobo`, e a rodada do view model de 1ª
+e o gate de `steering e colisao movem o lobo`, a rodada do view model de 1ª
 pessoa são as 11 checagens a mais sobre as 208 de antes: o censo das duas vistas
 (23 caixas em 3ª, 10 no braço em 1ª, cada uma fora da outra), a calibração da
-projeção contra `unproject_position` e o enquadramento dos dois arcos. O que a suíte cobre:
+projeção contra `unproject_position` e o enquadramento dos dois arcos. A de hoje
+é a premissa do passo de golpe (`mira travada no lobo do passo`, a 12ª sobre as
+208): o lobo que recebe o dano tem que ser o que está na mira, senão a matilha
+inteira ainda viva pode roubar o golpe no meio dos 280 ticks de janela.
+O que a suíte cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma

@@ -1361,28 +1361,100 @@ func _unpause_after(p: Player) -> void:
 	p.process_mode = Node.PROCESS_MODE_INHERIT
 
 
+## Passo cujo alvo e "um lobo VIVO" escolhe por aqui, em ordem de indice, e nao
+## por numero fixo. `targets_under_crosshair` so devolve vivos e o corpo fica na
+## matriz ate a faina de recolher, entao um indice caido aqui e mira sem alvo --
+## sintoma que forcar `main.wolves[2].die()` reproduziu linha por linha. Nao foi
+## o que a corrida natural tinha (abatidos=1, ou seja, nenhum lobo morto ainda),
+## mas era um buraco do mesmo tamanho parado no caminho.
+func _alive_wolf() -> Wolf:
+	for w in main.wolves:
+		if (w as Wolf).alive:
+			return w
+	return null
+
+
+## Distancia do lobo vivo mais proximo do olho que nao seja o alvo do passo;
+## -1 quando a matilha inteira se resumiu a ele. E o numero que diz se o golpe
+## poderia cair em outro corpo.
+func _nearest_other_alive(p: Player, w: Wolf) -> float:
+	var best := -1.0
+	for other in main.wolves:
+		if other == w or not (other as Wolf).alive:
+			continue
+		var d: float = (other as Wolf).body.feet_pos.distance_to(p.eye_position())
+		if best < 0.0 or d < best:
+			best = d
+	return best
+
+
 ## Golpe unificado (botao esquerdo): entidade primeiro, bloco depois. No lobo o
 ## golpe e dano fixo + atordoamento (steering suspenso) + empurrada no corpo.
 func _check_attack() -> void:
 	var p: Player = main.player
-	var w: Wolf = main.wolves[2]
+	var w: Wolf = _alive_wolf()
+	if w == null:
+		_check("ha um lobo vivo para o golpe", false, "matilha=%d" % main.wolves.size())
+		return
 	_pause_for(p)
 	p.hp = p.max_hp
 	p.energy = p.max_energy
+	# A premissa do passo e "jogador vivo, sem painel na frente, braco livre".
+	# Os tres sao estado que a simulacao ao vivo deixa pelo caminho, e cada um
+	# engole o clique: `update_local` retorna antes de mirar se o jogador caiu,
+	# `_apply_actions` retorna se o painel esta aberto, e a cadencia de 0,42 s
+	# adia o giro. Sem montar a premissa o passo mede a sorte -- a primeira
+	# corrida de um clone limpo desta arvore deu 4 falhas com `em 30 ticks` e a
+	# segunda, nada mudado, deu 0. `chegada` e o estado herdado, para a proxima
+	# falha ja nascer explicada.
+	var chegada := "vivo=%s painel=%s cad=%.2f" % [str(p.alive), str(p.panel_open),
+			p._attack_cd]
+	# Cada porta e fechada pela transicao do proprio jogo, nao por um campo
+	# escrito a mao: `respawn_at` devolve hp, vigor, ar e o travamento de sprint
+	# junto com `alive`, e `close_panel` so fecha se a pilha na mao tiver para
+	# onde voltar -- forcar `panel_open = false` ali deixaria o painel visivel no
+	# HUD com o jogador ja livre, estado que nenhum passo seguinte espera.
+	if not p.alive:
+		p.respawn_at(_spawn)
+	if p.panel_open:
+		p.close_panel()
+	p._attack_cd = 0.0
 	p.feet_to_spawn(_spawn)
 	_aim(p, -0.35)
 	w.hp = Wolf.MAX_HP
 	w.body.feet_pos = _spawn + Vector3(0.0, 0.0, -2.5)
 	w.body.velocity = Vector3.ZERO
 	w._move_target = w.body.feet_pos
+	# O resto da matilha sai da frente da mira. Com a arvore pausada os lobos
+	# congelam onde a simulacao ao vivo os deixou, e a janela de 280 ticks do
+	# passo de nado acaba com eles caçando o jogador: medido no clone de
+	# 88d1c19, um lobo vivo a 1,6 m do olho contra 3,0 m do alvo colocado -- o
+	# que salvou o golpe foi ele nao estar sobre o raio, por sorte. Como
+	# `_update_target` pega o mais proximo ao longo da mira (`dp < best_d`),
+	# sem isto o passo mediria a IA em vez do golpe, e vermelho intermitente
+	# seria a assinatura: `hp` do alvo intacto, stagger 0, velocidade 0.
+	for other in main.wolves:
+		if other != w:
+			other.body.feet_pos = _spawn + Vector3(0.0, 1.0, 8.0)
+			other.body.velocity = Vector3.ZERO
 	Input.action_press("break_block")
-	var n := 0
+	p.update_local(1.0 / 60.0)
+	_check("mira travada no lobo do passo", p._target_entity == w,
+		("alvo=%s na_lista=%s d_alvo=%.2f  rival_mais_proximo=%.2f m") % [
+			str(p._target_entity != null),
+			str(main.targets_under_crosshair().has(w)),
+			w.body.feet_pos.distance_to(p.eye_position()),
+			_nearest_other_alive(p, w)])
+	var n := 1
 	while absf(w.hp - Wolf.MAX_HP) < 0.01 and n < 30:
 		p.update_local(1.0 / 60.0)
 		n += 1
 	Input.action_release("break_block")
 	_check("golpe acertou o lobo", absf(w.hp - Wolf.MAX_HP) > 5.0,
-		"hp %.0f -> %.1f em %d ticks" % [Wolf.MAX_HP, w.hp, n])
+		("hp %.0f -> %.1f em %d ticks  chegada[%s]  alvo=%s  olho_a_alvo=%.2f m") % [
+			Wolf.MAX_HP, w.hp, n, chegada,
+			str(p._target_entity != null),
+			p.eye_position().distance_to(w.body.feet_pos)])
 	_check("dano do golpe e o ataque fixo",
 		absf(w.hp - (Wolf.MAX_HP - Player.ATTACK_DAMAGE)) < 0.01, "hp=%.2f" % w.hp)
 	_check("golpe atordoa o lobo", w._stagger > 0.0, "stagger=%.2f s" % w._stagger)
@@ -1855,7 +1927,10 @@ func _inv_signature(p: Player) -> String:
 # --------------------------------------------------------------------- ciclo de vida
 
 func _check_corpse() -> void:
-	var w: Wolf = main.wolves[2]
+	var w: Wolf = _alive_wolf()
+	if w == null:
+		_check("ha um lobo vivo para abater", false, "matilha=%d" % main.wolves.size())
+		return
 	_corpse_n = main.wolves.size()
 	var felled0 := int(main.stats["wolves_felled"])
 	var blood0: float = main.aether.channel_totals()[AetherField.Channel.BLOOD]

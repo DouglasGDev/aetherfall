@@ -1035,7 +1035,8 @@ próprio comentário (world_gen.gd:12-27). A mesma rotina fecha esta especifica�
    comentário registra o que foi medido, não o que foi escolhido.
 3. **Probe de orçamento**: soltar N = 1 024 e N = 4 096 colunas de areia e medir
    `worst_sim_ms` (`SimClock`, main.gd:351-361). Gate: nenhum tick perdido, com o
-   piso de 8,82 ms medido hoje (smoke_test.gd:1883-1885) como referência.
+   piso de pior passo medido nestas quatro corridas: 7,68 / 8,66 / 9,01 / 11,21 ms
+   (smoke_test.gd:1958-1960).
 4. **Ablação do span**: `build_chunk_mesh` com e sem `y_lo..y_hi`, dois `mesh_ms` lado
    a lado, antes de qualquer discussão de seção de 16.
 
