@@ -29,7 +29,3 @@ static func in_world_bounds(p: Vector3i) -> bool:
 		and p.z >= 0 and p.z < world_size_z()
 		and p.y >= 0 and p.y < CHUNK_SIZE_Y
 	)
-
-
-static func chunk_key(p: Vector3i) -> Vector2i:
-	return Vector2i(floori(float(p.x) / CHUNK_SIZE_X), floori(float(p.z) / CHUNK_SIZE_Z))

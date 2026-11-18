@@ -62,12 +62,11 @@ func _i(ch: int, c: Vector3i) -> int:
 
 
 func cell_of_voxel(p: Vector3i) -> Vector3i:
-	return Vector3i(
-		floori(float(p.x) / cell), floori(float(p.y) / cell), floori(float(p.z) / cell))
+	return Coords.cell_of_voxel(p, cell)
 
 
 func cell_of_world(p: Vector3) -> Vector3i:
-	return cell_of_voxel(Vector3i(floori(p.x), floori(p.y), floori(p.z)))
+	return cell_of_voxel(Coords.to_block(p))
 
 
 func _clamped(c: Vector3i) -> Vector3i:

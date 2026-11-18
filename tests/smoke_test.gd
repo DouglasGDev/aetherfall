@@ -64,6 +64,7 @@ func _ready() -> void:
 		["relogio real", 150, _check_live],
 		["malha e face-culling", 0, _check_meshing],
 		["edicoes no mundo", 0, _check_edits],
+		["sistema de coordenadas", 0, _check_coords],
 		["campo de eter", 0, _check_aether],
 		["relogio de simulacao", 0, _check_clock],
 		["minerar e colocar", 0, _check_mechanics],
@@ -346,6 +347,35 @@ func _check_edits() -> void:
 	_check("leitura igual ao escrito", w.get_block(p) == BlockDefs.Block.STONE)
 	_check("repetir o mesmo valor e no-op", not w.set_block(p, BlockDefs.Block.STONE))
 	_check("no-op nao polui o diario", w.edits.size() == n0 + 1, "%d" % w.edits.size())
+
+
+# ------------------------------------------------------------- coordenadas
+
+## O vocabulario canônico (Coords): piso de negativos, bordas de chunk,
+## ida e volta da chave de save e a grade do Eter saem todos da mesma fonte.
+func _check_coords() -> void:
+	var tb := Coords.to_block(Vector3(-0.25, 3.75, 127.9))
+	_check("to_block e piso com negativo", tb == Vector3i(-1, 3, 127), "to_block=%s" % tb)
+	var edge_a := Vector3i(15, 31, 16)
+	var edge_b := Vector3i(16, 31, 15)
+	_check("chunk na borda 15/16",
+		Coords.chunk_of(edge_a) == Vector2i(0, 1) and Coords.chunk_of(edge_b) == Vector2i(1, 0),
+		"chunk(15,y,z16)=%s  chunk(16,y,z15)=%s" % [Coords.chunk_of(edge_a), Coords.chunk_of(edge_b)])
+	var round_ok := true
+	for b in [edge_a, edge_b, Vector3i.ZERO, Vector3i(127, 63, 127)]:
+		var key := Coords.chunk_of(b)
+		if Coords.chunk_origin(key) + Coords.local_of(b, key) != b:
+			round_ok = false
+	_check("origem + local devolve o bloco", round_ok, "bordas, origem e canto oposto")
+	var k := Vector3i(-3, 27, 129)
+	_check("chave de save ida e volta", Coords.parse_block_key(Coords.block_key(k)) == k,
+		"chave=%s" % Coords.block_key(k))
+	var c1 := Coords.cell_of_voxel(Vector3i(17, 3, 5))
+	var c2 := Coords.cell_of_voxel(Vector3i(-1, 0, 0))
+	_check("celula do eter e piso por 4", c1 == Vector3i(4, 0, 1) and c2 == Vector3i(-1, 0, 0),
+		"cell(17,3,5)=%s  cell(-1,0,0)=%s" % [c1, c2])
+	var co := Coords.cell_origin(Vector3i(4, 0, 1))
+	_check("origem da celula devolve o canto", co == Vector3i(16, 0, 4), "cell_origin=%s" % co)
 
 
 # --------------------------------------------------------------------- eter

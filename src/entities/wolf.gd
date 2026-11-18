@@ -229,11 +229,10 @@ func _leaf_wander(_ctx: Dictionary) -> bool:
 
 ## Terra seca neste ponto: sem agua acima do leito na coluna.
 func _dry_ground(p: Vector3) -> bool:
-	var x := floori(p.x)
-	var z := floori(p.z)
-	if x < 1 or z < 1 or x >= VoxelConfig.world_size_x() - 1 or z >= VoxelConfig.world_size_z() - 1:
+	var b := Coords.to_block(p)
+	if b.x < 1 or b.z < 1 or b.x >= VoxelConfig.world_size_x() - 1 or b.z >= VoxelConfig.world_size_z() - 1:
 		return false
-	return not world.is_water_xyz(x, world.surface_height(x, z) + 1, z)
+	return not world.is_water_xyz(b.x, world.surface_height(b.x, b.z) + 1, b.z)
 
 
 ## Ponto de margem mais proximo: raio crescente em 8 direcoes, primeira coluna seca.
@@ -244,7 +243,8 @@ func _shore_point() -> Vector3:
 			var a := TAU * float(i) / 8.0 + 0.3
 			var p := me + Vector3(cos(a) * r, 0.0, sin(a) * r)
 			if _dry_ground(p):
-				p.y = float(world.surface_height(floori(p.x), floori(p.z))) + 0.2
+				var b := Coords.to_block(p)
+				p.y = float(world.surface_height(b.x, b.z)) + 0.2
 				return p
 	return me
 
@@ -397,8 +397,8 @@ func _physics_process(delta: float) -> void:
 	body.apply_gravity(delta, SWIM_BUOYANCY if body.in_water else 1.0)
 	if body.in_water:
 		# boia: a cabeca empurra pra cima quando mergulha e o afundar e limitado
-		var head := body.feet_pos + Vector3(0.0, DIMS.y - 0.15, 0.0)
-		if world.is_water_xyz(floori(head.x), floori(head.y), floori(head.z)):
+		var head := Coords.to_block(body.feet_pos + Vector3(0.0, DIMS.y - 0.15, 0.0))
+		if world.is_water_xyz(head.x, head.y, head.z):
 			body.velocity.y = lerpf(body.velocity.y, SWIM_RISE, clampf(delta * 12.0, 0.0, 1.0))
 		body.velocity.y = maxf(body.velocity.y, SWIM_SINK_MAX)
 	var want := _move_target - body.feet_pos

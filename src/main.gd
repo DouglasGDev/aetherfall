@@ -279,7 +279,7 @@ func _toggle_ether() -> void:
 func save_game() -> void:
 	var edit_list := {}
 	for k in world.edits:
-		edit_list["%d,%d,%d" % [k.x, k.y, k.z]] = int(world.edits[k])
+		edit_list[Coords.block_key(k)] = int(world.edits[k])
 	var minds: Array = []
 	for w in wolves:
 		minds.append(w.state_dict())

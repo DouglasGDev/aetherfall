@@ -181,7 +181,7 @@ func meshes_built() -> int:
 
 
 func chunk_at(p: Vector3i) -> VoxelChunk:
-	return chunks.get(VoxelConfig.chunk_key(p))
+	return chunks.get(Coords.chunk_of(p))
 
 
 ## Total de triangulos malhados agora: e a medida que prova que o face-culling
@@ -214,17 +214,19 @@ func get_block_xyz(x: int, y: int, z: int) -> int:
 		return BlockDefs.Block.STONE
 	if _flat_ready:
 		return _flat[(y * _sz + z) * _sx + x]
-	var c = chunks.get(VoxelConfig.chunk_key(Vector3i(x, y, z)))
+	var c = chunks.get(Coords.chunk_of(Vector3i(x, y, z)))
 	if c == null:
 		return BlockDefs.Block.STONE
-	return c.get_block(x - c.coord.x * CHUNK_SIZE_X, y, z - c.coord.y * CHUNK_SIZE_Z)
+	var l := Coords.local_of(Vector3i(x, y, z), c.coord)
+	return c.get_block(l.x, l.y, l.z)
 
 
 func _write_raw(p: Vector3i, b: int) -> void:
 	var c := chunk_at(p)
 	if c == null:
 		return
-	c.set_block(p.x - c.coord.x * CHUNK_SIZE_X, p.y, p.z - c.coord.y * CHUNK_SIZE_Z, b)
+	var l := Coords.local_of(p, c.coord)
+	c.set_block(l.x, l.y, l.z, b)
 	if _flat_ready:
 		_flat[(p.y * _sz + p.z) * _sx + p.x] = b
 
@@ -244,17 +246,16 @@ func set_block(p: Vector3i, b: int, record: bool = true) -> bool:
 
 
 func _touch_chunks_of(p: Vector3i, force: bool) -> void:
-	var key := VoxelConfig.chunk_key(p)
+	var key := Coords.chunk_of(p)
 	_mark(key)
-	var lx: int = p.x - key.x * CHUNK_SIZE_X
-	var lz: int = p.z - key.y * CHUNK_SIZE_Z
-	if lx == 0:
+	var l := Coords.local_of(p, key)
+	if l.x == 0:
 		_mark(key + Vector2i(-1, 0))
-	elif lx == CHUNK_SIZE_X - 1:
+	elif l.x == CHUNK_SIZE_X - 1:
 		_mark(key + Vector2i(1, 0))
-	if lz == 0:
+	if l.z == 0:
 		_mark(key + Vector2i(0, -1))
-	elif lz == CHUNK_SIZE_Z - 1:
+	elif l.z == CHUNK_SIZE_Z - 1:
 		_mark(key + Vector2i(0, 1))
 
 
@@ -330,7 +331,7 @@ func ray_voxel(origin: Vector3, direction: Vector3, max_dist: float) -> VoxelRay
 	if direction.length_squared() < 1e-12:
 		return res
 	var d := direction.normalized()
-	var cell := Vector3i(floori(origin.x), floori(origin.y), floori(origin.z))
+	var cell := Coords.to_block(origin)
 	var step := Vector3i(_axis_sign(d.x), _axis_sign(d.y), _axis_sign(d.z))
 	var t_max := Vector3(INF, INF, INF)
 	var t_delta := Vector3(INF, INF, INF)

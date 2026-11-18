@@ -129,8 +129,8 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **152 checagens, 0 falhas, 35,2 s** — e no clone limpo, depois
-do import: **152 checagens, 0 falhas**. O que ela cobre:
+nesta máquina: **158 checagens, 0 falhas, 35,2 s** — e no clone limpo, depois
+do import: **158 checagens, 0 falhas**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -154,6 +154,9 @@ do import: **152 checagens, 0 falhas**. O que ela cobre:
 - IA local opcional (oráculo): com a porta do llama-server fechada, o pedido
   estoura o timeout, o oráculo entra em recuo (30 s medidos) e a narrativa no
   debug fica vazia — utilidade e árvore seguem decidindo sozinhas;
+- sistema de coordenadas canônico (`Coords`): piso de negativos, bordas de
+  chunk (15/16), ida e volta origem+local, chave de save com negativo e a grade
+  grossa do Éter (4×4×4) saem todos do mesmo módulo;
 - corpo do jogador em 3ª pessoa: 23 caixas montadas em pivôs, coladas nos pés,
   girando com o yaw, com a cabeça fora de cena na 1ª pessoa;
 - IA: a mesma memória (`Mind`) muda a decisão do lobo entre os braços com e sem
@@ -175,7 +178,8 @@ src/
   persistence/   save atômico (.tmp + rename), schema e diário de edições
   rendering/     visão do Éter
   ui/            HUD, debug, mensagens
-  world/         mundo voxel, chunks, gerador, blocos, atlas, campo de Éter
+  world/         mundo voxel, chunks, gerador, blocos, atlas, campo de Éter,
+                 conversões canônicas (Coords)
   main.gd        composição do slice
 tests/           smoke test headless
 tools/           fetch de packs de IA local + servidor do oráculo (PowerShell)

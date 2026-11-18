@@ -463,8 +463,8 @@ func _try_roll(wish: Vector3) -> void:
 
 
 func _update_breath(delta: float) -> void:
-	var eye := eye_position()
-	var submerged := world.is_water_xyz(floori(eye.x), floori(eye.y), floori(eye.z))
+	var eye := Coords.to_block(eye_position())
+	var submerged := world.is_water_xyz(eye.x, eye.y, eye.z)
 	if submerged:
 		air = maxf(air - delta, 0.0)
 		if air <= 0.0:

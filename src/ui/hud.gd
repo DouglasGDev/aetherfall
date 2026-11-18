@@ -212,6 +212,13 @@ func _refresh_state() -> void:
 		lines.append("eter  trabalho %.2f  sangue %.2f  medo %.2f" % [t[0], t[1], t[2]])
 	if stats_provider.is_valid():
 		lines.append(String(stats_provider.call()))
+	if player != null:
+		var pb := Coords.to_block(player.position3())
+		var mira := "-"
+		if player.target_valid:
+			var tv := player.target_voxel
+			mira = "%d,%d,%d" % [tv.x, tv.y, tv.z]
+		lines.append("pos %d,%d,%d  mira %s" % [pb.x, pb.y, pb.z, mira])
 	if wolf_provider.is_valid():
 		for w in wolf_provider.call():
 			var line := String(w.debug_line())
