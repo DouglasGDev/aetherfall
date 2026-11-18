@@ -10,3 +10,8 @@
 *.wav binary
 *.ogg binary
 *.res binary
+
+# cmd.exe le .bat linha por linha e estranha LF puro em bloco com parenteses e
+# em labels: o launcher de 1 clique precisa sair CRLF do checkout.
+*.bat text eol=crlf
+*.cmd text eol=crlf
