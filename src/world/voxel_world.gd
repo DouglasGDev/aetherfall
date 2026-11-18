@@ -482,15 +482,22 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 							FACE_TINT[f] + jitter, 0.0)
 
 	var mesh := ArrayMesh.new()
+	# O indice do surface e o que era antes de acrescentar: um chunk de vidro sem
+	# agua tem dois surfaces e o hardcoded 2 caia fora deles, e o pano ficava sem
+	# material nenhum (o erro do engine passavaquieto na suíte de triangulos).
+	var s := 0
 	if not v.is_empty():
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(v, nr, uv, cl, ix))
-		mesh.surface_set_material(0, _mat_opaque)
+		mesh.surface_set_material(s, _mat_opaque)
+		s += 1
 	if not wv.is_empty():
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(wv, wn, wuv, wc, wi))
-		mesh.surface_set_material(1, _mat_water)
+		mesh.surface_set_material(s, _mat_water)
+		s += 1
 	if not gv.is_empty():
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(gv, gn, guv, gc, gi))
-		mesh.surface_set_material(2, _mat_glass)
+		mesh.surface_set_material(s, _mat_glass)
+		s += 1
 
 	if c.mesh_instance == null:
 		c.mesh_instance = MeshInstance3D.new()
