@@ -40,6 +40,13 @@ var _armed := false
 var _tick_player := false
 var _click_frame := -1
 var _click_detail := ""
+var _swim_wolf: Wolf = null
+var _swim_start := Vector3.ZERO
+var _swim_bed_y := 0.0
+var _swim_seen := false
+var _swim_min_y := 999.0
+var _swim_max_leg := 0.0
+var _swim_seek := false
 
 
 func _ready() -> void:
@@ -65,6 +72,8 @@ func _ready() -> void:
 		["construir enquanto lava", 0, _check_build_setup],
 		["lavra + clique direito", 20, _check_build_while_mining],
 		["memoria muda comportamento", 0, _check_memory],
+		["lobo na agua", 0, _check_swim_setup],
+		["lobo nada e busca margem", 280, _check_swim_assert],
 		["hud, morte e renascer", 0, _check_hud],
 		["salvar e carregar", 0, _check_save],
 		["cadaver no chao", 0, _check_corpse],
@@ -80,6 +89,15 @@ func _physics_process(_delta: float) -> void:
 	# senao a borda do clique cairia num frame em que ninguem le o input.
 	if _tick_player:
 		main.player.update_local(1.0 / 60.0)
+	if _swim_wolf != null and is_instance_valid(_swim_wolf) and _swim_wolf.alive:
+		if _swim_wolf.body.in_water:
+			_swim_seen = true
+			_swim_min_y = minf(_swim_min_y, _swim_wolf.body.feet_pos.y)
+			for leg in _swim_wolf._legs:
+				_swim_max_leg = maxf(_swim_max_leg, absf((leg as Node3D).rotation.x))
+		if _swim_wolf._swim_time > Wolf.SHORE_AFTER \
+				and _swim_wolf._dry_ground(_swim_wolf._move_target):
+			_swim_seek = true
 	if _armed and Input.is_action_just_pressed("place_block"):
 		var p: Player = main.player
 		_armed = false
@@ -659,6 +677,76 @@ func _check_memory() -> void:
 	w.hp = Wolf.MAX_HP
 	w.mind.beliefs.erase(BELIEF)
 	main.process_mode = Node.PROCESS_MODE_INHERIT
+
+
+# --------------------------------------------------------------------- agua
+
+## Acha a agua mais funda da seed, derruba um lobo nela e prova a patrulha seca
+## por sorteio direto. O amostrador vive no _physics_process do harness.
+func _check_swim_setup() -> void:
+	var world: VoxelWorld = main.world
+	var best := Vector3i.ZERO
+	var best_score := -1
+	for x in range(4, VoxelConfig.world_size_x() - 4, 2):
+		for z in range(4, VoxelConfig.world_size_z() - 4, 2):
+			var top := world.surface_height(x, z)
+			if not world.is_water_xyz(x, top + 1, z):
+				continue
+			var depth := VoxelConfig.SEA_LEVEL - top
+			var viz := 0
+			for off in [Vector3i(2, 0, 0), Vector3i(-2, 0, 0), Vector3i(0, 0, 2), Vector3i(0, 0, -2)]:
+				var t2 := world.surface_height(x + off.x, z + off.z)
+				if world.is_water_xyz(x + off.x, t2 + 1, z + off.z):
+					viz += 1
+			var score := depth * 10 + viz
+			if score > best_score:
+				best_score = score
+				best = Vector3i(x, top, z)
+	var depth := VoxelConfig.SEA_LEVEL - best.y
+	_check("lago fundo no mapa", best_score > 0 and depth >= 2,
+		"profundidade=%d  vizinhos=%d  em (%d,%d)" % [depth, (best_score % 10) if best_score > 0 else 0, best.x, best.z])
+	if best_score <= 0 or depth < 2:
+		_swim_wolf = null
+		return
+	_swim_bed_y = float(best.y)
+	_swim_wolf = main.wolves[1]
+	_swim_wolf.body.feet_pos = Vector3(float(best.x) + 0.5, _swim_bed_y + 0.4, float(best.z) + 0.5)
+	_swim_wolf.body.velocity = Vector3.ZERO
+	_swim_wolf._move_target = _swim_wolf.body.feet_pos + Vector3(6.0, 0.0, 0.0)
+	_swim_start = _swim_wolf.body.feet_pos
+	_swim_seen = false
+	_swim_min_y = 999.0
+	_swim_max_leg = 0.0
+	_swim_seek = false
+	var dry := 0
+	for i in 200:
+		_swim_wolf._wander_cd = 0.0
+		_swim_wolf._leaf_wander({})
+		if _swim_wolf._dry_ground(_swim_wolf._move_target):
+			dry += 1
+	_check("patrulha so sorteia terra seca", dry == 200, "%d/200 alvos secos" % dry)
+
+
+func _check_swim_assert() -> void:
+	if _swim_wolf == null:
+		return
+	var w := _swim_wolf
+	var feet := w.body.feet_pos
+	var world: VoxelWorld = main.world
+	var now_dry := not w.body.in_water \
+			and not world.is_water_xyz(floori(feet.x), world.surface_height(floori(feet.x), floori(feet.z)) + 1, floori(feet.z))
+	var advanced := feet.distance_to(_swim_start) > 1.2
+	_check("lobo boiou sem afundar ao leito", _swim_seen and _swim_min_y > _swim_bed_y + 0.3,
+		"y minimo=%.2f  leito=%.2f" % [_swim_min_y, _swim_bed_y])
+	_check("lobo rema na agua", _swim_seen and _swim_max_leg > 0.15,
+		"pata max=%.2f rad" % _swim_max_leg)
+	_check("lobo preso busca a margem", _swim_seek, "override de margem disparou")
+	_check("lobo sai da agua ou avanca nadando", now_dry or advanced,
+		"seco=%s  deslocamento=%.1f m" % [now_dry, feet.distance_to(_swim_start)])
+	print("       nado: %.1f m desde a queda, pata max %.2f rad, y min %.2f" % [
+		feet.distance_to(_swim_start), _swim_max_leg, _swim_min_y])
+	w.body.feet_pos = w.home + Vector3(0.0, 1.0, 0.0)
+	w.body.velocity = Vector3.ZERO
 
 
 ## Um braco do experimento. A posicao, o hp, o campo de Eter ao redor e a ameaca

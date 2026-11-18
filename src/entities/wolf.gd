@@ -4,6 +4,10 @@ extends Node3D
 ## raycast por frame) -> utilidade escolhe a acao -> Behavior Tree executa -> memoria
 ## grava o que aconteceu e muda a decisao do proximo encontro.
 ##
+## Locomocao: a patrulha so sorteia terra seca (sem agua acima do leito); se um
+## estímulo levar o lobo a agua, ele boia, rema (nado como o do jogador) e depois
+## de SHORE_AFTER segundos a margem mais proxima passa a mandar no rumo.
+##
 ## Contrato com o Player: body_aabb() e target_name().
 
 signal bit_player(wolf: Wolf, amount: float)
@@ -24,6 +28,13 @@ const SCENT_RADIUS: int = 3          # em celulas de Eter
 const SCENT_MIN: float = 0.06
 const CORPSE_SECONDS: float = 6.0
 const DIMS := Vector3(0.75, 0.95, 1.35)
+# agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
+# agua (fuga, perseguicao), boia e rema como o jogador nada e procura a margem.
+const SWIM_SPEED_FACTOR: float = 0.55
+const SWIM_BUOYANCY: float = 0.15
+const SWIM_RISE: float = 1.6
+const SWIM_SINK_MAX: float = -1.6
+const SHORE_AFTER: float = 2.0
 
 var world: VoxelWorld = null
 var aether: AetherField = null
@@ -69,6 +80,8 @@ var _wander_cd: float = 0.0
 var _saw_cd: float = 0.0
 var _bite_cd: float = 0.0
 var _corpse_timer: float = 0.0
+var _swim_time: float = 0.0
+var _swim_phase: float = 0.0
 var _visual: Node3D = null
 var _legs: Array = []
 var _fur: StandardMaterial3D = null
@@ -195,14 +208,40 @@ func _leaf_wander(_ctx: Dictionary) -> bool:
 	if _wander_cd > 0.0 and center().distance_squared_to(_move_target) > 2.0:
 		return true
 	_wander_cd = randf_range(4.0, 9.0)
-	var a := randf() * TAU
-	var r := randf_range(5.0, WANDER_RADIUS)
-	var p := home + Vector3(cos(a) * r, 0.0, sin(a) * r)
-	p.x = clampf(p.x, 4.0, float(VoxelConfig.world_size_x()) - 4.0)
-	p.z = clampf(p.z, 4.0, float(VoxelConfig.world_size_z()) - 4.0)
-	p.y = float(world.surface_height(int(p.x), int(p.z))) + 0.2
-	_move_target = p
+	for _t in 8:
+		var a := randf() * TAU
+		var r := randf_range(5.0, WANDER_RADIUS)
+		var p := home + Vector3(cos(a) * r, 0.0, sin(a) * r)
+		p.x = clampf(p.x, 4.0, float(VoxelConfig.world_size_x()) - 4.0)
+		p.z = clampf(p.z, 4.0, float(VoxelConfig.world_size_z()) - 4.0)
+		if not _dry_ground(p):
+			continue
+		p.y = float(world.surface_height(int(p.x), int(p.z))) + 0.2
+		_move_target = p
+		return true
 	return true
+
+
+## Terra seca neste ponto: sem agua acima do leito na coluna.
+func _dry_ground(p: Vector3) -> bool:
+	var x := floori(p.x)
+	var z := floori(p.z)
+	if x < 1 or z < 1 or x >= VoxelConfig.world_size_x() - 1 or z >= VoxelConfig.world_size_z() - 1:
+		return false
+	return not world.is_water_xyz(x, world.surface_height(x, z) + 1, z)
+
+
+## Ponto de margem mais proximo: raio crescente em 8 direcoes, primeira coluna seca.
+func _shore_point() -> Vector3:
+	var me := body.feet_pos
+	for r in [1.6, 2.6, 4.0, 6.0, 8.0]:
+		for i in 8:
+			var a := TAU * float(i) / 8.0 + 0.3
+			var p := me + Vector3(cos(a) * r, 0.0, sin(a) * r)
+			if _dry_ground(p):
+				p.y = float(world.surface_height(floori(p.x), floori(p.z))) + 0.2
+				return p
+	return me
 
 
 func _leaf_bite(_ctx: Dictionary) -> bool:
@@ -281,6 +320,15 @@ func sim_step(elapsed: float, dt: float) -> void:
 	_threat = maxf(_threat - dt * 0.05, 0.0)
 	hunger = clampf(hunger + dt * 0.006, 0.0, 1.0)
 	mind.decay(dt / 60.0)
+	if body.in_water:
+		_swim_time += dt
+		# preso na agua por tempo demais: a margem mais proxima manda, acima de
+		# qualquer outra intencao da arvore (a mordida no jogador pode esperar)
+		if _swim_time > SHORE_AFTER:
+			_move_target = _shore_point()
+			_speed = SPEED_WALK * SWIM_SPEED_FACTOR
+	else:
+		_swim_time = 0.0
 	_sense()
 	_think(elapsed)
 	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick})
@@ -341,7 +389,13 @@ func _physics_process(delta: float) -> void:
 			if _corpse_timer <= 0.0:
 				_visual.visible = false
 		return
-	body.apply_gravity(delta)
+	body.apply_gravity(delta, SWIM_BUOYANCY if body.in_water else 1.0)
+	if body.in_water:
+		# boia: a cabeca empurra pra cima quando mergulha e o afundar e limitado
+		var head := body.feet_pos + Vector3(0.0, DIMS.y - 0.15, 0.0)
+		if world.is_water_xyz(floori(head.x), floori(head.y), floori(head.z)):
+			body.velocity.y = lerpf(body.velocity.y, SWIM_RISE, clampf(delta * 12.0, 0.0, 1.0))
+		body.velocity.y = maxf(body.velocity.y, SWIM_SINK_MAX)
 	var want := _move_target - body.feet_pos
 	want.y = 0.0
 	if want.length_squared() > 0.04:
@@ -349,7 +403,8 @@ func _physics_process(delta: float) -> void:
 		if _unstick > 0.0:
 			dir = dir.rotated(Vector3.UP, _detour)
 			_unstick -= delta
-		var target_v := dir * _speed
+		var swim_speed := _speed * (SWIM_SPEED_FACTOR if body.in_water else 1.0)
+		var target_v := dir * swim_speed
 		body.velocity.x = lerpf(body.velocity.x, target_v.x, clampf(delta * 9.0, 0.0, 1.0))
 		body.velocity.z = lerpf(body.velocity.z, target_v.z, clampf(delta * 9.0, 0.0, 1.0))
 		_heading = atan2(-body.velocity.x, -body.velocity.z)
@@ -370,6 +425,18 @@ func _physics_process(delta: float) -> void:
 
 
 func _animate(delta: float) -> void:
+	if _visual:
+		_visual.rotation.y = _heading
+	if body.in_water:
+		# nado: patas remando em pares e o corpo sobe e desce com a flutuacao,
+		# mesmo parado na agua (o gait de terra depende da velocidade horizontal)
+		_swim_phase += delta * 6.5
+		for i in _legs.size():
+			var phase: float = _swim_phase + (PI if (i == 1 or i == 2) else 0.0)
+			(_legs[i] as Node3D).rotation.x = sin(phase) * 0.38
+		_visual.position.y = sin(_swim_phase * 0.5) * 0.05
+		return
+	_visual.position.y = 0.0
 	var sp := Vector3(body.velocity.x, 0.0, body.velocity.z).length()
 	if sp > 0.2:
 		_gait += delta * (2.6 + sp * 1.5)
@@ -379,8 +446,6 @@ func _animate(delta: float) -> void:
 	elif _visual:
 		for leg in _legs:
 			leg.rotation.x = lerpf(leg.rotation.x, 0.0, clampf(delta * 8.0, 0.0, 1.0))
-	if _visual:
-		_visual.rotation.y = _heading
 
 
 # ------------------------------------------------------------------ combate & memoria
@@ -462,6 +527,8 @@ func load_state(d: Dictionary) -> void:
 	kills = int(d.get("kills", 0))
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
+	_swim_time = 0.0
+	_swim_phase = 0.0
 	if _visual:
 		_visual.rotation.z = 0.0
 	if not alive:
