@@ -2,17 +2,19 @@
 
 Arquivo de trabalho. **Não é design**: cada linha abaixo ou cita código que existe, ou
 cita um log medido, ou declara explicitamente que não existe ainda. A fonte das cobranças
-são dois prompts que se completam: o "Prompt Master de Correção de Furos e Fechamento de
-Gates", que é o que esta primeira seção audita, e as "Instruções de Trabalho (obrigatórias)",
-que viraram [`AGENTS.md`](../AGENTS.md) na raiz — o prompt master responde *o que falta*,
-o `AGENTS.md` responde *como* mexer sem quebrar as propriedades do projeto. A segunda tabela
-abaixo audita as afirmações de escopo e estado desse segundo prompt, que também descrevem
-peças que este repositório ainda não tem.
+são três prompts que se completam, todos com as afirmações de estado conferidas aqui e o
+comportamento prescrito em [`AGENTS.md`](../AGENTS.md) (raiz): o "Prompt Master de Correção
+de Furos e Fechamento de Gates", que diz *o que falta*; as "Instruções de Trabalho
+(obrigatórias)", que dizem *como* mexer; e a "Disciplina de Otimização e Controle de
+Crescimento", que diz *quanto custa*. Este arquivo tem uma tabela por prompt, na mesma
+ordem.
 
 Revisão de referência: `9c6b722` — a premissa montada no passo de golpe (furo #6 abaixo).
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 
-## O prompt × o código
+## Os prompts × o código
+
+### O prompt master de furos e gates × o código
 
 | O que o prompt afirma | O que está em `src/` hoje | Veredicto |
 |---|---|---|
@@ -43,6 +45,22 @@ o mesmo texto traz, no mesmo espírito da tabela acima.
 | "Melhorar a degradação e a robustez do oráculo atual (ainda HTTP)" | Correto no diagnóstico, e a degradação já é checada sem rede — sonda apontada para a porta 1 em [smoke_test.gd:1647-1651](../tests/smoke_test.gd#L1647-L1651). O caminho feliz depende de `llama-server` de fora e não é testável em headless | **correto**; está dentro do escopo autorizado |
 | "Repositório: github.com/DouglasGDev/aetherfall" | `origin` confere. O que está publicado é `00538b3` (`git ls-remote --heads origin`, lido em 2026-11-18); `88d1c19`, `9c6b722` e `53eba15` são locais até o push ser pedido | **correto**; publicação se confirma por `ls-remote`, nunca pelo código 0 do `push` |
 | "Ao final de um bloco, atualize ou proponha atualização de `docs/melhorias-status.md`" | É este arquivo, com as seções que o prompt pede (feito / em andamento / falta / backlog / débitos / furos / notas) | **correto**; já é a prática da casa, e agora está escrita em [`AGENTS.md`](../AGENTS.md) |
+
+### O prompt de disciplina de otimização × o código
+
+Terceiro mandato, aplicado com as duas regras da casa: nada de adjetivo onde cabe número, e
+nada de otimização onde ainda não há medição. As regras anti-bloat não são afirmações de
+estado, então não têm linha aqui — o que tem linha é o instrumento e o custo que ele mostra.
+
+| O que o prompt afirma | O que está em `src/` hoje | Veredicto |
+|---|---|---|
+| "Meça antes de otimizar: use dados reais (Profiler, tempo de tick, contagem de objetos, alocações)" | Tempo de tick: medido e publicado — `last_step_ms`/`worst_step_ms`/`dropped_ticks` ([sim_clock.gd:12-14](../src/core/sim_clock.gd#L12-L14)) cronometrados em µs dentro de [main.gd:124-128](../src/main.gd#L124-L128). Tempo de frame: `TIME_PROCESS` e `TIME_PHYSICS_PROCESS` só no F3 ([hud.gd:244-247](../src/ui/hud.gd#L244-L247)). **Contagem de objetos e de alocações: nenhum monitor do engine é lido no repositório inteiro** (grep de `Performance.`: duas linhas, as duas acima) | **parcial**; o "Profiler" da casa é SimClock + `SubtreeGuard` + F3, e a coluna de alocação não existe como número |
+| "Otimize o que dói agora" | A dor está medida e é o boot: geração 936-962 ms e malharia 4.640-4.886 ms com a janela congelada, contra **pior passo de 7,56 a 11,21 ms num orçamento de 50 ms** e `dropped_ticks = 0` nas cinco corridas (`.tools/suite_fix1.log` … `suite_fix4.log`, `.tools/pub-suite.log`) | **correto, e já respondido**: o hot path de simulação não é a dor de hoje; o precedente medido é o mesher, que caiu de ~16 s para ~7,5 s com índice linear |
+| "Hot path tem regra diferente: o que roda a cada tick (20 Hz) precisa ser barato" | As duas cadências existem e estão separadas: 20 Hz autoritativo ([sim_clock.gd:5-7](../src/core/sim_clock.gd#L5-L7)) e jogador local por frame ([main.gd:123](../src/main.gd#L123)). Ressalva honesta: o jogador **muda estado do mundo por frame** — `set_block` da lavra e da colocação em [player.gd:660](../src/entities/player.gd#L660) e [:686](../src/entities/player.gd#L686) —, então "só o tick toca o mundo" ainda não é verdade | **correto no relógio, incompleto na autoridade**; é o §06 (dedicado) que cobra essa conta |
+| "Alocação é cara: evite arrays, dicionários, objetos e strings no tick quente" | Acontece hoje em dois lugares conhecidos: o blackboard é um `Dictionary` novo por lobo por tick ([wolf.gd:339](../src/entities/wolf.gd#L339), 100/s no teto de matilha viva) e a difusão aloca um `PackedInt32Array` por canal por passada ([aether_field.gd:113](../src/world/aether_field.gd#L113), 3 a cada 0,25 s). **Nenhum dos dois tem custo medido** | **válido como restrição**; como tarefa de otimização cai na regra 1 — primeiro a colheita (débito abaixo) |
+| "LOD é obrigatório em sistemas de IA/simulação" | Não há LOD por distância: os lobos vivos rodam a árvore inteira a cada tick. O que há é throttle temporal — difusão e visão 4×/s, cadáveres 1×/s ([main.gd:12-16](../src/main.gd#L12-L16)) — e cooldowns de percepção dentro da árvore ([wolf.gd:83-85](../src/entities/wolf.gd#L83-L85)) | **falso hoje**; a peça tem nome no design (`HotSet`/Véu, §04 e §06) e é P2: sem custo em log, é backlog, não tarefa |
+| "Budget explícito: defina e respeite orçamentos de tempo (ex.: HOT minds ≤ X ms)" | Quatro orçamentos são código: 50 ms por passo com teto de 5 passos por frame ([sim_clock.gd:19-29](../src/core/sim_clock.gd#L19-L29)), 400 µs por árvore ([wolf.gd:155-156](../src/entities/wolf.gd#L155-L156); default da classe, 250 µs, em [bt_tree.gd:117-120](../src/ai/behavior/bt_tree.gd#L117-L120)), 2 chunks de malha por frame ([main.gd:13](../src/main.gd#L13)) e 0,25 s de difusão. O "≤ 2,5 ms" do gate de P1 continua `[TARGET]` no §08, e a aritmética (5 × 400 µs = 2 ms) cabe nele sem que nenhum log mostre a soma | **parcial**; orçamento por peça existe, o agregado do gate é alvo sem medição |
+| "Observabilidade > micro-otimização cega: se não dá para medir, não dá para saber se melhorou" | Para o tick, dá: a última linha do diagnóstico da suíte publica `pior passo` e `perdidos` ([smoke_test.gd:1958-1960](../tests/smoke_test.gd#L1958-L1960)). Para frame, fila de malha, custo de BT e alocação, o número só existe em janela | **é o débito da colheita de custo**, e é o que trava as cinco linhas acima de virarem otimização |
 
 ## Feito nesta sessão
 
@@ -86,12 +104,14 @@ o mesmo texto traz, no mesmo espírito da tabela acima.
   (`.tools/pub-import.log`, `.tools/pub-suite.log`). Aproveitou e trouxe os logs dos braços do
   furo #6 da pasta temporária para `.tools/` — linha de tabela que aponta para arquivo apagado
   não é evidência.
-- **Os dois mandatos viraram uma coisa só lida por quem chega.** As "Instruções de Trabalho
-  (obrigatórias)" estão em [`AGENTS.md`](../AGENTS.md), na raiz, auditadas na segunda tabela
-  acima. O que aquele texto dava por existente — capacidade de hash/journal a preservar, "estamos
-  em P0/P1" — não existe ou não é fase encerrada, e está escrito lá com a linha de código que
-  mostra; o que ele manda (a mente propõe e as regras dispõem) foi conferido por fiação, não por
-  suposição.
+- **Os três mandatos viraram uma coisa só lida por quem chega.** As "Instruções de Trabalho
+  (obrigatórias)" e a "Disciplina de Otimização e Controle de Crescimento" estão em
+  [`AGENTS.md`](../AGENTS.md), na raiz, com uma tabela de auditoria para cada um acima. O que
+  aqueles textos davam por existente — capacidade de hash/journal a preservar, "estamos em
+  P0/P1" como fase encerrada, "Profiler" e contagem de alocações como dado disponível, LOD de
+  IA como regra já seguida — não existe ou é parcial, e está escrito lá com a linha de código
+  que mostra; o que eles mandam e já é verdade foi conferido por fiação e por grep, não por
+  suposição (oráculo → só o HUD; `Performance.` lido em duas linhas, ambas de tempo).
 
 ## Em andamento
 
@@ -153,7 +173,13 @@ Por dependência, não por preferência:
   `09-veloren-mechanics-adaptation.md` (falta um "s"). Corrigido junto deste arquivo.
 - **Nenhum log do `bt N us` existe**: a linha é impressa só no overlay em janela. O débito não
   é do código, é da evidência — enquanto não houver colheita em headless, "budget medido"
-  continua sendo afirmação.
+  continua sendo afirmação. É o mesmo balde que segura as outras três colunas que o terceiro
+  prompt pede: `TIME_PROCESS`/`TIME_PHYSICS_PROCESS` e a fila de malha (hoje só em janela), a
+  soma das cinco árvores contra o teto de 2,5 ms do gate, e qualquer número de **alocação** —
+  que não existe em lugar nenhum, porque o repositório lê dois monitores do engine e são os
+  dois de tempo. Antes de cortar o `Dictionary` do blackboard por tick
+  ([wolf.gd:339](../src/entities/wolf.gd#L339)) ou o array por canal da difusão
+  ([aether_field.gd:113](../src/world/aether_field.gd#L113)), a tarefa é essa colheita.
 - **O passo de nado sabe sumir sem deixar rastro**: se a seed não tiver lago fundo,
   `_swim_wolf` fica nulo e `_check_swim_assert` retorna antes de checar qualquer coisa —
   quatro checagens somem e a contagem cai de 220 para 216 sem nenhum vermelho. A contagem

@@ -12,14 +12,15 @@ Motor Godot 4.7.2-stable com Vulkan Forward+ (`config/features` em
 ([LICENSE](LICENSE)); modelos e packs em [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 Repositório: <https://github.com/DouglasGDev/aetherfall>.
 
-## Os dois mandatos, e o que cada um responde
+## Os três mandatos, e o que cada um responde
 
 | Você quer saber | Onde está |
 | --- | --- |
-| O que o projeto promete × o que `src/` faz hoje | [`docs/melhorias-status.md`](docs/melhorias-status.md), "O prompt × o código" |
+| O que o projeto promete × o que `src/` faz hoje | [`docs/melhorias-status.md`](docs/melhorias-status.md), "Os prompts × o código" |
 | Feito nesta rodada, em andamento, fila, backlog e débitos | idem, seções seguintes |
 | Que corrida sustenta cada número publicado | idem, "Notas de medição" |
 | Como conduzir a mudança: escopo, atomicidade, medição, comentário | este arquivo |
+| Custo de uma mudança: budget, alocação, LOD, o que cresce sem justificativa | este arquivo, "Disciplina de otimização", e a terceira tabela do status |
 | O que é cada fase e qual é o gate dela | [docs/design/08](design/08-roadmap-risks-licensing.md) |
 | O que é meta de design e o que é código que existe | [docs/design/README.md](design/README.md), legenda `[TARGET]`/`[MEASURED]`/`[DECIDED]`/`[OPEN]` |
 
@@ -76,6 +77,88 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    asset, não. *Verificado por ausência:* nenhum `.rs` e nenhum `.ron` no repositório;
    [docs/design/09](design/09-veloren-mechanics-adaptation.md) separa o que veio de lá como
    idéia, o que existe em código e o que foi rejeitado.
+
+## Disciplina de otimização e controle de crescimento
+
+O terceiro mandato não pede otimização nova: pede que nenhuma mudança entre sem responder
+o custo dela. Ele é aplicável porque o projeto **já** tem instrumento — e tem, com nomes:
+
+**As duas cadências.** O jogador local roda por *frame*
+([main.gd:123](src/main.gd#L123) → `update_local`) e é hoje a única coisa que escreve no
+mundo fora do tick — o `set_block` da lavra e da colocação está em
+[player.gd:660](src/entities/player.gd#L660) e [:686](src/entities/player.gd#L686). Todo o
+resto (Éter, mentes, cadáveres, relógio) é autoritativo a 20 Hz
+([sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7)) dentro de `begin_step`/`end_step`, que
+cronometra em microsegundos ([main.gd:124-128](src/main.gd#L124-L128),
+[sim_clock.gd:32-39](src/core/sim_clock.gd#L32-L39)). Regra de bolso: o que você coloca em
+`_sim_tick` divide 50 ms com 5 lobos; o que coloca em `_physics_process` divide o frame com
+a renderização.
+
+**Orçamentos que já são código**, não intenção (regra 7):
+
+| Orçamento | Valor hoje | Onde |
+| --- | --- | --- |
+| Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-L29) |
+| Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs) | [bt_tree.gd:117-120](src/ai/behavior/bt_tree.gd#L117-L120), [wolf.gd:155-156](src/entities/wolf.gd#L155-L156) |
+| Malha | 2 chunks por frame | [main.gd:13](src/main.gd#L13), usado em [:154](src/main.gd#L154) |
+| Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:12](src/main.gd#L12), [:134-137](src/main.gd#L134-L137) |
+| Recolha de cadáver, visão do Éter | 1 s e 0,25 s | [main.gd:16](src/main.gd#L16), [:14](src/main.gd#L14) |
+
+**O que dói hoje, medido** (regra 2): o boot, não o tick. Geração de 936 a 962 ms e
+malharia de 4.640 a 4.886 ms com a janela congelada (`.tools/suite_fix1.log` …
+`suite_fix4.log`; no clone limpo, 941 ms e 4.668 ms). O passo mais caro das cinco corridas
+ficou entre 7,56 e 11,21 ms dos 50 ms disponíveis, com `dropped_ticks = 0` em todas. Quem
+propuser otimizar o hot path de simulação começa a conversa por esse número — e a
+conversa sobre boot já aconteceu uma vez com número na mesa: os ~16 s originais caíram para
+~7,5 s quando o mesher passou a ler uma cópia linear do mundo em vez do dicionário de
+chunks (README, seção "Limites conhecidos (medidos nesta máquina)").
+
+**Alocação no caminho quente existe e não é medida** — é débito, não tarefa de otimização
+ainda (regras 5 e 1, nesta ordem):
+
+- o blackboard do BT é um `Dictionary` novo por lobo por tick
+  ([wolf.gd:339](src/entities/wolf.gd#L339)): com a matilha inteira viva, 5 × 20 = 100
+  dicionários por segundo (o `sim_step` retorna cedo em cadáver, então o número é teto);
+- a difusão aloca um `PackedInt32Array` por canal por passada
+  ([aether_field.gd:113](src/world/aether_field.gd#L113)): 3 a cada 0,25 s;
+- a conta das árvores (5 × 400 µs = 2 ms) cabe no teto de 2,5 ms que o gate de P1 ainda
+  escreve como `[TARGET]` — e nenhum log mostra a soma real.
+
+Nada disso tem medição própria: os únicos monitores do engine lidos no repositório são
+`TIME_PROCESS` e `TIME_PHYSICS_PROCESS`, e só no overlay F3
+([hud.gd:244-247](src/ui/hud.gd#L244-L247)). Em headless, a suíte colhe `worst_step_ms` e
+`dropped_ticks` pelo `diagnostics()` ([main.gd:404](src/main.gd#L404)). Então o primeiro
+passo de qualquer otimização é a colheita, não o corte.
+
+**LOD (regra 6) é parcial, e se diz assim:** existe *throttle temporal* por subsistema —
+Éter e visão 4×/s, cadáveres 1×/s, e cooldowns de percepção dentro da árvore
+([wolf.gd:83-85](src/entities/wolf.gd#L83-L85)) — e não existe *LOD por distância*: os lobos
+vivos rodam a árvore inteira a cada tick, perto ou longe. A peça do design é o
+`HotSet`/Véu (§04, §06) e pertence a P2; antes de o custo aparecer em log, ela é backlog.
+
+**Anti-bloat, com o estado real:**
+
+- `main.gd` é o "objeto deus" conhecido — 451 linhas donas de mundo, relógio, matilha, HUD,
+  oráculo e visualização ([main.gd:18-24](src/main.gd#L18-L24)). Isso está registrado como
+  débito, não como licença: mudança que precisa de estado novo pergunta primeiro **quem é o
+  dono** daquele estado.
+- Generalize no segundo chamador, não no primeiro. O padrão da casa é dado no código até
+  haver motivo para dado em arquivo: nomes e propriedades em
+  [block_defs.gd:123-137](src/world/block_defs.gd#L123-L137), receitas em
+  [recipes.gd:31-43](src/items/recipes.gd#L31-L43), ambos construídos uma vez.
+- Caminho nunca exercitado se isola com nome, não se comenta: a sonda de oráculo vivo é
+  cena própria ([tests/live_oracle_probe.tscn](tests/live_oracle_probe.tscn)) justamente para
+  não virar fallback silencioso dentro de `MindOracle`.
+- Complexidade se paga com teste: checagem nova que não pode falhar é remoção de código
+  adiada. A suíte é o lugar de justificar a abstração.
+
+**As quatro perguntas antes de escrever** (responda com número, não com adjetivo): roda por
+frame, por tick ou às vezes? quantas entidades são alcançadas (hoje: 5 lobos, 64 chunks, 1
+jogador)? aloco no caminho quente? como sei que ficou melhor — e o log existe em headless?
+Se a resposta da última for "não existe", o trabalho do bloco é a colheita. Se uma mudança
+puder degradar o budget de forma relevante, avise antes de implementar e proponha a versão
+mais enxuta que mantém a correção e a mensurabilidade; pedido grande quebra em partes e diz
+o que pode esperar.
 
 ## Escopo autorizado agora
 
