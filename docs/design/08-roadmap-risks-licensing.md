@@ -17,6 +17,26 @@ P6  Progressão + chefes + Crônica UI
 P7  Conteúdo, balanceamento, plataformas, alpha público
 ```
 
+### Estado real do roadmap (2026-11-18)
+
+Nada aqui muda os gates acima: uma fase continua **não** encerrada enquanto o comando e o
+critério numérico não rodarem. O que muda é o ponto de partida de cada uma, derivado do
+código que existe hoje.
+
+| Fase | Situação | O que já está em `src/` | O que falta para o gate |
+|---|---|---|---|
+| **P0** | parcial, sem o gate | mundo de 64 chunks gerado e malhado; `SimClock` 20 Hz com ticks perdidos visíveis [core/sim_clock.gd:5-27](../../src/core/sim_clock.gd); voxel com meshing e face-culling; jogador em 1ª/3ª pessoa com corpo animado; lavrar/colocar com buffer e guarda; save/load atômico por diário de edições [persistence/save_manager.gd:8-10](../../src/persistence/save_manager.gd); vocabulário de coordenadas canônico [world/coords.gd](../../src/world/coords.gd) | `af-bench --scenario boot_walk_10min` com hash de estado estável em 3 execuções; bake-off de voxel decidido com números (§06.4); `docs/engine/simclock.md` |
+| **P1** | parcial, sem o gate | BT runtime com blackboard, cooldown e `SubtreeGuard` [ai/behavior](../../src/ai/behavior); `UtilityScorer` + curvas de resposta [ai/utility_scorer.gd](../../src/ai/utility_scorer.gd); `Mind` com 24 episódios, crenças com decaimento e soleira, confiança, *drift* de personalidade e *trust* [ai/mind.gd:7-9](../../src/ai/mind.gd); `AetherField` de **3** canais (trabalho/sangue/medo) com difusão e decaimento [world/aether_field.gd:9-17](../../src/world/aether_field.gd); lobo que persegue, investiga rastro, foge e **veta a caçada por memória** [entities/wolf.gd:129-157](../../src/entities/wolf.gd) | canais de morte/som/fogo (6 no total), difusão em thread, `MindStore`, `MindsInspector` (observabilidade **é** parte de P1), cenário com hash igual em 20 sementes × 1000 ticks, budget HOT medido |
+| **P2** | não iniciada | — | tudo |
+| **P3** | não iniciada | — | tudo |
+| **P4** | degrau existe, gate distante | `MindOracle` falando HTTP com um `llama-server` local, uma requisição em voo, degradação com recuo de 30 s e a linha `ia:` no HUD [ai/mind_oracle.gd](../../src/ai/mind_oracle.gd); pacote `mind-small` (Qwen3.5-4B Q4_K_M, Apache-2.0) baixado por `tools/fetch_models.ps1` com SHA256 e licença registrados; throughput medido em §04.5.1 | `native/af_mind` embutido, schemas GBNF, `oracle_cache`, embeddings/`semantic_index`, grounding, `ModelPackFetcher` dentro do jogo, `ai_eval` com % de saídas válidas |
+| **P5** | não iniciada | — | tudo |
+| **P6/P7** | não iniciadas | mecânicas de locomoção, vigor, queda, respiração e regeneração já existem e estão documentadas em [§09](09-veloren-mecanics-adaptation.md) — são fundação de gameplay, não progressão | rotas de progressão, 6 chefes, Crônica na UI, port e publicação |
+
+Consequência prática: o projeto está **antes** de P1 e **sem nenhum gate fechado**. Isso
+não é pessimismo, é o estado que a suíte mostra — 5 lobos, um jogador, um mundo editado,
+e nenhum ledger, facção ou rede.
+
 ### P0 — Fundação `[gate mais importante do projeto]`
 
 Entregas: `project.godot` pinando 4.7.x; `SimClock` 20 Hz + `EntityStore` SoA + tick

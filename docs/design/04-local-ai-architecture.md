@@ -204,6 +204,34 @@ baixa por URL+SHA256, exibe a licença por modelo (muitos são Apache/MIT, algun
 restrição de uso — exibir é requisito), e o jogo funciona com packs ausentes. Nenhuma
 inferência envia dados de rede; telemetria de estilo fica em disco local com toggle.
 
+### 5.1 O que já existe em código
+
+`src/ai/mind_oracle.gd` é a camada 5 funcionando **fora** do processo do jogo: um
+`HTTPRequest` contra o endpoint OpenAI-compatível de um `llama-server` de localhost, um
+pedido em voo por vez, round-robin sobre o roster de lobos vivos, `max_tokens` 64,
+temperatura 0,7, e a resposta aparada a 140 caracteres antes de virar a linha
+`  ia: ...` no painel de debug de cada mente. O `llama.cpp` é **backend de servidor**,
+ainda não `native/af_mind`.
+
+| Peça do §5 | Estado hoje |
+|---|---|
+| Pack `mind-small` | **existe**: Qwen3.5-4B GGUF Q4_K_M, Apache-2.0, 2,55 GB, SHA256 conferido por `tools/fetch_models.ps1`, llama.cpp b12499 Vulkan (`THIRD_PARTY_LICENSES.md`) |
+| `--reasoning off` | **existe e medido**: flag de carga do b12499 funciona; `--chat-template-kwargs` não funciona — confirma a decisão acima |
+| Degradação por recuo | **existe**: falha de pedido → narração vazia + recuo global de 30 s, com teste na suite (recuo medido 29,6 s no relógio do sim) |
+| Transporte | **stepping stone**: HTTP local em vez de GDExtension. A superfície já é um `Callable` injetado no HUD (`narration_provider`), então trocar o transporte não toca em quem consome |
+| Fila por prioridade, preempção por budget | `[TARGET]` — hoje há um único job em voo e um cooldown por mente |
+| `oracle_cache`, GBNF/schemas, embeddings, `mind-voice` | `[TARGET]` — a saída de hoje é prosa livre só de leitura; nenhuma decisão do jogo a consome, então não há schema a validar ainda |
+
+Números do oráculo vivo num `llama-server` na RX 9060 XT `[MEASURED:
+tests/live_oracle_probe.tscn]`: boot 9,5 s, prompt 52,7 tok/s, geração 45,1 tok/s,
+primeira narração 1,4 s depois de o mundo estar pronto e a segunda 0,7 s depois.
+
+**Defeito de engine achado no caminho** `[MEASURED]`: em Godot 4.7.2 / Windows, um
+`HTTPRequest` contra porta fechada **nunca** emite `request_completed` quando `timeout`
+não é setado (a sonda pendurou mais de 25 s). Com `timeout = 2.0` completou em 2011 ms com
+`result = 13`. A degradação acima depende desse campo — por isso `request_timeout` é
+configurável no oráculo (8 s no jogo, 1 s na suite, que não pode esperar 8 s por check).
+
 ## 6. O que cada camada é autorizada a fazer (tabela de autoridade)
 
 | Pedido | Camada 1 BT/Utility | Camada 2 Memória | Camada 4 Adaptação | Camada 5 LLM |

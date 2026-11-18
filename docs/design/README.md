@@ -15,8 +15,10 @@ que está implementado hoje, veja o [`README.md`](../../README.md) da raiz.
 | `[DECIDED]` | Decisão tomada e vinculante para o time. |
 | `[OPEN]` | Questão aberta com data-limite e critério de fechamento. |
 
-Nenhum número de FPS, latência, custo de memória ou tempo de tick neste conjunto de
-documentos é `[MEASURED]` — todos são `[TARGET]` até que o bench de P0 rode.
+Alguns números deste conjunto já são `[MEASURED]` — tempo e contagem de checagens da
+suíte headless, latência e throughput do oráculo local, e as constantes de mecânica em
+`src/` (ver §09, que cita `arquivo:linha`). O que ainda não foi medido continua
+`[TARGET]` e está marcado como tal.
 
 ## Índice
 
@@ -30,6 +32,7 @@ documentos é `[MEASURED]` — todos são `[TARGET]` até que o bench de P0 rode
 | 06 | [Arquitetura técnica em Godot 4](06-godot-architecture.md) | Sim, voxel, rede, persistência, orçamento |
 | 07 | [Estrutura de pastas](07-project-structure.md) | Árvore completa e convenções |
 | 08 | [Roadmap, riscos e licenças](08-roadmap-risks-licensing.md) | Fases com gates, riscos, MIT × GPL |
+| 09 | [Mecânicas do Veloren adaptadas](09-veloren-mechanics-adaptation.md) | O que veio de lá como idéia, o que existe em código, o que foi rejeitado |
 
 ## Glossário canônico
 
