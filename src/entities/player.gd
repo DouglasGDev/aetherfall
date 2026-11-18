@@ -329,11 +329,16 @@ func _apply_vertical(wish: Vector3, delta: float) -> void:
 
 
 func _update_target() -> void:
-	var origin := eye_position()
+	# em 3a pessoa o raio sai da camera para o alvo ficar sob a mira; o alcance
+	# (REACH) continua medido do corpo, como o aim_point do Veloren
+	var eye := eye_position()
+	var origin := camera.global_position if third_person else eye
 	var dir := camera.global_transform.basis.z * -1.0
-	var hit := world.ray_voxel(origin, dir, REACH)
+	var span := REACH + origin.distance_to(eye)
+	var hit := world.ray_voxel(origin, dir, span)
+	var hit_d := (origin + dir * hit.distance - eye).length() if hit.valid else span + 1.0
+	var best_d := hit_d
 	var best_entity: Node3D = null
-	var best_dist := hit.distance if hit.valid else REACH + 1.0
 	look_target_name = ""
 	if entity_provider.is_valid():
 		for e in entity_provider.call():
@@ -341,12 +346,15 @@ func _update_target() -> void:
 				continue
 			var box: AABB = e.body_aabb()
 			var d := ray_aabb(origin, dir, box)
-			if d > 0.0 and d < best_dist:
-				best_dist = d
+			if d <= 0.0:
+				continue
+			var dp := (origin + dir * d - eye).length()
+			if dp <= REACH and dp < best_d:
+				best_d = dp
 				best_entity = e
 				look_target_name = e.target_name()
 	_target_entity = best_entity
-	target_valid = hit.valid and best_entity == null
+	target_valid = hit.valid and best_entity == null and hit_d <= REACH
 	target_voxel = hit.voxel
 	place_voxel = hit.voxel + hit.normal
 	target_hardness = _hardness(hit.block) if target_valid else 0.0
@@ -440,14 +448,23 @@ func _update_camera(delta: float) -> void:
 	camera.global_transform = Transform3D(final_rot, eye + Vector3(0.0, bob_y, 0.0))
 
 	if third_person:
-		var back := final_rot.z * 4.4
-		var origin := eye + Vector3(0.0, 0.35, 0.0)
-		var hit := world.ray_voxel(origin, back.normalized(), 4.4)
+		# orbita o centro do corpo (focus do Veloren), nao a cabeca: olhar para
+		# cima e para baixo nao arrasta a camera por cima do cranio
+		var pivot := body.feet_pos + Vector3(0.0, 1.0, 0.0)
+		var back_n := final_rot.z.normalized()
 		var dist := 4.4
+		var hit := world.ray_voxel(pivot, back_n, 4.4)
 		if hit.valid:
-			dist = maxf(hit.distance - 0.35, 0.6)
-		camera.global_position = origin + back.normalized() * dist
-		camera.global_transform = Transform3D(final_rot, camera.global_position)
+			dist = maxf(hit.distance - 0.35, 0.0)
+			if hit.distance > 1.1:
+				dist = maxf(dist, 0.75)
+		var cp := pivot + back_n * dist
+		# olhar para cima encosta a camera no chao por tras e o near-plane fura
+		# o terreno; levanta ate ~28 cm acima da primeira superficie abaixo dela
+		var down := world.ray_voxel(cp + Vector3(0.0, 0.6, 0.0), Vector3.DOWN, 1.2)
+		if down.valid and down.distance > 0.0:
+			cp.y = maxf(cp.y, cp.y + 0.88 - down.distance)
+		camera.global_position = cp
 
 
 ## Slab method: distancia de um raio a um AABB, ou -1 se nao acerta.

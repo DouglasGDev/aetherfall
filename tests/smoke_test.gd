@@ -262,6 +262,20 @@ func _mesh_count(n: Node) -> int:
 	return total
 
 
+## Extensao vertical global das malhas: [base, topo] da silhueta em coordenadas
+## de mundo. Pega o torso montado no lugar errado, que a contagem de caixas nao
+## distingue.
+func _mesh_span(n: Node) -> Array:
+	var lo := 999.0
+	var hi := -999.0
+	for b in n.find_children("*", "MeshInstance3D", true, false):
+		var mi := b as MeshInstance3D
+		var ab: AABB = mi.global_transform * mi.mesh.get_aabb()
+		lo = minf(lo, ab.position.y)
+		hi = maxf(hi, ab.position.y + ab.size.y)
+	return [lo, hi]
+
+
 func _chunk_triangles(c: VoxelChunk) -> int:
 	var n := 0
 	if c.mesh_instance == null or c.mesh_instance.mesh == null:
@@ -404,6 +418,11 @@ func _check_mechanics() -> void:
 	p.third_person = false
 	p.update_local(1.0 / 60.0)
 	_check("corpo do jogador tem malhas", parts >= 20, "caixas=%d" % parts)
+	var span := _mesh_span(p.avatar)
+	var top: float = span[1] - p.body.feet_pos.y
+	var base: float = span[0] - p.body.feet_pos.y
+	_check("silhueta fecha em ~1,8 m", top > 1.7 and top < 1.9, "altura=%.2f" % top)
+	_check("nenhuma malha abaixo dos pes", base > -0.15, "base=%.2f" % base)
 	_check("avatar cola nos pes", drift < 0.002, "desvio=%.5f" % drift)
 	_check("avatar gira com o yaw", absf(facing - rad_to_deg(0.62)) < 0.01,
 		"corpo=%.2fdeg  esperado=%.2fdeg" % [facing, rad_to_deg(0.62)])

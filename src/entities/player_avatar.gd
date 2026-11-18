@@ -76,13 +76,14 @@ func _pose() -> void:
 	var s1 := -s0
 	# indice 0 = esquerdo, 1 = direito; rotacao +x no quadril/ombro manda a
 	# extremidade para -Z, que e a frente do modelo
-	var thigh := [0.60 * a * s0, 0.60 * a * s1]
-	var knee := [-0.42 * a * maxf(0.0, -s0) - 0.06 * a, -0.42 * a * maxf(0.0, s0) - 0.06 * a]
-	var sh := [0.42 * a * s1, 0.42 * a * s0]
-	var el := [0.20 + 0.22 * a * maxf(0.0, s1), 0.20 + 0.22 * a * maxf(0.0, s0)]
-	var lean := -0.07 * a
+	var thigh := [0.46 * a * s0, 0.46 * a * s1]
+	var knee := [-0.36 * a * maxf(0.0, -s0) - 0.06 * a, -0.36 * a * maxf(0.0, s0) - 0.06 * a]
+	var sh := [0.34 * a * s1, 0.34 * a * s0]
+	var el := [0.20 + 0.18 * a * maxf(0.0, s1), 0.20 + 0.18 * a * maxf(0.0, s0)]
+	var lean := -0.05 * a
 	var bob := absf(s0) * 0.035 * a
 	var roll := s0 * 0.020 * a
+	var breath := sin(_phase * 2.2) * (1.0 - minf(a, 1.0))
 
 	var up := clampf(0.5 + 0.5 * _rise, 0.0, 1.0)
 	if _air > 0.01:
@@ -143,10 +144,10 @@ func _pose() -> void:
 		_shoulders[i].rotation.z = s * 0.07
 		_elbows[i].rotation.x = el[i]
 	_rig.rotation.z = roll
-	_rig.position.y = -CROUCH_DROP * _crouch + bob
+	_rig.position.y = -CROUCH_DROP * _crouch + bob + breath * 0.01
 	_chest.rotation.x = lean
 	_head.rotation.x = clampf(pitching, -0.85, 0.85) * 0.55 - lean
-	_head.rotation.z = -roll * 0.5
+	_head.rotation.z = -roll * 0.5 + breath * 0.025
 
 
 func _pose_dead(smooth: float) -> void:
@@ -181,6 +182,7 @@ func _ready() -> void:
 
 	_chest = Node3D.new()
 	_chest.name = "Chest"
+	_chest.position = Vector3(0.0, HIP_Y, 0.0)
 	_rig.add_child(_chest)
 	_box(_chest, Vector3(0.46, 0.54, 0.26), Vector3(0.0, 0.27, 0.0), shirt)
 	_box(_chest, Vector3(0.50, 0.13, 0.30), Vector3(0.0, 0.05, 0.0), leather)
