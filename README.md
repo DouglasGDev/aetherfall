@@ -186,7 +186,10 @@ godot --headless --path . tests/smoke_test.tscn
 
 Sai com código `1` se qualquer checagem falhar. Resultado medido em três
 corridas seguidas nesta máquina, na revisão deste README: **208 checagens,
-0 falhas, 36,1 s**. A contagem é sempre da revisão medida, nunca do texto: a
+0 falhas, 36,1 s** — e num clone limpo do repositório, recém-importado com o
+`--import` logo acima, no mesmo código (`ffec8ca`, este parágrafo só muda
+texto): **208 checagens, 0 falhas, 35,9 s**, com o log sem nenhuma linha
+`ERROR` do engine. A contagem é sempre da revisão medida, nunca do texto: a
 rodada de inventário, pilhas e craft acrescentou passos (`inventario, pilhas e
 receitas` e as checagens de quantidade dentro de `minerar e colocar`,
 `colocar com clique`, `tecla 3 no hotbar`, `malha e face-culling` (os dois panos
