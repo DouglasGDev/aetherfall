@@ -86,6 +86,12 @@ Dois toques em **`Rodar.bat`**, na raiz do clone. Ele faz, nesta ordem:
    simplesmente sumir; se ele sobrevive, a janela preta do launcher fecha e a
    partida segue sozinha.
 
+Os três primeiros passos foram exercidos de ponta a ponta num clone limpo deste
+repositório, com `.tools/` vazio: o download de 86.013.866 bytes, o digest
+conferido, o import montando o cache de classes e o `-CheckOnly` devolvendo 0. A
+recusa do passo 4 com uma janela já aberta também é medida — código 2, sem nada
+lançado.
+
 Não compila nada: o "executável" do jogo é o projeto GDScript mais a engine
 portável. Não há `npm install` da vida, e atlas e texturas são desenhados em
 runtime — os PNG de `docs/media/` são capturas de tela, não assets do jogo.
@@ -100,14 +106,17 @@ O mesmo script atende outras entradas:
 | `Rodar.bat -Editor` | abre o editor em vez do jogo |
 | `Rodar.bat -Tests` | roda a suíte headless inteira (`tests/smoke_test.tscn`) |
 | `Rodar.bat -Engine "D:\Godot\Godot_v4.7.2-stable_win64.exe"` | usa o motor que você já tem, fora do PATH |
-| `Rodar.bat -Force` | abre mesmo com outra janela do projeto aberta |
+| `Rodar.bat -Force` | abre mesmo com outra janela do mesmo save aberta |
 
 A última linha existe por um motivo concreto: duas janelas abertas escrevem no
 mesmo save (`user://saves/world_alpha.json`) e a última gravação vence — então o
-segundo clique é recusado por padrão, com a lista dos PIDs abertos. A checagem
-só roda quando o motor resolvido é o `.tools` deste projeto; com um Godot do
-PATH não dá para saber de qual projeto é a instância, e a checagem viraria falso
-positivo. `tools/run_game.ps1` é o script por trás do `.bat` (rodar ele direto
+segundo clique é recusado por padrão, com a lista dos PIDs e das linhas de
+comando abertos. Quem conta como a mesma janela não é decidido pelo binário nem
+pela pasta: `user://` sai de `application/config/name` do `project.godot`, então
+um segundo clone do repo cai na mesma checagem. Ficam fora da conta a suíte
+(`--headless`), o editor parado e o gerenciador de projetos; uma janela do jogo
+só não é vista quando o motor veio de fora e rodou com `--path` relativo, porque
+aí a linha de comando não diz o projeto. `tools/run_game.ps1` é o script por trás do `.bat` (rodar ele direto
 do PowerShell faz o mesmo); o `.bat` só existe para caber em dois toques e para
 chegar em CRLF, que o `cmd.exe` exige. Em Linux/macOS, o caminho é o da seção
 abaixo.

@@ -8,7 +8,8 @@
 #   3. se falta o cache de importacao (.godot/global_script_class_cache.cfg),
 #      roda o --import: sem ele o projeto abre com "Could not find type" em
 #      tudo que usa class_name,
-#   4. lanca o jogo.
+#   4. recusa abrir se ja ha janela do mesmo save (user:// e o config/name do
+#      project.godot, nao a pasta), e lanca o jogo.
 #
 # Nao ha build step: o "executavel" do jogo e o proprio projeto (GDScript) mais
 # a engine portavel. models/ e .tools/ estao no .gitignore e o jogo roda sem
@@ -196,34 +197,100 @@ function Get-ConsoleExe([string]$Exe) {
 }
 
 
-## Instancias deste projeto que ja estao de pe. So da para afirmar quando o
-## motor e o .tools do proprio projeto: qualquer processo rodando aquele
-## binario com --path e daqui, e duas janelas abertas disputam o mesmo
-## user://saves. Rodada --headless (a suite) nao escreve save, entao nao conta.
-## O build de GUI e o de console sao o mesmo jogo: os dois nomes contam, e o
-## que separa este projeto de outro clone com a mesma engine e o diretorio.
+## Divide uma linha de comando em tokens respeitando as aspas duplas do Windows.
+function Get-CmdTokens([string]$CommandLine) {
+    $tokens = @()
+    $cur = ""
+    $inQ = $false
+    foreach ($ch in $CommandLine.ToCharArray()) {
+        if ($ch -eq '"') {
+            $inQ = -not $inQ
+            continue
+        }
+        if (-not $inQ -and $ch -match "\s") {
+            if ($cur) { $tokens += $cur; $cur = "" }
+            continue
+        }
+        $cur += [string]$ch
+    }
+    if ($cur) { $tokens += $cur }
+    return $tokens
+}
+
+
+## O --path de uma linha de comando: o projeto que aquele processo abriu.
+function Get-PathArg([string[]]$Tokens) {
+    for ($i = 0; $i -lt $Tokens.Count; $i++) {
+        if ($Tokens[$i] -eq "--path" -and ($i + 1) -lt $Tokens.Count) { return $Tokens[$i + 1] }
+        if ($Tokens[$i].StartsWith("--path=")) { return $Tokens[$i].Substring(7) }
+    }
+    return $null
+}
+
+
+## Pasta de user:// que o engine monta para um projeto: o nome vem de
+## application/config/name no project.godot, nao do diretorio no disco.
+function Get-ProjectSaveSpace([string]$ProjectDir) {
+    $cfg = Join-Path $ProjectDir "project.godot"
+    if (-not (Test-Path -LiteralPath $cfg)) { return $null }
+    foreach ($line in (Get-Content -LiteralPath $cfg)) {
+        if ($line -match '^config/name=(.*)$') {
+            $v = $Matches[1].Trim().Trim('"')
+            if ($v) { return $v }
+        }
+    }
+    return $null
+}
+
+
+function Norm-Path([string]$Path) {
+    try {
+        return [System.IO.Path]::GetFullPath($Path).TrimEnd("\").ToLowerInvariant()
+    }
+    catch {
+        return $Path.ToLowerInvariant()
+    }
+}
+
+
+## Classifica a linha de comando de um processo do engine: "salva" quando a
+## janela escreve no save deste projeto, "" quando nao. O que define o arquivo
+## nao e a pasta do clone nem o binario: user:// e
+## %APPDATA%\Godot\app_userdata\<config/name>, entao dois clones diferentes e o
+## F5 do editor disputam o mesmo world_alpha.json. --headless (a suite) nao
+## escreve save e o editor parado tambem nao, entao os dois saem da conta.
+## Um --path relativo so pode ser atribuido pelo binario que o executou: se ele
+## mora dentro deste projeto, a instancia e daqui. Sem --path e o gerente de
+## projetos do engine aberto, que nao escreve save de jogo nenhum.
+function Get-InstanceVerdict([string]$CommandLine, [string]$MyRoot, [string]$MyName) {
+    if (-not $CommandLine) { return "" }
+    if ($CommandLine -match "--headless") { return "" }
+    if ($CommandLine -match "(^|\s)(-e|--editor)(\s|$)") { return "" }
+    $tokens = Get-CmdTokens $CommandLine
+    $proj = Get-PathArg $tokens
+    if (-not $proj) { return "" }
+    if ([System.IO.Path]::IsPathRooted($proj)) {
+        $space = Get-ProjectSaveSpace $proj
+        if ($space -and $space -eq $MyName) { return "salva" }
+        return ""
+    }
+    if ($tokens.Count -eq 0) { return "" }
+    $exeDir = Norm-Path (Split-Path -Parent $tokens[0])
+    if ($exeDir.StartsWith((Norm-Path $MyRoot) + "\")) { return "salva" }
+    return ""
+}
+
+
 function Get-GameInstances([string]$Exe) {
-    $dir = Split-Path -Parent $Exe
     $leaf = Split-Path -Leaf $Exe
     $console = $leaf -replace "\.exe$", "_console.exe"
-    $rows = Get-CimInstance -Query "Select ProcessId, CommandLine From Win32_Process Where Name = '$leaf' OR Name = '$console'" -ErrorAction SilentlyContinue
+    $mine = Get-ProjectSaveSpace $Root
+    $filter = "Name LIKE 'Godot%' OR Name LIKE 'godot%' OR Name = '$leaf' OR Name = '$console'"
+    $rows = Get-CimInstance -Query "Select ProcessId, CommandLine From Win32_Process Where $filter" -ErrorAction SilentlyContinue
     $found = @()
     foreach ($r in $rows) {
-        $cl = [string]$r.CommandLine
-        if (-not $cl) { continue }
-        if ($cl -notmatch "--path") { continue }
-        if ($cl -match "--headless") { continue }
-        $first = $cl
-        if ($first.StartsWith('"')) {
-            $first = $first.Substring(1)
-            $cut = $first.IndexOf('"')
-            if ($cut -ge 0) { $first = $first.Substring(0, $cut) }
-        }
-        else {
-            $first = ($first -split "\s+")[0]
-        }
-        if ((Split-Path -Parent $first) -ne $dir) { continue }
-        $found += ("PID " + $r.ProcessId + "  " + $cl)
+        if ((Get-InstanceVerdict ([string]$r.CommandLine) $Root $mine) -ne "salva") { continue }
+        $found += ("PID " + $r.ProcessId + "  " + [string]$r.CommandLine)
     }
     return $found
 }
@@ -259,15 +326,18 @@ function Start-GodotAndCheck([string]$Exe, [string[]]$Argv) {
 ## build de console e chamado direto; sem ele, o stdout e redirecionado para um
 ## arquivo, porque build de GUI lancado de um console nao escreve em lugar algum.
 function Invoke-GodotHeadless([string]$Exe, [string[]]$Argv) {
+    # o texto do engine vai para a janela por Out-Host: solto no pipeline ele
+    # viria junto com o codigo de saida e o "if ($rc -ne 0)" de quem chama leria
+    # um vetor de linhas como se fosse o numero
     $console = Get-ConsoleExe $Exe
     if ($console -ne $Exe) {
-        & $console $Argv
+        & $console $Argv | Out-Host
         return $LASTEXITCODE
     }
     $log = Join-Path $env:TEMP ("aetherfall_godot_" + [guid]::NewGuid().ToString("N") + ".log")
     $p = Start-Process -FilePath $Exe -ArgumentList (Format-Argv $Argv) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $log -RedirectStandardError "$log.err"
-    if (Test-Path $log) { Get-Content $log -Tail 40 }
-    if (Test-Path "$log.err") { Get-Content "$log.err" -Tail 40 }
+    if (Test-Path $log) { Get-Content $log -Tail 40 | Out-Host }
+    if (Test-Path "$log.err") { Get-Content "$log.err" -Tail 40 | Out-Host }
     Remove-Item -Force $log, "$log.err" -ErrorAction SilentlyContinue
     return $p.ExitCode
 }
@@ -300,12 +370,10 @@ else {
 
 $needsImport = -not (Test-Path $ClassCache)
 
-# com motor do PATH nao da para saber de qual projeto e a instancia, e o check
-# viraria falso positivo; so vale para o binario pinado em .tools
-$openGames = @()
-if ($godot.from -like ".tools*") {
-    $openGames = @(Get-GameInstances $godot.exe)
-}
+# vale para qualquer motor: o que identifica o projeto nao e o binario e sim o
+# --path lido da linha de comando de cada processo (mesmo config/name = mesmo
+# save), entao um Godot do PATH ou o F5 do editor tambem entram na conta
+$openGames = @(Get-GameInstances $godot.exe)
 
 Write-Step "plano"
 Write-Host "   projeto : $Root"
@@ -317,7 +385,7 @@ else {
     Write-Host "   import  : ja feito"
 }
 if ($openGames.Count -gt 0) {
-    Write-Host "   aberto  : $($openGames.Count) instancia(s) deste projeto"
+    Write-Host "   aberto  : $($openGames.Count) janela(s) do mesmo save"
     foreach ($g in $openGames) { Write-Host "             $g" }
 }
 Write-Host "   comando : `"$($godot.exe)`" $($runArgv -join ' ')"
@@ -330,9 +398,10 @@ if ($CheckOnly) {
 
 if ($openGames.Count -gt 0 -and $mode -eq "jogo" -and -not $Force) {
     Write-Host ""
-    Write-Host "Ja existe uma janela deste projeto aberta (lista acima). Abrir a segunda"
-    Write-Host "faz as duas escreverem no mesmo save (user://saves/world_alpha.json) e a"
-    Write-Host "ultima gravacao vence. Fecha a janela que esta aberta, ou passa -Force."
+    Write-Host "Ja existe janela do mesmo save aberta (lista acima): outra copia do projeto"
+    Write-Host "ou o jogo rodando pelo editor. Abrir a segunda faz as duas escreverem no"
+    Write-Host "mesmo arquivo (user://saves/world_alpha.json) e a ultima gravacao vence."
+    Write-Host "Fecha a janela que esta aberta, ou passa -Force."
     exit 2
 }
 
