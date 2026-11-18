@@ -4,9 +4,10 @@ extends Node3D
 ## da cabeca. Sao pivots articulados (quadril, joelho, ombro, cotovelo) com uma
 ## caixa por segmento; o Player escreve o estado e chama advance(delta).
 ##
-## A silhueta fecha em 1,82 m contra 1,80 m da AABB do corpo. Em 1a pessoa o
-## corpo inteiro sai de cena, no padrao Minecraft: quem representa o jogador
-## la e o braco preso a camera. Nunca ha dois corpos em quadro.
+## A silhueta fecha em 1,82 m contra 1,80 m da AABB do corpo. Em 1a pessoa o rig
+## continua em cena e e o unico corpo no quadro: cabeca e tronco de camisa saem
+## (a camera mora dentro do cranio e o tronco virava slab na frente da camera);
+## bracos, pernas, cinto e mochila ficam visiveis e animados.
 
 const PACE := 4.3
 const HIP_Y := 0.80
@@ -23,9 +24,11 @@ var pitching := 0.0
 var mining := false
 var dead := false
 
+var first_person := false
 var _rig: Node3D = null
 var _chest: Node3D = null
 var _head: Node3D = null
+var _fp_hidden: Array[MeshInstance3D] = []
 var _thighs: Array[Node3D] = []
 var _knees: Array[Node3D] = []
 var _shoulders: Array[Node3D] = []
@@ -43,6 +46,18 @@ var _swing := 0.0
 ## Impulso de golpe: o braco direito faz o arco e volta sozinho.
 func swing() -> void:
 	_swing = 1.0
+
+
+## 1a pessoa: cabeca e tronco saem de cena, o resto do rig fica e anima.
+func set_first_person(fp: bool) -> void:
+	first_person = fp
+	_head.visible = not fp
+	for mi in _fp_hidden:
+		mi.visible = not fp
+
+
+func head_shown() -> bool:
+	return _head.visible
 
 
 func advance(delta: float) -> void:
@@ -176,11 +191,15 @@ func _ready() -> void:
 	_chest.name = "Chest"
 	_chest.position = Vector3(0.0, HIP_Y, 0.0)
 	_rig.add_child(_chest)
-	_box(_chest, Vector3(0.46, 0.54, 0.26), Vector3(0.0, 0.27, 0.0), shirt)
+	_fp_hidden = [
+		_box(_chest, Vector3(0.46, 0.54, 0.26), Vector3(0.0, 0.27, 0.0), shirt),
+		_box(_chest, Vector3(0.11, 0.09, 0.03), Vector3(0.0, 0.05, -0.16), aether),
+		_box(_chest, Vector3(0.32, 0.06, 0.05), Vector3(0.0, 0.50, -0.13), aether),
+		# a mochila mora nas costas, exatamente na linha de visao da camera
+		# recuada de 1a pessoa: sem ela, o olhar para baixo enxerga as pernas
+		_box(_chest, Vector3(0.22, 0.30, 0.11), Vector3(0.0, 0.30, 0.17), leather),
+	]
 	_box(_chest, Vector3(0.50, 0.13, 0.30), Vector3(0.0, 0.05, 0.0), leather)
-	_box(_chest, Vector3(0.11, 0.09, 0.03), Vector3(0.0, 0.05, -0.16), aether)
-	_box(_chest, Vector3(0.32, 0.06, 0.05), Vector3(0.0, 0.50, -0.13), aether)
-	_box(_chest, Vector3(0.22, 0.30, 0.11), Vector3(0.0, 0.30, 0.17), leather)
 
 	_head = Node3D.new()
 	_head.name = "Head"
@@ -197,7 +216,9 @@ func _ready() -> void:
 		var sh := Node3D.new()
 		sh.position = Vector3(0.30 * side, 0.48, 0.0)
 		_chest.add_child(sh)
-		_box(sh, Vector3(0.17, 0.32, 0.18), Vector3(0.0, -0.16, 0.0), shirt)
+		# o ombro de camisa vira slab gigante na camera de 1a pessoa; sai de
+		# cena la junto com o tronco, e o antebraco/mao seguem visiveis
+		_fp_hidden.append(_box(sh, Vector3(0.17, 0.32, 0.18), Vector3(0.0, -0.16, 0.0), shirt))
 		var el := Node3D.new()
 		el.position = Vector3(0.0, -0.32, 0.0)
 		sh.add_child(el)
@@ -227,7 +248,7 @@ func _mat(c: Color, rough: float) -> StandardMaterial3D:
 	return m
 
 
-func _box(p: Node3D, size: Vector3, pos: Vector3, mat: Material) -> void:
+func _box(p: Node3D, size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var bm := BoxMesh.new()
 	bm.size = size
 	bm.material = mat
@@ -235,3 +256,4 @@ func _box(p: Node3D, size: Vector3, pos: Vector3, mat: Material) -> void:
 	mi.mesh = bm
 	mi.position = pos
 	p.add_child(mi)
+	return mi

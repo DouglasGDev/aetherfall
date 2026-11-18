@@ -262,6 +262,16 @@ func _mesh_count(n: Node) -> int:
 	return total
 
 
+## Malhas efetivamente em cena: desconta as que estao sob um no oculto.
+func _mesh_count_visible(n: Node) -> int:
+	var total := 0
+	if n is MeshInstance3D and n.is_visible_in_tree():
+		total += 1
+	for c in n.get_children():
+		total += _mesh_count_visible(c)
+	return total
+
+
 ## Extensao vertical global das malhas: [base, topo] da silhueta em coordenadas
 ## de mundo. Pega o torso montado no lugar errado, que a contagem de caixas nao
 ## distingue.
@@ -405,19 +415,21 @@ func _check_mechanics() -> void:
 			"dureza=%.3f  medido=%.3f" % [h, float(n) / 60.0])
 		_check("voxel virou ar", w.get_block(tgt) == BlockDefs.Block.AIR, "voxel=%s" % tgt)
 
-	# Corpo do jogador: em 1a pessoa a camera mora dentro da cabeca, entao so a
-	# cabeca sai de cena; na 3a o corpo inteiro tem que estar nos pes e girar com o
-	# yaw. Medido sem janela, contando as malhas do avatar na arvore de nodes.
+	# Corpo do jogador: o rig e o unico corpo no quadro nas duas vistas. Em 1a
+	# pessoa cabeca e tronco saem (a camera mora dentro do cranio; o tronco
+	# virava slab na frente da camera) e bracos/pernas/cinto/mochila ficam; na
+	# 3a tudo em cena, nos pes e girando com o yaw.
 	p.yaw = 0.62
 	p.third_person = true
 	p.update_local(1.0 / 60.0)
-	var body_tp := p.avatar.visible
+	var head_tp := p.avatar.head_shown()
 	var drift := p.avatar.global_position.distance_to(p.body.feet_pos)
 	var facing := rad_to_deg(p.avatar.rotation.y)
 	var parts := _mesh_count(p.avatar)
 	p.third_person = false
 	p.update_local(1.0 / 60.0)
-	var arm_fp := p.arm_shown()
+	var head_fp := p.avatar.head_shown()
+	var limbas_fp := _mesh_count_visible(p.avatar)
 	_check("corpo do jogador tem malhas", parts >= 20, "caixas=%d" % parts)
 	var span := _mesh_span(p.avatar)
 	var top: float = span[1] - p.body.feet_pos.y
@@ -427,9 +439,10 @@ func _check_mechanics() -> void:
 	_check("avatar cola nos pes", drift < 0.002, "desvio=%.5f" % drift)
 	_check("avatar gira com o yaw", absf(facing - rad_to_deg(0.62)) < 0.01,
 		"corpo=%.2fdeg  esperado=%.2fdeg" % [facing, rad_to_deg(0.62)])
-	_check("corpo aparece na 3a pessoa", body_tp)
-	_check("corpo sai de cena na 1a pessoa", not p.avatar.visible)
-	_check("braco entra em cena na 1a pessoa", arm_fp)
+	_check("corpo inteiro em cena na 3a pessoa", head_tp and p.avatar.visible)
+	_check("cabeca sai de cena na 1a pessoa", not head_fp)
+	_check("bracos e pernas em cena na 1a pessoa", limbas_fp >= 10,
+		"malhas visiveis=%d" % limbas_fp)
 
 	# Colocar exige o pipeline real de input: a borda do clique nasce em `_input` e
 	# vira bloco no tick seguinte. Minerar pode continuar sintetico porque le o

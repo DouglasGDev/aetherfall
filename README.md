@@ -128,7 +128,7 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **119 checagens, 0 falhas, 27,9 s** — e no clone limpo, depois
+nesta máquina: **119 checagens, 0 falhas, 28,7 s** — e no clone limpo, depois
 do import: **119 checagens, 0 falhas**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
