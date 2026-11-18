@@ -1,7 +1,9 @@
 class_name Player
 extends Node3D
 ## Jogador local: predicao a 60 Hz (controle do proprio corpo), mundo autoritativo a
-## 20 Hz. Camara 1a/3a pessoa com efeitos gateados por modo (bob/punch so em 1a).
+## 20 Hz. Em 1a pessoa a lente mora no olho e o que aparece e o FPViewmodel (braco
+## + bloco na mao); em 3a pessoa a lente orbita e o que aparece e o PlayerAvatar.
+## Os efeitos de camera (bob/punch) so existem em 1a pessoa.
 
 signal block_broken(pos: Vector3i, block: int)
 signal block_placed(pos: Vector3i, block: int)
@@ -82,6 +84,9 @@ var world: VoxelWorld = null
 var body: VoxelBody = VoxelBody.new()
 var camera: Camera3D = Camera3D.new()
 var avatar: PlayerAvatar = PlayerAvatar.new()
+## O braco que a lente de 1a pessoa ve: filho da camera, entao segue cada
+## virada, cada bob e cada punch sem nenhuma conta propria.
+var viewmodel: FPViewmodel = FPViewmodel.new()
 var entity_provider: Callable
 
 var yaw: float = 0.0
@@ -135,6 +140,8 @@ func _ready() -> void:
 	camera.name = "Camera3D"
 	add_child(camera)
 	camera.current = true
+	viewmodel.name = "FPViewmodel"
+	camera.add_child(viewmodel)
 	avatar.name = "Avatar"
 	add_child(avatar)
 	_highlight_mat = StandardMaterial3D.new()
@@ -173,6 +180,7 @@ func setup(p_world: VoxelWorld, p_spawn: Vector3) -> void:
 	world = p_world
 	spawn_point = p_spawn
 	body.setup(p_world, p_spawn, DIMS_STAND)
+	viewmodel.set_atlas(p_world.atlas_texture())
 	feet_to_spawn(p_spawn)
 
 
@@ -193,6 +201,13 @@ func eye_position() -> Vector3:
 
 func selected_block() -> int:
 	return inv.selected_block()
+
+
+## O mesmo impulso nos dois bracos que existem: o rig gira o ombro em 3a pessoa,
+## o view model corta na frente da lente em 1a. Cada um so aparece no seu modo.
+func _swing_arms() -> void:
+	avatar.swing()
+	viewmodel.swing()
 
 
 ## Bancada a no maximo `Recipes.BENCH_RANGE` metros do jogador. Varrido sobre a
@@ -360,12 +375,14 @@ func update_local(delta: float) -> void:
 	_update_avatar(delta)
 
 
-## O no do Player fica parado (quem anda e body.feet_pos), entao o avatar e
-## reposicionado a cada tick e gira com o yaw: -Z local = para frente.
+## Apresentacao do corpo nos dois modos: o rig de 3a pessoa cola nos pes e gira
+## com o yaw; o view model de 1a pessoa mora na camera e so existe para a lente.
+## Cada modo esconde o outro no mesmo tick -- nunca os dois no quadro.
 func _update_avatar(delta: float) -> void:
 	var fp := not third_person
 	if fp != avatar.first_person:
 		avatar.set_first_person(fp)
+	viewmodel.visible = fp
 	avatar.walk_speed = Vector3(body.velocity.x, 0.0, body.velocity.z).length()
 	avatar.vertical = body.velocity.y
 	avatar.on_ground = body.on_ground
@@ -379,6 +396,13 @@ func _update_avatar(delta: float) -> void:
 	avatar.global_position = body.feet_pos
 	avatar.global_rotation = Vector3(0.0, yaw, 0.0)
 	avatar.advance(delta)
+	viewmodel.walk_speed = avatar.walk_speed
+	viewmodel.vertical = avatar.vertical
+	viewmodel.on_ground = body.on_ground
+	viewmodel.mining = avatar.mining
+	viewmodel.dead = not alive
+	viewmodel.block_id = selected_block()
+	viewmodel.advance(delta)
 
 
 func _wish_direction() -> Vector3:
@@ -606,7 +630,7 @@ func _apply_actions(delta: float) -> void:
 		if _target_entity != null and _attack_cd <= 0.0:
 			_attack_cd = 0.42
 			_punch = minf(_punch + 0.10, 0.5)
-			avatar.swing()
+			_swing_arms()
 			# golpe basico devolve vigor, como o ataque basico do Veloren recupera stamina
 			energy = minf(energy + ATTACK_ENERGY, max_energy)
 			attacked.emit(_target_entity, ATTACK_DAMAGE)
@@ -635,7 +659,7 @@ func _mine_target() -> void:
 		return
 	if world.set_block(target_voxel, BlockDefs.Block.AIR):
 		_mining_accum = 0.0
-		avatar.swing()
+		_swing_arms()
 		inv.add(drop, 1)
 		block_broken.emit(target_voxel, b)
 		acted.emit("break", Vector3(target_voxel) + Vector3(0.5, 0.5, 0.5))
@@ -661,7 +685,7 @@ func _try_place() -> void:
 	# um voxel ocupado nao pode custar um bloco do inventario
 	if world.set_block(place_voxel, b):
 		inv.consume_selected(1)
-		avatar.swing()
+		_swing_arms()
 		block_placed.emit(place_voxel, b)
 		acted.emit("place", Vector3(place_voxel) + Vector3(0.5, 0.5, 0.5))
 
@@ -687,13 +711,10 @@ func _update_camera(delta: float) -> void:
 	var punch_pitch := _punch * 0.10 if not third_person else 0.0
 	var final_rot := rot.rotated(rot.z, bob_roll)
 	final_rot = final_rot.rotated(final_rot.x, punch_pitch)
-	# Em 1a pessoa a camera recua 0,60 m pela propria direcao de visao: com o
-	# tronco fora de cena, maos, cinto, coxas, canelas e pes ficam no quadro
-	# mesmo com o pitch nivelado, e o olhar para baixo mostra o corpo inteiro
-	# acima da hotbar. O recuo e colinear ao raio de mira: a mira segue exata
-	# sob o crosshair em qualquer pitch.
-	var fp_back := final_rot.z.normalized() * 0.60 if not third_person else Vector3.ZERO
-	camera.global_transform = Transform3D(final_rot, eye + fp_back + Vector3(0.0, bob_y, 0.0))
+	# Em 1a pessoa a lente mora no olho, sem recuo: o raio de mira sai do mesmo
+	# ponto, entao o crosshair e exato por construcao em qualquer pitch, e o corpo
+	# de 3a pessoa esta fora de cena -- quem ocupa o quadro e o view model.
+	camera.global_transform = Transform3D(final_rot, eye + Vector3(0.0, bob_y, 0.0))
 
 	if third_person:
 		# orbita na altura dos olhos, como o Minecraft: a mira passa sobre a

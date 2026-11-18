@@ -19,36 +19,37 @@ arquivo de dados deles. Ver §08 "Licenças".
 
 | Ação | Veloren `[CLAIMED]` | Aetherfall (código) |
 |---|---|---|
-| Andar | `Shift`/analógico, velocidade por espécie | `WALK_SPEED = 4,3 m/s` [player.gd:24](../../src/entities/player.gd); corpo `0,62 × 1,80 × 0,62` [player.gd:17](../../src/entities/player.gd) |
-| Correr | `Shift`, drena vigor | `SPRINT_SPEED = 6,9` [player.gd:25](../../src/entities/player.gd), dreno `8,0/s` [player.gd:40](../../src/entities/player.gd) |
-| Agachar | `Ctrl`, entra em buraco de 1 bloco, anda devagar | `CROUCH_SPEED = 2,1` [player.gd:26](../../src/entities/player.gd), corpo agachado `0,62 × 1,15 × 0,62` [player.gd:18](../../src/entities/player.gd), olho `1,62 → 0,98` [player.gd:19-20](../../src/entities/player.gd) |
-| Pular | `Space` | `JUMP_SPEED = 8,2 m/s` [player.gd:30](../../src/entities/player.gd), coyote `0,12 s` [player.gd:32](../../src/entities/player.gd) e buffer `0,15 s` [player.gd:33](../../src/entities/player.gd) |
-| Nadar | `Space` bate-perna, afunda sem ele | subida `3,6 m/s` [player.gd:31](../../src/entities/player.gd); empuxo e remada também no lobo (§8) |
-| Planar | `Ctrl` no ar com capa/kit de voo, `Space` para sair | segurar `Ctrl` no ar [player.gd:408-420](../../src/entities/player.gd): afundo `1,8 m/s`, gravidade `0,16` do normal [player.gd:58-59](../../src/entities/player.gd), mergulho olhando para baixo ganha `5,0 m/s` de horizontal até `11,5` e afunda `4,8` [player.gd:54-60](../../src/entities/player.gd), estol a `2,4` [player.gd:55](../../src/entities/player.gd) |
-| Rolamento | botão do meio, atravessa golpe | botão do meio [input_actions.gd](../../src/input/input_actions.gd): custo `14` de vigor, `10,5 m/s` por `0,35 s`, invencibilidade `0,45 s`, recarga `0,9 s`, buffer `0,18 s` [player.gd:45-50](../../src/entities/player.gd) |
+| Andar | `Shift`/analógico, velocidade por espécie | `WALK_SPEED = 4,3 m/s` [player.gd:31](../../src/entities/player.gd); corpo `0,62 × 1,80 × 0,62` [player.gd:24](../../src/entities/player.gd) |
+| Correr | `Shift`, drena vigor | `SPRINT_SPEED = 6,9` [player.gd:32](../../src/entities/player.gd), dreno `8,0/s` [player.gd:47](../../src/entities/player.gd) |
+| Agachar | `Ctrl`, entra em buraco de 1 bloco, anda devagar | `CROUCH_SPEED = 2,1` [player.gd:33](../../src/entities/player.gd), corpo agachado `0,62 × 1,15 × 0,62` [player.gd:25](../../src/entities/player.gd), olho `1,62 → 0,98` [player.gd:26-27](../../src/entities/player.gd) |
+| Pular | `Space` | `JUMP_SPEED = 8,2 m/s` [player.gd:37](../../src/entities/player.gd), coyote `0,12 s` [player.gd:39](../../src/entities/player.gd) e buffer `0,15 s` [player.gd:40](../../src/entities/player.gd) |
+| Nadar | `Space` bate-perna, afunda sem ele | subida `3,6 m/s` [player.gd:38](../../src/entities/player.gd); empuxo e remada também no lobo (§8) |
+| Planar | `Ctrl` no ar com capa/kit de voo, `Space` para sair | segurar `Ctrl` no ar [player.gd:489-491](../../src/entities/player.gd): afundo `1,8 m/s`, gravidade `0,16` do normal [player.gd:65-66](../../src/entities/player.gd), mergulho olhando para baixo ganha `5,0 m/s` de horizontal até `11,5` e afunda `4,8` [player.gd:60-67](../../src/entities/player.gd), estol a `2,4` [player.gd:62](../../src/entities/player.gd) |
+| Rolamento | botão do meio, atravessa golpe | botão do meio [input_actions.gd](../../src/input/input_actions.gd): custo `14` de vigor, `10,5 m/s` por `0,35 s`, invencibilidade `0,45 s`, recarga `0,9 s`, buffer `0,18 s` [player.gd:52-57](../../src/entities/player.gd) |
 | Escalada | `Space` contra parede, drena vigor | **não adaptado** `[TARGET]` (§9) |
 
 Aceleramos no chão com `46 m/s²` e no ar com `11 m/s²`, com atrito `13`
-[player.gd:27-29](../../src/entities/player.gd) e teto de `14 m/s` no ar
-[player.gd:63](../../src/entities/player.gd) — números nossos, escolhidos por sensação
-medida nos probes de câmera, não copiados de lá.
+[player.gd:34-36](../../src/entities/player.gd). No ar não há teto horizontal: a velocidade
+só converge para a mesma meta do solo (`6,9` correndo) [player.gd:462-470](../../src/entities/player.gd),
+e a queda para em `42 m/s` [voxel_body.gd:6,39-40](../../src/entities/voxel_body.gd) —
+números nossos, escolhidos por sensação medida nos probes de câmera, não copiados de lá.
 
 `Ctrl` é a mesma tecla de agachar e de planar, como no Veloren: no chão é agachar, caindo
-é planar [input_actions.gd:19-22](../../src/input/input_actions.gd).
+é planar [input_actions.gd:25,28](../../src/input/input_actions.gd).
 
 ## 2. Vigor
 
 Veloren tem *vigor* (stamina): corrida e voo gastam, golpes básicos recuperam, sem vigor
 não se corre [CLAIMED]. Aqui:
 
-- teto `100` [player.gd:38](../../src/entities/player.gd);
+- teto `100` [player.gd:45,119](../../src/entities/player.gd);
 - corrida no chão drena `8/s`, e fora dela o vigor recupera `12/s`
-  [player.gd:39-40,438-446](../../src/entities/player.gd);
-- golpe que acerta **devolve** `6` [player.gd:42,564](../../src/entities/player.gd) — a
+  [player.gd:46-47,520-528](../../src/entities/player.gd);
+- golpe que acerta **devolve** `6` [player.gd:49,635](../../src/entities/player.gd) — a
   mesma economia do ataque básico deles;
-- rolamento custa `14` fixo [player.gd:45](../../src/entities/player.gd);
+- rolamento custa `14` fixo [player.gd:52](../../src/entities/player.gd);
 - zerou, a corrida trava (`_sprint_locked`) e só volta quando o vigor subir de novo aos
-  `18` [player.gd:41,441-445](../../src/entities/player.gd) — `18` é soleira de
+  `18` [player.gd:48,527-528](../../src/entities/player.gd) — `18` é soleira de
   reentrada, não taxa de recuperação;
 - planar **não** gasta vigor no nosso slice `[DECIDED]`: é o que permite o loop de queda
   alto sem transformar travessia em contagem de segundos.
@@ -61,12 +62,13 @@ um golpe só, e é honesto sobre isso:
 
 | Item | Aetherfall |
 |---|---|
-| Dano | `14` [player.gd:34](../../src/entities/player.gd) |
-| Recarga | `0,42 s` [player.gd:560](../../src/entities/player.gd) |
-| Alcance | `5,5 m` medidos do corpo, mira saindo da câmera em 3ª pessoa [player.gd:21,500-534](../../src/entities/player.gd) — o alcance no corpo é a mesma decisão do `aim_point` deles |
-| Recuo de câmera no golpe | `_punch` `+0,10` limitado a `0,5` [player.gd:561](../../src/entities/player.gd), só em 1ª pessoa [player.gd:605-620](../../src/entities/player.gd) |
-| Alvo vivo vs. bloco | o raio testa entidades antes do voxel: mira em criatura não lavra [player.gd:512-526](../../src/entities/player.gd) |
-| Efeito no lobo | `8,5` de empurrada horizontal + `2,4` vertical e `0,45 s` sem steering [wolf.gd:39-41,463-476](../../src/entities/wolf.gd) |
+| Dano | `14` [player.gd:41](../../src/entities/player.gd) |
+| Recarga | `0,42 s` [player.gd:631](../../src/entities/player.gd) |
+| Alcance | `5,5 m` medidos do corpo, mira saindo do olho em 1ª pessoa e da câmera em 3ª [player.gd:28,582-608](../../src/entities/player.gd) — o alcance no corpo é a mesma decisão do `aim_point` deles |
+| Recuo de câmera no golpe | `_punch` `+0,10` limitado a `0,5` [player.gd:632](../../src/entities/player.gd), aplicado só em 1ª pessoa [player.gd:710-711](../../src/entities/player.gd) |
+| Arco visível do golpe | view model de 1ª pessoa: ombro `+0,30` no arma e `-0,15` no corte, cotovelo `+0,30`/`-0,45`, punho `+0,05 m`→`-0,10 m` ao longo do eixo da lente [fp_viewmodel.gd:130-153](../../src/entities/fp_viewmodel.gd); o mesmo impulso gira também o rig de 3ª pessoa [player.gd:206-210](../../src/entities/player.gd) |
+| Alvo vivo vs. bloco | o raio testa entidades antes do voxel: mira em criatura não lavra [player.gd:592-608](../../src/entities/player.gd) |
+| Efeito no lobo | `5,0` de empurrada horizontal + `2,4` vertical e `0,45 s` sem steering [wolf.gd:39-41,463-476](../../src/entities/wolf.gd) |
 
 Bloqueio, parry, combos, *poise* e dano por arma: **não adaptados** (§9).
 
@@ -78,19 +80,19 @@ bloco, sem ferramenta e sem XP:
 - `STONE 0,95 · WOOD 0,55 · GRASS 0,38 · DIRT 0,35 · SAND 0,30 · SNOW 0,25 · LEAVES 0,22`,
   padrão `0,4`. A tabela é o registro de blocos, não do jogador
   ([block_defs.gd:93,114-122](../../src/world/block_defs.gd)); o `Player` pergunta
-  `BlockDefs.hardness()` [player.gd:587](../../src/entities/player.gd). Os materiais de
+  `BlockDefs.hardness()` [player.gd:611](../../src/entities/player.gd). Os materiais de
   craft do documento 11 já chegam com dureza própria (bruta `0,85` · tabua `0,45` ·
   bancada `0,50` · vidro `0,10`);
 - o acumulador anda em segundos reais: `≈1 s` por unidade de dureza, então pedra leva
-  `0,95 s` e folha `0,22 s` [player.gd:605-616](../../src/entities/player.gd);
-- progresso por voxel guardado ao trocar de alvo [player.gd:595-599](../../src/entities/player.gd);
+  `0,95 s` e folha `0,22 s` [player.gd:637-640](../../src/entities/player.gd);
+- progresso por voxel guardado ao trocar de alvo [player.gd:619-623](../../src/entities/player.gd);
 - colocar bloco: buffer de `0,22 s`, recarga `0,16 s`, recusa se o bloco cair dentro do
-  próprio corpo [player.gd:41,619-621,659](../../src/entities/player.gd);
+  próprio corpo [player.gd:43,680-683](../../src/entities/player.gd);
 - **lava tem drop e o drop tem número**: o que sai do mundo é o que o registro diz
   (pedra → bruta, grama → terra, folha → nada)
   [block_defs.gd:140-144](../../src/world/block_defs.gd), e entra como **1 item** no
   inventário — que recusou antes, quando não havia onde pôr
-  [player.gd:628-641](../../src/entities/player.gd);
+  [player.gd:652-665](../../src/entities/player.gd);
 - inventário de 36 slots com pilha por bloco, e a hotbar são **10 teclas** (`1-9,0`)
   pinadas nesses slots, não um depósito separado
   [inventory.gd:24-33](../../src/items/inventory.gd),
@@ -99,26 +101,26 @@ bloco, sem ferramenta e sem XP:
   [documento 11](11-inventory-crafting.md).
 
 Cada bloco lavrado injeta **0,42 no canal de trabalho** do Éter e cada colocação `0,20`
-[main.gd:226-228](../../src/main.gd) — nada disso existe no Veloren; é a nossa trilha
+[main.gd:241-246](../../src/main.gd) — nada disso existe no Veloren; é a nossa trilha
 auditável (§8).
 
 ## 5. Respiração e afogamento
 
-Ar `14 s` [player.gd:63](../../src/entities/player.gd), `7` de dano por período de `1 s`
-sob água [player.gd:65-66,465-483](../../src/entities/player.gd), e recarga de `14/s` ao
+Ar `14 s` [player.gd:70](../../src/entities/player.gd), `7` de dano por período de `1 s`
+sob água [player.gd:72-73,547-559](../../src/entities/player.gd), e recarga de `14/s` ao
 emergir — ou seja, ~1 s para encher, como emergir neles `[CLAIMED]`.
 
 ## 6. Queda
 
 Impacto acima de `14 m/s` machuca: `3,5` de dano por `m/s` excedente, teto de `55`
-[player.gd:68-70,485-492](../../src/entities/player.gd). Água perdoa e planar nunca chega
+[player.gd:74-77,567-573](../../src/entities/player.gd). Água perdoa e planar nunca chega
 à velocidade de corte. Sem queda no Veloren? Não — eles têm dano de queda; os números são
 nossos.
 
 ## 7. Regeneração fora de combate
 
 `8 s` sem dano, exigindo vigor acima de `25`, regenerando `1,2 hp/s`
-[player.gd:72-74,494-498](../../src/entities/player.gd). Comida e poção como fonte de cura
+[player.gd:79-81,576-579](../../src/entities/player.gd). Comida e poção como fonte de cura
 são **não adaptadas** (§9).
 
 ## 8. Criaturas: o que virou comportamento
@@ -161,7 +163,7 @@ Nada aqui está em código — menos as linhas que o
 | Arcos, lanças arremessadas, cetros e magia de projétil | `[TARGET]` P6; magia existe como **Tecelagem** editando o Éter (§02), não como cast bar |
 | 6 espécies, personagens, opção *hardcore* | fora de escopo — solo humano + mentes locais (premissa 3 do README) |
 | Multiplayer | `[TARGET]` P5 |
-| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:367](../../src/main.gd). `[TARGET]` P7 |
+| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:420-427](../../src/main.gd). `[TARGET]` P7 |
 | Agricultura/plantação | **não existe no código**: só `_plant_tree` no gerador. `[TARGET]` P7 |
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de

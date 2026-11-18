@@ -18,11 +18,12 @@ Legenda de status é a do [`README.md`](README.md) da pasta.
 | Inventário | 36 slots, grade 4×9, painel em `I` [hud.gd:445-537](../../src/ui/hud.gd) | `painel com 36 celulas`, `sem bancada so mostra as receitas de mao` |
 | Hotbar | 10 pinos sobre os mesmos slots [inventory.gd:153-165](../../src/items/inventory.gd) | `hotbar tem 10 teclas pinadas nos slots`, `tecla 3 troca o pino` |
 | Criar item novo | lista de receitas [recipes.gd:31-43](../../src/items/recipes.gd) | `1 madeira -> 4 tabuas, com o preco cobrado`, `a cadeia ate a bancada fecha` |
-| Estação de craft | bancada é um bloco, casado por distância [player.gd:201-210](../../src/entities/player.gd) | `sem bancada so mostra as receitas de mao` |
+| Estação de craft | bancada é um bloco, casado por distância [player.gd:216-225](../../src/entities/player.gd) | `sem bancada so mostra as receitas de mao` |
 | Mais blocos | 4 ids novos: bruta, tabua, vidro, bancada [block_defs.gd:123-137](../../src/world/block_defs.gd) | `pano de vidro sozinho tem 6 faces`, `vidro colado nao desenha a face de contato` |
-| Construir com o que tem | `consume_selected` no colocar [player.gd:644-676](../../src/entities/player.gd) | `colocar gastou um da pilha` |
+| Construir com o que tem | `consume_selected` no colocar [player.gd:668-690](../../src/entities/player.gd) | `colocar gastou um da pilha` |
 
-Os nomes de passo acima existem na lista `_steps` ([smoke_test.gd:63-94](../../tests/smoke_test.gd)).
+Os nomes de checagem acima vivem na suíte, e a lista `_steps`
+([smoke_test.gd:63-95](../../tests/smoke_test.gd)) é a ordem dos passos que os medem.
 Contagem de checagens e tempo de corrida não vivem aqui: são publicados no
 [`README.md`](../../README.md) da raiz, derivados da corrida.
 
@@ -111,11 +112,11 @@ O Veloren escrevia a sobra de volta no mundo como entidade de item
 seria pior que o problema que resolve. Então o portão é **antes**:
 
 - `Player._mine_target` pergunta `inv.space_for(drop, 1)` **antes** do `set_block(AIR)`
-  ([player.gd:628-641](../../src/entities/player.gd)). Sem espaço, o bloco continua onde
+  ([player.gd:652-665](../../src/entities/player.gd)). Sem espaço, o bloco continua onde
   está, o acumulador zera e aparece no toast `inventario cheio: pedra bruta nao tem onde
   entrar`. A lavra não consome o bloco para jogar o drop fora.
 - `Player.close_panel` recusa fechar com pilha na mão que não tem para onde voltar
-  ([player.gd:285-291](../../src/entities/player.gd)): o `ESC` vira aviso, não perdão.
+  ([player.gd:300-306](../../src/entities/player.gd)): o `ESC` vira aviso, não perdão.
 - `Recipes.can_craft` inclui o espaço de **saída** no portão
   ([recipes.gd:71-78](../../src/items/recipes.gd)), então não existe meio-craft: `craft`
   roda o portão inteiro antes do primeiro `take` e, se falhar, não toca em nada.
@@ -137,12 +138,12 @@ Quatro receitas ([recipes.gd:31-43](../../src/items/recipes.gd)):
 | 1 vidro | 2 areia | bancada | areia em vidro **no lugar** de forja/caldeirão: simplificação explícita, até existir estação de calor (o documento 10 trata de lava) `[TARGET]` |
 
 A estação é um bloco no mundo, casado por distância, no modelo do sprite do Veloren:
-`Main._benches` mantém a lista ([main.gd:243-251](../../src/main.gd)) — entra no
+`Main._benches` mantém a lista ([main.gd:249-258](../../src/main.gd)) — entra no
 `block_placed`, sai no `block_broken`, e é **reconstruída do diário de edições** no load
-([main.gd:378-382](../../src/main.gd)), então não há estado de bancada para corromper.
+([main.gd:390-394](../../src/main.gd)), então não há estado de bancada para corromper.
 `Player.bench_near()` pergunta ao `bench_provider` (um `Callable` injetado, não uma
 referência de cena) e compara com `Recipes.BENCH_RANGE = 5,0`
-([player.gd:201-210](../../src/entities/player.gd)). A varredura é de ~5 entradas, não do
+([player.gd:216-225](../../src/entities/player.gd)). A varredura é de ~5 entradas, não do
 mundo: é a mesma regra do documento 10 — nunca varrer o mundo por frame.
 
 Conhecimento de receita **não** foi adaptado: sem pergaminho, sem `RecipeBook`. O filtro
@@ -156,17 +157,19 @@ O vidro é sólido para pisar e **não** é opaco para o vizinho. A tentação e
 e um painel de vidro viraria um cubo leitoso. Então a face ganhou uma pergunta própria,
 `draw_of` ∈ {OPAQUE, ALPHA, LIQUID} ([block_defs.gd:31-35](../../src/world/block_defs.gd)),
 e a malharia decide a face por ela
-([voxel_world.gd:457-477](../../src/world/voxel_world.gd)):
+([voxel_world.gd:463-483](../../src/world/voxel_world.gd)):
 
 - vizinho do mesmo bloco não tem face entre si: dois panos de vidro colados não desenham
   a face interna (a suíte mede 20 tri no par, não 24);
-- face ALPHA é desenhada contra vizinho opaco, mas **não** contra outra ALPHA;
+- face ALPHA é cortada por vizinho opaco: o pano encostado na parede não desenha a face,
+  e ela só aparece contra ar ou água;
 - a malharia passou a emitir uma terceira superfície com `_mat_glass`
   (`TRANSPARENCY_ALPHA`, rugosidade 0,25, `NEAREST_WITH_MIPMAPS` —
-  [voxel_world.gd:92-98](../../src/world/voxel_world.gd), aplicada em `:493`).
+  [voxel_world.gd:92-98](../../src/world/voxel_world.gd), aplicada em `:505`).
   `LINEAR` borrava o tile, que é quase puro alfa;
 - o documento 10 pediu `opaco = 0` para folha em `Draw.OPAQUE`: as duas coisas continuam
-  separadas. O tile do vidro escreve alfa por pixel (0,85 na borda, 0,10 no campo).
+  separadas. O tile do vidro escreve alfa por pixel — 0,85 na borda, 0,30 no anel
+  interno, 0,10 no campo ([voxel_atlas.gd:214-221](../../src/world/voxel_atlas.gd)).
 
 ## 11.8 HUD: hotbar com número e painel de 36 celulas
 
@@ -180,23 +183,23 @@ em ambar, coluna de receitas à direita e rodapé de teclas. Sem mouse: o cursor
 o mesmo teclado que anda o personagem, `E` pega/solta, `Q` parte, `TAB` troca de receita,
 `ENTER` crafta, e as dez teclas **repinam** o celula sob o cursor
 ([hud.gd:554-600](../../src/ui/hud.gd)). Com o painel aberto o `Player` segura o
-movimento, o sprint e o planar ([player.gd:387,457,465,616](../../src/entities/player.gd))
+movimento, o sprint, o planar e as mãos ([player.gd:411,481,489,627](../../src/entities/player.gd))
 — senão abrir o inventário seria andar de lado para sempre.
 
 Quem abre a tela é o `Player`, não o HUD: `panel_changed` é um sinal e o HUD escuta
-([player.gd:18](../../src/entities/player.gd), [main.gd:258](../../src/main.gd)). O
+([player.gd:20](../../src/entities/player.gd), [main.gd:89](../../src/main.gd)). O
 refresh do conteúdo roda na cadência `REFRESH = 0,1 s` do `_process` do HUD, igual aos
 slots.
 
 ## 11.9 Persistência: campo aditivo, sem bump de schema
 
-`save_game` escreve `"inv": player.inv.to_dict()` ([main.gd:318](../../src/main.gd)); o
+`save_game` escreve `"inv": player.inv.to_dict()` ([main.gd:330](../../src/main.gd)); o
 formato é `{slots: [[i,b,n]…], pins: […], sel: n, hand: [id,n]}` — só os slots com
 quantidade, então um inventário vazio custa ~2 bytes de JSON e não 36 triples.
 
 `SaveManager.SCHEMA` continua **1**. O campo é aditivo e o loader não tem whitelist de
 chaves: `load_game` usa `inv` quando existe e, quando não existe, aplica o kit
-([main.gd:361-363](../../src/main.gd)) — um save de antes da hotbar infinita não
+([main.gd:372-375](../../src/main.gd)) — um save de antes da hotbar infinita não
 acordaria um jogador sem blocos. O `SCHEMA = 2` está reservado ao rebase de Y do
 documento 10, que é a única mudança que invalida saves de verdade. O `from_dict` faz
 `clampi` em índice, id e quantidade, então um save corrompido não indexa fora do

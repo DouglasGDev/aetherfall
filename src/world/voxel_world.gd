@@ -98,6 +98,12 @@ func _build_materials() -> void:
 	_mat_glass.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 
 
+## O atlas do mundo, emprestado ao view model de 1a pessoa: o bloco na mao amostra
+## os mesmos tiles do bloco na parede, nao uma reamostragem a parte.
+func atlas_texture() -> Texture2D:
+	return _atlas
+
+
 func generate(p_seed: int) -> void:
 	_release_mesh_nodes()
 	_flat_ready = false
@@ -582,3 +588,49 @@ func _emit_face(
 
 static func _hash3(x: int, y: int, z: int) -> int:
 	return absi((x * 73856093) ^ (y * 19349663) ^ (z * 83492791))
+
+
+## Cubo de bloco fora do mundo: as MESMAS tabelas de face, tile e tint da
+## malharia, entao o item na mao e o bloco que esta na parede, so que menor e
+## centrado na propria origem. 24 vertices, um par de triangulos CW por face.
+static func block_cube_mesh(b: int, size: float) -> ArrayMesh:
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	var idx := PackedInt32Array()
+	for f in 6:
+		var tile: int = BlockDefs.tile_for(b, FACE_TILE[f])
+		var n: Vector3i = FACE_NORMALS[f]
+		var corners: Array = FACE_CORNERS[f]
+		var face_uvs: Array = FACE_UVS[f]
+		var tu: float = float(tile % VoxelAtlas.GRID) / VoxelAtlas.GRID
+		var tv: float = float(int(tile / VoxelAtlas.GRID)) / VoxelAtlas.GRID
+		var span: float = 1.0 / VoxelAtlas.GRID
+		var inset: float = 0.35 / float(VoxelAtlas.GRID * VoxelAtlas.TILE)
+		var base: int = verts.size()
+		for k in 4:
+			var corner: Vector3i = corners[k]
+			verts.append((Vector3(corner) - Vector3(0.5, 0.5, 0.5)) * size)
+			norms.append(Vector3(n))
+			uvs.append(Vector2(
+				tu + inset + face_uvs[k].x * (span - 2.0 * inset),
+				tv + inset + face_uvs[k].y * (span - 2.0 * inset)))
+			var bright: float = clampf(float(FACE_TINT[f]), 0.05, 1.2)
+			cols.append(Color(bright, bright, bright, 1.0))
+		idx.append(base)
+		idx.append(base + 2)
+		idx.append(base + 1)
+		idx.append(base)
+		idx.append(base + 3)
+		idx.append(base + 2)
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_NORMAL] = norms
+	arr[Mesh.ARRAY_TEX_UV] = uvs
+	arr[Mesh.ARRAY_COLOR] = cols
+	arr[Mesh.ARRAY_INDEX] = idx
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	return m

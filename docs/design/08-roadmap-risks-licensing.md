@@ -31,7 +31,7 @@ código que existe hoje.
 | **P3** | não iniciada | — | tudo |
 | **P4** | degrau existe, gate distante | `MindOracle` falando HTTP com um `llama-server` local, uma requisição em voo, degradação com recuo de 30 s e a linha `ia:` no HUD [ai/mind_oracle.gd](../../src/ai/mind_oracle.gd); pacote `mind-small` (Qwen3.5-4B Q4_K_M, Apache-2.0) baixado por `tools/fetch_models.ps1` com SHA256 e licença registrados; throughput medido em §04.5.1 | `native/af_mind` embutido, schemas GBNF, `oracle_cache`, embeddings/`semantic_index`, grounding, `ModelPackFetcher` dentro do jogo, `ai_eval` com % de saídas válidas |
 | **P5** | não iniciada | — | tudo |
-| **P6/P7** | não iniciadas | mecânicas de locomoção, vigor, queda, respiração e regeneração já existem e estão documentadas em [§09](09-veloren-mecanics-adaptation.md) — são fundação de gameplay, não progressão | rotas de progressão, 6 chefes, Crônica na UI, port e publicação |
+| **P6/P7** | não iniciadas | mecânicas de locomoção, vigor, queda, respiração e regeneração já existem e estão documentadas em [§09](09-veloren-mechanics-adaptation.md) — são fundação de gameplay, não progressão | rotas de progressão, 6 chefes, Crônica na UI, port e publicação |
 
 Consequência prática: o projeto está **antes** de P1 e **sem nenhum gate fechado**. Isso
 não é pessimismo, é o estado que a suíte mostra — 5 lobos, um jogador, um mundo editado,

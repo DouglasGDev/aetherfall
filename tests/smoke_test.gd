@@ -481,6 +481,98 @@ func _mesh_span(n: Node) -> Array:
 	return [lo, hi]
 
 
+## Pixels do quadro que o jogador ve, calculados da lente (fov vertical) e da
+## resolucao do project.godot -- NAO do viewport do processo: em headless ele e
+## 64x64, e medir o enquadramento nele daria um 1:1 que ninguem jogando ve.
+func _screen_res() -> Vector2:
+	return Vector2(float(ProjectSettings.get_setting("display/window/size/viewport_width")),
+		float(ProjectSettings.get_setting("display/window/size/viewport_height")))
+
+
+func _lens_px(cam: Camera3D, world: Vector3, res: Vector2) -> Vector2:
+	var c := cam.global_transform.affine_inverse() * world
+	var tan := tan(deg_to_rad(cam.fov) * 0.5)
+	var ndc_y := (c.y / -c.z) / tan
+	var ndc_x := (c.x / -c.z) / (tan * (res.x / res.y))
+	return Vector2((ndc_x * 0.5 + 0.5) * res.x, (0.5 - ndc_y * 0.5) * res.y)
+
+
+## Caixa projetada do cubo na mao, em pixels do quadro: [x0, y0, x1, y1]; vazia
+## quando o punho esta closed ou algum canto caiu atras da lente. E o que prende
+## o enquadramento do view model: os arcos ja jogaram o bloco pela borda de cima,
+## e contagem de malhas nao percebe isso.
+func _vm_frame(cam: Camera3D, held: MeshInstance3D) -> Array:
+	if held == null or not held.visible:
+		return []
+	var g := held.global_transform
+	var h := FPViewmodel.HELD_SIZE * 0.5
+	var back := cam.global_transform.affine_inverse()
+	var res := _screen_res()
+	var lo := Vector2(99999.0, 99999.0)
+	var hi := Vector2(-99999.0, -99999.0)
+	for sx in [-1, 1]:
+		for sy in [-1, 1]:
+			for sz in [-1, 1]:
+				var w := g * Vector3(sx * h, sy * h, sz * h)
+				if (back * w).z > 0.0:
+					return []
+				var pt := _lens_px(cam, w, res)
+				lo.x = minf(lo.x, pt.x)
+				lo.y = minf(lo.y, pt.y)
+				hi.x = maxf(hi.x, pt.x)
+				hi.y = maxf(hi.y, pt.y)
+	return [lo.x, lo.y, hi.x, hi.y]
+
+
+func _in_frame(fr: Array, res: Vector2) -> bool:
+	return fr.size() == 4 and fr[0] >= 0.0 and fr[1] >= 0.0 \
+		and fr[2] <= res.x and fr[3] <= res.y
+
+
+func _fmt_frame(fr: Array) -> String:
+	if fr.is_empty():
+		return "punho closed"
+	return "[%d..%d x %d..%d]" % [int(fr[0]), int(fr[2]), int(fr[1]), int(fr[3])]
+
+
+## Malhas em cena que desenham sem teste de profundidade.
+func _mesh_count_no_depth(n: Node) -> int:
+	var total := 0
+	if n is MeshInstance3D and (n as MeshInstance3D).is_visible_in_tree():
+		var mi := n as MeshInstance3D
+		var m := mi.material_override as StandardMaterial3D
+		if m == null:
+			m = mi.mesh.material as StandardMaterial3D
+		if m != null and m.no_depth_test:
+			total += 1
+	for c in n.get_children():
+		total += _mesh_count_no_depth(c)
+	return total
+
+
+## Roda um arco do view model tick a tick e devolve [ombro minimo, ombro maximo,
+## ticks com o cubo fora do quadro]. `punch` dispara o golpe; sem ele e a lavra,
+## que precisa de alguns ticks para assentar o blend antes de medir o ciclo.
+func _vm_arc(vm: FPViewmodel, cam: Camera3D, res: Vector2, ticks: int, punch: bool) -> Array:
+	if punch:
+		vm.swing()
+	else:
+		vm.mining = true
+		for i in 18:
+			vm.advance(1.0 / 60.0)
+	var lo := 999.0
+	var hi := -999.0
+	var fora := 0
+	for i in ticks:
+		vm.advance(1.0 / 60.0)
+		var a := vm.arm_angles().x
+		lo = minf(lo, a)
+		hi = maxf(hi, a)
+		if not _in_frame(_vm_frame(cam, vm.held_mesh()), res):
+			fora += 1
+	return [lo, hi, fora]
+
+
 func _chunk_triangles(c: VoxelChunk) -> int:
 	var n := 0
 	if c.mesh_instance == null or c.mesh_instance.mesh == null:
@@ -649,13 +741,11 @@ func _check_mechanics() -> void:
 			p.inv.count_of(drop) == drop0 + want and p.inv.item_count() == items0 + want,
 			"bloco=%d  drop=%d  pilha=%d->%d" % [was, drop, drop0, p.inv.count_of(drop)])
 
-	# Corpo do jogador: o rig e o unico corpo no quadro nas duas vistas. Em 1a
-	# pessoa cabeca, tronco, emblemas e mochila saem (a camera mora dentro do
-	# cranio; o tronco virava slab na frente da lente e a mochila tapava o
-	# proprio corpo no olhar para baixo) e bracos, pernas e cinto ficam — o
-	# ombro nao sai junto, so estreita, porque ocultar o deltoides deixava o
-	# antebraco pendurado sem ligacao ao corpo. Na 3a tudo em cena, nos pes e
-	# girando com o yaw.
+	# Corpo do jogador: um modelo por vista. Em 3a pessoa o rig inteiro esta em
+	# cena e o view model sai do quadro; em 1a e ao contrario — a camera mora no
+	# olho, o corpo de 3a pessoa nao entra (na lente ele virava slab sobre o
+	# alvo) e o que se ve e o braco direito do view model segurando o bloco
+	# selecionado, com o arco de lavra e o de golpe visiveis.
 	p.yaw = 0.62
 	p.third_person = true
 	p.update_local(1.0 / 60.0)
@@ -663,23 +753,100 @@ func _check_mechanics() -> void:
 	var drift := p.avatar.global_position.distance_to(p.body.feet_pos)
 	var facing := rad_to_deg(p.avatar.rotation.y)
 	var parts := _mesh_count(p.avatar)
-	p.third_person = false
-	p.update_local(1.0 / 60.0)
-	var head_fp := p.avatar.head_shown()
-	var limbas_fp := _mesh_count_visible(p.avatar)
-	_check("corpo do jogador tem malhas", parts >= 20, "caixas=%d" % parts)
+	var parts_tp := _mesh_count_visible(p.avatar)
+	var vm_tp := _mesh_count_visible(p.viewmodel)
 	var span := _mesh_span(p.avatar)
 	var top: float = span[1] - p.body.feet_pos.y
 	var base: float = span[0] - p.body.feet_pos.y
+	p.select_slot(0)
+	p.third_person = false
+	p.update_local(1.0 / 60.0)
+	var head_fp := p.avatar.head_shown()
+	var parts_fp := _mesh_count_visible(p.avatar)
+	var vm_fp := _mesh_count_visible(p.viewmodel)
+	_check("corpo do jogador tem malhas", parts >= 20, "caixas=%d" % parts)
 	_check("silhueta fecha em ~1,8 m", top > 1.7 and top < 1.9, "altura=%.2f" % top)
 	_check("nenhuma malha abaixo dos pes", base > -0.15, "base=%.2f" % base)
 	_check("avatar cola nos pes", drift < 0.002, "desvio=%.5f" % drift)
 	_check("avatar gira com o yaw", absf(facing - rad_to_deg(0.62)) < 0.01,
 		"corpo=%.2fdeg  esperado=%.2fdeg" % [facing, rad_to_deg(0.62)])
-	_check("corpo inteiro em cena na 3a pessoa", head_tp and p.avatar.visible)
-	_check("cabeca sai de cena na 1a pessoa", not head_fp)
-	_check("bracos e pernas em cena na 1a pessoa", limbas_fp >= 10,
-		"malhas visiveis=%d" % limbas_fp)
+	_check("corpo inteiro em cena na 3a pessoa",
+		head_tp and p.avatar.visible and parts_tp == parts,
+		"visiveis=%d de %d" % [parts_tp, parts])
+	_check("view model fora de cena na 3a pessoa", vm_tp == 0, "malhas vm=%d" % vm_tp)
+	_check("corpo de 3a pessoa sai inteiro na 1a", parts_fp == 0 and not head_fp,
+		"malhas visiveis=%d" % parts_fp)
+	_check("braco de 1a pessoa em cena", vm_fp >= 8, "malhas vm=%d" % vm_fp)
+
+	# O braco na frente da lente: o cubo segue o slot selecionado, fica no
+	# quadrante inferior direito dentro do quadro, e desenha SEM teste de
+	# profundidade — encostando o nariz na parede o membro nao pode ser engolido
+	# pelo muro (frame `parede` da sonda).
+	var vm: FPViewmodel = p.viewmodel
+	var res := _screen_res()
+
+	# calibracao do instrumento antes de confiar nele: a formula da suite,
+	# alimentada com a resolucao real do processo, bate com o unproject do motor
+	# ponto a ponto nos 8 cantos do cubo. So depois disso ela recebe os
+	# 1280x720 da partida, que o headless nao tem.
+	var proc := Vector2(p.camera.get_viewport().size)
+	var gg := vm.held_mesh().global_transform
+	var hh := FPViewmodel.HELD_SIZE * 0.5
+	var dev := 0.0
+	for sx in [-1, 1]:
+		for sy in [-1, 1]:
+			for sz in [-1, 1]:
+				var corner := gg * Vector3(sx * hh, sy * hh, sz * hh)
+				var mine := _lens_px(p.camera, corner, proc)
+				var engine := p.camera.unproject_position(corner)
+				dev = maxf(dev, maxf(absf(mine.x - engine.x), absf(mine.y - engine.y)))
+	_check("projecao da suite bate com a do motor", dev < 0.01,
+		"desvio=%.5f px no quadro %dx%d" % [dev, int(proc.x), int(proc.y)])
+	# repouso de verdade antes de medir enquadramento e arcos: a lavra do passo
+	# acima deixou _dig em 1, e no ciclo de picareta o braco esta erguido — o
+	# quadro medido ali nao seria o do punho parado, nem o do soco sozinho
+	vm.mining = false
+	for i in 20:
+		vm.advance(1.0 / 60.0)
+	_check("bloco na mao == slot selecionado", vm.block_id == p.selected_block(),
+		"vm=%d  mao=%d" % [vm.block_id, p.selected_block()])
+	var fr := _vm_frame(p.camera, vm.held_mesh())
+	_check("cubo na mao dentro do quadro", _in_frame(fr, res),
+		"quadro=%dx%d  cubo=%s" % [int(res.x), int(res.y), _fmt_frame(fr)])
+	_check("cubo no quadrante inferior direito, mira livre", fr.size() == 4
+		and fr[0] > res.x * 0.5 and fr[1] > res.y * 0.5,
+		"cubo=%s  mira=(%d,%d)" % [_fmt_frame(fr), int(res.x * 0.5), int(res.y * 0.5)])
+	_check("membro inteiro desenhado sobre o mundo",
+		_mesh_count_no_depth(p.viewmodel) == vm_fp,
+		"sem depth test=%d de %d" % [_mesh_count_no_depth(p.viewmodel), vm_fp])
+
+	# Os dois arcos, medidos no eixo que a lente ve. O de golpe sai do repouso,
+	# arma com o cotovelo dobrado e corta para dentro; o de lavra e o ciclo
+	# continuo enquanto o botao esta pressionado. Nenhum dos dois pode empurrar
+	# o cubo para fora do quadro — a primeira versao jogava o bloco pela borda
+	# de cima, e contagem de malhas nao percebe isso.
+	var ang0 := vm.arm_angles()
+	var arc := _vm_arc(vm, p.camera, res, 24, true)
+	_check("golpe mexe o ombro", arc[1] - arc[0] > 0.30,
+		"ombro repouso=%.2f  %.2f..%.2f rad" % [ang0.x, arc[0], arc[1]])
+	_check("cubo do golpe sempre no quadro", int(arc[2]) == 0,
+		"ticks fora=%d de 24" % int(arc[2]))
+	arc = _vm_arc(vm, p.camera, res, 60, false)
+	_check("lavra mexe o ombro", arc[1] - arc[0] > 0.35,
+		"ombro %.2f..%.2f rad" % [arc[0], arc[1]])
+	_check("cubo da lavra sempre no quadro", int(arc[2]) == 0,
+		"ticks fora=%d de 60" % int(arc[2]))
+	vm.mining = false
+	for i in 20:
+		vm.advance(1.0 / 60.0)
+
+	# pilha sem bloco = punho closed: o cubo some, o braco fica
+	vm.block_id = BlockDefs.Block.AIR
+	vm.advance(1.0 / 60.0)
+	_check("sem bloco = mao vazia", not vm.held_mesh().visible
+		and _vm_frame(p.camera, vm.held_mesh()).is_empty(), "bloco=%d" % vm.block_id)
+	vm.block_id = p.selected_block()
+	vm.advance(1.0 / 60.0)
 
 	# Colocar exige o pipeline real de input: a borda do clique nasce em `_input` e
 	# vira bloco no tick seguinte. Minerar pode continuar sintetico porque le o

@@ -184,18 +184,21 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. Resultado medido em três
-corridas seguidas nesta máquina, na revisão deste README: **208 checagens,
-0 falhas, 36,1 s** — e num clone limpo do repositório, recém-importado com o
-`--import` logo acima, no mesmo código (`ffec8ca`, este parágrafo só muda
-texto): **208 checagens, 0 falhas, 35,9 s**, com o log sem nenhuma linha
+Sai com código `1` se qualquer checagem falhar. Resultado medido em quatro
+corridas seguidas nesta máquina, na árvore deste README: **219 checagens,
+0 falhas, 35,4 / 35,8 / 35,5 / 35,7 s** — e numa cópia limpa dessa mesma árvore
+(29 `.gd`, sem `.godot/`), recém-importada com o `--import` logo acima:
+**219 checagens, 0 falhas, 35,5 s**, com os dois logs sem nenhuma linha
 `ERROR` do engine. A contagem é sempre da revisão medida, nunca do texto: a
 rodada de inventário, pilhas e craft acrescentou passos (`inventario, pilhas e
 receitas` e as checagens de quantidade dentro de `minerar e colocar`,
 `colocar com clique`, `tecla 3 no hotbar`, `malha e face-culling` (os dois panos
 de vidro e o censo de material por surface), `hud, morte e renascer` e
-`salvar e carregar`) e a rodada de corpo acrescentou `corpo encaixado se solta`
-e o gate de `steering e colisao movem o lobo`. O que a suíte cobre:
+`salvar e carregar`), a rodada de corpo acrescentou `corpo encaixado se solta`
+e o gate de `steering e colisao movem o lobo`, e a rodada do view model de 1ª
+pessoa são as 11 checagens a mais sobre as 208 de antes: o censo das duas vistas
+(23 caixas em 3ª, 10 no braço em 1ª, cada uma fora da outra), a calibração da
+projeção contra `unproject_position` e o enquadramento dos dois arcos. O que a suíte cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -237,8 +240,17 @@ e o gate de `steering e colisao movem o lobo`. O que a suíte cobre:
 - sistema de coordenadas canônico (`Coords`): piso de negativos, bordas de
   chunk (15/16), ida e volta origem+local, chave de save com negativo e a grade
   grossa do Éter (4×4×4) saem todos do mesmo módulo;
-- corpo do jogador em 3ª pessoa: 23 caixas montadas em pivôs, coladas nos pés,
-  girando com o yaw, com a cabeça fora de cena na 1ª pessoa;
+- corpo do jogador: um modelo por vista. Em 3ª pessoa, 23 caixas montadas em
+  pivôs, coladas nos pés, girando com o yaw e todas em cena; em 1ª pessoa o rig
+  sai inteiro e entra o view model — 10 caixas de ombro, manga, antebraço, punho
+  e dedos desenhadas para a lente, segurando o bloco do slot selecionado (pilha
+  zerada devolve punho fechado). O cubo na mão é medido em pixels do quadro
+  1280×720: dentro do quadro e no quadrante inferior direito, com a mira livre,
+  tanto em repouso quanto nos dois arcos (golpe de 24 ticks, lavra de 60), e o
+  membro desenha sem teste de profundidade para não ser engolido pela parede
+  encostada no nariz. A projeção usada por essas checagens é calibrada contra o
+  `unproject_position` do motor na resolução do próprio processo (0,0005 px de
+  desvio), porque o viewport headless é 64×64 e mentiria sobre o enquadramento;
 - IA: a mesma memória (`Mind`) muda a decisão do lobo entre os braços com e sem
   episódios gravados, e a fuga aparece depois de levar dano;
 - campo de Éter: imprint, difusão para a célula vizinha e meia-vida por canal;
@@ -264,6 +276,7 @@ src/
 tests/           smoke test headless
 tools/           fetch de packs de IA local + servidor do oráculo (PowerShell)
 docs/design/     design completo (pitch, IA, progressão, arquitetura, roadmap)
+docs/melhorias-status.md  o que está feito, o que falta e o que foi medido
 ```
 
 ## IA local (opcional)
@@ -333,7 +346,9 @@ está pronto — o slice é o P0/P1 do roadmap.
 O projeto é aberto e a fatia atual é pequena de propósito: dá para ler o inteiro
 em uma tarde. Comece pelo [design](docs/design/README.md) — os documentos usam a
 legenda `[TARGET]` / `[MEASURED]` / `[DECIDED]` / `[OPEN]`, e nada aqui promete
-número que não tenha sido medido.
+número que não tenha sido medido. O estado do trabalho, fila e débitos está em
+[`docs/melhorias-status.md`](docs/melhorias-status.md): cada linha ou cita código,
+ou cita o log da medição.
 
 ### Mapa do código
 
@@ -341,7 +356,7 @@ número que não tenha sido medido.
 | --- | --- |
 | `src/main.gd` | composição da cena: mundo, jogador, lobos, Éter, HUD, save |
 | `src/world/` | `voxel_world` (chunks + raycast DDA), `world_gen` (relevo, cubas, cavernas, árvores), `voxel_atlas` (texturas desenhadas em runtime), `aether_field` |
-| `src/entities/` | `player` (mira, minerar, colocar, golpe), `voxel_body` (colisão AABB-contra-voxel), `player_avatar` (corpo em 3ª pessoa), `wolf` |
+| `src/entities/` | `player` (mira, minerar, colocar, golpe), `voxel_body` (colisão AABB-contra-voxel), `player_avatar` (corpo em 3ª pessoa), `fp_viewmodel` (braço e bloco na mão em 1ª pessoa), `wolf` |
 | `src/ai/` | `bt_tree`/`bt_status` (Behavior Tree), `response_curve` + `utility_scorer` (utilidade), `mind` (personalidade, memória episódica, confiança) |
 | `src/core/sim_clock.gd` | relógio de simulação a 20 Hz, desacoplado do frame |
 | `src/persistence/` | `save_manager` (escrita atômica: `.tmp` + rename, schema versionado) |
@@ -374,7 +389,7 @@ número que não tenha sido medido.
 ```sh
 # porta de compilação por arquivo alterado (roda em segundos)
 godot --headless --path . --check-only --script res://src/world/world_gen.gd
-# suíte completa: ~28 s, sai com código 1 em qualquer falha
+# suíte completa: ~35 s, sai com código 1 em qualquer falha
 godot --headless --path . tests/smoke_test.tscn
 ```
 
