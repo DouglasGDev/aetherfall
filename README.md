@@ -184,14 +184,15 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **158 checagens, 0 falhas, 35,7 s** — e no clone limpo, depois
-do import: **158 checagens, 0 falhas**. Essa contagem é da revisão medida; a
+Sai com código `1` se qualquer checagem falhar. Resultado medido em três
+corridas seguidas nesta máquina, na revisão deste README: **208 checagens,
+0 falhas, 36,1 s**. A contagem é sempre da revisão medida, nunca do texto: a
 rodada de inventário, pilhas e craft acrescentou passos (`inventario, pilhas e
 receitas` e as checagens de quantidade dentro de `minerar e colocar`,
 `colocar com clique`, `tecla 3 no hotbar`, `malha e face-culling` (os dois panos
-de vidro), `hud, morte e renascer` e `salvar e carregar`), então o número é
-re-derivado na próxima corrida e não aqui. O que a suíte cobre:
+de vidro e o censo de material por surface), `hud, morte e renascer` e
+`salvar e carregar`) e a rodada de corpo acrescentou `corpo encaixado se solta`
+e o gate de `steering e colisao movem o lobo`. O que a suíte cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -201,6 +202,14 @@ re-derivado na próxima corrida e não aqui. O que a suíte cobre:
   transparente;
 - relógio de simulação: 60 Hz de locomoção contra 20 Hz de lógica, teto de 5
   passos por frame, nenhum tick perdido durante o teste inteiro;
+- corpo contra terreno: o ponto de nascimento do lobo só é aceito com o volume
+  do corpo livre (o AABB de 1,35 m de profundidade nasce dentro da parede do
+  degrau vizinho e, encaixado, nenhum eixo anda — medido em 2 dos 5 lobos), e o
+  integrador resgata corpo encaixado subindo até a primeira altura em que ele
+  cabe (1,0 m medido, teto de 1,2 m, sem teleporte); o gate de movimento do
+  lobo monta a situação num ponto livre e dá ele mesmo os 200 passos de 0,05 s,
+  em vez de contar lobos numa janela de relógio de parede — que era sorte: a
+  mesma contagem já saiu 1/5, 2/5 e 3/5;
 - mecânicas: mineração com o tempo igual à dureza do bloco, colocação por
   clique real do mouse passando pelo InputMap, recusa de colocar dentro do
   próprio corpo, construção com o botão esquerdo ainda pressionado (lavar um

@@ -7,6 +7,8 @@ const TERMINAL_VELOCITY: float = 42.0
 const SUBSTEP: float = 0.35
 const GROUND_PROBE: float = 0.06
 const WALL_SHAVE: float = 0.001
+const ESCAPE_LIFT: float = 2.5
+const ESCAPE_STEP: float = 0.05
 
 var world: VoxelWorld = null
 var dims := Vector3(0.6, 1.8, 0.6)
@@ -41,6 +43,7 @@ func apply_gravity(delta: float, factor: float = 1.0) -> void:
 ## Mover com resolucao eixo a eixo + auto step-up. Retorna true se houve colissao.
 func move_and_collide(delta: float) -> bool:
 	blocked_this_frame = false
+	escape_embedded()
 	var disp := velocity * delta
 	_collide_axis(0, disp.x)
 	_collide_axis(2, disp.z)
@@ -48,6 +51,25 @@ func move_and_collide(delta: float) -> bool:
 	in_water = world.box_in_water(aabb())
 	on_ground = _probe_ground()
 	return blocked_this_frame
+
+
+## Corpo com o volume dentro de solido nao tem para onde ir: cada eixo colide no
+## primeiro subpasso, a gravidade tambem, e a velocidade morre em zero -- congelado
+## para sempre no mesmo ponto (medido em 2 dos 5 lobos do spawn). Empurra pra cima
+## ate a primeira altura em que o volume cabe; se nao couber em ESCAPE_LIFT, devolve
+## o pe onde estava em vez de deixa-lo dentro de outra parede.
+func escape_embedded() -> bool:
+	if not world.aabb_hits_solid(aabb()):
+		return false
+	var y0: float = feet_pos.y
+	var steps := int(ESCAPE_LIFT / ESCAPE_STEP)
+	for i in steps:
+		feet_pos.y = y0 + float(i + 1) * ESCAPE_STEP
+		if not world.aabb_hits_solid(aabb()):
+			velocity.y = 0.0
+			return true
+	feet_pos.y = y0
+	return false
 
 
 func _collide_axis(axis: int, amount: float) -> void:

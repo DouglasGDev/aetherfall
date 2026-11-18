@@ -191,7 +191,8 @@ Os passos que cobrem este documento, por nome na suíte: `minerar e colocar`,
 `salvar e carregar`, `sistema de coordenadas`, `golpe no lobo: dano e empurrada`,
 `rolamento e invencibilidade`, `vigor: dreno, recupero e trava`, `planar e queda`,
 `respiracao e afogamento`, `regeneracao fora de combate`, `lobo nada e busca margem`,
-`memoria muda comportamento`
-[smoke_test.gd:63-94](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
+`corpo encaixado se solta` (resgate do integrador) e `relogio real`, onde mora o
+gate `steering e colisao movem o lobo`, `memoria muda comportamento`
+[smoke_test.gd:63-95](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
 publicados no [`README.md`](../../README.md) da raiz, derivados da corrida — não deste
 documento.

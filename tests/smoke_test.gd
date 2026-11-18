@@ -64,6 +64,7 @@ func _ready() -> void:
 		["boot do mundo", 2, _check_boot],
 		["relogio real", 150, _check_live],
 		["malha e face-culling", 0, _check_meshing],
+		["corpo encaixado se solta", 0, _check_embedded_body],
 		["edicoes no mundo", 0, _check_edits],
 		["sistema de coordenadas", 0, _check_coords],
 		["campo de eter", 0, _check_aether],
@@ -184,11 +185,22 @@ func _check_live() -> void:
 	_check("nenhum tick perdido", int(d["dropped_ticks"]) == 0,
 		"perdidos=%d  pior passo=%.2f ms" % [d["dropped_ticks"], d["worst_sim_ms"]])
 	_check("jogador segue no chao", bool(d["on_ground"]), "feet=%s" % d["feet"])
-	var moved := 0
+	var live_moved := 0
 	for i in main.wolves.size():
 		if (main.wolves[i] as Node3D).global_position.distance_to(_spawn_pos[i]) > 0.5:
-			moved += 1
-	_check("lobos caminham sozinhos", moved >= 2, "%d/%d se moveram" % [moved, main.wolves.size()])
+			live_moved += 1
+	_check("ao menos um lobo se moveu na janela real", live_moved >= 1,
+		"%d/%d se moveram em %.2f s de logica" % [live_moved, main.wolves.size(), float(main.elapsed)])
+	var encaixados := ""
+	var n_enc := 0
+	for w in main.wolves:
+		var wf := w as Wolf
+		if wf.alive and wf.world.aabb_hits_solid(wf.body.aabb()):
+			n_enc += 1
+			encaixados += " lobo%d em %s" % [wf.identity, str(wf.body.feet_pos)]
+	_check("nenhum lobo com o corpo dentro do terreno", n_enc == 0,
+		"encaixados=%d%s" % [n_enc, encaixados])
+	_check_wolf_steering()
 	var intents := ""
 	var legal := true
 	for w in main.wolves:
@@ -196,6 +208,69 @@ func _check_live() -> void:
 		if not (w.intent in ["patrol", "hunt", "investigate", "flee"]):
 			legal = false
 	_check("intento sempre valido", legal, intents.strip_edges())
+
+
+## O gate do movimento, medido em ticks proprios e com a situacao montada. O engine
+## chama _physics_process tantas vezes quanto o relogio de parede deixa, entao contar
+## lobos que andaram numa janela de tempo real era sorte: a mesma suite ja mediu 1/5,
+## 2/5 e 3/5. Aqui o teste da o dt e o numero de passos, e poe o corpo num ponto
+## onde ele cabe (o chao onde o lobo nasceu nao e nosso -- dois dos cinco nasceram
+## dentro da parede, estado em que nenhum eixo anda; coberto pelo censo acima).
+##
+## So o passo, nao a decisao: chamar sim_step em serie da 40 s de IA de uma vez
+## para cada lobo, eles caçam o jogador parado do teste e o matam antes das
+## secoes de vigor/respiracao/morte (medido: 32 falhas em cascata). A decisao de
+## andar fica gated pelo censo fraco acima e pelos checks de utilidade.
+func _check_wolf_steering() -> void:
+	var wf: Wolf = null
+	for w in main.wolves:
+		if (w as Wolf).alive:
+			wf = w as Wolf
+			break
+	if wf == null:
+		_check("steering e colisao movem o lobo", false, "nenhum lobo vivo")
+		return
+	var spot := _clear_stand_spot(wf)
+	if spot == Vector3.INF:
+		_check("steering e colisao movem o lobo", false, "nenhum ponto onde o corpo caiba")
+		return
+	var was_feet: Vector3 = wf.body.feet_pos
+	var was_vel: Vector3 = wf.body.velocity
+	var was_target: Vector3 = wf._move_target
+	var was_stagger: float = wf._stagger
+	var was_unstick: float = wf._unstick
+	wf.body.feet_pos = spot
+	wf.body.velocity = Vector3.ZERO
+	wf._stagger = 0.0
+	wf._unstick = 0.0
+	wf._speed = Wolf.SPEED_WALK
+	wf._move_target = spot + Vector3(0.0, 0.0, 8.0)
+	var reach := 0.0
+	for _step in 200:
+		wf._physics_process(0.05)
+		reach = maxf(reach, spot.distance_to(wf.body.feet_pos))
+	_check("steering e colisao movem o lobo", reach > 0.5,
+		"lobo%d reach=%.2f m em 200 passos desde (%.1f, %.1f, %.1f)  agora em %s"
+			% [wf.identity, reach, spot.x, spot.y, spot.z, str(wf.body.feet_pos)])
+	wf.body.feet_pos = was_feet
+	wf.body.velocity = was_vel
+	wf._move_target = was_target
+	wf._stagger = was_stagger
+	wf._unstick = was_unstick
+
+
+## Pe sobre o terreno mais alto da coluna, procurando ao redor do spawn do jogador
+## ate achar um ponto onde o corpo do lobo cabe e tem chao embaixo.
+func _clear_stand_spot(wf: Wolf) -> Vector3:
+	var c: Vector3 = main.spawn_point()
+	for ring in [0, 2, 4, 6, 8, 10, 12]:
+		for dirv in [Vector3.FORWARD, Vector3.BACK, Vector3.LEFT, Vector3.RIGHT]:
+			var p: Vector3 = c + dirv * float(ring)
+			var y: int = main.world.surface_height(int(p.x), int(p.z)) + 1
+			var cand := Vector3(p.x, float(y), p.z)
+			if y > VoxelConfig.SEA_LEVEL and wf.body.can_stand_at(cand):
+				return cand
+	return Vector3.INF
 
 
 # --------------------------------------------------------------------- malha
@@ -266,6 +341,36 @@ func _check_meshing() -> void:
 	_check("vidro colado nao desenha a face de contato", glass_air and pair == 20,
 		"par=%d  esperado=20  sem culling alfa=24" % pair)
 
+	# Cada surface added tem que sair com material: os grupos (opaco, agua, vidro)
+	# sao acrescentados condicionalmente, entao o indice do material nao pode ser
+	# um numero fixo. Um chunk de vidro sem agua e o caso que pegava o indice 2
+	# fora dos dois surfaces existentes e deixava o pano sem material.
+	var sem_material := 0
+	var surfaces := 0
+	for ck in _scratch.chunks.values():
+		var mi: MeshInstance3D = ck.mesh_instance
+		if mi == null or mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			surfaces += 1
+			if mi.mesh.surface_get_material(i) == null:
+				sem_material += 1
+	_check("todo surface de chunk tem material", surfaces > 0 and sem_material == 0,
+		"surfaces=%d  sem material=%d" % [surfaces, sem_material])
+
+	# e o pano tem que carregar o material de vidro, nao qualquer um: e isso que
+	# decide transparencia e textura do atlas na janela do jogador
+	var pane_key := Coords.chunk_of(Vector3i(gx, base, cz))
+	var glass_mat := false
+	if _scratch.chunks.has(pane_key):
+		var pm: MeshInstance3D = _scratch.chunks[pane_key].mesh_instance
+		if pm != null and pm.mesh != null:
+			for i in pm.mesh.get_surface_count():
+				if pm.mesh.surface_get_material(i) == _scratch._mat_glass:
+					glass_mat = true
+	_check("o pano de vidro usa o material de vidro", glass_air and glass_mat,
+		"chunk=(%d,%d)" % [pane_key.x, pane_key.y])
+
 	var c: VoxelChunk = _scratch.chunks[Vector2i(3, 3)]
 	var solid := 0
 	for y in VoxelConfig.CHUNK_SIZE_Y:
@@ -285,6 +390,38 @@ func _check_meshing() -> void:
 	_check("winding = face frontal do Godot", wn == 0, "triangulos contra=%d" % wn)
 	_scratch_root.queue_free()
 	_scratch = null
+
+
+## Corpo com o volume dentro de solido nao anda por eixo nenhum: o primeiro
+## subpasso colide, a gravidade tambem, e a velocidade morre em zero -- congelado
+## para sempre (foi o que travou 2 dos 5 lobos do spawn). Montado no ar, longe do
+## terreno: tres voxels de pedra ao redor do pe, e o integrador tem de devolve-lo
+## ao ar em vez de deixa-la la dentro.
+func _check_embedded_body() -> void:
+	var bx := 40
+	var bz := 40
+	var y: int = mini(main.world.surface_height(bx, bz) + 12, VoxelConfig.CHUNK_SIZE_Y - 5)
+	var livre_antes := true
+	for dz in range(-1, 2):
+		if main.world.get_block(Vector3i(bx, y, bz + dz)) != BlockDefs.Block.AIR:
+			livre_antes = false
+	_check("regiao do corpo encaixado estava em ar", livre_antes, "voxel=(%d,%d,%d)" % [bx, y, bz])
+	for dz in range(-1, 2):
+		main.world.set_block(Vector3i(bx, y, bz + dz), BlockDefs.Block.STONE, false)
+	var bd := VoxelBody.new()
+	bd.setup(main.world, Vector3(float(bx) + 0.5, float(y), float(bz) + 0.5), Wolf.DIMS)
+	var dentro: bool = main.world.aabb_hits_solid(bd.aabb())
+	for _i in 4:
+		bd.move_and_collide(0.05)
+	var saiu: bool = not main.world.aabb_hits_solid(bd.aabb())
+	var lift: float = bd.feet_pos.y - float(y)
+	_check("corpo encaixado sobe para fora do solido", dentro and saiu,
+		"encaixado=%s  agora em y=%.2f" % [dentro, bd.feet_pos.y])
+	_check("o resgate e curto e nao teleporta o corpo", saiu and lift > 0.0 and lift <= 1.2,
+		"subiu=%.2f m  teto=1,20" % lift)
+	for dz in range(-1, 2):
+		main.world.set_block(Vector3i(bx, y, bz + dz), BlockDefs.Block.AIR, false)
+	main.world.process(64)
 
 
 ## Triangulos cuja normal geometrica (ordem dos indices) concorda com a normal do
@@ -795,11 +932,19 @@ func _check_items() -> void:
 
 	# inventario cheio: o que nao coube volta, e o que nao tem buraco nao entra
 	inv.reset_default()
+	var kit_stone := inv.count_of(stone)
 	var left_stone := inv.add(stone, 100000)
+	var acima := 0
+	for i in Inventory.SLOTS:
+		if inv.slot_block(i) != BlockDefs.Block.AIR and inv.slot_block(i) == stone:
+			if inv.slot_count(i) > BlockDefs.stack_max(stone):
+				acima += 1
 	_check("cheio devolve a sobra e nao cria pilha fora do teto",
-		left_stone > 0 and inv.count_of(stone) == 100000 - left_stone
-			and inv.space_for(stone) == 0,
-		"entrou=%d  sobrou=%d  espaco=%d" % [100000 - left_stone, left_stone, inv.space_for(stone)])
+		left_stone > 0 and inv.count_of(stone) == kit_stone + 100000 - left_stone
+			and inv.space_for(stone) == 0 and acima == 0,
+		"total=%d  esperado=%d  kit=%d  sobrou=%d  espaco=%d  acima do teto=%d"
+			% [inv.count_of(stone), kit_stone + 100000 - left_stone, kit_stone,
+				left_stone, inv.space_for(stone), acima])
 	_check("bloco sem pilha nenhuma nao entra em lugar nenhum",
 		inv.add(glass, 1) == 1 and inv.count_of(glass) == 0,
 		"espaco p/ vidro=%d" % inv.space_for(glass))

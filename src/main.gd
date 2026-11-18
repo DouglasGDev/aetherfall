@@ -198,9 +198,21 @@ func _random_ground_point(rmin: float, rmax: float) -> Vector3:
 		p.z = clampf(p.z, 6.0, float(VoxelConfig.world_size_z()) - 6.0)
 		var y := world.surface_height(int(p.x), int(p.z))
 		if y > VoxelConfig.SEA_LEVEL:
-			return Vector3(p.x, float(y + 1), p.z)
+			var feet := Vector3(p.x, float(y + 1), p.z)
+			if _volume_clear(feet, Wolf.DIMS):
+				return feet
 	var fallback_y := world.surface_height(int(c.x), int(c.z))
 	return Vector3(c.x, float(fallback_y + 1), c.z)
+
+
+## Pe em cima do voxel mais alto da coluna nao basta: o corpo do lobo faz 1,35 m
+## de profundidade e 0,75 de largura, entao num ponto encostado na parede do degrau
+## vizinho a AABB ja nasce dentro do solido -- e encaixado, todo eixo do integrador
+## colide e o bicho congela ali (medido em 2 dos 5 lobos do spawn). O ponto so vale
+## com o volume inteiro livre.
+func _volume_clear(feet: Vector3, dims: Vector3) -> bool:
+	var box := AABB(feet - Vector3(dims.x * 0.5, 0.0, dims.z * 0.5), dims)
+	return not world.aabb_hits_solid(box)
 
 
 func targets_under_crosshair() -> Array:
