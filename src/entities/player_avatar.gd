@@ -4,10 +4,9 @@ extends Node3D
 ## da cabeca. Sao pivots articulados (quadril, joelho, ombro, cotovelo) com uma
 ## caixa por segmento; o Player escreve o estado e chama advance(delta).
 ##
-## A silhueta fecha em 1,76 m contra 1,80 m da AABB do corpo, e a linha dos olhos
-## (1,62) fica dentro da cabeca: em 1a pessoa so a cabeca sai de cena, porque e ai
-## que mora a camera. O resto do corpo continua na cena e aparece na beirada de
-## baixo quando o jogador olha para os proprios pes. Nunca ha dois corpos em quadro.
+## A silhueta fecha em 1,82 m contra 1,80 m da AABB do corpo. Em 1a pessoa o
+## corpo inteiro sai de cena, no padrao Minecraft: quem representa o jogador
+## la e o braco preso a camera. Nunca ha dois corpos em quadro.
 
 const PACE := 4.3
 const HIP_Y := 0.80
@@ -15,7 +14,6 @@ const THIGH := 0.40
 const SHIN := 0.32
 const CROUCH_DROP := 0.40
 
-var third_person := true
 var walk_speed := 0.0
 var vertical := 0.0
 var on_ground := true
@@ -47,13 +45,7 @@ func swing() -> void:
 	_swing = 1.0
 
 
-## Leituras do estado visual, usadas pelo smoke test.
-func head_shown() -> bool:
-	return _head.visible
-
-
 func advance(delta: float) -> void:
-	_head.visible = third_person
 	var smooth := 1.0 - exp(-13.0 * delta)
 	var norm := clampf(walk_speed / PACE, 0.0, 1.35)
 	_amp = lerpf(_amp, norm * (0.55 if crouching else 1.0), smooth)

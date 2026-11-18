@@ -67,6 +67,9 @@ var _place_buffer: float = 0.0
 var _attack_cd: float = 0.0
 var _bob_phase: float = 0.0
 var _punch: float = 0.0
+var _arm: Node3D = null
+var _arm_phase: float = 0.0
+var _arm_swing: float = 0.0
 var _highlight: MeshInstance3D = null
 var _highlight_mat: StandardMaterial3D = null
 var _cursor_captured: bool = true
@@ -90,6 +93,42 @@ func _ready() -> void:
 	_highlight.mesh.surface_set_material(0, _highlight_mat)
 	_highlight.visible = false
 	add_child(_highlight)
+	_build_arm()
+
+
+## Braco em 1a pessoa, padrao Minecraft: o corpo sai de cena e este braco preso
+## a camera e a unica parte do jogador visivel. Aponta para cima e para frente
+## a partir do canto inferior direito; a manga segue a camisa do avatar.
+func _build_arm() -> void:
+	var shirt := StandardMaterial3D.new()
+	shirt.albedo_color = Color(0.22, 0.34, 0.50)
+	shirt.roughness = 0.92
+	var skin := StandardMaterial3D.new()
+	skin.albedo_color = Color(0.74, 0.58, 0.45)
+	skin.roughness = 0.88
+	_arm = Node3D.new()
+	_arm.name = "ArmFP"
+	camera.add_child(_arm)
+	_box(_arm, Vector3(0.155, 0.36, 0.155), Vector3(0.0, 0.15, 0.0), shirt)
+	_box(_arm, Vector3(0.13, 0.32, 0.13), Vector3(0.0, 0.47, 0.0), skin)
+	_box(_arm, Vector3(0.135, 0.13, 0.15), Vector3(0.0, 0.68, 0.0), skin)
+	_arm.position = Vector3(0.40, -0.48, -0.36)
+	_arm.rotation = Vector3(-0.90, 0.28, -0.10)
+	_arm.visible = false
+
+
+static func _box(p: Node3D, size: Vector3, pos: Vector3, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	bm.material = mat
+	mi.mesh = bm
+	mi.position = pos
+	p.add_child(mi)
+
+
+func arm_shown() -> bool:
+	return _arm.visible
 
 
 ## As 12 arestas do cubo como PRIMITIVE_LINES. Um BoxMesh com alfa era um painel
@@ -243,7 +282,7 @@ func update_local(delta: float) -> void:
 ## O no do Player fica parado (quem anda e body.feet_pos), entao o avatar e
 ## reposicionado a cada tick e gira com o yaw: -Z local = para frente.
 func _update_avatar(delta: float) -> void:
-	avatar.third_person = third_person
+	avatar.visible = third_person
 	avatar.walk_speed = Vector3(body.velocity.x, 0.0, body.velocity.z).length()
 	avatar.vertical = body.velocity.y
 	avatar.on_ground = body.on_ground
@@ -391,6 +430,7 @@ func _apply_actions(delta: float) -> void:
 			_attack_cd = 0.42
 			_punch = minf(_punch + 0.10, 0.5)
 			avatar.swing()
+			_arm_swing = 1.0
 			attacked.emit(_target_entity, ATTACK_DAMAGE)
 		elif target_valid:
 			_mining_accum += delta
@@ -399,6 +439,7 @@ func _apply_actions(delta: float) -> void:
 				var b := world.get_block(target_voxel)
 				if world.set_block(target_voxel, BlockDefs.Block.AIR):
 					avatar.swing()
+					_arm_swing = 1.0
 					block_broken.emit(target_voxel, b)
 					acted.emit("break", Vector3(target_voxel) + Vector3(0.5, 0.5, 0.5))
 	# Construir e uma intencao separada da de minerar: segurar o botao esquerdo
@@ -421,6 +462,7 @@ func _try_place() -> void:
 		return
 	_place_cd = 0.16
 	if world.set_block(place_voxel, selected_block()):
+		_arm_swing = 1.0
 		block_placed.emit(place_voxel, selected_block())
 		acted.emit("place", Vector3(place_voxel) + Vector3(0.5, 0.5, 0.5))
 
@@ -433,24 +475,40 @@ func _update_camera(delta: float) -> void:
 	# bob e punch sao exclusivos da 1a pessoa: em 3a pessoa estragariam o enquadramento
 	var bob_y := 0.0
 	var bob_roll := 0.0
+	var bob_amp := 0.0
 	if not third_person and body.on_ground:
 		var planar := Vector3(body.velocity.x, 0.0, body.velocity.z)
 		var speed := planar.length()
 		if speed > 0.4:
 			_bob_phase += delta * (4.6 + speed * 0.55)
-			var amp := clampf(speed / SPRINT_SPEED, 0.0, 1.0)
-			bob_y = sin(_bob_phase * 2.0) * 0.030 * amp
-			bob_roll = sin(_bob_phase) * 0.010 * amp
+			bob_amp = clampf(speed / SPRINT_SPEED, 0.0, 1.0)
+			bob_y = sin(_bob_phase * 2.0) * 0.030 * bob_amp
+			bob_roll = sin(_bob_phase) * 0.010 * bob_amp
 	_punch = maxf(_punch - delta * 2.2, 0.0)
 	var punch_pitch := _punch * 0.10 if not third_person else 0.0
 	var final_rot := rot.rotated(rot.z, bob_roll)
 	final_rot = final_rot.rotated(final_rot.x, punch_pitch)
 	camera.global_transform = Transform3D(final_rot, eye + Vector3(0.0, bob_y, 0.0))
 
+	# braco em 1a pessoa: balanca com o passo, lavra em ciclo e faz o arco do golpe
+	_arm.visible = not third_person
+	if not third_person:
+		if _mining_accum > 0.0:
+			_arm_phase += delta * 9.0
+		_arm_swing = maxf(_arm_swing - delta * 3.2, 0.0)
+		var st := 1.0 - _arm_swing
+		var es := st * st * (3.0 - 2.0 * st)
+		var dig := sin(_arm_phase) * 0.45 if _mining_accum > 0.0 else 0.0
+		_arm.position = Vector3(0.40, -0.48, -0.36) + Vector3(
+			sin(_bob_phase) * 0.010 * bob_amp,
+			sin(_bob_phase * 2.0) * 0.014 * bob_amp - _punch * 0.02,
+			0.0)
+		_arm.rotation = Vector3(-0.90 + dig - es * 0.55 + _punch * 0.12, 0.28, -0.10)
+
 	if third_person:
-		# orbita o centro do corpo (focus do Veloren), nao a cabeca: olhar para
-		# cima e para baixo nao arrasta a camera por cima do cranio
-		var pivot := body.feet_pos + Vector3(0.0, 1.0, 0.0)
+		# orbita na altura dos olhos, como o Minecraft: a mira passa sobre a
+		# cabeca e olhar para cima/baixo nao arrasta a camera por cima do cranio
+		var pivot := body.feet_pos + Vector3(0.0, 1.55, 0.0)
 		var back_n := final_rot.z.normalized()
 		var dist := 4.4
 		var hit := world.ray_voxel(pivot, back_n, 4.4)

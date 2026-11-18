@@ -411,12 +411,13 @@ func _check_mechanics() -> void:
 	p.yaw = 0.62
 	p.third_person = true
 	p.update_local(1.0 / 60.0)
-	var head_tp := p.avatar.head_shown()
+	var body_tp := p.avatar.visible
 	var drift := p.avatar.global_position.distance_to(p.body.feet_pos)
 	var facing := rad_to_deg(p.avatar.rotation.y)
 	var parts := _mesh_count(p.avatar)
 	p.third_person = false
 	p.update_local(1.0 / 60.0)
+	var arm_fp := p.arm_shown()
 	_check("corpo do jogador tem malhas", parts >= 20, "caixas=%d" % parts)
 	var span := _mesh_span(p.avatar)
 	var top: float = span[1] - p.body.feet_pos.y
@@ -426,8 +427,9 @@ func _check_mechanics() -> void:
 	_check("avatar cola nos pes", drift < 0.002, "desvio=%.5f" % drift)
 	_check("avatar gira com o yaw", absf(facing - rad_to_deg(0.62)) < 0.01,
 		"corpo=%.2fdeg  esperado=%.2fdeg" % [facing, rad_to_deg(0.62)])
-	_check("cabeca aparece na 3a pessoa", head_tp)
-	_check("cabeca sai de cena na 1a pessoa", not p.avatar.head_shown())
+	_check("corpo aparece na 3a pessoa", body_tp)
+	_check("corpo sai de cena na 1a pessoa", not p.avatar.visible)
+	_check("braco entra em cena na 1a pessoa", arm_fp)
 
 	# Colocar exige o pipeline real de input: a borda do clique nasce em `_input` e
 	# vira bloco no tick seguinte. Minerar pode continuar sintetico porque le o
