@@ -34,6 +34,44 @@ const JUMP_BUFFER: float = 0.15
 const ATTACK_DAMAGE: float = 14.0
 const MOUSE_SENS: float = 0.0026
 const PLACE_BUFFER: float = 0.22
+# vigor (a stamina do Veloren): correr drena, parar recupera, golpe acertado devolve
+const MAX_ENERGY: float = 100.0
+const ENERGY_REGEN: float = 12.0
+const SPRINT_DRAIN: float = 8.0
+const SPRINT_RECOVERY: float = 18.0
+const ATTACK_ENERGY: float = 6.0
+# rolamento (botao do meio no Veloren): custo fixo, janela de invencibilidade e recarga;
+# atravessa a mordida do lobo sem levar dano
+const ROLL_COST: float = 14.0
+const ROLL_SPEED: float = 10.5
+const ROLL_TIME: float = 0.35
+const ROLL_IFRAMES: float = 0.45
+const ROLL_CD: float = 0.9
+const ROLL_BUFFER: float = 0.18
+# planar (segurar CTRL no ar, como o Veloren): gravidade e o combustivel, olhar para
+# baixo mergulha e ganha velocidade horizontal, olhar para cima perde; nao gasta vigor
+const GLIDE_SPEED: float = 5.4
+const GLIDE_DIVE_GAIN: float = 5.0
+const GLIDE_STALL: float = 2.4
+const GLIDE_DIVE_SPEED: float = 11.5
+const GLIDE_STEER: float = 5.5
+const GLIDE_GRAVITY: float = 0.16
+const GLIDE_SINK: float = 1.8
+const GLIDE_DIVE_SINK: float = 4.8
+# respiracao: embaixo d'agua o ar acaba e o afogamento cobra por periodo;
+# fora da agua enche em ~1 s, como emergir no Veloren
+const AIR_MAX: float = 14.0
+const AIR_REFILL: float = 14.0
+const DROWN_PERIOD: float = 1.0
+const DROWN_DAMAGE: float = 7.0
+# queda: impacto acima da velocidade segura machuca; agua perdoa e planar nunca chega la
+const FALL_SAFE_SPEED: float = 14.0
+const FALL_DAMAGE_PER_SPEED: float = 3.5
+const FALL_DAMAGE_MAX: float = 55.0
+# regeneracao fora de combate (Veloren): quieto e com vigor sobrando
+const REGEN_DELAY: float = 8.0
+const REGEN_MIN_ENERGY: float = 25.0
+const REGEN_RATE: float = 1.2
 
 var world: VoxelWorld = null
 var body: VoxelBody = VoxelBody.new()
@@ -65,6 +103,17 @@ var _jump_buffer: float = 0.0
 var _place_cd: float = 0.0
 var _place_buffer: float = 0.0
 var _attack_cd: float = 0.0
+var energy: float = MAX_ENERGY
+var max_energy: float = MAX_ENERGY
+var air: float = AIR_MAX
+var gliding: bool = false
+var _sprint_locked: bool = false
+var _iframes: float = 0.0
+var _roll_cd: float = 0.0
+var _roll_time: float = 0.0
+var _roll_buffer: float = 0.0
+var _drown_cd: float = DROWN_PERIOD
+var _since_damage: float = REGEN_DELAY
 var _bob_phase: float = 0.0
 var _punch: float = 0.0
 var _highlight: MeshInstance3D = null
@@ -153,6 +202,8 @@ func _input(event: InputEvent) -> void:
 		_place_buffer = PLACE_BUFFER
 	elif event.is_action_pressed("jump"):
 		_jump_buffer = JUMP_BUFFER
+	elif event.is_action_pressed("roll"):
+		_roll_buffer = ROLL_BUFFER
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -194,9 +245,10 @@ func _set_captured(v: bool) -> void:
 
 
 func take_damage(amount: float, from: Vector3) -> void:
-	if not alive:
+	if not alive or _iframes > 0.0:
 		return
 	hp = maxf(hp - amount, 0.0)
+	_since_damage = 0.0
 	_punch = minf(_punch + amount * 0.02, 0.55)
 	damaged.emit(amount, from)
 	if hp <= 0.0:
@@ -208,12 +260,19 @@ func die() -> void:
 	alive = false
 	_place_buffer = 0.0
 	_jump_buffer = 0.0
+	_roll_buffer = 0.0
+	_roll_time = 0.0
+	_iframes = 0.0
+	gliding = false
 	died.emit(body.feet_pos)
 
 
 func respawn_at(p: Vector3) -> void:
 	hp = max_hp
 	alive = true
+	energy = max_energy
+	air = AIR_MAX
+	_sprint_locked = false
 	feet_to_spawn(p)
 	_set_captured(true)
 
@@ -228,12 +287,21 @@ func update_local(delta: float) -> void:
 	_place_cd = maxf(_place_cd - delta, 0.0)
 	_place_buffer = maxf(_place_buffer - delta, 0.0)
 	_attack_cd = maxf(_attack_cd - delta, 0.0)
+	_roll_cd = maxf(_roll_cd - delta, 0.0)
+	_roll_time = maxf(_roll_time - delta, 0.0)
+	_iframes = maxf(_iframes - delta, 0.0)
 	_coyote = _coyote + delta if body.on_ground else 0.0
 
 	var wish := _wish_direction()
+	_apply_energy(delta, wish)
+	_try_roll(wish)
 	_apply_horizontal(wish, delta)
 	_apply_vertical(wish, delta)
+	var pre_vy := body.velocity.y
 	body.move_and_collide(delta)
+	_check_fall_impact(pre_vy)
+	_update_breath(delta)
+	_apply_regen(delta)
 	_update_target()
 	_apply_actions(delta)
 	_update_camera(delta)
@@ -252,6 +320,8 @@ func _update_avatar(delta: float) -> void:
 	avatar.in_water = body.in_water
 	avatar.crouching = crouching
 	avatar.pitching = pitch
+	avatar.gliding = gliding
+	avatar.rolling = _roll_time > 0.0
 	avatar.mining = _mining_accum > 0.0
 	avatar.dead = not alive
 	avatar.global_position = body.feet_pos
@@ -262,7 +332,8 @@ func _update_avatar(delta: float) -> void:
 func _wish_direction() -> Vector3:
 	var f := Input.get_action_strength("move_forward") - Input.get_action_strength("move_back")
 	var r := Input.get_action_strength("move_right") - Input.get_action_strength("move_left")
-	sprinting = Input.is_action_pressed("sprint") and f > 0.0
+	# trava com histerese: o vigor zerado corta a corrida ate voltar a SPRINT_RECOVERY
+	sprinting = Input.is_action_pressed("sprint") and f > 0.0 and not _sprint_locked
 	crouching = Input.is_action_pressed("crouch")
 	var dir := Vector3.ZERO
 	if absf(f) > 0.01 or absf(r) > 0.01:
@@ -274,13 +345,25 @@ func _wish_direction() -> Vector3:
 
 func _apply_horizontal(wish: Vector3, delta: float) -> void:
 	var speed := WALK_SPEED
-	if crouching:
+	if crouching and body.on_ground:
 		speed = CROUCH_SPEED
 	elif sprinting and not body.in_water:
 		speed = SPRINT_SPEED
 	var v := body.velocity
 	if body.on_ground:
 		var horiz := Vector3(v.x, 0.0, v.z)
+		if _roll_time > 0.0:
+			# durante o rolamento o controle normal nao engole o impulso: so o atrito
+			var drop := FRICTION * delta
+			var norm := horiz.length()
+			if norm <= drop:
+				horiz = Vector3.ZERO
+			else:
+				horiz = horiz * (norm - drop) / norm
+			v.x = horiz.x
+			v.z = horiz.z
+			body.velocity = v
+			return
 		if wish == Vector3.ZERO:
 			var drop := FRICTION * delta
 			var norm := horiz.length()
@@ -296,7 +379,10 @@ func _apply_horizontal(wish: Vector3, delta: float) -> void:
 		v.x = horiz.x
 		v.z = horiz.z
 	else:
-		if wish != Vector3.ZERO:
+		if gliding:
+			# o planar direciona o voo inteiro em _apply_vertical
+			pass
+		elif wish != Vector3.ZERO:
 			var air := Vector3(v.x, 0.0, v.z)
 			air = air.lerp(wish * speed, clampf(AIR_ACCEL * delta / speed, 0.0, 1.0))
 			v.x = air.x
@@ -313,6 +399,25 @@ func _apply_vertical(wish: Vector3, delta: float) -> void:
 		body.velocity.y = maxf(body.velocity.y, -2.4)
 		if Input.is_action_pressed("jump"):
 			body.velocity.y = SWIM_UP_SPEED
+		gliding = false
+		return
+
+	# planar: cair segurando CTRL (a tecla do agachar, como no Veloren). Olhar para
+	# baixo mergulha e converte altura em velocidade horizontal; olhar para cima
+	# perde velocidade sem nunca subir. Soltar devolve o controle normal.
+	gliding = (not body.on_ground) and Input.is_action_pressed("glide") \
+			and body.velocity.y < 0.5 and _roll_time <= 0.0
+	if gliding:
+		var dive := clampf(-pitch, -1.0, 1.0)
+		var target_h := clampf(GLIDE_SPEED + dive * GLIDE_DIVE_GAIN, GLIDE_STALL, GLIDE_DIVE_SPEED)
+		var forward := Vector3(-sin(yaw), 0.0, -cos(yaw))
+		var hv := Vector3(body.velocity.x, 0.0, body.velocity.z) \
+				.lerp(forward * target_h, clampf(delta * GLIDE_STEER, 0.0, 1.0))
+		body.velocity.x = hv.x
+		body.velocity.z = hv.z
+		body.apply_gravity(delta, GLIDE_GRAVITY)
+		body.velocity.y = maxf(body.velocity.y,
+				-(GLIDE_SINK + maxf(dive, 0.0) * GLIDE_DIVE_SINK))
 		return
 
 	if _jump_buffer > 0.0 and _coyote > 0.0:
@@ -328,6 +433,68 @@ func _apply_vertical(wish: Vector3, delta: float) -> void:
 		test.size = want_dims
 		if crouching or not world.aabb_hits_solid(test):
 			body.dims = want_dims
+
+
+func _apply_energy(delta: float, wish: Vector3) -> void:
+	if sprinting and body.on_ground and wish != Vector3.ZERO and not body.in_water:
+		energy = maxf(energy - SPRINT_DRAIN * delta, 0.0)
+		if energy <= 0.5:
+			_sprint_locked = true
+	else:
+		energy = minf(energy + ENERGY_REGEN * delta, max_energy)
+		if _sprint_locked and energy >= SPRINT_RECOVERY:
+			_sprint_locked = false
+
+
+## Rolamento: so no chao, custa vigor, da impulso na direcao do movimento (ou do
+## olhar) e abre uma janela de invencibilidade — a esquiva do Veloren.
+func _try_roll(wish: Vector3) -> void:
+	if _roll_buffer <= 0.0 or _roll_cd > 0.0 or not body.on_ground:
+		return
+	if energy < ROLL_COST:
+		return
+	_roll_buffer = 0.0
+	energy -= ROLL_COST
+	_roll_cd = ROLL_CD
+	_roll_time = ROLL_TIME
+	_iframes = ROLL_IFRAMES
+	var dir := wish if wish != Vector3.ZERO else Vector3(-sin(yaw), 0.0, -cos(yaw))
+	body.velocity = Vector3(dir.x * ROLL_SPEED, body.velocity.y, dir.z * ROLL_SPEED)
+
+
+func _update_breath(delta: float) -> void:
+	var eye := eye_position()
+	var submerged := world.is_water_xyz(floori(eye.x), floori(eye.y), floori(eye.z))
+	if submerged:
+		air = maxf(air - delta, 0.0)
+		if air <= 0.0:
+			_drown_cd -= delta
+			if _drown_cd <= 0.0:
+				_drown_cd = DROWN_PERIOD
+				take_damage(DROWN_DAMAGE, body.feet_pos)
+	else:
+		air = minf(air + delta * AIR_REFILL, AIR_MAX)
+		_drown_cd = DROWN_PERIOD
+
+
+## Impacto de queda: o integrador zera vy no choque vertical, e e esse numero —
+## nao o instante em que o pe toca o solo — que mede o impacto. A parada em
+## substep deixa o corpo ate um passo acima do solo e atrasa o on_ground: medir
+## ali comeria o dano de toda queda rapida. Agua perdoa, e o planar nunca chega
+## na velocidade segura.
+func _check_fall_impact(pre_vy: float) -> void:
+	if pre_vy >= 0.0 or body.velocity.y != 0.0 or body.in_water:
+		return
+	var impact := -pre_vy
+	if impact > FALL_SAFE_SPEED:
+		take_damage(minf((impact - FALL_SAFE_SPEED) * FALL_DAMAGE_PER_SPEED,
+				FALL_DAMAGE_MAX), body.feet_pos)
+
+
+func _apply_regen(delta: float) -> void:
+	_since_damage += delta
+	if _since_damage >= REGEN_DELAY and energy > REGEN_MIN_ENERGY and hp < max_hp:
+		hp = minf(hp + REGEN_RATE * delta, max_hp)
 
 
 func _update_target() -> void:
@@ -393,6 +560,8 @@ func _apply_actions(delta: float) -> void:
 			_attack_cd = 0.42
 			_punch = minf(_punch + 0.10, 0.5)
 			avatar.swing()
+			# golpe basico devolve vigor, como o ataque basico do Veloren recupera stamina
+			energy = minf(energy + ATTACK_ENERGY, max_energy)
 			attacked.emit(_target_entity, ATTACK_DAMAGE)
 		elif target_valid:
 			_mining_accum += delta

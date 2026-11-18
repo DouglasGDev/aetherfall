@@ -104,9 +104,10 @@ mensagem manda recriar o mundo em vez de interpretar mal o relevo.
 | --- | --- |
 | `W` `A` `S` `D` | mover |
 | `Espaço` | pular |
-| `Shift` | correr |
-| `Ctrl` | agachar |
+| `Shift` | correr (consome vigor) |
+| `Ctrl` | agachar / planar segurando no ar |
 | Botão esquerdo | minerar bloco / atacar criatura |
+| Botão do meio | rolamento (invencibilidade breve, custa vigor) |
 | Botão direito | colocar bloco do slot selecionado |
 | `1`–`7` | slot do hotbar |
 | `V` | câmera em 1ª / 3ª pessoa |
@@ -128,8 +129,8 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado da última execução
-nesta máquina: **119 checagens, 0 falhas, 28,7 s** — e no clone limpo, depois
-do import: **119 checagens, 0 falhas**. O que ela cobre:
+nesta máquina: **149 checagens, 0 falhas, 34,1 s** — e no clone limpo, depois
+do import: **149 checagens, 0 falhas**. O que ela cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
   mundos criados com a mesma seed), face-culling exato (cubo 3×3×3 soma
@@ -143,6 +144,13 @@ do import: **119 checagens, 0 falhas**. O que ela cobre:
   clique real do mouse passando pelo InputMap, recusa de colocar dentro do
   próprio corpo, construção com o botão esquerdo ainda pressionado (lavar um
   bloco não engole o clique direito), troca de hotbar por tecla;
+- mecânicas do Veloren adaptadas: golpe com dano fixo que atordoa (steering
+  suspenso) e empurra o lobo, vigor que a corrida drena e parar recupera com
+  trava por histerese, rolamento no botão do meio com janela de invencibilidade
+  de 0,45 s, planar segurando `Ctrl` no ar (mergulhar o olhar ganha velocidade,
+  cap de queda medido no próprio ângulo), queda livre que machuca acima da
+  velocidade segura, respiração com afogamento por período e regeneração fora
+  de combate;
 - corpo do jogador em 3ª pessoa: 23 caixas montadas em pivôs, coladas nos pés,
   girando com o yaw, com a cabeça fora de cena na 1ª pessoa;
 - IA: a mesma memória (`Mind`) muda a decisão do lobo entre os braços com e sem
@@ -177,8 +185,9 @@ lago e praia de areia no nível do mar — 12,5% das colunas caem abaixo de
 `SEA_LEVEL 26` na seed padrão, monte nevado, árvores, blocos de pedra,
 cavernas e túneis por ruído), malha com face-culling e oclusão ambiental por
 vértice, texturas geradas em runtime (atlas 8×8), jogador em 1ª/3ª pessoa com
-corpo animado (andar, agachar, pular, minerar, socar, morrer), quebrar e colocar
-blocos, combate corpo a corpo, vida/dano/morte/renascer,
+corpo animado (andar, agachar, pular, minerar, socar, planar, rolar, morrer),
+quebrar e colocar blocos, combate corpo a corpo com vigor, rolamento e
+planar, respiração e dano de queda, vida/dano/morte/renascer,
 hotbar, HUD, 5 lobos com Behavior Tree + Utilidade + memória episódica e
 confiança no jogador, campo de Éter com 3 canais (work, blood, fear) que difunde
 e decai, relógio de simulação desacoplado, save/load atômico e a suíte headless

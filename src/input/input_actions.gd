@@ -17,6 +17,9 @@ static func install() -> void:
 	_key_action("jump", [KEY_SPACE])
 	_key_action("sprint", [KEY_SHIFT])
 	_key_action("crouch", [KEY_CTRL])
+	# planar mora na mesma tecla do agachar, como no Veloren: no chao e agachar,
+	# caindo e planar
+	_key_action("glide", [KEY_CTRL])
 	_key_action("break_block", [])
 	_key_action("place_block", [])
 	_key_action("switch_camera", [KEY_V])
@@ -31,6 +34,7 @@ static func install() -> void:
 		_key_action(HOTBAR_ACTIONS[i], [KEY_1 + i])
 	_mouse_action("break_block", MOUSE_BUTTON_LEFT)
 	_mouse_action("place_block", MOUSE_BUTTON_RIGHT)
+	_mouse_action("roll", MOUSE_BUTTON_MIDDLE)
 
 
 static func _ensure(name: String) -> void:

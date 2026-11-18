@@ -22,6 +22,9 @@ var _root: Control = null
 var _slots: Array = []
 var _hp_fill: ColorRect = null
 var _hp_text: Label = null
+var _energy_fill: ColorRect = null
+var _air_bg: ColorRect = null
+var _air_fill: ColorRect = null
 var _target_label: Label = null
 var _mine_bg: ColorRect = null
 var _mine_fill: ColorRect = null
@@ -37,11 +40,12 @@ var _refresh_cd: float = 0.0
 const BINDS_TEXT := """WASD   mover
 mouse  olhar
 1-7    bloco
-ESQ    minerar / morder
+ESQ    minerar / atacar
 DIR    colocar
+MMID   rolar
 ESPACO pular
 SHIFT  correr
-CTRL   agachar
+CTRL   agachar / planar
 V      camera 1a/3a
 B      visao do eter
 F5     salvar
@@ -153,6 +157,13 @@ func _process(delta: float) -> void:
 	var ratio := clampf(player.hp / player.max_hp, 0.0, 1.0)
 	_hp_fill.size.x = HP_W * ratio
 	_hp_text.text = "%d / %d" % [int(round(player.hp)), int(player.max_hp)]
+	var vigor := clampf(player.energy / player.max_energy, 0.0, 1.0)
+	_energy_fill.size.x = HP_W * vigor
+	var air_ratio := clampf(player.air / Player.AIR_MAX, 0.0, 1.0)
+	var air_show := air_ratio < 0.999
+	_air_bg.visible = air_show
+	_air_fill.visible = air_show
+	_air_fill.size.x = HP_W * air_ratio
 	var mining := clampf(player.mining_progress, 0.0, 1.0)
 	_mine_bg.visible = mining > 0.0
 	_mine_fill.visible = mining > 0.0
@@ -262,6 +273,45 @@ func _build_target() -> void:
 
 
 func _build_vitals() -> void:
+	# pilha: ar (so quando falta) acima, vigor no meio, vida embaixo
+	_air_bg = ColorRect.new()
+	_air_bg.color = Color(0, 0, 0, 0.55)
+	_air_bg.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_air_bg.offset_left = 16.0
+	_air_bg.offset_top = -74.0
+	_air_bg.offset_right = 16.0 + HP_W + 4.0
+	_air_bg.offset_bottom = -56.0
+	_air_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_air_bg.visible = false
+	_root.add_child(_air_bg)
+	_air_fill = ColorRect.new()
+	_air_fill.color = Color(0.38, 0.70, 0.95, 0.95)
+	_air_fill.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_air_fill.offset_left = 18.0
+	_air_fill.offset_top = -72.0
+	_air_fill.offset_right = 18.0 + HP_W
+	_air_fill.offset_bottom = -58.0
+	_air_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_air_fill.visible = false
+	_root.add_child(_air_fill)
+	var energy_bg := ColorRect.new()
+	energy_bg.color = Color(0, 0, 0, 0.55)
+	energy_bg.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	energy_bg.offset_left = 16.0
+	energy_bg.offset_top = -54.0
+	energy_bg.offset_right = 16.0 + HP_W + 4.0
+	energy_bg.offset_bottom = -36.0
+	energy_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(energy_bg)
+	_energy_fill = ColorRect.new()
+	_energy_fill.color = Color(0.92, 0.78, 0.28, 0.95)
+	_energy_fill.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_energy_fill.offset_left = 18.0
+	_energy_fill.offset_top = -52.0
+	_energy_fill.offset_right = 18.0 + HP_W
+	_energy_fill.offset_bottom = -38.0
+	_energy_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_energy_fill)
 	var bg := ColorRect.new()
 	bg.color = Color(0, 0, 0, 0.55)
 	bg.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)

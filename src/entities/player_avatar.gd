@@ -21,6 +21,8 @@ var on_ground := true
 var in_water := false
 var crouching := false
 var pitching := 0.0
+var gliding := false
+var rolling := false
 var mining := false
 var dead := false
 
@@ -38,6 +40,8 @@ var _amp := 0.0
 var _air := 0.0
 var _rise := 0.0
 var _swim := 0.0
+var _glide := 0.0
+var _roll := 0.0
 var _crouch := 0.0
 var _dig := 0.0
 var _swing := 0.0
@@ -67,6 +71,8 @@ func advance(delta: float) -> void:
 	_air = lerpf(_air, 0.0 if on_ground else 1.0, smooth)
 	_rise = lerpf(_rise, clampf(vertical / 10.0, -1.0, 1.0), smooth)
 	_swim = lerpf(_swim, 1.0 if (in_water and not on_ground) else 0.0, smooth)
+	_glide = lerpf(_glide, 1.0 if gliding else 0.0, smooth)
+	_roll = lerpf(_roll, 1.0 if rolling else 0.0, smooth)
 	_crouch = lerpf(_crouch, 1.0 if (crouching and on_ground) else 0.0, smooth)
 	_dig = lerpf(_dig, 1.0 if mining else 0.0, smooth)
 	_swing = maxf(_swing - delta * 2.8, 0.0)
@@ -117,6 +123,32 @@ func _pose() -> void:
 		el[1] = lerpf(el[1], 0.30, _swim)
 		lean = lerpf(lean, 0.48, _swim)
 		bob = lerpf(bob, 0.05, _swim)
+
+	if _glide > 0.01:
+		# planar: pendurado de bracos erguidos segurando a vela, pernas esticadas
+		# pra tras e o tronco quase deitado no ar
+		thigh[0] = lerpf(thigh[0], 0.16, _glide)
+		thigh[1] = lerpf(thigh[1], 0.08, _glide)
+		knee[0] = lerpf(knee[0], -0.14, _glide)
+		knee[1] = lerpf(knee[1], -0.10, _glide)
+		sh[0] = lerpf(sh[0], -1.45, _glide)
+		sh[1] = lerpf(sh[1], -1.45, _glide)
+		el[0] = lerpf(el[0], 0.25, _glide)
+		el[1] = lerpf(el[1], 0.25, _glide)
+		lean = lerpf(lean, 0.90, _glide)
+		bob = lerpf(bob, 0.0, _glide)
+
+	if _roll > 0.01:
+		# rolamento: encolher e mergulhar o tronco pra frente enquanto o impulso carrega
+		thigh[0] = lerpf(thigh[0], 1.35, _roll)
+		thigh[1] = lerpf(thigh[1], 1.30, _roll)
+		knee[0] = lerpf(knee[0], -2.10, _roll)
+		knee[1] = lerpf(knee[1], -2.15, _roll)
+		sh[0] = lerpf(sh[0], 0.85, _roll)
+		sh[1] = lerpf(sh[1], 0.95, _roll)
+		el[0] = lerpf(el[0], 1.10, _roll)
+		el[1] = lerpf(el[1], 1.20, _roll)
+		lean = lerpf(lean, 1.00, _roll)
 
 	if _crouch > 0.01:
 		thigh[0] = lerpf(thigh[0], 1.22, _crouch)

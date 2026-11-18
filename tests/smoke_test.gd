@@ -47,6 +47,7 @@ var _swim_seen := false
 var _swim_min_y := 999.0
 var _swim_max_leg := 0.0
 var _swim_seek := false
+var _lake := Vector3i.ZERO
 
 
 func _ready() -> void:
@@ -74,6 +75,12 @@ func _ready() -> void:
 		["memoria muda comportamento", 0, _check_memory],
 		["lobo na agua", 0, _check_swim_setup],
 		["lobo nada e busca margem", 280, _check_swim_assert],
+		["golpe no lobo: dano e empurrada", 0, _check_attack],
+		["rolamento e invencibilidade", 0, _check_roll],
+		["vigor: dreno, recupero e trava", 0, _check_energy],
+		["planar e queda", 0, _check_glide_fall],
+		["respiracao e afogamento", 0, _check_breath],
+		["regeneracao fora de combate", 0, _check_regen],
 		["hud, morte e renascer", 0, _check_hud],
 		["salvar e carregar", 0, _check_save],
 		["cadaver no chao", 0, _check_corpse],
@@ -703,6 +710,7 @@ func _check_swim_setup() -> void:
 				best_score = score
 				best = Vector3i(x, top, z)
 	var depth := VoxelConfig.SEA_LEVEL - best.y
+	_lake = best
 	_check("lago fundo no mapa", best_score > 0 and depth >= 2,
 		"profundidade=%d  vizinhos=%d  em (%d,%d)" % [depth, (best_score % 10) if best_score > 0 else 0, best.x, best.z])
 	if best_score <= 0 or depth < 2:
@@ -747,6 +755,229 @@ func _check_swim_assert() -> void:
 		feet.distance_to(_swim_start), _swim_max_leg, _swim_min_y])
 	w.body.feet_pos = w.home + Vector3(0.0, 1.0, 0.0)
 	w.body.velocity = Vector3.ZERO
+
+
+# ------------------------------------------------------------- mecanicas veloren
+
+## Congela a arvore e deixa so o jogador receber passos do teste: mesmo contrato
+## dos passos de minerar/colocar (a IA e o relogio param, a mecanica e dirigida).
+func _pause_for(p: Player) -> void:
+	self.process_mode = Node.PROCESS_MODE_ALWAYS
+	p.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	get_tree().paused = true
+
+
+func _unpause_after(p: Player) -> void:
+	get_tree().paused = false
+	self.process_mode = Node.PROCESS_MODE_INHERIT
+	p.process_mode = Node.PROCESS_MODE_INHERIT
+
+
+## Golpe unificado (botao esquerdo): entidade primeiro, bloco depois. No lobo o
+## golpe e dano fixo + atordoamento (steering suspenso) + empurrada no corpo.
+func _check_attack() -> void:
+	var p: Player = main.player
+	var w: Wolf = main.wolves[2]
+	_pause_for(p)
+	p.hp = p.max_hp
+	p.energy = p.max_energy
+	p.feet_to_spawn(_spawn)
+	_aim(p, -0.35)
+	w.hp = Wolf.MAX_HP
+	w.body.feet_pos = _spawn + Vector3(0.0, 0.0, -2.5)
+	w.body.velocity = Vector3.ZERO
+	w._move_target = w.body.feet_pos
+	Input.action_press("break_block")
+	var n := 0
+	while absf(w.hp - Wolf.MAX_HP) < 0.01 and n < 30:
+		p.update_local(1.0 / 60.0)
+		n += 1
+	Input.action_release("break_block")
+	_check("golpe acertou o lobo", absf(w.hp - Wolf.MAX_HP) > 5.0,
+		"hp %.0f -> %.1f em %d ticks" % [Wolf.MAX_HP, w.hp, n])
+	_check("dano do golpe e o ataque fixo",
+		absf(w.hp - (Wolf.MAX_HP - Player.ATTACK_DAMAGE)) < 0.01, "hp=%.2f" % w.hp)
+	_check("golpe atordoa o lobo", w._stagger > 0.0, "stagger=%.2f s" % w._stagger)
+	_check("golpe empurra o corpo", w.body.velocity.length() > 3.0,
+		"velocidade=%.2f m/s" % w.body.velocity.length())
+	w.body.feet_pos = w.home + Vector3(0.0, 1.0, 0.0)
+	w.body.velocity = Vector3.ZERO
+	w._move_target = w.home
+	w._stagger = 0.0
+	_unpause_after(p)
+
+
+func _check_roll() -> void:
+	var p: Player = main.player
+	var mid := false
+	for e in InputMap.action_get_events("roll"):
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_MIDDLE:
+			mid = true
+	_check("acao rolar no botao do meio", mid)
+	var ctrl := false
+	for e in InputMap.action_get_events("glide"):
+		if e is InputEventKey and e.physical_keycode == KEY_CTRL:
+			ctrl = true
+	_check("acao planar no CTRL", ctrl)
+	_pause_for(p)
+	p.hp = p.max_hp
+	p.energy = p.max_energy
+	p.feet_to_spawn(_spawn)
+	_aim(p, 0.0)
+	# a borda do clique do meio e o mesmo caminho do clique direito (ja provado
+	# pelo pipeline de place): aqui a mecanica entra pelo buffer direto
+	p._roll_buffer = Player.ROLL_BUFFER
+	p.update_local(1.0 / 60.0)
+	var spd := Vector3(p.body.velocity.x, 0.0, p.body.velocity.z).length()
+	_check("rolamento disparou e custou vigor",
+		p._roll_time > 0.0 and absf(p.energy - (Player.MAX_ENERGY - Player.ROLL_COST)) < 0.05,
+		"vigor=%.1f  janela=%.2f s" % [p.energy, p._roll_time])
+	_check("impulso do rolamento no corpo", spd > 8.0, "velocidade=%.2f m/s" % spd)
+	p.take_damage(10.0, p.position3())
+	_check("janela de invencibilidade segura o golpe", p.hp == p.max_hp,
+		"hp=%.1f  iframes=%.2f" % [p.hp, p._iframes])
+	for i in 40:
+		p.update_local(1.0 / 60.0)
+	p.take_damage(10.0, p.position3())
+	_check("fora da janela o golpe entra", absf(p.hp - (p.max_hp - 10.0)) < 0.01,
+		"hp=%.1f" % p.hp)
+	_unpause_after(p)
+
+
+## A parede de pedra da o dreno sem atravessar o mapa: correr exige desejo e pe
+## no chao, e a parede mantem os dois com o corpo parado.
+func _check_energy() -> void:
+	var p: Player = main.player
+	var w: VoxelWorld = main.world
+	_pause_for(p)
+	p.hp = p.max_hp
+	p.energy = p.max_energy
+	p.feet_to_spawn(_spawn)
+	_aim(p, 0.0)
+	var base := Vector3i(floori(_spawn.x), floori(_spawn.y), floori(_spawn.z))
+	var cells: Array[Vector3i] = []
+	var orig: Array[int] = []
+	for dx in [-1, 0, 1]:
+		for dy in [0, 1, 2]:
+			var c := base + Vector3i(dx, dy, -2)
+			cells.append(c)
+			orig.append(w.get_block(c))
+			w.set_block(c, BlockDefs.Block.STONE)
+	Input.action_press("sprint")
+	Input.action_press("move_forward")
+	for i in 240:
+		p.update_local(1.0 / 60.0)
+	Input.action_release("sprint")
+	Input.action_release("move_forward")
+	var drained := p.energy
+	_check("correr drena o vigor", drained < Player.MAX_ENERGY - 15.0,
+		"vigor=%.1f apos 4 s de corrida" % drained)
+	for i in 120:
+		p.update_local(1.0 / 60.0)
+	_check("parado recupera o vigor", p.energy > drained + 15.0,
+		"%.1f -> %.1f em 2 s" % [drained, p.energy])
+	Input.action_press("sprint")
+	Input.action_press("move_forward")
+	p.energy = 0.4
+	for i in 40:
+		p.update_local(1.0 / 60.0)
+	Input.action_release("sprint")
+	Input.action_release("move_forward")
+	_check("vigor zerado trava a corrida", p._sprint_locked,
+		"vigor=%.2f  trava=%s" % [p.energy, p._sprint_locked])
+	p.energy = Player.SPRINT_RECOVERY + 12.0
+	for i in 20:
+		p.update_local(1.0 / 60.0)
+	_check("vigor recuperado libera a corrida", not p._sprint_locked,
+		"vigor=%.1f  trava=%s" % [p.energy, p._sprint_locked])
+	for i in cells.size():
+		w.set_block(cells[i], orig[i])
+	_unpause_after(p)
+
+
+func _check_glide_fall() -> void:
+	var p: Player = main.player
+	_pause_for(p)
+	p.hp = p.max_hp
+	p.energy = p.max_energy
+	p.feet_to_spawn(_spawn + Vector3(0.0, 4.0, 0.0))
+	p.yaw = 0.0
+	p.pitch = -0.9
+	Input.action_press("glide")
+	var seen := false
+	var min_vy := 0.0
+	var max_hs := 0.0
+	for i in 200:
+		p.update_local(1.0 / 60.0)
+		seen = seen or p.gliding
+		min_vy = minf(min_vy, p.body.velocity.y)
+		max_hs = maxf(max_hs, Vector3(p.body.velocity.x, 0.0, p.body.velocity.z).length())
+		if i > 20 and p.body.on_ground:
+			break
+	Input.action_release("glide")
+	var cap_dive := Player.GLIDE_SINK + 0.9 * Player.GLIDE_DIVE_SINK
+	_check("planou segurando CTRL no ar", seen)
+	_check("planar limita a queda", seen and min_vy >= -cap_dive - 0.05,
+		"vy minimo=%.2f  cap do mergulho=%.2f" % [min_vy, cap_dive])
+	_check("mergulhar ganha velocidade", seen and max_hs > 7.0,
+		"hs maxima=%.2f m/s" % max_hs)
+	_check("planar aterra sem dano de queda", p.hp == p.max_hp,
+		"hp=%.1f  no chao=%s" % [p.hp, p.body.on_ground])
+	p.feet_to_spawn(_spawn + Vector3(0.0, 12.0, 0.0))
+	for i in 150:
+		p.update_local(1.0 / 60.0)
+		if p.body.on_ground:
+			break
+	var esperado: float = p.max_hp \
+			- (sqrt(2.0 * p.body.gravity * 12.0) - Player.FALL_SAFE_SPEED) \
+			* Player.FALL_DAMAGE_PER_SPEED
+	_check("queda livre machuca", absf(p.hp - esperado) < 2.0,
+		"hp=%.1f (esperado ~%.1f  gravidade=%.0f)" % [p.hp, esperado, p.body.gravity])
+	_unpause_after(p)
+
+
+func _check_breath() -> void:
+	if _lake == Vector3i.ZERO:
+		return
+	var p: Player = main.player
+	_pause_for(p)
+	p.hp = p.max_hp
+	p.energy = p.max_energy
+	p.feet_to_spawn(Vector3(float(_lake.x) + 0.5, float(_lake.y) + 0.3, float(_lake.z) + 0.5))
+	for i in 120:
+		p.update_local(1.0 / 60.0)
+	_check("submerso consome ar", p.air < Player.AIR_MAX - 0.5,
+		"ar=%.2f s apos 2 s submerso" % p.air)
+	p.air = 0.5
+	for i in 240:
+		p.update_local(1.0 / 60.0)
+	_check("sem ar o afogamento machuca", p.hp < p.max_hp - 15.0,
+		"hp=%.1f apos 4 s sem ar" % p.hp)
+	p.feet_to_spawn(_spawn + Vector3(0.0, 1.0, 0.0))
+	for i in 120:
+		p.update_local(1.0 / 60.0)
+	_check("fora da agua o ar enche", p.air >= Player.AIR_MAX - 0.01,
+		"ar=%.2f s" % p.air)
+	_unpause_after(p)
+
+
+func _check_regen() -> void:
+	var p: Player = main.player
+	_pause_for(p)
+	p.energy = p.max_energy
+	p._since_damage = 20.0
+	var hp0 := p.hp
+	for i in 120:
+		p.update_local(1.0 / 60.0)
+	_check("regenera fora de combate", p.hp > hp0 + 1.5,
+		"hp %.1f -> %.1f em 2 s" % [hp0, p.hp])
+	p._since_damage = 0.0
+	var hp1 := p.hp
+	for i in 120:
+		p.update_local(1.0 / 60.0)
+	_check("combate recente trava a regeneracao", p.hp < hp1 + 0.05,
+		"hp %.1f -> %.1f apos 2 s" % [hp1, p.hp])
+	_unpause_after(p)
 
 
 ## Um braco do experimento. A posicao, o hp, o campo de Eter ao redor e a ameaca

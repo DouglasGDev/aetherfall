@@ -35,6 +35,10 @@ const SWIM_BUOYANCY: float = 0.15
 const SWIM_RISE: float = 1.6
 const SWIM_SINK_MAX: float = -1.6
 const SHORE_AFTER: float = 2.0
+# golpe do jogador: empurrada + tempo sem steering (o steering normal comeria o knockback)
+const STAGGER_TIME: float = 0.45
+const KNOCKBACK_SPEED: float = 5.0
+const KNOCKBACK_LIFT: float = 2.4
 
 var world: VoxelWorld = null
 var aether: AetherField = null
@@ -81,6 +85,7 @@ var _saw_cd: float = 0.0
 var _bite_cd: float = 0.0
 var _corpse_timer: float = 0.0
 var _swim_time: float = 0.0
+var _stagger: float = 0.0
 var _swim_phase: float = 0.0
 var _visual: Node3D = null
 var _legs: Array = []
@@ -398,7 +403,12 @@ func _physics_process(delta: float) -> void:
 		body.velocity.y = maxf(body.velocity.y, SWIM_SINK_MAX)
 	var want := _move_target - body.feet_pos
 	want.y = 0.0
-	if want.length_squared() > 0.04:
+	if _stagger > 0.0:
+		# atordoado pelo golpe: sem steering, a empurrada do knockback carrega o corpo
+		_stagger -= delta
+		body.velocity.x = lerpf(body.velocity.x, 0.0, clampf(delta * 2.5, 0.0, 1.0))
+		body.velocity.z = lerpf(body.velocity.z, 0.0, clampf(delta * 2.5, 0.0, 1.0))
+	elif want.length_squared() > 0.04:
 		var dir := want.normalized()
 		if _unstick > 0.0:
 			dir = dir.rotated(Vector3.UP, _detour)
@@ -455,7 +465,13 @@ func take_damage(amount: float, from_actor: int, hit_from: Vector3) -> void:
 		return
 	hp = maxf(hp - amount, 0.0)
 	_threat = 1.0
+	_stagger = STAGGER_TIME
 	var me := center()
+	var push := me - hit_from
+	push.y = 0.0
+	if push.length_squared() > 0.0001:
+		body.velocity += push.normalized() * KNOCKBACK_SPEED
+		body.velocity.y = maxf(body.velocity.y, KNOCKBACK_LIFT)
 	aether.imprint(me, AetherField.Channel.BLOOD, amount * 0.05)
 	aether.imprint(me, AetherField.Channel.FEAR, amount * 0.035)
 	mind.remember(_sim_clock.tick, "hurt", hit_from, from_actor, amount / MAX_HP)
@@ -529,6 +545,7 @@ func load_state(d: Dictionary) -> void:
 	_move_target = home
 	_swim_time = 0.0
 	_swim_phase = 0.0
+	_stagger = 0.0
 	if _visual:
 		_visual.rotation.z = 0.0
 	if not alive:
