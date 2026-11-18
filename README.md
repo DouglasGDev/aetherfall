@@ -186,7 +186,9 @@ godot --headless --path . tests/smoke_test.tscn
 
 Sai com código `1` se qualquer checagem falhar. Resultado medido em quatro
 corridas seguidas nesta máquina, na árvore deste README: **220 checagens,
-0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s**, os quatro logs sem nenhuma linha
+0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
+(29 `.gd`, sem `.godot/`), recém-importado com o `--import` logo acima:
+**220 checagens, 0 falhas, 35,4 s**. Os cinco logs sem nenhuma linha
 `ERROR` do engine. A contagem é sempre da revisão medida, nunca do texto: a
 rodada de inventário, pilhas e craft acrescentou passos (`inventario, pilhas e
 receitas` e as checagens de quantidade dentro de `minerar e colocar`,
