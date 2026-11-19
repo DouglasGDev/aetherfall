@@ -848,6 +848,10 @@ func _check_mechanics() -> void:
 	vm.block_id = p.selected_block()
 	vm.advance(1.0 / 60.0)
 
+	# O corpo de 3a pessoa carrega o bloco da tecla ativa, e a pose do braco
+	# direito, o ciclo de lavra e o de golpe mudam com a dureza do que ele segura.
+	_check_held_tp(p)
+
 	# Colocar exige o pipeline real de input: a borda do clique nasce em `_input` e
 	# vira bloco no tick seguinte. Minerar pode continuar sintetico porque le o
 	# nivel da acao, nao a borda. O mundo segue congelado e o clique arma a maquina
@@ -885,6 +889,274 @@ func _check_mechanics() -> void:
 		"dist=%.2f  voxel=%s" % [diag.distance, diag.voxel])
 	_check("linha de visada curta e limpa",
 		w.line_of_sight(p.eye_position(), p.eye_position() + Vector3(0.0, 3.0, 0.0)))
+
+
+## Posicao do cubo na mao direita no quadro do proprio corpo: +x = lado direito,
+## -z = para onde o personagem olha, y acima dos pes. E o que a orbita ve, sem o
+## yaw do jogador no meio da conta.
+func _held_local(p: Player) -> Vector3:
+	return p.avatar.global_transform.affine_inverse() * p.avatar.held_mesh().global_position
+
+
+## Rect projetado na moldura pelos oito cantos do AABB de uma malha. Cantos
+## atras da lente saem da conta: sem isso o rect explode e a medida vira ruido.
+func _proj_rect(cam: Camera3D, mi: MeshInstance3D) -> Rect2:
+	var r := Rect2()
+	var seen := false
+	var ab: AABB = mi.mesh.get_aabb()
+	for sx in [ab.position.x, ab.end.x]:
+		for sy in [ab.position.y, ab.end.y]:
+			for sz in [ab.position.z, ab.end.z]:
+				var wp := mi.global_transform * Vector3(sx, sy, sz)
+				if (cam.global_transform.affine_inverse() * wp).z >= -0.05:
+					continue
+				var sp := cam.unproject_position(wp)
+				r = r.expand(sp) if seen else Rect2(sp, Vector2.ZERO)
+				seen = true
+	return r
+
+
+## Fracao do cubo na mao que nenhum corpo mais proximo da camera cobre, medida
+## numa malha 8x8 de pontos dentro do rect projetado do cubo. E a medida do
+## defeito que a geometria sozinha nao via: o cubo correto no espaco do corpo
+## podia cair inteiro atras do punho e no quadro nao havia bloco nenhum. A
+## profundidade entra na conta porque o rect projetado nao diz quem esta na
+## frente -- sem ela a pose velha media 0,43 de "livre" e a checagem passava
+## justamente no quadro quebrado. Os dois bracos, com esta medicao e com o olho
+## (sonda de pixel em janela real): 0,02 e 0,00 contra 0,062 e 0,019 na pose
+## velha; 0,45 e 0,30 contra 0,405 e 0,294 na pose atual.
+func _held_free(av: PlayerAvatar, cam: Camera3D) -> float:
+	var cube := av.held_mesh()
+	var cr := _proj_rect(cam, cube)
+	if cr.size.x <= 1.0 or cr.size.y <= 1.0:
+		return 0.0
+	var cd := _view_depth(cam, cube)
+	var nearer: Array[Rect2] = []
+	for mi: MeshInstance3D in av.find_children("*", "MeshInstance3D", true, false):
+		if mi == cube or not mi.visible:
+			continue
+		if _view_depth(cam, mi) >= cd:
+			continue
+		var mr := _proj_rect(cam, mi)
+		if mr.size.x <= 1.0 or mr.size.y <= 1.0:
+			continue
+		nearer.append(mr)
+	if nearer.is_empty():
+		return 1.0
+	var n := 0
+	var free := 0
+	for iy in 8:
+		for ix in 8:
+			var pt := Vector2(cr.position.x + cr.size.x * (float(ix) + 0.5) / 8.0,
+				cr.position.y + cr.size.y * (float(iy) + 0.5) / 8.0)
+			n += 1
+			var covered := false
+			for r in nearer:
+				if r.has_point(pt):
+					covered = true
+					break
+			if not covered:
+				free += 1
+	return float(free) / float(maxi(n, 1))
+
+
+## Distancia da camera ao centro do AABB da malha, no espaco da lente. Menor =
+## mais perto do olho, entao e ela que tapa a outra.
+func _view_depth(cam: Camera3D, mi: MeshInstance3D) -> float:
+	var c := cam.global_transform.affine_inverse() \
+		* (mi.global_transform * mi.mesh.get_aabb().get_center())
+	return -c.z
+
+
+## Periodo (em frames de 1/60) e amplitude (rad) do ciclo de lavra do rig. O
+## campo `mining` e escrito na fronteira do rig -- a linha que `_update_avatar`
+## escreve no Player -- porque os dois ciclos precisam da MESMA pose de partida
+## sem quebrar dois blocos no mundo: aqui se mede a resposta do corpo, nao a da
+## lavra. Amplitude abaixo do ciclo cheio nao engana o periodo, que e a distancia
+## entre topos. Devolve periodo -1 se o segundo topo nunca chegou.
+func _avatar_cycle(av: PlayerAvatar, ticks: int) -> Array:
+	av.mining = true
+	var lo := 999.0
+	var hi := -999.0
+	var prev := av.arm_angles().x
+	var rising := false
+	var tops := 0
+	var first := -1
+	var second := -1
+	for i in ticks:
+		av.advance(1.0 / 60.0)
+		var cur := av.arm_angles().x
+		lo = minf(lo, cur)
+		hi = maxf(hi, cur)
+		if cur > prev:
+			rising = true
+		elif rising:
+			tops += 1
+			if tops == 1:
+				first = i
+			elif tops == 2:
+				second = i
+			rising = false
+			if second >= 0:
+				break
+		prev = cur
+	av.mining = false
+	for i in 60:
+		av.advance(1.0 / 60.0)
+	return [float(second - first) if second >= 0 else -1.0, hi - lo]
+
+
+## Amplitude do golpe no rig: o impulso inteiro dura 1/2,8 s, entao 26 frames de
+## 1/60 cobrem armao, corte e volta; os 40 seguintes devolvem o braco ao repouso.
+func _avatar_swing_span(av: PlayerAvatar) -> float:
+	av.swing()
+	var lo := 999.0
+	var hi := -999.0
+	for i in 26:
+		av.advance(1.0 / 60.0)
+		var a := av.arm_angles().x
+		lo = minf(lo, a)
+		hi = maxf(hi, a)
+	for i in 40:
+		av.advance(1.0 / 60.0)
+	return hi - lo
+
+
+## O que a mao direita do rig de 3a pessoa segura muda o corpo inteiro. Blocos
+## escolhidos pela tecla da hotbar (caminho real), durezas lidas do registro:
+## pedra 0,95 = carga cheia, folha 0,22 = carga leve, vidro 0,10 = o ramo ALPHA.
+func _check_held_tp(p: Player) -> void:
+	var av: PlayerAvatar = p.avatar
+	p.third_person = true
+	# A orbita de atras so existe com o olhar neutro: o yaw deixado pelo passo
+	# anterior gira a lente para o lado e a oclusao passa a valer para um angulo
+	# que o jogo nao mostra -- foi assim que a pose velha deu 0,75 de "livre" no
+	# quadro de tras-reto, onde o olho mede 0,02.
+	p.yaw = 0.0
+	p.pitch = 0.0
+	p.select_slot(2)
+	for i in 30:
+		p.update_local(1.0 / 60.0)
+	var heavy := av.arm_angles()
+	var heavy_pos := _held_local(p)
+	var heavy_free := _held_free(av, p.camera)
+	var cube := av.held_mesh()
+	var cube_mesh: ArrayMesh = cube.mesh as ArrayMesh
+	var tex := cube.material_override as StandardMaterial3D
+	_check("cubo na mao do avatar == slot selecionado",
+		av.block_id == p.selected_block() and cube.visible
+			and av.block_id == BlockDefs.Block.STONE,
+		"avatar=%d  slot=%d  name=%s" % [av.block_id, p.selected_block(),
+			BlockDefs.display_name(av.block_id)])
+	_check("cubo do rig amostra o atlas do mundo no tamanho da orbita",
+		tex != null and tex.albedo_texture == p.world.atlas_texture()
+			and cube_mesh != null
+			and absf(cube_mesh.get_aabb().size.x - PlayerAvatar.HELD_SIZE) < 0.001,
+		"atlas=%s  lado=%.3f (esperado %.2f, 1a pessoa usa %.2f)" % [
+			str(tex.albedo_texture != null), cube_mesh.get_aabb().size.x,
+			PlayerAvatar.HELD_SIZE, FPViewmodel.HELD_SIZE])
+	p.select_slot(6)
+	for i in 30:
+		p.update_local(1.0 / 60.0)
+	var light := av.arm_angles()
+	var light_pos := _held_local(p)
+	var light_free := _held_free(av, p.camera)
+	_check("cubo na lateral direita, a frente do tronco",
+		heavy_pos.x > 0.24 and light_pos.x > 0.24 and heavy_pos.z < -0.05
+			and light_pos.z < -0.05,
+		"pedra=(%.2f,%.2f,%.2f)  folha=(%.2f,%.2f,%.2f)" % [heavy_pos.x, heavy_pos.y,
+			heavy_pos.z, light_pos.x, light_pos.y, light_pos.z])
+	_check("cubo acima do joelho e abaixo da cabeca",
+		heavy_pos.y > 0.40 and heavy_pos.y < 1.50 and light_pos.y > 0.40
+			and light_pos.y < 1.50, "pedra y=%.2f  folha y=%.2f" % [heavy_pos.y, light_pos.y])
+	# A premissa que a pose tinha e nao estava segura: no quadro em que a orbita
+	# mora -- atras do personagem -- o cubo nao pode cair inteiro atras do proprio
+	# braco. Sem abertura do ombro e com o 0,16 da lente ele caia 100% coberto.
+	# O corte de 0,15 nao e adjetivo: a pose velha deu 0,02 e 0,00 aqui, a atual
+	# da 0,45 e 0,30, e o pior braco ainda fica duas vezes acima do minimo.
+	_check("bloco na mao passa para fora do braco no quadro da orbita",
+		heavy_free > 0.15 and light_free > 0.15,
+		"livre pedra=%.2f  folha=%.2f" % [heavy_free, light_free])
+	_check("peso do bloco muda a pose do braco",
+		heavy.x < light.x - 0.15 and heavy.y < light.y - 0.60
+			and light_pos.y > heavy_pos.y + 0.25,
+		"ombro pedra=%.2f folha=%.2f  cotovelo pedra=%.2f folha=%.2f  cubo y %.2f->%.2f"
+			% [heavy.x, light.x, heavy.y, light.y, heavy_pos.y, light_pos.y])
+
+	# os dois ciclos de lavra: mesma pose de partida, carga diferente na mao
+	p.select_slot(6)
+	for i in 30:
+		p.update_local(1.0 / 60.0)
+	var leaf_cycle: Array = _avatar_cycle(av, 240)
+	p.select_slot(2)
+	for i in 30:
+		p.update_local(1.0 / 60.0)
+	var stone_cycle: Array = _avatar_cycle(av, 320)
+	_check("ciclo de lavra do rig mexe o ombro",
+		float(leaf_cycle[0]) > 0.0 and float(leaf_cycle[1]) > 0.35,
+		"periodo=%.0f frames  amplitude=%.2f rad" % [leaf_cycle[0], leaf_cycle[1]])
+	_check("pedra lavra mais funda e mais lenta que folha",
+		float(stone_cycle[0]) > float(leaf_cycle[0]) * 1.4
+			and float(stone_cycle[1]) > float(leaf_cycle[1]) * 1.15,
+		"periodo folha=%.0f pedra=%.0f  amplitude folha=%.2f pedra=%.2f"
+			% [leaf_cycle[0], stone_cycle[0], leaf_cycle[1], stone_cycle[1]])
+
+	# golpe: o mesmo arco, mais fundo com a carga
+	var swing_stone := _avatar_swing_span(av)
+	p.select_slot(6)
+	for i in 30:
+		p.update_local(1.0 / 60.0)
+	var swing_leaf := _avatar_swing_span(av)
+
+	# mao vazia pelo caminho do jogo: a pilha gasta em `consume_selected` (o mesmo
+	# que o place usa) e o cubo tem que sair de cena junto do `selected_block()`.
+	var slot := p.inv.selected_slot()
+	var had := p.inv.slot_count(slot)
+	var was := p.inv.slot_block(slot)
+	p.inv.consume_selected(had)
+	for i in 40:
+		p.update_local(1.0 / 60.0)
+	var empty := av.arm_angles()
+	_check("pilha zerada = mao vazia no rig",
+		av.block_id == BlockDefs.Block.AIR and not av.held_mesh().visible,
+		"bloco=%d  visivel=%s  pilha=%d->0" % [av.block_id, str(av.held_mesh().visible), had])
+	_check("mao vazia devolve o braco ao repouso", empty.y < 0.35 and empty.y > 0.05,
+		"cotovelo vazio=%.2f  folha=%.2f  pedra=%.2f" % [empty.y, light.y, heavy.y])
+	var swing_empty := _avatar_swing_span(av)
+	p.inv.add(was, had)
+	p.select_slot(0)
+	for i in 30:
+		p.update_local(1.0 / 60.0)
+	_check("golpe com pedra vai mais fundo que sem carga",
+		swing_stone > swing_empty + 0.15 and swing_stone > swing_leaf + 0.05,
+		"ombro pedra=%.2f folha=%.2f vazio=%.2f rad" % [swing_stone, swing_leaf, swing_empty])
+
+	# o ramo ALPHA do material: vidro entra pelo caminho real da pilha e sai por
+	# `take` depois. Na 1a pessoa este foi o defeito documentado (o cubo virava
+	# painel leitoso); na 3a o cubo transparente tem que usar o MESMO material.
+	p.inv.add(BlockDefs.Block.GLASS, 2)
+	var key := -1
+	for k in Inventory.HOTBAR:
+		if p.inv.slot_block(p.inv.pin_of(k)) == BlockDefs.Block.GLASS:
+			key = k
+	if key >= 0:
+		p.select_slot(key)
+		for i in 30:
+			p.update_local(1.0 / 60.0)
+	var gm := av.held_mesh().material_override as StandardMaterial3D
+	_check("vidro na mao do rig usa o material alpha",
+		key >= 0 and gm != null and gm.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA
+			and av.block_id == BlockDefs.Block.GLASS,
+		"tecla=%d  bloco=%d  transparency=%d  classe=%d" % [key, av.block_id,
+			gm.transparency if gm != null else -1,
+			BlockDefs.draw_of(BlockDefs.Block.GLASS)])
+	p.inv.take(BlockDefs.Block.GLASS, 2)
+	p.select_slot(0)
+	for i in 30:
+		p.update_local(1.0 / 60.0)
+	p.third_person = false
+	for i in 10:
+		p.update_local(1.0 / 60.0)
 
 
 ## Clique direito de verdade: um InputEventMouseButton novo por chamada (o engine

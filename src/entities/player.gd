@@ -2,8 +2,9 @@ class_name Player
 extends Node3D
 ## Jogador local: predicao a 60 Hz (controle do proprio corpo), mundo autoritativo a
 ## 20 Hz. Em 1a pessoa a lente mora no olho e o que aparece e o FPViewmodel (braco
-## + bloco na mao); em 3a pessoa a lente orbita e o que aparece e o PlayerAvatar.
-## Os efeitos de camera (bob/punch) so existem em 1a pessoa.
+## + bloco na mao); em 3a pessoa a lente orbita e o que aparece e o PlayerAvatar
+## (corpo inteiro + o mesmo bloco na mao direita). Os efeitos de camera (bob/punch)
+## so existem em 1a pessoa.
 
 signal block_broken(pos: Vector3i, block: int)
 signal block_placed(pos: Vector3i, block: int)
@@ -180,7 +181,11 @@ func setup(p_world: VoxelWorld, p_spawn: Vector3) -> void:
 	world = p_world
 	spawn_point = p_spawn
 	body.setup(p_world, p_spawn, DIMS_STAND)
+	# O atlas e um so para os dois corpos: o cubo na mao do rig de 3a pessoa e o
+	# cubo na frente da lente saem das mesmas tiles, entao o bloco que o jogador
+	# ve na parede e o mesmo que ele carrega.
 	viewmodel.set_atlas(p_world.atlas_texture())
+	avatar.set_atlas(p_world.atlas_texture())
 	feet_to_spawn(p_spawn)
 
 
@@ -377,7 +382,8 @@ func update_local(delta: float) -> void:
 
 ## Apresentacao do corpo nos dois modos: o rig de 3a pessoa cola nos pes e gira
 ## com o yaw; o view model de 1a pessoa mora na camera e so existe para a lente.
-## Cada modo esconde o outro no mesmo tick -- nunca os dois no quadro.
+## Cada modo esconde o outro no mesmo tick -- nunca os dois no quadro. Os dois
+## carregam o bloco selecionado na mao direita.
 func _update_avatar(delta: float) -> void:
 	var fp := not third_person
 	if fp != avatar.first_person:
@@ -393,6 +399,7 @@ func _update_avatar(delta: float) -> void:
 	avatar.rolling = _roll_time > 0.0
 	avatar.mining = _mining_accum > 0.0
 	avatar.dead = not alive
+	avatar.block_id = selected_block()
 	avatar.global_position = body.feet_pos
 	avatar.global_rotation = Vector3(0.0, yaw, 0.0)
 	avatar.advance(delta)

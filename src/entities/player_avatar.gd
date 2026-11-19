@@ -9,6 +9,13 @@ extends Node3D
 ## oculto, nao desmontado) e quem entra e o FPViewmodel, o braco com o bloco na
 ## mao desenhado para a lente. Um modelo por vista -- sobrepor os dois foi o que
 ## fez a 1a pessoa anterior virar slab azul na frente do olho e braco solto.
+##
+## A mao direita carrega o bloco selecionado, do mesmo atlas e do mesmo tamanho
+## do cubo da 1a pessoa, e a pose do braco sai do que ele segura: o registro nao
+## tem massa, entao a dureza -- o unico gradiente fisico real por bloco, e o que
+## ja manda no tempo de lavra -- decide se o cubo sobe na frente do peito ou
+## pendura ao lado da coxa, de quanto o pendulo da caminhada encolhe com a carga
+## e de quao fundo e quao lento e o arco de picareta.
 
 const PACE := 4.3
 const HIP_Y := 0.80
@@ -18,6 +25,43 @@ const CROUCH_DROP := 0.40
 ## Ombro: 0,30 e a linha do deltoide fora do tronco de 0,46 de largura.
 const SHOULDER_X := 0.30
 const SHOULDER_SPLAY := 0.07
+## Tamanho do cubo na mao. Nao e o 0,16 da 1a pessoa: la o prop mora a meio
+## metro da lente e parece grande; aqui o mesmo 0,16 a 4,4 m de orbita cobre
+## 22 px e cai inteiro atras do punho que o segura (medido: 0,000..0,062 da
+## propria area chegava ao quadro). 0,24 e o menor tamanho com que o bloco
+## passa para fora da mao e se ve.
+const HELD_SIZE := 0.24
+## O cubo sai da mao pendurado abaixo do punho e encostado na sua face externa:
+## colado no punho ele some dentro da caixa da mao, solto ele fica flutuando a
+## um palmo do dedo e o braco parece nao ter segurado nada. Coordenadas do
+## cotovelo direito.
+const HELD_AT := Vector3(0.06, -0.46, -0.06)
+## Pedra e o bloco mais duro do registro, entao e a carga cheia da escala; nao e
+## uma media nem um palpite, e o maximo que `BlockDefs.hardness` devolve hoje.
+const LOAD_REF := 0.95
+## Braco com cubo LEVE: ombro para frente, cotovelo dobrado o bastante para o
+## antebraco ficar horizontal e o punho subir ate a altura do peito.
+const CARRY_SHOULDER_LIGHT := 0.45
+const CARRY_ELBOW_LIGHT := 1.55
+## Braco com cubo PESADO: o mesmo braco esticado para baixo, o bloco pendurado
+## ao lado da coxa. Os dois extremos sao interpolados pela dureza.
+const CARRY_SHOULDER_HEAVY := 0.10
+const CARRY_ELBOW_HEAVY := 0.28
+## Abertura do mesmo braco para fora do corpo, por carga. Sem ela o cubo fica
+## atras do proprio antebraco no quadro de tras -- que e o quadro em que a
+## camera de 3a pessoa quase sempre esta -- e o que ele segura nao se ve. O
+## leve abre quase tanto quanto o pesado: erguido na frente do peito ele
+## precisava sair da coluna do braco, nao so da do tronco.
+const CARRY_SPLAY_LIGHT := 0.40
+const CARRY_SPLAY_HEAVY := 0.44
+## Quanto do balanco da caminhada o ombro perde segurando a carga maxima.
+const CARRY_PUMP_LOSS := 0.45
+## Arco de lavra, por carga: alcance do impacto e cadencia em rad/s. Sem nada na
+## mao os dois ficam no leve, que e o soco curto e rapido de sempre.
+const DIG_REACH_LIGHT := 0.62
+const DIG_REACH_HEAVY := 1.12
+const DIG_RATE_LIGHT := 9.0
+const DIG_RATE_HEAVY := 4.6
 
 var walk_speed := 0.0
 var vertical := 0.0
@@ -29,6 +73,9 @@ var gliding := false
 var rolling := false
 var mining := false
 var dead := false
+## O que a mao direita segura: o Player escreve o `selected_block()` aqui, do
+## mesmo jeito que escreve no FPViewmodel, e o cubo sai do atlas do mundo.
+var block_id: int = BlockDefs.Block.AIR
 
 var first_person := false
 var _rig: Node3D = null
@@ -38,6 +85,11 @@ var _thighs: Array[Node3D] = []
 var _knees: Array[Node3D] = []
 var _shoulders: Array[Node3D] = []
 var _elbows: Array[Node3D] = []
+var _held: MeshInstance3D = null
+var _atlas: Texture2D = null
+var _mat_block: StandardMaterial3D = null
+var _mat_block_alpha: StandardMaterial3D = null
+var _mesh_for := -1
 var _phase := 0.0
 var _amp := 0.0
 var _air := 0.0
@@ -48,11 +100,36 @@ var _roll := 0.0
 var _crouch := 0.0
 var _dig := 0.0
 var _swing := 0.0
+## Blend da carga (tem algo na mao?) e do peso dela (0 folha .. 1 pedra), e o
+## relogio proprio do ciclo de picareta: a cadencia muda com a carga e nao pode
+## emprestar o _phase do corpo, que e da passada.
+var _carry := 0.0
+var _load := 0.0
+var _digp := 0.0
 
 
 ## Impulso de golpe: o braco direito faz o arco e volta sozinho.
 func swing() -> void:
 	_swing = 1.0
+
+
+## O atlas vem do mundo: sem ele o bloco na mao seria um cubo de cor chutada.
+func set_atlas(tex: Texture2D) -> void:
+	_atlas = tex
+	_mat_block = _atlas_mat(false)
+	_mat_block_alpha = _atlas_mat(true)
+	_mesh_for = -1
+
+
+## O cubo que esta na mao: para quem precisa medir visibilidade e posicionamento
+## sem conhecer os nomes internos do rig.
+func held_mesh() -> MeshInstance3D:
+	return _held
+
+
+## Ombro e cotovelo direitos: o eixo que a 3a pessoa ve, e onde a carga aparece.
+func arm_angles() -> Vector2:
+	return Vector2(_shoulders[1].rotation.x, _elbows[1].rotation.x)
 
 
 ## 1a pessoa: o rig inteiro sai de cena -- a lente tem o FPViewmodel. Em 3a ele
@@ -77,12 +154,29 @@ func advance(delta: float) -> void:
 	_roll = lerpf(_roll, 1.0 if rolling else 0.0, smooth)
 	_crouch = lerpf(_crouch, 1.0 if (crouching and on_ground) else 0.0, smooth)
 	_dig = lerpf(_dig, 1.0 if mining else 0.0, smooth)
+	_carry = lerpf(_carry, 1.0 if block_id != BlockDefs.Block.AIR else 0.0, smooth)
+	_load = lerpf(_load, clampf(BlockDefs.hardness(block_id) / LOAD_REF, 0.0, 1.0), smooth)
 	_swing = maxf(_swing - delta * 2.8, 0.0)
 	_phase += delta * (2.0 + 1.05 * walk_speed)
+	if _dig > 0.01:
+		_digp += delta * lerpf(DIG_RATE_LIGHT, DIG_RATE_HEAVY, _load)
+	_sync_held()
 	if dead:
 		_pose_dead(smooth)
 	else:
 		_pose()
+
+
+func _sync_held() -> void:
+	if block_id == BlockDefs.Block.AIR or _atlas == null:
+		_held.visible = false
+		return
+	if block_id != _mesh_for:
+		_held.mesh = VoxelWorld.block_cube_mesh(block_id, HELD_SIZE)
+		_held.material_override = (_mat_block_alpha
+			if BlockDefs.draw_of(block_id) == BlockDefs.Draw.ALPHA else _mat_block)
+		_mesh_for = block_id
+	_held.visible = true
 
 
 func _pose() -> void:
@@ -95,10 +189,26 @@ func _pose() -> void:
 	var knee := [-0.36 * a * maxf(0.0, -s0) - 0.06 * a, -0.36 * a * maxf(0.0, s0) - 0.06 * a]
 	var sh := [0.34 * a * s1, 0.34 * a * s0]
 	var el := [0.20 + 0.18 * a * maxf(0.0, s1), 0.20 + 0.18 * a * maxf(0.0, s0)]
+	var shz := [-SHOULDER_SPLAY, SHOULDER_SPLAY]
 	var lean := -0.05 * a
 	var bob := absf(s0) * 0.035 * a
 	var roll := s0 * 0.020 * a
 	var breath := sin(_phase * 2.2) * (1.0 - minf(a, 1.0))
+
+	if _carry > 0.01:
+		# O braco direito passa a existir para o que ele segura: cubo leve sobe na
+		# frente do peito, cubo pesado pendura ao lado da coxa, e o pendulo da
+		# caminhada encolhe com a carga -- pedra nao balanca como folha seca. O
+		# tronco inclina um dedo para o lado vazio, e por isso a 3a pessoa muda ate
+		# parado. Vem antes dos estilos de corpo: no ar, nadando, planando, rolando
+		# ou agachado as maos estao ocupadas com outra coisa e a carga nao manda.
+		var w := _load
+		sh[1] = lerpf(sh[1], lerpf(CARRY_SHOULDER_LIGHT, CARRY_SHOULDER_HEAVY, w)
+			+ 0.34 * a * s0 * (1.0 - CARRY_PUMP_LOSS * w), _carry)
+		el[1] = lerpf(el[1], lerpf(CARRY_ELBOW_LIGHT, CARRY_ELBOW_HEAVY, w), _carry)
+		shz[1] = lerpf(shz[1], SHOULDER_SPLAY + lerpf(CARRY_SPLAY_LIGHT,
+				CARRY_SPLAY_HEAVY, w), _carry)
+		roll += 0.030 * w * _carry
 
 	var up := clampf(0.5 + 0.5 * _rise, 0.0, 1.0)
 	if _air > 0.01:
@@ -164,25 +274,36 @@ func _pose() -> void:
 		lean = lerpf(lean, -0.30, _crouch)
 
 	if _dig > 0.01:
-		var c := sin(_phase * 3.4)
-		sh[1] = lerpf(sh[1], -0.95 + 0.80 * c, _dig)
-		el[1] = lerpf(el[1], 0.60 - 0.40 * c, _dig)
+		# Ciclo de picareta com o que a mao segura: no alto o braco recolhe o
+		# cotovelo, no impacto o ombro desce ate a frente do corpo, em direcao ao
+		# bloco minerado. O arco antigo passava o ciclo inteiro atras do corpo
+		# (-1,75 .. -0,15 rad) e nunca chegava no alvo; agora o alcance e o
+		# relogio do ciclo sao da carga (_digp, nao o da passada): pedra pesada
+		# desce mais fundo e mais devagar que folha.
+		var c := 0.5 + 0.5 * sin(_digp)
+		var reach := lerpf(DIG_REACH_LIGHT, DIG_REACH_HEAVY, _load)
+		sh[1] = lerpf(sh[1], lerpf(-0.10, reach, c), _dig)
+		el[1] = lerpf(el[1], lerpf(1.30, 0.30, c), _dig)
+		lean = lerpf(lean, lerpf(-0.10, -0.32, c), _dig * (0.4 + 0.6 * _load))
 
 	if _swing > 0.0:
 		var t := 1.0 - _swing
 		var e := t * t * (3.0 - 2.0 * t)
 		var wt := minf(_swing * 2.5, 1.0)
-		sh[1] = lerpf(sh[1], lerpf(-1.95, 0.95, e), wt)
+		# Com carga o mesmo arco fica mais fundo: arma atras do corpo e acompanha
+		# ate a frente. Sem nada na mao _load e 0 e os numeros sao os de sempre.
+		var wind := -1.95 - 0.30 * _load
+		var strike := 0.95 + 0.30 * _load
+		sh[1] = lerpf(sh[1], lerpf(wind, strike, e), wt)
 		el[1] = lerpf(el[1], lerpf(1.05, 0.10, e), wt)
 		lean = lerpf(lean, lerpf(-0.30, 0.14, e), wt * 0.7)
 
 	for i in 2:
-		var s := -1.0 if i == 0 else 1.0
 		_thighs[i].rotation.x = thigh[i]
 		_thighs[i].rotation.z = 0.0
 		_knees[i].rotation.x = knee[i]
 		_shoulders[i].rotation.x = sh[i]
-		_shoulders[i].rotation.z = s * SHOULDER_SPLAY
+		_shoulders[i].rotation.z = shz[i]
 		_elbows[i].rotation.x = el[i]
 	_rig.rotation.z = roll
 	_rig.position.y = -CROUCH_DROP * _crouch + bob + breath * 0.01
@@ -257,6 +378,15 @@ func _ready() -> void:
 		_shoulders.append(sh)
 		_elbows.append(el)
 
+	# A mao do lado direito (indice 1) e a que carrega: o cubo e irmao da caixa
+	# da mao sob o MESMO cotovelo, entao cada arco do braco leva o bloco junto.
+	_held = MeshInstance3D.new()
+	_held.name = "HeldBlock"
+	_held.position = HELD_AT
+	_held.rotation.y = 0.62
+	_held.visible = false
+	_elbows[1].add_child(_held)
+
 	for side in [-1.0, 1.0]:
 		var hip := Node3D.new()
 		hip.position = Vector3(0.155 * side, HIP_Y, 0.0)
@@ -275,6 +405,22 @@ func _mat(c: Color, rough: float) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = c
 	m.roughness = rough
+	return m
+
+
+## O material do cubo na mao e o material do mundo: atlas, tint por face, filtro
+## nearest e o SOL do cenario acertando ele. Diferente do FPViewmodel de proposito
+## -- la o membro mora na frente da lente e precisa de render_priority sem depth
+## test para nao ser engolido pelo muro; aqui o bloco esta a dois metros da camera
+## e um cubo que ignore profundidade flutuaria sobre a paisagem.
+func _atlas_mat(alpha: bool) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = _atlas
+	m.vertex_color_use_as_albedo = true
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+	m.roughness = 0.85
+	if alpha:
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return m
 
 

@@ -98,8 +98,9 @@ func _build_materials() -> void:
 	_mat_glass.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 
 
-## O atlas do mundo, emprestado ao view model de 1a pessoa: o bloco na mao amostra
-## os mesmos tiles do bloco na parede, nao uma reamostragem a parte.
+## O atlas do mundo, emprestado aos dois corpos: o bloco na mao do rig de 3a
+## pessoa e o bloco na frente da lente amostram os mesmos tiles do bloco na
+## parede, nao uma reamostragem a parte.
 func atlas_texture() -> Texture2D:
 	return _atlas
 
