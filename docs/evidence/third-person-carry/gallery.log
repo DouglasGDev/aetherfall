@@ -1,0 +1,21 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+GALERIA  resolucao=(1920, 1080)  seed=20261116  AETHER_CELL=4
+VARREDURA  14884 colunas em 1112 ms  { "planicie": 4487, "floresta": 3311, "neve": 4843, "pico": 18, "praia": 2225 }
+MATA  claro_na_floresta=919  claro_com_mata=51  claro_fora=10871  claro_fora_com_mata=21
+LOBOS  boot  ["viva d=49.7", "viva d=44.4", "viva d=43.6", "viva d=35.3", "viva d=22.5"]
+SHOT  01-3a-pessoa-planicie    0.184  (92,43,98) yaw=1.57 cam=4.40 lum=0.45
+SHOT  02-1a-pessoa-planicie    0.181  (71,48,118) yaw=0.00 cam=0.00 lum=0.45
+SHOT  03-floresta              0.172  (110,39,106) yaw=1.57 copas=21 lum=0.45
+SHOT  04-lago-e-praia          0.134  (82,28,79) yaw=4.71 cam=0.00 lum=0.52
+SHOT  06-monte-nevado          0.077  (17,49,62) yaw=4.71 cam=4.40 lum=0.63
+SHOT  07-mirante-do-pico       0.063  (43,51,59) yaw=3.14 h=50 lum=0.67
+SHOT  08-corpo-no-ar           0.176  (64,31,60) yaw=3.14 altura=1.33 lum=0.50
+       obra: 10 blocos pelo clique em (69,113)  ultimo erro={  }
+       obra: 6 blocos pelo clique em (109,119)  ultimo erro={ "clique nao virou bloco": (111, 41, 119) }
+SHOT  09-construcao            0.192  (67,49,113) base=(69,113) giro=+0.30 lum=0.46
+SHOT  05-lavrando              0.119  (72,49,114) yaw=0.00 progresso=0.57 alvo= brilho_alvo=0.39 lum=0.41
+SHOT  10-lobo                  0.163  noquadro=1 alvo=lobo (hunt) a=3.14 d=4.8 intent=hunt lum=0.51
+SHOT  11-visao-do-eter         0.143  marca=(67,48,119) lente=(60,112) yaw=-2.81 pitch=-0.44 celulas=38 cam=4.37 fundo=20.0 escuro=0.01 estouro=0.00 eter=0.074 pinta=0.05 trabalho=38 sangue=0 medo=0 lum=0.51
+GALERIA ok

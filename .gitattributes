@@ -2,6 +2,12 @@
 # Git para Windows converte no checkout sem esta linha.
 * text=auto eol=lf
 
+# A evidencia e forensic: cada tabela do status cita um SHA-256 de log, e os
+# manifests (artifacts.sha256) foram computados sobre os bytes que o engine
+# escreveu -- CRLF. Sem esta linha o `eol=lf` de cima reescreveria cada .log no
+# commit e o hash publicado deixaria de bater em qualquer clone.
+docs/evidence/** -text
+
 *.png binary
 *.jpg binary
 *.svg text

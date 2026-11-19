@@ -1,0 +1,95 @@
+PREFLIGHT Godot=0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK geracao real | seed=20261116 chunks=64
+OK 2025 colunas secas, piso y=50, ar ate o teto | invalidas=0
+OK Player pronto com atlas real | ready=true atlas=():<ImageTexture#-9223372002109159944>
+OK sem input automatico ou malharia | process=false meshes=0
+OK WORK sem jogador perceptivel | dist=73.595 los=false
+OK imprint WORK .42 atrai | work=0.4200 tick=1 intent=investigate reaction=seguindo trabalho feet=(58.02826, 51.15434, 62.01449) speed=0.9237 target=(66.0, 50.6, 62.0)
+OK aproximacao fisica do rastro | dist 7.972 -> 6.707 tick=17 intent=investigate reaction=seguindo trabalho feet=(59.304, 51.221, 62.37674) speed=2.5219 target=(66.0, 50.6, 62.0)
+OK rastro nao fabrica avistamento | episodios=0
+OK premissa dos pesos simultaneos | blood=0.250 work*.35=0.147
+OK vence o rastro ponderado mais forte | esperado=(58.0, 50.6, 66.0) tick=1 intent=investigate reaction=seguindo sangue feet=(57.98551, 51.15434, 62.02826) speed=0.9237 target=(58.0, 50.6, 66.0)
+OK premissa dos pesos simultaneos | blood=0.080 work*.35=0.294
+OK vence o rastro ponderado mais forte | esperado=(66.0, 50.6, 62.0) tick=1 intent=investigate reaction=seguindo trabalho feet=(58.02826, 51.15434, 62.01449) speed=0.9237 target=(66.0, 50.6, 62.0)
+OK medo local com jogador invisivel | player_z=18.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-0.839012, 0.0, -0.927879) tick=7 intent=flee reaction=evitando medo feet=(61.16099, 51.45433, 61.07212) speed=5.7513 target=(47.34103, 51.98933, 61.29216)
+OK medo local com jogador invisivel | player_z=106.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-0.839012, 0.0, -0.927879) tick=7 intent=flee reaction=evitando medo feet=(61.16099, 51.45433, 61.07212) speed=5.7513 target=(47.34103, 51.98933, 61.29216)
+OK A/B jogador oculto nao muda vetor | A=(-1.0, 0.0, 0.0) B=(-1.0, 0.0, 0.0)
+OK A/B mesmo seed e clock conservam movimento | A=(-0.839012, 0.0, -0.927879) B=(-0.839012, 0.0, -0.927879)
+OK parede real oculta jogador proximo | dist=8.011 los=false
+OK sem avistamento nao caca | ticks_hunt=0 tick=13 intent=patrol reaction=patrulhando feet=(57.51664, 51.33434, 60.6525) speed=2.5728 target=(61.83709, 50.2, 52.08398)
+OK parede nao produz memoria visual | episodios=0
+OK presa visivel ainda provoca caca | tick=10 intent=hunt reaction=perseguindo presa visivel feet=(59.51234, 51.081, 63.52291) speed=4.4980 target=(66.0, 51.401, 62.0)
+OK caca move corpo ate presa visivel | dist 8.000 -> 6.664
+OK avistamento real seguido de bloqueio e deslocamento | visto=(66.0, 51.901, 62.0) oculto=(66.0, 51.001, 72.0) los=false
+OK persegue ultima observacao, nao posicao oculta | tick=11 intent=hunt reaction=buscando ultimo avistamento feet=(59.67067, 51.281, 63.58062) speed=2.9599 target=(66.0, 51.901, 62.0)
+OK memoria guia movimento apos perda de LOS | dist 6.524 -> 6.084 tick=15 intent=hunt reaction=buscando ultimo avistamento feet=(60.07307, 51.481, 63.37195) speed=2.4126 target=(66.0, 51.901, 62.0)
+OK WORK chega ao local em ate 8s | dist=1.154 tick=108 intent=investigate reaction=seguindo trabalho feet=(65.28786, 51.001, 62.90815) speed=2.5715 target=(66.0, 50.6, 62.0)
+OK inspecao para corpo em vez de cair na patrulha | drift=0.0000 tick=120 intent=investigate reaction=farejando feet=(65.28786, 51.001, 62.90815) speed=0.0000 target=(65.28786, 51.001, 62.90815)
+OK inspecao WORK produz episodio sem atribuir ator | count=1 atom={ "tick": 147, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.0272222213723 }
+OK rastro estatico nao repete episodio em 3s | antes=1 depois=1
+OK inspecao registra cache limitado | cache={ (15, 12, 14): (0.0, 37.4), (16, 12, 14): (0.0, 37.4), (17, 12, 14): (0.0, 37.4), (15, 12, 15): (0.0, 37.4), (16, 12, 15): (0.147, 37.4), (17, 12, 15): (0.0, 37.4), (15, 12, 16): (0.0, 37.4), (16, 12, 16): (0.0, 37.4), (17, 12, 16): (0.0, 37.4) }
+OK novo imprint .42 reabre local checado | reabriu=true work=0.840 tick=382 intent=investigate reaction=rastro examinado feet=(67.19477, 51.001, 62.10367) speed=0.0000 target=(67.19477, 51.001, 62.10367)
+OK rastro renovado termina segunda inspecao | count=2
+OK load limpa cache transitorio | cache={  }
+OK load nao retoma timer de inspecao | left=0.0 tick=382 intent=investigate reaction=patrulhando feet=(67.19477, 51.001, 62.10367) speed=0.0000 target=(58.0, 51.001, 62.0)
+OK BLOOD aproxima corpo ate fonte | dist=1.154 tick=108 intent=investigate reaction=seguindo sangue feet=(65.28786, 51.001, 62.90815) speed=2.5715 target=(66.0, 50.6, 62.0)
+OK inspecao BLOOD produz episodio sem ator | atom={ "tick": 147, "kind": "scent_blood", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.07777777534944 }
+OK sangue nao vira avistamento ou trabalho | saw=0 work=0
+OK premissa: inspecao em andamento | tick=3 intent=investigate reaction=farejando feet=(66.0, 51.45433, 62.0) speed=0.0000 target=(66.0, 51.33434, 62.0)
+OK medo interrompe inspecao antes de 2s | tick=17 intent=flee reaction=evitando medo feet=(65.3757, 51.001, 61.21983) speed=5.5671 target=(51.54675, 51.476, 61.43308)
+OK interrupcao move corpo sem concluir episodio | dx=-0.624 count=0
+OK premissa: WORK forte sem presa perceptivel | energia=4.000000 tick=1 intent=investigate reaction=seguindo trabalho feet=(58.02826, 51.15434, 62.01449) speed=0.9237 target=(66.0, 50.6, 62.0)
+OK difusao .25s durante aproximacao e inspecao | ticks=240 passes=48 seguindo=21 farejando=8
+OK campo realmente decai e espalha | energia 4.000000 -> 2.021455 celulas=19
+OK WORK difuso conclui episodio sem ator em ate 12s | tick=148 count=1 atom={ "tick": 147, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.0527427483488 }
+OK episodio difuso exige chegada fisica ao local examinado | dist=1.1541 deslocamento=7.3442
+OK difusao WORK nao fabrica presa ou sangue | saw=0 blood=0
+OK premissa: primeira inspecao com corpo real em ate 3s | tick=40 atom={ "tick": 39, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.05444444274461 } tick=40 intent=investigate reaction=rastro examinado feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK premissa: cache da fonte dura 30s e WORK continua forte | entrada=(0.294, 32.0) tick=40 work*.35=0.294000
+OK cache impede reinspecao durante os primeiros 29s | idade=29.00 farejando=0 count=1 cached=true
+OK cache expira apos 30s na cadencia de percepcao | idade=30.050 tick=641
+OK mesmo WORK reabre inspecao sem novo imprint | idade=30.050 tick=641
+OK revisita termina segundo episodio no mesmo local | intervalo_ticks=640 count=2 atom={ "tick": 679, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.05444444274461 }
+OK premissa mantida: corpo parado e campo estatico sem renovacao | drift=0.000000 work 0.840000 -> 0.840000 energia 0.840000 -> 0.840000
+OK premissa: somente dois imprints FEAR, nenhum golpe | amostras=(0.9, 3.5, 0.0) energia=4.400000 hp=42.00
+OK fuga fisica provocada so pelo campo | flee=12 los=0 dx=-2.1064 threat=0.0000
+OK fugir nao amplifica FEAR nas sondas fixas | antes=(0.9, 3.5, 0.0) depois=(0.9, 3.5, 0.0)
+OK fuga sem golpe nao cria energia em outras celulas | energia 4.400000 -> 4.400000 canais=[0.0, 0.0, 4.39999997615814]
+OK premissa A/B: um unico take_damage real | braco_z=18.0 hp=34.00 atom={ "tick": 0, "kind": "hurt", "pos": (60.0, 51.001, 62.0), "actor": 1, "mag": 0.19047619047619 }
+OK premissa A/B: jogador relocado oculto em rumo distinto do golpe | dist=44.002 threat=0.998 golpe=(-1.0, 0.0, 0.0) oculto=(0.0, 0.0, 1.0)
+OK fuga usa LAST hurt, nao jogador oculto | vetor=(-1.0, 0.0, 0.0) esperado=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=fugindo do ultimo golpe feet=(58.0, 51.001, 62.0) speed=5.0000 target=(44.0, 51.476, 62.0)
+OK apos knockback, fuga ainda aponta para longe do ultimo golpe | stagger=-0.0167 deslocamento=(-2.874516, 0.0, -2.141453) vetor=(-0.919261, 0.0, -0.39365) esperado=(-0.919261, 0.0, -0.39365)
+OK premissa A/B: um unico take_damage real | braco_z=106.0 hp=34.00 atom={ "tick": 0, "kind": "hurt", "pos": (60.0, 51.001, 62.0), "actor": 1, "mag": 0.19047619047619 }
+OK premissa A/B: jogador relocado oculto em rumo distinto do golpe | dist=44.002 threat=0.998 golpe=(-1.0, 0.0, 0.0) oculto=(0.0, 0.0, -1.0)
+OK fuga usa LAST hurt, nao jogador oculto | vetor=(-1.0, 0.0, 0.0) esperado=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=fugindo do ultimo golpe feet=(58.0, 51.001, 62.0) speed=5.0000 target=(44.0, 51.476, 62.0)
+OK apos knockback, fuga ainda aponta para longe do ultimo golpe | stagger=-0.0167 deslocamento=(-2.874516, 0.0, -2.141453) vetor=(-0.919261, 0.0, -0.39365) esperado=(-0.919261, 0.0, -0.39365)
+OK A/B relocacao oculta nao muda steering apos golpe | A=(-1.0, 0.0, 0.0) B=(-1.0, 0.0, 0.0)
+OK A/B mesmo golpe produz mesmo movimento | A=(-2.874516, 0.0, -2.141453) B=(-2.874516, 0.0, -2.141453)
+OK premissa: avistamento real antes de medir os 6s | atom={ "tick": 0, "kind": "saw_player", "pos": (66.0, 51.901, 62.0), "actor": 1, "mag": 0.4 } tick=1 intent=hunt reaction=perseguindo presa visivel feet=(58.05869, 51.15434, 62.0301) speed=1.9186 target=(66.0, 51.401, 62.0)
+OK parede oculta presa proxima, memoria ainda guia caca | dist_memoria=7.941 dist_player=12.749 tick=2 intent=hunt reaction=buscando ultimo avistamento feet=(58.05869, 51.15434, 62.0301) speed=1.9186 target=(66.0, 51.901, 62.0)
+OK memoria vale no ultimo tick inclusivo de 6s | idade_ticks=120 tick=121 intent=hunt reaction=buscando ultimo avistamento feet=(58.05869, 51.15434, 62.0301) speed=1.9186 target=(66.0, 51.901, 62.0)
+OK apos 6s nao ha caca oculta em nenhum tick | amostras=41 hunt=0 chase=0
+OK parede impede renovacao; episodio persiste mas nao autoriza caca | los_ticks=0 count=1 tick_visto=0 ultimo={ "tick": 0, "kind": "saw_player", "pos": (66.0, 51.901, 62.0), "actor": 1, "mag": 0.4 }
+OK premissa mantida: sem chegada, dano ou campo concorrente | drift=0.000000 dist_memoria=7.941 energia=0.000000 hp=42.00
+OK premissa: caca acaba de iniciar antes da morte | tick=1 intent=hunt reaction=perseguindo presa visivel feet=(58.05869, 51.15434, 62.0301) speed=1.9186 target=(66.0, 51.401, 62.0)
+OK morte real durante histerese de caca | hp=0.0 tick=2 intent=hunt reaction=patrulhando feet=(58.10237, 51.33434, 62.10606) speed=1.7711 target=(61.46495, 50.2, 67.44788)
+OK histerese nao executa busca de presa morta | tick=2 intent=hunt reaction=patrulhando feet=(58.10237, 51.33434, 62.10606) speed=1.7711 target=(61.46495, 50.2, 67.44788)
+OK premissa: ultimo passo antes de concluir inspecao | left=0.050000 tick=39 intent=investigate reaction=farejando feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK golpe real interrompe corpo antes da conclusao | stagger=0.450 tick=39 intent=investigate reaction=farejando feet=(66.0, 51.001, 62.0) speed=5.0000 target=(66.0, 51.001, 62.0)
+OK atordoamento cancela inspecao sem episodio | left=0.000000 count=0 tick=40 intent=investigate reaction=atordoado feet=(65.77026, 51.081, 62.0) speed=4.4007 target=(66.0, 51.001, 62.0)
+OK premissa: local examinado antes de nova construcao | count=1 tick=40 intent=investigate reaction=rastro examinado feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK imprint com amplitude real de place | work 0.420000 -> 0.620000 delta_ponderado=0.070000
+OK construcao .20 reabre local antes dos 30s | tick=46 intent=investigate reaction=farejando feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK construcao renovada termina segunda visita | count=2 tick=91 intent=patrol reaction=patrulhando feet=(65.7673, 51.33434, 63.04658) speed=1.4401 target=(69.46496, 50.2, 67.44788)
+OK runner retornou | run=true
+OK censo de testes completos | 17/17
+OK censo de checagens | 89/89
+CENARIO ESTREITO, NAO GATE P1: passos=1907 sim_step total=292865 us pico=848 us; BT last_us soma=13972 pico=84 trips=0
+89 checagens 0 falhas 1.973 s
+REAL_EXIT=0

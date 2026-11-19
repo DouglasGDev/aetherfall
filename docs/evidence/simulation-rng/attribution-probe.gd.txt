@@ -1,0 +1,38 @@
+extends "res://tests/aether_reactions_test.gd"
+
+func _run() -> void:
+	if _test_fixture() != true:
+		return
+	for player_z: float in [18.0, 106.0]:
+		_arm(SPAWN, SPAWN + Vector3(2, 0, 0))
+		var hit_from: Vector3 = _player.position3()
+		_wolf.take_damage(8.0, Wolf.ACTOR_PLAYER, hit_from)
+		_player.feet_to_spawn(Vector3(SPAWN.x, SPAWN.y, player_z))
+		_advance(1, false)
+		_advance(19)
+		var decision_center: Vector3 = _wolf.center()
+		_advance(1, false)
+		var target: Vector3 = _wolf._move_target
+		var decision_direction := _horizontal(target - decision_center).normalized()
+		var decision_expected := _horizontal(decision_center - hit_from).normalized()
+		for frame: int in 3:
+			_wolf._physics_process(SimClock.STEP / 3.0)
+		var current_direction := _horizontal(target - _wolf.center()).normalized()
+		var current_expected := _horizontal(_wolf.center() - hit_from).normalized()
+		var measured: float = current_direction.dot(current_expected)
+		var prediction: float = _horizontal(decision_center + decision_expected * 14.0 - _wolf.center()).normalized().dot(current_expected)
+		_check(decision_direction.dot(decision_expected) > 0.999 and _wolf._stagger <= 0.0,
+				"decisao no proprio instante respeita ultimo golpe", "z=%.1f centro=%s alvo=%s dot=%.9f" % [
+				player_z, decision_center, target, decision_direction.dot(decision_expected)])
+		_check(is_equal_approx(measured, prediction), "erro previsto apenas pela mudanca do centro",
+				"centro_atual=%s delta=%s dot_original=%.9f dot_previsto=%.9f original_passaria=%s" % [
+				_wolf.center(), _wolf.center() - decision_center, measured, prediction, measured > 0.999])
+	_ran = true
+
+func _finish() -> void:
+	Input.mouse_mode = _mouse_mode
+	_check(_ran and _checks == 8, "censo de atribuicao", "ran=%s checks=%d/8" % [_ran, _checks])
+	if is_instance_valid(_stage):
+		_stage.free()
+	print("%d checagens %d falhas" % [_checks, _failures])
+	quit(1 if _failures > 0 else 0)

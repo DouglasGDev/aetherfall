@@ -1,0 +1,37 @@
+extends SceneTree
+## Sonda de diagnostico (fora da suíte, fora do jogo): o smoke com audio passou a
+## encerrar com "instances leaked / resources still in use" apontando para os
+## streams que tocavam na saida. Os bracos separam o que o motor faz sozinho do
+## que o codigo do diretor pode resolver:
+##   p2d          AudioStreamPlayer no Master (o braco que nao vaza)
+##   p2d_bus      AudioStreamPlayer no barramento SFX
+##   p3d          AudioStreamPlayer3D no SFX, com max_distance (o que o jogo usa)
+##   p3d_sample   idem, com stream registrado como sample
+## Uso: godot --headless --path . --verbose --script res://.tools/leak_probe.gd -- <braco>
+
+func _initialize() -> void:
+	var mode := OS.get_cmdline_user_args()[0]
+	# `root` so quem chama `_initialize()`, entao o node ainda nao esta na arvore e
+	# `play()` recusaria (foi o que a primeira versao desta sonda mediu: nada).
+	await process_frame
+	var p: Node
+	if mode.begins_with("p3d"):
+		p = AudioStreamPlayer3D.new()
+	else:
+		p = AudioStreamPlayer.new()
+	if mode.contains("bus") or mode.contains("sample"):
+		p.bus = "SFX"
+	p.stream = load("res://assets/audio/amb/amb_birds.ogg")
+	root.add_child(p)
+	if mode.contains("sample"):
+		AudioServer.register_stream_as_sample(p.stream)
+	p.play()
+	for i in 20:
+		await process_frame
+	if mode.contains("stop"):
+		p.stop()
+		if mode.contains("wait"):
+			for i in 20:
+				await process_frame
+	print("braco=%s playing=%s pos=%s" % [mode, p.is_playing(), p.get_playback_position()])
+	quit(0)

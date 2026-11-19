@@ -1,0 +1,8 @@
+sources=69 root_candidate_byte_equal=true manifest_sha256=3160ed29ef8e8e63029cb5e7d0f168f03c27d167f4c679ed7d86d65386ce2911
+journal rows=205 ticks=1..205 bytes=14857 sha256=99b4bc2fa2f6fb9f87c96134e343a34b2aac9061b6fb76c4d86f5bde97635bd5 newline=true
+last_hash=0a648448829faef737f5cf26c92564bf5fb7d46cc2a6015c5494764ff05a9a32 matches_diagnostic=true active=false simulation_tick=359
+candidate-import.log ERROR_WARNING_FAIL_lines=0
+candidate-reactions.log ERROR_WARNING_FAIL_lines=0
+candidate-contract.log ERROR_WARNING_FAIL_lines=0
+candidate-off.log ERROR_WARNING_FAIL_lines=0
+candidate-on.log ERROR_WARNING_FAIL_lines=0

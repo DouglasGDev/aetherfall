@@ -1,0 +1,11 @@
+sources=79 manifest_sha256=62456b0b6e84a87f3ab6d792bdc85f6fe5ed37f7834d3032da7416455e108a20
+census={"suite-audio":"73","smoke":"220","regression-journal":"128","regression-rng":"27","regression-reactions":"89"}
+suite-audio.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=2
+smoke.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=2
+regression-journal.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=0
+regression-rng.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=0
+regression-reactions.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=0
+live-3-green.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=0
+cost.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=2
+dummy-progress.log unexpected_error_fail_lines=0 leaked_or_inuse_lines=2
+dummy-progress sfx_ends_by_itself_in_headless=true

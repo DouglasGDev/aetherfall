@@ -1,0 +1,155 @@
+extends Node
+## Sonda de leitura do cubo na mao em 3a pessoa: quanto do bloco chega de fato ao
+## quadro, medido pixel a pixel. A geometria sozinha nao responde -- o cubo pode
+## estar correto no espaco do corpo e ainda assim atras do proprio braco, que e o
+## defeito que a galeria de 2026-11-19 mostrou no olho.
+
+const OUT := "C:/Aetherfall/.tools/shots/"
+const BLOCKS: Array[int] = [BlockDefs.Block.GRASS, BlockDefs.Block.STONE,
+	BlockDefs.Block.LEAVES, BlockDefs.Block.SNOW]
+
+var main: Node3D = null
+var p: Player = null
+var w: VoxelWorld = null
+
+
+func _ready() -> void:
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
+	DirAccess.make_dir_recursive_absolute(OUT)
+	get_window().size = Vector2i(1280, 720)
+	main = load("res://src/main.tscn").instantiate()
+	add_child(main)
+	p = main.player
+	w = main.world
+	await get_tree().create_timer(1.5).timeout
+	main.hud.show_binds(false)
+	var spot := _dry_flat()
+	if spot.x < 0:
+		print("PROBE  sem planicie plana")
+		get_tree().quit()
+		return
+	p.third_person = true
+	p.feet_to_spawn(Vector3(float(spot.x) + 0.5, float(spot.y + 1), float(spot.z) + 0.5))
+	p.body.velocity = Vector3.ZERO
+	p.yaw = 0.0
+	p.pitch = -0.06
+	print("PROBE  res=%s  pe=(%d,%d,%d)" % [
+		get_viewport().get_texture().get_image().get_size(), spot.x, spot.y, spot.z])
+	for b in BLOCKS:
+		await _measure(b)
+	print("PROBE ok")
+	get_tree().quit()
+
+
+## Coluna seca com chao nivelado 5x5 e o mesmo topo dois blocos a frente: o
+## mesmo corte que a galeria usa para o personagem nao ficar na encosta.
+func _dry_flat() -> Vector3i:
+	for z in range(40, 90):
+		for x in range(40, 90):
+			var h := w.surface_height(x, z)
+			if h <= VoxelConfig.SEA_LEVEL:
+				continue
+			var ok := true
+			for dx in range(-2, 3):
+				for dz in range(-2, 3):
+					if w.surface_height(x + dx, z + dz) != h:
+						ok = false
+						break
+				if not ok:
+					break
+			if ok:
+				return Vector3i(x, h, z)
+	return Vector3i(-1, -1, -1)
+
+
+func _select(b: int) -> int:
+	for i in Inventory.SLOTS:
+		if p.inv.slot_block(i) == b and p.inv.slot_count(i) > 0:
+			p.inv.pin(0, i)
+			p.select_slot(0)
+			return i
+	if p.inv.add(b, 8) > 0:
+		return -1
+	for i in Inventory.SLOTS:
+		if p.inv.slot_block(i) == b:
+			p.inv.pin(0, i)
+			p.select_slot(0)
+			return i
+	return -1
+
+
+func _measure(b: int) -> void:
+	var slot := _select(b)
+	if slot < 0:
+		print("BLOCO  %-6s sem pilha" % BlockDefs.display_name(b))
+		return
+	for i in 40:
+		await get_tree().physics_frame
+	var av: PlayerAvatar = p.avatar
+	var held := av.held_mesh()
+	var local := p.avatar.global_transform.affine_inverse() * held.global_position
+	var rect := _held_rect(held)
+	var on := get_viewport().get_texture().get_image()
+	held.mesh = null
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var off := get_viewport().get_texture().get_image()
+	av.set_atlas(w.atlas_texture())
+	await get_tree().process_frame
+	var seen := _diff_frac(off, on, rect)
+	print("BLOCO  %-6s slot=%d dureza=%.2f  cubo=(%.2f,%.2f,%.2f)  ombro=%.2f cotovelo=%.2f  rect=%s  visivel=%.3f" % [
+		BlockDefs.display_name(b), slot, BlockDefs.hardness(b), local.x, local.y, local.z,
+		av.arm_angles().x, av.arm_angles().y, _fmt(rect), seen])
+	if rect.size.x > 8.0:
+		var cx := int(rect.get_center().x)
+		var cy := int(rect.get_center().y)
+		var box := Rect2i(Vector2i(clampi(cx - 220, 0, 1280 - 440),
+				clampi(cy - 220, 0, 720 - 440)), Vector2i(440, 440))
+		var crop := on.get_region(box)
+		crop.resize(660, 660, Image.INTERPOLATE_NEAREST)
+		crop.save_png(OUT + "probe-held-%s.png" % BlockDefs.display_name(b))
+
+
+## Os oito cantos do AABB do cubo projetados na moldura. Cantos atras da lente
+## saem da conta: sem isso o rect explode e a medida de pixels vira ruido.
+func _held_rect(held: MeshInstance3D) -> Rect2:
+	var gt := held.global_transform
+	var r := Rect2()
+	var seen := false
+	for sx in [-0.5, 0.5]:
+		for sy in [-0.5, 0.5]:
+			for sz in [-0.5, 0.5]:
+				var wp := gt * (Vector3(sx, sy, sz) * PlayerAvatar.HELD_SIZE)
+				if (p.camera.global_transform.affine_inverse() * wp).z >= -0.05:
+					continue
+				var sp := p.camera.unproject_position(wp)
+				r = r.expand(sp) if seen else Rect2(sp, Vector2.ZERO)
+				seen = true
+	return r
+
+
+## Fracao do rect do cubo que mudou de pixel com o bloco ligado. E a resposta
+## direta para "da para ver o que ele segura?".
+func _diff_frac(off: Image, on: Image, rect: Rect2) -> float:
+	if rect.size.x < 2.0 or rect.size.y < 2.0:
+		return 0.0
+	var x0 := clampi(int(rect.position.x) - 1, 0, off.get_width() - 2)
+	var y0 := clampi(int(rect.position.y) - 1, 0, off.get_height() - 2)
+	var x1 := clampi(int(rect.end.x) + 1, x0 + 2, off.get_width())
+	var y1 := clampi(int(rect.end.y) + 1, y0 + 2, off.get_height())
+	var n := 0
+	var hit := 0
+	for y in range(y0, y1, 2):
+		for x in range(x0, x1, 2):
+			var a := off.get_pixel(x, y)
+			var b := on.get_pixel(x, y)
+			n += 1
+			if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.08:
+				hit += 1
+	return float(hit) / float(maxi(n, 1))
+
+
+func _fmt(r: Rect2) -> String:
+	if r.size.x <= 0.0:
+		return "fora"
+	return "%dx%d" % [int(r.size.x), int(r.size.y)]

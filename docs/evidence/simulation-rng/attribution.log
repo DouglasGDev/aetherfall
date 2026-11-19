@@ -1,0 +1,14 @@
+PREFLIGHT Godot=0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK geracao real | seed=20261116 chunks=64
+OK 2025 colunas secas, piso y=50, ar ate o teto | invalidas=0
+OK Player pronto com atlas real | ready=true atlas=():<ImageTexture#-9223372001924610567>
+OK sem input automatico ou malharia | process=false meshes=0
+OK decisao no proprio instante respeita ultimo golpe | z=18.0 centro=(55.25202, 51.476, 63.99286) alvo=(42.34302, 51.476, 69.41113) dot=1.000000000
+OK erro previsto apenas pela mudanca do centro | centro_atual=(55.13804, 51.476, 64.27265) delta=(-0.113979, 0.0, 0.279793) dot_original=0.998467147 dot_previsto=0.998467147 original_passaria=false
+OK decisao no proprio instante respeita ultimo golpe | z=106.0 centro=(55.25202, 51.476, 63.99286) alvo=(42.34302, 51.476, 69.41113) dot=1.000000000
+OK erro previsto apenas pela mudanca do centro | centro_atual=(55.13804, 51.476, 64.27265) delta=(-0.113979, 0.0, 0.279793) dot_original=0.998467147 dot_previsto=0.998467147 original_passaria=false
+OK censo de atribuicao | ran=true checks=8/8
+9 checagens 0 falhas
+REAL_EXIT=0

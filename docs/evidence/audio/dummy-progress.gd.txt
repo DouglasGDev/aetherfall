@@ -1,0 +1,26 @@
+extends SceneTree
+## Sonda de diagnostico (fora da suíte): o comentario de `_voice_index` e a secao
+## de procedencia dizem que, no headless, o stream "nunca termina sozinho". Isso
+## precisa de numero, nao de fe: um sfx de 0,674 s (step_grass_1) e a cama em loop
+## (amb_birds) tocando lado a lado, com posicao e `playing` impressos a cada 20
+## frames em --headless.
+## Uso: godot --headless --path . --script res://.tools/dummy_progress_probe.gd
+
+func _initialize() -> void:
+	await process_frame
+	var short := AudioStreamPlayer.new()
+	short.stream = load("res://assets/audio/sfx/step_grass_1.ogg")
+	root.add_child(short)
+	var bed := AudioStreamPlayer.new()
+	bed.stream = load("res://assets/audio/amb/amb_birds.ogg")
+	root.add_child(bed)
+	short.play()
+	bed.play()
+	print("dur_sfx=%.3f dur_bed=%.3f" % [short.stream.get_length(), bed.stream.get_length()])
+	for i in 200:
+		await process_frame
+		if i % 20 == 19:
+			print("frame=%d sfx[playing=%s pos=%.3f] bed[playing=%s pos=%.3f]" % [
+				i + 1, short.is_playing(), short.get_playback_position(),
+				bed.is_playing(), bed.get_playback_position()])
+	quit(0)

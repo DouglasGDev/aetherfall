@@ -1,0 +1,52 @@
+=== braco p2d ===
+braco=p2d playing=true pos=0.1866666674614
+Leaked instance: AudioStreamPlaybackOggVorbis:9223372063631214029 - Reference count: 1
+Leaked instance: OggPacketSequencePlayback:9223372063647991246 - Reference count: 1
+Leaked instance: OggPacketSequence:9223372063547327951 - Reference count: 3
+Leaked instance: AudioStreamOggVorbis:9223372063564105168 - Reference count: 1
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+Resource still in use: res://assets/audio/amb/amb_birds.ogg::OggPacketSequence_q4vmv (OggPacketSequence)
+Resource still in use: res://assets/audio/amb/amb_birds.ogg (AudioStreamOggVorbis)
+ERROR: 2 resources still in use at exit.
+=== braco p2d_bus ===
+braco=p2d_bus playing=true pos=0.1866666674614
+Leaked instance: AudioStreamPlaybackOggVorbis:9223372063631214029 - Reference count: 1
+Leaked instance: OggPacketSequencePlayback:9223372063647991246 - Reference count: 1
+Leaked instance: OggPacketSequence:9223372063547327951 - Reference count: 3
+Leaked instance: AudioStreamOggVorbis:9223372063564105168 - Reference count: 1
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+Resource still in use: res://assets/audio/amb/amb_birds.ogg::OggPacketSequence_q4vmv (OggPacketSequence)
+Resource still in use: res://assets/audio/amb/amb_birds.ogg (AudioStreamOggVorbis)
+ERROR: 2 resources still in use at exit.
+=== braco p3d ===
+braco=p3d playing=true pos=0.1866666674614
+Leaked instance: AudioStreamPlaybackOggVorbis:9223372063647991246 - Reference count: 1
+Leaked instance: OggPacketSequencePlayback:9223372063664768463 - Reference count: 1
+Leaked instance: OggPacketSequence:9223372063564105168 - Reference count: 3
+Leaked instance: AudioStreamOggVorbis:9223372063580882385 - Reference count: 1
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+Resource still in use: res://assets/audio/amb/amb_birds.ogg::OggPacketSequence_q4vmv (OggPacketSequence)
+Resource still in use: res://assets/audio/amb/amb_birds.ogg (AudioStreamOggVorbis)
+ERROR: 2 resources still in use at exit.
+=== braco p3d_sample ===
+braco=p3d_sample playing=true pos=0.1866666674614
+Leaked instance: AudioStreamPlaybackOggVorbis:9223372063664768462 - Reference count: 1
+Leaked instance: OggPacketSequencePlayback:9223372063681545679 - Reference count: 1
+Leaked instance: OggPacketSequence:9223372063564105168 - Reference count: 3
+Leaked instance: AudioStreamOggVorbis:9223372063580882385 - Reference count: 1
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+Resource still in use: res://assets/audio/amb/amb_birds.ogg::OggPacketSequence_q4vmv (OggPacketSequence)
+Resource still in use: res://assets/audio/amb/amb_birds.ogg (AudioStreamOggVorbis)
+ERROR: 2 resources still in use at exit.
+=== braco p3d_stop ===
+braco=p3d_stop playing=false pos=0.0
+Leaked instance: AudioStreamPlaybackOggVorbis:9223372063647991246 - Reference count: 1
+Leaked instance: OggPacketSequencePlayback:9223372063664768463 - Reference count: 1
+Leaked instance: OggPacketSequence:9223372063564105168 - Reference count: 3
+Leaked instance: AudioStreamOggVorbis:9223372063580882385 - Reference count: 1
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+Resource still in use: res://assets/audio/amb/amb_birds.ogg::OggPacketSequence_q4vmv (OggPacketSequence)
+Resource still in use: res://assets/audio/amb/amb_birds.ogg (AudioStreamOggVorbis)
+ERROR: 2 resources still in use at exit.
+=== braco p3d_stop_wait ===
+braco=p3d_stop_wait playing=false pos=0.0

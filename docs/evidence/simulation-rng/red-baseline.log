@@ -1,0 +1,32 @@
+PREFLIGHT Godot=0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK mundo real | seed=20261116 chunks=64
+OK sem input automatico, malharia ou save | ready=true process=false meshes=0
+OK spawn real sem executar boot completo | braco=0 livres=5/5 ready=false
+OK spawn real sem executar boot completo | braco=1 livres=5/5 ready=false
+OK spawn real sem executar boot completo | braco=2 livres=5/5 ready=false
+OK spawn real sem executar boot completo | braco=3 livres=5/5 ready=false
+OK spawn real sem executar boot completo | braco=4 livres=5/5 ready=false
+OK populacao independente: repeticao de controle | base=[[0, (46.5183, 43.0, 41.84018), 4.62639205499899], [1, (30.56434, 52.0, 46.63815), 3.23964496021622], [2, (65.07324, 39.0, 20.46977), 0.80538363733551], [3, (75.01955, 46.0, 98.13978), 1.13125287610303], [4, (73.97936, 50.0, 108.4694), 4.6076247587972]] braco=[[0, (46.5183, 43.0, 41.84018), 4.62639205499899], [1, (30.56434, 52.0, 46.63815), 3.23964496021622], [2, (65.07324, 39.0, 20.46977), 0.80538363733551], [3, (75.01955, 46.0, 98.13978), 1.13125287610303], [4, (73.97936, 50.0, 108.4694), 4.6076247587972]]
+FALHA populacao independente: sorteios globais | base=[[0, (46.5183, 43.0, 41.84018), 4.62639205499899], [1, (30.56434, 52.0, 46.63815), 3.23964496021622], [2, (65.07324, 39.0, 20.46977), 0.80538363733551], [3, (75.01955, 46.0, 98.13978), 1.13125287610303], [4, (73.97936, 50.0, 108.4694), 4.6076247587972]] braco=[[0, (38.19584, 55.0, 65.65301), 3.39378943151217], [1, (51.70926, 38.0, 39.4345), 4.55211457804965], [2, (55.82533, 55.0, 101.3022), 3.75379479865503], [3, (45.516, 45.0, 51.31232), 2.45490124785072], [4, (31.21293, 51.0, 36.19306), 5.43482240063642]]
+OK populacao independente: criacao em lotes distintos | base=[[0, (46.5183, 43.0, 41.84018), 4.62639205499899], [1, (30.56434, 52.0, 46.63815), 3.23964496021622], [2, (65.07324, 39.0, 20.46977), 0.80538363733551], [3, (75.01955, 46.0, 98.13978), 1.13125287610303], [4, (73.97936, 50.0, 108.4694), 4.6076247587972]] braco=[[0, (46.5183, 43.0, 41.84018), 4.62639205499899], [1, (30.56434, 52.0, 46.63815), 3.23964496021622], [2, (65.07324, 39.0, 20.46977), 0.80538363733551], [3, (75.01955, 46.0, 98.13978), 1.13125287610303], [4, (73.97936, 50.0, 108.4694), 4.6076247587972]]
+FALHA populacao independente: patrulha de outro lobo | base=[[0, (46.5183, 43.0, 41.84018), 4.62639205499899], [1, (30.56434, 52.0, 46.63815), 3.23964496021622], [2, (65.07324, 39.0, 20.46977), 0.80538363733551], [3, (75.01955, 46.0, 98.13978), 1.13125287610303], [4, (73.97936, 50.0, 108.4694), 4.6076247587972]] braco=[[0, (46.5183, 43.0, 41.84018), 4.62639205499899], [1, (29.03462, 52.0, 53.48081), 6.26268778850709], [2, (60.16578, 37.0, 23.2803), 5.69170089091949], [3, (23.45172, 51.0, 59.50925), 4.19761221718052], [4, (47.73933, 38.0, 22.34893), 0.31698916217954]]
+FALHA spawn e setup nao consomem RNG global | preservado=false
+OK patrulha real renova destino | ticks=240 destinos=4
+OK patrulha independente por frame | modo=0 base=c13a3886643a86df38f263af22bc7b0498f577150b5bbb7fef52f9717c3ff57a braco=c13a3886643a86df38f263af22bc7b0498f577150b5bbb7fef52f9717c3ff57a
+FALHA patrulha independente por frame | modo=1 base=c13a3886643a86df38f263af22bc7b0498f577150b5bbb7fef52f9717c3ff57a braco=96f1316779e791d8e45bad001d803cd3a91eb73eee461514f0d15be0b0269b05
+FALHA patrulha independente por frame | modo=2 base=c13a3886643a86df38f263af22bc7b0498f577150b5bbb7fef52f9717c3ff57a braco=52c4c17b3557e807809bf33277735e440667cd36c5cb3a3290046d44c323810d
+FALHA identidades distintas tem sequencias distintas | id1=c13a3886643a86df38f263af22bc7b0498f577150b5bbb7fef52f9717c3ff57a id2=c13a3886643a86df38f263af22bc7b0498f577150b5bbb7fef52f9717c3ff57a
+FALHA patrulha nao consome RNG global | preservado=false
+OK rastro leva a colisao e desvio reais | frames_bloqueados=670 desvios=20
+FALHA desvio independente por frame | modo=1 desvios=21 base=9693744ed975986e0074691b80267e32453c34d2a559fc2feac40f4ccac2f491 braco=bb79ef1eecb863d00080fccec5a07b08b45bd270359bbda32876f2f54b4647e8
+FALHA desvio independente por frame | modo=2 desvios=20 base=9693744ed975986e0074691b80267e32453c34d2a559fc2feac40f4ccac2f491 braco=2d7de2c4cbe2499d26c60ab6496258fc543f19e4ecc1d6fc3a90bc16cbd35eb3
+FALHA desvio nao consome RNG global | preservado=false
+OK outra semente altera populacao | seed=20261117 populacao=[[0, (46.5183, 36.0, 41.84018), 4.62639205499899], [1, (95.36382, 37.0, 64.66385), 3.62609314510572], [2, (36.66461, 30.0, 42.15944), 1.21023584660936], [3, (83.08585, 43.0, 61.16622), 4.77681018136343], [4, (93.75057, 38.0, 65.66531), 3.44283936602168]]
+FALHA outra semente altera lobo de mesma identidade no mesmo piso | seed=20261117 id=1 hash=c13a3886643a86df38f263af22bc7b0498f577150b5bbb7fef52f9717c3ff57a
+OK runner retornou | run=true
+OK censo de testes completos | 5/5
+OK censo de checagens | 27/27
+27 checagens 11 falhas 3.636 s
+REAL_EXIT=1

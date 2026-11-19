@@ -1,0 +1,17 @@
+# readback da validacao do recorte de RNG (2026-11-18)
+candidate=C:/Aetherfall/.tools/rng-final-candidate  base_git=1db00cf
+sources=73 root_candidate_byte_equal=true mismatches=0 missing=0
+manifest_sha256=e5fc11fd1ab673c2fd84e669df0e9bbec963f8ef2888183999c8bb290e1d2cf5
+journal rows=205 ticks=1..205 bytes=14857 sha256=5e9d751a469c46939c6878af152b881389e88089d5aa030dce56b0f6f52c53d5
+journal first_line=[1,"042bab63a6045d7da33bac98fca3d8ba45e1
+journal last_line=[205,"a969dac54b738576bb55e28240c3fdbb44
+diagnostic_last_hash=a969dac54b738576bb55e28240c3fdbb4460e7c57146f106a4a99b079c937373 journal_tail_hash=a969dac54b738576bb55e28240c3fdbb4460e7c57146f106a4a99b079c937373 matches=true
+red-baseline.log error_warning_lines=0 zero_failure_footer=0
+rng.log error_warning_lines=0 zero_failure_footer=1
+reactions.log error_warning_lines=0 zero_failure_footer=1
+contract.log error_warning_lines=0 zero_failure_footer=1
+smoke-off.log error_warning_lines=0 zero_failure_footer=1
+smoke-on.log error_warning_lines=0 zero_failure_footer=1
+attribution.log error_warning_lines=0 zero_failure_footer=1
+reactions-corrected-old-production.log error_warning_lines=0 zero_failure_footer=1
+smoke_pass_lines off=220 on=220

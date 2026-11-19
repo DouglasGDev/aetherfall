@@ -1,0 +1,4 @@
+smoke-on: records=205 bytes=14857 ticks=1..205 sha256=879f87f8a0f87171380e5e77c1a78cd7eaca56243daa9ccb70c6a90064ae2d78
+load: active=false last_tick=205 sim_tick=359 last_hash=a1c94454869c0a5f8709195913f7314633e6c51697f2742655b566dd735d33da
+cli: records=100 bytes=7192 ticks=1..100 sha256=5316c643377a82263e9bceecd9f4be0d5d8fe2d0db801e26597d991c511b3902
+refusal: observed_process_exit=1; bytes match pre-refusal SHA256

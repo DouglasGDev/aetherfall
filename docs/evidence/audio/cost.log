@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+boot da sessao: gen=1171.8 ms mesh=5589.7 ms
+audio: build+setup=743 us  10x pick=1000 us  600 updates (10 s de corpo)=1831 us
+evento: 1o (frio)=1627 us  99 seguintes (cache quente)=65856 us
+diagnostico: { "driver": "Dummy", "levels": 51, "families": 27, "voices": 12, "events_played": 101, "families_played": 2, "last_event": "place", "bed": "amb_birds" }
+WARNING: 6 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

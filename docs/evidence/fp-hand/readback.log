@@ -1,0 +1,7 @@
+sources=71 root_candidate_byte_equal=true manifest_sha256=57a2afde872e27ffec2e123b34ffb0ad2a27e68b12073c65e0f11b330ef5c017
+before_viewmodel_sha256=10930f53530e07c40edf61750082d315884d5e30b0697de78da51d1480a90ff0
+smoke_pass_lines=220
+import.log error_warning_fail_lines=0
+after.log error_warning_fail_lines=0
+candidate-render.log error_warning_fail_lines=0
+smoke.log error_warning_fail_lines=0

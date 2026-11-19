@@ -1,0 +1,123 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK mundo real | seed=20261116 chunks=64
+OK sem input automatico, malharia ou save | ready=true process=false meshes=0
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:87)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:87)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'on_wolf_registered' in base 'Nil'.
+   at: _spawn_wolves (res://src/main.gd:210)
+   GDScript backtrace (most recent call first):
+       [0] _spawn_wolves (res://src/main.gd:210)
+       [1] _population (res://tests/simulation_rng_test.gd:92)
+       [2] _test_population (res://tests/simulation_rng_test.gd:110)
+       [3] _run (res://tests/simulation_rng_test.gd:34)
+SCRIPT ERROR: Out of bounds get index '0' (on base: 'Array')
+   at: _population (res://tests/simulation_rng_test.gd:94)
+   GDScript backtrace (most recent call first):
+       [0] _population (res://tests/simulation_rng_test.gd:94)
+       [1] _test_population (res://tests/simulation_rng_test.gd:110)
+       [2] _run (res://tests/simulation_rng_test.gd:34)
+FALHA spawn real sem executar boot completo | braco=0 livres=0/5 ready=false
+FALHA spawn real sem executar boot completo | braco=1 livres=0/5 ready=false
+FALHA spawn real sem executar boot completo | braco=2 livres=0/5 ready=false
+FALHA spawn real sem executar boot completo | braco=3 livres=0/5 ready=false
+SCRIPT ERROR: Invalid access to property or key 'valid' on a base object of type 'Dictionary'.
+   at: _test_population (res://tests/simulation_rng_test.gd:112)
+   GDScript backtrace (most recent call first):
+       [0] _test_population (res://tests/simulation_rng_test.gd:112)
+       [1] _run (res://tests/simulation_rng_test.gd:34)
+ERROR: ABORTOU _test_population: nao devolveu true
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tests/simulation_rng_test.gd:36)
+OK runner retornou | run=true
+FALHA censo de testes completos | 1/5
+FALHA censo de checagens | 9/27
+9 checagens 7 falhas 1.191 s
+ERROR: 1 RID allocations of type 'PN13RendererDummy14TextureStorage12DummyTextureE' were leaked at exit.
+WARNING: 93 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 7 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

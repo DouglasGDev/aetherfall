@@ -1,0 +1,25 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+PROBE  res=(1280, 720)  pe=(63,30,57)
+BLOCO  grama  slot=0 dureza=0.38  cubo=(0.32,1.02,-0.54)  ombro=0.31 cotovelo=1.04  rect=21x22  visivel=0.000
+SCRIPT ERROR: Invalid call. Nonexistent function 'crop_region' in base 'Image'.
+   at: _measure (res://.tools/held_tp_probe.gd:108)
+   GDScript backtrace (most recent call first):
+       [0] _measure (res://.tools/held_tp_probe.gd:108)
+BLOCO  pedra  slot=2 dureza=0.95  cubo=(0.33,0.63,-0.31)  ombro=0.10 cotovelo=0.28  rect=23x26  visivel=0.062
+SCRIPT ERROR: Invalid call. Nonexistent function 'crop_region' in base 'Image'.
+   at: _measure (res://.tools/held_tp_probe.gd:108)
+   GDScript backtrace (most recent call first):
+       [0] _measure (res://.tools/held_tp_probe.gd:108)
+BLOCO  folhas slot=6 dureza=0.22  cubo=(0.31,1.14,-0.53)  ombro=0.37 cotovelo=1.26  rect=22x23  visivel=0.019
+SCRIPT ERROR: Invalid call. Nonexistent function 'crop_region' in base 'Image'.
+   at: _measure (res://.tools/held_tp_probe.gd:108)
+   GDScript backtrace (most recent call first):
+       [0] _measure (res://.tools/held_tp_probe.gd:108)
+BLOCO  neve   slot=4 dureza=0.25  cubo=(0.32,1.11,-0.53)  ombro=0.36 cotovelo=1.22  rect=21x23  visivel=0.000
+SCRIPT ERROR: Invalid call. Nonexistent function 'crop_region' in base 'Image'.
+   at: _measure (res://.tools/held_tp_probe.gd:108)
+   GDScript backtrace (most recent call first):
+       [0] _measure (res://.tools/held_tp_probe.gd:108)
+PROBE ok

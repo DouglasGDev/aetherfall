@@ -1,0 +1,19 @@
+sources=79 manifest_sha256=17ddce7fc2017bbc1442d9e6f4581b29012b567636240f239115305be29ebd7d
+avatar_before_sha256=238809d34e9df62952b7019e4c8303af53eb26f587d75f7b986e4e708f9df4b3
+census={"arm-green-suite":"232","arm-red-suite":"232"}
+arm-red-suite failing_check="bloco na mao passa para fora do braco no quadro da orbita livre pedra=0.02  folha=0.00"
+arm-green-suite passing_check="bloco na mao passa para fora do braco no quadro da orbita livre pedra=0.45  folha=0.30"
+arm-green-suite final_line="232 checagens  0 falhas  33.7 s de teste"
+arm-red-suite final_line="232 checagens  1 falhas  33.8 s de teste"
+framing-debug final_line="232 checagens  0 falhas  33.8 s de teste"
+framing-debug readings="cam=(64.5,32.55,68.9) dist_pivot=4.40 av=(64.5,31.0,64.5) vp=(64.0,64.0) projecao_da_suite_desvio=0.00046px"
+framing-debug note=sao as linhas DBG da corrida instrumentada; o print saiu do smoke_test.gd antes desta suíte verde publicada, o arquivo na arvore nao imprime DBG
+pixel_probe_visivel_before={grama:0.000,pedra:0.062,folhas:0.019,neve:0.000}
+pixel_probe_visivel_after={grama:0.288,pedra:0.405,folhas:0.294,neve:0.304}
+arm-red-suite.log script_error_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+framing-debug.log script_error_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+arm-green-suite.log script_error_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+pixel-probe-after.log script_error_lines=0 exit_error_lines=0 leaked_or_inuse_lines=0
+pixel-probe-before.log script_error_lines=4 exit_error_lines=0 leaked_or_inuse_lines=0
+pixel-probe-before note=os 4 SCRIPT ERROR sao do corte de imagem (Image.crop_region nao existe); o numero "visivel" sai antes do erro, entao os quatro valores do braco antes do conserto sao validos e as PNG de recorte dessa brao nao existem
+gallery.log script_error_lines=0 exit_error_lines=0 leaked_or_inuse_lines=0

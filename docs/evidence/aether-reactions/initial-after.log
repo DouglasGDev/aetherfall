@@ -1,0 +1,50 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK geracao real | seed=20261116 chunks=64
+OK 2025 colunas secas, piso y=50, ar ate o teto | invalidas=0
+OK Player pronto com atlas real | ready=true atlas=():<ImageTexture#-9223372002142714376>
+OK sem input automatico ou malharia | process=false meshes=0
+OK WORK sem jogador perceptivel | dist=73.595 los=false
+OK imprint WORK .42 atrai | work=0.4200 tick=1 intent=investigate reaction=seguindo trabalho feet=(58.02826, 51.15434, 62.01449) speed=0.9237 target=(66.0, 50.6, 62.0)
+OK aproximacao fisica do rastro | dist 7.972 -> 6.707 tick=17 intent=investigate reaction=seguindo trabalho feet=(59.304, 51.221, 62.37674) speed=2.5219 target=(66.0, 50.6, 62.0)
+OK rastro nao fabrica avistamento | episodios=0
+OK premissa dos pesos simultaneos | blood=0.250 work*.35=0.147
+OK vence o rastro ponderado mais forte | esperado=(58.0, 50.6, 66.0) tick=1 intent=investigate reaction=seguindo sangue feet=(57.98551, 51.15434, 62.02826) speed=0.9237 target=(58.0, 50.6, 66.0)
+OK premissa dos pesos simultaneos | blood=0.080 work*.35=0.294
+OK vence o rastro ponderado mais forte | esperado=(66.0, 50.6, 62.0) tick=1 intent=investigate reaction=seguindo trabalho feet=(58.02826, 51.15434, 62.01449) speed=0.9237 target=(66.0, 50.6, 62.0)
+OK medo local com jogador invisivel | player_z=18.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-0.839012, 0.0, -0.927879) tick=7 intent=flee reaction=evitando medo feet=(61.16099, 51.45433, 61.07212) speed=5.7513 target=(47.34103, 51.98933, 61.29216)
+OK medo local com jogador invisivel | player_z=106.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-0.839012, 0.0, -0.927879) tick=7 intent=flee reaction=evitando medo feet=(61.16099, 51.45433, 61.07212) speed=5.7513 target=(47.34103, 51.98933, 61.29216)
+OK A/B jogador oculto nao muda vetor | A=(-1.0, 0.0, 0.0) B=(-1.0, 0.0, 0.0)
+OK A/B mesmo seed e clock conservam movimento | A=(-0.839012, 0.0, -0.927879) B=(-0.839012, 0.0, -0.927879)
+OK parede real oculta jogador proximo | dist=8.011 los=false
+OK sem avistamento nao caca | ticks_hunt=0 tick=13 intent=patrol reaction=patrulhando feet=(57.51664, 51.33434, 60.6525) speed=2.5728 target=(61.83709, 50.2, 52.08398)
+OK parede nao produz memoria visual | episodios=0
+OK presa visivel ainda provoca caca | tick=10 intent=hunt reaction=perseguindo presa visivel feet=(59.51234, 51.081, 63.52291) speed=4.4980 target=(66.0, 51.401, 62.0)
+OK caca move corpo ate presa visivel | dist 8.000 -> 6.664
+OK avistamento real seguido de bloqueio e deslocamento | visto=(66.0, 51.901, 62.0) oculto=(66.0, 51.001, 72.0) los=false
+OK persegue ultima observacao, nao posicao oculta | tick=11 intent=hunt reaction=buscando ultimo avistamento feet=(59.67067, 51.281, 63.58062) speed=2.9599 target=(66.0, 51.901, 62.0)
+OK memoria guia movimento apos perda de LOS | dist 6.524 -> 6.084 tick=15 intent=hunt reaction=buscando ultimo avistamento feet=(60.07307, 51.481, 63.37195) speed=2.4126 target=(66.0, 51.901, 62.0)
+OK WORK chega ao local em ate 8s | dist=1.154 tick=108 intent=investigate reaction=seguindo trabalho feet=(65.28786, 51.001, 62.90815) speed=2.5715 target=(66.0, 50.6, 62.0)
+OK inspecao para corpo em vez de cair na patrulha | drift=0.0000 tick=120 intent=investigate reaction=farejando feet=(65.28786, 51.001, 62.90815) speed=0.0000 target=(65.28786, 51.001, 62.90815)
+OK inspecao WORK produz episodio sem atribuir ator | count=1 atom={ "tick": 147, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.0272222213723 }
+OK rastro estatico nao repete episodio em 3s | antes=1 depois=1
+OK inspecao registra cache limitado | cache={ (15, 12, 14): (0.0, 37.4), (16, 12, 14): (0.0, 37.4), (17, 12, 14): (0.0, 37.4), (15, 12, 15): (0.0, 37.4), (16, 12, 15): (0.147, 37.4), (17, 12, 15): (0.0, 37.4), (15, 12, 16): (0.0, 37.4), (16, 12, 16): (0.0, 37.4), (17, 12, 16): (0.0, 37.4) }
+OK novo imprint .42 reabre local checado | reabriu=true work=0.840 tick=382 intent=investigate reaction=rastro examinado feet=(67.19477, 51.001, 62.10367) speed=0.0000 target=(67.19477, 51.001, 62.10367)
+OK rastro renovado termina segunda inspecao | count=2
+OK load limpa cache transitorio | cache={  }
+OK load nao retoma timer de inspecao | left=0.0 tick=382 intent=investigate reaction=patrulhando feet=(67.19477, 51.001, 62.10367) speed=0.0000 target=(58.0, 51.001, 62.0)
+OK BLOOD aproxima corpo ate fonte | dist=1.154 tick=108 intent=investigate reaction=seguindo sangue feet=(65.28786, 51.001, 62.90815) speed=2.5715 target=(66.0, 50.6, 62.0)
+OK inspecao BLOOD produz episodio sem ator | atom={ "tick": 147, "kind": "scent_blood", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.07777777534944 }
+OK sangue nao vira avistamento ou trabalho | saw=0 work=0
+OK premissa: inspecao em andamento | tick=3 intent=investigate reaction=farejando feet=(66.0, 51.45433, 62.0) speed=0.0000 target=(66.0, 51.33434, 62.0)
+OK medo interrompe inspecao antes de 2s | tick=17 intent=flee reaction=evitando medo feet=(65.3757, 51.001, 61.21983) speed=5.5671 target=(51.54675, 51.476, 61.43308)
+OK interrupcao move corpo sem concluir episodio | dx=-0.624 count=0
+OK runner retornou | run=true
+OK censo de testes completos | 9/9
+OK censo de checagens | 46/46
+CENARIO ESTREITO, NAO GATE P1: passos=630 sim_step total=76897 us pico=478 us; BT last_us soma=3379 pico=38 trips=0
+46 checagens 0 falhas 1.207 s
