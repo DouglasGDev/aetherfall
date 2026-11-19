@@ -36,6 +36,10 @@ suíte headless, latência e throughput do oráculo local, e as constantes de me
 | 10 | [Camadas verticais e física de blocos](10-world-layers-and-block-physics.md) | Y −64..319, tabela de propriedades dos blocos, gravidade por evento, geração em camadas |
 | 11 | [Inventário, pilhas e craft](11-inventory-crafting.md) | 36 slots com quantidade por bloco, hotbar de 10 pinos, estação por distância, receitas em lista, blocos 19..22 |
 
+Estes onze são **visão**. O que existe em `src/` está no [status](../melhorias-status.md), e o
+caminho de cada item aberto da fila — leitura de código, com premissa nomeada, gate e custo, sem
+corrida de engine — está em [`docs/planos/`](../planos/README.md).
+
 ## Glossário canônico
 
 Os nomes de mundo e de sistema são 1:1 — um conceito, dois nomes, nunca três.
