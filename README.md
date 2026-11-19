@@ -22,7 +22,7 @@ mockup, sem render de outra engine.
     <td width="50%"><img src="docs/media/02-1a-pessoa-planicie.png" alt="Planície em primeira pessoa"></td>
   </tr>
   <tr>
-    <th>Planície, 3ª pessoa</th>
+    <th>Planície, 3ª pessoa — o bloco na mão direita muda o porte do braço</th>
     <th>Planície, 1ª pessoa</th>
   </tr>
   <tr>
@@ -177,7 +177,8 @@ mensagem manda recriar o mundo em vez de interpretar mal o relevo.
 ## Teste headless
 
 A suíte roda a sessão real (`src/main.tscn`) sem janela e só conta como prova o
-que foi medido naquela execução:
+que foi medido naquela execução. Ela sobrescreve o slot `alpha`: use uma cópia de teste
+com diretório de dados isolado, conforme as [notas de medição](docs/melhorias-status.md#notas-de-medição):
 
 ```sh
 godot --headless --path . --import            # só no clone ainda não importado
@@ -185,11 +186,14 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Sai com código `1` se qualquer checagem falhar. Resultado medido em quatro
-corridas seguidas nesta máquina, na árvore deste README: **220 checagens,
+corridas seguidas nesta máquina, na revisão histórica `9c6b722`: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`), recém-importado com o `--import` logo acima:
 **220 checagens, 0 falhas, 35,4 s**. Os cinco logs sem nenhuma linha
-`ERROR` do engine. A contagem é sempre da revisão medida, nunca do texto: a
+`ERROR` do engine — essas cinco são da revisão histórica; desde que o som
+entrou, o smoke e o censo de áudio encerram com as duas linhas de vazamento
+do quit (medidas e explicadas em "O jogo tem som, e o som não manda no
+mundo"). A contagem é sempre da revisão medida, nunca do texto: a
 rodada de inventário, pilhas e craft acrescentou passos (`inventario, pilhas e
 receitas` e as checagens de quantidade dentro de `minerar e colocar`,
 `colocar com clique`, `tecla 3 no hotbar`, `malha e face-culling` (os dois panos
@@ -245,7 +249,8 @@ O que a suíte cobre:
   chunk (15/16), ida e volta origem+local, chave de save com negativo e a grade
   grossa do Éter (4×4×4) saem todos do mesmo módulo;
 - corpo do jogador: um modelo por vista. Em 3ª pessoa, 23 caixas montadas em
-  pivôs, coladas nos pés, girando com o yaw e todas em cena; em 1ª pessoa o rig
+  pivôs, coladas nos pés, girando com o yaw, todas em cena e com o braço direito de
+  porte conforme o bloco segurado (ver "Porte na 3ª pessoa"); em 1ª pessoa o rig
   sai inteiro e entra o view model — 10 caixas de ombro, manga, antebraço, punho
   e dedos desenhadas para a lente, segurando o bloco do slot selecionado (pilha
   zerada devolve punho fechado). O cubo na mão é medido em pixels do quadro
@@ -263,21 +268,170 @@ O que a suíte cobre:
 - persistência: salvar → mutar o mundo → carregar devolve relevo, diário de
   edições, posição, vida, tick e a memória dos lobos.
 
+## Bloco na mão
+
+O item opaco desenha após os dedos, sem a pele atravessar a face do bloco; vidro continua
+transparente. A correção passou em 21 checagens com renderização real e na suíte de 220
+checagens, ambas sem falhas no candidato local recém-importado.
+[Antes/depois, comando e limites do teste](docs/melhorias-status.md#bloco-na-mão--correção-local-de-2026-11-18).
+
+## Porte na 3ª pessoa
+
+O que está na mão muda o corpo: o braço direito pende mais baixo e mais para fora com bloco
+pesado (pedra, dureza 0,95 → cota de carga 1,00) e sobe para o peito com bloco leve (folha, 0,22
+→ 0,23), e o cubo segurado é o bloco do slot selecionado, com o mesmo atlas emprestado pelo mundo
+que o view model usa. A premissa é do jogo — `avatar.block_id = selected_block()` —, não de um
+campo escrito pelo teste.
+
+A checagem headless (`bloco na mao passa para fora do braco no quadro da orbita`) mede a fração da
+face do cubo que nenhum outro corpo do avatar tapa, no enquadramento real da órbita de trás. Sobre
+a pose anterior dava **0,02** (pedra) e **0,00** (folha) e caía em vermelho; hoje dá **0,45** e
+**0,30**, com o corte em 0,15. Conferido em instrumento independente, por pixels reais do quadro
+1280×720: a fração visível do cubo passou de 0,000–0,062 para 0,288–0,405. Candidato local: **232
+checagens, 0 falhas, 33,7 s**, exit 0, fontes pinadas por manifesto SHA-256
+`17ddce7fc2017bbc1442d9e6f4581b29012b567636240f239115305be29ebd7d`.
+
+Limite honesto: nada aqui gateia aprovação a olho — o que se vê é a galeria lá em cima, recapturada
+na mesma corrida desta pose. E o porte é corpo e câmera: não toca IA, determinismo nem o custo do
+tick de simulação (o braço se move no frame de física, não nos 20 Hz).
+[Notas de medição](docs/melhorias-status.md#porte-do-corpo-em-terceira-pessoa--candidato-local-de-2026-11-19-não-publicado).
+
+## Rastros e reações
+
+Trabalho e sangue atraem lobos mesmo sem visão do jogador. Ao alcançar o local, o lobo
+para por 2 s para farejar e grava um episódio sem inventar quem deixou o cheiro.
+A memória curta evita repetir a inspeção do mesmo rastro por 30 s; um aumento de 0,06
+na força ponderada (`sangue + 0,35 × trabalho`) pode reabrir a investigação, inclusive
+um novo imprint de construção de 0,20. São até 32 células lembradas por lobo; um golpe
+interrompe a inspeção, que precisa recomeçar depois do atordoamento.
+
+O medo orienta a fuga pelo campo percebido, pela presa visível ou pelo último golpe
+recebido — não pela posição oculta do jogador. Uma fuga causada apenas pelo campo
+não produz mais medo indefinidamente. A caça exige visão ou um avistamento real dos
+últimos 6 s, com a presa ainda viva; atrás de obstáculos, a busca vai até a última posição observada.
+O F3 mostra a reação atual, o canal, a célula e a força do rastro.
+
+Teste dedicado, sem abrir janela nem gravar saves:
+
+```sh
+godot --headless --path . --script tests/aether_reactions_test.gd
+```
+
+Esse recorte não acrescenta canais, autoria dos rastros, pathfinding ou replay.
+A busca ainda lê uma camada de altura e projeta o alvo na superfície; um rastro fraco
+pode desaparecer antes da chegada. O cache de inspeções é transitório e se limpa ao
+carregar; os episódios ficam no save.
+
+Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
+rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por
+SHA-256, evidências e limites nas [notas de medição](docs/melhorias-status.md#rastros-e-reações--candidato-local-de-2026-11-18).
+São resultados headless, ainda sem aprovação visual em janela ou novo commit.
+
+## Hash por tick e journal mínimo
+
+A gravação é opcional e exige um arquivo **novo**, num diretório existente:
+
+```sh
+godot --headless --path . --fixed-fps 60 --quit-after 300 -- --tick-journal=user://tick-run.jsonl
+```
+
+Cada linha JSONL contém `[tick, "sha256"]`, gravada após o passo de simulação.
+O hash cobre semente/versão/dimensões, tick, edições voxel, todos os valores do Éter e
+identidades/intenções/crenças das mentes vivas, em ordem canônica. Não cobre corpos,
+jogador, RNG ou comandos: **não é replay nem prova de determinismo da simulação inteira**.
+Um load encerra a gravação antes de restaurar o mundo; outro registro exige outro arquivo.
+Sem essa opção não há hash por tick ou arquivo crescendo automaticamente.
+
+O contrato tem teste próprio, além da suíte do slice:
+
+```sh
+godot --headless --path . --script tests/tick_journal_test.gd
+```
+
+`main.state_hash()` permite consultar a projeção; `diagnostics()["journal"]` informa
+registros, último hash e custo de hash/escrita/flush em microssegundos. O custo também
+entra em `worst_sim_ms`. Contrato, limites e medições em
+[`docs/melhorias-status.md`](docs/melhorias-status.md#contrato-do-hash-e-journal-mínimo).
+
+Validação histórica do candidato de hash, anterior ao refinamento dos rastros e sem commit novo: contrato **128 checagens / 0 falhas**;
+smoke sem e com gravação, **220 / 0 em cada corrida**. CLI e encerramento no load também
+exercitados. Fontes identificadas por SHA-256 e logs preservados nas
+[notas de medição](docs/melhorias-status.md#notas-de-medição); isso não substitui a prova
+num clone limpo do próximo commit.
+
+## O sorteio da matilha tem dono
+
+O povoamento sorteia por um gerador da sessão (`_population_rng`, semeado com
+`"population:<seed do mundo>"` só no primeiro lote, para o respawn continuar a mesma
+sequência) e cada lobo sorteia pelo próprio `_rng`, semeado com
+`"wolf:<seed do mundo>:<identity>"`. Então um `randi()`/`randf()` global solto em outro
+sistema já não muda onde a matilha nasce, para onde ela patrulha nem para que lado o
+lobo desvia — e a identidade continua decidindo a sequência: outro lobo, outra série;
+outra semente de mundo, outra população e outro padrão até para a mesma identidade.
+Não sobra nenhum sorteio do gerador global em `src/`: atlas e gerador de relevo já
+tinham gerador próprio.
+
+```sh
+godot --headless --path . --script tests/simulation_rng_test.gd
+```
+
+Isto é pré-condição de replay, **não replay**: o hash por tick continua sem cobrir RNG,
+o save não guarda a posição dos geradores (depois de um load cada um está onde a sessão
+o deixou) e falta a ordem autoritativa dos passos. No candidato local recém-importado
+(base `1db00cf`, sem commit novo): **27 checagens / 0 falhas**; o mesmo teste contra o
+código anterior dava **11 falhas**. Evidências e limites nas
+[notas de RNG](docs/melhorias-status.md#rng-da-matilha--recorte-local-de-2026-11-18).
+
+## O jogo tem som, e o som não manda no mundo
+
+51 arquivos CC0 em `assets/audio/` — origem, SHA-256 e nível médio medido de cada um em
+[`docs/audio-provenance.md`](docs/audio-provenance.md). O `AudioDirector` só escuta os
+sinais que o mundo já emite: passo pela superfície sob os pés (1,9 m por passo, 1,4 m
+nadando), tick de lavra a cada 0,3 s lido na barra de progresso real, quebra e colocação
+de bloco, uivo e latido saindo da `intent` do lobo, splash ao entrar na água e a cama
+ambiental (pássaros, vento ou água) com crossfade de 0,7 s. O ganho de cada arquivo sai do
+nível medido dele, então os 20 dB que separam `dig_soft_1` (-14,2 dB) de `ui_click`
+(-34,3 dB) na fonte já chegam corrigidos no alto-falante.
+
+Ele não escreve voxel, não imprime no Éter e sorteia variante numa RNG própria: nove
+eventos disparados deixam o hash autoritativo do tick e o estado dos geradores da matilha
+byte por byte iguais.
+
+```sh
+godot --headless --path . --script tests/audio_test.gd   # censo e contrato (driver Dummy)
+godot --path . tests/audio_live_probe.tscn               # audibilidade real, em janela
+```
+
+Na árvore de trabalho atual (base `1db00cf`, sem commit novo): **73 checagens / 0 falhas** no
+censo e **220 / 0** no smoke. A sonda em janela mediu 13 toques em 6 s sem nenhum input
+disparado (`step_grass` 6, `step_snow` 6, `splash` 1), cama `amb_birds` e pico de
+**-7,4 dB no Master** com o driver WASAPI. Headless não prova audibilidade — lá o driver é
+`Dummy` e o mixer entrega silêncio (a posição de playback, essa sim, anda: medida em
+[`docs/evidence/audio/dummy-progress.log`](docs/evidence/audio/dummy-progress.log)); se a
+primeira linha da sonda vier `Dummy`, o endpoint do Windows não abriu e a culpa não é do jogo
+(aconteceu uma vez em três corridas). Uma corrida que sai com um stream tocando encerra com as
+linhas de vazamento do engine (`8 ObjectDB instances` no smoke, `12` no censo): a playback só é
+liberada no tick de mix seguinte, e o processo morre antes — a causa está medida em
+[`docs/evidence/audio/leak-probe.log`](docs/evidence/audio/leak-probe.log) e não muda nenhum
+contador.
+
 ## Estrutura
 
 ```
 src/
   ai/            behavior tree, curvas de resposta, utilidade, mente do NPC, oráculo
+  audio/         diretor de som: consumidor dos eventos do mundo, ganho por arquivo medido
   core/          relógio de simulação (20 Hz)
   entities/      jogador, corpo voxel (colisão AABB-contra-voxel), lobo
   input/         registro de ações (sai para rebinder com persistência no P2)
-  persistence/   save atômico (.tmp + rename), schema e diário de edições
+  persistence/   save atômico, diário de edições e TickJournal (hash/JSONL sob demanda)
   rendering/     visão do Éter
   ui/            HUD, debug, mensagens
   world/         mundo voxel, chunks, gerador, blocos, atlas, campo de Éter,
                  conversões canônicas (Coords)
   main.gd        composição do slice
-tests/           smoke test headless
+tests/           smoke do slice + contratos headless de hash/journal, rastros, RNG e som
+assets/audio/    os 51 arquivos CC0 e o levels.json com o nível medido de cada um
 tools/           fetch de packs de IA local + servidor do oráculo (PowerShell)
 docs/design/     design completo (pitch, IA, progressão, arquitetura, roadmap)
 docs/melhorias-status.md  o que está feito, o que falta e o que foi medido
@@ -321,9 +475,10 @@ combate corpo a corpo com vigor, rolamento e
 planar, respiração e dano de queda, vida/dano/morte/renascer,
 HUD, 5 lobos com Behavior Tree + Utilidade + memória episódica e
 confiança no jogador, campo de Éter com 3 canais (work, blood, fear) que difunde
-e decai, relógio de simulação desacoplado, save/load atômico, o oráculo de IA
-local opcional (llama-server + Qwen3.5-4B em localhost, narração no debug) e a
-suíte headless acima.
+e decai, relógio de simulação desacoplado, save/load atômico, som ambiente e de ação com
+51 arquivos CC0 roteados por barramento (o ganho sai do nível medido de cada arquivo), o
+oráculo de IA local opcional (llama-server + Qwen3.5-4B em localhost, narração no debug) e
+a suíte headless acima.
 
 Ainda **alvo de design** (descrito em `docs/design/`, sem código aqui): NPCs de
 aldeia com objetivos próprios, facções e evolução de assentamentos, progressão
@@ -362,14 +517,21 @@ igual para humano e para agente.
 
 | Caminho | O que faz |
 | --- | --- |
-| `src/main.gd` | composição da cena: mundo, jogador, lobos, Éter, HUD, save |
+| `src/main.gd` | composição da cena: mundo, jogador, lobos, Éter, HUD, save, nó de áudio |
 | `src/world/` | `voxel_world` (chunks + raycast DDA), `world_gen` (relevo, cubas, cavernas, árvores), `voxel_atlas` (texturas desenhadas em runtime), `aether_field` |
 | `src/entities/` | `player` (mira, minerar, colocar, golpe), `voxel_body` (colisão AABB-contra-voxel), `player_avatar` (corpo em 3ª pessoa), `fp_viewmodel` (braço e bloco na mão em 1ª pessoa), `wolf` |
 | `src/ai/` | `bt_tree`/`bt_status` (Behavior Tree), `response_curve` + `utility_scorer` (utilidade), `mind` (personalidade, memória episódica, confiança) |
 | `src/core/sim_clock.gd` | relógio de simulação a 20 Hz, desacoplado do frame |
+| `src/audio/audio_director.gd` | som: 12 vozes 3D, ganho por arquivo medido, cadência de passo/lavra, camas com crossfade — só lê os sinais do mundo |
 | `src/persistence/` | `save_manager` (escrita atômica: `.tmp` + rename, schema versionado) |
 | `src/ui/`, `src/rendering/`, `src/input/` | HUD, visão do Éter, registro de ações |
 | `tests/smoke_test.gd` | a suíte headless que roda a sessão real |
+| `tests/aether_reactions_test.gd` | aproximação, inspeção, memória de rastros e fuga com percepção real |
+| `tests/fp_viewmodel_render_test.gd` | comparação de pixels do item com/sem a mão; exige renderização Vulkan |
+| `tests/tick_journal_test.gd` | contrato do hash mínimo e do arquivo JSONL |
+| `tests/simulation_rng_test.gd` | gerador próprio da sessão e de cada lobo; sorteios globais alheios não mudam mais a matilha |
+| `tests/audio_test.gd` | censo dos 51 arquivos, ganhos derivados, cadência de passo/lavra e o contrato de que som não move o mundo |
+| `tests/audio_live_probe.tscn` | sonda em janela: mede o pico dos barramentos com o driver real de áudio (headless é `Dummy`) |
 
 ### Regras que o código já segue
 

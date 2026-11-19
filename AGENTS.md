@@ -21,8 +21,8 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
 | Que corrida sustenta cada número publicado | idem, "Notas de medição" |
 | Como conduzir a mudança: escopo, atomicidade, medição, comentário | este arquivo |
 | Custo de uma mudança: budget, alocação, LOD, o que cresce sem justificativa | este arquivo, "Disciplina de otimização", e a terceira tabela do status |
-| O que é cada fase e qual é o gate dela | [docs/design/08](design/08-roadmap-risks-licensing.md) |
-| O que é meta de design e o que é código que existe | [docs/design/README.md](design/README.md), legenda `[TARGET]`/`[MEASURED]`/`[DECIDED]`/`[OPEN]` |
+| O que é cada fase e qual é o gate dela | [docs/design/08](docs/design/08-roadmap-risks-licensing.md) |
+| O que é meta de design e o que é código que existe | [docs/design/README.md](docs/design/README.md), legenda `[TARGET]`/`[MEASURED]`/`[DECIDED]`/`[OPEN]` |
 
 ## Princípios invioláveis e onde cada um já está seguro
 
@@ -37,9 +37,10 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    `_narrations` ([mind_oracle.gd:27](src/ai/mind_oracle.gd#L27), gravado em
    [:120](src/ai/mind_oracle.gd#L120)), lido por `narration_of()`
    ([:59-60](src/ai/mind_oracle.gd#L59-L60)) e entregue só ao HUD
-   ([main.gd:109](src/main.gd#L109) → [hud.gd:270-271](src/ui/hud.gd#L270-L271)). Não existe
+   ([main.gd:114](src/main.gd#L114) → [hud.gd:270-271](src/ui/hud.gd#L270-L271)). Não existe
    caminho do oráculo para `Mind`, `Wolf` ou `VoxelWorld`; a decisão vem de BT + utilidade
-   ([wolf.gd:129-156](src/entities/wolf.gd#L129-L156), `src/ai/utility_scorer.gd`).
+   ([wolf.gd:146-174](src/entities/wolf.gd#L146-L174), [:401-403](src/entities/wolf.gd#L401-L403),
+   `src/ai/utility_scorer.gd`).
    *Fica faltando:* é verdade por ausência de ligação, não por verifier. Quando o oráculo
    começar a sugerir algo, a sugestão entra como crença em quarentena (§04), nunca como
    intenção já escrita no corpo.
@@ -47,64 +48,111 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    headless. *Estado honesto:* a geração é determinística (seed única
    [`SEED := 20261116`](tests/smoke_test.gd#L10), o mesmo mundo construído duas vezes devolve as
    mesmas 16 colunas de relevo) e a **simulação ao vivo não é** — `hp` final, Éter e pior passo
-   mudam entre corridas da mesma árvore. Não existe hash de estado por tick nem journal de tick.
-   Portanto "não quebrar a capacidade de hash/journal" aqui só pode significar uma coisa: não
-   fechar o acesso ao estado autoritativo. Ele continua serializável por dicionário e `Callable`
-   (`main.diagnostics()`, [main.gd:404](src/main.gd#L404)) exatamente para que o primitivo seja
-   construído depois — e ele é o item 1 da fila.
+   mudaram nas corridas históricas da mesma árvore. O item 1 agora tem o primitivo
+   `TickJournal`: SHA256 de uma **projeção mínima**, não hash completo nem replay
+   ([tick_journal.gd:16-44](src/persistence/tick_journal.gd#L16-L44)). Inclui
+   `FORMAT_VERSION = 1`, seed real (`world.gen.world_seed`), `GEN_VERSION`, tick, dimensões do
+   mundo e do Éter (com tamanho de célula e canais), edições ordenadas XYZ com id de bloco,
+   lobos vivos ordenados por `wolf.identity` com `mind.identity`, `mind.kind`, `intent` e
+   crenças ordenadas por chave (`key/confidence/source`). O SHA256 recebe esses metadados
+   via `var_to_bytes` seguidos de todos os bytes Float32 de `_cur`
+   ([aether_field.gd:217-219](src/world/aether_field.gd#L217-L219)), sem o corte do save.
+   **Não inclui** jogador, corpos, RNG, episódios, relações, timers ou comandos; não torna a
+   simulação determinística. `main.state_hash()` expõe a consulta
+   ([main.gd:486-487](src/main.gd#L486-L487)); o acesso ao estado autoritativo permanece aberto.
+   O contrato foi exercitado em headless antes do refinamento dos rastros; resultados
+   históricos locais e fontes medidas estão nas [notas do status](docs/melhorias-status.md#notas-de-medição).
+   O candidato final com o lobo refinado também foi importado sem cache e validado;
+   fontes e corridas estão nas [notas de rastros](docs/melhorias-status.md#rastros-e-reações--candidato-local-de-2026-11-18).
+   São alterações locais identificadas por SHA-256, não clone de novo commit publicado;
+   nenhum gate de fase se fecha.
 4. **Gates são sagrados.** Nenhuma fase termina por calendário; termina por comando headless +
    critério numérico + documento derivado do código. *Estado medido:* **nenhum gate fechado**, o
-   slice jogável está **antes** de P1 ([docs/design/08](design/08-roadmap-risks-licensing.md)).
+   slice jogável está **antes** de P1 ([docs/design/08](docs/design/08-roadmap-risks-licensing.md)).
    "Estamos em P0/P1" descreve o que existe, não uma fase encerrada. Gate travado = a próxima não
    começa; a exceção se registra **antes** de escrever o código, nunca na justificativa do commit.
 5. **Observabilidade é requisito, não luxo.** *Seguro por:* o overlay de debug (F3 em
    [input_actions.gd:33](src/input/input_actions.gd#L33), corpo em
    [hud.gd:241-275](src/ui/hud.gd#L241-L275)) mostra tick, `worst_step_ms`, ticks perdidos,
    total por canal do Éter e uma linha por lobo com a narrativa do oráculo. *Falta para P1:*
-   `MindsInspector` não existe, e o custo de BT (`tree_stats()`,
-   [wolf.gd:524-525](src/entities/wolf.gd#L524-L525)) só sai em janela — enquanto não houver
-   colheita em headless, "budget medido" continua sendo afirmação.
+   `MindsInspector` não existe. O custo de BT sai no F3 (`tree_stats()`,
+   [wolf.gd:637-638](src/entities/wolf.gd#L637-L638)); agora há também colheita headless
+   estreita de `sim_step` integral e `_guard.last_us`/`trips`, um lobo por cenário
+   ([aether_reactions_test.gd:104-121](tests/aether_reactions_test.gd#L104-L121),
+   [:640-641](tests/aether_reactions_test.gd#L640-L641)). O guard mede só BT, sem
+   percepção/utilidade ([wolf.gd:428-432](src/entities/wolf.gd#L428-L432)); isso não mede
+   o HOT agregado dos cinco lobos nem fecha P1.
 6. **Mudanças pequenas e atômicas.** Um assunto por commit e suíte verde entre eles, com a
-   medição de cada um no próprio commit. O corte desta revisão é o exemplo: o conserto do passo
+   medição de cada um no próprio commit. O corte da revisão do golpe é o exemplo: o conserto do passo
    de golpe e a publicação do número do clone limpo são dois commits porque cada um tem uma
    corrida que lhe responde.
 7. **Comentário explica o porquê, em português.** Nunca narrar o óbvio do código. Modelos
    reais: [smoke_test.gd:215-223](tests/smoke_test.gd#L215-L223) (por que o teste dá o `dt` e os
    passos ele mesmo) e o `GEN_VERSION` [world_gen.gd:6](src/world/world_gen.gd#L6), que faz o
    save velho ser recusado com mensagem em vez de lido torto
-   ([main.gd:351](src/main.gd#L351)).
+   ([main.gd:378-380](src/main.gd#L378-L380)).
 8. **Zero derivação GPL do Veloren.** Inspiração de idéias e sistemas é permitida; código e
    asset, não. *Verificado por ausência:* nenhum `.rs` e nenhum `.ron` no repositório;
-   [docs/design/09](design/09-veloren-mechanics-adaptation.md) separa o que veio de lá como
-   idéia, o que existe em código e o que foi rejeitado.
+   [docs/design/09](docs/design/09-veloren-mechanics-adaptation.md) separa o que veio de lá como
+   idéia, o que existe em código e o que foi rejeitado. *O veto cobre áudio, e isso foi chegado
+   em 2026-11-18:* o Veloren tem `assets/voxygen/audio/{sfx,ambience,soundtrack}` — **645 arquivos
+   de áudio, 312,35 MB** na árvore recursiva da API de objetos do Git, mais os manifests `sfx.ron`,
+   `ambience.ron`, `soundtrack.ron`. O repositório deles tem **um único `LICENSE` na raiz, GPL-3.0**
+   (a FAQ do README: "we decided to license it under the GNU General Public License v3.0"), e nesses
+   651 blobs de áudio não há nenhum arquivo de licença ou atribuição por pasta — os únicos 6 blobs
+   não-áudio são os `.ron`. O `CONTRIBUTING.md` deles reforça: conteúdo de terceiro só entra se for
+   distribuível **sob a licença deles**. Então nenhum `.ogg` do Veloren vem para cá, e "pegar o som
+   do Veloren" continua sendo derivação GPL. O que se aproveita é a estrutura: categorias de sfx,
+   passos por material, ambiência por bioma, trilha com transição. Som do jogo vem de domínio
+   público (CC0) já dentro do repositório: 51 arquivos em `assets/audio/`, com origem e
+   SHA-256 por arquivo em [docs/audio-provenance.md](docs/audio-provenance.md) e
+   [docs/audio-sha256.txt](docs/audio-sha256.txt), e o ganho medido em `assets/audio/levels.json`.
 
 ## Disciplina de otimização e controle de crescimento
 
 O terceiro mandato não pede otimização nova: pede que nenhuma mudança entre sem responder
 o custo dela. Ele é aplicável porque o projeto **já** tem instrumento — e tem, com nomes:
 
-**As duas cadências.** O jogador local roda por *frame*
-([main.gd:123](src/main.gd#L123) → `update_local`) e é hoje a única coisa que escreve no
-mundo fora do tick — o `set_block` da lavra e da colocação está em
-[player.gd:660](src/entities/player.gd#L660) e [:686](src/entities/player.gd#L686). Todo o
-resto (Éter, mentes, cadáveres, relógio) é autoritativo a 20 Hz
-([sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7)) dentro de `begin_step`/`end_step`, que
-cronometra em microsegundos ([main.gd:124-128](src/main.gd#L124-L128),
-[sim_clock.gd:32-39](src/core/sim_clock.gd#L32-L39)). Regra de bolso: o que você coloca em
-`_sim_tick` divide 50 ms com 5 lobos; o que coloca em `_physics_process` divide o frame com
-a renderização.
+**As duas cadências.** O jogador local roda por *frame de física*
+([main.gd:136-142](src/main.gd#L136-L142) → `update_local`): lavra e colocação escrevem
+voxels fora do tick ([player.gd:659](src/entities/player.gd#L659),
+[:675](src/entities/player.gd#L675)) e seus sinais também imprimem no Éter
+([main.gd:268-273](src/main.gd#L268-L273)). O lobo não é só 20 Hz:
+`wolf._physics_process` locomove o corpo e reduz timers de cadáver, atordoamento e desvio
+por frame ([wolf.gd:501-546](src/entities/wolf.gd#L501-L546)). Decisão de IA, difusão,
+recolha de cadáveres e respawns são agendados pelo tick de 20 Hz, com cadências próprias
+([main.gd:145-170](src/main.gd#L145-L170), [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7)).
+`begin_step`/`end_step` cronometra esse passo em microsegundos
+([main.gd:140-142](src/main.gd#L140-L142), [sim_clock.gd:32-39](src/core/sim_clock.gd#L32-L39)),
+incluindo o journal ativo. Regra de bolso: o que você coloca em `_sim_tick` divide 50 ms
+com 5 lobos; o que coloca em `_physics_process` divide o frame com a renderização.
+
+**Journal sob demanda, não gravação automática.** A CLI lê, após `--`,
+`--tick-journal=path` ([main.gd:490-498](src/main.gd#L490-L498)). `start()` recusa caminho
+existente: cada corrida exige arquivo novo explícito, sem reabrir histórico nem criar
+arquivos automaticamente entre sessões ([tick_journal.gd:47-62](src/persistence/tick_journal.gd#L47-L62)).
+`record()` acrescenta JSONL `[tick,hash]` com `flush` por linha; recusa tick negativo e,
+após o primeiro registro, duplicata, regressão ou salto (exige `last_tick + 1`)
+([tick_journal.gd:69-87](src/persistence/tick_journal.gd#L69-L87)). A chamada ocorre após
+`clock.tick += 1`, **dentro** do cronômetro da simulação
+([main.gd:164-170](src/main.gd#L164-L170)); sem o modo, o tick só consulta `active()`.
+O load válido encerra o arquivo antes de restaurar o mundo
+([main.gd:381-383](src/main.gd#L381-L383)); sair da cena também o fecha
+([main.gd:500-501](src/main.gd#L500-L501)). O arquivo cresce apenas enquanto a gravação
+explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 
 **Orçamentos que já são código**, não intenção (regra 7):
 
 | Orçamento | Valor hoje | Onde |
 | --- | --- | --- |
 | Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-L29) |
-| Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs) | [bt_tree.gd:117-120](src/ai/behavior/bt_tree.gd#L117-L120), [wolf.gd:155-156](src/entities/wolf.gd#L155-L156) |
-| Malha | 2 chunks por frame | [main.gd:13](src/main.gd#L13), usado em [:154](src/main.gd#L154) |
-| Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:12](src/main.gd#L12), [:134-137](src/main.gd#L134-L137) |
+| Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs); só BT, não percepção/utilidade | [bt_tree.gd:117-137](src/ai/behavior/bt_tree.gd#L117-L137), [wolf.gd:172-174](src/entities/wolf.gd#L172-L174) |
+| Malha | 2 chunks por frame | [main.gd:13](src/main.gd#L13), usado em [:173-174](src/main.gd#L173-L174) |
+| Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:12](src/main.gd#L12), [:148-150](src/main.gd#L148-L150) |
 | Recolha de cadáver, visão do Éter | 1 s e 0,25 s | [main.gd:16](src/main.gd#L16), [:14](src/main.gd#L14) |
 
-**O que dói hoje, medido** (regra 2): o boot, não o tick. Geração de 936 a 962 ms e
+**O que doeu nas corridas históricas, antes do journal** (regra 2): o boot, não o tick.
+Geração de 936 a 962 ms e
 malharia de 4.640 a 4.886 ms com a janela congelada (`.tools/suite_fix1.log` …
 `suite_fix4.log`; no clone limpo, 941 ms e 4.668 ms). O passo mais caro das cinco corridas
 ficou entre 7,56 e 11,21 ms dos 50 ms disponíveis, com `dropped_ticks = 0` em todas. Quem
@@ -117,29 +165,67 @@ chunks (README, seção "Limites conhecidos (medidos nesta máquina)").
 ainda (regras 5 e 1, nesta ordem):
 
 - o blackboard do BT é um `Dictionary` novo por lobo por tick
-  ([wolf.gd:339](src/entities/wolf.gd#L339)): com a matilha inteira viva, 5 × 20 = 100
-  dicionários por segundo (o `sim_step` retorna cedo em cadáver, então o número é teto);
+  ([wolf.gd:432](src/entities/wolf.gd#L432)): com a matilha inteira viva, 5 × 20 = 100
+  dicionários por segundo (o `sim_step` retorna cedo em cadáver, então o número é teto
+  derivado do código, não medição de alocação);
 - a difusão aloca um `PackedInt32Array` por canal por passada
   ([aether_field.gd:113](src/world/aether_field.gd#L113)): 3 a cada 0,25 s;
 - a conta das árvores (5 × 400 µs = 2 ms) cabe no teto de 2,5 ms que o gate de P1 ainda
   escreve como `[TARGET]` — e nenhum log mostra a soma real.
 
-Nada disso tem medição própria: os únicos monitores do engine lidos no repositório são
-`TIME_PROCESS` e `TIME_PHYSICS_PROCESS`, e só no overlay F3
-([hud.gd:244-247](src/ui/hud.gd#L244-L247)). Em headless, a suíte colhe `worst_step_ms` e
-`dropped_ticks` pelo `diagnostics()` ([main.gd:404](src/main.gd#L404)). Então o primeiro
-passo de qualquer otimização é a colheita, não o corte.
+Essas alocações ainda não têm medição própria: os monitores do engine lidos são
+`TIME_PROCESS` e `TIME_PHYSICS_PROCESS`, só no overlay F3
+([hud.gd:244-247](src/ui/hud.gd#L244-L247)). Em headless, a suíte colhe o pior passo
+(`worst_sim_ms`, vindo de `clock.worst_step_ms`) e `dropped_ticks` pelo `diagnostics()`
+([main.gd:435-446](src/main.gd#L435-L446)). A colheita estreita de reações já separa
+`sim_step` integral de BT, mas não mede alocações nem o HOT agregado dos cinco lobos.
+Então o primeiro passo de qualquer otimização é a colheita, não o corte.
+
+**Leitor de rastros: custo limitado por código, não otimização medida.** Cada scan
+percorre `7 × 7` células na camada Y atual: **49 × 3 leituras** `sample_cell`
+(BLOOD/WORK/FEAR) por lobo, com seleção por `BLOOD + 0,35 × WORK`
+([wolf.gd:461-496](src/entities/wolf.gd#L461-L496)). A cadência é `0,25 s`, com rescan
+no tick seguinte à inspeção concluída ([:271-276](src/entities/wolf.gd#L271-L276),
+[:408-446](src/entities/wolf.gd#L408-L446)); cinco lobos podem fazer o scan no mesmo tick.
+Isso não conta todo o `sim_step`: há ainda três amostras locais por tick e LOS quando
+pode importar ([:435-444](src/entities/wolf.gd#L435-L444)). Ao concluir os `2 s` de
+inspeção, a vizinhança `3 × 3` acrescenta até duas leituras por célula válida para
+registrar a força ponderada no cache, limitado a **32 células por lobo**, com expiração
+em `30 s` e renovação por aumento de pelo menos `0,06` ponderado
+([:27-33](src/entities/wolf.gd#L27-L33), [:248-293](src/entities/wolf.gd#L248-L293),
+[:482-483](src/entities/wolf.gd#L482-L483)). `keys()` aloca um Array por scan para
+recolher expirados e também nas evicções ao atingir o teto
+([:291-293](src/entities/wolf.gd#L291-L293), [:462-466](src/entities/wolf.gd#L462-L466)).
+O cache transitório pertence ao lobo e é limpo no load
+([:649-670](src/entities/wolf.gd#L649-L670)). Esses limites são derivados do código:
+não quantificam a alocação total, não provam ganho de desempenho e não fecham P1.
+
+**Cópia de estado e custo observado:** com journal ativo, `state_bytes()` copia
+32 × 16 × 32 × 3 × 4 = **196 608 bytes/tick** de Float32 (tamanho conferido pelo teste),
+além dos arrays de edições, lobos vivos (hoje até 5 mentes) e crenças ordenados,
+serialização, SHA256 e escrita com `flush`. Não é custo total de alocação medido.
+O journal expõe `records`, `last_us`, `worst_us` e `total_us` (hash + escrita + flush
+concluídos) em `diagnostics()["journal"]`
+([tick_journal.gd:74-98](src/persistence/tick_journal.gd#L74-L98),
+[main.gd:445](src/main.gd#L445)). No candidato histórico local recém-importado, anterior
+ao refinamento dos rastros, 205 registros custaram 160 000 µs ao todo, com pico de
+1 646 µs; o load encerrou a gravação. Os dois smokes, sem/com journal, terminaram sem
+ticks perdidos, mas não são replay pareado, prova de otimização ou medição do lobo
+refinado: [fontes e logs](docs/melhorias-status.md#notas-de-medição).
 
 **LOD (regra 6) é parcial, e se diz assim:** existe *throttle temporal* por subsistema —
-Éter e visão 4×/s, cadáveres 1×/s, e cooldowns de percepção dentro da árvore
-([wolf.gd:83-85](src/entities/wolf.gd#L83-L85)) — e não existe *LOD por distância*: os lobos
-vivos rodam a árvore inteira a cada tick, perto ou longe. A peça do design é o
+difusão e visualização do Éter 4×/s, cadáveres 1×/s; o leitor de rastros tem cadência de
+`0,25 s` (com rescan após inspeção) e o registro de avistamentos, `2 s`
+([wolf.gd:271-276](src/entities/wolf.gd#L271-L276), [:435-463](src/entities/wolf.gd#L435-L463)).
+Isso não limita a LOS a 4×/s: ela é consultada a cada tick se o jogador está vivo e a
+menos de 30 m. Não existe *LOD por distância*: os lobos vivos avaliam o BT a cada tick,
+perto ou longe ([wolf.gd:408-432](src/entities/wolf.gd#L408-L432)). A peça do design é o
 `HotSet`/Véu (§04, §06) e pertence a P2; antes de o custo aparecer em log, ela é backlog.
 
 **Anti-bloat, com o estado real:**
 
-- `main.gd` é o "objeto deus" conhecido — 451 linhas donas de mundo, relógio, matilha, HUD,
-  oráculo e visualização ([main.gd:18-24](src/main.gd#L18-L24)). Isso está registrado como
+- `main.gd` é o "objeto deus" conhecido — 501 linhas donas de mundo, relógio, matilha, HUD,
+  oráculo, visualização, instância do journal e o nó de áudio ([main.gd:19-31](src/main.gd#L19-L31)). Isso está registrado como
   débito, não como licença: mudança que precisa de estado novo pergunta primeiro **quem é o
   dono** daquele estado.
 - Generalize no segundo chamador, não no primeiro. O padrão da casa é dado no código até

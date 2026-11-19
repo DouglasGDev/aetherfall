@@ -18,7 +18,20 @@ simples) e separa por convenção de nome o que é código, dado, arte e nativo.
 | `addons/` só para terceiros | nossa 1ª-party vive em `src/` e `native/`; `addons/` é apenas deps de engine, cada um com licença registrada em `THIRD_PARTY_LICENSES.md` |
 | `data/` sem lógica | só `.tres`/`.json`/`.csv` de definição; qualquer `.gd` dentro de `data/` é bug de arquitetura |
 
-## Árvore
+## Recorte real — hash e journal
+
+| Arquivo existente | Responsabilidade neste bloco |
+|---|---|
+| [src/main.gd](../../src/main.gd) (501 linhas) | dona da instância do journal; grava após incrementar o tick, dentro do cronômetro ([164-170](../../src/main.gd#L164-L170)); expõe diagnóstico ([435-446](../../src/main.gd#L435-L446)) e `state_hash()` ([486-487](../../src/main.gd#L486-L487)) |
+| [src/persistence/tick_journal.gd](../../src/persistence/tick_journal.gd) | `TickJournal`: SHA256 da projeção mínima e JSONL `[tick,hash]` sob demanda, em arquivo novo por corrida; não é replay |
+| [src/world/aether_field.gd](../../src/world/aether_field.gd) (219 linhas) | `state_bytes()` copia todos os bytes de `_cur` Float32, sem o corte usado no save ([217-219](../../src/world/aether_field.gd#L217-L219)) |
+
+Contrato e limites em [AGENTS.md](../../AGENTS.md); gates continuam abertos em
+[§08](08-roadmap-risks-licensing.md). A árvore e os autoloads abaixo são **alvos de
+organização**, não inventário do código atual nem autorização para criá-los. Em particular,
+`core/sim/tick_journal.gd` é localização alvo; o arquivo real está em `src/persistence/`.
+
+## Árvore `[TARGET]`
 
 ```text
 Aetherfall/
@@ -312,7 +325,7 @@ Aetherfall/
    └─ ai_eval/                     #   oráculo: grounding de ids, % fora de schema, custo/tempo
 ```
 
-## Autoloads canônicos (ordem importa)
+## Autoloads canônicos `[TARGET]` (ordem importa)
 
 ```
 GameBoot        src/core/boot/game_boot.gd          # detecta hw, safemode, crash guard
@@ -331,6 +344,12 @@ Saves           src/persistence/save_manager.gd
 Audio           src/audio/audio_service.gd
 Debug           src/util/debug/dev_menu.gd          # só em builds de debug
 ```
+
+Nada dessa lista é autoload hoje — `project.godot` não tem seção `[autoload]`. O som que
+existe é outra linha: `src/audio/audio_director.gd`, um nó filho da sessão
+(`src/main.gd`), consumidor dos sinais do mundo com as 27 famílias derivadas de
+`assets/audio/levels.json` ([procedência e medição](../audio-provenance.md)).
+`audio_service.gd` continua `[TARGET]`.
 
 **Regra de ouro de dependência:** `core → util`; `world/gameplay/entities → core`;
 `ai → core, world (leitura), gameplay (intents)`; `net → tudo (autoridade)`, **mas**
