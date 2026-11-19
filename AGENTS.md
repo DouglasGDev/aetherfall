@@ -63,9 +63,10 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    O contrato foi exercitado em headless antes do refinamento dos rastros; resultados
    históricos locais e fontes medidas estão nas [notas do status](docs/melhorias-status.md#notas-de-medição).
    O candidato final com o lobo refinado também foi importado sem cache e validado;
-   fontes e corridas estão nas [notas de rastros](docs/melhorias-status.md#rastros-e-reações--candidato-local-de-2026-11-18).
-   São alterações locais identificadas por SHA-256, não clone de novo commit publicado;
-   nenhum gate de fase se fecha.
+   fontes e corridas estão nas [notas de rastros](docs/melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
+   Essa árvore de alterações locais é o commit `a8967e0`, e o clone limpo dele foi reimportado
+   sem cache e re-medido: 232 checagens / 0 falhas / 33,7 s, exit 0. Nenhum gate de fase se
+   fecha com isso.
 4. **Gates são sagrados.** Nenhuma fase termina por calendário; termina por comando headless +
    critério numérico + documento derivado do código. *Estado medido:* **nenhum gate fechado**, o
    slice jogável está **antes** de P1 ([docs/design/08](docs/design/08-roadmap-risks-licensing.md)).

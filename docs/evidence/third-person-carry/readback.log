@@ -17,3 +17,15 @@ pixel-probe-after.log script_error_lines=0 exit_error_lines=0 leaked_or_inuse_li
 pixel-probe-before.log script_error_lines=4 exit_error_lines=0 leaked_or_inuse_lines=0
 pixel-probe-before note=os 4 SCRIPT ERROR sao do corte de imagem (Image.crop_region nao existe); o numero "visivel" sai antes do erro, entao os quatro valores do braco antes do conserto sao validos e as PNG de recorte dessa brao nao existem
 gallery.log script_error_lines=0 exit_error_lines=0 leaked_or_inuse_lines=0
+clone_base_sha=a8967e0 (clone de file:///C:/Aetherfall sem .godot/ nem .tools/, sem override.cfg: so a receita do README)
+clone-import.log exit=0 lines=299 script_error_lines=0 exit_error_lines=0 warning_lines=0
+clone-suite final_line="232 checagens  0 falhas  33.7 s de teste"
+clone-suite exit=0 script_error_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2 (a dupla de quit ja debitada no som)
+clone-suite diagnostics_final="geracao=926,4 ms  malharia=4.134,9 ms  worst_sim_ms=6,78  dropped_ticks=0  tick=359  edits=13  meshes=147  triangulos=214480  lobos_vivos=4  journal.active=false"
+clone-suite janela_real_clock="perdidos=0  pior passo=5,41 ms nos 2,50 s de logica; a linha 303 e o teto do teste inteiro (6,78 ms)"
+clone-suite projecao="desvio=0,00046 px no quadro 64x64"
+clone_verify sources_sha256=79/79 OK
+clone_verify artifacts_por_pasta="aether-reactions 15/15, audio 16/16, fp-hand 25/25, simulation-rng 19/19, tick-journal 15/15 -- todos OK dentro do clone"
+clone_verify third_person_carry_manifesto_no_clone=10/10 (o manifesto do clone ainda nao continha os dois logs que esta corrida gerou; na arvore de trabalho, com eles, sao 12/12 -- conferido aqui)
+clone_verify note=todas as assinaturas dao OK dentro do clone porque o .gitattributes congela docs/evidence com -text; sem a regra os 51 arquivos de texto com CR da pasta (de 108 nao-binarios) seriam normalizados e nenhum SHA publicado bateria
+clone_sidecars=tests/audio_test.gd.uid e tests/audio_live_probe.gd.uid aparecem como nao-rastreados depois do --import; nenhum .tscn referencia esses dois scripts por uid:// (o audio_live_probe.tscn usa path=), entao a ausencia nao quebra nada -- fica como debito de higiene no status

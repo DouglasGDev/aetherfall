@@ -275,5 +275,5 @@ soma/pico de ambos e estouros do guard
 percepção/utilidade; `sim_step` não inclui a física executada depois pelo runner.
 Isso não é medição do HOT agregado de cinco lobos, teste multi-semente ou replay, nem
 fecha P1. O candidato local passou nas 89 checagens específicas e nas regressões de
-hash/smoke; manifesto e logs nas [notas de rastros](../melhorias-status.md#rastros-e-reações--candidato-local-de-2026-11-18).
+hash/smoke; manifesto e logs nas [notas de rastros](../melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
 Movimento e parada foram medidos em headless; não houve aprovação visual em janela.

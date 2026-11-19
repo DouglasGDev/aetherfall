@@ -185,15 +185,15 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. Resultado medido em quatro
-corridas seguidas nesta máquina, na revisão histórica `9c6b722`: **220 checagens,
+Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `a8967e0`,
+medida num clone limpo dela mesma (37 `.gd`, sem `.godot/` e sem `.tools/`), recém-importado com
+o `--import` logo acima: **232 checagens, 0 falhas, 33,7 s**, exit 0 — o mesmo resultado da
+árvore de trabalho, com as duas linhas de vazamento do quit que entraram junto com o som
+(medidas e explicadas em "O jogo tem som, e o som não manda no mundo"). Na revisão histórica
+`9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
-(29 `.gd`, sem `.godot/`), recém-importado com o `--import` logo acima:
-**220 checagens, 0 falhas, 35,4 s**. Os cinco logs sem nenhuma linha
-`ERROR` do engine — essas cinco são da revisão histórica; desde que o som
-entrou, o smoke e o censo de áudio encerram com as duas linhas de vazamento
-do quit (medidas e explicadas em "O jogo tem som, e o som não manda no
-mundo"). A contagem é sempre da revisão medida, nunca do texto: a
+(29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
+linha `ERROR` do engine. A contagem é sempre da revisão medida, nunca do texto: a
 rodada de inventário, pilhas e craft acrescentou passos (`inventario, pilhas e
 receitas` e as checagens de quantidade dentro de `minerar e colocar`,
 `colocar com clique`, `tecla 3 no hotbar`, `malha e face-culling` (os dois panos
@@ -205,7 +205,14 @@ pessoa são as 11 checagens a mais sobre as 208 de antes: o censo das duas vista
 projeção contra `unproject_position` e o enquadramento dos dois arcos. A de hoje
 é a premissa do passo de golpe (`mira travada no lobo do passo`, a 12ª sobre as
 208): o lobo que recebe o dano tem que ser o que está na mira, senão a matilha
-inteira ainda viva pode roubar o golpe no meio dos 280 ticks de janela.
+inteira ainda viva pode roubar o golpe no meio dos 280 ticks de janela. Sobre as
+220 entram as 12 checagens do porte em 3ª pessoa: o cubo na mão do avatar é o
+slot selecionado, fica acima do joelho e abaixo da cabeça, na lateral direita à
+frente do tronco, amostra o atlas do mundo no tamanho da órbita, o vidro usa o
+material alpha, pilha zerada equivale a mão vazia, o peso do bloco muda a pose do
+braço, o golpe com pedra afunda mais que sem carga, o ciclo de lavra do rig mexe o
+ombro, pedra lavra mais funda e mais lenta que folha, a mão vazia devolve o braço
+ao repouso e a fração da face do cubo que sai do braço no quadro da órbita.
 O que a suíte cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
@@ -271,9 +278,10 @@ O que a suíte cobre:
 ## Bloco na mão
 
 O item opaco desenha após os dedos, sem a pele atravessar a face do bloco; vidro continua
-transparente. A correção passou em 21 checagens com renderização real e na suíte de 220
-checagens, ambas sem falhas no candidato local recém-importado.
-[Antes/depois, comando e limites do teste](docs/melhorias-status.md#bloco-na-mão--correção-local-de-2026-11-18).
+transparente. A correção passou em 21 checagens com renderização real e na suíte daquela revisão
+(220 checagens), ambas sem falhas no candidato recém-importado. O teste de pixels é runner à
+parte, exige janela, e não foi re-rodado no clone publicado.
+[Antes/depois, comando e limites do teste](docs/melhorias-status.md#bloco-na-mão--publicado-em-a8967e0).
 
 ## Porte na 3ª pessoa
 
@@ -287,14 +295,16 @@ A checagem headless (`bloco na mao passa para fora do braco no quadro da orbita`
 face do cubo que nenhum outro corpo do avatar tapa, no enquadramento real da órbita de trás. Sobre
 a pose anterior dava **0,02** (pedra) e **0,00** (folha) e caía em vermelho; hoje dá **0,45** e
 **0,30**, com o corte em 0,15. Conferido em instrumento independente, por pixels reais do quadro
-1280×720: a fração visível do cubo passou de 0,000–0,062 para 0,288–0,405. Candidato local: **232
-checagens, 0 falhas, 33,7 s**, exit 0, fontes pinadas por manifesto SHA-256
-`17ddce7fc2017bbc1442d9e6f4581b29012b567636240f239115305be29ebd7d`.
+1280×720: a fração visível do cubo passou de 0,000–0,062 para 0,288–0,405. Publicado em
+`a8967e0`: **232 checagens, 0 falhas, 33,7 s**, exit 0 — o mesmo número da árvore de trabalho,
+re-medido num clone limpo do commit sem `.godot/` e sem `.tools/`, com as 79 fontes do manifesto
+SHA-256 `17ddce7fc2017bbc1442d9e6f4581b29012b567636240f239115305be29ebd7d` conferidas dentro
+dele.
 
 Limite honesto: nada aqui gateia aprovação a olho — o que se vê é a galeria lá em cima, recapturada
 na mesma corrida desta pose. E o porte é corpo e câmera: não toca IA, determinismo nem o custo do
 tick de simulação (o braço se move no frame de física, não nos 20 Hz).
-[Notas de medição](docs/melhorias-status.md#porte-do-corpo-em-terceira-pessoa--candidato-local-de-2026-11-19-não-publicado).
+[Notas de medição](docs/melhorias-status.md#porte-do-corpo-em-terceira-pessoa--publicado-em-a8967e0).
 
 ## Rastros e reações
 
@@ -324,8 +334,10 @@ carregar; os episódios ficam no save.
 
 Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
 rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por
-SHA-256, evidências e limites nas [notas de medição](docs/melhorias-status.md#rastros-e-reações--candidato-local-de-2026-11-18).
-São resultados headless, ainda sem aprovação visual em janela ou novo commit.
+SHA-256, evidências e limites nas [notas de medição](docs/melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
+São resultados headless do candidato daquela revisão, com o smoke hoje em 232 checagens; o código
+está no commit `a8967e0` e o clone limpo dele re-mediu a suíte completa, mas os runners dedicados
+de rastros e journal continuaram na árvore de trabalho. Falta a aprovação visual em janela.
 
 ## Hash por tick e journal mínimo
 
@@ -353,11 +365,12 @@ registros, último hash e custo de hash/escrita/flush em microssegundos. O custo
 entra em `worst_sim_ms`. Contrato, limites e medições em
 [`docs/melhorias-status.md`](docs/melhorias-status.md#contrato-do-hash-e-journal-mínimo).
 
-Validação histórica do candidato de hash, anterior ao refinamento dos rastros e sem commit novo: contrato **128 checagens / 0 falhas**;
+Validação histórica do candidato de hash, anterior ao refinamento dos rastros: contrato **128 checagens / 0 falhas**;
 smoke sem e com gravação, **220 / 0 em cada corrida**. CLI e encerramento no load também
 exercitados. Fontes identificadas por SHA-256 e logs preservados nas
-[notas de medição](docs/melhorias-status.md#notas-de-medição); isso não substitui a prova
-num clone limpo do próximo commit.
+[notas de medição](docs/melhorias-status.md#notas-de-medição); no clone limpo de `a8967e0` as 15
+assinaturas de `docs/evidence/tick-journal` conferem e a suíte completa voltou 232 / 0, mas o
+contrato dedicado e os smokes com `--tick-journal` não foram re-rodados lá.
 
 ## O sorteio da matilha tem dono
 
@@ -378,9 +391,9 @@ godot --headless --path . --script tests/simulation_rng_test.gd
 Isto é pré-condição de replay, **não replay**: o hash por tick continua sem cobrir RNG,
 o save não guarda a posição dos geradores (depois de um load cada um está onde a sessão
 o deixou) e falta a ordem autoritativa dos passos. No candidato local recém-importado
-(base `1db00cf`, sem commit novo): **27 checagens / 0 falhas**; o mesmo teste contra o
+(base `1db00cf`, hoje o commit `a8967e0`): **27 checagens / 0 falhas**; o mesmo teste contra o
 código anterior dava **11 falhas**. Evidências e limites nas
-[notas de RNG](docs/melhorias-status.md#rng-da-matilha--recorte-local-de-2026-11-18).
+[notas de RNG](docs/melhorias-status.md#rng-da-matilha--publicado-em-a8967e0).
 
 ## O jogo tem som, e o som não manda no mundo
 
@@ -402,8 +415,10 @@ godot --headless --path . --script tests/audio_test.gd   # censo e contrato (dri
 godot --path . tests/audio_live_probe.tscn               # audibilidade real, em janela
 ```
 
-Na árvore de trabalho atual (base `1db00cf`, sem commit novo): **73 checagens / 0 falhas** no
-censo e **220 / 0** no smoke. A sonda em janela mediu 13 toques em 6 s sem nenhum input
+Na árvore de trabalho daquela revisão (base `1db00cf`, hoje o commit `a8967e0`): **73 checagens / 0 falhas** no
+censo e **220 / 0** no smoke — a suíte publicada é hoje a de 232 do clone de `a8967e0`, e nela
+nenhum runner de som roda: os 73 passos do censo e a sonda viva continuam medidos na árvore de
+trabalho daquela revisão. A sonda em janela mediu 13 toques em 6 s sem nenhum input
 disparado (`step_grass` 6, `step_snow` 6, `splash` 1), cama `amb_birds` e pico de
 **-7,4 dB no Master** com o driver WASAPI. Headless não prova audibilidade — lá o driver é
 `Dummy` e o mixer entrega silêncio (a posição de playback, essa sim, anda: medida em

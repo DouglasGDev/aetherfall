@@ -12,7 +12,9 @@ ordem.
 Referência histórica das medições de golpe: `9c6b722` (furo #6 abaixo).
 Bloco atual: porte do corpo em 3ª pessoa com o que está na mão, checagem headless do cubo segurado
 e galeria recapturada — em cima da sessão que já trouxe som, hash/journal, rastros/reações, RNG
-próprio da matilha e a correção da sobreposição na mão. Base Git `1db00cf`; alterações locais.
+próprio da matilha e a correção da sobreposição na mão. Essa árvore de alterações locais é o
+commit `a8967e0` (base `1db00cf`); o clone limpo dele foi reimportado e re-medido — ver a
+primeira linha da tabela de porte em 3ª pessoa nas notas de medição.
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 
 ## Os prompts × o código
@@ -88,7 +90,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   Galeria recapturada numa corrida só com a pose nova (11 frames, 1920×1080) e a legenda da
   3ª pessoa no README passou a dizer o que o frame mostra. Nada aqui fecha gate: é corpo e
   câmera, não IA.
-  [Notas completas](#porte-do-corpo-em-terceira-pessoa--candidato-local-de-2026-11-19-não-publicado).
+  [Notas completas](#porte-do-corpo-em-terceira-pessoa--publicado-em-a8967e0).
 
 - **O jogo tem som, e o som não manda no mundo.** `AudioDirector`
   ([audio_director.gd](../src/audio/audio_director.gd), 619 linhas) nasce com a sessão
@@ -123,7 +125,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   incremento por família. O que **não** foi feito de propósito: nenhum som escreve no Éter,
   então o canal SOM do item 4 continua aberto, e o `stop()` de saída não apaga a mensagem de
   vazamento do engine no quit (débito abaixo, com a causa medida em dois braços).
-  [Notas completas](#som--candidato-local-de-2026-11-19-não-publicado).
+  [Notas completas](#som--publicado-em-a8967e0).
 
 - **Item 2, primeiro recorte — o sorteio tem dono.** `main.gd` e `wolf.gd` eram os únicos
   consumidores do gerador global do Godot; hoje o grep de `randf`/`randi`/`randi_range` sem
@@ -137,7 +139,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   [simulation_rng_test.gd](../tests/simulation_rng_test.gd): vermelho **27 checagens / 11 falhas**
   antes, **27 / 0** depois, em candidato recém-importado; regressões **89 / 0** (rastros),
   **128 / 0** (contrato do journal) e **220 / 0** em cada smoke OFF/ON, todos com
-  `dropped_ticks = 0`. [Fontes, premissa e os dois sentidos](#rng-da-matilha--recorte-local-de-2026-11-18).
+  `dropped_ticks = 0`. [Fontes, premissa e os dois sentidos](#rng-da-matilha--publicado-em-a8967e0).
   O teste também achou uma premissa errada no passo de knockback e ela foi corrigida no instante
   da decisão, não na tolerância — ver as notas. Não é replay nem fecha o item 2: estado inicial
   completo, comandos e ordem autoritativa continuam na fila. O
@@ -145,14 +147,14 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 - **Bloco na mão sem pele sobreposta.** O material do item agora desenha após os dedos:
   prioridade 15 contra 14, conservando atlas, nove segmentos da mão e transparência do
   vidro. Teste com pixels reais: **21 / 0**, repetido em candidato recém-importado;
-  smoke **220 / 0**. [Antes/depois e fontes](#bloco-na-mão--correção-local-de-2026-11-18).
+  smoke **220 / 0**. [Antes/depois e fontes](#bloco-na-mão--publicado-em-a8967e0).
 - **Rastros e reações dos três canais atuais.** Lobos aproximam, param por 2 s,
   registram o cheiro sem inventar autoria e suprimem visitas repetidas num cache limitado;
   aumento da força ou expiração permite revisita. Fuga usa campo percebido, visão ou último
   golpe; caça oculta só vai ao avistamento real recente. Golpe interrompe a inspeção, e
   morte da presa fecha a busca mesmo durante a histerese. Candidato final: **89 / 0** no
   teste específico, **128 / 0** no contrato do journal e **220 / 0** em cada smoke OFF/ON.
-  Fontes e logs [preservados abaixo](#rastros-e-reações--candidato-local-de-2026-11-18).
+  Fontes e logs [preservados abaixo](#rastros-e-reações--publicado-em-a8967e0).
   Validação física headless, não aprovação visual em janela nem fechamento de P1.
 - **Item 1 — hash mínimo e journal sob demanda.** `TickJournal` assina a projeção
   canônica, preserva todos os Float32 do Éter, recusa arquivo existente e ticks fora de
@@ -240,12 +242,13 @@ intermediários dos commits por arquivo não têm log próprio — cada um é co
 ao assunto de cada um nas notas de medição, não ao commit.
 
 Item 1, refinamento dos rastros e primeiro recorte do item 2 (propriedade dos geradores)
-concluídos e validados localmente; falta avaliação visual em janela. Alterações ainda sem
-commit/publicação; antes de publicar resultados como prova de um commit, falta repetir
-importação e testes no clone desse SHA. Os logs de hash anteriores continuam vinculados ao
-manifesto histórico; a validação do recorte de RNG tem manifesto próprio nas notas abaixo.
-O resto do item 2 — estado inicial completo, comandos, restauração de RNG no load e ordem
-autoritativa — não foi iniciado.
+concluídos e validados localmente; falta avaliação visual em janela. A árvore de alterações
+locais virou o commit `a8967e0`, e o clone limpo dele foi reimportado sem cache e re-medido:
+**232 checagens / 0 falhas / 33,7 s**, exit 0 — o mesmo número da árvore de trabalho, com as
+79 fontes e as assinaturas de artefatos conferidas dentro do clone. Os logs de hash anteriores
+continuam vinculados ao manifesto histórico; a validação do recorte de RNG tem manifesto próprio
+nas notas abaixo. O resto do item 2 — estado inicial completo, comandos, restauração de RNG no
+load e ordem autoritativa — não foi iniciado.
 
 ## Falta
 
@@ -367,6 +370,16 @@ Por dependência, não por preferência:
   quatro checagens somem e a contagem cai de 220 para 216 sem nenhum vermelho. A contagem
   publicada por revisão é o que pega isso hoje; o certo é o passo falhar quando a premissa
   que ele mesmo pediu não existe.
+- **Dois scripts de áudio não têm o `.uid` no índice.** `src/` + `tests/` somam 37 `.gd` e o
+  índice rastreia 35 `.uid`; faltam exatamente `tests/audio_test.gd.uid` e
+  `tests/audio_live_probe.gd.uid`, que na árvore de trabalho nem existem. No clone limpo o
+  `--import` os cria e o `git status` os mostra como não-rastreados
+  (linha `clone_sidecars` da [conferência](evidence/third-person-carry/readback.log)). Nada
+  quebra: nenhum `.tscn` de `tests/` referencia script por `uid://` —
+  `audio_live_probe.tscn` usa `path="res://tests/audio_live_probe.gd"` — e o `--script` resolve
+  por caminho. Não entraram neste commit porque o manifesto pinado descreve **79 arquivos** e
+  re-pinar sem corrida nova em cima do conjunto re-pinado é o que a regra 6 proíbe; a correção
+  pertence ao próximo bloco que já tiver de re-medir por outro motivo.
 - **O gate do oráculo depende de um servidor local de fora**: `live_oracle_probe.tscn` exige o
   `llama-server` de pé; a degradação é testada sem rede ([smoke_test.gd:1919-1925](../tests/smoke_test.gd#L1919-L1925),
   sonda apontada para a porta 1), o caminho feliz não é testável em CI.
@@ -478,6 +491,19 @@ Por dependência, não por preferência:
    pelo flag, porque o flag só muda no tick de mix seguinte — mas a justificativa escrita era
    falsa nas três páginas e no código, e foi substituída pelo número medido. Uma premissa que
    alguém repete sem corrida vira defeito de documento, não de engine.
+11. **A regra de linha do repositório reescreveria a evidência e falsificaria cada SHA
+    publicado.** [`AGENTS.md`](../AGENTS.md) manda publicar número só com log real, e os logs de
+    console do engine saem com CRLF; a primeira linha de
+    [`.gitattributes`](../.gitattributes) é `* text=auto eol=lf`, que normaliza texto no add e no
+    checkout. Reproduzido num repositório sob controle: um `.gitattributes` só com a regra da
+    casa e um arquivo de 2 CR — o blob entra com **0** CR e o Git avisa
+    "CRLF will be replaced by LF"; acrescentada a linha `docs/evidence/** -text` e refeito o
+    `add`, o mesmo arquivo sai do índice com os **2** CR originais. Na árvore de verdade,
+    51 dos 108 arquivos de texto de `docs/evidence` têm CR — `clone-suite.log` são 311,
+    `arm-red-suite.log` 361 — e os manifests foram computados com `sha256sum -b`, ou seja, sobre
+    esses bytes. Sem o conserto, todo `artifacts.sha256` daria FAILED no primeiro clone e nenhum
+    SHA pinado em tabela bateria nunca. O que a linha não toca é o que já estava protegido:
+    `.png` e `.wav` são `binary` e nunca foram normalizados.
 
 ## Contrato dos rastros e reações
 
@@ -577,11 +603,30 @@ Por dependência, não por preferência:
 
 ## Notas de medição
 
-### Porte do corpo em terceira pessoa — candidato local de 2026-11-19, não publicado
+**Pins de fonte × clone publicado.** Cada bloco abaixo pinou as fontes do *seu* candidato, e a
+casa mexeu nesses arquivos depois: conferido agora, na árvore de trabalho, o
+[manifesto de fp-hand](evidence/fp-hand/sources.sha256) diverge em **8** arquivos,
+[o de rastros](evidence/aether-reactions/sources.sha256) em **9**,
+[o de RNG](evidence/simulation-rng/sources.sha256) em **6**,
+[o de journal](evidence/tick-journal/sources.sha256) em **8** e
+[o de som](evidence/audio/sources.sha256) em **4** — é histórico por construção, e linha de
+tabela que hoje não confere não se vende como conferindo. O pin vivo é o
+[manifesto de 79 fontes](evidence/third-person-carry/sources.sha256) desta revisão, que confere
+**79/79 dentro do clone limpo de `a8967e0`** (linha `clone_verify` da
+[conferência](evidence/third-person-carry/readback.log)). As assinaturas de artefatos, essas sim,
+são todas atuais e conferem no clone: rastros 15/15, som 16/16, mão 25/25, RNG 19/19, journal
+15/15, porte 10/10 lá e 12/12 na árvore (os dois logs do clone nasceram depois da corrida que os
+registra). Isso só é verdade porque [`.gitattributes`](../.gitattributes) congela `docs/evidence`
+com `-text`: sem essa linha o `* text=auto eol=lf` do mesmo arquivo reescreveria os 51 arquivos
+de texto da pasta que carregam CR e nenhum SHA publicado bateria (furo #11).
+
+### Porte do corpo em terceira pessoa — publicado em a8967e0
 
 Base Git `1db00cf0cdcbfbdac88dc980127c1720b4b6e4ef` + as alterações locais desta árvore (som,
-journal, RNG, rastros, mão e agora o porte em 3ª pessoa). As corridas rodam **na árvore de
-trabalho**, não em clone: as fontes estão pinadas por
+journal, RNG, rastros, mão e agora o porte em 3ª pessoa), que são o commit `a8967e0`. Os braços
+vermelho e verde rodam **na árvore de trabalho**; as duas últimas linhas da tabela rodam num
+**clone limpo** de `a8967e0`, sem `.godot/` e sem `.tools/`, importado pela receita do README. As
+fontes estão pinadas por
 [manifesto](evidence/third-person-carry/sources.sha256) — **79 arquivos** de código, cenas, UIDs,
 ícone, configuração e `assets/audio/levels.json`, SHA-256 do manifesto
 `17ddce7fc2017bbc1442d9e6f4581b29012b567636240f239115305be29ebd7d`. A
@@ -603,6 +648,9 @@ pixels, o jogo nunca recebeu input dela.
 | Fração de pixels reais do cubo visível, pose anterior (janela 1280×720) | grama **0,000**, pedra **0,062**, folhas **0,019**, neve **0,000**; recorte projetado do cubo entre 21 e 26 px de lado | [pixel-probe-before.log](evidence/third-person-carry/pixel-probe-before.log) |
 | Fração de pixels reais do cubo visível, pose atual | grama **0,288**, pedra **0,405**, folhas **0,294**, neve **0,304**; recorte 31–41 px | [pixel-probe-after.log](evidence/third-person-carry/pixel-probe-after.log), [código da sonda](evidence/third-person-carry/held_tp_probe.gd.txt) |
 | Galeria completa com a pose nova | 11 frames de uma única corrida, `GALERIA ok`, zero `SCRIPT ERROR`, zero `ERROR:` | [gallery.log](evidence/third-person-carry/gallery.log) |
+| Clone limpo de `a8967e0`, `--import` sem cache | exit 0, 299 linhas, **zero** `ERROR`, `WARNING` e `SCRIPT ERROR` | [clone-import.log](evidence/third-person-carry/clone-import.log) |
+| Suíte no mesmo clone | **232 checagens / 0 falhas**, 33,7 s, exit 0; `tick=359`, `dropped_ticks=0`, `worst_sim_ms=6,78`, geração 926,4 ms, malharia 4.134,9 ms, `projecao da suite bate com a do motor` com desvio 0,00046 px; as duas linhas de vazamento do quit, já debitadas | [clone-suite.log](evidence/third-person-carry/clone-suite.log) |
+| Assinaturas conferidas **dentro** do clone | 79/79 fontes do manifesto; `artifacts.sha256` das seis pastas OK (aether-reactions 15/15, audio 16/16, fp-hand 25/25, simulation-rng 19/19, tick-journal 15/15, third-person-carry 10/10 — os dois logs desta corrida ainda não estavam no manifesto do clone) | [readback.log](evidence/third-person-carry/readback.log), linhas `clone_*` |
 
 **O que foi observado além do contador**, tudo impresso nos próprios logs:
 
@@ -636,10 +684,13 @@ pixels, o jogo nunca recebeu input dela.
   determinismo ou custo do caminho quente (o braço se move em `_physics_process`, não em
   `_sim_tick`).
 
-Nenhum gate de fase se fecha com isto. O que fecha o bloco é reimportar um clone limpo do SHA
-publicado e re-medir nele, e isso continua aberto até o commit existir.
+Nenhum gate de fase se fecha com isto: P0 e P1 continuam abertos, e a aprovação a olho do
+porte é do dono. O que fechou foi o bloco de medição — a árvore virou commit `a8967e0`, o clone
+limpo dele foi reimportado sem cache e devolveu o mesmo **232 / 0 / 33,7 s** da árvore de
+trabalho, com as assinaturas conferidas dentro do próprio clone. Faltava só isto para o número
+publicado deixar de ser hipótese.
 
-### Som — candidato local de 2026-11-19, não publicado
+### Som — publicado em a8967e0
 
 Base Git `1db00cf0cdcbfbdac88dc980127c1720b4b6e4ef` + alterações locais de som, docs e das
 sondas de diagnóstico. As corridas abaixo rodam **na árvore de trabalho**, não em clone: as fontes
@@ -649,8 +700,11 @@ UIDs, ícone, configuração e o `assets/audio/levels.json` que deriva o ganho, 
 [conferência](evidence/audio/readback.log) extrai cada contagem dos logs e exige que a única
 linha de erro presente seja a dupla de vazamento do quit nos quatro logs onde ela é esperada
 (censo, smoke, custo e a própria sonda de progresso).
-Reimportar um clone limpo deste SHA e re-medir continua aberto; nenhum número daqui é prova
-de commit. Engine 4.7.2-stable `ed1daf0bf`, Windows, corridas seriais com a máquina livre, sem
+Estas corridas são da árvore de trabalho, e o código que elas medem é o do commit `a8967e0`:
+dentro do clone limpo dele as 79 fontes conferem byte a byte e as 16 assinaturas desta pasta
+também, mas a suíte re-rodada no clone **não contém nenhuma linha de som** — os 232 passos são
+mundo, corpo, IA, persistência e HUD. O runner dedicado `audio_test` ficou na árvore, e a
+sonda viva exige janela. Nenhum número daqui é prova de custo de commit. Engine 4.7.2-stable `ed1daf0bf`, Windows, corridas seriais com a máquina livre, sem
 captura de desktop e sem entrada sintética. A sonda viva abre janela própria porque em headless
 o driver `Dummy` não entrega som a nenhum aparelho — os outros números do headless são medidos
 de verdade, inclusive a posição de playback. Nenhuma tecla foi enviada à sonda: os 13 toques
@@ -694,7 +748,7 @@ corridas: a procedência e o SHA por arquivo estão em [audio-provenance.md](aud
 conferíveis com `sha256sum -c docs/audio-sha256.txt`.
 
 
-### RNG da matilha — recorte local de 2026-11-18
+### RNG da matilha — publicado em a8967e0
 
 Base Git `1db00cf0cdcbfbdac88dc980127c1720b4b6e4ef` + alterações locais de hash/journal,
 rastros, mão e deste recorte. Um clone novo recebeu as fontes atuais sem `.godot/` e passou pelo
@@ -703,7 +757,8 @@ conferem byte a byte entre raiz e candidato no
 [manifesto de fontes](evidence/simulation-rng/sources.sha256), SHA-256
 `e5fc11fd1ab673c2fd84e669df0e9bbec963f8ef2888183999c8bb290e1d2cf5`; a
 [conferência](evidence/simulation-rng/readback.log) refaz a comparação, verifica as 205 linhas do
-journal contra o diagnóstico e conta as 220 linhas PASS de cada smoke. As
+journal contra o diagnóstico e conta as 220 linhas PASS de cada smoke — pin histórico do
+candidato, ver a nota dos pins acima. As
 [assinaturas dos artefatos](evidence/simulation-rng/artifacts.sha256) conferem cada um dos
 outros 19 arquivos da pasta, todos os logs incluídos. O `user://` das corridas
 foi isolado ([isolation.cfg](evidence/simulation-rng/isolation.cfg)); o caminho efetivo aparece
@@ -788,7 +843,7 @@ godot --headless --path . tests/smoke_test.tscn
 godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.jsonl
 ```
 
-### Bloco na mão — correção local de 2026-11-18
+### Bloco na mão — publicado em a8967e0
 
 Causa reproduzida na GPU: o bloco era opaco, mas os dedos desenhavam depois dele com
 `no_depth_test`. Mudança funcional única: prioridade do material do item de 13 para 15
@@ -810,7 +865,10 @@ vidro e slot vazio também são renderizados. As sete imagens finais foram inspe
 | Candidato novo, após importação sem cache | 21 / 0, exit 0; mesmos censos e pixels | [import](evidence/fp-hand/import.log), [render](evidence/fp-hand/candidate-render.log) |
 | Smoke do candidato, journal desligado | 220 / 0, exit 0, 35,2 s; nenhuma perda de tick | [log integral](evidence/fp-hand/smoke.log) |
 
-O candidato é clone de `1db00cf` com fontes locais sobrepostas, **não novo commit**.
+O candidato é clone de `1db00cf` com fontes locais sobrepostas — o mesmo conteúdo que hoje é o
+commit `a8967e0`. No clone limpo publicado as **25** assinaturas de artefatos desta pasta
+conferem OK; o teste de render em janela, que exige dispositivo de renderização, não foi
+re-rodado nele, e o pin de fontes desta seção é histórico (ver a nota dos pins acima).
 [Manifesto de 71 arquivos](evidence/fp-hand/sources.sha256), SHA-256
 `57a2afde872e27ffec2e123b34ffb0ad2a27e68b12073c65e0f11b330ef5c017`;
 [conferência](evidence/fp-hand/readback.log) confirma identidade byte a byte com a árvore
@@ -833,7 +891,7 @@ e checagens; `--output-prefix=CAMINHO` após `--` grava PNGs novos, sem sobrescr
 Não cobre todas as fases das animações nem outros renderers; a suíte geral mede os arcos.
 As medições de rastros/journal abaixo continuam históricas, anteriores a esta mudança.
 
-### Rastros e reações — candidato local de 2026-11-18
+### Rastros e reações — publicado em a8967e0
 
 Base Git `1db00cf0cdcbfbdac88dc980127c1720b4b6e4ef` + alterações locais de hash/journal
 e rastros. Um novo clone recebeu as fontes atuais, sem copiar `.godot/`, e passou pelo
@@ -841,7 +899,10 @@ e rastros. Um novo clone recebeu as fontes atuais, sem copiar `.godot/`, e passo
 configuração conferem byte a byte entre raiz e candidato no
 [manifesto de fontes](evidence/aether-reactions/sources.sha256), cujo SHA-256 é
 `3160ed29ef8e8e63029cb5e7d0f168f03c27d167f4c679ed7d86d65386ce2911`.
-Isso identifica o candidato local, não substitui o clone limpo de um futuro commit.
+Isso identifica o candidato da época. O clone limpo de `a8967e0` existe e re-mediu a suíte
+completa (232 / 0 / 33,7 s, tabela do porte), e as **15** assinaturas de artefatos desta pasta
+conferem OK dentro dele; o runner dedicado de rastros e os smokes com gravação ficaram no
+candidato, e o pin de 69 fontes é histórico (nota dos pins, acima).
 
 O [override](evidence/aether-reactions/isolation.cfg) existe somente no candidato e
 isola `user://` em `Aetherfall-trails-validation-20261118-cf727d40`; o contrato imprime
@@ -922,7 +983,7 @@ godot --headless --path . tests/smoke_test.tscn
 godot --headless --path . tests/smoke_test.tscn -- --tick-journal=res://aether-final-smoke.jsonl
 ```
 
-### Hash/journal — candidato local de 2026-11-18, não publicado
+### Hash e journal — publicado em a8967e0
 
 Base Git `1db00cf0cdcbfbdac88dc980127c1720b4b6e4ef` + alterações locais, copiadas sobre
 um clone sem `.godot/` e importadas antes dos testes. Os 67 arquivos de código, cenas,
@@ -932,8 +993,10 @@ o bloco de hash, antes do refinamento dos rastros, no [manifesto SHA-256](eviden
 As [assinaturas dos artefatos](evidence/tick-journal/artifacts.sha256) cobrem os outros 15
 arquivos da pasta, manifesto incluído, e foram conferidas depois de o bloco entrar no
 repositório: `sha256sum -c` devolve 15/15 OK.
-Isso identifica o candidato, **não inventa um SHA de commit nem certifica um clone
-limpo do próximo commit**. Docs podem mudar sem alterar esse conjunto de fontes.
+O commit publicado é `a8967e0`: dentro do clone limpo dele estas 15 assinaturas conferem e a
+suíte completa re-medida (232 / 0 / 33,7 s) está na tabela do porte. O que **não** se re-rodou
+no clone foi o contrato dedicado de 128 checagens nem os smokes com `--tick-journal`, e o pin de
+67 fontes é histórico (nota dos pins, acima). Docs podem mudar sem alterar esse conjunto.
 
 O [override de isolamento](evidence/tick-journal/isolation.cfg) foi copiado somente para
 `override.cfg` do candidato: muda o diretório `user://`, não gameplay. O teste de contrato

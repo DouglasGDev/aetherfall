@@ -38,10 +38,11 @@ não é pessimismo, é o estado que a suíte mostra — 5 lobos, um jogador, um 
 e nenhum ledger, facção ou rede.
 
 O primitivo de P0 existe e passou no teste de contrato e no smoke com gravação
-ligada/desligada em candidato recém-importado, ainda sem commit novo. Essas execuções
+ligada/desligada em candidato recém-importado. Essas execuções
 históricas antecedem o refinamento dos rastros. A validação conjunta posterior tem
-[manifesto e logs próprios](../melhorias-status.md#rastros-e-reações--candidato-local-de-2026-11-18),
-ainda como candidato local, não prova de um novo commit. A projeção
+[manifesto e logs próprios](../melhorias-status.md#rastros-e-reações--publicado-em-a8967e0):
+a árvore delas é o commit `a8967e0`, re-medido em clone limpo com 232 checagens / 0 falhas /
+33,7 s, exit 0; os runners dedicados de contrato e de gravação continuaram no candidato. A projeção
 inclui versões, seed real, tick, dimensões, edições ordenadas, identidades/intenções/crenças
 dos lobos vivos e todos os bytes Float32 do Éter; exclui jogador, corpos, RNG, episódios,
 relações, timers e comandos. O contrato completo está em [AGENTS.md](../../AGENTS.md).
@@ -83,7 +84,7 @@ runner não é o HOT agregado dos cinco lobos no mesmo tick. Tampouco o runner d
 hash igual em 20 sementes × 1000 ticks: usa uma semente e controla as cadências, com
 campo estático por padrão e difusão explícita no cenário que a exige. **P1 continua
 aberto**; resultados do candidato local e limites da medição nas
-[notas de rastros](../melhorias-status.md#rastros-e-reações--candidato-local-de-2026-11-18).
+[notas de rastros](../melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
 
 ### P2 — Trama (SlowSim)
 
