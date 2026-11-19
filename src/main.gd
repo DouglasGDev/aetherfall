@@ -14,6 +14,9 @@ const MESH_BUDGET := 2             # chunks por frame
 const VIZ_PERIOD := 0.25
 const RESPAWN_DELAY := 45.0
 const CORPSE_CHECK_PERIOD := 1.0
+const Journal = preload("res://src/persistence/tick_journal.gd")
+
+var tick_journal := Journal.new()
 
 var world: VoxelWorld = null
 var aether: AetherField = null
@@ -22,6 +25,7 @@ var player: Player = null
 var viz: AetherViz = null
 var hud: Hud = null
 var oracle: MindOracle = null
+var audio: AudioDirector = null
 var wolves: Array = []
 var elapsed: float = 0.0
 var stats := {"mined": 0, "placed": 0, "wolves_felled": 0, "deaths": 0}
@@ -29,6 +33,7 @@ var stats := {"mined": 0, "placed": 0, "wolves_felled": 0, "deaths": 0}
 var _terrain: Node3D = null
 var _entities: Node3D = null
 var _next_identity: int = 0
+var _population_rng := RandomNumberGenerator.new()
 var _respawn_queue: Array = []
 var _aether_cd: float = AETHER_PERIOD
 var _viz_cd: float = 0.0
@@ -108,7 +113,16 @@ func _ready() -> void:
 	add_child(oracle)
 	hud.narration_provider = Callable(oracle, "narration_of")
 
+	# Ultimo a entrar e o primeiro a ser ouvido: so consome os sinais que ja
+	# existiam, nao escreve mundo nem sorteia nas RNG da simulacao.
+	audio = AudioDirector.new()
+	audio.name = "Audio"
+	audio.wolves_provider = Callable(self, "wolves_roster")
+	add_child(audio)
+	audio.setup(world, player)
+
 	_spawn_wolves(WOLF_COUNT)
+	_start_journal_from_args()
 
 
 func spawn_point() -> Vector3:
@@ -148,6 +162,12 @@ func _sim_tick() -> void:
 			_spawn_wolves(1)
 			hud.show_message("uma nova matilha entrou no vale")
 	clock.tick += 1
+	if tick_journal.active():
+		var err := tick_journal.record(clock.tick, world, aether, wolves)
+		if err != OK:
+			tick_journal.close()
+			push_error("journal tick %d: %s" % [clock.tick, error_string(err)])
+			get_tree().quit(1)
 
 
 func _process(delta: float) -> void:
@@ -177,6 +197,8 @@ func respawn() -> void:
 # ------------------------------------------------------------------ povoamento
 
 func _spawn_wolves(n: int) -> void:
+	if _next_identity == 0:
+		_population_rng.seed = ("population:%d" % world.gen.world_seed).hash()
 	for i in n:
 		var w := Wolf.new()
 		var home := _random_ground_point(16.0, 46.0)
@@ -185,14 +207,19 @@ func _spawn_wolves(n: int) -> void:
 		_next_identity += 1
 		w.bit_player.connect(_on_wolf_bit)
 		w.died.connect(_on_wolf_died)
+		# O diretor nasce em `_ready`, e `simulation_rng_test.gd` chama este spawn numa
+		# sessao fora da arvore de proposito (o contrato la e "spawnar sem boot
+		# completo"): aqui o som e opcional, a mente nao.
+		if audio != null:
+			audio.on_wolf_registered(w)
 		wolves.append(w)
 
 
 func _random_ground_point(rmin: float, rmax: float) -> Vector3:
 	var c := spawn_point()
 	for _attempt in 24:
-		var a := randf() * TAU
-		var r := randf_range(rmin, rmax)
+		var a := _population_rng.randf() * TAU
+		var r := _population_rng.randf_range(rmin, rmax)
 		var p := Vector3(c.x + cos(a) * r, 0.0, c.z + sin(a) * r)
 		p.x = clampf(p.x, 6.0, float(VoxelConfig.world_size_x()) - 6.0)
 		p.z = clampf(p.z, 6.0, float(VoxelConfig.world_size_z()) - 6.0)
@@ -351,6 +378,9 @@ func load_game() -> void:
 	if int(d.get("gen_version", -1)) != WorldGen.GEN_VERSION:
 		hud.show_message("save de gerador antigo: recrie o mundo")
 		return
+	if tick_journal.active():
+		tick_journal.close()
+		print("journal encerrado antes do load: ", tick_journal.path)
 	world.generate(SEED)
 	var edit_list := {}
 	for k in d.get("edits", {}):
@@ -374,6 +404,7 @@ func load_game() -> void:
 	else:
 		player.inv.reset_default()
 	_rebuild_benches()
+	audio.clear_transient()
 	aether.from_dict(d.get("aether", {}))
 	var saved: Array = d.get("wolves", [])
 	for i in mini(saved.size(), wolves.size()):
@@ -411,6 +442,7 @@ func diagnostics() -> Dictionary:
 		"tick": clock.tick, "worst_sim_ms": clock.worst_step_ms,
 		"dropped_ticks": clock.dropped_ticks, "hp": player.hp,
 		"on_ground": player.body.on_ground, "feet": player.body.feet_pos,
+		"journal": tick_journal.diagnostics(),
 	}
 
 
@@ -449,3 +481,21 @@ func _build_environment() -> void:
 	we.name = "WorldEnvironment"
 	we.environment = env
 	add_child(we)
+
+
+func state_hash() -> String:
+	return Journal.state_hash(clock.tick, world, aether, wolves)
+
+
+func _start_journal_from_args() -> void:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--tick-journal="):
+			var err := tick_journal.start(arg.trim_prefix("--tick-journal="))
+			if err != OK:
+				push_error("abrir journal: %s" % error_string(err))
+				get_tree().quit(1)
+			return
+
+
+func _exit_tree() -> void:
+	tick_journal.close()

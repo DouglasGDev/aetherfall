@@ -212,3 +212,8 @@ func from_dict(d: Dictionary) -> bool:
 	for raw in d.get("cells", []):
 		set_cell_value(Vector3i(int(raw[0]), int(raw[1]), int(raw[2])), int(raw[3]), float(raw[4]))
 	return true
+
+
+# O save corta valores <= 0,01; a assinatura precisa dos bits de todas as celulas.
+func state_bytes() -> PackedByteArray:
+	return _cur.to_byte_array()

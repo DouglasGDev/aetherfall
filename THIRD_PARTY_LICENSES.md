@@ -1,9 +1,12 @@
 # Licenças de terceiros
 
-Pacotes que o Aetherfall usa localmente. Nenhum entra no repositório: `models/`
+Pacotes que o Aetherfall usa localmente. Nenhum desses três entra no repositório: `models/`
 e `.tools/` estão no `.gitignore` e são baixados por
 [tools/fetch_models.ps1](tools/fetch_models.ps1), que confere SHA256 e tamanho
 antes de instalar; download parcial nunca vira modelo.
+
+O que **acompanha** o repositório é só o som: 51 arquivos CC0 em `assets/audio/`, com origem,
+licença lida e SHA-256 por arquivo em [`docs/audio-provenance.md`](docs/audio-provenance.md).
 
 | Pacote | Origem | Licença | Destino local |
 |---|---|---|---|
@@ -22,3 +25,36 @@ Notas:
   backend Vulkan (AMD Radeon 9060 XT e qualquer GPU moderna).
 - **Godot Engine** — engine MIT; o binário portável em `.tools/` é ferramenta
   local de validação (janela/headless) e não acompanha o projeto.
+
+## De onde veio a arte (e de onde ela não veio)
+
+**Nenhum modelo 3D nem textura de terceiro entra no jogo — a imagem é 100% código.** Conferido
+em 2026-11-18: `git ls-files` não devolve `.glb`, `.gltf` nem `.png` de arte. O único material de
+terceiro no repositório é o som (`.ogg`/`.wav` em `assets/audio/`), e ele é domínio público CC0,
+arquivo por arquivo, com origem e SHA-256 em
+[`docs/audio-provenance.md`](docs/audio-provenance.md):
+
+| O que você vê | Como é feito |
+|---|---|
+| Texturas de todos os blocos | desenhadas em runtime, pixel a pixel, em [`src/world/voxel_atlas.gd`](src/world/voxel_atlas.gd) — nenhum arquivo de textura existe |
+| Terreno, cubas, cavernas, árvores | [`src/world/world_gen.gd`](src/world/world_gen.gd) a partir da seed, com a malha montada em [`src/world/voxel_world.gd`](src/world/voxel_world.gd) |
+| Corpo do jogador em 3ª pessoa | caixas e animação procedurais em [`src/entities/player_avatar.gd`](src/entities/player_avatar.gd) |
+| Braço e bloco na mão (1ª pessoa) | [`src/entities/fp_viewmodel.gd`](src/entities/fp_viewmodel.gd) |
+| Lobo | [`src/entities/wolf.gd`](src/entities/wolf.gd), `_build_visual()` |
+| Véu do Éter | [`src/rendering/aether_viz.gd`](src/rendering/aether_viz.gd) |
+| `icon.svg` | vetor do próprio projeto |
+| `docs/media/*.png` | capturas que o jogo produziu nestas máquina (harness de galeria), não material de terceiro |
+| O que você ouve | 51 arquivos CC0 em `assets/audio/`, roteados por [`src/audio/audio_director.gd`](src/audio/audio_director.gd) — origem, licença lida e SHA por arquivo em [`docs/audio-provenance.md`](docs/audio-provenance.md) |
+
+**Inspiração é de idéias, não de arquivos.** O *que* os sistemas fazem vem em boa parte do
+Veloren (lobo que patrulha e caça, golpear/planar/nadar, memória do mundo) e o feels voxel do
+Minecraft — o registro linha a linha do que virou código, do que ficou como idéia e do que foi
+rejeitado está em [`docs/design/09`](docs/design/09-veloren-mechanics-adaptation.md), e a regra
+de conduta está no item 8 de [`AGENTS.md`](AGENTS.md). Dos dois, nenhum asset foi copiado: o
+Veloren distribui tudo (código **e** `assets/voxygen/audio/**`) sob um único `LICENSE` GPL-3.0,
+e os assets do Minecraft são proprietários. O que se aproveita deles é estrutura e idéia — no som,
+a estrutura de categorias (passo por material, ambiência por bioma, vocalização por espécie). Os
+arquivos que tocam no jogo hoje são CC0 de domínio público, cópia byte a byte do pacote de origem,
+com SHA-256 conferido por `sha256sum -c docs/audio-sha256.txt`. A tabela de pacotes, os autores e
+o que foi rejeitado estão em [`docs/audio-provenance.md`](docs/audio-provenance.md).
+

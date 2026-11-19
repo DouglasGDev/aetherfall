@@ -26,6 +26,12 @@ const BITE_COOLDOWN: float = 1.15
 const WANDER_RADIUS: float = 22.0
 const SCENT_RADIUS: int = 3          # em celulas de Eter
 const SCENT_MIN: float = 0.06
+const SCENT_PERIOD: float = 0.25
+const INSPECT_SECONDS: float = 2.0
+const SCENT_MEMORY_SECONDS: float = 30.0
+const SCENT_MEMORY_CAP: int = 32
+const SCENT_RENEWAL: float = 0.06
+const SIGHT_MEMORY_SECONDS: float = 6.0
 const CORPSE_SECONDS: float = 6.0
 const DIMS := Vector3(0.75, 0.95, 1.35)
 # agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
@@ -54,6 +60,7 @@ var kills: int = 0
 
 var _player: Player = null
 var _sim_clock: SimClock = null
+var _rng := RandomNumberGenerator.new()
 var _scorer: UtilityScorer = UtilityScorer.new()
 var _tree: BtTree.BtNode = null
 var _guard: BtTree.SubtreeGuard = null
@@ -67,6 +74,15 @@ var _work_here: float = 0.0
 var _scent_pos: Vector3 = Vector3.ZERO
 var _scent_strength: float = 0.0
 var _scent_found: bool = false
+var _scent_cell := Vector3i.ZERO
+var _scent_channel: int = AetherField.Channel.WORK
+var _scent_cd: float = 0.0
+var _scent_clock: float = 0.0
+var _inspect_left: float = 0.0
+var _checked_scents: Dictionary = {}
+var _fear_away := Vector3.ZERO
+var _searched_sighting_tick: int = -1
+var _reaction: String = "patrulhando"
 var _fear_level: float = 0.0
 var _hp_ratio: float = 1.0
 var _threat: float = 0.0
@@ -101,7 +117,8 @@ func setup(p_world: VoxelWorld, p_aether: AetherField, p_player: Player,
 	identity = p_identity
 	home = p_spawn
 	body.setup(world, p_spawn, DIMS)
-	_heading = randf() * TAU
+	_rng.seed = ("wolf:%d:%d" % [world.gen.world_seed, identity]).hash()
+	_heading = _rng.randf() * TAU
 	mind = Mind.new("wolf", p_identity, 1000 + p_identity)
 	name = "Wolf%d" % p_identity
 	_move_target = p_spawn
@@ -139,11 +156,11 @@ func _build_tree() -> void:
 				BtTree.Cooldown.new().init("cd mordida",
 					BtTree.Action.new().init("morder", _leaf_bite), BITE_COOLDOWN),
 			]),
+			BtTree.Action.new().init("perseguir presa visivel", _leaf_chase),
 			BtTree.Sequence.new().with([
 				BtTree.Condition.new().init("lembra da presa", _cond_hunt_memory),
 				BtTree.Action.new().init("vir ao ultimo avistamento", _leaf_stalk),
 			]),
-			BtTree.Action.new().init("perseguir", _leaf_chase),
 		]),
 	])
 	var sniff := BtTree.Sequence.new().with([
@@ -166,7 +183,16 @@ func _cond_range(_ctx: Dictionary) -> bool:
 
 
 func _cond_hunt_memory(_ctx: Dictionary) -> bool:
-	return mind.believes("player_visible_recent") or mind.believes("prey_wounded")
+	var atom := mind.last_atom("saw_player")
+	return _player.alive and not atom.is_empty() and int(atom["tick"]) > _searched_sighting_tick \
+			and _sim_clock.tick - int(atom["tick"]) <= int(SIGHT_MEMORY_SECONDS * SimClock.HZ)
+
+
+func _hunt_distance() -> float:
+	if _los_player:
+		return _dist_player
+	var atom := mind.last_atom("saw_player")
+	return center().distance_to(atom["pos"]) if not atom.is_empty() else 999.0
 
 
 func _cond_scent(_ctx: Dictionary) -> bool:
@@ -176,18 +202,31 @@ func _cond_scent(_ctx: Dictionary) -> bool:
 # ------------------------------------------------------------------ folhas
 
 func _leaf_flee(_ctx: Dictionary) -> bool:
-	var away := center() - _player.position3()
+	var away := _fear_away
+	_reaction = "evitando medo"
+	if _los_player:
+		away = center() - _player.position3()
+		_reaction = "fugindo do jogador visivel"
+	elif _threat > 0.0:
+		var hurt := mind.last_atom("hurt")
+		if not hurt.is_empty():
+			away = center() - Vector3(hurt["pos"])
+			_reaction = "fugindo do ultimo golpe"
 	away.y = 0.0
 	if away.length_squared() < 0.01:
-		away = Vector3(0.0, 0.0, 1.0)
+		away = Vector3(-sin(_heading), 0.0, -cos(_heading))
 	_move_target = center() + away.normalized() * 14.0
 	_speed = SPEED_FLEE
-	# fugir espalha medo: e assim que um lobo avisa os outros sem nenhum canal de rede
-	aether.imprint(center(), AetherField.Channel.FEAR, 0.06)
+	# Reagir ao medo alheio nao pode realimentar o campo para sempre.
+	if _threat > 0.0:
+		aether.imprint(center(), AetherField.Channel.FEAR, 0.06)
 	return true
 
 
 func _leaf_chase(_ctx: Dictionary) -> bool:
+	if not _los_player:
+		return false
+	_reaction = "perseguindo presa visivel"
 	_move_target = _player.position3() + Vector3(0.0, 0.4, 0.0)
 	_speed = SPEED_RUN if _dist_player > 6.0 else SPEED_WALK
 	return true
@@ -195,27 +234,74 @@ func _leaf_chase(_ctx: Dictionary) -> bool:
 
 func _leaf_stalk(_ctx: Dictionary) -> bool:
 	var atom: Dictionary = mind.last_atom("saw_player")
-	if atom.is_empty():
-		return false
 	_move_target = atom["pos"]
+	var offset := _move_target - center()
+	offset.y = 0.0
+	if offset.length_squared() <= 2.25:
+		_searched_sighting_tick = int(atom["tick"])
+		return false
+	_reaction = "buscando ultimo avistamento"
 	_speed = SPEED_WALK
-	return center().distance_squared_to(_move_target) > 2.25
+	return true
 
 
-func _leaf_investigate(_ctx: Dictionary) -> bool:
+func _leaf_investigate(ctx: Dictionary) -> int:
+	if _stagger > 0.0:
+		_inspect_left = 0.0
+		_reaction = "atordoado"
+		_move_target = body.feet_pos
+		_speed = 0.0
+		return BtStatus.RUNNING
 	_move_target = _scent_pos
-	_speed = SPEED_WALK
-	return center().distance_squared_to(_move_target) > 1.44
+	var offset := _move_target - body.feet_pos
+	offset.y = 0.0
+	if offset.length_squared() > 1.44:
+		_reaction = "seguindo sangue" if _scent_channel == AetherField.Channel.BLOOD else "seguindo trabalho"
+		_speed = SPEED_WALK
+		_inspect_left = 0.0
+		return BtStatus.RUNNING
+	_move_target = body.feet_pos
+	_speed = 0.0
+	_reaction = "farejando"
+	if _inspect_left <= 0.0:
+		_inspect_left = INSPECT_SECONDS
+	_inspect_left = maxf(0.0, _inspect_left - float(ctx["dt"]))
+	if _inspect_left > 0.0:
+		return BtStatus.RUNNING
+	_remember_scent()
+	_reaction = "rastro examinado"
+	_scent_found = false
+	_scent_strength = 0.0
+	_scent_cd = 0.0
+	return BtStatus.SUCCESS
+
+
+func _remember_scent() -> void:
+	var kind := "scent_blood" if _scent_channel == AetherField.Channel.BLOOD else "scent_work"
+	mind.remember(_sim_clock.tick, kind, _scent_pos, 0, _scent_strength / (AetherField.MAX_VALUE * 1.35))
+	# Inclui a borda difusa: o mesmo cheiro nao deve provocar uma volta por celula.
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var c := _scent_cell + Vector3i(dx, 0, dz)
+			if not aether.in_bounds(c):
+				continue
+			var strength := aether.sample_cell(c, AetherField.Channel.BLOOD) \
+					+ aether.sample_cell(c, AetherField.Channel.WORK) * 0.35
+			_checked_scents.erase(c)
+			if _checked_scents.size() >= SCENT_MEMORY_CAP:
+				_checked_scents.erase(_checked_scents.keys()[0])
+			_checked_scents[c] = Vector2(strength, _scent_clock + SCENT_MEMORY_SECONDS)
 
 
 func _leaf_wander(_ctx: Dictionary) -> bool:
+	_reaction = "patrulhando"
 	_speed = SPEED_WALK
 	if _wander_cd > 0.0 and center().distance_squared_to(_move_target) > 2.0:
 		return true
-	_wander_cd = randf_range(4.0, 9.0)
+	_wander_cd = _rng.randf_range(4.0, 9.0)
 	for _t in 8:
-		var a := randf() * TAU
-		var r := randf_range(5.0, WANDER_RADIUS)
+		var a := _rng.randf() * TAU
+		var r := _rng.randf_range(5.0, WANDER_RADIUS)
 		var p := home + Vector3(cos(a) * r, 0.0, sin(a) * r)
 		p.x = clampf(p.x, 4.0, float(VoxelConfig.world_size_x()) - 4.0)
 		p.z = clampf(p.z, 4.0, float(VoxelConfig.world_size_z()) - 4.0)
@@ -287,13 +373,16 @@ func _build_scorer() -> void:
 	hunt.add("alvo a vista", func(_c: Dictionary) -> float: return 1.0 if _los_player else 0.0,
 			0.0, 1.0, ResponseCurve.Type.STEP, 1.0, 0.0, 1.5, false)
 	# faixa invertida (hi < lo): longe pontua zero, perto pontua 1.
-	hunt.add("proximidade", func(_c: Dictionary) -> float: return _dist_player,
+	hunt.add("proximidade percebida", func(_c: Dictionary) -> float: return _hunt_distance(),
 			26.0, 0.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 1.1, false)
+	hunt.add("presa percebida", func(c: Dictionary) -> float:
+		return 1.0 if (_player.alive and (_los_player or _cond_hunt_memory(c))) else 0.0,
+			0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
 	hunt.add("coragem contra este ator", func(_c: Dictionary) -> float: return _courage,
 			0.5, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
 
 	var sniff := _scorer.add_option("investigate")
-	sniff.add("sangue no ar", func(_c: Dictionary) -> float: return _scent_strength,
+	sniff.add("rastro no ar", func(_c: Dictionary) -> float: return _scent_strength,
 			0.05, 1.0, ResponseCurve.Type.SATURATING, 2.4, 0.0, 1.6, false)
 	sniff.add("curiosidade", func(_c: Dictionary) -> float: return mind.temperament("curiosity"),
 			0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.9, false)
@@ -322,6 +411,8 @@ func sim_step(elapsed: float, dt: float) -> void:
 	_bite_cd = maxf(_bite_cd - dt, 0.0)
 	_wander_cd = maxf(_wander_cd - dt, 0.0)
 	_saw_cd = maxf(_saw_cd - dt, 0.0)
+	_scent_clock += dt
+	_scent_cd = maxf(_scent_cd - dt, 0.0)
 	_threat = maxf(_threat - dt * 0.05, 0.0)
 	hunger = clampf(hunger + dt * 0.006, 0.0, 1.0)
 	mind.decay(dt / 60.0)
@@ -336,7 +427,9 @@ func sim_step(elapsed: float, dt: float) -> void:
 		_swim_time = 0.0
 	_sense()
 	_think(elapsed)
-	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick})
+	if intent != "investigate":
+		_inspect_left = 0.0
+	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt})
 
 
 func _sense() -> void:
@@ -349,7 +442,8 @@ func _sense() -> void:
 	_fear_here = aether.sample(me, AetherField.Channel.FEAR)
 	_blood_here = aether.sample(me, AetherField.Channel.BLOOD)
 	_work_here = aether.sample(me, AetherField.Channel.WORK)
-	_find_scent()
+	if _scent_cd <= 0.00001:
+		_find_scent()
 	_fear_level = clampf(_fear_here * 0.85 + _threat * 0.9 + _blood_here * 0.35, 0.0, 1.5)
 	# Memoria vira comportamento: quem ja apanhou deste ator evita ca-lo enquanto estiver
 	# ferido. A porta de coragem da opcao "hunt" e exatamente este numero.
@@ -366,17 +460,35 @@ func _sense() -> void:
 
 ## Varre a vizinhanca de celulas de Eter atras do rastro mais forte (custo fixo).
 func _find_scent() -> void:
+	_scent_cd = SCENT_PERIOD
+	for c: Vector3i in _checked_scents.keys():
+		if _checked_scents[c].y <= _scent_clock:
+			_checked_scents.erase(c)
 	var c0 := aether.cell_of_world(center())
 	var best := 0.0
 	var best_cell := c0
+	var channel: int = AetherField.Channel.WORK
+	_fear_away = Vector3.ZERO
 	for dz in range(-SCENT_RADIUS, SCENT_RADIUS + 1):
 		for dx in range(-SCENT_RADIUS, SCENT_RADIUS + 1):
 			var c := Vector3i(c0.x + dx, c0.y, c0.z + dz)
-			var v: float = aether.sample_cell(c, AetherField.Channel.BLOOD) \
-					+ aether.sample_cell(c, AetherField.Channel.WORK) * 0.35
+			var blood := aether.sample_cell(c, AetherField.Channel.BLOOD)
+			var work := aether.sample_cell(c, AetherField.Channel.WORK) * 0.35
+			var fear := aether.sample_cell(c, AetherField.Channel.FEAR)
+			var offset := Vector3(dx, 0.0, dz)
+			if offset.length_squared() > 0.0:
+				_fear_away -= offset * maxf(fear - _fear_here, 0.0) / offset.length_squared()
+			var v := blood + work
+			if _checked_scents.has(c) and v < _checked_scents[c].x + SCENT_RENEWAL:
+				continue
 			if v > best:
 				best = v
 				best_cell = c
+				channel = AetherField.Channel.BLOOD if blood > work else AetherField.Channel.WORK
+	if best_cell != _scent_cell or best <= SCENT_MIN:
+		_inspect_left = 0.0
+	_scent_cell = best_cell
+	_scent_channel = channel
 	_scent_strength = best
 	_scent_found = best > SCENT_MIN
 	var cell_pos := aether.cell_center(best_cell)
@@ -423,8 +535,8 @@ func _physics_process(delta: float) -> void:
 		body.velocity.z = 0.0
 	body.move_and_collide(delta)
 	if body.blocked_this_frame and _unstick <= 0.0:
-		_unstick = randf_range(0.35, 0.8)
-		_detour = (1.0 if randf() < 0.5 else -1.0) * randf_range(0.7, 1.3)
+		_unstick = _rng.randf_range(0.35, 0.8)
+		_detour = (1.0 if _rng.randf() < 0.5 else -1.0) * _rng.randf_range(0.7, 1.3)
 		if body.on_ground:
 			body.velocity.y = 5.2
 	if body.feet_pos.y < -6.0:
@@ -516,9 +628,10 @@ func finished() -> bool:
 
 func debug_line() -> String:
 	var fmt := "lobo%d %-12s hp %3.0f  %s\n     medo %.2f  sangue %.2f  trabalho %.2f  "\
-			+ "mem %d  crencas %d  %s"
+			+ "mem %d  crencas %d  %s\n     %s | %s %.2f em %s | checadas %d"
 	return fmt % [identity, intent, hp, _top_line, _fear_level, _blood_here, _work_here,
-			mind.episodic.size(), mind.beliefs.size(), tree_stats()]
+			mind.episodic.size(), mind.beliefs.size(), tree_stats(), _reaction,
+			AetherField.CHANNEL_NAMES[_scent_channel], _scent_strength, _scent_cell, _checked_scents.size()]
 
 
 func tree_stats() -> String:
@@ -543,6 +656,15 @@ func load_state(d: Dictionary) -> void:
 	kills = int(d.get("kills", 0))
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
+	_checked_scents.clear()
+	_scent_cd = 0.0
+	_scent_clock = 0.0
+	_scent_found = false
+	_scent_strength = 0.0
+	_inspect_left = 0.0
+	_fear_away = Vector3.ZERO
+	_searched_sighting_tick = -1
+	_reaction = "patrulhando"
 	_swim_time = 0.0
 	_swim_phase = 0.0
 	_stagger = 0.0
