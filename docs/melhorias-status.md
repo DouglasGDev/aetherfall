@@ -254,7 +254,7 @@ load e ordem autoritativa — não foi iniciado.
 
 ## Falta
 
-Por dependência, não por preferência:
+Por dependência, não por preferência (cada item aberto tem um dossiê de leitura em [`docs/planos/`](planos/README.md): premissa nomeada, estado do código com `arquivo:linha`, gate headless e custo pelas quatro perguntas — nenhum dossiê rodou a engine e nenhum fecha gate):
 
 1. **Primitivo de hash de estado por tick — concluído e validado nesta máquina.** Implementado em
    [tick_journal.gd](../src/persistence/tick_journal.gd), com contrato, testes e medições abaixo.
