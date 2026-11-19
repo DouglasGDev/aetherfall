@@ -202,9 +202,6 @@ func _ready() -> void:
 	_elbow.add_child(_hand)
 	_box(_hand, Vector3(0.125, 0.115, 0.12), Vector3(0.0, -0.015, -0.05), skin_hand)
 
-	# os dedos na frente do cubo (prioridade 14, acima do bloco): e o que faz o
-	# bloco parecer segurado -- sem eles o cubo desenhado por ultimo engole a mao
-	# e fica flutuando na frente de uma prancha
 	_grip = Node3D.new()
 	_grip.name = "Grip"
 	_hand.add_child(_grip)
@@ -222,17 +219,7 @@ func _ready() -> void:
 	_hand.add_child(_held)
 
 
-## O view model nao pode ser engolido pela parede quando o nariz encosta nela,
-## entao desenha sem teste de profundidade e por ultimo, com prioridade fixa por
-## camada (braco 10 < antebraco e barra da manga 11 < punho 12 < bloco 13 <
-## dedos 14): sem isso a ordem de desenho seria a que o rasterizador escolhe e a
-## articulacao piscaria.
-##
-## Unshaded de proposito: a lente gira e o sol fica atras dela, entao um braco
-## iluminado pelo mundo escureceria e clarearia conforme o rumo que o jogador
-## aponta. O volume vem das cores por segmento e, no bloco, do tint de face do
-## atlas (topo 1,00 / lateral 0,88 / base 0,60) -- o mesmo truque que faz o
-## mundo ler como cubo.
+# Camadas sem depth test impedem que paredes escondam o membro junto da lente.
 func _vm_mat(c: Color, priority: int) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = c
@@ -243,7 +230,8 @@ func _vm_mat(c: Color, priority: int) -> StandardMaterial3D:
 
 
 func _atlas_mat(alpha: bool) -> StandardMaterial3D:
-	var m := _vm_mat(Color(1.0, 1.0, 1.0), 13)
+	# Sem depth test, o bloco precisa cobrir os dedos para nao parecer furado.
+	var m := _vm_mat(Color(1.0, 1.0, 1.0), 15)
 	m.albedo_texture = _atlas
 	m.vertex_color_use_as_albedo = true
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
