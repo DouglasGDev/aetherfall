@@ -12,9 +12,11 @@ ordem.
 Referência histórica das medições de golpe: `9c6b722` (furo #6 abaixo).
 Bloco atual: porte do corpo em 3ª pessoa com o que está na mão, checagem headless do cubo segurado
 e galeria recapturada — em cima da sessão que já trouxe som, hash/journal, rastros/reações, RNG
-próprio da matilha e a correção da sobreposição na mão. Essa árvore de alterações locais é o
-commit `a8967e0` (base `1db00cf`); o clone limpo dele foi reimportado e re-medido — ver a
-primeira linha da tabela de porte em 3ª pessoa nas notas de medição.
+próprio da matilha e a correção da sobreposição na mão. Essa árvore de alterações é o commit
+`a8967e0` (base `1db00cf`) e está no remoto: `git ls-remote --heads origin` respondeu
+`42799fa0f0987b20d58902b4b2f7a4927a93cfd2` em 2026-11-19, o mesmo `HEAD` local depois de
+`git push origin main` devolver `1db00cf..42799fa`. O clone limpo de `a8967e0` foi reimportado e
+re-medido — ver a primeira linha da tabela de porte em 3ª pessoa nas notas de medição.
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 
 ## Os prompts × o código
@@ -48,7 +50,7 @@ o mesmo texto traz, no mesmo espírito da tabela acima.
 | "A mente propõe, as regras dispõem — LLM nunca decide movimento, dano, posição ou estado" | Verdade hoje por fiação, não por verifier: a única saída de `MindOracle` é `_narrations` — [mind_oracle.gd:27](../src/ai/mind_oracle.gd#L27), [:120](../src/ai/mind_oracle.gd#L120) — lida por `narration_of()` ([:59-60](../src/ai/mind_oracle.gd#L59-L60)) e entregue só ao HUD ([main.gd:114](../src/main.gd#L114) → [hud.gd:270-271](../src/ui/hud.gd#L270-L271)). Grep de `oracle`/`narration` em `src/` não acha nenhum outro consumidor: nem `Mind`, nem `Wolf`, nem o mundo leem o oráculo | **correto hoje**; o dia em que o oráculo *sugerir*, a sugestão entra como crença em quarentena (§04), não como intenção escrita |
 | "Completar o mínimo de P1: AetherField, Mind, consolidação, observabilidade, testes de hash, budget" | Três dos seis existem: `AetherField` (com 3 dos 6 canais), `Mind` e a **consolidação** — mas esta vive dentro de `Mind`, não num `MindStore` à parte. Observabilidade há em texto (F3), inspector não; o primitivo de hash mínimo tem suíte própria, mas o cenário multi-semente ainda não existe; "budget" tem mecanismo e colheita estreita de um lobo, não do agregado HOT | **metade feito**; item por item nas linhas acima e na fila "Falta" |
 | "Melhorar a degradação e a robustez do oráculo atual (ainda HTTP)" | Correto no diagnóstico, e a degradação já é checada sem rede — sonda apontada para a porta 1 em [smoke_test.gd:1919-1925](../tests/smoke_test.gd#L1919-L1925). O caminho feliz depende de `llama-server` de fora e não é testável em headless | **correto**; está dentro do escopo autorizado |
-| "Repositório: github.com/DouglasGDev/aetherfall" | `origin` confere. Publicação confirmada em `1db00cf` por `git ls-remote --heads origin main` em 2026-11-18; os blocos de hash/journal e rastros ainda são locais | **correto**; publicação se confirma por `ls-remote`, nunca pelo código 0 do `push` |
+| "Repositório: github.com/DouglasGDev/aetherfall" | `origin` confere. Publicação re-confirmada em `42799fa` — o `push` devolveu `1db00cf..42799fa main -> main` e `git ls-remote --heads origin` respondeu `42799fa0f0987b20d58902b4b2f7a4927a93cfd2 refs/heads/main` em 2026-11-19, o mesmo SHA do `HEAD` local. Os seis blocos desta revisão (som, journal, RNG, rastros, mão e porte em 3ª pessoa) estão todos no remoto; a confirmação anterior, de 2026-11-18, parava em `1db00cf` com hash/journal e rastros ainda locais | **correto**; publicação se confirma por `ls-remote`, nunca pelo código 0 do `push` |
 | "Ao final de um bloco, atualize ou proponha atualização de `docs/melhorias-status.md`" | É este arquivo, com as seções que o prompt pede (feito / em andamento / falta / backlog / débitos / furos / notas) | **correto**; já é a prática da casa, e agora está escrita em [`AGENTS.md`](../AGENTS.md) |
 
 ### O prompt de disciplina de otimização × o código
@@ -242,10 +244,10 @@ intermediários dos commits por arquivo não têm log próprio — cada um é co
 ao assunto de cada um nas notas de medição, não ao commit.
 
 Item 1, refinamento dos rastros e primeiro recorte do item 2 (propriedade dos geradores)
-concluídos e validados localmente; falta avaliação visual em janela. A árvore de alterações
-locais virou o commit `a8967e0`, e o clone limpo dele foi reimportado sem cache e re-medido:
-**232 checagens / 0 falhas / 33,7 s**, exit 0 — o mesmo número da árvore de trabalho, com as
-79 fontes e as assinaturas de artefatos conferidas dentro do clone. Os logs de hash anteriores
+concluídos e validados nesta máquina; falta avaliação visual em janela, que é do dono. A árvore
+virou o commit `a8967e0`, publicado em `42799fa`, e o clone limpo dele foi reimportado sem cache e
+re-medido: **232 checagens / 0 falhas / 33,7 s**, exit 0 — o mesmo número da árvore de trabalho,
+com as 79 fontes e as assinaturas de artefatos conferidas dentro do clone. Os logs de hash anteriores
 continuam vinculados ao manifesto histórico; a validação do recorte de RNG tem manifesto próprio
 nas notas abaixo. O resto do item 2 — estado inicial completo, comandos, restauração de RNG no
 load e ordem autoritativa — não foi iniciado.
@@ -254,10 +256,10 @@ load e ordem autoritativa — não foi iniciado.
 
 Por dependência, não por preferência:
 
-1. **Primitivo de hash de estado por tick — concluído localmente.** Implementado em
+1. **Primitivo de hash de estado por tick — concluído e validado nesta máquina.** Implementado em
    [tick_journal.gd](../src/persistence/tick_journal.gd), com contrato, testes e medições abaixo.
    Mantida a numeração original para não mudar as dependências da fila.
-2. **Diário de tick sobre a simulação — um recorte concluído localmente.** O journal mínimo
+2. **Diário de tick sobre a simulação — um recorte concluído e validado nesta máquina.** O journal mínimo
    registra somente `[tick, hash]`. O sorteio deixou de ser o gerador global: a sessão tem
    `_population_rng` ([main.gd:36](../src/main.gd#L36), sorteado em
    [:221-222](../src/main.gd#L221-L222)) e cada lobo tem `_rng`
@@ -293,7 +295,7 @@ Por dependência, não por preferência:
 ## Backlog priorizado (P0 → P1)
 
 **P0 — fundação determinística** (gate atual: nenhum fechado)
-- [x] `state_hash()` mínimo + JSONL `[tick,hash]` sob demanda (item 1, validado localmente).
+- [x] `state_hash()` mínimo + JSONL `[tick,hash]` sob demanda (item 1, validado nesta máquina).
 - [ ] Estado inicial completo, comandos/RNG e ordem autoritativa para replay (item 2).
 - [ ] `af-bench --scenario boot_walk_10min` com hash estável em 3 execuções.
 - [ ] bake-off de voxel decidido com números (as alturas já estão certas: geração 942 ms e
