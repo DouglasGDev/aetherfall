@@ -19,7 +19,7 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
 | O que o projeto promete × o que `src/` faz hoje | [`docs/melhorias-status.md`](docs/melhorias-status.md), "Os prompts × o código" |
 | Feito nesta rodada, em andamento, fila, backlog e débitos | idem, seções seguintes |
 | Que corrida sustenta cada número publicado | idem, "Notas de medição" |
-| Como conduzir a mudança: escopo, atomicidade, medição, comentário | este arquivo |
+| Como conduzir a mudança: escopo, atomicidade, branches, medição, comentário | este arquivo |
 | Custo de uma mudança: budget, alocação, LOD, o que cresce sem justificativa | este arquivo, "Disciplina de otimização", e a terceira tabela do status |
 | O que é cada fase e qual é o gate dela | [docs/design/08](docs/design/08-roadmap-risks-licensing.md) |
 | O que é meta de design e o que é código que existe | [docs/design/README.md](docs/design/README.md), legenda `[TARGET]`/`[MEASURED]`/`[DECIDED]`/`[OPEN]` |
@@ -300,6 +300,53 @@ godot --path . .tools/shot_gallery.tscn
 Medição de tempo é serial: lote com gate de timing não roda em paralelo com outra carga na
 máquina, porque o número que sai é do concorrente. Sonda curta de compilação é sempre permitida;
 corrida de 36 s espera a máquina livre.
+
+## Branches: um ajuste por linha de história
+
+Trabalho entra por branch e chega à `main` por merge. O motivo não é cerimônia: com um assunto por
+branch, `git log --first-parent main` responde *o que foi feito* sem abrir diff, e um ajuste
+posterior tem onde procurar a decisão original — que é exatamente o que se perde quando tudo é
+commitado direto na `main`.
+
+1. **Nome carrega tipo e assunto.** `feat/` mecânica nova, `fix/` defeito, `perf/` custo, `test/`
+   instrumento, `refator/` dono de estado, `bench/` medição, `docs/` documento. Quando o trabalho
+   vem de um item da fila, o número do dossiê fecha o nome (`perf/difusao-fora-do-tick-05`); a
+   tabela de nomes por dossiê está em [`docs/planos/README.md`](docs/planos/README.md).
+2. **Base é sempre a `main` no ponto atual.** `git checkout main`, `git fetch origin`,
+   `git merge --ff-only origin/main`, e só então `git checkout -b <branch>`. Branch criada de outra
+   branch de trabalho deixa de responder "a partir de quê" — o registro que se quer era justamente esse.
+3. **Dentro da branch vale o ciclo inteiro.** Um assunto por commit, suíte verde entre eles, e o
+   número de cada medição no commit a que ele responde. Branch não é rascunho: merge vermelho põe
+   número errado na `main`.
+4. **`--no-ff` é obrigatório no merge.** Fast-forward achata a branch dentro da `main` e apaga a
+   forma do histórico; com merge commit nomeado, a primeira fila do log vira o índice das mecânicas.
+5. **A `main` andou? Re-rome o gate.** Traga a branch até ela (`git rebase main` ou merge da `main`
+   na branch) e rode a suíte de novo: a árvore resultante é outra revisão, e número publicado é
+   número medido nesta revisão (mandato 3, item 6 do ciclo).
+6. **Um escritor por arquivo por branch.** Duas branches que tocam a mesma página precisam de ordem
+   decidida *antes* de abrir a segunda. O incidente dos dois agentes no dossiê 03 apagou uma versão
+   já conferida — é o custo real de não ordenar.
+7. **Branch não fecha gate de fase** (mandato 4), não autoriza escopo novo ("Escopo autorizado
+   agora") e não dispensa a re-medição no clone limpo antes de publicar.
+8. **A branch remota fica** enquanto for o registro do ajuste; apagar no GitHub é descartar a pista
+   que motivou esta seção. A local sai no merge verde com `-d` — nunca `-D` sem motivo aberto.
+
+**Sequência de um ciclo** (nada aqui substitui a suíte):
+
+```sh
+git checkout main && git fetch origin && git merge --ff-only origin/main
+git checkout -b feat/exemplo-03
+# ... commits atômicos, um assunto cada ...
+git diff --stat main...HEAD                        # o que a branch realmente toca
+godot --headless --path . tests/smoke_test.tscn    # na branch: ultima linha e o contrato
+git push -u origin feat/exemplo-03
+git checkout main
+git merge --no-ff feat/exemplo-03 -m "Merge feat/exemplo-03: <assunto> (dossie 03)"
+godot --headless --path . tests/smoke_test.tscn    # a main mergeda e outra revisao
+git push origin main
+git ls-remote --heads origin                       # unico prova de que publicou
+git branch -d feat/exemplo-03
+```
 
 ## O que não fazer (com o motivo já medido aqui)
 
