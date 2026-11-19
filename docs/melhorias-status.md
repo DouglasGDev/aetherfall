@@ -1108,3 +1108,24 @@ godot --headless --path . tests/smoke_test.tscn
 Os números históricos da suíte e da galeria valem para as revisões indicadas, não para
 alterações posteriores. A árvore de trabalho requer nova execução; a publicação de uma
 contagem por commit requer clone limpo recém-importado e SHA explícito.
+
+## Rodada de branches (2026-11-19)
+
+O trabalho desta rodada entrou por branch, duas vezes, cada uma com um assunto:
+`docs/dossies-de-leitura` (os oito dossiês de [`docs/planos/`](planos/README.md) e as pontas nos
+índices deste status e de `docs/design/`) e `docs/fluxo-de-branches` (a regra nova de
+[`AGENTS.md`](../AGENTS.md), "Branches: um ajuste por linha de história"). Os dois merges são
+`--no-ff` na `main`, então `git log --first-parent main` lista os assuntos sem abrir diff — é isso
+que a regra compra, e é por isso que a branch remota fica.
+
+Nenhuma das duas branches toca `src/` ou `tests/`: `git diff --name-only main...HEAD` devolve zero
+arquivos de código em ambas, e por isso a contagem da suíte não muda de revisão para revisão. A
+execução na `main` mergida (`2fdbb1b`) fecha **232 checagens / 0 falhas**, exit 0, zero
+`SCRIPT ERROR`. O tempo dessa corrida (41,4 s) **não** entra como número publicado: é árvore de
+trabalho, sem clone limpo reimportado, e o par publicado continua sendo o do clone de `a8967e0`
+(232 / 0 / 33,7 s). As duas linhas de ruído de saída (`4 ObjectDB instances` e
+`2 resources still in use`) já estavam no log do clone (`evidence/third-person-carry/clone-suite.log:308,310`)
+— não são desta rodada.
+
+Nenhum gate de fase se fechou aqui, e nenhum item da fila acima mudou de veredito: os dossiês são
+leitura que prepara os itens 1 a 8, não execução deles.
