@@ -33,7 +33,42 @@ const SCENT_MEMORY_SECONDS: float = 30.0
 const SCENT_MEMORY_CAP: int = 32
 const SCENT_RENEWAL: float = 0.06
 const SIGHT_MEMORY_SECONDS: float = 6.0
+## Raio do anel de cerco (dossie 10 §3.4): `BITE_RANGE` menos a folga do corpo, para
+## o assento parar a alcance de mordida em vez de subir em cima da presa -- cinco
+## corpos no mesmo voxel e o mesmo mal que `_volume_clear` registra no spawn.
+const ENCIRCLE_RING: float = BITE_RANGE - 0.45
 const CORPSE_SECONDS: float = 6.0
+## Leitura compartilhada de "estou sozinho": o lobo nunca aloca lista vazia, e sim
+## aponta para esta, que ninguem escreve.
+const NO_PACK: Array = []
+## Contagio do medo (dossie 10 §3.6): quanto o panico de UM vizinho em `flee`,
+## dentro da coesao, soma no meu proprio `_fear_level`. E uma soma por vizinho, e
+## nao uma media: dois em panico somam o dobro (o que satura e a curva de terror
+## do escorredor, sigmoid 9,0 em torno de 0,42 na consideracao "terror no ar").
+## O valor medido do par de bracos esta em `contagio_medo_muda_intent_do_observador`:
+## com um vizinho em panico o `_fear_level` do lobo 1 sai de 0 para 0,55, `flee`
+## marca 0,37 contra o chao de fundo 0,22 do `patrol`, e a margem passa o
+## `min_lead` de 0,05 -- a margem depende da cautela sorteada da mente, nao e um
+## numero valido para qualquer lobo.
+const PACK_PANIC_FEAR: float = 0.55
+## Contagio de confianca (dossie 10 §3.6): a coragem contra o jogador passa a ser
+## tambem a de quem esta perto. `PACK_TRUST_GATE` e a mesma soleira de
+## `Mind.believes` -- so confianca acima dela amortce; abaixo, o vizinho nao conta
+## para nenhum lado. `PACK_TRUST_DAMP` e o que sai do `_courage` do observador por
+## unidade de confianca lida, e o leva de 1,0 para baixo da porta de 0,5 que a
+## consideracao "coragem contra este ator" cobra na opcao `hunt`: um vizinho
+## amansado fecha a porta do colega. O medo de apanhar (trust negativo, o que
+## `take_damage` escreve) nao da coragem a quem olha.
+## Medido nos tres bracos de `amortece_confianca_fecha_a_porta_de_hunt_dos_colegas`:
+## vizinho com trust 0,60 da `_courage` 0,46, `hunt` vetada com score 0,0 e os dois
+## colegas em `patrol` enquanto o amansado fica com a porta aberta e em `hunt`; o
+## MESMO vizinho com trust 0,30 -- abaixo da soleira -- devolve `_courage` 1,0 e os
+## tres caam de novo, entao e o 0,35 que decide e nao a presenca de confianca.
+## Estado do codigo, nao meta: hoje nada em `src/` escreve trust positivo --
+## `take_damage` e o unico chamador de `adjust_trust` e passa -0,35 -- entao esta
+## porta so tem o que amortecer quando o amansamento existir (dossies 14 e 11).
+const PACK_TRUST_GATE: float = 0.35
+const PACK_TRUST_DAMP: float = 0.9
 const DIMS := Vector3(0.75, 0.95, 1.35)
 # agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
 # agua (fuga, perseguicao), boia e rema como o jogador nada e procura a margem.
@@ -74,12 +109,31 @@ var kills: int = 0
 
 var _player: Player = null
 var _sim_clock: SimClock = null
+## A matilha chega injetada, pelo mesmo caminho do `entity_provider` do jogador
+## (dossie 10 §3.1): a sessao e a dona da lista, o lobo so le. Sem provedor -- o
+## fixture do runner arma lobos soltos -- a leitura e vazia e nenhuma rotina de
+## grupo roda, entao o lote novo nao toca no comportamento ja gateado.
+var pack_provider: Callable = Callable()
+## O trust da propria mente para com o jogador, publicado como escalar para a sessao
+## copiar na leitura da matilha. Um `mind.trust()` por lobo por tick de 20 Hz, e nao
+## um `str(ator)` por par: ler alcateia nao pode alocar no caminho quente (dossie 10
+## §4). Vale o do passo anterior, exatamente como `intent` -- mesma cadencia, mesmo
+## atraso.
+var trust_toward_player: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _scorer: UtilityScorer = UtilityScorer.new()
 var _tree: BtTree.BtNode = null
 var _guard: BtTree.SubtreeGuard = null
 
 # percepcao: recalculada uma vez por tick de simulacao
+var _pack: Array = NO_PACK
+# Quantos vizinhos da leitura estao em `flee` neste tick, e a maior confianca no
+# jogador entre eles acima de `PACK_TRUST_GATE`. Contados em `_sense()`, uma vez
+# por tick, consumidos ali mesmo por `_fear_level` e `_courage`, e colhidos pelo
+# runner para que os dois numeros do contagio saiam no log em vez de ficarem na
+# conversa (dossie 10 §3.6).
+var _pack_panic: int = 0
+var _pack_trust: float = 0.0
 var _dist_player: float = 999.0
 var _los_player: bool = false
 var _fear_here: float = 0.0
@@ -254,10 +308,49 @@ func _leaf_flee(_ctx: Dictionary) -> bool:
 func _leaf_chase(_ctx: Dictionary) -> bool:
 	if not _los_player:
 		return false
-	_reaction = "perseguindo presa visivel"
-	_move_target = _player.position3() + Vector3(0.0, 0.4, 0.0)
+	var n := _hunt_pack_size()
+	if n <= 1:
+		# Um participante sozinho: a perseguicao literal de antes, direto ao corpo.
+		_reaction = "perseguindo presa visivel"
+		_move_target = _player.position3() + Vector3(0.0, 0.4, 0.0)
+	else:
+		var rank := _hunt_pack_rank()
+		_reaction = "fechando cerco no assento %d de %d" % [rank, n]
+		_move_target = _seat_point(_player.position3(), rank, n)
 	_speed = SPEED_RUN if _dist_player > 6.0 else SPEED_WALK
 	return true
+
+
+## Quantos lobos estao no cerco neste tick: eu mais os vizinhos que a leitura da
+## sessao devolve em `hunt`. O espacamento angular sai daqui, entao o assento e
+## funcao de quem caa de fato, nao do censo da matilha nem de um N fixo.
+func _hunt_pack_size() -> int:
+	var n := 1
+	for e: Dictionary in _pack:
+		if String(e["intent"]) == "hunt":
+			n += 1
+	return n
+
+
+## Minha posicao na fila do cerco: quantos participantes de identidade menor estao
+## na leitura. Como a leitura e mutua e a identidade e unica, os assentos nunca
+## se repetem enquanto o conjunto de participantes for o mesmo para todos.
+func _hunt_pack_rank() -> int:
+	var rank := 0
+	for e: Dictionary in _pack:
+		if String(e["intent"]) == "hunt" and int(e["identity"]) < identity:
+			rank += 1
+	return rank
+
+
+## Assento angular em torno da presa: `TAU/n` por participante, medido no eixo do
+## mundo (a leitura da sessao e a mesma para todos, entao o angulo de cada um sai
+## do rank e nao da direcao em que cada um chegou -- duas referencias dariam dois
+## anis girados). O `y` fica no da presa para a locomocao nao ter de adivinhar.
+func _seat_point(prey: Vector3, rank: int, n: int) -> Vector3:
+	var a := TAU * float(rank) / float(n)
+	return Vector3(prey.x + cos(a) * ENCIRCLE_RING, prey.y + 0.4,
+			prey.z + sin(a) * ENCIRCLE_RING)
 
 
 func _leaf_stalk(_ctx: Dictionary) -> bool:
@@ -322,15 +415,33 @@ func _remember_scent() -> void:
 
 
 func _leaf_wander(_ctx: Dictionary) -> bool:
-	_reaction = "patrulhando"
+	var n: int = _pack.size() + 1
+	# Com um lobo so a ronda e exatamente a de antes: o centro e o proprio lar e a
+	# fatia e o circulo inteiro. Nada aqui depende de provedor para funcionar.
+	_reaction = "patrulhando" if n <= 1 else "rondando setor da matilha"
 	_speed = SPEED_WALK
 	if _wander_cd > 0.0 and center().distance_squared_to(_move_target) > 2.0:
 		return true
 	_wander_cd = _rng.randf_range(4.0, 9.0)
+	if n <= 1:
+		_pick_wander(home, 0.0, TAU)
+		return true
+	var arc := TAU / float(n)
+	var seat := float(_territory_rank()) * arc
+	if not _pick_wander(_territory_center(n), seat, arc):
+		# Setor inteiro em agua nao e prisao: o lobo volta a sortear o circulo
+		# completo em torno do proprio lar, que e a ronda de um lobo so.
+		_pick_wander(home, 0.0, TAU)
+	return true
+
+
+## Sorteia ate oito pontos na fatia dada do territorio e grava o primeiro que tem
+## terra seca. Devolve falso so quando a agua ganhou as oito tentativas.
+func _pick_wander(origin: Vector3, seat: float, arc: float) -> bool:
 	for _t in 8:
-		var a := _rng.randf() * TAU
+		var a := seat + _rng.randf() * arc
 		var r := _rng.randf_range(5.0, WANDER_RADIUS)
-		var p := home + Vector3(cos(a) * r, 0.0, sin(a) * r)
+		var p := origin + Vector3(cos(a) * r, 0.0, sin(a) * r)
 		p.x = clampf(p.x, 4.0, float(VoxelConfig.world_size_x()) - 4.0)
 		p.z = clampf(p.z, 4.0, float(VoxelConfig.world_size_z()) - 4.0)
 		if not _dry_ground(p):
@@ -338,7 +449,33 @@ func _leaf_wander(_ctx: Dictionary) -> bool:
 		p.y = float(world.surface_height(int(p.x), int(p.z))) + 0.2
 		_move_target = p
 		return true
-	return true
+	return false
+
+
+## Centro compartilhado da ronda (dossie 10 §3.2): o baricentro das posicoes que a
+## matilha le, e nao o `home` sorteado um por lobo -- cinco lares espalhados nunca
+## foram territorio. A leitura da sessao e mutua, entao todos os membros chegam no
+## mesmo numero e cada um particiona o circulo do seu proprio ponto de vista.
+func _territory_center(n: int) -> Vector3:
+	if n <= 1:
+		return home
+	var sum := center()
+	for e: Dictionary in _pack:
+		var pos: Vector3 = e["pos"]
+		sum += pos
+	return sum / float(n)
+
+
+## Qual fatia do circulo este lobo patrulha: quantos vizinhos tem identidade menor
+## que a dele. `identity % n` daria a mesma fatia a identidades nao consecutivas e
+## nao distribui nada; o rank comparado e sempre distinto dentro da matilha e nao
+## aloca lista nenhuma (dossie 10 §4).
+func _territory_rank() -> int:
+	var rank := 0
+	for e: Dictionary in _pack:
+		if int(e["identity"]) < identity:
+			rank += 1
+	return rank
 
 
 ## Terra seca neste ponto: sem agua acima do leito na coluna.
@@ -366,6 +503,10 @@ func _shore_point() -> Vector3:
 func _leaf_bite(_ctx: Dictionary) -> bool:
 	if _bite_cd > 0.0:
 		return false
+	if not _bite_turn():
+		# Assento esperando: a folha devolve falso, a arvore cai em `perseguir` e o
+		# lobo continua circundando a presa ate ser a sua vez.
+		return false
 	_bite_cd = BITE_COOLDOWN
 	bit_player.emit(self, BITE_DAMAGE)
 	var pp := _player.position3()
@@ -373,6 +514,19 @@ func _leaf_bite(_ctx: Dictionary) -> bool:
 	mind.remember(_sim_clock.tick, "hit_land", pp, ACTOR_PLAYER, 0.3)
 	mind.reinforce("prey_wounded", 0.22, "perception")
 	return true
+
+
+## Escalonamento da mordida (dossie 10 §3.5): com n participantes do cerco, o
+## assento r morde nos ticks `tick % n == r`. A janela de `BITE_COOLDOWN` sao 23
+## ticks e o periodo e no maximo n, entao dois assentos nunca chegam ao alcance no
+## mesmo tick e a matilha distribui a pressao em vez de morder toda junto. A
+## referencia e o `clock.tick` da sessao: `Time.get_ticks_*` daria outro padrao
+## conforme a maquina, e o journal nao e reproduzivel com relogio de parede.
+func _bite_turn() -> bool:
+	var n := _hunt_pack_size()
+	if n <= 1:
+		return true
+	return _sim_clock.tick % n == _hunt_pack_rank()
 
 
 # ------------------------------------------------------------------ decisao por utilidade
@@ -427,8 +581,15 @@ func _build_scorer() -> void:
 
 
 func _think(elapsed: float) -> void:
-	intent = _scorer.choose(elapsed, {"wolf": self, "elapsed": elapsed}, intent)
+	intent = _scorer.choose(elapsed, {"wolf": self, "elapsed": elapsed, "pack": _pack}, intent)
 	_top_line = _scorer.top_line()
+
+
+## A leitura da matilha e uma chamada por tick de 20 Hz, nunca por frame: o Array
+## devolvido e o buffer da sessao, reescrito no lugar a cada passo, entao ler nao
+## aloca nada (dossie 10 §4 -- se fosse cinco arrays novos por tick, nao entraria).
+func _read_pack() -> void:
+	_pack = pack_provider.call() if pack_provider.is_valid() else NO_PACK
 
 
 # ------------------------------------------------------------------ tick de simulacao (20 Hz)
@@ -453,11 +614,12 @@ func sim_step(elapsed: float, dt: float) -> void:
 			_speed = SPEED_WALK * SWIM_SPEED_FACTOR
 	else:
 		_swim_time = 0.0
+	_read_pack()
 	_sense()
 	_think(elapsed)
 	if intent != "investigate":
 		_inspect_left = 0.0
-	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt})
+	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt, "pack": _pack})
 
 
 func _sense() -> void:
@@ -470,13 +632,27 @@ func _sense() -> void:
 	_fear_here = aether.sample(me, AetherField.Channel.FEAR)
 	_blood_here = aether.sample(me, AetherField.Channel.BLOOD)
 	_work_here = aether.sample(me, AetherField.Channel.WORK)
+	trust_toward_player = mind.trust(ACTOR_PLAYER)
 	if _scent_cd <= 0.00001:
 		_find_scent()
-	_fear_level = clampf(_fear_here * 0.85 + _threat * 0.9 + _blood_here * 0.35, 0.0, 1.5)
+	# Contagio (dossie 10 §3.6): a fuga e a confianca de quem esta perto sao leitura,
+	# nao corpo -- o vizinho nao escreve em mim, eu somo o que a sessao devolve. Sem
+	# provedor a lista e vazia e o numero e literalmente o de antes.
+	_pack_panic = 0
+	_pack_trust = 0.0
+	for e: Dictionary in _pack:
+		if String(e["intent"]) == "flee":
+			_pack_panic += 1
+		var t: float = float(e["trust"])
+		if t >= PACK_TRUST_GATE:
+			_pack_trust = maxf(_pack_trust, t)
+	_fear_level = clampf(_fear_here * 0.85 + _threat * 0.9 + _blood_here * 0.35
+			+ float(_pack_panic) * PACK_PANIC_FEAR, 0.0, 1.5)
 	# Memoria vira comportamento: quem ja apanhou deste ator evita ca-lo enquanto estiver
 	# ferido. A porta de coragem da opcao "hunt" e exatamente este numero.
 	var fears_actor: bool = mind.believes("danger_from_actor_%d" % ACTOR_PLAYER)
 	_courage = 0.0 if (fears_actor and _hp_ratio < 0.62) else 1.0
+	_courage = clampf(_courage - _pack_trust * PACK_TRUST_DAMP, 0.0, 1.0)
 	if not _los_player:
 		mind.reinforce("player_visible_recent", -0.02, "perception")
 		mind.reinforce("prey_wounded", -0.01, "perception")
@@ -714,6 +890,9 @@ func load_state(d: Dictionary) -> void:
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
 	_checked_scents.clear()
+	# A leitura da matilha e do passo: depois do load o mundo em volta mudou, entao
+	# ela volta a vazia ate o proximo rebuild da sessao.
+	_pack = NO_PACK
 	_scent_cd = 0.0
 	_scent_clock = 0.0
 	_scent_found = false

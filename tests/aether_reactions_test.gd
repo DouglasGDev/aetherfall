@@ -1,5 +1,6 @@
 extends SceneTree
 
+const Session = preload("res://src/main.gd")
 const SEED: int = 20261116
 const SPAWN := Vector3(58.0, 51.001, 62.0)
 const SOURCE := Vector3(66.0, 50.6, 62.0)
@@ -12,9 +13,11 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
-	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias",
+	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
+	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
+	&"_test_contagio_medo", &"_test_amortece_confianca",
 ]
-const EXPECTED_CHECKS: int = 119
+const EXPECTED_CHECKS: int = 150
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -43,6 +46,76 @@ var _sim_worst_us: int = 0
 var _bt_us: int = 0
 var _bt_worst_us: int = 0
 var _bt_trips: int = 0
+# Contadores da alcateia, separados dos de um lobo so: o rodape historico do
+# runner e o que a rodada anterior publicou, e misturar nele o `sim_tick` da
+# sessao (difusao incluida) quebraria a comparacao pareada branch x chao.
+var _session: Session = null
+var _pack_steps: int = 0
+var _pack_sim_us: int = 0
+var _pack_sim_worst_us: int = 0
+var _pack_bt_us: int = 0
+var _pack_bt_worst_us: int = 0
+var _pack_bt_trips: int = 0
+# Mordidas colhidas pelo sinal real `bit_player` da sessao, como
+# [tick, identidade, n lido, rank lido, intent]: a contagem por tick e o numero que
+# o escalonamento exige, e o sinal e a unica forma de ver a mordida sem ler um campo
+# escrito a mao.
+var _bite_events: Array = []
+
+# Geometria da matilha no plateau da fixture: tres lobos se enxergam (8,5 m e
+# 17 m), o quarto fica a 25,6 m do vizinho mais proximo -- do lado de la do raio
+# de coesao de 24 m, entao a lista dele tem de vir vazia.
+const PACK_SPOTS: Array = [
+	Vector3(52.0, 51.001, 56.0), Vector3(58.0, 51.001, 62.0),
+	Vector3(64.0, 51.001, 68.0), Vector3(84.0, 51.001, 84.0),
+]
+
+# Geometria fechada da ronda: quatro lobos a no maximo 8,9 m um do outro, todos
+# dentro do raio de coesao, entao cada um le tres vizinhos (n = 4, fatia de 90
+# graus). O baricentro cai exatamente no lobo 0 -- distancia horizontal dele ao
+# centro e zero, o que da ao teste um centro conferivel a lapis.
+const RONDAR_SPOTS: Array = [
+	Vector3(58.0, 51.001, 62.0), Vector3(54.0, 51.001, 62.0),
+	Vector3(58.0, 51.001, 66.0), Vector3(62.0, 51.001, 58.0),
+]
+
+# Geometria do cerco: presa no centro do plateau e quatro participantes a 8 m em
+# cruz, todos dentro dos 30 m da LOS e dentro dos 24 m de coesao (o par mais
+# distante fica a 16 m). Nem um deles comeca ao alcance da mordida, senao o ramo
+# `morder` engoliria o ramo `perseguir` e o assento nunca seria escrito.
+const CERCAR_PLAYER := Vector3(58.0, 51.001, 62.0)
+const CERCAR_SPOTS: Array = [
+	Vector3(50.0, 51.001, 62.0), Vector3(66.0, 51.001, 62.0),
+	Vector3(58.0, 51.001, 54.0), Vector3(58.0, 51.001, 70.0),
+]
+
+# Geometria do ataque escalonado: quatro lobos JA dentro de `BITE_RANGE` (1,5 m
+# horizontal, 1,56 m na conta 3D do `_sense`), todos com visada. Sem o
+# escalonamento os quatro mordem no tick zero; com ele, cada assento morde no
+# proprio assento morde na sua fase de tick.
+const ESCALONAR_SPOTS: Array = [
+	Vector3(59.5, 51.001, 62.0), Vector3(56.5, 51.001, 62.0),
+	Vector3(58.0, 51.001, 63.5), Vector3(58.0, 51.001, 60.5),
+]
+
+# Geometria do contagio de medo: 20 m separam o observador (lobo 1) do vizinho que
+# foge (lobo 0) -- dentro do raio de coesao de 24 m, mas a cinco celulas de Eter
+# (AETHER_CELL = 4) um do outro, o que a difusao nao cruza na janela medida (3
+# passadas em 16 ticks). O jogador fica a mais de 60 m dos dois e sem visada para
+# nenhum, entao a base do observador e `patrol` e a `hunt` dele esta vetada.
+const MEDO_SPOTS: Array = [
+	Vector3(78.0, 51.001, 62.0), Vector3(58.0, 51.001, 62.0),
+]
+
+# Geometria do amortecimento por confianca: tres lobos a 8 m do jogador (que fica
+# no centro do plateau) e a 11,3 m / 11,3 m / 16 m um do outro -- todos dentro dos
+# 24 m de coesao, cada um lendo os outros dois, e todos dentro dos 30 m da LOS,
+# entao a porta de `hunt` e o que decide a intencao dos tres. O lobo 0 e o
+# amansado; 1 e 2 sao os colegas cuja coragem o trust dele amortce.
+const AMORTECE_SPOTS: Array = [
+	Vector3(58.0, 51.001, 54.0), Vector3(50.0, 51.001, 62.0),
+	Vector3(66.0, 51.001, 62.0),
+]
 
 
 func _initialize() -> void:
@@ -1235,13 +1308,813 @@ func _test_imprint_bias() -> bool:
 	return true
 
 
+# ------------------------------------------------------------------ alcateia (dossie 10)
+
+## Sessao real (`main.gd`) fora da arvore de cenario, sobre o plateau da fixture:
+## `pack_of`, `_rebuild_packs` e o `Callable` bindado sao os de `main.gd`, sem
+## boot de HUD, oraculo e audio -- o mesmo truque de `simulation_rng_test.gd`. Os
+## lobos vem do `_spawn_wolves` verdadeiro e sao reposicionados depois, porque a
+## geometria de um gate tem de ser lida no log, nao sorteada.
+func _pack_session(n: int) -> void:
+	_pack_release()
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s.clock = _clock
+	s.player = _player
+	s._entities = Node3D.new()
+	_stage.add_child(s._entities)
+	s._spawn_wolves(n)
+	_session = s
+	for i: int in mini(n, PACK_SPOTS.size()):
+		_pack_place(i, PACK_SPOTS[i])
+
+
+func _pack_place(i: int, spot: Vector3) -> void:
+	var w: Wolf = _session.wolves[i]
+	w.body.feet_pos = spot
+	w.body.velocity = Vector3.ZERO
+	w.home = spot
+	w._move_target = spot
+
+
+func _pack_release() -> void:
+	if _session == null:
+		return
+	if is_instance_valid(_session._entities):
+		_session._entities.free()
+	_session.free()
+	_session = null
+
+
+func _pack_wolves() -> Array:
+	return _session.wolves
+
+
+func _wolf_of(ws: Array, ident: int) -> Wolf:
+	for w: Wolf in ws:
+		if w.identity == ident:
+			return w
+	return null
+
+
+## Um passo de 20 Hz da sessao inteira, pelo caminho real (`_sim_tick`, com o
+## rebuild antes do laco de lobos). O custo vai para os contadores da alcateia:
+## somar `sim_tick` (que inclui a difusao) no rodape historico de lobo solo
+## quebraria a comparacao pareada branch x chao das rodadas anteriores.
+func _advance_pack(ticks: int, move_body: bool = false) -> void:
+	for i: int in ticks:
+		var trips_delta: int = 0
+		for w: Wolf in _session.wolves:
+			trips_delta -= w._guard.trips
+		var start: int = Time.get_ticks_usec()
+		_session._sim_tick()
+		var cost: int = Time.get_ticks_usec() - start
+		_pack_sim_us += cost
+		_pack_sim_worst_us = maxi(_pack_sim_worst_us, cost)
+		for w: Wolf in _session.wolves:
+			_pack_bt_us += w._guard.last_us
+			_pack_bt_worst_us = maxi(_pack_bt_worst_us, w._guard.last_us)
+			trips_delta += w._guard.trips
+		_pack_bt_trips += trips_delta
+		_pack_steps += 1
+		if move_body:
+			for w: Wolf in _session.wolves:
+				for frame: int in 3:
+					w._physics_process(SimClock.STEP / 3.0)
+
+
+func _pack_lists() -> String:
+	var out := ""
+	for w: Wolf in _pack_wolves():
+		out += "lobo%d(%d viz) " % [w.identity, w._pack.size()]
+	return out.strip_edges()
+
+
+## Checagem 5 do dossie 10, mais o contrato de formato da leitura. O cursor da
+## RNG da populacao e colhido sem consume-la: o estado e copiado para uma
+## geradora descartavel e o proximo valor dela e a assinatura do cursor.
+func _rng_cursor(rng: RandomNumberGenerator) -> float:
+	var probe := RandomNumberGenerator.new()
+	probe.state = rng.state
+	return probe.randf()
+
+
+func _test_pack_provider() -> bool:
+	_arm()
+	_pack_session(4)
+	var ws: Array = _pack_wolves()
+	var mounted := true
+	var binds := ""
+	for w: Wolf in ws:
+		var bound: Array = w.pack_provider.get_bound_arguments()
+		mounted = mounted and w.pack_provider.is_valid() and bound.size() == 1 \
+				and int(bound[0]) == w.identity
+		binds += "lobo%d bind=%s " % [w.identity, str(bound)]
+	_check(mounted, "provedor_montado_pela_sessao", binds.strip_edges())
+	# O lobo da fixture, armado sem sessao, nao pode ver matilha nenhuma: e o que
+	# segura os 24 cenarios anteriores inteiros com a leitura nova no caminho.
+	_advance(1)
+	_check(not _wolf.pack_provider.is_valid() and _wolf._pack.is_empty(),
+			"lobo sem provedor nao le matilha", "provedor=%s leitura=%d" % [
+			_wolf.pack_provider.is_valid(), _wolf._pack.size()])
+	# Um golpe real num da matilha, pela identidade e nao por campo escrito a mao:
+	# `take_damage` e o unico caminho do jogo que escreve `relations`, e e o que da
+	# ao trust publicado um valor proprio antes da conferencia de abaixo.
+	(ws[0] as Wolf).take_damage(8.0, Wolf.ACTOR_PLAYER, _player.position3())
+	_advance_pack(1)
+	_check(int(_session._pack_pairs) == 6, "par_testado_uma_vez_por_passo",
+			"pares=%d esperado=4x3/2=6 buffers=%d" % [
+			_session._pack_pairs, _session._pack_buffers.size()])
+	# Reconstrucao seca, sem passo no meio: assim o valor lido na lista e o valor
+	# atual do vizinho e a conferencia e exata, nao uma aproximacao de intencoes.
+	_session._rebuild_packs()
+	var keys_ok := true
+	var values_ok := true
+	var viu_confianca := false
+	var linhas := ""
+	var confiancas := ""
+	for w: Wolf in ws:
+		var um_linhas := ""
+		for e: Dictionary in w._pack:
+			if e.size() != 5 or not e.has("identity") or not e.has("pos") \
+					or not e.has("intent") or not e.has("hp_ratio") or not e.has("trust"):
+				keys_ok = false
+				continue
+			var other: Wolf = _wolf_of(ws, int(e["identity"]))
+			if other == null or not (e["pos"] as Vector3).is_equal_approx(other.center()) \
+					or String(e["intent"]) != other.intent \
+					or not is_equal_approx(float(e["hp_ratio"]), other.hp / Wolf.MAX_HP) \
+					or not is_equal_approx(float(e["trust"]), other.trust_toward_player):
+				values_ok = false
+			if absf(float(e["trust"])) > 0.001:
+				viu_confianca = true
+			um_linhas += "%d:%.3f " % [int(e["identity"]), float(e["trust"])]
+		linhas += "lobo%d<-[%s] " % [w.identity, _ids_of(w._pack)]
+		confiancas += "lobo%d<-[%s] " % [w.identity, um_linhas.strip_edges()]
+	_check(keys_ok, "leitura_barata_com_as_cinco_chaves",
+			"chaves=identity,pos,intent,hp_ratio,trust  %s" % linhas.strip_edges())
+	_check(values_ok, "leitura_barata_confere_valor_do_vizinho", confiancas.strip_edges())
+	# O pino do trust so pode falhar se a leitura divergir do vizinho REAL, e contra
+	# 0,0 default de uma mente que ninguem tocou ele nao decide nada: por isto a
+	# premissa exige um valor proprio na mesa. A transicao e `take_damage`, unico
+	# escritor de `relations` no jogo (`mind.adjust_trust(from_actor, -0,35)`),
+	# chamada pela identidade e nao por um campo escrito a mao.
+	_check(viu_confianca, "premissa: a leitura tem trust nao zero para conferir",
+			confiancas.strip_edges())
+	var sizes: Array[int] = []
+	for w: Wolf in ws:
+		sizes.append(w._pack.size())
+	_check(sizes[0] == 2 and sizes[1] == 2 and sizes[2] == 2 and sizes[3] == 0,
+			"raio_de_coesao_recorta_o_lobo_isolado",
+			"tamanhos=%s  esperado=[2,2,2,0]  raio=%.1f m" % [sizes, Session.PACK_COHESION_RADIUS])
+	var mutual := true
+	for w: Wolf in ws:
+		for e: Dictionary in w._pack:
+			var other: Wolf = _wolf_of(ws, int(e["identity"]))
+			if other == null or not other.alive or not _pack_lists_ids(other._pack).has(w.identity):
+				mutual = false
+	_check(mutual, "matilha_mutua", _pack_lists())
+	# Prova de que `pack_of` devolve o buffer da sessao e nao uma copia: mexer no
+	# buffer aparece na leitura do lobo, e o rebuild devolve o tamanho anterior.
+	var buf: Array = _session.pack_of(int((ws[0] as Wolf).identity))
+	var antes: int = buf.size()
+	buf.resize(antes + 1)
+	var visto: int = (ws[0] as Wolf)._pack.size()
+	buf.resize(antes)
+	_check(visto == antes + 1 and (ws[0] as Wolf)._pack.size() == antes,
+			"pack_of_devolve_o_buffer_da_sessao",
+			"buffer=%d leitura=%d restaurado=%d" % [antes + 1, visto, (ws[0] as Wolf)._pack.size()])
+	# Passo com matilha completa de verdade, para a checagem 5 nao ser vazia.
+	_pack_place(3, Vector3(PACK_SPOTS[0].x + 6.0, PACK_SPOTS[0].y, PACK_SPOTS[0].z))
+	_advance_pack(1)
+	var completa := true
+	for w: Wolf in ws:
+		completa = completa and w._pack.size() == 3
+	_check(completa, "premissa: o passo da checagem 5 tem matilha completa", _pack_lists())
+	var cursor_antes: float = _rng_cursor(_session._population_rng)
+	seed(4242)
+	var next_global: int = randi()
+	_advance_pack(20)
+	seed(4242)
+	var global_preservado := randi() == next_global
+	var cursor_depois: float = _rng_cursor(_session._population_rng)
+	_check(cursor_depois == cursor_antes and global_preservado,
+			"alcateia_nao_consome_rng_da_sessao",
+			"cursor_population=%.8f->%.8f global_preservado=%s passos=%d  %s" % [
+			cursor_antes, cursor_depois, str(global_preservado), _pack_steps, _pack_lists()])
+	_pack_release()
+	return true
+
+
+## Checagem 1 do dossie 10 (ronda por setor). Premissa nomeada: quatro lobos que se
+## leem dentro do raio de coesao patrulham fatias DISTINTAS do mesmo territorio, e um
+## lobo sozinho patrulha literalmente como antes (centro = o proprio lar, fatia = TAU).
+## O numero que decide nao e a distancia entre os alvos -- dois setores vizinhos podem
+## dar pontos proximos por sorte -- e o angulo de cada alvo em torno do baricentro cair
+## dentro da fatia do proprio rank, com o raio na faixa sorteada. O segundo braço e o
+## replay a lapis da formula antiga: se o lote tivesse mudado a ronda solitaria por
+## meio grau, os dois lados divergem.
+func _test_rondar_setor() -> bool:
+	_arm(SPAWN, FAR_PLAYER, 1)
+	_advance(1, false)
+	var replay := RandomNumberGenerator.new()
+	replay.seed = ("wolf:%d:%d" % [_world.gen.world_seed, 1]).hash()
+	replay.randf()					# _heading, consumido em setup()
+	replay.randf_range(4.0, 9.0)		# _wander_cd, antes do sorteio do alvo
+	var esperado := Vector3.ZERO
+	for _t in 8:
+		var a := replay.randf() * TAU
+		var rad := replay.randf_range(5.0, Wolf.WANDER_RADIUS)
+		var p := _wolf.home + Vector3(cos(a) * rad, 0.0, sin(a) * rad)
+		p.x = clampf(p.x, 4.0, float(VoxelConfig.world_size_x()) - 4.0)
+		p.z = clampf(p.z, 4.0, float(VoxelConfig.world_size_z()) - 4.0)
+		if not _wolf._dry_ground(p):
+			continue
+		p.y = float(_world.surface_height(int(p.x), int(p.z))) + 0.2
+		esperado = p
+		break
+	_check(_wolf.intent == "patrol" and _wolf.get("_reaction") == "patrulhando"
+			and esperado == _wolf._move_target and _wolf._pack.is_empty(),
+			"um_lobo_so_ronda_identico_a_formula_anterior",
+			"intent=%s reaction=%s alvo=%s replay=%s leitura=%d" % [
+			_wolf.intent, _wolf.get("_reaction"), _wolf._move_target, esperado, _wolf._pack.size()])
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, RONDAR_SPOTS[i])
+	# Baricentro a lapis dos quatro assentos, na horizontal: e o numero que a
+	# sessao devolve e o numero que o teste confere, sem nenhum dos dois vindo do
+	# proprio codigo do lobo.
+	var bar := Vector3.ZERO
+	for s: Vector3 in RONDAR_SPOTS:
+		bar += s
+	bar /= float(RONDAR_SPOTS.size())
+	var n := RONDAR_SPOTS.size()
+	var arc := TAU / float(n)
+	_advance_pack(1)
+	var ws: Array = _pack_wolves()
+	var premissa_ok := true
+	var lists := ""
+	for w: Wolf in ws:
+		premissa_ok = premissa_ok and w._pack.size() == n - 1 and w.intent == "patrol"
+		lists += "lobo%d(%d viz,intent=%s) " % [w.identity, w._pack.size(), w.intent]
+	_check(premissa_ok, "premissa: os quatro se leem por inteiro e patrulham",
+			"n=%d  %s" % [n, lists.strip_edges()])
+	var assentos: Array[float] = []
+	var distintos := true
+	var dentro := true
+	var centro_ok := true
+	var linhas := ""
+	var lares_fora := 0
+	for w: Wolf in ws:
+		var rank := w._territory_rank()
+		var seat := float(rank) * arc
+		assentos.append(seat)
+		var c: Vector3 = w._territory_center(n)
+		if _horizontal(c - bar).length() > 0.001:
+			centro_ok = false
+		if _horizontal(c - w.home).length() > 3.0:
+			lares_fora += 1
+		var v := _horizontal(w._move_target - c)
+		var rel := wrapf(atan2(v.z, v.x) - seat, 0.0, TAU)
+		if rel > arc or v.length() < 5.0 or v.length() > Wolf.WANDER_RADIUS \
+				or w.get("_reaction") != "rondando setor da matilha":
+			dentro = false
+		linhas += "lobo%d rank=%d rel=%.4f raio=%.2f reaction=%s alvo=%s " % [
+				w.identity, rank, rel, v.length(), w.get("_reaction"), w._move_target]
+	for i in assentos.size():
+		for j in range(i + 1, assentos.size()):
+			if absf(assentos[i] - assentos[j]) < 1e-6:
+				distintos = false
+	_check(distintos and assentos.size() == n, "ronda_assentos_distintos_por_rank",
+			"assentos=%s n=%d fatia=%.4f rad" % [assentos, n, arc])
+	_check(dentro, "ronda_alvo_dentro_da_fatia_do_proprio_rank", linhas.strip_edges())
+	# O baricentro tem de ser um so para a matilha inteira e tem de ser outro ponto
+	# para quem nao nasceu nele: sem a segunda metade, "territorio compartilhado"
+	# poderia estar virando `home` por outra porta.
+	_check(centro_ok and lares_fora == n - 1,
+			"ronda_centro_e_baricentro_e_nao_o_lar_do_lobo",
+			"baricentro=%s lares_fora=%d/%d  %s" % [bar, lares_fora, n, _territory_lines(ws)])
+	return true
+
+
+## Linha de conferencia do territorio: o que cada lobo devolve como centro e o que
+## ele chama de lar. Sem isto, "centro compartilhado" poderia estar virando home.
+func _territory_lines(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		out += "lobo%d centro=%s home=%s " % [
+				w.identity, _horizontal(w._territory_center(4)), _horizontal(w.home)]
+	return out.strip_edges()
+
+
+## Checagem 2 do dossie 10 (`cercar_calcula_assentos`). Premissa nomeada: n
+## participantes do MESMO alvo produzem n assentos distintos, espacados por TAU/n,
+## todos a alcance de mordida sem subir em cima do corpo. O angulo esperado sai
+## calculado aqui, a partir da lista de lobos e da identidade de cada um, e nao de
+## `_hunt_pack_rank`: conferir o codigo contra ele mesmo nao pode falhar.
+func _test_cercar_assentos() -> bool:
+	_arm(SPAWN, CERCAR_PLAYER)
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, CERCAR_SPOTS[i])
+	# Quatro passos de aquecimento: no primeiro o `intent` que a leitura devolve
+	# ainda e `patrol`, e um cerco montado sobre censo zero nao e cerco nenhum.
+	_advance_pack(4)
+	_session._rebuild_packs()
+	var ws: Array = _pack_wolves()
+	var ppos: Vector3 = _player.position3()
+	var hunt_ok := true
+	var n_hunt := 0
+	var linhas := ""
+	for w: Wolf in ws:
+		var vizinhos := 0
+		for e: Dictionary in w._pack:
+			if String(e["intent"]) == "hunt":
+				vizinhos += 1
+		hunt_ok = hunt_ok and w.intent == "hunt" and w._los_player and vizinhos == 3
+		if w.intent == "hunt":
+			n_hunt += 1
+		linhas += "lobo%d intent=%s los=%s viz_hunt=%d ang=%.4f dist=%.4f " % [
+				w.identity, w.intent, w._los_player, vizinhos,
+				_seat_angle(w._move_target, ppos), _horizontal(w._move_target - ppos).length()]
+	_check(hunt_ok and n_hunt == 4, "premissa: os quatro perseguem a presa visivel",
+			"participantes=%d  %s" % [n_hunt, linhas.strip_edges()])
+	var angulos: Array[float] = []
+	var distancias: Array[float] = []
+	var assentos_ok := true
+	var anel_ok := true
+	for w: Wolf in ws:
+		var rank := _participantes_antes_de(w, ws)
+		var ang := _seat_angle(w._move_target, ppos)
+		if absf(ang - wrapf(TAU * float(rank) / 4.0, 0.0, TAU)) > 1e-4:
+			assentos_ok = false
+		var d := _horizontal(w._move_target - ppos).length()
+		if d <= 0.9 or d > Wolf.BITE_RANGE:
+			anel_ok = false
+		angulos.append(ang)
+		distancias.append(d)
+	_check(assentos_ok, "cercar_assentos_distintos_espacados_por_tau_over_n",
+			"angulos=%s n=4 espacamento=%.4f" % [angulos, TAU / 4.0])
+	_check(anel_ok, "cercar_assento_a_alcance_de_mordida_sem_subir_na_presa",
+			"distancias=%s ring=%.3f bite_range=%.3f" % [
+			distancias, Wolf.ENCIRCLE_RING, Wolf.BITE_RANGE])
+	# Contraste obrigatorio do dossie: o MESMO cenario com um lobo so nao pode
+	# devolver o mesmo numero. Se o anel fosse um angulo fixo, ou se `n` fosse o
+	# censo da matilha em vez dos participantes, as duas corridas concordariam.
+	var alvo_matilha: float = distancias[0]
+	_pack_session(1)
+	_pack_place(0, CERCAR_SPOTS[0])
+	_advance_pack(4)
+	var solo: Wolf = _pack_wolves()[0]
+	var alvo_solo: float = _horizontal(solo._move_target - _player.position3()).length()
+	_check(solo.intent == "hunt" and solo._los_player \
+			and solo._move_target == _player.position3() + Vector3(0.0, 0.4, 0.0) \
+			and absf(alvo_matilha - alvo_solo) > 0.5,
+			"cercar_contraste_um_lobo_contra_quatro_diverge",
+			"dist_solo=%.4f dist_matilha=%.4f reaction_solo=%s n_lido=%d" % [
+			alvo_solo, alvo_matilha, solo.get("_reaction"), solo._hunt_pack_size()])
+	# Terceira checagem, a que pega o "espacamento derivado de quem participa, e nao
+	# do censo": uma parede real entre o lobo 0 e a presa tira o `hunt` dele pela
+	# porta do proprio codigo (sem visada nao ha caca), sem tira-lo do raio de
+	# coesao. Se o angulo saida de `n = matilha`, os tres que enxergam continuariam
+	# em TAU/4 e o rank do lobo 3 seria 3 -- aqui ele tem de ser 2.
+	var parede: Array = [
+		Vector3(70.0, 51.001, 62.0), Vector3(50.0, 51.001, 62.0),
+		Vector3(58.0, 51.001, 54.0), Vector3(58.0, 51.001, 70.0),
+	]
+	_pack_session(4)
+	_wall(BlockDefs.Block.STONE)
+	for i: int in 4:
+		_pack_place(i, parede[i])
+	_advance_pack(6)
+	_session._rebuild_packs()
+	var ws2: Array = _pack_wolves()
+	var vitima: Wolf = ws2[0]
+	var restantes: Array = []
+	var cegas := ""
+	for w: Wolf in ws2:
+		var viz_hunt := 0
+		for e: Dictionary in w._pack:
+			if String(e["intent"]) == "hunt":
+				viz_hunt += 1
+		cegas += "lobo%d intent=%s los=%s viz_hunt=%d ang=%.4f " % [
+				w.identity, w.intent, w._los_player, viz_hunt,
+				_seat_angle(w._move_target, ppos)]
+		if w != vitima and w.intent == "hunt":
+			restantes.append(w)
+	var espac_ok := restantes.size() == 3 and not vitima._pack.is_empty()
+	for k: int in restantes.size():
+		var w: Wolf = restantes[k]
+		if absf(_seat_angle(w._move_target, ppos) - wrapf(TAU * float(k) / 3.0, 0.0, TAU)) > 1e-4:
+			espac_ok = false
+	_wall(BlockDefs.Block.AIR)
+	_check(not vitima._los_player and vitima.intent != "hunt" and espac_ok,
+			"cercar_espacamento_segue_os_participantes",
+			"sem_visada=%d restantes=%d espacamento=%.4f  %s" % [
+			0 if vitima._los_player else 1, restantes.size(), TAU / 3.0, cegas.strip_edges()])
+	return true
+
+
+## Checagem 3 do dossie 10 (`ataque_escalonado`). Premissa nomeada: quatro lobos em
+## cerco, todos a alcance de mordida e com o cooldown zerado, nao mordem no mesmo
+## tick. O numero e a contagem de mordidas por tick: `pior_tick` tem de ser 1, as
+## quatro mordidas tem de cair em quatro ticks seguidos, e cada uma na fase em que o
+## proprio rank casa com `clock.tick % n` -- com n = 4 e os quatro caando, o rank de
+## cada um e a sua identidade, entao mordida fora desta igualdade veio de outra porta.
+## O segundo braco e a referencia do relogio: as duas corridas entram no alcance em
+## fases de tick diferentes, decididas pelo teste e nao pelo acaso. O mapa {fase ->
+## identidade} e o mesmo nas duas, e o lobo que morde no tick da entrada e o da fase
+## daquela entrada (0 na primeira, 1 na segunda). Tempo de parede, ou "tempo desde
+## que entrou no alcance", dariam o lobo 0 mordendo na entrada das duas corridas.
+func _test_ataque_escalonado() -> bool:
+	_arm(SPAWN, CERCAR_PLAYER)
+	var corrida_a := _corrida_mordidas(0, 6)
+	# Contraste: os quatro candidatos do primeiro tick saem do estado real deles
+	# (cooldown zerado e corpo dentro do alcance), medido antes da entrada -- sem o
+	# escalonamento os quatro morderiam no tick zero, como mordiam antes do lote.
+	_check(corrida_a["aquecimento"] >= 0 and corrida_a["prontos"] == 4
+			and corrida_a["candidatos"] == 4 and corrida_a["n_cheio"]
+			and corrida_a["mordidas"] == 4 and corrida_a["no_pior_tick"] == 1
+			and corrida_a["consecutivos"] and corrida_a["fora_de_fase"] == 0,
+			"ataque_mordidas_nunca_no_mesmo_tick",
+			"mordidas=%d pior_tick=%d consecutivos=%s candidatos=%d prontos=%d aquecimento_tick=%d fora_de_fase=%d eventos=%s" % [
+			corrida_a["mordidas"], corrida_a["no_pior_tick"],
+			str(corrida_a["consecutivos"]), corrida_a["candidatos"],
+			corrida_a["prontos"], corrida_a["aquecimento"],
+			corrida_a["fora_de_fase"], corrida_a["eventos"]])
+	# O segundo braco re-arma o cenario: campo, relogio e seed voltam ao mesmo ponto
+	# de partida, entao a unica diferenca declarada entre as corridas e a fase de
+	# `clock.tick` em que os quatro entram no alcance -- nao o sangue e o medo que a
+	# primeira corrida deixou no ar.
+	_pack_release()
+	_arm(SPAWN, CERCAR_PLAYER)
+	var corrida_b := _corrida_mordidas(1, 6)
+	var fases_iguais: bool = corrida_a["fase"].size() == 4 and corrida_b["fase"].size() == 4
+	for phase: int in 4:
+		if not corrida_a["fase"].has(phase) or not corrida_b["fase"].has(phase) \
+				or int(corrida_a["fase"][phase]) != int(corrida_b["fase"][phase]):
+			fases_iguais = false
+	_check(fases_iguais and not corrida_a["fase_disputada"]
+			and not corrida_b["fase_disputada"] and corrida_b["prontos"] == 4
+			and corrida_b["candidatos"] == 4 and corrida_b["n_cheio"]
+			and corrida_b["mordidas"] == 4 and corrida_b["no_pior_tick"] == 1
+			and corrida_b["consecutivos"] and corrida_b["fora_de_fase"] == 0
+			and corrida_a["tick_entrada"] % 4 != corrida_b["tick_entrada"] % 4
+			and int(corrida_a["biter_entrada"]) == corrida_a["tick_entrada"] % 4
+			and int(corrida_b["biter_entrada"]) == corrida_b["tick_entrada"] % 4,
+			"ataque_escalonamento_funcao_do_clock_tick",
+			"fases_A=%s fases_B=%s entrada_A=%d fase_A=%d biter_A=%d entrada_B=%d fase_B=%d biter_B=%d mordidas_B=%d pior_B=%d prontos_B=%d candid_B=%d n_cheio_B=%s fora_B=%d eventos_B=%s" % [
+			corrida_a["fase"], corrida_b["fase"], corrida_a["tick_entrada"],
+			corrida_a["tick_entrada"] % 4, corrida_a["biter_entrada"],
+			corrida_b["tick_entrada"], corrida_b["tick_entrada"] % 4,
+			corrida_b["biter_entrada"], corrida_b["mordidas"],
+			corrida_b["no_pior_tick"], corrida_b["prontos"],
+			corrida_b["candidatos"], str(corrida_b["n_cheio"]),
+			corrida_b["fora_de_fase"], corrida_b["eventos"]])
+	_pack_release()
+	return true
+
+
+## Checagem 4a do dossie 10 (`medo_contagia`). Premissa nomeada: um vizinho DENTRO
+## do raio de coesao entra em panico pela transicao real (`take_damage`, o unico
+## escritor de `relations` e o que poe o corpo em `flee`), e o observador -- que nao
+## foi tocado, nao ve o jogador a 73 m e nao sente o campo a cinco celulas -- muda
+## de intencao por causa da LEITURA, nao do mundo. O numero que decide e duplo:
+## (i) `contagio_medo_soma_panic_no_fear_level` reproduz a composicao do
+## `_fear_level` a lapis com os coeficientes do codigo (0,85 / 0,9 / 0,35) e o
+## `0,55` por vizinho em panico escrito aqui, e exige igualdade -- se a soma saiu da
+## percepcao por outra porta, ou se o `PACK_PANIC_FEAR` mudou de valor sem o teste
+## mudar, os dois lados divergem; (ii) a subida de 0,55 tem de vir com o par
+## `_fear_here`/`_blood_here` do observador INALTERADO entre os bracos, porque e
+## exatamente isso que separa contagio de difusao. O terceiro numero e a intencao:
+## `patrol` no braco sem panico, `flee` no braco com, nos mesmos 20 m.
+func _test_contagio_medo() -> bool:
+	_arm(SPAWN, FAR_PLAYER, 1)
+	_pack_session(2)
+	for i: int in 2:
+		_pack_place(i, MEDO_SPOTS[i])
+	_advance_pack(6)
+	var ws: Array = _pack_wolves()
+	var obs: Wolf = ws[1]
+	var vitima: Wolf = ws[0]
+	var dist_obs_vitima: float = obs.center().distance_to(vitima.center())
+	var dist_obs_jogador: float = obs.center().distance_to(_player.position3())
+	_check(obs._pack.size() == 1 and vitima._pack.size() == 1 \
+			and int(obs._pack[0]["identity"]) == vitima.identity \
+			and dist_obs_vitima <= Session.PACK_COHESION_RADIUS \
+			and obs.intent == "patrol" and obs._pack_panic == 0 \
+			and absf(obs._fear_level) < 0.001,
+			"premissa: observador patrulha com um vizinho lido e medo zerado",
+			"vizinhos=%d panic=%d fear=%.6f intent=%s dist_vitima=%.3f (raio %.1f) dist_jogador=%.3f los=%s  %s" % [
+			obs._pack.size(), obs._pack_panic, obs._fear_level, obs.intent,
+			dist_obs_vitima, Session.PACK_COHESION_RADIUS, dist_obs_jogador,
+			str(obs._los_player), _pack_lists()])
+	var fear_antes: float = obs._fear_level
+	var here_antes: float = obs._fear_here
+	var blood_antes: float = obs._blood_here
+	var intent_antes: String = obs.intent
+	# A unica diferenca declarada entre os bracos: um golpe real no VIZINHO. O
+	# observador nao e tocado, nao ve o jogador e esta a cinco celulas de Eter do
+	# sangue e do medo impressos.
+	vitima.take_damage(8.0, Wolf.ACTOR_PLAYER, _player.position3())
+	_advance_pack(16)
+	var panic_lido := 0
+	for e: Dictionary in obs._pack:
+		if String(e["intent"]) == "flee":
+			panic_lido += 1
+	# Replay a lapis da composicao, com os coeficientes copiados do codigo desta
+	# revisao e o 0,55 escrito aqui: conferir o lobo contra ele mesmo nao pode falhar.
+	var esperado: float = clampf(obs._fear_here * 0.85 + obs._threat * 0.9
+			+ obs._blood_here * 0.35 + float(obs._pack_panic) * 0.55, 0.0, 1.5)
+	_check(panic_lido == 1 and vitima.intent == "flee" \
+			and obs._pack_panic == panic_lido \
+			and absf(esperado - obs._fear_level) < 0.0001 \
+			and absf(obs._fear_here - here_antes) < 0.0001 \
+			and absf(obs._blood_here - blood_antes) < 0.0001 \
+			and absf(obs._fear_level - fear_antes - 0.55) < 0.0001,
+			"contagio_medo_soma_panic_no_fear_level",
+			"fear_antes=%.6f fear_depois=%.6f delta=%.6f replay=%.6f panic=%d  campo_antes=(medo %.6f sangue %.6f) campo_depois=(medo %.6f sangue %.6f) vitima_intent=%s" % [
+			fear_antes, obs._fear_level, obs._fear_level - fear_antes, esperado,
+			obs._pack_panic, here_antes, blood_antes, obs._fear_here, obs._blood_here,
+			vitima.intent])
+	# O `intent` e o numero que o dossie pede: sem o vizinho em panico o observador
+	# estava em `patrol` com `_fear_level` 0; com ele, `flee` passa o chao de fundo
+	# de 0,22 e o escorredor troca. Os dois valores de `_fear_level` saem na linha.
+	_check(intent_antes == "patrol" and obs.intent == "flee" \
+			and fear_antes < 0.001 and obs._fear_level >= 0.55 \
+			and obs._fear_here < 0.0001,
+			"contagio_medo_muda_intent_do_observador",
+			"intent_antes=%s intent_depois=%s fear_antes=%.6f fear_depois=%.6f cautela=%.4f top=%s panic=%d medo_no_observador=%.6f" % [
+			intent_antes, obs.intent, fear_antes, obs._fear_level,
+			obs.mind.temperament("caution"), obs._top_line, obs._pack_panic,
+			obs._fear_here])
+	_pack_release()
+	return true
+
+
+## Checagem 4b do dossie 10 (`amigo_amortece`). Premissa nomeada: tres lobos a 8 m
+## do jogador, todos dentro da coesao, todos lendo os outros dois e todos em `hunt`.
+## O numero que decide e a PORTA e nao a media: `hunt` carrega o veto "coragem
+## contra este ator" na faixa 0,5..1,0, entao `_courage` 0,46 zera a opcao inteira
+## e o escorredor devolve `patrol`. Tres bracos na mesma sessao:
+## - A, sem vizinho amansado: `_pack_trust` 0, `_courage` 1, porta aberta, 3 caando.
+## - B, vizinho com trust 0,60 (acima de `PACK_TRUST_GATE` 0,35): `_pack_trust`
+##   0,60, `_courage` 0,46 -- igual a `1 - 0,60 * 0,9` reproduzido a lapis aqui --
+##   porta vetada para os DOIS colegas, e o amansado continua com porta aberta e em
+##   `hunt`, porque a leitura dele devolve trust 0 para os outros dois. A assimetria
+##   e o que prova que o numero veio da leitura da matilha, e nao de um global.
+## - C, vizinho com trust 0,30 (abaixo da soleira): `_pack_trust` volta a 0,
+##   `_courage` a 1, a porta reabre e os tres caam de novo. Sem este braco a soleira
+##   seria enfeite: qualquer trust nao zero amorteceria e o 0,35 do codigo nao
+##   decidia nada.
+## O trust alto NAO tem caminho de gameplay hoje, e isso fica no log: `take_damage`
+## e o unico chamador de `adjust_trust` em `src/` e passa -0,35. Entao o valor entra
+## pelo mutador da propria mente (+0,6 / -0,3), a porta pela qual o amansamento dos
+## dossies 14 e 11 chegaria -- nunca por `mind.relations` escrito a mao.
+func _test_amortece_confianca() -> bool:
+	_arm(SPAWN, CERCAR_PLAYER, 1)
+	_pack_session(3)
+	for i: int in 3:
+		_pack_place(i, AMORTECE_SPOTS[i])
+	# O jogador volta ao centro do plateau pela transicao real, como no cerco.
+	_player.respawn_at(CERCAR_PLAYER)
+	var n_antes := 0
+	for _t in 40:
+		_advance_pack(1)
+		n_antes = _caadores(3)
+		if n_antes == 3:
+			break
+	var ws: Array = _pack_wolves()
+	var am: Wolf = ws[0]
+	var c1: Wolf = ws[1]
+	var c2: Wolf = ws[2]
+	var leitura_tres := am._pack.size() == 2 and c1._pack.size() == 2 and c2._pack.size() == 2
+	_check(n_antes == 3 and leitura_tres and absf(c1._pack_trust) < 0.0001 \
+			and absf(c1._courage - 1.0) < 0.0001 and _porta_hunt_aberta(c1) \
+			and _porta_hunt_aberta(c2) and absf(am.trust_toward_player) < 0.0001,
+			"premissa: os tres caam com o vizinho sem confianca e a porta aberta",
+			"caadores=%d leitura=[%d,%d,%d]  %s" % [
+			n_antes, am._pack.size(), c1._pack.size(), c2._pack.size(),
+			_confianca_linhas(ws)])
+	# Braco B: o amansado ganha trust 0,60 pelo mutador da mente, e os colegas so o
+	# veem quando a sessao copiar o escalar publicado no buffer do passo seguinte.
+	var intent_antes_1: String = c1.intent
+	var intent_antes_2: String = c2.intent
+	am.mind.adjust_trust(Wolf.ACTOR_PLAYER, 0.6)
+	_advance_pack(20)
+	# Replay a lapis do amortecimento: `1 - 0,60 * 0,9` com os dois numeros do codigo
+	# escritos aqui. Se o `PACK_TRUST_DAMP` mudar sem o teste mudar, os lados
+	# divergem; se o contagio sair da percepcao por outra porta, idem.
+	var coragem_esperada: float = clampf(1.0 - 0.6 * 0.9, 0.0, 1.0)
+	_check(absf(am.trust_toward_player - 0.6) < 0.0001 \
+			and absf(c1._pack_trust - 0.6) < 0.0001 \
+			and absf(c1._courage - coragem_esperada) < 0.0001 \
+			and absf(c2._courage - coragem_esperada) < 0.0001 \
+			and not _porta_hunt_aberta(c1) and not _porta_hunt_aberta(c2) \
+			and absf(am._pack_trust) < 0.0001 and _porta_hunt_aberta(am),
+			"amortece_confianca_fecha_a_porta_de_hunt_dos_colegas",
+			"coragem_replay=%.6f  %s" % [coragem_esperada, _confianca_linhas(ws)])
+	_check(intent_antes_1 == "hunt" and intent_antes_2 == "hunt" \
+			and c1.intent != "hunt" and c2.intent != "hunt" and am.intent == "hunt",
+			"amortece_confianca_muda_intent_dos_colegas_sem_tocar_no_amansado",
+			"antes=(lobo1 %s, lobo2 %s) depois=(lobo1 %s, lobo2 %s, amansado %s)  %s" % [
+			intent_antes_1, intent_antes_2, c1.intent, c2.intent, am.intent,
+			_confianca_linhas(ws)])
+	# Braco C: 0,30 cai abaixo da soleira de 0,35 que o codigo cobra, e a porta tem
+	# de reabrir sozinha -- sem isso o gate seria decoracao.
+	am.mind.adjust_trust(Wolf.ACTOR_PLAYER, -0.3)
+	_advance_pack(20)
+	var n_depois := _caadores(3)
+	_check(absf(am.trust_toward_player - 0.3) < 0.0001 \
+			and absf(c1._pack_trust) < 0.0001 and absf(c1._courage - 1.0) < 0.0001 \
+			and _porta_hunt_aberta(c1) and _porta_hunt_aberta(c2) and n_depois == 3,
+			"amortece_confianca_soleira_de_035_decide_a_porta",
+			"caadores_depois=%d soleira=0.35 confiado_agora=0.30  %s" % [
+			n_depois, _confianca_linhas(ws)])
+	_pack_release()
+	return true
+
+
+## O veto `hunt` na ultima decisao colhida pelo escorredor do lobo: aberta quer
+## dizer `vetoed == false` e score acima de zero. Le-se no escorredor e nao se
+## deduz do `intent`, porque a histerese (`min_interval` 0,6 s) pode estar segurando
+## a intencao antiga por mais alguns ticks do que a porta.
+func _porta_hunt_aberta(w: Wolf) -> bool:
+	var bd: Dictionary = w._scorer.breakdown()
+	return bd.has("hunt") and not bool(bd["hunt"]["vetoed"]) \
+			and float(bd["hunt"]["score"]) > 0.0
+
+
+## Linha de conferencia do contagio de confianca: o trust publicado pelo vizinho, o
+## que a leitura deixou em `_pack_trust`, o `_courage` resultante, o estado da porta
+## e a intencao -- os cinco numeros de cada lobo, na ordem da sessao.
+func _confianca_linhas(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		var bd: Dictionary = w._scorer.breakdown()
+		var porta := "sem leitura"
+		if bd.has("hunt"):
+			porta = "%s score=%.6f" % [
+					"aberta" if _porta_hunt_aberta(w) else "VETADA",
+					float(bd["hunt"]["score"])]
+		out += "lobo%d trust_pub=%.3f pack_trust=%.3f courage=%.6f hunt=%s intent=%s | " % [
+				w.identity, w.trust_toward_player, w._pack_trust, w._courage,
+				porta, w.intent]
+	return out.strip_edges()
+
+
+## Quantos dos lobos da sessao estao em `hunt` lendo `n_espera` caadores na leitura
+## da matilha -- a condicao de entrada do cerco, medida e nao assumida.
+func _caadores(n_espera: int) -> int:
+	var total := 0
+	for w: Wolf in _pack_wolves():
+		if w.intent == "hunt" and w._hunt_pack_size() == n_espera:
+			total += 1
+	return total
+
+
+## Desloca o relogio ate a fase pedida, com os quatro ainda a 8 m da presa e o
+## cooldown zerado: e o unico modo de mudar a fase da entrada sem mudar o mundo, e
+## a unica diferenca declarada entre os dois bracos do contraste.
+func _advance_ate_fase(alvo: int, teto: int) -> void:
+	var i := 0
+	while i < teto and _clock.tick % 4 != alvo:
+		_advance_pack(1)
+		i += 1
+
+
+## Uma corrida do cenario: monta a sessao, religa o jogador pela transicao real
+## (`respawn_at`) e anda a 8 m ate os quatro estarem em `hunt` e cada um lendo os
+## outros tres como caadores -- sem isto a primeira leitura devolve `patrol`, cada
+## lobo se acha sozinho no cerco e todos mordem juntos por outra porta. Alinha a
+## fase do relogio, so entao coloca os quatro dentro de `BITE_RANGE` e roda `passos`
+## ticks de 20 Hz. O `passos` maior que as quatro mordidas mostra que a segunda rodada
+## nao antecipa: com `BITE_COOLDOWN` de 23 ticks nenhuma mordida cai antes do tick 23.
+func _corrida_mordidas(fase_entrada: int, passos: int) -> Dictionary:
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, CERCAR_SPOTS[i])
+	_player.respawn_at(CERCAR_PLAYER)
+	var aquecimento := -1
+	for i: int in 40:
+		_advance_pack(1)
+		if _caadores(4) == 4:
+			aquecimento = _clock.tick
+			break
+	_advance_ate_fase(fase_entrada, 5)
+	var prontos := _caadores(4)
+	var ws: Array = _pack_wolves()
+	for i: int in 4:
+		_pack_place(i, ESCALONAR_SPOTS[i])
+	var candidatos := 0
+	for w: Wolf in ws:
+		if w._bite_cd <= 0.0 and _horizontal(w.center() - _player.position3()).length() \
+				<= Wolf.BITE_RANGE:
+			candidatos += 1
+	var tick_entrada: int = _clock.tick
+	_bite_events.clear()
+	for w: Wolf in ws:
+		w.bit_player.connect(_on_bit_observed.bind(w.identity))
+	for i: int in passos:
+		_advance_pack(1)
+	var por_tick := {}
+	var ticks: Array = []
+	var fase := {}
+	var conflito := false
+	var fora_de_fase := 0
+	var n_cheio := true
+	var ev_str := ""
+	for ev: Array in _bite_events:
+		var t: int = int(ev[0])
+		var ident: int = int(ev[1])
+		por_tick[t] = int(por_tick.get(t, 0)) + 1
+		ticks.append(t)
+		ev_str += "%d:%d(n%d,r%d,%s) " % [t, ident, int(ev[2]), int(ev[3]), String(ev[4])]
+		if int(ev[2]) != 4:
+			n_cheio = false
+		var mod: int = t % 4
+		if fase.has(mod) and int(fase[mod]) != ident:
+			conflito = true
+		fase[mod] = ident
+		# O assento r so pode morder em `tick % n == r`, e com os quatro em `hunt`
+		# o rank de cada um e a sua identidade: qualquer mordida fora desta
+		# igualdade veio de outra porta.
+		if mod != ident:
+			fora_de_fase += 1
+	ticks.sort()
+	var pior := 0
+	for t: int in por_tick:
+		pior = maxi(pior, int(por_tick[t]))
+	var consecutivos: bool = ticks.size() >= 2
+	for i: int in range(1, ticks.size()):
+		if int(ticks[i]) - int(ticks[i - 1]) != 1:
+			consecutivos = false
+	var biter_entrada := -1
+	for ev: Array in _bite_events:
+		if int(ev[0]) == tick_entrada:
+			biter_entrada = int(ev[1])
+	return {
+		"mordidas": _bite_events.size(), "no_pior_tick": pior, "ticks": ticks,
+		"fase": fase, "candidatos": candidatos, "prontos": prontos,
+		"fase_disputada": conflito, "tick_entrada": tick_entrada,
+		"fora_de_fase": fora_de_fase, "n_cheio": n_cheio, "eventos": ev_str,
+		"aquecimento": aquecimento, "consecutivos": consecutivos,
+		"biter_entrada": biter_entrada,
+	}
+
+
+## O sinal da sessao entregue ao runner: `[tick, identidade]` de cada mordida.
+## Os argumentos do `bind` vao DEPOIS dos do sinal, e a assinatura espelha isto.
+func _on_bit_observed(wolf: Wolf, _amount: float, ident: int) -> void:
+	_bite_events.append([_clock.tick, ident, wolf._hunt_pack_size(),
+			wolf._hunt_pack_rank(), wolf.intent])
+
+
+## Angulo horizontal do alvo escrito pelo lobo em torno da presa, no eixo do mundo.
+func _seat_angle(target: Vector3, prey: Vector3) -> float:
+	var v := _horizontal(target - prey)
+	return wrapf(atan2(v.z, v.x), 0.0, TAU)
+
+
+## Quantos participantes de identidade menor precedem este lobo -- o rank que o teste
+## exige, calculado pela lista viva e nao pelo metodo do lobo.
+func _participantes_antes_de(w: Wolf, ws: Array) -> int:
+	var rank := 0
+	for other: Wolf in ws:
+		if other.identity < w.identity and other.intent == "hunt":
+			rank += 1
+	return rank
+
+
+func _ids_of(pack: Array) -> String:
+	var out := ""
+	for e: Dictionary in pack:
+		out += "%d " % int(e["identity"])
+	return out.strip_edges()
+
+
+func _pack_lists_ids(pack: Array) -> Array:
+	var out: Array = []
+	for e: Dictionary in pack:
+		out.append(int(e["identity"]))
+	return out
+
+
 func _finish() -> void:
 	Input.mouse_mode = _mouse_mode
+	_pack_release()
 	_check(_ran, "runner retornou", "run=%s" % _ran)
 	_check(_completed == TESTS.size(), "censo de testes completos", "%d/%d" % [_completed, TESTS.size()])
+	# O budget de 400 us por mente e gate publicado, e com a alcateia dentro da
+	# arvore ele passou a valer para duas colonias: a de lobo solo e a da sessao.
+	_check(_bt_trips == 0 and _pack_bt_trips == 0, "nenhum estouro de subtree no budget",
+			"trips_solo=%d trips_matilha=%d" % [_bt_trips, _pack_bt_trips])
 	_check(_checks + 1 == EXPECTED_CHECKS, "censo de checagens", "%d/%d" % [_checks + 1, EXPECTED_CHECKS])
 	print("CENARIO ESTREITO, NAO GATE P1: passos=%d sim_step total=%d us pico=%d us; BT last_us soma=%d pico=%d trips=%d" % [
 		_steps, _sim_us, _sim_worst_us, _bt_us, _bt_worst_us, _bt_trips])
+	print("PASSOS DE MATILHA (sessao real, difusao incluida), NAO GATE P1: passos=%d sim_tick total=%d us pico=%d us; BT last_us soma=%d pico=%d trips=%d" % [
+		_pack_steps, _pack_sim_us, _pack_sim_worst_us, _pack_bt_us, _pack_bt_worst_us, _pack_bt_trips])
 	if is_instance_valid(_stage):
 		_stage.free()
 	print("%d checagens %d falhas %.3f s" % [_checks, _failures, float(Time.get_ticks_usec() - _started_us) / 1000000.0])

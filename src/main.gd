@@ -14,6 +14,15 @@ const MESH_BUDGET := 2             # chunks por frame
 const VIZ_PERIOD := 0.25
 const RESPAWN_DELAY := 45.0
 const CORPSE_CHECK_PERIOD := 1.0
+# Raio de coesao da matilha (dossie 10 §3.1): quem esta dentro disto e lido como
+# vizinho. O teto e o horizonte do proprio lobo -- `_sense` so roda a LOS do
+# jogador ate 30 m -- entao 24 m e um vizinho que o lobo poderia ver, com folga;
+# um raio maior faria a alcateia coordenar bicho que esta fora do mundo
+# percebido dele. O que este numero rende na sessao real de cinco lares nao e
+# suposicao: a checagem "alcateia existe na sessao real" imprime os pares e o
+# tamanho da matilha lida a cada corrida da suite.
+const PACK_COHESION_RADIUS := 24.0
+const EMPTY_PACK: Array = []
 const Journal = preload("res://src/persistence/tick_journal.gd")
 
 var tick_journal := Journal.new()
@@ -44,6 +53,15 @@ var _binds_on: bool = false
 # Bancadas colocadas, em blocos. E a lista que o Veloren varreria por sprite
 # proximo; o mundo nao e varrido porque a consulta roda a cada frame do painel.
 var _benches: Array[Vector3i] = []
+# Buffers da matilha (dossie 10 §4): um Array por identidade, com as entradas
+# Dictionary reescritas no lugar a cada passo. A leitura e o preco que o contrato
+# aceita -- construir cinco arrays novos por tick nao entraria.
+var _pack_buffers: Dictionary = {}
+var _pack_cursor: Dictionary = {}
+# Comparacoes de par feitas no ultimo rebuild. E numero de gate, nao conversa: o
+# dossie 10 §4 promete n(n-1)/2 por passo, e o rodape da suite prova isto no
+# diagnostico JSON.
+var _pack_pairs: int = 0
 
 
 func _ready() -> void:
@@ -149,6 +167,7 @@ func _sim_tick() -> void:
 	if _aether_cd <= 0.0:
 		aether.diffuse_and_decay(AETHER_PERIOD)
 		_aether_cd = AETHER_PERIOD
+	_rebuild_packs()
 	for w in wolves:
 		w.sim_step(elapsed, dt)
 	_corpse_cd -= dt
@@ -204,6 +223,9 @@ func _spawn_wolves(n: int) -> void:
 		var home := _random_ground_point(16.0, 46.0)
 		_entities.add_child(w)
 		w.setup(world, aether, player, home, _next_identity, clock)
+		# A matilha entra pelo mesmo caminho do `entity_provider` do jogador: o
+		# Callable e montado pela sessao, com a identidade presa, e o lobo so le.
+		w.pack_provider = Callable(self, "pack_of").bind(_next_identity)
 		_next_identity += 1
 		w.bit_player.connect(_on_wolf_bit)
 		w.died.connect(_on_wolf_died)
@@ -254,11 +276,77 @@ func wolves_roster() -> Array:
 	return wolves
 
 
+## A matilha do lobo, no formato do dossie 10 §3.1: os vivos a menos do raio de
+## coesao, cada um como `{identity, pos, intent, hp_ratio, trust}`. Devolve o
+## buffer da sessao, nunca uma copia -- e o que permite a leitura de 20 Hz sem
+## alocar.
+func pack_of(identity: int) -> Array:
+	var buf: Variant = _pack_buffers.get(identity)
+	return EMPTY_PACK if not (buf is Array) else buf
+
+
+## Uma passada por passo, aqui e nao cinco vezes dentro dos lobos: cada par i<j e
+## testado uma unica vez (10 comparacoes com cinco lobos) e escrito nos dois
+## buffers. O cursor e o proprio tamanho do buffer no passo anterior, cortado no
+## fim para a lista nunca mostrar um vizinho fantasma.
+func _rebuild_packs() -> void:
+	for w: Wolf in wolves:
+		_pack_cursor[w.identity] = 0
+	_pack_pairs = 0
+	var r2: float = PACK_COHESION_RADIUS * PACK_COHESION_RADIUS
+	for i in wolves.size():
+		var a: Wolf = wolves[i]
+		if not a.alive:
+			continue
+		var ca: Vector3 = a.center()
+		for j in range(i + 1, wolves.size()):
+			var b: Wolf = wolves[j]
+			if not b.alive:
+				continue
+			_pack_pairs += 1
+			if ca.distance_squared_to(b.center()) > r2:
+				continue
+			_pack_put(a.identity, b)
+			_pack_put(b.identity, a)
+	for w: Wolf in wolves:
+		_pack_slot(w.identity).resize(int(_pack_cursor[w.identity]))
+
+
+func _pack_slot(identity: int) -> Array:
+	if not _pack_buffers.has(identity):
+		_pack_buffers[identity] = []
+	return _pack_buffers[identity]
+
+
+## A entrada e reescrita no lugar: depois do primeiro passo aquecido o lote copia
+## cinco campos por vizinho e nao cria nenhum contenedor novo.
+func _pack_put(identity: int, other: Wolf) -> void:
+	var buf: Array = _pack_slot(identity)
+	var n: int = int(_pack_cursor[identity])
+	var e: Dictionary = {}
+	if n < buf.size():
+		e = buf[n]
+	else:
+		buf.append(e)
+	e["identity"] = other.identity
+	e["pos"] = other.center()
+	e["intent"] = other.intent
+	e["hp_ratio"] = other.hp / Wolf.MAX_HP
+	# O trust vem como escalar ja publicado pelo lobo: um `mind.trust()` por par
+	# custaria um `str(ator)` novo por comparacao no caminho quente (dossie 10 §4).
+	e["trust"] = other.trust_toward_player
+	_pack_cursor[identity] = n + 1
+
+
 func _reap_corpses() -> void:
 	for i in range(wolves.size() - 1, -1, -1):
 		var w: Wolf = wolves[i]
 		if w.finished():
 			wolves.remove_at(i)
+			# O buffer do morto sairia do rebuild e ficaria orphan no Dictionary para
+			# sempre; a identidade nao e reutilizada, entao a limpeza e aqui.
+			_pack_buffers.erase(w.identity)
+			_pack_cursor.erase(w.identity)
 			w.queue_free()
 			_respawn_queue.append(RESPAWN_DELAY)
 
@@ -447,6 +535,7 @@ func diagnostics() -> Dictionary:
 		"chunks": world.chunks.size(), "meshes": world.meshes_built(),
 		"edits": world.edits.size(), "aether_energy": aether.total_energy(),
 		"wolves": wolves.size(), "wolves_alive": targets_under_crosshair().size(),
+		"pack_pairs": _pack_pairs,
 		"pending_respawns": _respawn_queue.size(), "triangles": world.triangle_count(),
 		"tick": clock.tick, "worst_sim_ms": clock.worst_step_ms,
 		"dropped_ticks": clock.dropped_ticks, "hp": player.hp,

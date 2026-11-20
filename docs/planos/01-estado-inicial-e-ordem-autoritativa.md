@@ -1,6 +1,6 @@
 # 01 — Estado inicial completo, comandos, RNG e ordem autoritativa
 
-Plano derivado de leitura; nada foi rodado por mim. Cobre o item 2 de "Falta" (`docs/melhorias-status.md:262-271`) e a linha não marcada do P0 (`:299`), cujo débito declarado é "não foi iniciado" (`:252-253`). A frase do P0 **não** está em `docs/design/08`, cujo gate (`:61-63`) é `af-bench --scenario boot_walk_10min` — peça que não existe em `src/` nem em `tests/`. Marcas por `docs/design/README.md:10-16`: `[MEASURED]` lido, `[TARGET]`/`[OPEN]` inexistente.
+Plano derivado de leitura; nada foi rodado por mim. Cobre o item 2 de "Falta" (`docs/melhorias-status.md:296-305`) e a linha não marcada do P0 (`:299`), cujo débito declarado é "não foi iniciado" (`:252-253`). A frase do P0 **não** está em `docs/design/08`, cujo gate (`:61-63`) é `af-bench --scenario boot_walk_10min` — peça que não existe em `src/` nem em `tests/`. Marcas por `docs/design/README.md:10-16`: `[MEASURED]` lido, `[TARGET]`/`[OPEN]` inexistente.
 
 ## Premissa nomeada: diário com duas portas
 
@@ -28,13 +28,13 @@ Quase existe: `save_game()` (`src/main.gd:341-364`) grava `schema` (`src/persist
 Não há captura: só o efeito já escrito. Gravar tecla não reproduz — medido no harness, `Input.parse_input_event` chega 6 a 7 iterações depois (`tests/smoke_test.gd:140-144`) e a janela real deu 163 quadros/s contra 59,8 ticks (`:118-121`). O que tem posição reproduzível é a intenção aplicada, que já passa por handlers com evento e relógio à vista (`src/main.gd:268-321`); vocabulário nomeado existe (`src/input/input_actions.gd:18-54`). Fita: `[tick_do_relogio, seq, tipo, args]` com as regras já cobradas de `record()` (negativo, duplicata, regressão, salto — `tick_journal.gd:72-73`). `start()` não escreve cabeçalho (`tests/tick_journal_test.gd:291`) e o leitor exige aridade 2 (`:431-432`): `FORMAT_VERSION` (`tick_journal.gd:4`) mora só dentro do hash, então v2 é indistinguível de v1 para quem lê e nenhuma checagem exige que ele altere o hash. Cabeçalho lateral é pré-requisito da fita.
 
 ### RNG no estado `[TARGET]` + `[OPEN]`
-Sementes derivadas já provadas: população (`src/main.gd:200-201`, uso em `:221-222`), lobo (`src/entities/wolf.gd:121`), personalidade por semente (`src/ai/mind.gd:24-32`). Falta a **posição do fluxo**, que não é função do tick: dois dos três sorteios do lobo são em `_physics_process` (`src/entities/wolf.gd:563-564`). `[OPEN]`: qual propriedade do engine faz o fluxo ir e voltar — não há snapshot de gerador em `src/` (grep de `state` sobre `rng` não devolve uso). Sem isso, o caminho sem API nova é gravar por dono o contador de sorteios, número que a suíte de reações já imprime (`frames_bloqueados=679 desvios=22`, `docs/melhorias-status.md:795-797`). Débito lido: `load_state()` não re-semeia (`src/entities/wolf.gd:674-705`). Quarto dono fica fora por motivo medido: o `_rng` do áudio (`src/audio/audio_director.gd:117,140`, sorteios em `:521,529`) não escreve no mundo — grep de `aether`/`imprint` no arquivo devolve 0 ocorrências.
+Sementes derivadas já provadas: população (`src/main.gd:200-201`, uso em `:221-222`), lobo (`src/entities/wolf.gd:121`), personalidade por semente (`src/ai/mind.gd:24-32`). Falta a **posição do fluxo**, que não é função do tick: dois dos três sorteios do lobo são em `_physics_process` (`src/entities/wolf.gd:563-564`). `[OPEN]`: qual propriedade do engine faz o fluxo ir e voltar — não há snapshot de gerador em `src/` (grep de `state` sobre `rng` não devolve uso). Sem isso, o caminho sem API nova é gravar por dono o contador de sorteios, número que a suíte de reações já imprime (`frames_bloqueados=679 desvios=22`, `docs/melhorias-status.md:887-889`). Débito lido: `load_state()` não re-semeia (`src/entities/wolf.gd:674-705`). Quarto dono fica fora por motivo medido: o `_rng` do áudio (`src/audio/audio_director.gd:117,140`, sorteios em `:521,529`) não escreve no mundo — grep de `aether`/`imprint` no arquivo devolve 0 ocorrências.
 
 ### Ordem autoritativa `[TARGET]` + `[OPEN]`
 A regra-alvo está escrita (`docs/design/06-godot-architecture.md:34-38`, que ainda cita `src/core/sim/tick_clock.gd`, caminho inexistente; o real é `src/core/sim_clock.gd`) e o código não obedece: a ordem real é jogador-primeiro, passos-depois (`src/main.gd:136-142`), hash no fim do passo, depois de `clock.tick += 1` (`:164-166`). Decisão `[OPEN]` do dono, dois braços. **A (menor diff)**: a fita carimba o evento com o tick vigente e o passo ganha fases nomeadas — (1) eventos com carimbo ≤ N, (2) cadências, (3) `sim_step` dos lobos, (4) `clock.tick += 1`, (5) hash/registro; exige trazer corpos e timers para a projeção, porque `_sense()` lê a posição do corpo (`src/entities/wolf.gd:436-442`) e isso contamina intenção e crença. **B (autoridade única)**: mover locomoção e timers para o passo com K sub-passos fixos, como o harness de reações faz com K = 3 (`tests/aether_reactions_test.gd:118-120`); custo: mexe na cadência que produziu o conserto medido do buffer de colocação (`src/entities/player.gd:44,650-652`, protegido em `tests/smoke_test.gd:118-126`). Em qualquer braço, fita e snapshot usam o mesmo dono (`src/main.gd:19`) e o mesmo `FORMAT_VERSION`.
 
 ## Gate de fechamento
-Comandos que já existem (`docs/melhorias-status.md:1048-1054`, `AGENTS.md:289-298`):
+Comandos que já existem (`docs/melhorias-status.md:1140-1146`, `AGENTS.md:289-298`):
 
 ```sh
 godot --headless --path . --import
@@ -43,7 +43,7 @@ godot --headless --path . --script tests/tick_journal_test.gd
 godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.jsonl
 ```
 
-Âncora no contrato, o único com contagem travada em código (`tests/tick_journal_test.gd:13`, exigida em `:461`: 128 checagens); o smoke imprime sem exigir (`tests/smoke_test.gd:158-161`) — por isso o censo pode cair de 220 para 216 sem nenhum vermelho (`docs/melhorias-status.md:370-374`). As checagens abaixo **não existem**; a primeira tarefa é o driver de replay na forma do que existe (`extends SceneTree`, `TESTS`, `_check`, censo, `quit(1)` — `tests/tick_journal_test.gd:1-13,45-51,458-464`) dirigindo `main._sim_tick()` com `process_mode` desligado, como já faz `tests/tick_journal_test.gd:359-382`. `snapshot_resta_hash`: snapshot + fita desde o tick 0 em dois processos → `ticks_conferidos=N`, `divergencia_primeiro=-1`. `ordem_independente_de_quadros`: mesma fita com K=1 e K=8 → `divergentes=0` `[TARGET]`, e a primeira corrida imprime o valor real (esperado > 0), número que nomeia o vazamento por frame. `rng_restaurada_no_load`: `sorteios_iguais=verdadeiro` por dono após load. `formato_declarado`: `FORMAT_VERSION` 1 vs 2 dão hashes diferentes e a fita recusa versão estrangeira. Custo sem regressão: `dropped_ticks=0` e `worst_sim_ms` contra o `6,779 ms` `[MEASURED]`. Nada aqui fecha gate de fase: P0 e P1 seguem abertos, e quem fecha é o dono.
+Âncora no contrato, o único com contagem travada em código (`tests/tick_journal_test.gd:13`, exigida em `:461`: 128 checagens); o smoke imprime sem exigir (`tests/smoke_test.gd:158-161`) — por isso o censo pode cair de 220 para 216 sem nenhum vermelho (`docs/melhorias-status.md:419-423`). As checagens abaixo **não existem**; a primeira tarefa é o driver de replay na forma do que existe (`extends SceneTree`, `TESTS`, `_check`, censo, `quit(1)` — `tests/tick_journal_test.gd:1-13,45-51,458-464`) dirigindo `main._sim_tick()` com `process_mode` desligado, como já faz `tests/tick_journal_test.gd:359-382`. `snapshot_resta_hash`: snapshot + fita desde o tick 0 em dois processos → `ticks_conferidos=N`, `divergencia_primeiro=-1`. `ordem_independente_de_quadros`: mesma fita com K=1 e K=8 → `divergentes=0` `[TARGET]`, e a primeira corrida imprime o valor real (esperado > 0), número que nomeia o vazamento por frame. `rng_restaurada_no_load`: `sorteios_iguais=verdadeiro` por dono após load. `formato_declarado`: `FORMAT_VERSION` 1 vs 2 dão hashes diferentes e a fita recusa versão estrangeira. Custo sem regressão: `dropped_ticks=0` e `worst_sim_ms` contra o `6,779 ms` `[MEASURED]`. Nada aqui fecha gate de fase: P0 e P1 seguem abertos, e quem fecha é o dono.
 
 ## Custo — as quatro perguntas (`AGENTS.md:242-244`)
 1. Por frame, por tick, às vezes? `record()` roda 1× por passo (20×/s, `src/main.gd:165-166`); a fita roda no ponto de
@@ -54,15 +54,15 @@ godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.j
    janela medida.
 3. Aloco no caminho quente? Sim e medido no recorte: 196.608 bytes/tick de cópia Float32 (`aether_field.gd:233-234`) mais
    os arrays da projeção (`tick_journal.gd:17-39`); o journal custou 160.000 µs em 205 registros (~780 µs médios), pico
-   1,646 ms, pior passo 9,738 ms ON contra 10,574 ms OFF (`docs/melhorias-status.md:1027-1028,1041`). Bytes novos: não
+   1,646 ms, pior passo 9,738 ms ON contra 10,574 ms OFF (`docs/melhorias-status.md:1119-1120,1041`). Bytes novos: não
    medidos; a colheita por registro já existe (`tick_journal.gd:84-86,96-98`).
 4. Como sei que ficou melhor? Não é otimização, é propriedade: o censo do contrato (128 → novo `EXPECTED_CHECKS`) mais as
    linhas de cima, em corrida serial com a máquina livre (`AGENTS.md:300-302`), e número publicado re-medido no clone
-   limpo do SHA final (`docs/melhorias-status.md:619-626`).
+   limpo do SHA final (`docs/melhorias-status.md:668-675`).
 
 ## O que NÃO fazer
 Não chamar de replay a igualdade da projeção atual, que exclui jogador, corpos, RNG e comandos
-(`docs/melhorias-status.md:552-555`). Não gravar tecla crua como verdade, nem inventar flag de engine nem o `af-bench`. Não
+(`docs/melhorias-status.md:601-604`). Não gravar tecla crua como verdade, nem inventar flag de engine nem o `af-bench`. Não
 mover locomoção para o tick sem re-medir a borda de input. Não abrir canal novo de Éter, inspector de mentes,
 `HotSet` ou facções. Fita e snapshot nascem das transições reais (`respawn_at`, `close_panel`, `set_block`), não de
 campo escrito à mão.

@@ -1,6 +1,6 @@
 # 08 — `MindStore` e `MindsInspector`
 
-Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:311-314), decididas pelas linhas docs/melhorias-status.md:29 e :30 da tabela do prompt master. Nada aqui roda engine; nenhum número de desempenho é publicado.
+Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:345-348), decididas pelas linhas docs/melhorias-status.md:29-29 e :30 da tabela do prompt master. Nada aqui roda engine; nenhum número de desempenho é publicado.
 
 ## 1. Premissa nomeada por peça
 
@@ -28,7 +28,7 @@ Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:311-314), de
 
 ## 5. Constraint do mandato 2
 
-A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:27), escrita em :120 e lida só por `narration_of()` (:59-60) → HUD (src/main.gd:114 → src/ui/hud.gd:270-271). É verdade por fiação, não por verifier (docs/melhorias-status.md:50). O inspector **mostra, não decide**: pode ler `narration_of()` e as coleções; não pode chamar `reinforce()`/`remember()` (src/ai/mind.gd:86, :39) nem tocar `intent`. A escrita continua só nas transições do lobo (src/entities/wolf.gd:347, :453-458, :591).
+A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:27), escrita em :120 e lida só por `narration_of()` (:59-60) → HUD (src/main.gd:114 → src/ui/hud.gd:270-271). É verdade por fiação, não por verifier (docs/melhorias-status.md:50-50). O inspector **mostra, não decide**: pode ler `narration_of()` e as coleções; não pode chamar `reinforce()`/`remember()` (src/ai/mind.gd:86, :39) nem tocar `intent`. A escrita continua só nas transições do lobo (src/entities/wolf.gd:347, :453-458, :591).
 
 ## 6. Gate em headless
 
@@ -49,4 +49,4 @@ Não: `MindStore` como *pass-through* que só repassa à `Mind` do lobo (muda o 
 
 Commits atômicos: (1) F3 com o `_breakdown` completo + checagem (iii) de §6; (2) extrair o resumo de mente de `debug_line()` sem mudar comportamento; (3) `MindStore` dono das coleções com round-trip de save checado; (4) atualizar docs/melhorias-status.md:29-30 e :311-314 com o veredito novo. Um número por commit.
 
-Citações que não conferem: o briefing apontava as linhas 27-28 da tabela do prompt master — as reais são docs/melhorias-status.md:29 e :30 (a :27 é a linha de separação do cabeçalho); docs/melhorias-status.md:30 cita a tecla F3 em src/input/input_actions.gd:33, arquivo não aberto neste plano; o nó `MemoryGate` prometido em docs/design/04-local-ai-architecture.md:53-55 não existe em `src/` — a única ocorrência é o comentário de src/ai/mind.gd:103, e o veto por memória é feito por `believes()` direto em src/entities/wolf.gd:451.
+Citações que não conferem: o briefing apontava as linhas 27-28 da tabela do prompt master — as reais são docs/melhorias-status.md:29-29 e :30 (a :27 é a linha de separação do cabeçalho); docs/melhorias-status.md:30-30 cita a tecla F3 em src/input/input_actions.gd:33, arquivo não aberto neste plano; o nó `MemoryGate` prometido em docs/design/04-local-ai-architecture.md:53-55 não existe em `src/` — a única ocorrência é o comentário de src/ai/mind.gd:103, e o veto por memória é feito por `believes()` direto em src/entities/wolf.gd:451.

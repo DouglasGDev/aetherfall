@@ -1,6 +1,6 @@
 # 05 — Difusão do Éter fora do tick de decisão
 
-Plano derivado de leitura; nada foi rodado por mim. Cobre o item 6 de "Falta" (`docs/melhorias-status.md:288-290`) e a linha não marcada do P1 (`docs/melhorias-status.md:310`), que `docs/design/08-roadmap-risks-licensing.md:68` lista como entrega de P1 e `:36` registra que nenhum gate está fechado. Marcas: `[MEASURED]` lido em log, `[TARGET]` peça que não existe em `src/`.
+Plano derivado de leitura; nada foi rodado por mim. Cobre o item 6 de "Falta" (`docs/melhorias-status.md:288-290`) e a linha não marcada do P1 (`docs/melhorias-status.md:344-344`), que `docs/design/08-roadmap-risks-licensing.md:68` lista como entrega de P1 e `:36` registra que nenhum gate está fechado. Marcas: `[MEASURED]` lido em log, `[TARGET]` peça que não existe em `src/`.
 
 ## Premissa nomeada: visibilidade síncrona
 
@@ -55,9 +55,9 @@ godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.j
 
 ## O que NÃO fazer
 
-- Não é "melhorar um sistema que já passou no gate": o gate de P1 está aberto (`docs/design/08-roadmap-risks-licensing.md:72-85`) e o item segue não marcado (`docs/melhorias-status.md:310`). O que veta o corte agora é a ordem colheita→corte (`AGENTS.md:183`) e a regra de complexidade sem necessidade de gate.
+- Não é "melhorar um sistema que já passou no gate": o gate de P1 está aberto (`docs/design/08-roadmap-risks-licensing.md:72-85`) e o item segue não marcado (`docs/melhorias-status.md:344-344`). O que veta o corte agora é a ordem colheita→corte (`AGENTS.md:183`) e a regra de complexidade sem necessidade de gate.
 - Não abrir thread sem a fila de publicação no tick (`docs/design/06-godot-architecture.md:118-120`) nem sem mover o `is_solid` para uma cópia lida (`src/world/aether_field.gd:176`).
-- Não aproveitar para levar o campo a 6 canais: é o item 4 (`docs/melhorias-status.md:274-282`, adiado em `:307`) e `Channel.COUNT` entra na projeção (`src/persistence/tick_journal.gd:36-39`) — dois assuntos, dois hashes, dois commits.
+- Não aproveitar para levar o campo a 6 canais: é o item 4 (`docs/melhorias-status.md:308-316`, adiado em `:307`) e `Channel.COUNT` entra na projeção (`src/persistence/tick_journal.gd:36-39`) — dois assuntos, dois hashes, dois commits.
 - Não tocar `HALF_LIFE`/`DIFFUSE_RATE` (`src/world/aether_field.gd:13-15`) nem o `elapsed` fixo (`src/main.gd:150`): muda Éter e hash por decreto, não por evidência.
 - Não assumir `HotSet`, `SlowSim`, facções, `MindsInspector`, replay nem fita de comandos: nada disso existe em `src/`.
 - Não somar estado novo em `main.gd` (débito de objeto deus reconhecido): a colheita mora no runner, e os contadores ficam em `AetherField`.

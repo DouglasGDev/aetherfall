@@ -29,7 +29,7 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:547-559](../../src/entities/player.gd) |
 | Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:261` |
 | Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:300-310](../../src/world/voxel_world.gd) |
-| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:276-279](../../src/main.gd#L276-L279); coleta em [player.gd:652-665](../../src/entities/player.gd#L652-L665) |
+| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:364-367](../../src/main.gd#L364-L367); coleta em [player.gd:652-665](../../src/entities/player.gd#L652-L665) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
 pelo [documento 11](11-inventory-crafting.md):** a dureza saiu de `Player._hardness()`
@@ -444,8 +444,8 @@ bloco é estado de mundo, e o hash de estado do gate P0 depende disso. O `TickJo
 atual só assina uma projeção mínima, **sem corpos nem comandos**
 ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)); não cobre a
 entidade de queda proposta nem fecha esse gate. Hoje, jogador e locomoção/timers do lobo
-ainda mudam por frame de física ([main.gd:137](../../src/main.gd#L137),
-[wolf.gd:526-571](../../src/entities/wolf.gd#L526-L571)).
+ainda mudam por frame de física ([main.gd:155](../../src/main.gd#L155),
+[wolf.gd:702-747](../../src/entities/wolf.gd#L702-L747)).
 
 ### Matemática
 
@@ -603,10 +603,10 @@ func _overlapping(cell: Vector3i) -> Array:
 ```
 
 `e.has_method("body_aabb")` não é decoração: `body_aabb()` já é o contrato de
-entidade visada do projeto (player.gd:598, [wolf.gd:131-132](../../src/entities/wolf.gd#L131-L132)),
+entidade visada do projeto (player.gd:598, [wolf.gd:185-186](../../src/entities/wolf.gd#L185-L186)),
 e `entity_provider` é o `Callable` que `Main` injeta hoje no jogador
-([main.gd:81](../../src/main.gd#L81) → `targets_under_crosshair`,
-[main.gd:245-250](../../src/main.gd#L245-L250)).
+([main.gd:99](../../src/main.gd#L99) → `targets_under_crosshair`,
+[main.gd:267-272](../../src/main.gd#L267-L272)).
 
 ### Da fila para a entidade
 
@@ -652,7 +652,7 @@ bloco cair para sempre em cima de um suporte recém-colocado.)
 | Necessidade | Estado hoje | Custo real |
 |---|---|---|
 | Entidade física de bloco | inexistente | `src/entities/falling_block.gd` + spawner e step em `Main` |
-| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:276-279](../../src/main.gd#L276-L279)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
+| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:364-367](../../src/main.gd#L364-L367)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
 | Sufocamento em jogador | o medidor `air` existe, mas `_update_breath` só olha água (player.gd:548-549) | uma linha: `no_air := world.is_water_xyz(olho) or BlockDefs.blocks_air(world.get_block(olho))` — `blocks_air` é derivado dos campos de §10.3, não um décimo flag |
 | Sufocamento em NPC | o lobo **não tem medidor de ar** | ou um `Breath` comum aos dois, ou dano por tick direto no NPC enterrado |
 | Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:301-303); nenhum `is Player` dentro da física |
@@ -749,7 +749,7 @@ func stats() -> Dictionary:
 	return {"queued": _pending.size(), "overflow": _overflow}
 ```
 
-`Main.diagnostics()` ([main.gd:435-446](../../src/main.gd#L435-L446)) ganha `"block_updates":
+`Main.diagnostics()` ([main.gd:523-534](../../src/main.gd#L523-L534)) ganha `"block_updates":
 updates.stats()` junto de `"dropped_ticks"` — os dois são a mesma categoria de medida
 (quantos ticks de simulação o orçamento não absorveu), e sem o número a discussão sobre
 `MAX_PER_TICK` e `MAX_QUEUED` seria opinião.
@@ -1003,7 +1003,7 @@ mundo velho não tinha nada ali, e o novo tem faixa profunda, lava e bedrock. Re
 fechamento `[DECIDED]`: migrar por translação e **recusar o slot se qualquer edição
 antiga cair em faixa que o novo mundo não conhece** (`y_novo < Y_BEDROCK_TOP + 1`).
 A gravação/conferência de `gen_version` já existe em `save_game`/`load_game`
-([main.gd:350](../../src/main.gd#L350), [main.gd:378-380](../../src/main.gd#L378-L380)):
+([main.gd:438](../../src/main.gd#L438), [main.gd:466-468](../../src/main.gd#L466-L468)):
 hoje o save incompatível é recusado antes da restauração. A migração proposta precisa
 atualizar essa versão junto das edições; não há migração implementada aqui.
 

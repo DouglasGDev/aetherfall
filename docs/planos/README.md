@@ -114,7 +114,7 @@ somando esta página ao corpus o status dá 60, mas aí o `README.md` da raiz d�
 adicionam nada ao status nem ao contrato (linkam-nos por nome), mas adicionam **3** ao `README.md` da
 raiz: `13` aponta `:192` e `:197` e `14` aponta `:192`. Conferindo conteúdo contra a `main` em `eb6ec8d`,
 quatro ponteiros estavam errados e **foram corrigidos na própria página**: `12:63` dizia
-`docs/melhorias-status.md:78` (prosa da seção anterior; o par geração/malharia está em `:83`) e
+`docs/melhorias-status.md:78-78` (prosa da seção anterior; o par geração/malharia está em `:83`) e
 `README.md:533` (linha de lista do Éter; os ~4,3 s de malharia dos 64 chunks estão em `:548`), e `07:67`
 e `07:137` apontavam `README.md:505-512` e `:507` — que é a seção do oráculo local — para a queda de
 ~16 s para ~7,5 s com a cópia linear, que está em `:546-553`. Restam **69** referências a estes três
