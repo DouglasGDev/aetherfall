@@ -16,6 +16,21 @@ const ARM_NONE := 0
 const ARM_WOUND := 1
 const ARM_REMEMBER := 2
 
+# Assinatura do terreno da revisao anterior ao `biome_of` (main e7e30e6, mundo
+# recem-gerado de seed 20261116, sem edicao nenhuma): SHA256 das 16 colunas de
+# relevo que a suite ja compara, SHA256 da grade fixa de 32x32 `(x,z,altura,topo)` e
+# o histograma dessa grade por id de bloco. Derivar bioma e leitura, nao escrita: se
+# qualquer um dos tres se mover, o lote mudou o terreno e a premissa do dossie 09.2
+# esta quebrada — nao e caso de "melhorar a assercao".
+const BIOME_BASE_REL16_SHA := "f1fca48dc6d1db6e0ce0484ca5b16a8202ccedaafd0a0efcd1fc98d3ee71c9af"
+const BIOME_BASE_TOP_SHA := "2b630c0085cc2e58ee280ba9edf82d91d53dd7efd6fe6faa609c8ca2436a436a"
+const BIOME_BASE_TOP_HIST := "1=491 3=6 4=145 5=313 7=69"
+# A grade de cima e uma amostra: com 4 em 4 blocos ela nao viu nenhuma coluna mudar
+# quando o limiar de umidade foi de -0,30 para -0,50 de proposito, e passou verde
+# sobre um terreno trocado. Esta e a premissa inteira, byte por byte, e e ela que
+# morde.
+const BIOME_BASE_FULL_SHA := "75fb058ed409b617afc03ac67444eb5f02f26dfd6c51ca81c30b22e640c147a1"
+
 var main: Node3D = null
 var _steps: Array = []
 var _step := 0
@@ -293,6 +308,7 @@ func _check_meshing() -> void:
 			same = false
 	_check("geracao deterministica (16 colunas)", same, "ms=%.1f" % ms)
 	_check("malha identica entre mundos", tri_a == tri_b, "espelho=%d  sessao=%d" % [tri_a, tri_b])
+	_check_biome_nao_altera_terreno(_scratch)
 
 	var cx := 20
 	var cz := 20
@@ -390,6 +406,72 @@ func _check_meshing() -> void:
 	_check("winding = face frontal do Godot", wn == 0, "triangulos contra=%d" % wn)
 	_scratch_root.queue_free()
 	_scratch = null
+
+
+static func _sha_hex(s: String) -> String:
+	return _sha_bytes_hex(s.to_utf8_buffer())
+
+
+static func _sha_bytes_hex(b: PackedByteArray) -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(b)
+	return ctx.finish().hex_encode()
+
+
+## Premissa do dossie 09.2: "derivar bioma nao pode alterar o terreno". Nao e checagem
+## de aparencia — ela refaz as assinaturas do mundo recem-gerado e confere contra a
+## medicao da revisao anterior ao `biome_of`. O numero que decide e `divergentes`: 0,
+## ou o lote escreveu bloco sem querer e o hash por tick do journal passa a responder
+## por um mundo diferente do que respondia.
+##
+## A grade de 32x32 e legivel (da o histograma), mas e amostra: medir com ela a
+## unica assinatura deixou passar o limiar de umidade trocado de -0,30 para -0,50,
+## que e exatamente o tipo de mudanca que esta checagem existe para pegar. Por isso a
+## varredura dos 1 048 576 voxels acompanha — um segundo de corrida, e o preco de
+## uma premissa que nao depende de sorte de amostragem.
+func _check_biome_nao_altera_terreno(w: VoxelWorld) -> void:
+	var rel := ""
+	for x in [12, 44, 100, 116]:
+		for z in [12, 44, 100, 116]:
+			rel += "%d,%d:%d;" % [x, z, w.surface_height(x, z)]
+	var top := ""
+	var hist := {}
+	for x in range(0, VoxelConfig.world_size_x(), 4):
+		for z in range(0, VoxelConfig.world_size_z(), 4):
+			var h: int = w.surface_height(x, z)
+			var b: int = w.get_block_xyz(x, h, z)
+			top += "%d,%d:%d,%d;" % [x, z, h, b]
+			hist[b] = int(hist.get(b, 0)) + 1
+	var keys: Array = hist.keys()
+	keys.sort()
+	var line := ""
+	for k in keys:
+		line += "%s=%d " % [k, hist[k]]
+	line = line.strip_edges()
+	var full := PackedByteArray()
+	full.resize(VoxelChunk.SIZE_Y * VoxelConfig.world_size_z() * VoxelConfig.world_size_x())
+	var i := 0
+	for y in VoxelChunk.SIZE_Y:
+		for z in VoxelConfig.world_size_z():
+			for x in VoxelConfig.world_size_x():
+				full[i] = w.get_block_xyz(x, y, z)
+				i += 1
+	var rel_sha := _sha_hex(rel)
+	var top_sha := _sha_hex(top)
+	var full_sha := _sha_bytes_hex(full)
+	var divergentes := 0
+	if rel_sha != BIOME_BASE_REL16_SHA:
+		divergentes += 1
+	if top_sha != BIOME_BASE_TOP_SHA:
+		divergentes += 1
+	if line != BIOME_BASE_TOP_HIST:
+		divergentes += 1
+	if full_sha != BIOME_BASE_FULL_SHA:
+		divergentes += 1
+	_check("bioma_nao_altera_terreno", divergentes == 0,
+		"divergentes=%d/%d  voxels=%d  full=%s  rel16=%s  hist=%s" % [
+			divergentes, 4, full.size(), full_sha.substr(0, 12), rel_sha.substr(0, 12), line])
 
 
 ## Corpo com o volume dentro de solido nao anda por eixo nenhum: o primeiro

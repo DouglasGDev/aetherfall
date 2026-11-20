@@ -189,7 +189,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func respawn() -> void:
 	player.respawn_at(player.spawn_point)
-	aether.imprint(player.spawn_point, AetherField.Channel.FEAR, 0.4)
+	_imprint(player.spawn_point, AetherField.Channel.FEAR, 0.4)
 	hud.set_death(false)
 	hud.show_message("a marea cobrou sua divida")
 
@@ -265,12 +265,21 @@ func _reap_corpses() -> void:
 
 # ------------------------------------------------------------------ ecos do mundo
 
+## O vies de bioma e do chamador, nao do campo: `AetherField.imprint` continua
+## sem saber que existe voxel, e e a fronteira que mantem a difusao barata
+## (dossie 09). A pergunta ao gen so roda em evento (lavra, colocacao, dano,
+## morte, respawn), nunca no tick de 20 Hz.
+func _imprint(pos: Vector3, ch: int, amount: float) -> void:
+	var h: int = world.gen.surface_height(int(pos.x), int(pos.z))
+	aether.imprint(pos, ch, amount * world.gen.imprint_bias(int(pos.x), int(pos.z), h, ch))
+
+
 func _on_acted(kind: String, pos: Vector3) -> void:
 	match kind:
 		"break":
-			aether.imprint(pos, AetherField.Channel.WORK, 0.42)
+			_imprint(pos, AetherField.Channel.WORK, 0.42)
 		"place":
-			aether.imprint(pos, AetherField.Channel.WORK, 0.20)
+			_imprint(pos, AetherField.Channel.WORK, 0.20)
 
 
 func _on_block_broken(pos: Vector3i, block: int) -> void:
@@ -304,13 +313,13 @@ func _on_attacked(target: Node3D, amount: float) -> void:
 
 
 func _on_damaged(_amount: float, _from: Vector3) -> void:
-	aether.imprint(player.position3(), AetherField.Channel.BLOOD, 0.22)
+	_imprint(player.position3(), AetherField.Channel.BLOOD, 0.22)
 
 
 func _on_player_died(at: Vector3) -> void:
 	stats["deaths"] += 1
-	aether.imprint(at, AetherField.Channel.BLOOD, 1.3)
-	aether.imprint(at, AetherField.Channel.FEAR, 1.0)
+	_imprint(at, AetherField.Channel.BLOOD, 1.3)
+	_imprint(at, AetherField.Channel.FEAR, 1.0)
 	hud.set_death(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 

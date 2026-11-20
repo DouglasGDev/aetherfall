@@ -46,6 +46,18 @@ const SHORE_AFTER: float = 2.0
 const STAGGER_TIME: float = 0.45
 const KNOCKBACK_SPEED: float = 5.0
 const KNOCKBACK_LIFT: float = 2.4
+# Pelo por bioma do `home`, na ordem exata do enum `WorldGen.Biome` (0 frozen,
+# 1 arid, 2 temperate, 3 wetland): o indice da tabela e o id do bioma, entao
+# trocar a ordem de um dos dois lados repinta os lobos sem erro nenhum. Tabela
+# na propria classe (e nao `.tres`) porque o consumidor e um so. A linha de
+# temperate e a cor historica do lobo: a maioria da matilha nasce nela e sai
+# visualmente igual.
+const FUR_COLORS: Array[Color] = [
+	Color(0.78, 0.80, 0.84),    # frozen
+	Color(0.62, 0.47, 0.27),    # arid
+	Color(0.40, 0.36, 0.31),    # temperate
+	Color(0.24, 0.29, 0.26),    # wetland
+]
 
 var world: VoxelWorld = null
 var aether: AetherField = null
@@ -57,6 +69,7 @@ var alive: bool = true
 var intent: String = "patrol"
 var hunger: float = 0.35
 var home := Vector3.ZERO
+var home_biome: int = WorldGen.Biome.TEMPERATE
 var kills: int = 0
 
 var _player: Player = null
@@ -117,6 +130,9 @@ func setup(p_world: VoxelWorld, p_aether: AetherField, p_player: Player,
 	_sim_clock = p_clock
 	identity = p_identity
 	home = p_spawn
+	# Uma pergunta por lobo, sem cadencia: o bioma de onde o lobo nasceu ja esta
+	# nos ruidos que geraram aquela coluna, e nao em dado novo do mundo.
+	home_biome = world.gen.biome_at(int(home.x), int(home.z))
 	body.setup(world, p_spawn, DIMS)
 	_rng.seed = ("wolf:%d:%d" % [world.gen.world_seed, identity]).hash()
 	_heading = _rng.randf() * TAU
@@ -140,6 +156,16 @@ func target_name() -> String:
 
 func center() -> Vector3:
 	return body.center()
+
+
+## O vies de bioma e do chamador, nao do campo: `AetherField.imprint` continua
+## sem saber que existe voxel, e e a fronteira que mantem a difusao barata
+## (dossie 09). So roda em evento (mordida, golpe, morte); a altura vem do
+## relevo gerado, nao da superficie atual, porque cavar nao troca o clima da
+## coluna.
+func _imprint(pos: Vector3, ch: int, amount: float) -> void:
+	var h: int = world.gen.surface_height(int(pos.x), int(pos.z))
+	aether.imprint(pos, ch, amount * world.gen.imprint_bias(int(pos.x), int(pos.z), h, ch))
 
 
 # ------------------------------------------------------------------ arvore de comportamento
@@ -220,6 +246,7 @@ func _leaf_flee(_ctx: Dictionary) -> bool:
 	_speed = SPEED_FLEE
 	# Reagir ao medo alheio nao pode realimentar o campo para sempre.
 	if _threat > 0.0:
+		# Re-imprint da fuga fica sem vies: a folha roda todo tick com _threat > 0, e ruido+altura ali e o custo que o dossie 09 recusa no caminho quente.
 		aether.imprint(center(), AetherField.Channel.FEAR, 0.06)
 	return true
 
@@ -342,7 +369,7 @@ func _leaf_bite(_ctx: Dictionary) -> bool:
 	_bite_cd = BITE_COOLDOWN
 	bit_player.emit(self, BITE_DAMAGE)
 	var pp := _player.position3()
-	aether.imprint(pp, AetherField.Channel.BLOOD, 0.18)
+	_imprint(pp, AetherField.Channel.BLOOD, 0.18)
 	mind.remember(_sim_clock.tick, "hit_land", pp, ACTOR_PLAYER, 0.3)
 	mind.reinforce("prey_wounded", 0.22, "perception")
 	return true
@@ -609,8 +636,8 @@ func take_damage(amount: float, from_actor: int, hit_from: Vector3) -> void:
 	if push.length_squared() > 0.0001:
 		body.velocity += push.normalized() * KNOCKBACK_SPEED
 		body.velocity.y = maxf(body.velocity.y, KNOCKBACK_LIFT)
-	aether.imprint(me, AetherField.Channel.BLOOD, amount * 0.05)
-	aether.imprint(me, AetherField.Channel.FEAR, amount * 0.035)
+	_imprint(me, AetherField.Channel.BLOOD, amount * 0.05)
+	_imprint(me, AetherField.Channel.FEAR, amount * 0.035)
 	mind.remember(_sim_clock.tick, "hurt", hit_from, from_actor, amount / MAX_HP)
 	mind.adjust_trust(from_actor, -0.35)
 	mind.reinforce("danger_from_actor_%d" % from_actor, 0.3, "perception")
@@ -628,8 +655,8 @@ func die() -> void:
 	intent = "morto"
 	_speed = 0.0
 	var me := center()
-	aether.imprint(me, AetherField.Channel.BLOOD, 1.1)
-	aether.imprint(me, AetherField.Channel.FEAR, 0.55)
+	_imprint(me, AetherField.Channel.BLOOD, 1.1)
+	_imprint(me, AetherField.Channel.FEAR, 0.55)
 	_corpse_timer = CORPSE_SECONDS
 	died.emit(self, me)
 	acted.emit("kill", me)
@@ -673,6 +700,11 @@ func state_dict() -> Dictionary:
 
 func load_state(d: Dictionary) -> void:
 	home = Vector3(float(d["home"][0]), float(d["home"][1]), float(d["home"][2]))
+	# O load move o `home` sem reconstruir o visual: sem re-derivar o bioma aqui,
+	# o lobo voltaria com a cor do ponto sorteado nesta sessao e nao do seu lar.
+	home_biome = world.gen.biome_at(int(home.x), int(home.z))
+	if _fur:
+		_fur.albedo_color = FUR_COLORS[home_biome]
 	body.feet_pos = Vector3(float(d["feet"][0]), float(d["feet"][1]), float(d["feet"][2]))
 	body.velocity = Vector3.ZERO
 	hp = float(d.get("hp", MAX_HP))
@@ -711,7 +743,7 @@ func _build_visual() -> void:
 	_visual.name = "Visual"
 	add_child(_visual)
 	_fur = StandardMaterial3D.new()
-	_fur.albedo_color = Color(0.40, 0.36, 0.31)
+	_fur.albedo_color = FUR_COLORS[home_biome]
 	_fur.roughness = 0.95
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color(0.16, 0.15, 0.14)

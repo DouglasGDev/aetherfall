@@ -26,6 +26,29 @@ const CARVE_CRUST: int = 5
 # virava grade, e e isso que a camera mostrava como "bloco transparente".
 const CAVE_MIN_DEPTH: int = 12
 
+# Bioma = a regra que `surface_block` ja aplicava, agora nomeada e lida por quem
+# precisa dela. Quatro, porque e o que a altura e os dois ruidos distinguem sem
+# criar dado novo.
+enum Biome { FROZEN = 0, ARID = 1, TEMPERATE = 2, WETLAND = 3 }
+
+# So os testes nomeiam a coluna por extenso; o jogo escolhe pelo id.
+const BIOME_NAMES: PackedStringArray = ["frozen", "arid", "temperate", "wetland"]
+
+# vies de imprint por bioma: uma linha por bioma, uma coluna por canal na ordem
+# de `AetherField.Channel` (0 trabalho, 1 sangue, 2 medo). O indice composto e o
+# que liga as duas tabelas sem importar estado nenhum, e inverter a ordem de um
+# dos dois lados troca os canais sem erro nenhum. temperate fica em 1,0 nos tres
+# canais, a linha onde nenhuma fonte do jogo muda de numero. Neve segura mais
+# medo, areia segura mais trabalho, banhado segura mais sangue. Array aninhado e
+# nao de PackedFloat32Array porque construtor packed nao e expressao constante em
+# GDScript 4 — o precedente da casa e o HALF_LIFE do campo (aether_field.gd:13).
+const IMPRINT_BIAS: Array = [
+	[0.85, 1.00, 1.30],    # frozen
+	[1.30, 0.90, 0.85],    # arid
+	[1.00, 1.00, 1.00],    # temperate
+	[0.85, 1.15, 0.90],    # wetland
+]
+
 
 var world_seed: int = 0
 var _height := FastNoiseLite.new()
@@ -97,17 +120,54 @@ func _spawn_flatten(x: int, z: int, h: float) -> float:
 	return lerpf(base, h, w * w * (3.0 - 2.0 * w))
 
 
-func surface_block(x: int, z: int, h: int) -> int:
-	var moist: float = _moist.get_noise_2d(float(x), float(z))
-	var temp: float = _temp.get_noise_2d(float(x), float(z))
+## Bioma da coluna: funcao pura dos mesmos dois ruidos e da mesma altura que o bloco
+## de topo sempre consultou, e na mesma ordem (agua primeiro, altitude, depois frio e
+## seca). Projecao lida — nada aqui e gravado no mundo, entao o save nao migra.
+## O que muda frente as comparacoes soltas de antes e que os ruidos so sao amostrados
+## quando a cadeia chega neles: praia e altitude nem olhavam umidade e temperatura,
+## e as duas eram sorteadas em toda coluna.
+func biome_of(x: int, z: int, h: int) -> int:
 	if h <= VoxelConfig.SEA_LEVEL + 1:
-		return BlockDefs.Block.SAND
+		return Biome.WETLAND
 	if h >= 52:
-		return BlockDefs.Block.SNOW if h < 57 else BlockDefs.Block.STONE
-	if temp < -0.35:
-		return BlockDefs.Block.SNOW
-	if moist < -0.30:
+		return Biome.FROZEN
+	if _temp.get_noise_2d(float(x), float(z)) < -0.35:
+		return Biome.FROZEN
+	if _moist.get_noise_2d(float(x), float(z)) < -0.30:
+		return Biome.ARID
+	return Biome.TEMPERATE
+
+
+## Bioma da coluna pela altura GERADA do relevo, nao pela superficie atual do mundo:
+## cavar ou encher nao troca o clima da coluna (que e regra de geracao, nao pauta de
+## edicao) e o chamador nao paga a varredura de ate 64 voxels que
+## `VoxelWorld.surface_height` faz.
+func biome_at(x: int, z: int) -> int:
+	return biome_of(x, z, surface_height(x, z))
+
+
+## vies do imprint da coluna, por canal: leitura pura da tabela acima, custo de
+## duas amostras de ruido no maximo, as mesmas que `biome_of` ja faz. Quem
+## multiplica e o chamador do lado do evento: o campo nao pode conhecer voxel
+## nenhum, e essa fronteira e o que mantem `diffuse_and_decay` barata (dossie
+## 09). Quatro linhas e tres colunas e o que a suíte pino confere antes de
+## qualquer chamador: sem casa, o indice estoura na consola, porque um 1,0
+## devolvido em silencio disfarcaria de "nenhum vies" um erro de ligacao.
+func imprint_bias(x: int, z: int, h: int, ch: int) -> float:
+	var row: Array = IMPRINT_BIAS[biome_of(x, z, h)]
+	return float(row[ch])
+
+
+## O bloco de topo agora DECIDE a partir do bioma em vez de repetir as comparacoes: a
+## regra fica uma vez so, e o que sobra aqui e detalhe de bloco (a rocha nua acima de
+## 57), nao de clima. Nenhum byte de bloco muda — e o que a checagem
+## `bioma_nao_altera_terreno` confere coluna por coluna.
+func surface_block(x: int, z: int, h: int) -> int:
+	var biome: int = biome_of(x, z, h)
+	if biome == Biome.WETLAND or biome == Biome.ARID:
 		return BlockDefs.Block.SAND
+	if biome == Biome.FROZEN:
+		return BlockDefs.Block.SNOW if h < 57 else BlockDefs.Block.STONE
 	return BlockDefs.Block.GRASS
 
 

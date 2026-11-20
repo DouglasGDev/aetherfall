@@ -10,26 +10,28 @@ Crescimento", que diz *quanto custa*. Este arquivo tem uma tabela por prompt, na
 ordem.
 
 Referência histórica das medições de golpe: `9c6b722` (furo #6 abaixo).
-Bloco atual: o nariz do lobo passou a ler mais de um andar. O varredor visitava 49 células de uma
-única camada Y, então sangue escorrendo para dentro de uma caverna não existia para um lobo em cima
-do teto. Agora a camada própria vem primeiro e, se ela não devolve força acima de `SCENT_MIN`, o
-quadrado se repete uma camada acima e outra abaixo; o alvo do rastro deixou de ser o topo da coluna
-e passou a ser a primeira superfície sólida descendo do topo da camada encontrada. O código (branch
-`feat/rastro-em-duas-camadas`, `f89041b`) entrou como `cbaaef5`, com a ablação braço a braço no
-colhedor estreito: `sim_step total` de 322 128 / 326 189 µs no leitor de um andar contra
-361 464 / 364 589 / 364 987 µs no publicado (+12%); a varredura incondicional dos três andares custa
-+32% e foi recusada por medida, não por gosto. A revisão publicada desta perna é `ff347d2`, cujo
-`src/` e `tests/` são byte a byte os de `cbaaef5` (só markdown e logs entraram): clone limpo dela,
-sem `.godot/`, reimportado com `--import` frio exit 0, deu **236 checagens / 0 falhas / 35,1 s** na
-suíte e **109 checagens / 0 falhas / 2,003 s** no runner dedicado, exit 0 nos dois, com as 79 fontes
-e os 27 artefatos que aquele commit carrega conferidos **dentro do clone** (`sha256sum -c` 79/79 e
-27/27, exit 0 nos dois) — é isso que fecha o furo da evidência que não estava no repositório, na
-seção da rodada.
-No clone de `cbaaef5` foram **236 / 0 / 34,3 s** e **109 / 0 / 1,969 s**, com as 79 fontes já
-conferidas lá dentro ([readback.log](evidence/rastro-duas-camadas/readback.log), linha
-`verificacao=`).
-Rodadas anteriores do Éter, cada uma com sua seção no fim: o saldo da difusão medido (`9f3622b`), o
-teto do cache de inspeções (`297685b`) e o passo do lobo em plano livre (`520c3b4` + `a1405e4`).
+Bloco atual: o bioma passou a existir como código. `WorldGen.biome_of(x, z, h)` devolve um de quatro
+identificadores (`FROZEN`, `ARID`, `TEMPERATE`, `WETLAND`) a partir das mesmas duas ruídos e da mesma
+altura que a regra de superfície já consultava, e `surface_block` agora **pergunta** em vez de repetir
+as comparações. A premissa do dossiê — derivar bioma não pode alterar o terreno — virou checagem
+headless auto-contida: quatro assinaturas pinadas da revisão anterior (`e7e30e6`), 16 colunas de
+relevo, histograma de blocos de topo e os 1 048 576 voxels do mundo. O pelo de cada lobo sai do bioma
+do seu `home` (tabela de quatro cores na classe, uma pergunta por lobo no `setup`), e o imprint do
+Éter ganhou viés por bioma aplicado **pelo chamador do evento** — o campo continua sem conhecer voxel
+nenhum, e a sabotagem que move o multiplicador para dentro de `AetherField.imprint` está vermelha em
+log (7 falhas, inclusive saturação em `MAX_VALUE 4,0`). Branch `feat/bioma-e-cor-de-pelo-09` (base
+`e7e30e6`, ponta `44c9d94`, quatro commits de código antes deste documento, um assunto cada): suíte
+**237 checagens / 0 falhas / 35,5 s** e runner dedicado **119 checagens / 0 falhas / 2,044 s** em 24
+cenários, exit 0 nos dois, repetidos na árvore de trabalho e no clone limpo com `--import` frio — as
+79 fontes conferidas dentro do clone, 79 `OK` / 0 divergências. O custo do viés não aparece no
+`sim_step`: pareado contra o chão na mesma janela, `+0,59 %` contra `4,05 %` de dispersão do próprio
+chão; o `pico` sobe `+13 %` e é indício, não atribuição — a perna `bench/` decide. O efeito no mundo,
+que é o que a peça existe para ter, é mensurável: `aether_energy` do cenário da suíte sai de
+`9,36133219487965` para `9,44745890423656` (`+0,92 %`), idêntico entre trabalho e clone, em
+[readback.md](evidence/bioma-cor-de-pelo/readback.md).
+Rodadas anteriores do Éter, cada uma com sua seção no fim: o nariz que desce e sobe (`cbaaef5`,
+publicado em `ff347d2`), o saldo da difusão medido (`9f3622b`), o teto do cache de inspeções
+(`297685b`) e o passo do lobo em plano livre (`520c3b4` + `a1405e4`).
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 
 ## Os prompts × o código
@@ -83,6 +85,24 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 | "Observabilidade > micro-otimização cega: se não dá para medir, não dá para saber se melhorou" | Para o tick, dá: a última linha do diagnóstico da suíte publica `pior passo` e `perdidos` ([smoke_test.gd:2278-2280](../tests/smoke_test.gd#L2278-L2280)). Frame e fila de malha só aparecem em janela; BT agora tem colheita no cenário estreito de rastros, sem equivaler ao agregado HOT; custo de alocação não é medido. Hash/escrita/flush agora têm contadores próprios no diagnóstico do journal | **é o débito da colheita de custo**, e é o que trava as cinco linhas acima de virarem otimização |
 
 ## Feito nesta sessão
+
+- **Bioma como código, pelo por bioma e viés de imprint (dossiê 09).** `WorldGen` ganha
+  `enum Biome` + `biome_of(x, z, h)` ([world_gen.gd](../src/world/world_gen.gd)) e
+  `surface_block` passa a consultá-la — a regra fica uma vez só, e nenhum bloco muda de byte: é o
+  que a checagem nova da suíte (`bioma_nao_altera_terreno`) confere contra quatro assinaturas
+  pinadas de `e7e30e6`, incluindo os 1 048 576 voxels do mundo, porque a amostra de 32 × 32 passou
+  verde sobre uma sabotagem de umidade deliberada. O lobo pergunta o bioma do `home` uma vez no
+  `setup` ([:135](../src/entities/wolf.gd#L135), re-derivado no `load_state` [:705](../src/entities/wolf.gd#L705))
+  e pinta o pelo da tabela `FUR_COLORS` ([:55](../src/entities/wolf.gd#L55)) antes de montar o visual. O terceiro
+  item da peça — "fundo de Éter por bioma" — entra como **viés de imprint**: o chamador do evento
+  multiplica pelo valor lido de `IMPRINT_BIAS`
+  (`_imprint` em [wolf.gd:166-168](../src/entities/wolf.gd#L166-L168) e
+  [main.gd:272-274](../src/main.gd#L272-L274)), em 11 sítios; a folha de fuga fica **de fora** por
+  custo, com o motivo escrito no código ([:249](../src/entities/wolf.gd#L249)) porque roda todo tick
+  com `_threat > 0`. O runner sobe de 109 para **119 checagens** e de 21 para **24 cenários**, com
+  o pino literal da tabela linha a linha; a fronteira é checada dos dois lados (viés dentro do
+  campo dá 7 falhas e satura `MAX_VALUE 4,0`). Efeitos e limites, com log por número:
+  [evidence/bioma-cor-de-pelo/readback.md](evidence/bioma-cor-de-pelo/readback.md).
 
 - **O corpo de 3ª pessoa muda de porte com o que está na mão.** `PlayerAvatar` lê o bloco
   segurado e interpola o braço direito entre porte leve e pesado: `HELD_SIZE 0.24`,
@@ -304,13 +324,21 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
 7. **Decompor `main.gd`** pelo eixo certo: um dono por sistema (sessão, matilha, HUD, oráculo,
    visualização), preservando o acesso ao estado. A autoridade temporal ainda não é única:
    jogador, corpos dos lobos e timers também mudam por frame.
-8. **Bioma como código, cor do pelo por bioma e background de Éter por bioma** (dossiê 09). Hoje o
-   mundo não tem nenhum identificador de bioma: o que existe é a regra de superfície
-   ([world_gen.gd:100-111](../src/world/world_gen.gd#L100-L111)), que escolhe `SAND`/`SNOW`/`STONE`/
-   `GRASS` por altura e por duas ruídos (`_temp`, `_moist`) sem nunca guardar o resultado. Todos os
-   lobos têm a mesma cor — uma linha, [wolf.gd:714](../src/entities/wolf.gd#L714)
-   `Color(0.40, 0.36, 0.31)`. A palavra "bioma" aparece em `docs/` (design 06 e 07, como estrutura
-   futura) e **zero vezes em `src/`**.
+8. **Bioma como código, cor do pelo por bioma e fundo de Éter por bioma — concluído nesta máquina
+   (dossiê 09; mantida a numeração para não mexer nas dependências da fila).** O identificador existe:
+   `enum Biome` ([world_gen.gd:32](../src/world/world_gen.gd#L32)) e `biome_of(x, z, h)`
+   ([:129](../src/world/world_gen.gd#L129)) decidem a partir das mesmas duas ruídos e da altura, e
+   `surface_block` ([:165-166](../src/world/world_gen.gd#L165-L166)) consulta em vez de repetir a
+   regra — nenhum byte de bloco muda, e a suíte confere isso contra as assinaturas pinadas de
+   `e7e30e6`. A cor do pelo vem do bioma do `home` ([wolf.gd:55](../src/entities/wolf.gd#L55),
+   aplicada em [:746](../src/entities/wolf.gd#L746)). O "fundo" entrou como **viés de imprint**
+   (`IMPRINT_BIAS` em [world_gen.gd:45](../src/world/world_gen.gd#L45), lido em
+   [:156-157](../src/world/world_gen.gd#L156-L157), multiplicado pelo chamador), que é a forma que o
+   dossiê §3.3 escolheu: o campo continua sem saber de mundo. Fica **de fora** e aberto: a avaliação
+   visual em janela (a galeria não foi re-bakeada, e o dossiê §6 proíbe prometer "bioma deserto" sem
+   re-bake), o bioma lido por outras peças além do pelo e do imprint, e o cenário multi-semente (item
+   3). Medição, sabotagens e limites:
+   [evidence/bioma-cor-de-pelo/readback.md](evidence/bioma-cor-de-pelo/readback.md).
 9. **Rotinas de alcateia** (dossiê 10). A árvore de decisão é de um lobo solitário:
    `Selector[flee, hunt, sniff, patrol]` ([wolf.gd:147-173](../src/entities/wolf.gd#L147-L173)) e o
    dicionário do blackboard ([wolf.gd:433](../src/entities/wolf.gd#L433)) não leva nenhum outro lobo.
@@ -594,6 +622,19 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     única de 12 aponta para o `README.md` da raiz. Falta a perna de docs que re-derive as 67 pelo
     conteúdo — a mesma que o furo #13 deixou pendente — e enquanto ela não roda, nenhum número de
     `docs/planos/*.md` apontando para cá deve ser lido como conferido.
+
+15. **O gate de custo do dossiê 09 era uma digitalidade de janela, não um gate.** §4 pedia: o
+    `sim_step` do runner estreito "tem de sair na banda das oito árvores medidas
+    (361 464–375 216 µs em 2 768 passos); se sair, o imprint com bioma não custou nada". Medido na
+    janela desta perna, **o chão** — `e7e30e6`, a base exata da branch, que contém aquelas oito
+    árvores — devolve 372 473 / 379 938 / 381 320 / 385 848 / 387 730 µs: quatro dos cinco valores
+    **fora** da banda publicada, e a branch na mesma faixa (379 321–387 450). Corrida absolutas de
+    janelas diferentes não se comparam, e a regra I da sessão anterior já tinha dito isso — o que o
+    furo acrescenta é que **um dossiê pode escrever um critério que a própria máquina do dia seguinte
+    não consegue satisfazer com o código velho**. A leitura substituta é pareada (branch e chão
+    intercalados, mesma janela), é o que está em
+    [evidence/bioma-cor-de-pelo/readback.md](evidence/bioma-cor-de-pelo/readback.md) §3, e vale para
+    10, 11 e 12: nenhuma banda absoluta de µs como gate.
 
 ## Contrato dos rastros e reações
 
@@ -1993,3 +2034,117 @@ tocam o caminho quente do lobo e a quarta o mesher; cada uma precisa do seu par 
 chão medido, ou o delta sai como foi aqui: imprestável para atribuir.
 
 Nenhum gate de fase se fechou aqui, e nenhum item da fila mudou de veredito.
+
+## Rodada Bioma — o bioma decide algo, medido (2026-11-20, branch `feat/bioma-e-cor-de-pelo-09`, base `e7e30e6`, ponta `44c9d94`)
+
+### O que estava em aberto
+
+Dossiê [09](planos/09-bioma-cor-de-pelo-e-ether.md), três peças e duas premissas: (1) um bioma só
+existe como código se decidir algo que o jogador vê ou o lobo sente; (2) derivar bioma **não pode**
+alterar o terreno, porque o terreno é o que o `GEN_VERSION = 4` e a projeção do hash assinam. O
+[`README.md`](../../README.md) e este arquivo descreviam a realidade anterior: nenhum identificador
+em `src/`, todos os lobos com `Color(0.40, 0.36, 0.31)` e os imprints passando o mesmo número numa
+coluna de gelo e numa de savana.
+
+### O que entrou (quatro commits, um assunto cada)
+
+- `0111a9a` — `enum Biome` + `biome_of(x, z, h)` em [world_gen.gd:32](../src/world/world_gen.gd#L32)
+  e [:129](../src/world/world_gen.gd#L129); `surface_block` passa a consultar
+  ([:165-166](../src/world/world_gen.gd#L165-L166)) em vez de repetir as comparações. Gate da
+  premissa 2: checagem nova `bioma_nao_altera_terreno` em
+  [tests/smoke_test.gd](../tests/smoke_test.gd), auto-contida contra quatro assinaturas pinadas da
+  base `e7e30e6` (relevo das 16 colunas, SHA do topo de uma grade 32×32, histograma de blocos de
+  topo e SHA dos 1 048 576 voxels do mundo).
+- `2f6ca26` — `FUR_COLORS` [:55](../src/entities/wolf.gd#L55), `home_biome` perguntado uma vez no
+  `setup` ([:135](../src/entities/wolf.gd#L135)) e re-derivado no `load_state`
+  ([:703-707](../src/entities/wolf.gd#L703-L707)), porque o load move o `home` sem reconstruir o
+  visual. Checagens 3 no runner: dois lobos em biomas diferentes saem com `albedo_color` diferente,
+  dois no mesmo bioma saem com a mesma.
+- `f9b63b3` — `IMPRINT_BIAS` [:45](../src/world/world_gen.gd#L45) lida por
+  `imprint_bias` ([:156-157](../src/world/world_gen.gd#L156-L157)) e aplicada **pelo chamador** do
+  evento: `_imprint` em [wolf.gd:166-168](../src/entities/wolf.gd#L166-L168) e
+  [main.gd:272-274](../src/main.gd#L272-L274) cobrem os 11 sítios de imprint que já existiam. A
+  folha de fuga fica de fora, com o motivo no código ([:249](../src/entities/wolf.gd#L249)): ela roda
+  todo tick com `_threat > 0`, e ruído + altura ali é exatamente o custo que o dossiê recusa no
+  caminho quente. Checagens 4: pino literal da tabela linha a linha, campo cru devolvendo o valor do
+  evento sem viés (a fronteira), ordem de grandeza preservada e média por canal na banda.
+- `44c9d94` — a guarda inalcansável que o commit anterior deixou em `imprint_bias` (`push_error` +
+  `return 1,0` para índice fora da tabela) sai: um `1,0` devolvido em silêncio disfarça de "nenhum
+  viés" um erro de ligação entre bioma e canal, e o runner já conta um teste que estoura como falha.
+  É também o commit que conserta o `const` — `Array[PackedFloat32Array]` com construtores embutidos
+  **não é expressão constante** em GDScript 4, e a branch não compilava antes disso.
+
+### Gates de contagem, com o clone limpo
+
+| onde | suíte | runner (`--script tests/aether_reactions_test.gd`) |
+|---|---|---|
+| árvore de trabalho, conteúdo de `44c9d94` | 237 / 0 / 35,5 s, exit 0, `SCRIPT ERROR` 0 | 119 / 0 / 2,064 s, exit 0 |
+| clone limpo de `44c9d94`, `--import` frio | 237 / 0 / 35,5 s, exit 0, `SCRIPT ERROR` 0 | 119 / 0 / 2,044 · 2,028 · 2,017 s, exit 0 nos três |
+| clone limpo do chão `e7e30e6` | não rodou — o número daquela árvore já está publicado | 109 / 0 / 2,012 · 1,995 · 2,052 s, exit 0 nos três |
+
+Censo interno conferido em todas as corridas da branch: `24/24` cenários e `119/119` checagens — 21→24
+e 109→119 é a conta do lote. O `diff` trabalho × clone tem 14 linhas e **nenhuma é checagem**; os dois
+logs batem `aether_energy`, `tick=359`, `wolves_alive=4`, `dropped_ticks=0`, `triangles=214480`,
+`chunks=64` e `edits=13` dígito a dígito. Manifestos: `sources.sha256` (79 fontes, conferidas dentro do
+clone, 79 `OK` / 0 divergências) e `artifacts.sha256` (15 logs, 15 `OK`).
+
+### As três sabotagens, e o que cada uma decide
+
+Não bastava o verde: `sab-red-linha-da-tabela.log` troca um multiplicador (`arid/work` 1,30 → 1,10) e
+devolve **119 / 1**; `sab-red-vies-dentro-do-campo.log` move o multiplicador para dentro de
+`AetherField.imprint` e devolve **119 / 7** — inclusive `medo local com jogador invisivel`, porque o
+valor estoura o `MAX_VALUE 4,0` quando o viés age no campo. A fronteira é requisito, não estilo, e é
+isso que as duas corridas dizem. A terceira é da suíte: `sab-red-coluna-profunda-suite.log` faz o
+erro que o dossiê §1.2 proíbe **abaixo** do bloco de topo (o `sub` de `generate_chunk` passa a
+depender do bioma) e devolve **237 / 1 / 35,6 s**, exit 1, um único FAIL —
+`bioma_nao_altera_terreno | divergentes=1/4 voxels=1048576 full=249dd54198bc`, com `rel16` e `hist`
+idênticos ao pino. Ou seja: as duas amostras de superfície não veem a coluna profunda, e a varredura
+dos 1 048 576 voxels é o que segura o viamento.
+
+### O custo: pareado, e a banda do dossiê não vale (furo #15)
+
+Dez corridas do runner estreito nesta janela, cinco por árvore, as últimas quatro em pares alternados.
+`sim_step total` médio **383 695 µs** na branch contra **381 462 µs** no chão: **+0,59 %** contra uma
+dispersão intra-chão de **4,05 %**. No par alternado a branch ficou abaixo do chão numa dupla e acima
+na outra. O `pico` é o único que se move de forma não-trivial (média 872,8 vs 772,6, +13 %; 21 dos 25
+pares possíveis branch > chão) e, com n = 5 e sendo máximo de um único passo, **é indício, não
+atribuição** — a hipótese que ele aponta é a consulta de ruído + altura caindo no passo em que o
+evento imprime, e a perna `bench/` do item 5 é quem decide.
+
+A banda que o dossiê §4 escreveu como gate (361 464–375 216 µs) não é alcançada nem pelo chão desta
+janela: `e7e30e6` dá 372 473–387 730. É a segunda vez que banda de µs não é portátil entre janelas, e
+o motivo agora tem nome na lista de furos.
+
+### O efeito no mundo, que é a razão da peça
+
+`aether_energy` do diagnóstico final, mesmo cenário, campo e revisão:
+
+| árvores até `e7e30e6` (sem viés) | `44c9d94` (com viés), trabalho **e** clone |
+|---|---|
+| `9,36133219487965` | `9,44745890423656` |
+
+Δ **+0,086 126 709 356 91 (+0,92 %)**, direção esperada: a média do multiplicador é 1,0000 em trabalho
+e 1,0125 em sangue e medo, com a linha `temperate` sendo a identidade nos três canais — redistribuição
+entre biomas, não inflação global. É o primeiro número desta linha de história que mostra o mundo
+mudando, não só a contagem de checagens subindo.
+
+### Re-derivações desta rodada
+
+Crescimento dos arquivos citados: `world_gen.gd` 249→309, `wolf.gd` 748→780, `main.gd` 501→510,
+`smoke_test.gd` 2 283→2 365, `aether_reactions_test.gd` 1 011→1 248. Toda âncora `arquivo:linha` deste
+registro foi re-derivada contra `44c9d94` e lida no alvo, não conferida por faixa. A varredura por
+conteúdo desta sessão (`ponteiros conferidos: 217 | alvos drifted: 96`) rodou com um script em
+`.tools/`, **não versionado** — o número é da sessão, não reproduzível do repositório, e a perna de
+`docs/` que fecha o furo #14 tem de trazer o instrumento para `tools/` junto com as re-derivações de
+[`AGENTS.md`](../AGENTS.md) e [`docs/planos/`](planos/README.md). As citações desta seção e do bloco
+de topo, ao contrário, foram lidas uma a uma nesta árvore.
+
+### O que nada disso fecha
+
+- Nenhum gate de fase. P0/P1 continua sem gate fechado, o runner é um lobo por cenário e não é o HOT
+  agregado dos cinco.
+- O item 8 da fila muda de veredito (concluído nesta máquina); os itens 9, 10 e 11 não.
+- Falta a avaliação visual em janela — cor de pelo por bioma e a galeria re-bakeada são do dono, e o
+  dossiê §6 proíbe prometer "bioma deserto" em texto de captura sem re-bake.
+- Multi-semente (item 3) continua aberto: as checagens novas rodam com a semente fixa `20261116`.
+- O `pico` de +13 % não tem dono ainda, e nada aqui autoriza tocar no mesher ou na difusão.

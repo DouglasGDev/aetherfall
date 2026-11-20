@@ -12,8 +12,18 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
+	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias",
 ]
-const EXPECTED_CHECKS: int = 109
+const EXPECTED_CHECKS: int = 119
+# Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
+# nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
+# quando a tabela do gen e editada se o par esperado vier de outro lugar.
+const BIAS_MEDIDA: Array = [
+	[0.85, 1.00, 1.30],    # frozen
+	[1.30, 0.90, 0.85],    # arid
+	[1.00, 1.00, 1.00],    # temperate
+	[0.85, 1.15, 0.90],    # wetland
+]
 
 var _checks: int = 0
 var _failures: int = 0
@@ -995,6 +1005,233 @@ func _test_scent_cave_layer() -> bool:
 			"controle: rastro na camada do lobo acha o alvo na superficie de sempre",
 			"found=%s celula=%s alvo=%s forca=%.4f" % [
 			_wolf._scent_found, _wolf._scent_cell, _wolf._scent_pos, _wolf._scent_strength])
+	return true
+
+
+## Premissa do dossie 09.1: o identificador de bioma tem de ser FUNCAO do mundo
+## (seed, x, z, h), nao da instancia que o calcula. Duas `WorldGen` com a mesma
+## semente, a mesma grade 16x16, e a contagem de celulas divergentes -- 0.
+##
+## A segunda checagem nao e enfeite: sem mais de um bioma na grade amostrada, a
+## primeira passaria sobre um campo constante e "identico" nao decidiria nada.
+func _test_biome() -> bool:
+	var gen_a := WorldGen.new()
+	var gen_b := WorldGen.new()
+	gen_a.setup(SEED)
+	gen_b.setup(SEED)
+	var dif: int = 0
+	var colunas: int = 0
+	var census := {}
+	for x: int in range(0, VoxelConfig.world_size_x(), 8):
+		for z: int in range(0, VoxelConfig.world_size_z(), 8):
+			var bi_a: int = gen_a.biome_of(x, z, gen_a.surface_height(x, z))
+			var bi_b: int = gen_b.biome_of(x, z, gen_b.surface_height(x, z))
+			colunas += 1
+			census[bi_a] = int(census.get(bi_a, 0)) + 1
+			if bi_a != bi_b:
+				dif += 1
+	var nomes := ""
+	var biomas := 0
+	for id: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if int(census.get(id, 0)) > 0:
+			biomas += 1
+		nomes += "%s=%d " % [WorldGen.BIOME_NAMES[id], int(census.get(id, 0))]
+	_check(dif == 0 and colunas == 256, "bioma_deterministico",
+			"divergentes=%d  colunas=%d" % [dif, colunas])
+	_check(biomas > 1, "premissa: a grade 16x16 cobre mais de um bioma",
+			"biomas=%d  %s" % [biomas, nomes.strip_edges()])
+	return true
+
+
+## Lobo montado so para ler o pelo: casa na coluna (x, z) pela altura GERADA dela,
+## sem andar e sem decidir nada.
+func _lobo_na_coluna(x: int, z: int, pid: int) -> Wolf:
+	var w := Wolf.new()
+	_stage.add_child(w)
+	w.setup(_world, _field, _player,
+			Vector3(float(x), float(_world.gen.surface_height(x, z) + 1), float(z)),
+			pid, _clock)
+	return w
+
+
+## Premissa 1 do dossie 09 no que o jogador ve: dois lobos em colunas de biomas
+## diferentes tem de sair com material de pelo diferente, e dois lobos no mesmo
+## bioma com a MESMA cor. As colunas nao sao sorteadas — sao a primeira e a ultima
+## que o proprio `biome_at` do mundo gerado nomeia para cada bioma, porque "lobo
+## no bioma X" so vale se o gen diz X. O numero que decide e o hex de cada pelo,
+## impresso com o bioma do seu `home`.
+func _test_fur_colour() -> bool:
+	_arm()
+	var primeira := {}
+	var ultima := {}
+	for x: int in range(6, VoxelConfig.world_size_x() - 6, 3):
+		for z: int in range(6, VoxelConfig.world_size_z() - 6, 3):
+			var b: int = _world.gen.biome_at(x, z)
+			if not primeira.has(b):
+				primeira[b] = Vector2i(x, z)
+			ultima[b] = Vector2i(x, z)
+	var achados: Array = []
+	var nomes := ""
+	for id: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if primeira.has(id):
+			achados.append(id)
+			nomes += "%s " % WorldGen.BIOME_NAMES[id]
+	_check(achados.size() >= 2, "premissa: a semente da colunas de dois biomas",
+			"biomas=%d  %s" % [achados.size(), nomes.strip_edges()])
+	var letras := ["a", "b", "c"]
+	var lobos: Array = []
+	var linhas := ""
+	for i: int in range(3):
+		var id: int = achados[0]
+		if i == 1 and achados.size() > 1:
+			id = achados[1]
+		# a e c: mesmo bioma em colunas diferentes. b: o bioma seguinte da lista.
+		var tabela: Dictionary = ultima if i == 2 else primeira
+		var coluna: Vector2i = tabela[id]
+		var lobo := _lobo_na_coluna(coluna.x, coluna.y, 90 + i)
+		lobos.append(lobo)
+		linhas += "%s[%s %s] " % [letras[i], WorldGen.BIOME_NAMES[id],
+				lobo._fur.albedo_color.to_html(false)]
+	_check(is_instance_valid(lobos[0]) and is_instance_valid(lobos[1])
+			and is_instance_valid(lobos[2])
+			and lobos[0]._fur.albedo_color != lobos[1]._fur.albedo_color
+			and lobos[0]._fur.albedo_color == lobos[2]._fur.albedo_color,
+			"cor_do_pelo_vem_do_bioma", linhas.strip_edges())
+	for solto in lobos:
+		solto.free()
+	var cores := {}
+	var tabela_hex := ""
+	for cor in Wolf.FUR_COLORS:
+		cores[cor.to_html(false)] = true
+		tabela_hex += "%s " % cor.to_html(false)
+	_check(cores.size() == Wolf.FUR_COLORS.size(),
+			"premissa: os quatro pares da tabela dao quatro cores diferentes",
+			"cores=%d/%d  %s" % [cores.size(), Wolf.FUR_COLORS.size(),
+					tabela_hex.strip_edges()])
+	_check(Wolf.FUR_COLORS[WorldGen.Biome.TEMPERATE] == Color(0.40, 0.36, 0.31),
+			"temperate conserva a cor historica do lobo",
+			"cor=%s" % Wolf.FUR_COLORS[WorldGen.Biome.TEMPERATE].to_html(false))
+	return true
+
+
+## Checagem 4 do dossie 09: o vies de imprint por bioma e do chamador, e os dois
+## lados dessa fronteira tem de poder ficar vermelhos. A tabela esperada e a
+## copia literal deste arquivo (BIAS_MEDIDA), nao uma leitura do gen: editar um
+## multiplicador em WorldGen pinica vermelho. Mover o vies para dentro de
+## `AetherField.imprint` pinica a fonte crua, que tem de devolver o valor do
+## evento sem nada, e o helper do lobo passaria a multiplicar duas vezes. O
+## numero que decide e o par sem/com por canal, a razao e o bioma da coluna.
+func _test_imprint_bias() -> bool:
+	var colunas := {}
+	for x: int in range(6, VoxelConfig.world_size_x() - 6, 3):
+		for z: int in range(6, VoxelConfig.world_size_z() - 6, 3):
+			var b: int = _world.gen.biome_at(x, z)
+			if not colunas.has(b):
+				colunas[b] = Vector2i(x, z)
+	# Pino linha a linha por leitura DIRETA da tabela, nao so pela composta: esta
+	# semente nao expoe arid em nenhuma coluna do mundo, e uma linha sem casa nao
+	# pode sair do gate sem conferencia. Onde existe coluna, a leitura composta
+	# (biome_of -> linha -> canal) tambem tem de bater com a copia medida, senao
+	# trocar a ordem das duas tabelas passaria. Guardas de forma antes de indexar
+	# porque tabela encolhida tem de dar vermelho de checagem, nao de script.
+	var pino_ok: bool = WorldGen.IMPRINT_BIAS.size() == BIAS_MEDIDA.size()
+	var linhas_t := ""
+	for bi: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if bi >= WorldGen.IMPRINT_BIAS.size():
+			pino_ok = false
+			linhas_t += "%s sem linha; " % WorldGen.BIOME_NAMES[bi]
+			continue
+		var row: Array = WorldGen.IMPRINT_BIAS[bi]
+		if row.size() != AetherField.Channel.COUNT:
+			pino_ok = false
+		var tem_casa: bool = colunas.has(bi)
+		var cc: Vector2i = colunas[bi] if tem_casa else Vector2i(0, 0)
+		var hh: int = _world.gen.surface_height(cc.x, cc.y) if tem_casa else 0
+		for ch: int in AetherField.Channel.COUNT:
+			var direto: float = float(row[ch]) if ch < row.size() else -1.0
+			var medido: float = float(BIAS_MEDIDA[bi][ch])
+			if absf(direto - medido) > 0.0001:
+				pino_ok = false
+			if tem_casa and absf(_world.gen.imprint_bias(cc.x, cc.y, hh, ch) - medido) > 0.0001:
+				pino_ok = false
+			linhas_t += "%s/%s=%.2f " % [WorldGen.BIOME_NAMES[bi],
+					AetherField.CHANNEL_NAMES[ch], direto]
+	_check(pino_ok, "premissa: vies_lido_confirma_tabela_medida", linhas_t.strip_edges())
+	# A mesma fonte nos mesmos lugares, crua pelo campo e vies pelo helper do
+	# lobo (o caminho real dos eventos), com as quantias lidas do proprio
+	# batch: lavra WORK 0,42, morte BLOOD 1,3 e FEAR 1,0.
+	var amounts: Array = [0.42, 1.3, 1.0]
+	var crua_ok := true
+	var ordem_ok := true
+	var linhas_ab := ""
+	var feitos := 0
+	for bi: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if not colunas.has(bi):
+			continue
+		var cc: Vector2i = colunas[bi]
+		var hh: int = _world.gen.surface_height(cc.x, cc.y)
+		var pos := Vector3(float(cc.x) + 0.5, float(hh + 1), float(cc.y) + 0.5)
+		_arm()
+		var bruto: Array = []
+		for ch: int in AetherField.Channel.COUNT:
+			_field.imprint(pos, ch, float(amounts[ch]))
+			bruto.append(_field.sample(pos, ch))
+		_arm()
+		var vies: Array = []
+		for ch: int in AetherField.Channel.COUNT:
+			_wolf._imprint(pos, ch, float(amounts[ch]))
+			vies.append(_field.sample(pos, ch))
+		feitos += 1
+		for ch: int in AetherField.Channel.COUNT:
+			var medido: float = float(BIAS_MEDIDA[bi][ch])
+			var b0: float = float(bruto[ch])
+			var b1: float = float(vies[ch])
+			var razao: float = b1 / maxf(b0, 1e-9)
+			if not is_equal_approx(b0, float(amounts[ch])):
+				crua_ok = false
+			if not (is_equal_approx(b1, float(amounts[ch]) * medido)
+					and absf(razao - medido) < 0.01
+					and razao >= 0.5 and razao <= 2.0
+					and b1 > 0.0 and b1 < AetherField.MAX_VALUE):
+				ordem_ok = false
+			linhas_ab += "bioma=%d(%s) %s sem=%.4f com=%.4f razao=%.4f  " % [
+					bi, WorldGen.BIOME_NAMES[bi], AetherField.CHANNEL_NAMES[ch],
+					b0, b1, razao]
+	_check(crua_ok, "premissa: imprint cru no campo devolve o valor do evento",
+			"esperado=%.2f/%.2f/%.2f  colhido: %s" % [
+			float(amounts[0]), float(amounts[1]), float(amounts[2]), linhas_ab])
+	_check(ordem_ok and feitos >= 2, "imprint_bioma_tem_mesma_ordem",
+			"biomas_colhidos=%d  %s" % [feitos, linhas_ab.strip_edges()])
+	# Media do vies por canal sobre as quatro linhas da tabela: o pedido e
+	# redistribuicao, nao inflacao — a banda 1,00 +/- 0,10 contem os valores
+	# medidos desta revisao (trabalho 1,0000; sangue e medo 1,0125), e uma linha
+	# grossamente editada sai dela antes mesmo da leitura composta chegar ao
+	# chamador. O pino acima e que confere multiplicador a multiplicador.
+	var banda_ok: bool = WorldGen.IMPRINT_BIAS.size() == BIAS_MEDIDA.size()
+	var soma_tab: Array[float] = [0.0, 0.0, 0.0]
+	var linhas := 0
+	for bi: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if bi >= WorldGen.IMPRINT_BIAS.size() \
+				or (WorldGen.IMPRINT_BIAS[bi] as Array).size() != AetherField.Channel.COUNT:
+			banda_ok = false
+			continue
+		var rw: Array = WorldGen.IMPRINT_BIAS[bi]
+		linhas += 1
+		for ch: int in AetherField.Channel.COUNT:
+			soma_tab[ch] += float(rw[ch]) / float(BIAS_MEDIDA.size())
+	var medias := ""
+	for ch: int in AetherField.Channel.COUNT:
+		var m: float = soma_tab[ch]
+		if m < 0.90 or m > 1.10:
+			banda_ok = false
+		medias += "%s=%.4f " % [AetherField.CHANNEL_NAMES[ch], m]
+	_check(banda_ok, "media do vies por canal dentro da banda medida",
+			"linhas=%d  %s" % [linhas, medias.strip_edges()])
 	return true
 
 
