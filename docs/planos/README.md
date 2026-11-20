@@ -117,7 +117,9 @@ quatro ponteiros estavam errados e **foram corrigidos na própria página**: `12
 `docs/melhorias-status.md:78-78` (prosa da seção anterior; o par geração/malharia está em `:83`) e
 `README.md:533` (linha de lista do Éter; os ~4,3 s de malharia dos 64 chunks estão em `:548`), e `07:67`
 e `07:137` apontavam `README.md:505-512` e `:507` — que é a seção do oráculo local — para a queda de
-~16 s para ~7,5 s com a cópia linear, que está em `:546-553`. Restam **69** referências a estes três
+~16 s para ~7,5 s com a cópia linear, que está em `:546-553` (os quatro números de README desta frase
+são da numeração de `eb6ec8d`, e o README não mudou entre ela e esta ponta; hoje o mesmo texto cai em
+`:546`, `:518-525` e `:559-566`). Restam **69** referências a estes três
 arquivos sem conferência de conteúdo, e é por isso que nenhuma delas deve ser lida como conferida. A
 perna de docs que re-derive as 69 pelo conteúdo continua aberta, registrada no furo. Este re-contado mora
 aqui, e não dentro do furo #14, por um motivo que é o próprio furo: escrever no meio do status empurra

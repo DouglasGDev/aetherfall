@@ -20,7 +20,8 @@ Base da branch: `eb6ec8d` (runner `119 checagens` / 24 cenários, suíte `237`).
 
 Nenhum exit code foi gravado nestes logs — o contrato lido é a última linha (`N checagens M
 falhas T s` no runner, `== N checagens M falhas T s de teste ==` na suíte) e a contagem de
-`SCRIPT ERROR`, que é **0 nos 30 arquivos** (os 28 da escada mais os dois do clone, §6).
+`SCRIPT ERROR`, que é **0 nos 31 arquivos** (os 28 da escada, o par do clone §6 e o da `main`
+mergida §7).
 
 | degrau | commit | runner (cenário / checagens) | log do runner | suíte | log da suíte |
 | --- | --- | --- | --- | --- | --- |
@@ -140,10 +141,29 @@ importação foi fria de verdade.
 | suíte no clone | **239 checagens / 0 falhas / 38,6 s**, exit **0**, zero `SCRIPT ERROR`, ruído de saída **12** ObjectDB + **6** resources | `clone-gate-suite.log` |
 
 Os 38,6 s comparam-se com os 41,3 s da árvore de trabalho (`pos-merge-suite.log`) e caem dentro da
-faixa dos degraus anteriores (35,8 a 45,1 s), que é o comportamento de sempre nesta máquina; a
-corrida não foi paralela com outra carga. O que o número decide é a contagem e o exit code, não o
+faixa dos degraus anteriores (35,8 a 45,1 s), que é o comportamento de sempre nesta máquina. O que o
+número decide é a contagem e o exit code, não o
 tempo: 239/0/exit 0 valia para `src` + `tests` byte a byte idênticos aos de `c42250c`, e o clone
 confere isso por execução em vez de só por hash de árvore.
 
-Não confere, e continua faltando: o gate de nenhuma fase fecha com isto (mandato 4), e o merge na
-`main` ainda precisa da suíte re-rodada na árvore mergida — outra revisão, outro número.
+Não confere, e continua faltando: o gate de nenhuma fase fecha com isto (mandato 4). A suíte da
+árvore mergida está na **seção 7**.
+
+## 7. A `main` mergida, re-rodada
+
+`git merge --no-ff feat/alcateia-rutinas-10` deu `0c38489`, e `src` / `tests` na árvore mergida são
+os mesmos hashes do degrau de código: `c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a` e
+`03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`. A suíte nesta revisão:
+
+| passo | resultado | log |
+| --- | --- | --- |
+| suíte em `0c38489` (árvore de trabalho, `.godot/` já quente) | **239 checagens / 0 falhas / 38,2 s**, exit **0**, zero `SCRIPT ERROR`, ruído 12 ObjectDB + 6 resources | `merge-0c38489-suite.log` |
+
+Conferência de carga depois da corrida acima: nenhum processo com caminho sob `C:\Aetherfall`
+rodava. Foi uma checagem desta sessão, não um registro dentro do log — e é exatamente por isso que o
+contrato lido continua sendo a contagem e o exit code: os 38,2 s ficam na mesma faixa dos 38,6 s do
+clone e dentro dos 35,8 a 45,1 s da escada.
+
+Com isto a perna 10 pousou na `main`. O que continua aberto não é número de suíte: **nenhum gate de
+fase** (mandato 4), o furo #16 (a sessão real nunca montou matilha de dois) é a primeira peça da
+perna 14, e as 8 referências deixadas no furo #17 seguem pedindo leitura humana.

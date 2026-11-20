@@ -64,7 +64,7 @@ consumido em `src/world/voxel_world.gd:178-186`) e geometria só de cubo unitár
 O precedente medido está no comentário de `:126-129` (dicionário de chunks ≈ 250 ms/chunk, boot
 congelado ≈ 16 s) e no README: `~0,9 s de geração + ~4,3 s de malharia` dos 64 chunks, 214.480
 triângulos, e a queda de ~16 s para ~7,5 s quando as consultas de vizinhança passaram a ler a
-cópia linear (`README.md:546-553`; os logs locais dão 4.640–4.886 ms de malha,
+cópia linear (`README.md:559-566`; os logs locais dão 4.640–4.886 ms de malha,
 `docs/melhorias-status.md:1064`). Braços reais na mesa hoje:
 
 | Braço | O que mudaria | Número que decide |
@@ -134,7 +134,7 @@ Citações que não conferem (verificadas abrindo os arquivos):
   932,9 com 4684,0/4661,6/4675,9 (`:1066`); o clone limpo re-medido dá 926,4 / 4.134,9 ms
   (`:665`). O par de `:302` é arredondamento de uma corrida que não está nomeada ali — e contra o
   número de `:665` ele está velho em 3,9% na geração e 13% na malha.
-- `README.md:548` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `:1064` e
+- `README.md:561` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `:1064` e
   4.134,9 ms no clone re-medido.
 - `docs/design/06:33` aponta `src/core/sim/tick_clock.gd` (caminho inexistente — o arquivo real é
   `src/core/sim_clock.gd`) e `:200` aponta `src/tools/` (diretório inexistente).

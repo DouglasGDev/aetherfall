@@ -185,7 +185,7 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `44c9d94`, ponta de
+Sai com código `1` se qualquer checagem falhar. O número da rodada do bioma é da revisão `44c9d94`, ponta de
 `feat/bioma-e-cor-de-pelo-09` sobre a base `e7e30e6`, medida num clone limpo dela mesma (os 79 arquivos de
 [docs/evidence/bioma-cor-de-pelo/sources.sha256](docs/evidence/bioma-cor-de-pelo/sources.sha256), sem
 `.godot/`, sem `.tools/` e sem `override.cfg`), recém-importado com o `--import` logo acima:
@@ -210,6 +210,19 @@ Que "clone limpo da mesma revisão" não é generosidade de redação é conferi
 A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois hashes de `src` e `tests`:
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
+
+**O pin de hoje é `0c38489`**, a `main` depois do merge `--no-ff` de `feat/alcateia-rutinas-10`
+(dossiê 10 — rotinas de alcateia). A suíte re-rodada nesta árvore dá **239 checagens, 0 falhas,
+38,2 s**, exit 0, zero `SCRIPT ERROR`; `src` = `c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a` e `tests` =
+`03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`, os mesmos hashes da ponta de código da perna. O clone
+limpo daquela ponta (`188490b`, sem `.godot/`, `--import` frio com exit 0) confere por execução o
+que o hash de árvore só sugere: **239 checagens, 0 falhas, 38,6 s**, exit 0. Os dois tempos caem na
+faixa dos degraus da perna (35,8 a 45,1 s). Logs e conferência estão em
+[docs/evidence/alcateia-rutinas/readback.md](docs/evidence/alcateia-rutinas/readback.md), §6 e §7.
+O ruído de saída muda de família aqui: as corridas da perna 10 dão **12 ObjectDB + 6 resources**,
+igual na árvore de trabalho, no clone e na `main` mergida — e atribuí-lo continua aberto, como na
+rodada de rastros.
+
 Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
