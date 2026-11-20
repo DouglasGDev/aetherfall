@@ -84,7 +84,8 @@ páginas são **790 citações conferidas, 0 números fora do arquivo** (61 · 4
 52 · 36 · 74 · 56 · 54 · 103 · 65, na ordem da tabela), e nesta página há mais 12 — **802** no
 diretório inteiro. Somando os três documentos que governam a casa — [`AGENTS.md`](../../AGENTS.md),
 [`README.md`](../../README.md) e [`docs/melhorias-status.md`](../melhorias-status.md) — são mais
-**322 números (85 · 0 · 237), 0 fora do arquivo**. A conta anterior desta página — 622 · 629 no
+**330 números (85 · 0 · 245), 0 fora do arquivo** — os 245 do status incluem os oito que a nota de
+rodada desta rodada acrescentou ao fim do arquivo. A conta anterior desta página — 622 · 629 no
 diretório e 261 (72 · 0 · 189) no trio — media **doze** páginas e deixava a página 07 em 39: os cinco
 números que ela cita em `.tools/af-clean-suite*.log` só são conferidos onde `.tools/` existe, porque a
 gateira **não conta** citação de arquivo ausente. Aqui `.tools/` está no `.gitignore` e está na árvore,
