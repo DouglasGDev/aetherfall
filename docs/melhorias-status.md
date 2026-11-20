@@ -2597,10 +2597,10 @@ deslocaram **44** delas (16 já caíam no lugar) — registro no **furo #17**, e
 
 ### O que nada disso fecha
 
-- **Nenhum gate de fase**, e a branch não está mergida: falta o gate no clone limpo de `c42250c` com
-  `--import` frio, falta o merge `--no-ff` na `main`, a suíte re-rodada na árvore mergida e o
-  `git ls-remote --heads origin`. Sem isso, 239/0/41,3 s é medição de árvore de trabalho e a
-  publicação está vetada por mandato 3, item 6.
+- **Nenhum gate de fase.** O clone limpo **rodou** em `188490b`: `--import` frio exit 0 e suíte
+  **239 / 0 / 38,6 s**, exit 0, zero `SCRIPT ERROR` (`clone-gate-*.log`, §6 de
+  [`readback.md`](evidence/alcateia-rutinas/readback.md)). Falta o merge `--no-ff` na `main` com a
+  suíte re-rodada na árvore mergida e o `git ls-remote --heads origin`: sem isso a publicação segue vetada.
 - **Furo #16**: a sessão real nunca montou matilha de dois. É a primeira peça da perna 14.
 - **Furo #17**: **8** das 60 referências a linhas deste arquivo ficaram para trás de propósito — seis
   já apontavam para linha em branco (mis-citação pré-existente, prova vazia) e duas caem dentro de um

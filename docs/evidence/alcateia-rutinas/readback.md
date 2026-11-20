@@ -9,17 +9,18 @@ Motor Godot 4.7.2-stable (`ed1daf0bf`), binário `.tools/Godot_v4.7.2-stable_win
 código da perna: o merge da `main` (`265aad4`) e os três commits de documentos depois dele não
 tocaram uma linha de `src/` nem de `tests/` (`git diff --stat eb6ec8d..HEAD -- src tests` fecha em
 4 arquivos, `+1 171 / -11`, todos já presentes em `c42250c`). Então o runner de **150 checagens**
-medido em `c42250c` vale byte a byte para esta árvore, sem re-corrida. O que **não** vale ainda é o
-clone limpo: nenhuma corrida abaixo foi feita em clone — todas são árvore de trabalho.
+medido em `c42250c` vale byte a byte para esta árvore, sem re-corrida. As seções 1 a 5 abaixo são
+**árvore de trabalho** — nenhuma corrida ali foi feita em clone. O clone limpo rodou depois, na
+ponta desta branch, e está na **seção 6**.
 
-Base da branch: `eb6ec8d` (runner `119 checagens` / 24 cenários, suíte `237`). `git merge-base main
-HEAD` = `4ac5838`.
+Base da branch: `eb6ec8d` (runner `119 checagens` / 24 cenários, suíte `237`).
+`git merge-base main HEAD` = `4ac5838`.
 
 ## 1. A escada de contagem, com o log de cada degrau
 
 Nenhum exit code foi gravado nestes logs — o contrato lido é a última linha (`N checagens M
 falhas T s` no runner, `== N checagens M falhas T s de teste ==` na suíte) e a contagem de
-`SCRIPT ERROR`, que é **0 nos 28 arquivos**.
+`SCRIPT ERROR`, que é **0 nos 30 arquivos** (os 28 da escada mais os dois do clone, §6).
 
 | degrau | commit | runner (cenário / checagens) | log do runner | suíte | log da suíte |
 | --- | --- | --- | --- | --- | --- |
@@ -105,16 +106,44 @@ a leitura da matilha mais o contágio custam ~45 %, ou a janela estava carregada
 
 - Nenhum gate de fase. O custo de BT continua medido só pelo `SubtreeGuard`, que cronometra a
   árvore e não a percepção nem a utilidade.
-- Clone limpo com `--import` frio ainda não rodou para `c42250c` nem para `cb96493`; sem ele o
-  número de 239 continua sendo medição de árvore de trabalho, e a publicação fica proibida por
-  mandato 3, item 6.
+- Clone limpo com `--import` frio **rodou**, mas só na ponta desta branch (`188490b`) e não nos
+  degraus intermediários: ver §6. O que estava proibido — publicar 239 como número de clone — caiu;
+  o número do clone é **239 / 0 / 38,6 s**, exit 0.
 - `maior_matilha_lida=1` (furo #16) e a ausência de chão pareado (§4) são os dois buracos reais
   desta perna.
 - O log de ruído de saída tem agora **quatro** famílias nesta branch: `ronda-suite.log` dá **24**
-  ObjectDB + **8** resources, `cerco-suite.log` dá **16/6**, os cinco seguintes (`ataque`,
-  `confianca`, `contagio`, `amortecimento`, `pos-merge`) dão **12/6** e `backup-suite.log` dá
-  **8/4** — este último já registrado no status como a exceção antiga da amostra. Não há par de
-  árvores com `src` e
-  `tests` idênticos dando números diferentes aqui (as duas árvores iguais desta perna, `c42250c` e
-  `HEAD`, dão a mesma 12/6), e nenhum log tem `--verbose`, então a contagem fica registrada sem
-  atribuição.
+  ObjectDB + **8** resources, `cerco-suite.log` dá **16/6**, os seis seguintes (`ataque`,
+  `confianca`, `contagio`, `amortecimento`, `pos-merge`, `clone-gate-suite`) dão **12/6** e
+  `backup-suite.log` dá **8/4** — este último já registrado no status como a exceção antiga da
+  amostra. Não há par de árvores com `src` e `tests` idênticos dando números diferentes aqui (as
+  duas árvores iguais desta perna, `c42250c` e `HEAD`, dão a mesma 12/6, e o clone limpo da ponta —
+  mesmo `src`, mesmo `tests`, cache frio — dá a mesma 12/6), e nenhum log tem `--verbose`, então a
+  contagem fica registrada sem atribuição.
+
+## 6. O clone limpo da ponta, com `--import` frio
+
+Comando e revisão, na ordem exata em que rodaram (caminhos literais desta máquina):
+
+```sh
+git clone --no-hardlinks C:/Aetherfall C:/Aetherfall/.tools/leg10-gate
+git -C C:/Aetherfall/.tools/leg10-gate checkout 188490b
+C:/Aetherfall/.tools/Godot_v4.7.2-stable_win64_console.exe --headless --path C:/Aetherfall/.tools/leg10-gate --import
+C:/Aetherfall/.tools/Godot_v4.7.2-stable_win64_console.exe --headless --path C:/Aetherfall/.tools/leg10-gate tests/smoke_test.tscn
+```
+
+O clone saiu **sem `.godot/`** (conferido antes do `--import`: o diretório não existia), então a
+importação foi fria de verdade.
+
+| passo | resultado | log |
+| --- | --- | --- |
+| `--import` frio | exit **0**, com `[ DONE ] loading_editor_layout` no fim e zero `SCRIPT ERROR` | `clone-gate-import.log` |
+| suíte no clone | **239 checagens / 0 falhas / 38,6 s**, exit **0**, zero `SCRIPT ERROR`, ruído de saída **12** ObjectDB + **6** resources | `clone-gate-suite.log` |
+
+Os 38,6 s comparam-se com os 41,3 s da árvore de trabalho (`pos-merge-suite.log`) e caem dentro da
+faixa dos degraus anteriores (35,8 a 45,1 s), que é o comportamento de sempre nesta máquina; a
+corrida não foi paralela com outra carga. O que o número decide é a contagem e o exit code, não o
+tempo: 239/0/exit 0 valia para `src` + `tests` byte a byte idênticos aos de `c42250c`, e o clone
+confere isso por execução em vez de só por hash de árvore.
+
+Não confere, e continua faltando: o gate de nenhuma fase fecha com isto (mandato 4), e o merge na
+`main` ainda precisa da suíte re-rodada na árvore mergida — outra revisão, outro número.
