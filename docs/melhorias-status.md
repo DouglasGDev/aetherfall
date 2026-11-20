@@ -1211,3 +1211,106 @@ runner estreito continua um lobo por cenário, com `sim_step total=224134 us`, p
 `last_us soma=10295 pico=44 trips=0` na corrida do clone (log `:92`) — colheita, não gate. E o débito antigo
 de alocação no caminho quente permanece: `pass_cut` é realocado uma vez em `setup()`, não por
 passada, e as demais alocações listadas na "Disciplina de otimização" estão como estavam.
+
+## Rodada Éter — o que limita o cache de inspeções, medido (2026-11-20, branch `test/cache-rastro-evicao-03`)
+
+### O que estava em aberto
+
+A memória de rastros é publicada por dois números derivados do código — o teto de 32 células por lobo
+([wolf.gd:32](../src/entities/wolf.gd#L32)) e o relógio de 30 s
+([:31](../src/entities/wolf.gd#L31)) — e nenhuma corrida dizia **qual dos dois limita o jogo**. A
+evicção FIFO que corta a célula mais antiga quando a 33ª entra
+([:291-292](../src/entities/wolf.gd#L291-L292)) é caminho nunca exercitado, e cobertura de rastros é
+promessa do slice: "o cache está limitado a 32" só quer dizer alguma coisa depois de medir se ele
+chega lá. O bloco começou pela colheita.
+
+### O que entrou
+
+Décimo oitavo cenário do runner dedicado, `_test_cache_cap`
+([aether_reactions_test.gd:639-728](../tests/aether_reactions_test.gd#L639-L728)): seis fontes reais
+de WORK na grade de células 11/14/17 × 13/16, 12 m por salto, com amplitudes decrescentes
+`0,84 → 0,54` para que a ordem de visita saia da regra de seleção — o máximo de
+`BLOOD + 0,35 × WORK` entre as células não cacheadas
+([:461-496](../src/entities/wolf.gd#L461-L496)) — e não de uma imposição do teste. O cenário colhe,
+com produção intocada: o instante em que cada inspeção **conclui**, a célula inspecionada, o pico do
+cache, a idade de cada saída (escrita → remoção), os metros andados por salto e a velocidade do
+corpo. Cinco checagens novas, `EXPECTED_CHECKS` de 89 para 94 e censo de cenários `18/18`.
+
+### O que foi medido
+
+| Corrida | Censo | Última linha | Log |
+| --- | --- | --- | --- |
+| runner dedicado no commit do instrumento | 94 | **94 / 0 falhas / 2,293 s**, `18/18` | [worktree-branch-reactions.log](evidence/ether-cache-limite/worktree-branch-reactions.log) |
+| runner dedicado na ponta da branch, com as seis linhas `CHEGADA` | 94 | **94 / 0 / 2,034 s** | [worktree-branch-tip-reactions.log](evidence/ether-cache-limite/worktree-branch-tip-reactions.log) |
+| suíte na ponta da branch | 236 | **236 / 0 / 35,4 s**, zero `SCRIPT ERROR`, zero `FALHA` | [worktree-branch-suite.log](evidence/ether-cache-limite/worktree-branch-suite.log) |
+| clone limpo do `main` mergido | — | **alvo**, ainda não medido: a linha é preenchida pela branch de medição que vem depois do merge | — |
+
+O que decide a pergunta, impresso nos logs acima: `pico=27 teto=32 vistas=36`; as 36 saídas colhidas
+com idade `30,250 s` (a mais jovem e a mais velha — todas pelo relógio, nenhuma por evicção,
+`saida_mais_jovem=30.250 mais_velha=30.250 ttl=30.0`); `intervalo=12.540 janela=30.000 blocos=3
+preencheria=27`; `pico=27 previsto=27`; `salto=12.0 metros_por_salto=24.8 progressao=0.957
+m/s=1.914`.
+
+**Veredito: a evicção não roda no jogo de hoje.** Com 12,54 s entre inspeções a janela de 30 s
+comporta três blocos 3×3; o quarto só entraria com intervalo ≤ 10 s, e é o quarto que ultrapassa o
+teto (`9 × 4 = 36 > 32`). O `previsto` é o modelo lido do próprio código — um bloco por inspeção
+concluída, cada um vivo por 30 s — e ele fecha com o `pico` medido célula por célula. A checagem
+`evicao nao roda` é o tripé: se o intervalo cair abaixo de 10 s ela vai a vermelho, e é aí, não
+antes, que o braço da evicção (ordem FIFO e reabertura depois da remoção) passa a ter código a
+testar.
+
+### Propriedade medida: a expirada mais forte passa na frente da nunca visitada
+
+As seis linhas `CHEGADA` do log da ponta dão as células `(11,12,13)`, `(14,12,13)`, `(17,12,13)`,
+`(17,12,16)`, `(11,12,13)`, `(14,12,13)` — **quatro** células distintas em seis inspeções. As
+chegadas 5 e 6 voltaram às fontes 1 e 2, já vencidas pelo relógio, em vez de caminhar até as fontes
+5 e 6, que o lobo nunca inspecionou: é a regra de seleção funcionando como está escrita, célula
+expirada volta a ser elegível e a mais forte entre elas (`0,84` ponderado em `0,294`) ganha da nunca
+vista (`0,60` em `0,21`). Daí os `vistas=36` em lugar de 54 — dezoito escritas renovaram célula já
+cacheada. **Não se registra como defeito sem corrida que o refute**: com fontes estáticas o leitor
+cicla nas duas mais fortes; no jogo o WORK nasce, decai (meia-vida de 90 s) e se move, e essa ordem
+não foi medida aqui. Fica como pergunta para a fila do refinamento de rastros.
+
+### Furo descoberto: o contato com o chão conta como obstáculo
+
+Mecanismo lido no código: `move_and_collide` resolve os três eixos e o Y desce contra o chão em
+todo frame ([voxel_body.gd:50](../src/entities/voxel_body.gd#L50)), e `_collide_axis` marca
+`blocked_this_frame` para **qualquer** eixo, inclusive o pouso
+([:94](../src/entities/voxel_body.gd#L94)). O passo do lobo trata o flag como parede
+([wolf.gd:537-541](../src/entities/wolf.gd#L537-L541)): re-arma `_unstick` (0,35–0,8 s) e `_detour`
+(±0,7–1,3 rad) e ainda salta (`velocity.y = 5,2`) estando no chão. Em plateau plano, sem nenhum
+obstáculo entre o corpo e a fonte, o steering roda girado — daí os `24,8` metros andados para
+`12,0` metros de ganho (2,07×) e a progressão líquida de `0,957 m/s` contra
+`SPEED_WALK = 2,6` ([:20](../src/entities/wolf.gd#L20)).
+
+Atribuição **não** fechada nos dois sentidos (ciclo de trabalho, item 3): o braço que mostra o
+conserto indiferente ao estado não foi rodado, e locomoção é assunto próprio. Fica como branch
+`fix/` a abrir, com `metros_por_salto=24.8 progressao=0.957` como linha de base. A conta que importa
+para os rastros é derivada do código com o metro medido, não corrida: com o caminho tortuoso de hoje
+e `2,6 m/s` nominais o intervalo seria `24,8/2,6 + 2,0 = 11,5 s` — ainda acima dos 10 s; só com o
+caminho limpo (`12/2,6 + 2,0 = 6,6 s`) o quinto bloco entraria na janela. Ou seja: o que hoje segura
+o cache abaixo do teto é o **desvio**, não a velocidade.
+
+### Nota de ruído: o µs do rodapé é amostra
+
+Duas corridas do runner com o mesmo conjunto de cenários e `passos=3234`, ambas arquivadas acima,
+deram `sim_step total=437350 µs, pico=812 µs` e `376723 µs, pico=431 µs` — 16% de spread na mesma
+árvore. O rodapé continua colheita estreita (um lobo por cenário, `trips=0`); comparar revisions por
+esse número exige mais de uma corrida de cada, exatamente o que a rodada anterior pediu para o
+`worst_sim_ms` da suíte.
+
+### Re-derivações desta rodada
+
+O rodapé do runner, que a colheita empurrou: `:640-641` → `:736-737` em `AGENTS.md`,
+`docs/design/08` e `docs/design/09` (a antiga apontava para o `_check(_ran…)` de
+`_finish()`, não para a linha colhida — corrigida pelo conteúdo); `:645` → `:737` e `:648` → `:740`
+nos dossiês 03 e 04; `:644-645` → `:736-737` no dossiê 04. Censo nos mesmos três lugares:
+`EXPECTED_CHECKS` 89 → 94 e cenários 17 → 18. `README.md` mantém os `89 checagens` da rodada
+anterior porque aquela frase responde por um candidato nomeado, não pelo estado atual.
+
+### O que nada disso fecha
+
+Nenhum gate de fase. O teto de 32 células continua sem instrumento de evicção — ele depende do
+`fix/` acima. O item 4 da fila (canais MORTE/SOM/FOGO) está intocado, e o item 5 (HOT agregado dos
+cinco lobos) também. O `SCENT_MEMORY_CAP` deixa de poder ser publicado como o limitante da memória
+de rastros: o limitante medido hoje é o relógio de 30 s, com as 36 saídas todas em `30,250 s`.
