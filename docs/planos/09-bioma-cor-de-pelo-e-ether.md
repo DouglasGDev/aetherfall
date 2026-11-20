@@ -45,7 +45,7 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   [`_build_visual()`](../../src/entities/wolf.gd#L885) cria um `StandardMaterial3D` por lobo
   ([:889](../../src/entities/wolf.gd#L889)) e pinta todos com
   `Color(0.40, 0.36, 0.31)` ([:890](../../src/entities/wolf.gd#L890)); as caixas do corpo usam essa
-  material de [:892](../../src/entities/wolf.gd#L892) até [:917](../../src/entities/wolf.gd#L917).
+  material de [:892](../../src/entities/wolf.gd#L892) até [:738](../../src/entities/wolf.gd#L738).
   Não há cor por semente, por bioma nem por indivíduo.
 - **O Éter não sabe onde está.** `setup` aloca `_cur`/`_nxt` de
   `COUNT * _per_channel` ([aether_field.gd:42-54](../../src/world/aether_field.gd#L42-L54)) e as

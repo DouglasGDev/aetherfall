@@ -30,8 +30,8 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
   ([:227](../../src/entities/wolf.gd#L227)). Nenhum nó lê outro lobo.
 - **O blackboard não tem matilha.** `sim_step` chama
   `_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt})`
-  ([:594](../../src/entities/wolf.gd#L594)) e `_think` passa `{"wolf": self, "elapsed": elapsed}` ao
-  escorredor ([:557](../../src/entities/wolf.gd#L557)). É o dicionário novo por lobo por tick que o
+  ([:433](../../src/entities/wolf.gd#L433)) e `_think` passa `{"wolf": self, "elapsed": elapsed}` ao
+  escorredor ([:403](../../src/entities/wolf.gd#L403)). É o dicionário novo por lobo por tick que o
   contrato já registra como débito ([`AGENTS.md`](../../AGENTS.md), "Alocação no caminho quente").
 - **A percepção só enxerga o jogador.**
   [`_sense`](../../src/entities/wolf.gd#L436-L459): distância e LOS **contra o jogador**, e a LOS só
@@ -46,7 +46,7 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
   [`_build_scorer`](../../src/entities/wolf.gd#L353-L399): `flee` com 5 considerações
   ([:494-504](../../src/entities/wolf.gd#L494-L504)), `hunt` com 6 — inclusive o veto
   "presa percebida" ([:533-535](../../src/entities/wolf.gd#L533-L535)) e o veto "coragem contra este
-  ator" ([:382-383](../../src/entities/wolf.gd#L537)) —, `investigate` com 4 e o veto "ha rastro"
+  ator" ([:382-383](../../src/entities/wolf.gd#L383)) —, `investigate` com 4 e o veto "ha rastro"
   ([:392-393](../../src/entities/wolf.gd#L547)), e `patrol` com o chão de fundo de 0,22
   ([:551-553](../../src/entities/wolf.gd#L551-L553)). `min_lead = 0,05` e `min_interval = 0,6`
   ([:491-492](../../src/entities/wolf.gd#L491-L492)) são a histerese que evita o flicker — e é
@@ -59,7 +59,7 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
   [`_spawn_wolves`](../../src/main.gd#L199-L215): cinco lares espalhados, **nenhum território
   compartilhado**, e a mensagem de respawn diz "uma nova matilha entrou no vale"
   ([main.gd:182](../../src/main.gd#L182)) sem que nada no código chame aquilo de matilha.
-- **Cercar não existe.** [`_leaf_chase`](../../src/entities/wolf.gd#L281) vai direto ao alvo e
+- **Cercar não existe.** [`_leaf_chase`](../../src/entities/wolf.gd#L227) vai direto ao alvo e
   [`_leaf_stalk`](../../src/entities/wolf.gd#L290) vai ao último avistamento
   (`mind.last_atom("saw_player")`). `_move_target` é um ponto só, e a locomoção em
   [`_physics_process`](../../src/entities/wolf.gd#L702-L747) tem desemperto + desvio
@@ -81,15 +81,15 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
   ([:104-105](../../src/ai/mind.gd#L104-L105)), decaimento exponencial por minuto
   ([:108-123](../../src/ai/mind.gd#L108-L123)) e deriva de temperamento por experiência
   ([:50-58](../../src/ai/mind.gd#L50-L58)). `main` persiste cada mente por
-  [`state_dict`](../../src/entities/wolf.gd#L842)/[`load_state`](../../src/entities/wolf.gd#L850).
+  [`state_dict`](../../src/entities/wolf.gd#L842)/[`load_state`](../../src/entities/wolf.gd#L674).
   Não há canal de lobo para lobo.
 
 ## 3. O que a peça exige
 
 1. **`pack_provider` no lobo**, montado em `main` como o do jogador, devolvendo uma leitura
    **barata e estável**: para cada lobo, `[{identity, pos, intent, hp_ratio}]` dos vivos a menos de
-   um raio de coesão. A lista entra no blackboard de `sim_step` ([:594](../../src/entities/wolf.gd#L594))
-   e no contexto do escorredor ([:557](../../src/entities/wolf.gd#L557)), uma vez por tick de
+   um raio de coesão. A lista entra no blackboard de `sim_step` ([:433](../../src/entities/wolf.gd#L433))
+   e no contexto do escorredor ([:403](../../src/entities/wolf.gd#L403)), uma vez por tick de
    20 Hz — nunca por frame.
 2. **Rondar com território**: o `home` vira **centro compartilhado** com raio próprio, e o
    `_leaf_wander` escolhe setor por `identity` (o assento angular §3.4) em vez de sortear qualquer
@@ -144,7 +144,7 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
   dossiê 11 (até ~12), vira 66 — ainda uma fração do `sim_step`, mas o número tem de sair no
   rodapé, não na conversa.
 - **Aloco no caminho quente?** Sim, e é o débito registrado: o dicionário de blackboard por lobo por
-  tick ([:594](../../src/entities/wolf.gd#L594)) passa a carregar uma `Array` nova por lobo. Antes
+  tick ([:433](../../src/entities/wolf.gd#L433)) passa a carregar uma `Array` nova por lobo. Antes
   de somar qualquer alocação nova, o lote **reaproveita** um buffer por sessão (o mesmo array,
   reescrito a cada passo) — se a solução for alocar cinco arrays por tick, ela não entra.
 - **Como sei que ficou melhor?** Pelo budget que já é código: `SubtreeGuard` de 400 µs por mente

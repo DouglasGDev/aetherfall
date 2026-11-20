@@ -110,7 +110,7 @@ perto e quem é de fora, e isso é estado de alcateia.
   ganha trabalho novo.
 - **Quantas entidades são alcançadas?** De 5 para `5 + filhotes`, **limitado por teto**. O número
   que importa: cada lobo vivo custa um dicionário de blackboard por tick
-  ([:594](../../src/entities/wolf.gd#L594)), uma avaliação de BT por tick
+  ([:433](../../src/entities/wolf.gd#L433)), uma avaliação de BT por tick
   ([:409-433](../../src/entities/wolf.gd#L409-L433), budget 400 µs em
   [:227-229](../../src/entities/wolf.gd#L227-L229)) e um corpo no F3 (`wolves_roster` em
   [main.gd:275](../../src/main.gd#L275)). Teto sugerido e escrito com o motivo: **12**, porque

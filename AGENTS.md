@@ -166,7 +166,7 @@ chunks (README, seção "Limites conhecidos (medidos nesta máquina)").
 ainda (regras 5 e 1, nesta ordem):
 
 - o blackboard do BT é um `Dictionary` novo por lobo por tick
-  ([wolf.gd:594](src/entities/wolf.gd#L594)): com a matilha inteira viva, 5 × 20 = 100
+  ([wolf.gd:433](src/entities/wolf.gd#L433)): com a matilha inteira viva, 5 × 20 = 100
   dicionários por segundo (o `sim_step` retorna cedo em cadáver, então o número é teto
   derivado do código, não medição de alocação);
 - a difusão aloca um `PackedInt32Array` por canal por passada
