@@ -1,0 +1,42 @@
+sources=79 manifest_sha256=5c550753de2e8225c107fb3458009f8146512688024faabe8a3dfe9340945f90
+clone_base_sha=9f3622bbe3f727a70ba789e361faa8e2095d25c0 (clone do origin da publicacao, https://github.com/DouglasGDev/aetherfall.git; sem .godot/ nem .tools/ antes do --import; sem override.cfg: so a receita do README)
+worktree_vs_clone=sources.sha256 recalculado na arvore de trabalho em 9f3622b: 79/79 linhas identicas ao manifesto do clone
+engine nos tres logs=Godot Engine v4.7.2.stable.official.ed1daf0bf
+
+binario=.tools/Godot_v4.7.2-stable_win64_console.exe --headless --path .
+comandos=--import (clone-import.log); tests/smoke_test.tscn (clone-suite.log, worktree-branch-suite.log, worktree-main-suite.log); --script tests/aether_reactions_test.gd (clone-reactions.log, worktree-main-reactions.log)
+
+clone-suite final_line="236 checagens  0 falhas  37.1 s de teste"
+worktree-branch-suite final_line="236 checagens  0 falhas  42.2 s de teste"  (ponta da branch test/ether-massa-conservada: 98f1d63 + 28884ff)
+worktree-main-suite final_line="236 checagens  0 falhas  42.1 s de teste"  (main depois do merge --no-ff 9f3622b)
+clone-reactions final_line="89 checagens 0 falhas 1.734 s"
+worktree-main-reactions final_line="89 checagens 0 falhas 1.740 s"
+censo_reactions="17/17 testes completos e 89/89 checagens nos dois logs"
+
+massa_medida_clone (linhas 68-73 do clone-suite.log, identicas byte a byte nas tres corridas da suite):
+  "meia-vida reduziu a energia                 2.500 -> 2.296"
+  "nenhuma passada cria massa                  pior ganho=0.00000000 acima do decaimento em 8 passadas x 3 canais"
+  "saldo fecha com o corte de MIN_VALUE        pior erro=0.00000046 corte=0.176129"
+  "o corte da fronteira explica a perda alem da meia-vida  fear 2.500000 -> 2.296008; so meia-vida daria 2.471285; cadeia com corte da 2.296008 (corte 0.176129)"
+  "teto de valor aplicado                       teto=4.0"
+  "teto nao injeta o excedente no campo         canal 2.296008 -> 5.170020 por imprint de 900.0 (teto 4.0)"
+aether_energy_final=9.67776005901396 nos tres logs (clone, branch, main) -- o mesmo valor, nao tres valores proximos
+dropped_ticks=0 nos tres; tick=359, edits=13, meshes=147, triangulos=214480, lobos_vivos=4 nos tres
+
+worst_sim_ms=clone 12,929  branch 13,186  main 13,898 -- mesmo estatistico, spread de 1 ms entre corridas da mesma arvore
+worst_sim_ms antes da colheita, logs desta maquina no mesmo dia: audio-smoke-220a 14,474 / audio-smoke-220b 13,106 / audio-smoke-final 8,436 (220 checagens, revisao anterior a 98f1d63)
+note_do_worst=nada indica que a varredura de corte moveu o teto: a amostra de antes da colheita ja chegava a 14,47 ms. O 6,78 ms publicado na rodada do item na mao e uma amostra dessa mesma distribuicao, nao um teto comparavel. Atribuicao por ablacao nao foi feita e fica como debito.
+gen_ms=clone 939,273  branch 940,749  main 939,216
+mesh_ms=clone 5647,087  branch 5819,272  main 5856,94
+
+reactions_custo_clone="passos=1939 sim_step total=224134 us pico=360 us; BT last_us soma=10295 pico=44 trips=0"
+reactions_custo_main="passos=1939 sim_step total=223493 us pico=320 us; BT last_us soma=10238 pico=37 trips=0"
+reactions_custo_note=cenarios estreitos, nao gate P1: um lobo por cenario, trips=0 em ambas
+
+clone-import.log lines=299 script_error_lines=0 ERROR_lines=0 WARNING_lines=0
+clone-suite.log script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+clone-reactions.log script_error_lines=0 ERROR_lines=0 WARNING_lines=0 leaked_or_inuse_lines=0
+worktree-branch-suite.log script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+worktree-main-suite.log script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+worktree-main-reactions.log script_error_lines=0 ERROR_lines=0 WARNING_lines=0 leaked_or_inuse_lines=0
+ruido_de_saida_note=a dupla "ObjectDB instances leaked" + "resources still in use at exit" e o ruido de quit ja debitado na rodada do audio; nao e SCRIPT ERROR e nao derruba checagem alguma (as tres corridas dao 236/0)

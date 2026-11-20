@@ -50,7 +50,25 @@ godot --headless --path . tests/smoke_test.tscn
 godot --headless --path . --script tests/tick_journal_test.gd
 ```
 
-Critérios: a última linha do smoke (`tests/smoke_test.gd:160`) continua **232 checagens / 0 falhas**, `dropped_ticks=0` (`:2278-2280`) e `worst_sim_ms` dentro do publicado `6,78 ms` (`docs/evidence/third-person-carry/clone-suite.log:303,305,307`) — desvio > 20% sem medição concorrente é vermelho, não ruído. O contrato do journal trava **128 checagens** (`tests/tick_journal_test.gd:13`) e as 6 linhas de `[tick,hash]` do caminho dirigido por `_sim_tick()` (`:379-394`) têm de bater entre antes e depois do commit: a checagem de repetibilidade **não existe hoje**, então o primeiro passo de K3 roda a suíte duas vezes e publica as sequências; se divergirem na própria árvore antes da mudança, o critério de hash é retirado do gate e fica só censo + `dropped_ticks` + passo. Áudio: **73 checagens** (`tests/audio_test.gd`). Contagem conferida **antes** do lote (`AGENTS.md`, "Nada simulado"): um `SCRIPT ERROR` derruba passos em silêncio.
+Critérios: a última linha do smoke (`tests/smoke_test.gd:160`) continua no censo publicado da
+revisão — hoje **236 checagens / 0 falhas**
+(`docs/evidence/ether-massa-conservada/clone-suite.log:311`, nota em
+`docs/melhorias-status.md:1133-1213`) — e `dropped_ticks=0` (`:2278-2280`).
+
+**O terceiro critério desta linha estava errado e foi retirado.** Ele pedia `worst_sim_ms` dentro
+do publicado `6,78 ms` (`docs/evidence/third-person-carry/clone-suite.log:303,305,307`) com
+"desvio > 20% sem medição concorrente é vermelho, não ruído". `worst_sim_ms` é máximo de corrida de
+uma distribuição larga, não teto: na mesma máquina e no mesmo dia, antes da colheita do corte, a
+mesma estatística deu `8,436` / `13,106` / `14,474` ms (220 checagens) e depois dela `12,929`
+(clone) / `13,186` (branch) / `13,898` (`main` mergida). Os `6,78` são uma amostra dessa
+distribuição, e a amostra de antes da colheita já chegava a `14,47` — ou seja, o critério daria
+vermelho para corridas que não perderam um tick sequer (`dropped_ticks=0` nas seis). O que entra no
+lugar: nenhuma mudança de K1/K2/K3 pode perder tick, e a comparação de passo exige **banda medida
+em N execuções da mesma árvore antes e depois**, não um pico solitário. Atribuição por ablação da
+varredura de corte não foi rodada e fica debitada
+(`docs/melhorias-status.md:1190-1202`).
+
+O contrato do journal trava **128 checagens** (`tests/tick_journal_test.gd:13`) e as 6 linhas de `[tick,hash]` do caminho dirigido por `_sim_tick()` (`:379-394`) têm de bater entre antes e depois do commit: a checagem de repetibilidade **não existe hoje**, então o primeiro passo de K3 roda a suíte duas vezes e publica as sequências; se divergirem na própria árvore antes da mudança, o critério de hash é retirado do gate e fica só censo + `dropped_ticks` + passo. Áudio: **73 checagens** (`tests/audio_test.gd`). Contagem conferida **antes** do lote (`AGENTS.md`, "Nada simulado"): um `SCRIPT ERROR` derruba passos em silêncio.
 
 ## O que NÃO fazer
 
@@ -58,7 +76,8 @@ Não reorganizar por gosto: mover `_build_environment` (`:451-483`) para arquivo
 
 ## Checklist de commits atômicos (um assunto, uma corrida)
 
-1. Checagem nova de respawn/cadáver impressa (K2 pré-requisito), produção intocada; censo sobe de 232 para 232+K com K declarado.
+1. Checagem nova de respawn/cadáver impressa (K2 pré-requisito), produção intocada; censo sobe de
+   236 (base `9f3622b`) para 236+K com K declarado.
 2. K1: índice de bancadas com dono; `main.gd` mantém `bench_positions()` como porta.
 3. K2: fila e faina com dono; mensagem ao HUD permanece no `main.gd`.
 4. K3: dono da matilha; nenhuma linha de `_sim_tick` (`:145-170`) reordenada no mesmo commit.

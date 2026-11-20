@@ -185,9 +185,9 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `a8967e0`,
-medida num clone limpo dela mesma (37 `.gd`, sem `.godot/` e sem `.tools/`), recém-importado com
-o `--import` logo acima: **232 checagens, 0 falhas, 33,7 s**, exit 0 — o mesmo resultado da
+Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `9f3622b`,
+medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/ether-massa-conservada/sources.sha256`, sem `.godot/` e sem `.tools/`), recém-importado com
+o `--import` logo acima: **236 checagens, 0 falhas, 37,1 s**, exit 0 — o mesmo censo da
 árvore de trabalho, com as duas linhas de vazamento do quit que entraram junto com o som
 (medidas e explicadas em "O jogo tem som, e o som não manda no mundo"). Na revisão histórica
 `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
@@ -335,7 +335,7 @@ carregar; os episódios ficam no save.
 Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
 rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por
 SHA-256, evidências e limites nas [notas de medição](docs/melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
-São resultados headless do candidato daquela revisão, com o smoke hoje em 232 checagens; o código
+São resultados headless do candidato daquela revisão, com o smoke hoje em 236 checagens; o código
 está no commit `a8967e0` e o clone limpo dele re-mediu a suíte completa, mas os runners dedicados
 de rastros e journal continuaram na árvore de trabalho. Falta a aprovação visual em janela.
 
@@ -416,7 +416,7 @@ godot --path . tests/audio_live_probe.tscn               # audibilidade real, em
 ```
 
 Na árvore de trabalho daquela revisão (base `1db00cf`, hoje o commit `a8967e0`): **73 checagens / 0 falhas** no
-censo e **220 / 0** no smoke — a suíte publicada é hoje a de 232 do clone de `a8967e0`, e nela
+censo e **220 / 0** no smoke — a suíte publicada é hoje a de 236 do clone de `9f3622b`, e nela
 nenhum runner de som roda: os 73 passos do censo e a sonda viva continuam medidos na árvore de
 trabalho daquela revisão. A sonda em janela mediu 13 toques em 6 s sem nenhum input
 disparado (`step_grass` 6, `step_snow` 6, `splash` 1), cama `amb_birds` e pico de
