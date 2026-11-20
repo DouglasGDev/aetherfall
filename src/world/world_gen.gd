@@ -150,18 +150,11 @@ func biome_at(x: int, z: int) -> int:
 ## duas amostras de ruido no maximo, as mesmas que `biome_of` ja faz. Quem
 ## multiplica e o chamador do lado do evento: o campo nao pode conhecer voxel
 ## nenhum, e essa fronteira e o que mantem `diffuse_and_decay` barata (dossie
-## 09). Indice fora da tabela e bug de quem ligou bioma e canal ao contrario,
-## nao caso de mundo: empurra erro na consola em vez de trocar o numero do
-## evento em silencio.
+## 09). Quatro linhas e tres colunas e o que a suíte pino confere antes de
+## qualquer chamador: sem casa, o indice estoura na consola, porque um 1,0
+## devolvido em silencio disfarcaria de "nenhum vies" um erro de ligacao.
 func imprint_bias(x: int, z: int, h: int, ch: int) -> float:
-	var biome: int = biome_of(x, z, h)
-	if biome < 0 or biome >= IMPRINT_BIAS.size():
-		push_error("imprint_bias: bioma %d fora da tabela" % biome)
-		return 1.0
-	var row: Array = IMPRINT_BIAS[biome]
-	if ch < 0 or ch >= row.size():
-		push_error("imprint_bias: canal %d fora da linha do bioma %d" % [ch, biome])
-		return 1.0
+	var row: Array = IMPRINT_BIAS[biome_of(x, z, h)]
 	return float(row[ch])
 
 
