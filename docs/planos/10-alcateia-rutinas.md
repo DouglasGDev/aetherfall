@@ -46,8 +46,8 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
   [`_build_scorer`](../../src/entities/wolf.gd#L353-L399): `flee` com 5 considerações
   ([:494-504](../../src/entities/wolf.gd#L494-L504)), `hunt` com 6 — inclusive o veto
   "presa percebida" ([:533-535](../../src/entities/wolf.gd#L533-L535)) e o veto "coragem contra este
-  ator" ([:382-383](../../src/entities/wolf.gd#L383)) —, `investigate` com 4 e o veto "ha rastro"
-  ([:392-393](../../src/entities/wolf.gd#L547)), e `patrol` com o chão de fundo de 0,22
+  ator" ([:563-564](../../src/entities/wolf.gd#L563-L564)) —, `investigate` com 4 e o veto "ha rastro"
+  ([:573-574](../../src/entities/wolf.gd#L573-L574)), e `patrol` com o chão de fundo de 0,22
   ([:551-553](../../src/entities/wolf.gd#L551-L553)). `min_lead = 0,05` e `min_interval = 0,6`
   ([:491-492](../../src/entities/wolf.gd#L491-L492)) são a histerese que evita o flicker — e é
   nela que uma opção "circle" nova tem de caber, não em `if` solto.
@@ -93,7 +93,7 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
    20 Hz — nunca por frame.
 2. **Rondar com território**: o `home` vira **centro compartilhado** com raio próprio, e o
    `_leaf_wander` escolhe setor por `identity` (o assento angular §3.4) em vez de sortear qualquer
-   ponto. O RNG por lobo ([:175](../../src/entities/wolf.gd#L175)) continua sendo o sorteio; o
+   ponto. O RNG por lobo ([:191](../../src/entities/wolf.gd#L191)) continua sendo o sorteio; o
    `_population_rng` da sessão ([main.gd:45](../../src/main.gd#L45), sorteado em
    [:243-244](../../src/main.gd#L243-L244)) não pode ser consumido por decisão de lobo — é o que o
    dossiê de RNG isolou.
@@ -212,3 +212,20 @@ limpo. Branch `feat/alcateia-rutinas-10`, base `main`, merge `--no-ff`, suíte v
 Nenhum gate de fase (mandato 4). O HOT agregado dos cinco lobos continua sem medição (04), a
 difusão continua síncrona (05), os canais morte/som/fogo continuam 3 (03), e `MindsInspector` não
 existe (08) — sem ele, a memória compartilhada é lida no log do runner, não na tela do F3.
+
+## 9. Citações deste arquivo
+
+§2 a §7 foram lidos na base desta branch (`eb6ec8d`, a `main` antes do lobo de alcateia); o código
+de `src/` e `tests/` nessa base é byte a byte o mesmo da revisão que o passe de citações usou como
+referência, então os números de §2 são da árvore **antes** da peça. O passe `fb20707` deslocou só as
+âncoras cujo conteúdo reapareceu inteiro na árvore nova. As bullets cujo código **esta branch
+substituiu** — a árvore sem vizinho, o blackboard sem `pack`, o chase sem assento, o `_sense` que só
+via o jogador — não passam por aquela prova, porque o trecho não sobreviveu: nelas a frase é
+história, e o que existe hoje, com que número, está no status ("Feito nesta sessão").
+
+Duas citações deste arquivo estavam com rótulo ≠ âncora **já na base**: `:382-383` com âncora
+`#L383` e `:392-393` com âncora `#L547`. Conferidas uma a uma na árvore atual: as duas
+considerações continuam lá, texto por texto, em [wolf.gd:563-564](../../src/entities/wolf.gd#L563-L564)
+("coragem contra este ator") e [wolf.gd:573-574](../../src/entities/wolf.gd#L573-L574) ("ha rastro").
+Onde a frase ainda é verdadeira na árvore, a âncora foi posta na árvore; onde ela deixou de ser, o
+número antigo fica como leitura da base e está dito acima.
