@@ -1890,7 +1890,7 @@ alcança a camada vizinha quando a própria não devolve nada, e isso custa +12 
   re-derivação), mais a mis-citação de `docs/design/10:1046`. O contador existe como conta de
   rodada, não como checagem da suíte: nada em `tests/` derruba vermelho quando um rótulo envelhece.
 
-## Rodada de escopo — a corrida da branch e o que ela não mede (2026-11-20, branch `docs/escopo-alcateia-bioma-reproducao`)
+## Rodada de escopo — as corridas da branch e da `main` mergida, e o que elas não medem (2026-11-20, `docs/escopo-alcateia-bioma-reproducao` → `633e653`)
 
 ### O que rodou
 
@@ -1937,9 +1937,10 @@ disparou uma vez em quatro — e as 109 checagens continuaram 0 falhas, porque a
 colhida, não gateada. Um disparo que só aparece sob concorrência é o instrumento medindo o
 concorrente, não a árvore.
 
-Deslocamento de +16 % a +27 % no total e +20 % no BT, com a árvore medida byte a byte a mesma, não
-é de código: é da máquina. Duas amostras instantâneas na janela das corridas, ambas com a máquina
-longe de ociosa: `Win32_PerfFormattedData_PerfOS_Processor` (`Name='_Total'`) deu **28 %** de uso,
+Deslocamento de +16 % a +27 % no total das quatro corridas da branch, e +20 % no BT, com a árvore
+medida byte a byte a mesma, não é de código: é da máquina. Duas amostras instantâneas na janela
+das corridas, ambas com a máquina longe de ociosa: `Win32_PerfFormattedData_PerfOS_Processor`
+(`Name='_Total'`) deu **28 %** de uso,
 e `Win32_PerfFormattedData_PerfProc_Process` deu `_Total=1562` contra `Idle=1380` (**11,7 %** de
 uso) com os maiores consumidores reais sendo `Qoder#2` (38), **`MsMpEng` (27 — o Defender em tempo
 real, que varre exatamente os arquivos que uma corrida headless escreve)**, `QuantumEngine` (16),
@@ -1951,11 +1952,34 @@ formatados acima. Pelo contrato (medição de tempo é serial com a máquina liv
 como medição**: o `363 680` publicado no AGENTS.md e a ablação de +12 % da rodada dos rastros
 continuam sendo o par de referência, e nenhuma das duas tabelas muda por esta sessão.
 
-Um indício que fica registrado sem virar conclusão: a média contaminada (442 967) passa até do
-braço de **três camadas incondicionais** da ablação (427 940 / 427 134, linha 19 do readback). As
-duas hipóteses que isso não separa são "a máquina agora está mais lenta" e "o gate abre camada
-vizinha mais vezes do que a ablação media". O que decide é uma perna `bench/` com a máquina
-ociosa, na mesma revisão, medindo o braço do gate na mesma janela — e ela pertence ao item 5 da
-fila (dossiê 04, HOT agregado), não a esta branch de docs.
+Um indício que fica registrado sem virar conclusão: a média das quatro contaminadas (442 967 µs) e
+três dos cinco valores desta sessão passam do braço de **três camadas incondicionais** da ablação
+(427 940 / 427 134, linha 19 do readback). As duas hipóteses que isso não separa são "a máquina
+agora está mais lenta" e "o gate abre camada vizinha mais vezes do que a ablação media". O que
+decide é uma perna `bench/` com a máquina ociosa, na mesma revisão, medindo o braço do gate na mesma
+janela — e ela pertence ao item 5 da fila (dossiê 04, HOT agregado), não a esta branch de docs.
+
+### A quinta corrida, na `main` mergida, é a peça que faltava
+
+`633e653` (merge `--no-ff` desta branch) roda suíte **236 checagens / 0 falhas / 38,3 s**, exit 0,
+zero `SCRIPT ERROR`, ruído `8/4` de quit; e o runner estreito, **109 checagens / 0 falhas /
+2,052 s**, exit 0, com `passos=2768 sim_step total=389 885 µs pico=897 µs; BT soma=16 042 µs
+trips=0`. A igualdade de código é conferida por árvore: `git rev-parse HEAD:src` =
+`9a8dbdfc01f1…` e `HEAD:tests` = `7bcbde99b7d8…`, os mesmos dois hashes do parágrafo anterior.
+
+O `total` desta vez cai **entre** as duas bandas — acima dos 361 464–375 216 publicados, abaixo dos
+420 595–466 263 das quatro anteriores — e é justamente isso que fecha a atribuição sem precisar de
+mais nada: cinco execuções da **mesma árvore de código** nesta sessão deram 389 885, 420 595,
+439 265, 445 745 e 466 263 µs, chão de **−9,8 % a +7,8 %** em torno da média delas (432 351),
+contra uma banda de ±2 % em doze execuções da rodada dos rastros. O instrumento não está cego por
+acaso: ele está sendo lido em cima de carga. `pico=897` e `trips=0` nesta corrida, contra
+`pico=877–989` e um `trips=1` nas anteriores, dizem a mesma coisa.
+
+Consequência registrada, e é ela que vale para as próximas pernas: **nenhuma medição de µs desta
+máquina entra como número enquanto houver sessão de agente rodando**, e o que separa um deslocamento
+de código de um deslocamento de ambiente não é uma corrida a mais na mesma janela — é uma corrida
+com a máquina ociosa. As quatro pernas `feat/` de 09 a 12 vão esbarar nisso, porque as três primeiras
+tocam o caminho quente do lobo e a quarta o mesher; cada uma precisa do seu par de corridas com o
+chão medido, ou o delta sai como foi aqui: imprestável para atribuir.
 
 Nenhum gate de fase se fechou aqui, e nenhum item da fila mudou de veredito.
