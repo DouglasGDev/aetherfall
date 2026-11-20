@@ -1,0 +1,75 @@
+sources=79 manifest_sha256=2986d919f7252fa2045bd4b0c017391d21801cd1a56aa634f2d80719861091e5
+clone_base_sha=520c3b44200bf8e5d96f6baaece702d3af7082c5 (merge --no-ff da fix/passo-do-lobo-pouso-nao-e-obstaculo na main; clone do origin da publicacao, https://github.com/DouglasGDev/aetherfall.git; sem .godot/, sem .tools/ e sem override.cfg antes do --import; so a receita do README)
+worktree_vs_clone=sources.sha256 recalculado na arvore de trabalho em 8addd23 (branch docs/medicao-passo-lobo, que acrescenta ao commit 520c3b4 apenas os dois logs de evidencia desta pagina): 79/79 linhas identicas ao manifesto do clone, nenhuma linha fora de OK
+engine nos tres logs do clone=Godot Engine v4.7.2.stable.official.ed1daf0bf
+
+binario=.tools/Godot_v4.7.2-stable_win64_console.exe --headless --path .
+comandos=--import (clone-import.log); --script tests/aether_reactions_test.gd (clone-reactions.log, branch-runner.log, main-runner.log); tests/smoke_test.tscn (clone-suite.log, conserto-suite.log, main-suite.log)
+
+clone-suite final_line="236 checagens  0 falhas  34,0 s de teste"  exit 0
+main-suite final_line="236 checagens  0 falhas  34,9 s de teste"  exit 0  (main mergida 520c3b4, arvore de trabalho)
+conserto-suite final_line="236 checagens  0 falhas  34,9 s de teste"  exit 0  (ponta da branch do conserto, c5a08b2)
+clone-reactions final_line="103 checagens 0 falhas 1,912 s"  exit 0
+main-runner final_line="103 checagens 0 falhas 1,920 s"  exit 0  (arvore de trabalho, main mergida)
+branch-runner final_line="103 checagens 0 falhas 1,901 s"  exit 0  (refez a gateira na ponta da branch depois do ultimo ajuste de texto)
+conserto-reactions final_line="103 checagens 0 falhas 1,895 s"  (commit do conserto, c5a08b2)
+censo_reactions="20/20 testes completos e 103/103 checagens nos quatro logs de runner desta arvore"
+censo_suite="236 checagens / 0 falhas nos cinco logs verdes da rodada (instrumento, conserto, ponta da branch, main mergida, clone limpo); os tres suite-vermelho-*.log dao 236 / 1 por construcao, sao os vermelhos provocados da atribuicao"
+
+clone-reactions vs main-runner=113 linhas cada, diff de exatamente 2 pares: a linha 112 (custo do cenario estreito) e a 113 (tempo). As 111 linhas de resultado sao byte identicas entre o clone limpo e a arvore de trabalho.
+clone-suite vs main-suite=315 linhas cada, diff de 8 pares e os oito sao de tempo: geracao/malharia, `pior passo` do gate inicial, ms da corrida deterministica, `cronometro do passo`, `leitura do slot`, `pior passo` do gate final, `diagnostico final` (cujos campos nao-tempo conferem) e a linha de contrato.
+
+passo_medido (linhas 100-108 de clone-reactions.log, identicas em main-runner.log):
+  "premissa: plateu 45x45 sem nenhum solido acima do piso | solidos=0 alturas=[50] fora=0 los=true hunt=100/100 ticks=100"
+  "premissa: dos frames em que o corpo esteve apoiado, quase todos o integrador chamou bloqueio | apoiados=300 bloqueados=300 pouso_bloqueado=300 frames=300 lancamentos=0 rearms=0"
+  "o corpo alcanga a presa no corredor livre | percorrido=23.5 ganho=23.5 razao=1.000 rearms=0 lancamentos=0 tempo=5.0 s andamento=4.707 m/s"
+  "contato com o chao nao e obstaculo | horizontais=0 rearms=0 lancamentos=0 bloqueados=300 pouso_bloqueado=300 frames=300"
+  "premissa: parede real no caminho e o corpo encosta nela atrae pelo rastro | parede=true los=false investigate=200/200 x_max=62.625 alvo=(66.0, 50.6, 54.0)"
+  "na parede o integrador chama bloqueio horizontal | horizontais=340 bloqueados=555 frames=600 apoiados=355 pouso_bloqueado=354"
+  "com parede de verdade o desvio re-arma e o corpo salta | rearms=12 lancamentos=11 horizontais=340 frames=600"
+  "o corpo para do lado de ca da parede | x_max=62.625 teto_bloqueio=63.0 percorrido=8.6"
+  "encostar na parede nao e encaixar | encaixados=0 encaixe_max=0.000 mm frames=600 x_max=62.625 face_x=62.9995"
+
+cache_medido (linhas 89-99 de clone-reactions.log, identicas em main-runner.log) -- o regime novo, depois do passo consertado:
+  "CHEGADA 1..6 tick=40/165/300/426/551/721 celula=(11,12,13) (14,12,13) (17,12,13) (17,12,16) (14,12,16) (11,12,13) cache=9/18/27/32/32/32"
+  "premissa: seis inspecoes reais e uma janela inteira de saidas colhida | episodios=6 chegadas=6 saidas=22 vistas=45 idade=36.250"
+  "cache nunca passa do teto de 32 celulas | pico=32 teto=32 vistas=45"
+  "saida mais jovem que o relogio so existe com o teto em jogo | por_relogio=0 por_evicao=22 tamanho_na_saida=32 saida_mais_jovem=19.500 mais_velha=28.000 ttl=30.0"
+  "o cache fecha no menor dos dois limites, o teto ou a janela | intervalo=6.810 janela=30.000 blocos=5 pedido=45 teto=32 pico=32 saltocelula=12.0 metros_por_salto=12.3 progressao=1.762 m/s=1.700"
+  "a evicao por FIFO roda exatamente quando a janela pede mais celulas que o teto | por_evicao=22 pedido=45 teto=32 intervalo=6.810"
+cache_regime_anterior=na arvore 297685b as mesmas cinco linhas davam intervalo=12.540, blocos=3, pedido=27, pico=27, por_evicao=0, saida_mais_jovem=30.250 (docs/evidence/ether-cache-limite/readback.log). O conserto do passo nao tocou no cache; ele mudou a velocidade com que o lobo anda, e com o intervalo abaixo de 10 s a janela de 30 s passa a pedir mais celulas que o teto.
+
+massa_conservada (linhas 68-73 do clone-suite.log, diff vazio contra as mesmas linhas do main-suite.log):
+  "meia-vida reduziu a energia                 2.500 -> 2.296"
+  "nenhuma passada cria massa                  pior ganho=0.00000000 acima do decaimento em 8 passadas x 3 canais"
+  "saldo fecha com o corte de MIN_VALUE        pior erro=0.00000046 corte=0.176129"
+  "teto nao injeta o excedente no campo        canal 2.296008 -> 5.170020 por imprint de 900.0 (teto 4.0)"
+aether_energy_final=9.36133219487965 nos quatro logs de suite desta arvore (commit do conserto, ponta da branch, main mergida e clone limpo) -- o mesmo valor, nao quatro valores proximos
+dropped_ticks=0 nos dois; tick=359, edits=13, meshes=147, triangulos=214480, lobos_vivos=4, hp=0.0 nos dois
+
+consequencias_do_passo_na_suite (mesma semente, arvore anterior 297685b -> esta):
+  "steering e colisao movem o lobo   reach 8,85 m -> 7,83 m em 200 passos"
+  "morte imprinta sangue e medo      fear 4,21 -> 4,23 (blood 4,16 igual)"
+  "save com corpo                    11.902 -> 12.237 bytes"
+  "aether_energy_final               9,67776005901396 -> 9,36133219487965"
+o que nao mudou: os 236 nomes de checagem e o censo, os 13 edits, os 147 meshes, tick=359, dropped_ticks=0.
+
+worst_sim_ms nesta arvore=commit do conserto 11,692  ponta da branch 8,646  main mergida 11,107  clone limpo 9,237 -- mesma estatistica em quatro corridas, spread de 3,0 ms
+worst_sim_ms na arvore anterior=instrumento 9,963 (desta rodada, pre-conserto) e main de 297685b 9,289 -- mesmo spread entre arvores, o que e o ponto da nota: `worst_sim_ms` continua uma amostra unica, nao uma banda
+gen_ms=clone 920,203  arvore de trabalho 929,028
+mesh_ms=clone 4.173,793  arvore de trabalho 4.455,274
+
+reactions_custo_clone="passos=2766 sim_step total=317556 us pico=463 us; BT last_us soma=14403 pico=45 trips=0"
+reactions_custo_main="passos=2766 sim_step total=322419 us pico=400 us; BT last_us soma=14726 pico=152 trips=0"
+reactions_custo_branch="passos=2766 sim_step total=319714 us pico=354 us; BT last_us soma=14443 pico=49 trips=0"
+reactions_custo_pre_conserto="passos=3444 sim_step total=400984 us pico=425 us; BT last_us soma=17751 pico=40 trips=0"  (instrumento-reactions.log: 18 cenarios, 97 checagens, sem os dois cenarios de locomocao)
+reactions_custo_note=trips=0 nos quatro logs; o passo consertado nao e otimizacao: os passos caem de 3444 para 2766 porque os dois cenarios novos fecham antes do teto de frames, e a media por passo fica 116,4 us -> 114,8 us. Colheita estreita, um lobo por cenario, nao e o HOT agregado dos cinco lobos nem gate P1.
+
+clone-import.log lines=299 script_error_lines=0 ERROR_lines=0 WARNING_lines=0 exit=139 (primeira tentativa fria)
+clone-import.log refeito lines=299 exit=0 (duas tentativas frias seguintes, log byte identico ao primeiro)
+import_frio_na_arvore_anterior=clone de 297685b, tres tentativas frias, todas exit=0, tres logs byte identicos ao deste clone -- diff vazio entre os quatro
+clone-suite.log lines=315 script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+clone-reactions.log lines=113 script_error_lines=0 ERROR_lines=0 WARNING_lines=0
+main-runner.log lines=113 script_error_lines=0 ERROR_lines=0 WARNING_lines=0
+main-suite.log lines=315 script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+ruido_de_saida_note=a dupla "ObjectDB instances leaked" + "resources still in use at exit" so aparece em quem capturou stderr (2>&1); instrumento-suite.log e branch-suite.log desta rodada foram capturados so em stdout e por isso nao tem a linha. Onde ela foi capturada, esta arvore da 8/4 nas tres corridas (conserto, main mergida, clone) e a arvore 297685b deu 4/2 nas tres; a rodada do som (smoke.log, 220 checagens) tambem deu 8/4. Contagem nao atribuida, nenhuma checagem depende dela e o exit segue 0.
