@@ -18,12 +18,13 @@ e passou a ser a primeira superfície sólida descendo do topo da camada encontr
 `feat/rastro-em-duas-camadas`, `f89041b`) entrou como `cbaaef5`, com a ablação braço a braço no
 colhedor estreito: `sim_step total` de 322 128 / 326 189 µs no leitor de um andar contra
 361 464 / 364 589 / 364 987 µs no publicado (+12%); a varredura incondicional dos três andares custa
-+32% e foi recusada por medida, não por gosto. A revisão publicada desta perna é `3ab08db`, cujo
++32% e foi recusada por medida, não por gosto. A revisão publicada desta perna é `ff347d2`, cujo
 `src/` e `tests/` são byte a byte os de `cbaaef5` (só markdown e logs entraram): clone limpo dela,
-sem `.godot/`, reimportado com `--import` frio exit 0, deu **236 checagens / 0 falhas / 34,7 s** na
-suíte e **109 checagens / 0 falhas / 1,953 s** no runner dedicado, exit 0 nos dois, com as 79 fontes
-e os 27 artefatos desta página conferidos **dentro do clone** (`sha256sum -c` 79/79 e 27/27, exit 0
-nos dois) — é isso que fecha o furo da evidência que não estava no repositório, na seção da rodada.
+sem `.godot/`, reimportado com `--import` frio exit 0, deu **236 checagens / 0 falhas / 35,1 s** na
+suíte e **109 checagens / 0 falhas / 2,003 s** no runner dedicado, exit 0 nos dois, com as 79 fontes
+e os 27 artefatos que aquele commit carrega conferidos **dentro do clone** (`sha256sum -c` 79/79 e
+27/27, exit 0 nos dois) — é isso que fecha o furo da evidência que não estava no repositório, na
+seção da rodada.
 No clone de `cbaaef5` foram **236 / 0 / 34,3 s** e **109 / 0 / 1,969 s**, com as 79 fontes já
 conferidas lá dentro ([readback.log](evidence/rastro-duas-camadas/readback.log), linha
 `verificacao=`).
@@ -1549,16 +1550,18 @@ varredor hoje lê ±1 andar (`cbaaef5`). Do `worst_sim_ms` há agora quatro amos
 [`tests/smoke_test.gd:2279`](../tests/smoke_test.gd#L2279)) cobram `perdidos=0`, não a distribuição do passo. Somam-se
 à fila as duas observações do clone limpo lá em cima — o exit do `--import` frio e a contagem de
 objetos vazados no quit, ambas precisando de N corridas com o exit anotado para virar coisa que se
-possa chamar de defeito. A primeira ganhou uma terceira e uma quarta amostra nas seções seguintes
-(exit 0 nas duas, com o log do `--import` byte a byte igual entre os dois clones); a segunda ganhou
-seis, cinco delas `8 ObjectDB / 4 resources` e uma `4/2`, e elas se movem entre corridas da mesma
-árvore.
+possa chamar de defeito. A primeira ganhou uma terceira, uma quarta e uma quinta amostra nas
+seções seguintes (exit 0 nas três, com o log do `--import` byte a byte igual entre os três
+clones); a segunda ganhou oito, seis delas `8 ObjectDB / 4 resources`, uma `4/2` e uma em que o
+processo não imprimiu nenhuma das duas linhas — e elas se movem entre corridas da mesma árvore,
+inclusive com o mesmo comando de captura.
 
 ## Rodada Éter — o nariz desce e sobe, medido (2026-11-20, publicado em `cbaaef5` pelo merge de `feat/rastro-em-duas-camadas`, ponta `f89041b`)
 
 O código é o de `cbaaef5`; a conta dele, as citações re-derivadas e as assinaturas desta página
-entraram depois, pelos merges de `docs/medicao-rastro-duas-camadas` (`3ab08db`) e de
-`docs/medicao-merge-e-clone-3ab08db`, cada perna com suas duas gateiras corridas.
+entraram depois, pelos merges de `docs/medicao-rastro-duas-camadas` (`3ab08db`), de
+`docs/medicao-merge-e-clone-3ab08db` (`ff347d2`) e da perna que mede este último, cada um com suas
+duas gateiras corridas na revisão que resultou dele.
 
 ### O que estava em aberto
 
@@ -1661,7 +1664,7 @@ publicado e não se reescreve; a leitura conferida é a da tabela acima e a do
 
 ### O que o jogo real custa
 
-Seis árvores, mesma receita, cada uma com as duas gateiras. A suíte larga em 4 lobos neste
+Oito árvores, mesma receita, cada uma com as duas gateiras. A suíte larga em 4 lobos neste
 `SEED` e o `aether_energy` não se moveu em nenhuma delas — o varredor em camadas troca o custo
 do scan, não o estado do mundo:
 
@@ -1673,27 +1676,32 @@ do scan, não o estado do mundo:
 | árvore de docs desta rodada, `src/` e `tests/` byte a byte iguais a `cbaaef5` | 109 / 0 / 1,963 s, `total=368 658 pico=666` | 236 / 0 / 35,1 s | 11,426 | [docs-runner.log](evidence/rastro-duas-camadas/docs-runner.log), [docs-suite.log](evidence/rastro-duas-camadas/docs-suite.log) |
 | `main` mergida (`3ab08db`), depois do merge da perna de docs | 109 / 0 / 1,959 s, `total=367 176 pico=624` | 236 / 0 / 34,8 s | 10,887 | [merge-main-runner.log](evidence/rastro-duas-camadas/merge-main-runner.log), [merge-main-suite.log](evidence/rastro-duas-camadas/merge-main-suite.log) |
 | clone limpo de `3ab08db`, `--import` frio | 109 / 0 / 1,953 s, `total=363 658 pico=610` | 236 / 0 / 34,7 s | 9,655 | [clone-3ab08db-runner.log](evidence/rastro-duas-camadas/clone-3ab08db-runner.log), [clone-3ab08db-suite.log](evidence/rastro-duas-camadas/clone-3ab08db-suite.log), [clone-3ab08db-import.log](evidence/rastro-duas-camadas/clone-3ab08db-import.log) |
+| `main` mergida (`ff347d2`), depois do merge da perna que levou a medição do clone | 109 / 0 / 1,967 s, `total=364 657 pico=596` | 236 / 0 / 34,7 s | 9,644 | [merge-ff347d2-runner.log](evidence/rastro-duas-camadas/merge-ff347d2-runner.log), [merge-ff347d2-suite.log](evidence/rastro-duas-camadas/merge-ff347d2-suite.log) |
+| clone limpo de `ff347d2`, `--import` frio | 109 / 0 / 2,003 s, `total=375 216 pico=647` | 236 / 0 / 35,1 s | 10,988 | [clone-ff347d2-runner.log](evidence/rastro-duas-camadas/clone-ff347d2-runner.log), [clone-ff347d2-suite.log](evidence/rastro-duas-camadas/clone-ff347d2-suite.log), [clone-ff347d2-import.log](evidence/rastro-duas-camadas/clone-ff347d2-import.log), [clone-ff347d2.log](evidence/rastro-duas-camadas/clone-ff347d2.log) |
 
-As seis dão `tick=359`, `edits=13`, `meshes=147`, `dropped_ticks=0`, `wolves_alive=4` e
+As oito dão `tick=359`, `edits=13`, `meshes=147`, `dropped_ticks=0`, `wolves_alive=4` e
 `aether_energy=9,36133219487965` — a assinatura de estado é idêntica, o µs é amostra, e a banda
-das seis linhas é 361 464 a 368 658 (2 % de ponta a ponta, e nenhum dos lados do `git diff` das
-revisões toca `src/`). As duas últimas linhas existem porque o contrato diz que número publicado é
-número medido na revisão, e esta revisão é feita de markdown: conferido, não afirmado —
-`git rev-parse cbaaef5:src 3ab08db:src` devolve `9a8dbdf…` nos dois, `…:tests` devolve `7bcbde9…`
-nos dois, e `git diff --name-only cbaaef5 3ab08db -- src tests project.godot assets tools` conta
-**zero** arquivos contra 37 no total. O `sha256sum -c sources.sha256` no clone de `3ab08db` é
-**79/79 OK, exit 0**. A mesma igualdade vale para os merges seguintes desta perna, que só movem
-markdown e log: quem quiser conferir não roda nada, lê `git rev-parse <rev>:src <rev>:tests` e vê
-os dois hashes repetidos.
+das oito linhas é 361 464 a 375 216 (4 % de ponta a ponta, e nenhum dos lados do `git diff` das
+revisões toca `src/`). As quatro últimas linhas existem porque o contrato diz que número publicado é
+número medido na revisão, e estas revisões são feitas de markdown: conferido, não afirmado —
+`git rev-parse cbaaef5:src 3ab08db:src ff347d2:src` devolve `9a8dbdf…` nos três e `…:tests` devolve
+`7bcbde9…` nos três; `git diff --name-only cbaaef5 3ab08db -- src tests project.godot assets tools`
+conta **zero** arquivos contra 37 no total, e o mesmo `--name-only 3ab08db ff347d2` com o mesmo
+pathset conta **zero** contra 10. Os dois clones dão o mesmo `sha256sum -c sources.sha256`:
+**79/79 OK, exit 0** em cada um. Quem quiser conferir uma revisão de docs não roda nada: lê
+`git rev-parse <rev>:src <rev>:tests` e vê os dois hashes repetidos.
 
 O [artifacts.sha256](evidence/rastro-duas-camadas/artifacts.sha256) desta página acompanhou: 20
-entradas na perna de código, 22 com os dois logs da árvore de docs e **27** com os cinco desta
-perna (dois da `main` mergida + três do clone). Cada regravação foi conferida antes e depois —
-**20/20**, **22/22** e **27/27 OK, exit 0** na árvore de trabalho, e **27/27 OK, exit 0 dentro do
-clone limpo**, que é onde o número vale. O `diff` entre os manifestos é exatamente as linhas novas,
-nenhum artefato antigo mudou de hash; o `clone-3ab08db-import.log` tem o mesmo SHA do
-`clone-import.log` de `cbaaef5` (`6778e5a…`), ou seja, a saída do `--import` frio byte a byte igual
-entre as duas revisões. Os `.log` ficam fora da normalização de fim de linha
+entradas na perna de código, 22 com os dois logs da árvore de docs, 27 com os cinco da perna
+anterior e **33** com os seis desta (dois da `main` mergida, três do clone e o log de procedência
+dele). Cada regravação foi conferida antes e depois — **20/20**, **22/22**, **27/27** e **33/33 OK,
+exit 0** na árvore de trabalho, e **27/27 OK, exit 0 dentro do clone limpo de `ff347d2`**, contra o
+manifesto que aquele commit carrega — que é onde o número vale. O `diff` entre os manifestos é
+exatamente as linhas novas, nenhum artefato antigo mudou de hash: `grep -F -x -f` do manifesto
+velho contra o novo devolve **27 de 27** linhas reproduzidas byte a byte. O
+`clone-ff347d2-import.log` tem o mesmo SHA do `clone-import.log` de `cbaaef5` e do
+`clone-3ab08db-import.log` (`6778e5a…`), ou seja, a saída do `--import` frio byte a byte igual
+entre as três revisões. Os `.log` ficam fora da normalização de fim de linha
 (`docs/evidence/** -text` no [.gitattributes](../.gitattributes)), que é o que faz o hash do
 manifesto bater em qualquer clone — e foi isso que se provou acima, rodando o `-c` do lado de dentro.
 
@@ -1750,7 +1758,8 @@ trazidos de volta ao alvo** e **15 citações corrigidas pelo conteúdo**, entre
 citação do varredor impressa contra o arquivo — `462-506` abre no docstring do quadrado,
 `478-489` é o `for k`, `493-494` é a renovação, `505-506` é `cell_center` + `_scent_ground_y`,
 `513-521` é o chão, `654-659` é a linha do F3 e `257-258` é o achatamento do `offset`. Zero
-rótulos fora do alvo ao final.
+rótulos fora do alvo **entre as citações que aquele bloco tocou** — a frase não vale para o arquivo
+inteiro, e a perna que mede `ff347d2` foi ver isso acontecendo.
 
 Fica devendo, e não foi tocado: `docs/design/10:1046` cita `smoke_test.gd:2006-2008` como a
 impressão do piso de pior passo, e essas linhas são o armando do lobo no cenário de golpe — as
@@ -1760,20 +1769,42 @@ envolve `wolf.gd`, e a re-derivação daqui só tinha jurisdição sobre as cita
 do lobo moveu (as duas de design10, `501-546` → `526-571` e `130-131` → `131-132`, conferidas
 conteúdo a conteúdo). Registramos onde está; consertá-la é um commit de assunto próprio.
 
+O mesmo vale para três rótulos deste arquivo que ficaram para trás quando o `wolf.gd` cresceu — e
+aqui a conferência é por máquina, não por leitura: das **79** citações com número de linha que têm
+âncora no repositório, **5 ocorrências** (três rótulos distintos, dois deles escritos duas vezes)
+têm rótulo ≠ âncora, todas neste arquivo. O caso é sempre o mesmo: a âncora foi re-derivada, o
+rótulo não. `:538-539` com âncora `#L563-564` (linhas 152 e 281) aponta para `563-564`, que é
+`_unstick = _rng.randf_range(…)` e `_detour = … _rng.randf()` — a âncora está certa, o rótulo está
+25 linhas velho, do deslocamento do bloco do chão. `:291-292` com âncora `#L292-293` (linha 1261)
+aponta para `292-293`, que é o `if _checked_scents.size() >= SCENT_MEMORY_CAP:` e o
+`erase(_checked_scents.keys()[0])` da evicção — de novo a âncora certa, rótulo +1 velho. E
+`:301-304` com âncora `#L302-305` (linhas 151 e 281) é o pior dos três: nem o rótulo nem a âncora
+são o que a frase afirma — as três chamadas de `_rng` na patrulha estão em `303`, `305` e `306`,
+então a janela honesta é `303-306` e nenhuma das duas janelas atuais a cobre. Não se corrige aqui:
+é assunto de citação, não de medição, e a lição registrada é que conferir rótulo contra âncora é
+checagem de máquina (o par `rótulo:NN-MM` do texto contra o `#LNN-MM` da URL, arquivo a arquivo),
+e ela não estava sendo feita.
+
 ### Observações registradas, sem atribuição
 
-**O `--import` frio do clone limpo deu exit 0 também em `3ab08db`** — quarta amostra depois do 139
-isolado da rodada do passo, e a saída é byte a byte a do clone de `cbaaef5` (mesmo SHA de log,
-`6778e5a…`). Continua sem atribuição: quatro zeros seguidos em árvores diferentes não separam
-"o 139 era intermitente" de "a árvore nova não o dispara".
+**O `--import` frio do clone limpo deu exit 0 também em `ff347d2`** — quinta amostra depois do 139
+isolado da rodada do passo, 299 linhas em 7 s de relógio, zero linhas de erro, e a saída de novo
+byte a byte a dos dois clones anteriores (mesmo SHA de log, `6778e5a…`). Continua sem atribuição:
+cinco zeros seguidos em árvores diferentes não separam "o 139 era intermitente" de "a árvore nova
+não o dispara" — o que fecharia é N tentativas frias da mesma árvore com o exit anotado, ou a pilha
+do engine.
 
 **A contagem de quit voltou a se mover entre árvores de conteúdo idêntico, e agora com mais
 amostras:** `branch-suite.log` dá `4 ObjectDB instances` + `2 resources still in use`;
-`main-suite.log`, `clone-suite.log`, `docs-suite.log`, `merge-main-suite.log` e
-`clone-3ab08db-suite.log` dão `8` + `4`. As cinco árvores são iguais em `src/` e `tests/`
-(`git rev-parse cbaaef5:src` = `3ab08db:src`), mesmo binário, mesma máquina, corrida serial. A
-leitura de que a contagem é do processo no `quit()`, não da árvore, fica mais forte e o par
-`4/2` passa a ser a exceção da amostra. Nenhuma checagem depende dela e o exit segue 0.
+`main-suite.log`, `clone-suite.log`, `docs-suite.log`, `merge-main-suite.log`,
+`clone-3ab08db-suite.log` e `merge-ff347d2-suite.log` dão `8` + `4`; e `clone-ff347d2-suite.log`
+não dá **nenhuma** das duas linhas. As seis primeiras árvores são iguais em `src/` e `tests/`
+(`git rev-parse cbaaef5:src` = `3ab08db:src` = `ff347d2:src`), mesmo binário, mesma máquina,
+corrida serial. A leitura de que a contagem é do processo no `quit()`, não da árvore, fica mais
+forte e o par `4/2` passa a ser a exceção da amostra. O log sem linha nenhuma obriga a corrigir o
+que se tinha dito: ele foi capturado com `2>&1`, igual ao da `main` mergida que encheu as duas —
+então a ausência não é explicada pelo modo de captura, e sim pelo processo ter saído antes de
+imprimir. Nenhuma checagem depende dela e o exit segue 0 nas duas.
 
 ### O que nada disso fecha
 
@@ -1789,4 +1820,8 @@ alcança a camada vizinha quando a própria não devolve nada, e isso custa +12 
 - o achatamento horizontal do destino (`offset.y = 0.0`): o lobo fareja no andar certo e anda
   no dele. Não é defeito reproduzido, é limite registrado em §09;
 - as alocações do cache (`keys()`) continuam sem colheita própria, e o `Dictionary` do
-  blackboard também.
+  blackboard também;
+- **citações fora do alvo medidas por máquina**: das 79 citações com âncora do repositório, 5
+  ocorrências têm rótulo ≠ âncora (três rótulos, dois escritos duas vezes — ver a seção de
+  re-derivação), mais a mis-citação de `docs/design/10:1046`. O contador existe como conta de
+  rodada, não como checagem da suíte: nada em `tests/` derruba vermelho quando um rótulo envelhece.

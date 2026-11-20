@@ -93,8 +93,8 @@ Contagem hoje: **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
 em `melhorias-status.md` — `:91`, `:249`, `:665`, `:702` — são da rodada do `a8967e0` e continuam
 certas porque mediram o clone daquele commit). O runner dedicado é `godot --headless --path . --script
 tests/aether_reactions_test.gd`, hoje **109 checagens** (`EXPECTED_CHECKS`,
-`tests/aether_reactions_test.gd:16`, 21 cenários `:7-15`), medida no clone limpo de `3ab08db`:
-**109 / 0 falhas / 1,953 s**, exit 0 (`docs/evidence/rastro-duas-camadas/clone-3ab08db-runner.log`).
+`tests/aether_reactions_test.gd:16`, 21 cenários `:7-15`), medida no clone limpo de `ff347d2`:
+**109 / 0 falhas / 2,003 s**, exit 0 (`docs/evidence/rastro-duas-camadas/clone-ff347d2-runner.log`).
 
 1. `godot --headless --path . tests/smoke_test.tscn` → última linha **exatamente** o censo da
    revisão acrescido das checagens novas, exit 0. As três checagens previstas, como ficaram:
