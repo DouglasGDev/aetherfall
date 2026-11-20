@@ -185,20 +185,24 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `3ab08db`, mesmo código desta,
+Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `ff347d2`, mesmo código desta,
 medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/rastro-duas-camadas/sources.sha256`, sem `.godot/`, sem `.tools/` e sem
-`override.cfg`), recém-importado com o `--import` logo acima: **236 checagens, 0 falhas, 34,7 s**, exit 0 — o
-log da suíte é idêntico ao da árvore de trabalho salvo os pares de linha de tempo, e o estado
-final também confere (`aether_energy` `9,36133219487965`, 4 lobos vivos, `tick=359`, `dropped_ticks=0`),
-com as duas linhas de vazamento do quit que entraram junto com o som (medidas e explicadas em "O jogo
-tem som, e o som não manda no mundo"; nesta árvore a contagem capturada é `8 ObjectDB` / `4 resources`
-na `main` mergida, no clone e na árvore de docs, e `4` / `2` só na ponta da branch de código — com
-`src/` e `tests/` idênticos entre as cinco, o que reforça a leitura de que o par é do processo no
-`quit()`, não da árvore; registrada na rodada de rastros em
-[docs/melhorias-status.md](docs/melhorias-status.md)). Que "mesmo código desta" não é generosidade de
-redação é conferido: `git rev-parse cbaaef5:src 3ab08db:src` e `…:tests` dão os mesmos dois hashes
-(`9a8dbdf…`, `7bcbde9…`), e `git diff --name-only cbaaef5 3ab08db -- src tests project.godot assets
-tools` conta zero arquivos. Na revisão histórica
+`override.cfg`), recém-importado com o `--import` logo acima: **236 checagens, 0 falhas, 35,1 s**, exit 0 —
+as 236 linhas de checagem são as mesmas da corrida feita na árvore de trabalho desta vez; o `diff` dos
+dois logs conta 20 linhas e todas são número de tempo (geração, malharia, `pior passo` ×2, determinismo,
+cronômetro do passo, leitura do slot e o diagnóstico final) ou as quatro linhas de ruído do `quit()` que
+só a árvore de trabalho imprimiu. O estado final confere (`aether_energy` `9,36133219487965`, 4 lobos
+vivos, `tick=359`, `dropped_ticks=0`). O vazamento do quit, que entrou junto com o som (medido e
+explicado em "O jogo tem som, e o som não manda no mundo"), segue se movendo entre corridas de conteúdo
+idêntico: `8 ObjectDB` / `4 resources` em `main-suite.log`, `clone-suite.log`, `docs-suite.log`,
+`merge-main-suite.log`, `clone-3ab08db-suite.log` e `merge-ff347d2-suite.log`; `4` / `2` em
+`branch-suite.log`; e nenhuma das duas em `clone-ff347d2-suite.log`, capturado com o mesmo `2>&1` — com
+`src/` e `tests/` idênticos entre as oito árvores, o que reforça a leitura de que o par é do processo no
+`quit()`, não da árvore; registrada na rodada de rastros em [docs/melhorias-status.md](docs/melhorias-status.md)).
+Que "mesmo código desta" não é generosidade de redação é conferido: `git rev-parse cbaaef5:src
+3ab08db:src ff347d2:src` e `…:tests` dão os mesmos dois hashes (`9a8dbdf…`, `7bcbde9…`), e
+`git diff --name-only cbaaef5 ff347d2 -- src tests project.godot assets tools` conta zero arquivos
+contra 42 no total. Na revisão histórica
 `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
@@ -346,11 +350,11 @@ rastro dois andares abaixo continua fora do alcance, e um rastro fraco pode
 desaparecer antes da chegada. O cache de inspeções é transitório e se limpa ao
 carregar; os episódios ficam no save.
 
-O censo publicado deste runner é o da mesma revisão da suíte acima — `3ab08db`, medido no
-mesmo clone limpo: **109 checagens, 0 falhas, 1,953 s** em 21 cenários, exit 0
-([clone-3ab08db-runner.log](docs/evidence/rastro-duas-camadas/clone-3ab08db-runner.log), com o rodapé de
-colheita estreita `passos=2768 sim_step total=363658 us pico=610 us; BT last_us soma=14627
-pico=47 trips=0`). É um lobo por cenário: não é o HOT agregado dos cinco lobos do jogo nem gate de P1.
+O censo publicado deste runner é o da mesma revisão da suíte acima — `ff347d2`, medido no
+mesmo clone limpo: **109 checagens, 0 falhas, 2,003 s** em 21 cenários, exit 0
+([clone-ff347d2-runner.log](docs/evidence/rastro-duas-camadas/clone-ff347d2-runner.log), com o rodapé de
+colheita estreita `passos=2768 sim_step total=375216 us pico=647 us; BT last_us soma=14551
+pico=40 trips=0`). É um lobo por cenário: não é o HOT agregado dos cinco lobos do jogo nem gate de P1.
 O custo de abrir as camadas vizinhas está medido braço a braço na matriz de ablação da
 [roda de rastros](docs/melhorias-status.md#rodada-éter--o-nariz-desce-e-sobe-medido-2026-11-20-publicado-em-cbaaef5-pelo-merge-de-featrastro-em-duas-camadas-ponta-f89041b).
 
