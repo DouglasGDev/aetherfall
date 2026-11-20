@@ -12,7 +12,8 @@ primeira metade é o pedido e entra como `[DECIDED]`; a segunda adia a máquina 
 Posição na fila serializada: **09 → 10 → 15 → 14 → 11 → 12 → 13**. A 15 não depende de nenhuma
 linha do código da matilha — não encosta em `src/entities/wolf.gd`, e em `src/main.gd` só pendura
 um nó novo no boot — e é o caminho do `Rodar.bat`; a 14 depende da ronda por setor que a perna 10
-está escrevendo agora. A exceção está registrada **antes** do código, como exige
+já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`). A exceção está registrada
+**antes** do código, como exige
 [`AGENTS.md`, mandato 4](../../AGENTS.md#L70-L74) ("a exceção se registra **antes** de escrever o
 código, nunca na justificativa do commit") — ver §11.
 
@@ -452,7 +453,7 @@ sem o log da corrida que o produziu.
 
 A fila serializada passa a **09 → 10 → 15 → 14 → 11 → 12 → 13**: a 15 não depende do código da
 matilha (é o caminho do boot, e não encosta em `wolf.gd`), enquanto a 14 depende da ronda por
-setor que a perna 10 está escrevendo agora. Escrito **antes** de qualquer linha de `src/`, porque
+setor que a perna 10 já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`). Escrito **antes** de qualquer linha de `src/`, porque
 é a regra do contrato — [`AGENTS.md:70-74`](../../AGENTS.md#L70-L74) e a cláusula de um escritor
 por arquivo ([`AGENTS.md:425-427`](../../AGENTS.md#L425-L427)); o custo de não ordenar está
 medido no incidente do dossiê 03. A fila vive em dois lugares do contrato — o parágrafo de exceção

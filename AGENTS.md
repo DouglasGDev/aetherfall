@@ -355,7 +355,7 @@ tem que ser algo embutido", e "depois vemos como fica pra quem nao tem palca de 
 metade fica `[OPEN]`, não é tarefa desta perna. A fila passa a **09 → 10 → 15 → 14 → 11 → 12 → 13**,
 com a 15 no meio porque não depende de nenhuma linha do código da matilha: é o caminho do `Rodar.bat`
 e em `src/main.gd` só pendura um nó novo no boot, enquanto a 14 depende da ronda por setor que a perna
-10 está escrevendo agora. Registrada **antes** de qualquer código, como exige o mandato 4; nada deste
+10 já escreveu e pousou. Registrada **antes** de qualquer código, como exige o mandato 4; nada deste
 lote encosta em `src/entities/wolf.gd`, e o processo do oráculo continua fora do caminho de simulação.
 
 ## Ciclo de trabalho
