@@ -2215,3 +2215,93 @@ de topo, ao contrário, foram lidas uma a uma nesta árvore.
   dossiê §6 proíbe prometer "bioma deserto" em texto de captura sem re-bake.
 - Multi-semente (item 3) continua aberto: as checagens novas rodam com a semente fixa `20261116`.
 - O `pico` de +13 % não tem dono ainda, e nada aqui autoriza tocar no mesher ou na difusão.
+
+## Rodada Docs — dois dossiês novos, o índice das catorze páginas e a re-derivacão das citações (2026-11-20, `docs/escopo-convivio-e-genealogia` → `f47b61f`)
+
+### O que estava em aberto
+
+Dois pedidos do dono na própria conversa e nenhuma peça de código que os nomeasse: a **árvore
+genealógica** de todo ser vivo com o Éter lendo parentesco, e a **convivência da alcateia** — rondar
+pelos blocos de terra, água como último recurso, nada de aviso na tela e spawn sempre a uma distância
+segura. Somaram-se a isso duas dívidas deste arquivo: a página-índice de
+[`docs/planos/`](planos/README.md) publicava contagens medidas por **regras diferentes entre si** (a
+mesma página dava 622/629 para doze arquivos e 74 referências cruzadas contando duas vezes o mesmo
+link), e quatro ponteiros de dossiê caíam em faixa mas em prosa de outra seção — o defeito que o furo
+#14 descreve e que a gateira de existência não vê.
+
+### O que entrou (quatro commits, um assunto cada)
+
+- `c8c50f4` — dossiê [13](planos/13-arvore-genealogica-e-ether.md): a premissa falsificável é que
+  **ascendência só existe se nascer de dois adultos, sobreviver ao save e mudar algo observável**, e
+  que herdar é genoma-base — nunca a memória nem o trauma do pai. Oito checagens em headless, o custo
+  pelas quatro perguntas, e o degrau real do código: `src/entities/` tem **uma** espécie animal,
+  nenhum NPC e o jogador sem `Mind` nem `identity` (grep devolve zero ocorrências dos dois nomes em
+  [`player.gd`](../src/entities/player.gd)). Os três degraus acima do lobo ficam `[TARGET]`.
+- `58aa1b7` — dossiê [14](planos/14-convivio-da-alcateia.md): seco é regra de validade do **alvo**
+  (água é último recurso, não obstáculo), "organizado" é teto numérico e não adjetivo, criatura nunca
+  vira texto no HUD e nenhum bicho nasce a menos de `SAFE_SPAWN_DIST` do jogador com linha de visão
+  livre. Nove checagens, inclusive a que exige que o resgate de margem continue funcionando depois da
+  árvore de decisões mudada.
+- `40ca4fb` — re-derivacão por conteúdo, com as duas pontas lidas contra `eb6ec8d`: os dois
+  `world.set_block` de gameplay são [`player.gd:667`](../src/entities/player.gd#L667) e
+  [`:693`](../src/entities/player.gd#L693) (eram `:659`/`:675`, que são os cabeçalhos de
+  `_mine_target()` e `_try_place()`); o `_on_acted` que imprime WORK está em
+  [`main.gd:277-282`](../src/main.gd#L277-L282) (saiu de `:268-273` quando o viés de imprint entrou);
+  o teto do load que pareia por índice é [`main.gd:419`](../src/main.gd#L419), não `:410`; as três
+  promessas da lavra estão em [`smoke_test.gd:862-870`](../tests/smoke_test.gd#L862-L870), não
+  `:780-790`; `EXPECTED_CHECKS` é [`aether_reactions_test.gd:17`](../tests/aether_reactions_test.gd#L17)
+  com **119**, não `:16` com 109. Nos dossiês: `07:67` e `07:137` apontavam
+  [`README.md:505-512`](../../README.md) (a seção do oráculo local) para a queda de ~16 s para ~7,5 s,
+  que está em `:546-553`, e `12:63` apontava `README.md:533` (linha de lista do Éter) e o par
+  geração/malharia em `:78` quando está em `:83`.
+- `91409af` — a página-índice passa a ter **uma regra declarada**: contam-se os catorze dossiês, esta
+  página fica fora (ela cita os ponteiros alheios para descrevê-los) e cada link
+  `[rótulo](alvo)` vale uma referência, não duas. Sob essa regra: 59 ao status, 8 ao contrato, 6 ao
+  `README.md` da raiz — **73**, mais 5 ao `README.md` de design.
+
+### A corrida que sustenta os números
+
+Nenhuma engine foi rodada pelos dossiês: eles são leitura de código, como diz o topo daquela página. O
+que foi rodado é a verificação das duas gateiras, e ela tem método — `git archive eb6ec8d` extraído em
+`/tmp/cite-eb6`, os **documentos** desta árvore por cima (é o corpo que se publica), `src/` e `tests/`
+do archive intocados, e `.tools/` copiado para dentro porque está no `.gitignore` e os logs que a
+página 07 cita só existem lá. Com `CITE_ROOT` apontando para essa árvore montada:
+
+| Conta | Valor | Como se confere |
+| --- | --- | --- |
+| Citações dos catorze dossiês | **790**, 0 fora do arquivo | `python .tools/verify_plan_cites.py docs/planos/<arquivo>` por página (61 · 47 · 25 · 73 · 67 · 33 · 44 · 52 · 36 · 74 · 56 · 54 · 103 · 65) |
+| Diretório `docs/planos/` inteiro | **802** (790 + 12 desta página-índice) | idem, somando `README.md` |
+| Trio que governa a casa | **322** (85 · 0 · 237), 0 fora | `AGENTS.md`, `README.md` da raiz, `docs/melhorias-status.md` |
+| Referências cruzadas do corpus | **73** pela regra nova | links colapsados, índice fora; a conta velha (74) misturava duas regras |
+
+Os quatro números acima **se reproduzem na árvore mergida**, sem o rig: rodados em
+`C:/Aetherfall` com `src/` e `tests/` exatamente em `eb6ec8d` (árvores `9f3a952` e `56e4873`), dão
+802 · 322 · 0 fora. A página-índice registra também que a contagem da página 07 é 44 **porque**
+`.tools/` existe nesta árvore: a gateira não conta citação de arquivo ausente, então numa máquina sem
+os logs de run o mesmo comando devolve 39. Não é erro de corpo — é a diferença entre ter e não ter o
+que está no `.gitignore`.
+
+A suíte na `main` mergida: **237 checagens / 0 falhas / 36,4 s**, exit 0, zero `SCRIPT ERROR` no log
+(`.tools/main-merge-docs-suite.log`, `:312`). O pino publicado de 35,5 s vale para `eb6ec8d`; os 36,4 s
+são desta corrida e não re-pinam nada, porque o merge não toca uma linha de código.
+
+### O que nada disso fecha
+
+- Nenhum gate de fase, e nenhum dossiê vira código por ser escrito. A fila serializada é
+  09 → 10 → 14 → 11 → 12 → 13, e 09 já pousou.
+- **A perna 10 morreu no meio.** O agente de `feat/alcateia-rutinas-10` chegou a commitar
+  `6e670c3` (matilha injetada: `pack_provider` no lobo, leitura da sessão uma vez por passo) e ficou
+  com **57 linhas** de diferença não commitada em [`wolf.gd`](../src/entities/wolf.gd) e
+  [`aether_reactions_test.gd`](../tests/aether_reactions_test.gd) — assentos de cerco, `_pick_wander`
+  por rank de território e o centro da matilha — quando bateu o limite de turnos. O trabalho não foi
+  jogado fora: está preservado em `/tmp/leg10-backup/` (cópia dos quatro arquivos, `md5` conferido, o
+  patch `wip-vs-eb6ec8d.patch` e os dois logs que ele mesmo rodou) e volta para a branch dele antes de
+  qualquer outra perna tocar `wolf.gd`. É exatamente o cenário que a regra 6 de
+  [`AGENTS.md`](../AGENTS.md) protege: um escritor por arquivo, e a ordem decidida **antes**.
+- Restam **69** referências numeradas do corpus a estes três arquivos sem conferência de conteúdo. A
+  perna que as re-derive pelo que a linha realmente diz roda depois de a 10 pousar, porque cada merge
+  desta fila move outra vez os números de `wolf.gd` e `main.gd` — e inserir no meio deste arquivo
+  empurraria as referências `:1064` e `:1066` que a página 07 já faz.
+- Os dois dossiês novos não têm runner, nem branch de código, nem captura. `FamilyTree`, `PackState`,
+  `SAFE_SPAWN_DIST` e as dezessete checagens propostas são `[TARGET]`, declarados como tais no
+  `verify_plan_ids.py`.
