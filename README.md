@@ -185,25 +185,29 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `ff347d2`, mesmo código desta,
-medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/rastro-duas-camadas/sources.sha256`, sem `.godot/`, sem `.tools/` e sem
-`override.cfg`), recém-importado com o `--import` logo acima: **236 checagens, 0 falhas, 35,1 s**, exit 0 —
-as 236 linhas de checagem são as mesmas da corrida feita na árvore de trabalho desta vez; o `diff` dos
-dois logs conta 20 linhas e todas são número de tempo (geração, malharia, `pior passo` ×2, determinismo,
-cronômetro do passo, leitura do slot e o diagnóstico final) ou as quatro linhas de ruído do `quit()` que
-só a árvore de trabalho imprimiu. O estado final confere (`aether_energy` `9,36133219487965`, 4 lobos
-vivos, `tick=359`, `dropped_ticks=0`). O vazamento do quit, que entrou junto com o som (medido e
-explicado em "O jogo tem som, e o som não manda no mundo"), segue se movendo entre corridas de conteúdo
-idêntico: `8 ObjectDB` / `4 resources` em `main-suite.log`, `clone-suite.log`, `docs-suite.log`,
-`merge-main-suite.log`, `clone-3ab08db-suite.log` e `merge-ff347d2-suite.log`; `4` / `2` em
-`branch-suite.log`; e nenhuma das duas em `clone-ff347d2-suite.log`, capturado com o mesmo `2>&1` — com
-`src/` e `tests/` idênticos entre as oito árvores, o que reforça a leitura de que o par é do processo no
-`quit()`, não da árvore; registrada na rodada de rastros em [docs/melhorias-status.md](docs/melhorias-status.md)).
-Que "mesmo código desta" não é generosidade de redação é conferido: `git rev-parse cbaaef5:src
-3ab08db:src ff347d2:src` e `…:tests` dão os mesmos dois hashes (`9a8dbdf…`, `7bcbde9…`), e
-`git diff --name-only cbaaef5 ff347d2 -- src tests project.godot assets tools` conta zero arquivos
-contra 42 no total. Na revisão histórica
-`9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
+Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `44c9d94`, ponta de
+`feat/bioma-e-cor-de-pelo-09` sobre a base `e7e30e6`, medida num clone limpo dela mesma (os 79 arquivos de
+[docs/evidence/bioma-cor-de-pelo/sources.sha256](docs/evidence/bioma-cor-de-pelo/sources.sha256), sem
+`.godot/`, sem `.tools/` e sem `override.cfg`), recém-importado com o `--import` logo acima:
+**237 checagens, 0 falhas, 35,5 s**, exit 0 — as mesmas 237 linhas de checagem da corrida feita na árvore
+de trabalho desta vez; o `diff` dos dois logs conta 14 linhas e **nenhuma é checagem**: sete pares de
+número de tempo (geração e malharia, `pior passo` duas vezes, determinismo, cronômetro do passo, leitura
+do slot) e o diagnóstico final, onde só `gen_ms` (946,922 → 958,011), `mesh_ms` (4 523,613 → 4 542,158) e
+`worst_sim_ms` (10,027 → 9,754) se movem. O estado final confere dígito a dígito nos dois logs
+(`aether_energy` `9,44745890423656`, 4 lobos vivos, `tick=359`, `dropped_ticks=0`, `triangles=214480`,
+`chunks=64`, `edits=13`). O vazamento do quit, que entrou junto com o som (medido e explicado em "O jogo
+tem som, e o som não manda no mundo"), sai **igual nos dois** nesta revisão — `WARNING: 8 ObjectDB
+instances were leaked at exit` na linha 313 e `ERROR: 4 resources still in use at exit` na linha 315 — e é
+o mesmo par de `merge-ff347d2-suite.log` e `main-suite.log` da rodada anterior, onde só o
+`branch-suite.log` deu `4` / `2`; nenhum dos doze runners desta pasta imprime qualquer dos dois.
+A atribuição do par segue aberta, como na rodada de
+rastros, e o registro desta revisão está em
+[docs/evidence/bioma-cor-de-pelo/readback.md](docs/evidence/bioma-cor-de-pelo/readback.md).
+Que "clone limpo da mesma revisão" não é generosidade de redação é conferido por hash de árvore:
+`git rev-parse 44c9d94:src 44c9d94:tests` devolve `9f3a952dc123…` / `56e487343728…`, e `git diff
+--name-only e7e30e6 44c9d94` conta exatamente os cinco arquivos da perna — `src/world/world_gen.gd`,
+`src/entities/wolf.gd`, `src/main.gd`, `tests/smoke_test.gd` e `tests/aether_reactions_test.gd`.
+Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
 linha `ERROR` do engine. A contagem é sempre da revisão medida, nunca do texto: a
@@ -350,18 +354,23 @@ rastro dois andares abaixo continua fora do alcance, e um rastro fraco pode
 desaparecer antes da chegada. O cache de inspeções é transitório e se limpa ao
 carregar; os episódios ficam no save.
 
-O censo publicado deste runner é o da mesma revisão da suíte acima — `ff347d2`, medido no
-mesmo clone limpo: **109 checagens, 0 falhas, 2,003 s** em 21 cenários, exit 0
-([clone-ff347d2-runner.log](docs/evidence/rastro-duas-camadas/clone-ff347d2-runner.log), com o rodapé de
-colheita estreita `passos=2768 sim_step total=375216 us pico=647 us; BT last_us soma=14551
-pico=40 trips=0`). É um lobo por cenário: não é o HOT agregado dos cinco lobos do jogo nem gate de P1.
+O censo publicado deste runner é o da mesma revisão da suíte acima — `44c9d94`, medido no
+mesmo clone limpo: **119 checagens, 0 falhas, 2,044 s** em 24 cenários, exit 0
+([clone-44c9d94-runner-1.log](docs/evidence/bioma-cor-de-pelo/clone-44c9d94-runner-1.log), com o rodapé de
+colheita estreita `passos=2768 sim_step total=385889 us pico=918 us; BT last_us soma=15430
+pico=169 trips=0`). As outras duas corridas do mesmo clone dão 119/0 com `total=387450` e `379321`.
+É um lobo por cenário: não é o HOT agregado dos cinco lobos do jogo nem gate de P1.
 O custo de abrir as camadas vizinhas está medido braço a braço na matriz de ablação da
-[roda de rastros](docs/melhorias-status.md#rodada-éter--o-nariz-desce-e-sobe-medido-2026-11-20-publicado-em-cbaaef5-pelo-merge-de-featrastro-em-duas-camadas-ponta-f89041b).
+[roda de rastros](docs/melhorias-status.md#rodada-éter--o-nariz-desce-e-sobe-medido-2026-11-20-publicado-em-cbaaef5-pelo-merge-de-featrastro-em-duas-camadas-ponta-f89041b),
+e o do viés de imprint por bioma, pareado contra o chão `e7e30e6` na mesma máquina, no
+[readback do bioma](docs/evidence/bioma-cor-de-pelo/readback.md) — `+0,59 %` de `sim_step` contra
+uma dispersão de `4,05 %` no próprio chão: nada mensurável ali, e o `pico` fica como indício para a
+perna `bench/`.
 
 Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
 rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por
 SHA-256, evidências e limites nas [notas de medição](docs/melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
-São resultados headless do candidato daquela revisão, com o smoke hoje em 236 checagens; o código
+São resultados headless do candidato daquela revisão, com o smoke hoje em 237 checagens; o código
 está no commit `a8967e0` e o clone limpo dele re-mediu a suíte completa, mas os runners dedicados
 de rastros e journal continuaram na árvore de trabalho. Falta a aprovação visual em janela.
 
@@ -515,7 +524,10 @@ de 10 pinos, painel de inventário e receitas com estação de craft (bancada),
 combate corpo a corpo com vigor, rolamento e
 planar, respiração e dano de queda, vida/dano/morte/renascer,
 HUD, 5 lobos com Behavior Tree + Utilidade + memória episódica e
-confiança no jogador, campo de Éter com 3 canais (work, blood, fear) que difunde
+confiança no jogador, bioma como código (uma função decide a partir do relevo, e o mesmo
+bioma dá a cor do pelo de quem ali nasceu e o viés por canal do imprint do Éter — o viés é
+aplicado pelo chamador do evento, o campo continua sem conhecer voxel nenhum), campo de Éter
+com 3 canais (work, blood, fear) que difunde
 e decai, relógio de simulação desacoplado, save/load atômico, som ambiente e de ação com
 51 arquivos CC0 roteados por barramento (o ganho sai do nível medido de cada arquivo), o
 oráculo de IA local opcional (llama-server + Qwen3.5-4B em localhost, narração no debug) e
