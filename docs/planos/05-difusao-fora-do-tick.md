@@ -74,6 +74,10 @@ Entre cada commit: contagem de checagens conferida antes do lote, suíte verde, 
 
 ## Citações que não conferem
 
-- `src/entities/wolf.gd:461-496` e `src/entities/player.gd:659`, `:675` são herdadas de `AGENTS.md` e do briefing: **não relidas** nesta revisão — reconferir antes do commit 3.
+- `src/entities/wolf.gd:462-506` e `src/entities/player.gd:659`, `:675` foram reconferidas na
+  árvore desta rodada: o corpo de `_find_scent()` continua o varredor citado (agora escalonado
+  em camadas, `:478-498`), e as duas funções do jogador são `_mine_target()` e `_try_place()`,
+  donas das escritas de voxel. A cadência de rastros de 0,25 s é `SCENT_PERIOD` em
+  `src/entities/wolf.gd:30`, disparada em `:446-447` — o risco da fase descrito acima é real.
 - `AGENTS.md:183` ("colheita, não corte"), `:242` (quatro perguntas) e `:287-298` (comandos) lidos por grep; os números históricos de boot (936–962 ms, 4 640–4 886 ms) citados por `AGENTS.md` não foram re-medidos aqui — a única âncora usada é o log do clone limpo (`docs/evidence/third-person-carry/clone-suite.log:305`, `:307`).
 - Nenhum custo de difusão foi medido: todo valor de µs neste arquivo está ausente por projeto, não por esquecimento.

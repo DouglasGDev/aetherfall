@@ -1,0 +1,61 @@
+# Leitura das corridas desta pagina
+
+binario=.tools/Godot_v4.7.2-stable_win64_console.exe --headless --path . (Godot Engine v4.7.2.stable.official.ed1daf0bf, primeira linha de todos os logs)
+publicacao=main cbaaef5c2405cf1a165458190f51525baada7c5f (merge --no-ff de feat/rastro-em-duas-camadas, ponta f89041b57b06729bb0cb92aedb26c1d78c149017), conferida com `git ls-remote --heads origin`
+comandos=--import (clone-import.log); --script tests/aether_reactions_test.gd (os 13 logs de runner); tests/smoke_test.tscn (branch-suite.log, main-suite.log, clone-suite.log)
+
+## Bracos de ablagao (arvore de trabalho da branch, um processo por config)
+
+tests/aether_reactions_test.gd e o mesmo nas 11 corridas de braco: md5 6179200c. O que muda e
+somente src/entities/wolf.gd, md5 impresso em cada linha. Os dois logs de colheita carregam no
+lobo dois `static var` contadores e no teste uma linha de print a mais (`COLHEITA TEMPORARIA`),
+revertidas antes do commit f89041b; por isso o hash do teste neles nao e 6179200c.
+
+| braco | wolf.gd | o que e | sim_step total us | pico us | contrato |
+|---|---|---|---|---|---|
+| A | 0f70274e (HEAD antes do commit) | camada propria + surface_height | 326 189 / 322 128 | 440 / 409 | 109 / 2 falhas / 1,919 e 1,921 s |
+| D | 4b2f5110 | camada propria + chao novo | 318 171 | 409 | 109 / 2 falhas / 1,908 s |
+| C | 89e07cd5 | tres camadas sem gate + surface_height | 434 052 | 723 | 109 / 1 falha / 2,023 s |
+| B | 5fcab371 | tres camadas sem gate + chao novo | 427 940 / 427 134 | 622 / 693 | 109 / 0 / 2,016 e 2,024 s |
+| E | (com contadores) | escalonado + chao novo, colher frequencia | 363 038 / 363 089 | 540 / 543 | 109 / 0 / 1,941 e 1,943 s; scans=567 varredura-vertical=479 |
+| F | 885362e8 = f89041b | publicado (escalonado + chao novo) | 364 589 / 364 987 / 361 464 | 619 / 609 / 545 | 109 / 0 / 1,938 e 1,975 e 1,950 s |
+
+Leitura da matriz: D == A dentro do ruido do instrumento e C == B. O chao do rastro
+(`_scent_ground_y`) nao custa nada mensuravel; todo o delta esta na varredura das camadas
+vizinhas, e cada camada vizinha custa 98 leituras `sample_cell` (49 celulas x 2 canais, sem
+FEAR) -- 196 por scan, porque SCENT_Y_RADIUS = 1 abre duas. A varredura incondicional custa
++103 ms sobre A (427 537 contra 324 159, media dos dois runs). O gate pelo nivel proprio
+derruba isso para +39 ms (363 064, media dos dois runs com contadores; 363 680 nos tres runs
+F publicados) porque corta 64 190 das 111 132 leituras extras: 567 scans, 479 entradas de
+camada vizinha contra um maximo possivel de 1 134 (567 x 2). O contador e por camada
+percorrida, nao por scan -- a primeira camada vizinha que sobe acima de SCENT_MIN fecha a
+segunda no mesmo scan, entao um scan pode pagar zero, uma ou duas camadas extras. Os dois
+runs de colheita dao exatamente o mesmo par (567 / 479): a cena e deterministica.
+
+## Gates
+
+branch-runner (publicado-3.log, ponta f89041b)="109 checagens 0 falhas 1,950 s" exit 0, censo 21/21 e 109/109
+main-runner.log (arvore de trabalho, main mergida cbaaef5)="109 checagens 0 falhas 1,941 s" exit 0, total=366 192 pico=553
+clone-reactions.log (clone limpo de cbaaef5, depois do --import)="109 checagens 0 falhas 1,969 s" exit 0, total=367 690 pico=775
+branch-suite.log (arvore de trabalho, ponta da branch)="236 checagens 0 falhas 34,8 s de teste" exit 0, worst_sim_ms 9,921, gen_ms 925,733, mesh_ms 4 413,612, dropped_ticks 0, aether_energy 9,36133219487965
+main-suite.log (arvore de trabalho, main mergida)="236 checagens 0 falhas 34,8 s de teste" exit 0, worst_sim_ms 10,031, gen_ms 920,965, mesh_ms 4 435,475, dropped_ticks 0, aether_energy 9,36133219487965
+clone-suite.log (clone limpo)="236 checagens 0 falhas 34,3 s de teste" exit 0, worst_sim_ms 12,939, gen_ms 942,515, mesh_ms 4 284,262, dropped_ticks 0, aether_energy 9,36133219487965
+
+O `aether_energy` das tres suites e o mesmo numero do pin publicado na rodada anterior, e o
+`wolves_alive` segue 4: neste seed o varredor em camadas nao muda o estado do mundo, muda so o
+custo do scan. Nenhum dos tres logs e o HOT agregado dos cinco lobos nem gate de fase.
+
+## Manifesto
+
+manifesto=git ls-tree -r --name-only HEAD -- src tests project.godot icon.svg assets/audio/levels.json, ordenado, 79 arquivos, sha256sum -b
+verificacao=sha256sum -c do mesmo manifesto na arvore de trabalho (cbaaef5) e no clone limpo: 79/79 ": OK" nos dois lados, exit 0, nenhuma linha fora de OK
+
+## Observacao registrada, sem atribuicao
+
+Os avisos do `quit()` divergem entre arvores com conteudo identico: branch-suite.log da
+`4 ObjectDB instances` e `2 resources still in use`, main-suite.log e clone-suite.log dao
+`8` e `4`. tree(f89041b) == tree(cbaaef5) em `src/` e `tests/` (o merge nao trouxe nada alem
+do proprio commit), mesmo binario, mesma maquina, minutos apartados. Entao a contagem de
+objetos vivos no exit variou de corrida para corrida, e nao e propriedade clone-vs-arvore.
+Isso responde parcialmente a observacao registrada na pagina `passo-lobo-plano`, sem fechar
+por que o lote de 4 aparece ou nao.
