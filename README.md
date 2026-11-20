@@ -185,7 +185,7 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `9f3622b`,
+Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `9f3622b`, mesmo código desta,
 medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/ether-massa-conservada/sources.sha256`, sem `.godot/` e sem `.tools/`), recém-importado com
 o `--import` logo acima: **236 checagens, 0 falhas, 37,1 s**, exit 0 — o mesmo censo da
 árvore de trabalho, com as duas linhas de vazamento do quit que entraram junto com o som
@@ -416,7 +416,7 @@ godot --path . tests/audio_live_probe.tscn               # audibilidade real, em
 ```
 
 Na árvore de trabalho daquela revisão (base `1db00cf`, hoje o commit `a8967e0`): **73 checagens / 0 falhas** no
-censo e **220 / 0** no smoke — a suíte publicada é hoje a de 236 do clone de `9f3622b`, e nela
+censo e **220 / 0** no smoke — a suíte publicada é a de 236 do clone de `9f3622b` (mesmo código desta), e nela
 nenhum runner de som roda: os 73 passos do censo e a sonda viva continuam medidos na árvore de
 trabalho daquela revisão. A sonda em janela mediu 13 toques em 6 s sem nenhum input
 disparado (`step_grass` 6, `step_snow` 6, `splash` 1), cama `amb_birds` e pico de

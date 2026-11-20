@@ -42,7 +42,7 @@ ligada/desligada em candidato recém-importado. Essas execuções
 históricas antecedem o refinamento dos rastros. A validação conjunta posterior tem
 [manifesto e logs próprios](../melhorias-status.md#rastros-e-reações--publicado-em-a8967e0):
 a árvore delas é o commit `a8967e0`, re-medido em clone limpo com 232 checagens / 0 falhas /
-33,7 s, exit 0 — e na revisão publicada hoje, `9f3622b`, o mesmo procedimento em clone limpo devolveu 236 / 0 / 37,1 s ([logs](../evidence/ether-massa-conservada/clone-suite.log)); os runners dedicados de contrato e de gravação continuaram no candidato. A projeção
+33,7 s, exit 0 — e na revisão `9f3622b`, mesmo código desta, o mesmo procedimento em clone limpo devolveu 236 / 0 / 37,1 s ([logs](../evidence/ether-massa-conservada/clone-suite.log)); os runners dedicados de contrato e de gravação continuaram no candidato. A projeção
 inclui versões, seed real, tick, dimensões, edições ordenadas, identidades/intenções/crenças
 dos lobos vivos e todos os bytes Float32 do Éter; exclui jogador, corpos, RNG, episódios,
 relações, timers e comandos. O contrato completo está em [AGENTS.md](../../AGENTS.md).
