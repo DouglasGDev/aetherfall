@@ -1,6 +1,6 @@
 # 07 — `af-bench` de 10 min, bake-off de voxel e o doc do `SimClock`
 
-Alvo: as três linhas não marcadas do checklist P0 em `docs/melhorias-status.md:300-303`. São P0,
+Alvo: as três linhas não marcadas do checklist P0 em `docs/melhorias-status.md:334-337`. São P0,
 não P1. Nenhuma das três peças existe hoje em `src/` — este texto diz o que precisa nascer, em
 que ordem e com que comando. Gate de fase fecha o dono do repositório, não este plano.
 
@@ -53,7 +53,7 @@ binário e independente de máquina. Consequência honesta: a projeção do hash
 corpos, RNG, episódios, relações, timers e comandos (`docs/design/08-roadmap-risks-licensing.md:46-48`),
 então 3 hashes iguais provam determinismo **do que está na projeção**, não da simulação inteira.
 Número publicado volta a ser hipótese se o código mudou depois da medição: re-medir em clone limpo
-com `--import` (`docs/melhorias-status.md:619-634`).
+com `--import` (`docs/melhorias-status.md:668-683`).
 
 ## 4. Bake-off de voxel, com as abordagens que o código permite
 
@@ -119,7 +119,7 @@ de journal já medido é histórico: 205 registros / 160.000 µs / pico 1.646 µ
 
 Não: prometer FPS (`docs/design/08:62`), chamar o bench de replay (o journal é `[tick,hash]`
 apêndice-only, `src/persistence/tick_journal.gd:69-87`), contar checagem sem conferir a última
-linha (quatro checagens somem quando a premissa não existe, `docs/melhorias-status.md:370-374`),
+linha (quatro checagens somem quando a premissa não existe, `docs/melhorias-status.md:419-423`),
 escrever estado na mão para o cenário passar, vendorizar addon para "ganhar" o bake-off, ou fechar
 gate de fase por este documento. Commits atômicos, um por linha da tabela do §6, suíte verde entre
 eles: (1) `docs/engine/simclock.md`; (2) runner de `dt` fixo + hash, sem número publicado;
@@ -146,7 +146,7 @@ Citações que não conferem (verificadas abrindo os arquivos):
   malha, `:14` visão, `:16` cadáveres); a alegação de deslocamento em +1 foi deste briefing e o
   código a refuta. `WOLF_COUNT` está em `:9`, `SEED` em `:10`, `SLOT` em `:11`.
 - A contagem publicada é **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
-  (`docs/melhorias-status.md:19` e a nota em `:1144-1224`). As ocorrências antigas de 232 —
+  (`docs/melhorias-status.md:19-19` e a nota em `:1144-1224`). As ocorrências antigas de 232 —
   `docs/design/08:44-45` (que agora diz os dois números) e `melhorias-status.md:91`, `:249`, `:665`,
   `:702` — são da rodada do `a8967e0` e continuam corretas porque mediram o clone daquele commit.
   Os logs que eu abri aqui são os locais de `.tools/` e dão 219 (um com 4 falhas) — contagem

@@ -1,13 +1,13 @@
 # 03 — Canais MORTE / SOM / FOGO no `AetherField`
 
-Plano do item 4 de "Falta" (`docs/melhorias-status.md:274-278`). Nenhum número aqui é de
+Plano do item 4 de "Falta" (`docs/melhorias-status.md:308-312`). Nenhum número aqui é de
 corrida nova: eu não rodei engine nem suíte. Onde não há log, diz "não medido".
 
 **Estado em 2026-11-19 (mudado por execução, não por leitura):** o **passo 1 do §7** — a colheita
 sem canal novo — foi rodado, medido e publicado em `9f3622b`; §5, §7, §8 e a nota de contagem do §9
 foram atualizados com os números daquele clone. Nada do §2 em diante (canais MORTE/SOM/FOGO) saiu,
 e `Channel.COUNT` continua 3. A nota de medição está em
-`docs/melhorias-status.md:1144-1224`.
+`docs/melhorias-status.md:1236-1316`.
 
 ## 1. Premissa nomeada
 
@@ -25,7 +25,7 @@ logo o trabalho é ligar fonte a consumidora, não acrescentar linhas em tabelas
 | decaimento | `HALF_LIFE = [90.0, 55.0, 120.0]`, **lido** em `keep = pow(0.5, elapsed / HALF_LIFE[ch])` | `aether_field.gd:13`, uso em `:120` |
 | fluxo | `DIFFUSE_RATE = [0.06, 0.16, 0.10]`; corte `MIN_VALUE 0,004` (`:16`), teto `MAX_VALUE 4,0` (`:17`) | `aether_field.gd:15` |
 | cor | `CHANNEL_COLOR` com 3 entradas | `src/rendering/aether_viz.gd:12-16` |
-| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1026` |
+| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1118-1118` |
 | porta de escrita | `imprint(world_pos, ch, amount)` — posição primeiro, canal segundo | `aether_field.gd:87-89` |
 | fontes reais | medo no spawn `main.gd:192`; lavra 0,42 / colocação 0,20 `main.gd:271-273`; sangue 0,22 `main.gd:307`; morte do jogador `main.gd:312-313`; lobo ferido `wolf.gd:612-613`; lobo morto `wolf.gd:631-632`; medo do lobo `wolf.gd:223`, sangue `wolf.gd:345` | as fontes dos 3 canais novos: **zero ocorrências** |
 | passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:150`, constante `src/main.gd:12` |
@@ -146,7 +146,7 @@ das curvas na mesma mudança do imprint, nada de ler o canal no `AudioDirector`.
 
 ## 8. Citações que não conferem no repositório
 
-- `docs/melhorias-status.md:274-277`: "três tabelas paralelas de `aether_field.gd:11-15`" e "uma
+- `docs/melhorias-status.md:308-311`: "três tabelas paralelas de `aether_field.gd:11-15`" e "uma
   cor em `aether_viz.gd:12-16"`. No arquivo há duas tabelas (`:13`, `:15`), mais `CHANNEL_NAMES`
   (`:11`) e o `enum Channel` (`:9`); a cor é a quinta superfície com largura e a sexta é
   `Channel.COUNT` dentro da projeção do journal (`src/persistence/tick_journal.gd:38`) — abrir

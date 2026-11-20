@@ -89,6 +89,40 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 
 ## Feito nesta sessão
 
+- **Rotinas de alcateia: a matilha entra na decisão do lobo (dossiê 10).** O lobo lê a matilha por um
+  `pack_provider` injetado pela sessão ([wolf.gd:116](../src/entities/wolf.gd#L116), montado em
+  [main.gd:228](../src/main.gd#L228) com a identidade presa) e a sessão faz **uma** passada por
+  passo: cada par `i<j` testado uma vez contra `PACK_COHESION_RADIUS` de 24 m
+  ([main.gd:24](../src/main.gd#L24), `_rebuild_packs` [[:292-313](../src/main.gd#L292-L313)]) e
+  escrito nos dois buffers; `pack_of` ([:283-285](../src/main.gd#L283-L285)) devolve a lista e o lobo
+  só lê (`_read_pack` em [wolf.gd:591-592](../src/entities/wolf.gd#L591-L592), chamado em
+  [:617](../src/entities/wolf.gd#L617)). Cinco comportamentos mudam com essa leitura: **ronda** em
+  torno do baricentro da matilha com uma fatia angular por rank
+  (`_leaf_wander` [[:417-435](../src/entities/wolf.gd#L417-L435)], `_territory_center`
+  [[:459](../src/entities/wolf.gd#L459)], `_territory_rank` [[:473](../src/entities/wolf.gd#L473)]);
+  **cerco** com assento `TAU/n`, em que `n` conta quem está em `hunt` de fato
+  (`_hunt_pack_size` [[:327](../src/entities/wolf.gd#L327)], `_seat_point`
+  [[:350-353](../src/entities/wolf.gd#L350-L353)] a 1,50 m da presa por `ENCIRCLE_RING`
+  [[:39](../src/entities/wolf.gd#L39)]); **mordida escalonada** por `clock.tick % n == rank`
+  (`_bite_turn` [[:525-529](../src/entities/wolf.gd#L525-L529)], chamada em
+  [:506](../src/entities/wolf.gd#L506)); **contágio do medo** — vizinho em `flee` soma `0,55` no
+  `_fear_level` do observador ([`_sense` 641-650](../src/entities/wolf.gd#L641-L650),
+  `PACK_PANIC_FEAR` [[:53](../src/entities/wolf.gd#L53)]); e **amortecimento por confiança** —
+  vizinho com `trust ≥ 0,35` corta `0,9` do `_courage` e fecha a porta de `hunt`
+  ([:646-655](../src/entities/wolf.gd#L646-L655); a confiança vem de `take_damage`, único chamador de
+  `adjust_trust(-0,35)` [:818](../src/entities/wolf.gd#L818)). O vizinho **não escreve** no lobo: cada
+  um soma o que a sessão devolve, e sem provedor a lista é `NO_PACK`
+  ([[:43](../src/entities/wolf.gd#L43)]) — os números do lobo solitário são literalmente os de antes,
+  que é o que a checagem `lobo sem provedor nao le matilha` exige. Runner de **119 para 150
+  checagens** e de **24 para 30 cenários**
+  ([aether_reactions_test.gd:20](../tests/aether_reactions_test.gd#L20)); suíte de **237 para 239**
+  com duas checagens novas na sessão real ([smoke_test.gd:238](../tests/smoke_test.gd#L238),
+  [:241](../tests/smoke_test.gd#L241)). Verdes, vermelhas e limites, com log por número:
+  [evidence/alcateia-rutinas/](evidence/alcateia-rutinas/). **O que a sessão real ainda não exercita
+  é o furo #16**: com cinco lares espalhados o raio de coesão devolve no máximo um vizinho
+  (`maior_matilha_lida=1`), então cerco, contágio e ronda por setor estão provados em fixture de
+  quatro lobos próximos, não no vale — e isso é trabalho da perna 14.
+
 - **Bioma como código, pelo por bioma e viés de imprint (dossiê 09).** `WorldGen` ganha
   `enum Biome` + `biome_of(x, z, h)` ([world_gen.gd](../src/world/world_gen.gd)) e
   `surface_block` passa a consultá-la — a regra fica uma vez só, e nenhum bloco muda de byte: é o
@@ -355,13 +389,28 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
    re-bake), o bioma lido por outras peças além do pelo e do imprint, e o cenário multi-semente (item
    3). Medição, sabotagens e limites:
    [evidence/bioma-cor-de-pelo/readback.md](evidence/bioma-cor-de-pelo/readback.md).
-9. **Rotinas de alcateia** (dossiê 10). A árvore de decisão é de um lobo solitário:
-   `Selector[flee, hunt, sniff, patrol]` ([wolf.gd:201-227](../src/entities/wolf.gd#L201-L227)) e o
-   dicionário do blackboard ([wolf.gd:433](../src/entities/wolf.gd#L433)) não leva nenhum outro lobo.
-   Não existe rondar em área, cercar (nenhum assento angular), atacar em grupo nem memória
-   compartilhada: `Mind.relations` é confiança por **ator** ([mind.gd:20](../src/ai/mind.gd#L20),
-   [:126-131](../src/ai/mind.gd#L126-L131)), não por matilha, e nada hoje decide se a lembrança
-   ajuda ou atrapalha o jogador.
+9. **Rotinas de alcateia — concluído nesta máquina (dossiê 10; mantida a numeração para não mexer
+   nas dependências da fila).** A árvore deixou de ser de um lobo solitário: o `Selector[flee, hunt,
+   sniff, patrol]` ([wolf.gd:253-254](../src/entities/wolf.gd#L253-L254)) continua a mesma forma, e o
+   que mudou é o que entra nas folhas. O lobo recebe a matilha por `pack_provider`
+   ([wolf.gd:116](../src/entities/wolf.gd#L116), montado em [main.gd:228](../src/main.gd#L228)), lê
+   uma vez por passo ([:591-592](../src/entities/wolf.gd#L591-L592), chamado em
+   [:617](../src/entities/wolf.gd#L617)) e o contexto do escorredor leva o pacote
+   ([:584](../src/entities/wolf.gd#L584), `["_pack", "pack_panic", "pack_trust", ...]`). Ronda sai do
+   `home` individual e vai para o baricentro com fatia por rank
+   ([:417-435](../src/entities/wolf.gd#L417-L435), [:459](../src/entities/wolf.gd#L459),
+   [:473](../src/entities/wolf.gd#L473)); o cerco tem assento angular função de quem caa
+   ([:327](../src/entities/wolf.gd#L327), [:350-353](../src/entities/wolf.gd#L350-L353)); a mordida é
+   escalonada pelo `clock.tick` ([:525-529](../src/entities/wolf.gd#L525-L529)); o medo do vizinho
+   soma no `_fear_level` ([:641-650](../src/entities/wolf.gd#L641-L650)) e a confiança do vizinho
+   amansa o `_courage` ([:646-655](../src/entities/wolf.gd#L646-L655)). Continua **aberto** e não é
+   deste item: a memória compartilhada *entre matilhas* — `Mind.relations` ainda é confiança por
+   **ator** ([mind.gd:20](../src/ai/mind.gd#L20), [:126-131](../src/ai/mind.gd#L126-L131)), não por
+   matilha, e nada decide se a lembrança de um vizinho ajuda o jogador; o HOT agregado dos cinco
+   lobos (item 5); a água como último recurso, o spawn fora dos olhos do jogador e os avisos de
+   criatura na tela (item 12, dossiê 14); e `MindsInspector`, que não existe (dossiê 08) — sem ele a
+   matilha lida se lê no log do runner, não no F3. E a sessão real ainda não exerce o que a fixture
+   prova: furo #16.
 10. **Acasalamento, filhote que cresce e censo variável** (dossiê 11). A população é uma constante
     ([main.gd:9](../src/main.gd#L9) `WOLF_COUNT := 5`) e a fila de respawns só repõe
     ([main.gd:181](../src/main.gd#L181) `_spawn_wolves(1)`). Não existe idade, filhote nem corpo
@@ -701,6 +750,49 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     intercalados, mesma janela), é o que está em
     [evidence/bioma-cor-de-pelo/readback.md](evidence/bioma-cor-de-pelo/readback.md) §3, e vale para
     10, 11 e 12: nenhuma banda absoluta de µs como gate.
+
+16. **A suíte real aprova a alcateia sem nunca ter visto uma alcateia.** As duas checagens que a
+    perna 10 pôs na sessão verdadeira ([smoke_test.gd:238](../tests/smoke_test.gd#L238),
+    [:241-244](../tests/smoke_test.gd#L241-L244)) dão verde com o vale inteiro assim:
+    `pares=10 esperado=10 maior_matilha_lida=1 lobos_vivos=5`
+    ([evidence/alcateia-rutinas/pos-merge-suite.log:23-24](evidence/alcateia-rutinas/pos-merge-suite.log)).
+    Duas leituras erradas cabem nessa linha. A primeira: `pares=10` **não** são pares coesos, são as
+    **comparações** `i<j` que a passada da sessão avalia — `_pack_pairs += 1` roda em todo par
+    testado, dentro ou fora do raio ([main.gd:306](../src/main.gd#L306), dentro de `_rebuild_packs`
+    [:292-313](../src/main.gd#L292-L313)), e `10 = 5·4/2` é justamente o total de combinações de
+    cinco lobos, ou seja: o número é teto de trabalho, nunca de matilha formada. A segunda, e é o
+    furo: `maior_matilha_lida` é o maior `_pack.size()` entre os lobos, e `_pack` **não** conta o
+    próprio lobo — então `1` significa "um lobo viu **um** vizinho", e a asserção é `biggest >= 1`
+    ([:242](../tests/smoke_test.gd#L242)). Com os cinco lares espalhados como o spawn os sorteia,
+    `PACK_COHESION_RADIUS = 24 m` nunca entregou dois vizinhos a ninguém. Consequência direta:
+    cerco, contágio do medo e ronda por setor estão provados no fixture do runner, que põe quatro
+    lobos a distância um do outro de propósito
+    ([evidence/alcateia-rutinas/cerco-runner-2.log](evidence/alcateia-rutinas/cerco-runner-2.log),
+    `angulos=[0.0, 1.5708, 3.1416, 4.7124] n=4`), e **não** no vale. O que a regra 4 do ciclo cobra
+    e aqui faltou: a checagem nomeia "o rebuild viu par", mas a premissa que se quer garantir é
+    "**a sessão real monta matilha de tamanho ≥ 2**", e nenhuma linha hoje a exige. Não se conserta
+    escrevendo `biggest >= 2` — com spawn em anel de 16–46 m em torno do centro fixo, isso é vermelho
+    legítimo e o conserto certo é o da perna 14, que é quem mexe em lares, spawn e distância segura.
+    Registro antes do código, como manda a regra 6: **a perna 14 troca o `>= 1` por `>= 2` e exige
+    que o verde venha do mundo, não do fixture.**
+
+17. **Este arquivo também é alvo de citação por linha, e a passada de re-derivação não olhava
+    para ele.** O corpus guarda **60** referências no formato `docs/melhorias-status.md:NNN`
+    (dossiês e páginas de design que citam uma seção deste arquivo pelo número da linha), e a
+    perna 10 escreveu **285** linhas aqui dentro — de 2 326 a 2 611. `fb20707` e `cb96493`
+    conferiram `src/` e `tests/` e deixaram o próprio status apodrecer: é o risco do furo #3
+    (`"main.gd cresce e todo doc que cita main.gd:NNN apodrece em silêncio"`) aplicado ao
+    documento que registra a regra. Medido contra `HEAD` pela linha inicial de cada uma, **16** já
+    caíam no lugar certo e **44** estavam **+34**, **+49** ou **+92** adiante; como faixa conta pelos dois
+    topos, o realinhamento tocou **52** referências e mudou **49** números, cada um com prova de conteúdo: a linha nova é a
+    mesma linha antiga, byte a byte, lida pelo alinhamento `difflib` entre `HEAD` e a árvore — não por
+    offset adivinhado, e a conferência refeita pelo mapa ao contrário devolve **52/52**.
+    **8 ficaram para trás por motivo legítimo.** Seis já apontavam para linha **em branco**
+    antes de qualquer inserção — mis-citação pré-existente, e deslocar prova vazia só enfeita o
+    erro com número novo (a mesma regra que devolveu as 11 faixas em `cb09015`): 04:27 → `:853`,
+    05:3 → `:288-290`, 05:23 e 05:45 → `:961-963`, 07:68 → `:1064`, 07:131 → `:301-302`. Duas
+    (02:32 e 05:19 → `:354-361`) caem dentro de um bloco que esta própria passada reescreveu.
+    Consertar é ler a frase e escolher a linha; não é tarefa desta perna, e nada aqui fecha gate.
 
 ## Contrato dos rastros e reações
 
@@ -1942,8 +2034,9 @@ conteúdo a conteúdo). Registramos onde está; consertá-la é um commit de ass
 
 O mesmo vale para três rótulos deste arquivo que ficaram para trás quando o `wolf.gd` cresceu — e
 aqui a conferência é por máquina, não por leitura: das **79** citações com número de linha que têm
-âncora no repositório, **5 ocorrências** (três rótulos distintos, dois deles escritos duas vezes)
-têm rótulo ≠ âncora, todas neste arquivo. O caso é sempre o mesmo: a âncora foi re-derivada, o
+âncora no repositório **à época desta passada**, **5 ocorrências** (três rótulos distintos, dois deles escritos duas vezes)
+têm rótulo ≠ âncora, todas neste arquivo. As cinco estão fechadas na tabela de **"Rodada Alcateia"**
+no fim deste arquivo, e os números do parágrafo anterior valem pela corrida em que foram medidos. O caso é sempre o mesmo: a âncora foi re-derivada, o
 rótulo não. `:538-539` com âncora `#L563-L564` (linhas 152 e 281) aponta para `563-564`, que é
 `_unstick = _rng.randf_range(…)` e `_detour = … _rng.randf()` — a âncora está certa, o rótulo está
 25 linhas velho, do deslocamento do bloco do chão. `:291-292` com âncora `#L292-L293` (linha 1261)
@@ -1970,9 +2063,12 @@ e âncora batiam entre si e os dois apontavam para código que a frase não afir
 em quatro lugares deste arquivo — as duas frases que descrevem o `_rng` (o recorte do sorteio em
 "Feito nesta sessão" e o item 2 da fila), a frase do corte em "Notas de medição" e a da evicção na
 rodada do cache de inspeções — foram postas na árvore atual nesta rodada, cada alvo lido: cinco são da classe rótulo ≠
-âncora e cinco da classe rótulo = âncora com alvo errado; as cinco primeiras viraram **seis** âncoras
-porque a faixa `:301-304`, que afirmava três chamadas, foi cortada em duas (`:425` e `:442-443`). A
-tabela e o que ficou de fora estão em "Rodada Alcateia".
+âncora e cinco da classe rótulo = âncora com alvo errado. **A conta fechada é doze âncoras novas,
+não onze**, e a nota anterior desta mesma seção dizia **seis** para a primeira classe: as cinco
+ocorrências viraram **sete**, porque `:301-304` e `:538-539` aparecem **duas** vezes cada (uma em
+cada frase que descreve o `_rng`) — a primeira faixa virou duas (`:425` e `:442-443`) em cada
+aparência, o que dá quatro âncoras, e o desvio virou `:766-767` em cada, o que dá duas; com a
+evicção `:412-413`, são sete. A tabela, âncora por âncora, está em "Rodada Alcateia".
 
 ### Observações registradas, sem atribuição
 
@@ -2308,19 +2404,208 @@ são desta corrida e não re-pinam nada, porque o merge não toca uma linha de c
 
 - Nenhum gate de fase, e nenhum dossiê vira código por ser escrito. A fila serializada é
   09 → 10 → 14 → 11 → 12 → 13, e 09 já pousou.
-- **A perna 10 morreu no meio.** O agente de `feat/alcateia-rutinas-10` chegou a commitar
-  `6e670c3` (matilha injetada: `pack_provider` no lobo, leitura da sessão uma vez por passo) e ficou
-  com **57 linhas** de diferença não commitada em [`wolf.gd`](../src/entities/wolf.gd) e
+- **A perna 10 morreu no meio, e este item está fechado: ela voltou.** O agente de
+  `feat/alcateia-rutinas-10` chegou a commitar `6e670c3` (matilha injetada: `pack_provider` no lobo,
+  leitura da sessão uma vez por passo) e ficou com **57 linhas** de diferença não commitada em
+  [`wolf.gd`](../src/entities/wolf.gd) e
   [`aether_reactions_test.gd`](../tests/aether_reactions_test.gd) — assentos de cerco, `_pick_wander`
   por rank de território e o centro da matilha — quando bateu o limite de turnos. O trabalho não foi
-  jogado fora: está preservado em `/tmp/leg10-backup/` (cópia dos quatro arquivos, `md5` conferido, o
-  patch `wip-vs-eb6ec8d.patch` e os dois logs que ele mesmo rodou) e volta para a branch dele antes de
-  qualquer outra perna tocar `wolf.gd`. É exatamente o cenário que a regra 6 de
+  jogado fora: esteve preservado em `/tmp/leg10-backup/` (cópia dos quatro arquivos, `md5` conferido, o
+  patch `wip-vs-eb6ec8d.patch` e os dois logs que ele mesmo rodou). A perna voltou, os `md5` do backup
+  foram conferidos contra a ponta e o resto do dossiê foi commitado na própria branch — veja
+  **"Rodada Alcateia"** no fim deste arquivo. É exatamente o cenário que a regra 6 de
   [`AGENTS.md`](../AGENTS.md) protege: um escritor por arquivo, e a ordem decidida **antes**.
-- Restam **69** referências numeradas do corpus a estes três arquivos sem conferência de conteúdo. A
-  perna que as re-derive pelo que a linha realmente diz roda depois de a 10 pousar, porque cada merge
-  desta fila move outra vez os números de `wolf.gd` e `main.gd` — e inserir no meio deste arquivo
-  empurraria as referências `:1064` e `:1066` que a página 07 já faz.
+- Restavam **69** referências numeradas do corpus a `wolf.gd`, `main.gd` e `smoke_test.gd` sem conferência de
+  conteúdo (régua daquela passada, não reproduzível pelo comando de hoje; re-medido: **234** suspeitas no corpus
+  pelo `verify_cite_content.py` — 848 citações em faixa, alegação colhida para 445 — e **78** no trio da casa). A
+  perna que as lê pelo que a linha diz roda depois de a 10 pousar; o que mudou aqui está no furo #17.
 - Os dois dossiês novos não têm runner, nem branch de código, nem captura. `FamilyTree`, `PackState`,
   `SAFE_SPAWN_DIST` e as dezessete checagens propostas são `[TARGET]`, declarados como tais no
   `verify_plan_ids.py`.
+
+## Rodada Alcateia — a matilha entra na decisão do lobo, com contagem e citações re-derivadas (2026-11-20, `feat/alcateia-rutinas-10`, base `eb6ec8d`, ponta de código `c42250c`, ainda **não** mergida)
+
+### O que estava em aberto
+
+A perna tinha morrido no meio: o agente de `feat/alcateia-rutinas-10` chegou a commitar
+`6e670c3` e ficou com **57 linhas** não commitadas em [`src/entities/wolf.gd`](../src/entities/wolf.gd)
+e [`tests/aether_reactions_test.gd`](../tests/aether_reactions_test.gd) quando bateu o limite de
+turnos. O trabalho estava preservado em `/tmp/leg10-backup/` e foi retomado na própria branch, não
+reescrito de memória: dos quatro arquivos do backup, [`tests/smoke_test.gd`](../tests/smoke_test.gd)
+chegou à ponta com `md5` **idêntico** ao do backup (`2f3e6eeb11a2…`), e os outros três cresceram
+depois dele (`wolf.gd` `fc63f2521883…` → `655d8660bcb2…`, `main.gd` `235e23157cef…` →
+`da91fc6216e8…`, runner `a0e9de309954…` → `9b90b61d1847…`). O item correspondente na Rodada Docs
+envelheceu com isso e está marcado como fechado ali mesmo.
+
+O pedido do dossiê era uma frase com cinco verbos: a alcateia **ronda**, **fareja**, **procura**,
+**cerca** e **ataca em grupo**. O estado lido antes de escrever: a árvore de decisão era de um lobo
+solitário — o `Selector[flee, hunt, sniff, patrol]` não recebia nenhum outro lobo, e o único lugar
+onde "matilha" existia era o `WOLF_COUNT := 5` do spawn e a frase do HUD.
+
+### O que entrou (sete commits de código, um assunto cada)
+
+- `6e670c3` — a sessão monta a matilha e o lobo **só lê**: `pack_provider`
+  ([wolf.gd:116](../src/entities/wolf.gd#L116)) preso à identidade em
+  [main.gd:228](../src/main.gd#L228), uma passada por passo (`_rebuild_packs`
+  [:292-313](../src/main.gd#L292-L313)) que testa cada par `i<j` contra
+  `PACK_COHESION_RADIUS = 24 m` ([:24](../src/main.gd#L24)), escreve nos dois buffers e trunca o
+  cursor para não deixar vizinho fantasma; `pack_of` ([:283-285](../src/main.gd#L283-L285)). Sem
+  provedor a lista é `NO_PACK` ([wolf.gd:43](../src/entities/wolf.gd#L43)) e o lobo solitário é
+  literalmente o de antes.
+- `79882d2` — **ronda por setor**: centro compartilhado (baricentro, `_territory_center`
+  [:459-466](../src/entities/wolf.gd#L459-L466)) e fatia angular por rank (`_territory_rank`
+  [:473-478](../src/entities/wolf.gd#L473-L478)) em `_leaf_wander`
+  ([:417-435](../src/entities/wolf.gd#L417-L435)); com um lobo só, o centro é o próprio lar e a fatia
+  é o círculo inteiro, que é a ronda antiga.
+- `8e334e3` — **cerco**: assento `TAU/n` onde `n` conta quem está em `hunt` de fato
+  (`_hunt_pack_size` [:327](../src/entities/wolf.gd#L327)), ponto a 1,50 m da presa
+  (`_seat_point` [:350-353](../src/entities/wolf.gd#L350-L353), `ENCIRCLE_RING`
+  [:39](../src/entities/wolf.gd#L39)).
+- `89df566` — **mordida escalonada**: `_bite_turn` [:525-529](../src/entities/wolf.gd#L525-L529)
+  devolve `clock.tick % n == rank`, chamada em [:506](../src/entities/wolf.gd#L506) — dois lobos não
+  mordem o mesmo tick.
+- `4888818` — a leitura da matilha ganha **quinta chave conferida**: `trust` vem de
+  `_pack_put` ([main.gd:337](../src/main.gd#L337), `e["trust"] = other.trust_toward_player`), o
+  contexto do escorredor leva o pacote ([wolf.gd:584](../src/entities/wolf.gd#L584)) e o
+  `_sense()` agrega `_pack_trust` ([:646-655](../src/entities/wolf.gd#L646-L655)).
+- `2e4ff65` — **contágio do medo**: vizinho em `flee` soma `0,55` no `_fear_level` do observador
+  ([:641-650](../src/entities/wolf.gd#L641-L650), `PACK_PANIC_FEAR`
+  [:53](../src/entities/wolf.gd#L53)). O vizinho **não escreve** no lobo — cada um soma o que a
+  sessão devolve.
+- `c42250c` — **amortecimento por confiança**: vizinho com `trust ≥ 0,35` corta o `_courage` e fecha
+  a porta de `hunt` ([:646-655](../src/entities/wolf.gd#L646-L655)); a única fonte de confiança é
+  `take_damage` → `adjust_trust(from_actor, -0,35)` ([:818](../src/entities/wolf.gd#L818)), e o
+  limiar é o mesmo `0,35` de `Mind.believes()` ([mind.gd:104-105](../src/ai/mind.gd#L104-L105)).
+
+### A corrida que sustenta os números
+
+Contagem só, em árvore de trabalho; os logs estão em
+[`evidence/alcateia-rutinas/`](evidence/alcateia-rutinas/) (`readback.md` §1) e nenhum deles é clone
+limpo. `src` e `tests` de `c42250c` são **byte a byte** os de `HEAD` (`c36ab6cd2380…` /
+`03f8da29fce0…`), então o runner de 150 vale para a árvore atual sem re-corrida.
+
+| corrida | suíte `tests/smoke_test.tscn` | runner `--script tests/aether_reactions_test.gd` | cenários |
+| --- | --- | --- | --- |
+| chão (`eb6ec8d`, publicado na Rodada Bioma) | `237 / 0 / 35,5 s` | `119 / 0` | 24 |
+| WIP preservado (backup) | `239 / 0 / 36,2 s` | `130 / 0` | 25 |
+| `79882d2` ronda | `239 / 0 / 36,9 s` | `135 / 0` | 26 |
+| `8e334e3` cerco | `239 / 0 / 37,4 s` | `140 / 1` → `140 / 0` | 27 |
+| `89df566` mordida | `239 / 0 / 35,8 s` | `142 / 3` → `/ 2` → `/ 2` → `/ 2` → `/ 1` → `142 / 0` | 28 |
+| `4888818` confiança | `239 / 0 / 45,1 s` | `143 / 0` | 28 |
+| `2e4ff65` contágio | `239 / 0 / 45,1 s` | `146 / 0` → `146 / 1` → `146 / 0` | 29 |
+| `c42250c` amortecimento | `239 / 0 / 40,1 s` | `150 / 0` → `150 / 1` → `150 / 0` | **30** |
+| pós-merge + docs (a ponta atual) | `239 / 0 / 41,3 s`, 318 linhas, `SCRIPT ERROR` 0 | não re-rodado — `src`/`tests` idênticos | **30** |
+
+O teto publicado do runner é `EXPECTED_CHECKS` ([aether_reactions_test.gd:20](../tests/aether_reactions_test.gd#L20)),
+que saiu de **119** (na base, linha 17) para **150**. Suíte: **237 → 239**, com as duas checagens da
+sessão real ([smoke_test.gd:238](../tests/smoke_test.gd#L238),
+[:241-244](../tests/smoke_test.gd#L241-L244)). Em todos os 28 logs arquivados, `SCRIPT ERROR` é
+zero — e as sete vermelhas nomeiam a premissa que quebraram, uma por uma, no `readback.md` §2. A
+mais instructiva é `ataque-runner-1.log`: `mordidas=0` com `candidatos_no_primeiro_tick=4` e
+`trips_matilha=10`, ou seja, antes do escalonamento quatro lobos em alcance e nenhum morde porque o
+`SubtreeGuard` estoura antes de chegar na folha.
+
+**µs não são gate nesta perna** (regra I do furo #15), e não há chão pareado: o cenário estreito roda
+os mesmos 2 770 passos em todos os braços e o `sim_step` integral saiu de ~378–405 kµs (ronda/cerco)
+para ~557–570 kµs (contágio/amortecimento) na mesma janela de trabalho, com a máquina em uso pelo
+dono. Duas leituras possíveis — a leitura da matilha mais o contágio custam ~45 %, ou a janela estava
+carregada — e esta perna não tem como separá-las. Fica como débito, tabela completa no `readback.md`
+§4.
+
+### O censo da sessão real, e o furo que ele abre
+
+`pos-merge-suite.log:23-24` diz `pares=10 esperado=10 maior_matilha_lida=1 lobos_vivos=5`. É verde,
+e é o furo **#16**: `pares=10` conta **comparações** `i<j`
+([main.gd:306](../src/main.gd#L306)), não vizinhos coesos; `maior_matilha_lida=1` é o maior
+`_pack.size()` entre os lobos, e `_pack` exclui o próprio lobo. No vale real, com os cinco lares
+espalhados, ninguém teve dois vizinhos — cerco, contágio e ronda por setor estão provados no fixture
+de quatro lobos colocados a propósito uns dos outros
+(`cerco-runner-2.log:141`, `angulos=[0.0, 1.5708, 3.1416, 4.7124] n=4`), não no mundo. A asserção
+`biggest >= 1` não barra esse estado; a perna 14 é quem troca por `>= 2` quando o spawn mudar, e isso
+está registrado **antes** do código.
+
+### A tabela que a nota das dez ocorrências prometeu
+
+`cb96493` pôs na árvore **dez ocorrências** em quatro lugares deste arquivo. Cada alvo foi lido na
+linha; nada aqui é troca automática.
+
+| # | onde está | afirmava | classe | âncora posta na árvore |
+| --- | --- | --- | --- | --- |
+| 1 | linha 207 deste arquivo, em "Feito nesta sessão" — recorte do sorteio | `wolf.gd:99` / `#L99` | rótulo = âncora, alvo errado | [`:123`](../src/entities/wolf.gd#L123) (`var _rng := RandomNumberGenerator.new()`); na base era `77` |
+| 2 | idem | `:175` / `#L175` | idem | [`:191`](../src/entities/wolf.gd#L191) (`_rng.seed = ("wolf:%d:%d" % …)`); na base era `137` |
+| 3 | idem | `:301-304` / `#L302-L305` | rótulo ≠ âncora | [`:425`](../src/entities/wolf.gd#L425) **e** [`:442-443`](../src/entities/wolf.gd#L442-L443) — a faixa virou duas |
+| 4 | idem | `:538-539` / `#L563-L564` | rótulo ≠ âncora | [`:766-767`](../src/entities/wolf.gd#L766-L767) (`_unstick` / `_detour`) |
+| 5-8 | linhas 348-351 deste arquivo, em "Falta" — item 2 da fila, as mesmas quatro frases | idem a 1–4 | idem | idem a 1–4 |
+| 9 | "Notas de medição", frase do corte | `wolf.gd:99` / `#L99` | rótulo = âncora, alvo errado | [`:123`](../src/entities/wolf.gd#L123) |
+| 10 | rodada do cache de inspeções, evicção | `:291-292` / `#L292-L293` | rótulo ≠ âncora | [`:412-413`](../src/entities/wolf.gd#L412-L413) (`SCENT_MEMORY_CAP` e o `keys()[0]`) |
+
+Cinco ocorrências por classe rótulo ≠ âncora viram **sete** âncoras (as faixas 3 e 7 aparecem duas
+vezes cada e cada uma corta em duas), e cinco por classe alvo errado viram cinco: **doze** âncoras
+novas por **dez** ocorrências.
+
+**O que ficou de fora** e por quê: as 11 citações que a passada mecânica tinha escrito sobre faixa em
+branco ou só comentário voltaram ao número da `main` em `cb09015` — branco casa com branco em
+qualquer lugar, a prova é vazia, e o número errado de antes é conhecido, não um número novo inventado.
+Em `fb20707` outras **18** re-derivações foram desfeitas pelo mesmo motivo, e as **15** âncoras
+escritas com travessão nu (`#L173-174`) foram normalizadas sem tocar no número — **8** delas já
+apontavam para código que a frase não afirma, e deslocar isso seria embelezar mis-citação com um
+número saído de uma prova que não confere.
+
+### Prosa que esta perna obrigou a reescrever
+
+- A Rodada Docs escreveu "**A perna 10 morreu no meio**" no tempo em que ainda era verdade; ela voltou
+  e fechou. O texto ali foi corrigido no tempo e mantém o registro do backup.
+- A nota das dez ocorrências dizia que "as cinco primeiras viraram **seis** âncoras". Conferidas uma a
+  uma na árvore: são **sete** (e o total, doze). Corrigido na própria nota.
+- [`AGENTS.md`](../AGENTS.md) tinha **42** ponteiros sobre os quatro arquivos que a branch fez
+  crescer, escritos contra a `main` anterior à perna — inclusive a descrição das pernas 13 e 14, que
+  citava `main.gd:163`/`:335` (agora `:182`/`:423`), `wolf.gd:324-342` (agora `:417-435`) e o
+  `Mind.new` de `wolf.gd:139` (agora `:193`). Cada um dos 42 foi lido no alvo, e o conteúdo da frase
+  re-conferido: as quatro folhas que "escolhem alvo sem nenhum teste de solo" continuam sendo as
+  quatro ([_leaf_flee:299](../src/entities/wolf.gd#L299),
+  [_leaf_chase:315](../src/entities/wolf.gd#L315)/[:319](../src/entities/wolf.gd#L319),
+  [_leaf_stalk:358](../src/entities/wolf.gd#L358),
+  [_leaf_investigate:376](../src/entities/wolf.gd#L376)).
+
+### Contagem de citações, pela regra declarada aqui
+
+`python .tools/verify_plan_cites.py <cada .md rastreado>` sobre o corpus: **1 309** citações com
+número de linha conferidas, **0** números fora do arquivo, **27** arquivos citados que não existem
+(todos `[TARGET]` dos dossiês 13 e 14 — `FamilyTree`, `PackState`, `SAFE_SPAWN_DIST` e cia.). O trio
+que governa a casa (`AGENTS.md`, `README.md` da raiz, este arquivo) dá **413**, 0 fora, com a mesma
+falta de `docs/engine/simclock.md` que já estava registrada. A checagem de rótulo contra âncora
+([`_chk_labels.py`](../.tools/_chk_labels.py), corpus `.md` **sem** `.tools/`) dá **848** links com
+`#L`, **97** rótulos sem número e **7** sinalizados — os sete lidos: seis são literal de código na
+etiqueta (`SEED := 20261116`, `_random_ground_point(16.0, 46.0)`, `GEN_VERSION = 4`,
+`Mind.new(..., 1000 + p_identity)`, `var identity: int = 0`, `SCHEMA = 1`) e um é a soleira
+`0,35` de `believes()`; **nenhum** é citação errada, e as sete âncoras foram conferidas no conteúdo.
+Os dois verificadores vivem em `.tools/`, que está no `.gitignore` — é o furo #14 alcançando a
+própria régua: quem chega por clone não tem a ferramenta, então estas quatro contagens são medição de
+árvore de trabalho desta máquina, não comando reproduzível de fora.
+
+Dois números desta conta não se reproduzem, e isso é a lição, não o erro: a mensagem de `cb96493`
+publicou "2 446 links de código" e a mesma passada sobre o corpus rastreado devolve **848**. A
+diferença é `.tools/`: incluído, a contagem sobe para **2 529** porque o diretório tem 131 `.md` de
+trabalho. É o furo #14 em outro dígito — o que está em `.tools/` não existe no clone de quem chega, e
+uma contagem que o inclui não é reproduzível por fora.
+
+Falta uma régua e ela não estava em lugar nenhum: o corpus também cita **este arquivo** por linha. São
+**60** referências `docs/melhorias-status.md:NNN`, e as 285 linhas que a perna escreveu aqui dentro
+deslocaram **44** delas (16 já caíam no lugar) — registro no **furo #17**, e a passada que as realinha é
+`python .tools/_rederive_status_refs.py`, com prova de conteúdo linha a linha (o mapa `difflib`
+`HEAD` → árvore só reescreve onde o texto é idêntico) e conferência refeita ao contrário: **52/52**.
+
+### O que nada disso fecha
+
+- **Nenhum gate de fase**, e a branch não está mergida: falta o gate no clone limpo de `c42250c` com
+  `--import` frio, falta o merge `--no-ff` na `main`, a suíte re-rodada na árvore mergida e o
+  `git ls-remote --heads origin`. Sem isso, 239/0/41,3 s é medição de árvore de trabalho e a
+  publicação está vetada por mandato 3, item 6.
+- **Furo #16**: a sessão real nunca montou matilha de dois. É a primeira peça da perna 14.
+- **Furo #17**: **8** das 60 referências a linhas deste arquivo ficaram para trás de propósito — seis
+  já apontavam para linha em branco (mis-citação pré-existente, prova vazia) e duas caem dentro de um
+  bloco que esta passada reescreveu. Consertar é ler a frase, não mexer o número.
+- O HOT agregado dos cinco lobos continua sem medição (dossiê 08, item 5) e `MindsInspector` não
+  existe: a matilha lida hoje se lê no log do runner, não no F3.
+- Memória compartilhada **entre** matilhas continua `[TARGET]`: `Mind.relations` é confiança por ator
+  ([mind.gd:20](../src/ai/mind.gd#L20), [:126-131](../src/ai/mind.gd#L126-L131)).
