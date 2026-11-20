@@ -271,7 +271,7 @@ o campo é estático por padrão, com difusão explícita no cenário dedicado
 A colheita cronometra `sim_step` integral e lê `_guard.last_us`/`trips`, imprimindo
 soma/pico de ambos e estouros do guard
 ([:104-121](../../tests/aether_reactions_test.gd#L104-L121),
-[:640-641](../../tests/aether_reactions_test.gd#L640-L641)). O guard mede só BT, não
+[:736-737](../../tests/aether_reactions_test.gd#L736-L737)). O guard mede só BT, não
 percepção/utilidade; `sim_step` não inclui a física executada depois pelo runner.
 Isso não é medição do HOT agregado de cinco lobos, teste multi-semente ou replay, nem
 fecha P1. O candidato local passou nas 89 checagens específicas e nas regressões de

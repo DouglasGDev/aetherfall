@@ -92,8 +92,8 @@ Contagem hoje: **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
 (`docs/evidence/ether-massa-conservada/clone-suite.log:311`; as quatro ocorrências antigas de 232
 em `melhorias-status.md` — `:91`, `:249`, `:654`, `:691` — são da rodada do `a8967e0` e continuam
 certas porque mediram o clone daquele commit). O runner dedicado é `godot --headless --path . --script
-tests/aether_reactions_test.gd`, hoje **89 checagens** (`EXPECTED_CHECKS`,
-`tests/aether_reactions_test.gd:15`, 17 cenários `:7-14`).
+tests/aether_reactions_test.gd`, hoje **94 checagens** (`EXPECTED_CHECKS`,
+`tests/aether_reactions_test.gd:15`, 18 cenários `:7-14`).
 
 1. `godot --headless --path . tests/smoke_test.tscn` → última linha **exatamente** o censo da
    revisão acrescido das checagens novas, exit 0. As três checagens previstas, como ficaram:
@@ -116,9 +116,9 @@ tests/aether_reactions_test.gd`, hoje **89 checagens** (`EXPECTED_CHECKS`,
    `teto nao injeta o excedente no campo` (`:709-712`) — quatro checagens, não três.
    A existente `ledger com 3 canais` (`smoke_test.gd:714`) tem o `3` literal e precisa passar a
    ler `Channel.COUNT`.
-2. Runner dedicado: 89 → o número dos cenários acrescentados, exit 0, com um cenário por canal
+2. Runner dedicado: 94 → o número dos cenários acrescentados, exit 0, com um cenário por canal
    novo que nomeia a premissa (imprint → leitura → mudança de intenção) e imprime o `keep` e o
-   o `_sim_worst_us` e o `_bt_worst_us` já colhidos (`aether_reactions_test.gd:112-114`, impressos em `:645`).
+   o `_sim_worst_us` e o `_bt_worst_us` já colhidos (`aether_reactions_test.gd:112-114`, impressos em `:737`).
 3. Sonda curta apenas enquanto se edita: `godot --headless --path . --check-only --script
    src/world/aether_field.gd` (não substitui os dois acima).
 Gate de fase quem fecha é o dono; este item não fecha P1.
