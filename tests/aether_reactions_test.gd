@@ -1,5 +1,6 @@
 extends SceneTree
 
+const Session = preload("res://src/main.gd")
 const SEED: int = 20261116
 const SPAWN := Vector3(58.0, 51.001, 62.0)
 const SOURCE := Vector3(66.0, 50.6, 62.0)
@@ -12,9 +13,9 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
-	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias",
+	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 ]
-const EXPECTED_CHECKS: int = 119
+const EXPECTED_CHECKS: int = 130
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -43,6 +44,24 @@ var _sim_worst_us: int = 0
 var _bt_us: int = 0
 var _bt_worst_us: int = 0
 var _bt_trips: int = 0
+# Contadores da alcateia, separados dos de um lobo so: o rodape historico do
+# runner e o que a rodada anterior publicou, e misturar nele o `sim_tick` da
+# sessao (difusao incluida) quebraria a comparacao pareada branch x chao.
+var _session: Session = null
+var _pack_steps: int = 0
+var _pack_sim_us: int = 0
+var _pack_sim_worst_us: int = 0
+var _pack_bt_us: int = 0
+var _pack_bt_worst_us: int = 0
+var _pack_bt_trips: int = 0
+
+# Geometria da matilha no plateau da fixture: tres lobos se enxergam (8,5 m e
+# 17 m), o quarto fica a 25,6 m do vizinho mais proximo -- do lado de la do raio
+# de coesao de 24 m, entao a lista dele tem de vir vazia.
+const PACK_SPOTS: Array = [
+	Vector3(52.0, 51.001, 56.0), Vector3(58.0, 51.001, 62.0),
+	Vector3(64.0, 51.001, 68.0), Vector3(84.0, 51.001, 84.0),
+]
 
 
 func _initialize() -> void:
@@ -1235,13 +1254,213 @@ func _test_imprint_bias() -> bool:
 	return true
 
 
+# ------------------------------------------------------------------ alcateia (dossie 10)
+
+## Sessao real (`main.gd`) fora da arvore de cenario, sobre o plateau da fixture:
+## `pack_of`, `_rebuild_packs` e o `Callable` bindado sao os de `main.gd`, sem
+## boot de HUD, oraculo e audio -- o mesmo truque de `simulation_rng_test.gd`. Os
+## lobos vem do `_spawn_wolves` verdadeiro e sao reposicionados depois, porque a
+## geometria de um gate tem de ser lida no log, nao sorteada.
+func _pack_session(n: int) -> void:
+	_pack_release()
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s.clock = _clock
+	s.player = _player
+	s._entities = Node3D.new()
+	_stage.add_child(s._entities)
+	s._spawn_wolves(n)
+	_session = s
+	for i: int in mini(n, PACK_SPOTS.size()):
+		_pack_place(i, PACK_SPOTS[i])
+
+
+func _pack_place(i: int, spot: Vector3) -> void:
+	var w: Wolf = _session.wolves[i]
+	w.body.feet_pos = spot
+	w.body.velocity = Vector3.ZERO
+	w.home = spot
+	w._move_target = spot
+
+
+func _pack_release() -> void:
+	if _session == null:
+		return
+	if is_instance_valid(_session._entities):
+		_session._entities.free()
+	_session.free()
+	_session = null
+
+
+func _pack_wolves() -> Array:
+	return _session.wolves
+
+
+func _wolf_of(ws: Array, ident: int) -> Wolf:
+	for w: Wolf in ws:
+		if w.identity == ident:
+			return w
+	return null
+
+
+## Um passo de 20 Hz da sessao inteira, pelo caminho real (`_sim_tick`, com o
+## rebuild antes do laco de lobos). O custo vai para os contadores da alcateia:
+## somar `sim_tick` (que inclui a difusao) no rodape historico de lobo solo
+## quebraria a comparacao pareada branch x chao das rodadas anteriores.
+func _advance_pack(ticks: int, move_body: bool = false) -> void:
+	for i: int in ticks:
+		var trips_delta: int = 0
+		for w: Wolf in _session.wolves:
+			trips_delta -= w._guard.trips
+		var start: int = Time.get_ticks_usec()
+		_session._sim_tick()
+		var cost: int = Time.get_ticks_usec() - start
+		_pack_sim_us += cost
+		_pack_sim_worst_us = maxi(_pack_sim_worst_us, cost)
+		for w: Wolf in _session.wolves:
+			_pack_bt_us += w._guard.last_us
+			_pack_bt_worst_us = maxi(_pack_bt_worst_us, w._guard.last_us)
+			trips_delta += w._guard.trips
+		_pack_bt_trips += trips_delta
+		_pack_steps += 1
+		if move_body:
+			for w: Wolf in _session.wolves:
+				for frame: int in 3:
+					w._physics_process(SimClock.STEP / 3.0)
+
+
+func _pack_lists() -> String:
+	var out := ""
+	for w: Wolf in _pack_wolves():
+		out += "lobo%d(%d viz) " % [w.identity, w._pack.size()]
+	return out.strip_edges()
+
+
+## Checagem 5 do dossie 10, mais o contrato de formato da leitura. O cursor da
+## RNG da populacao e colhido sem consume-la: o estado e copiado para uma
+## geradora descartavel e o proximo valor dela e a assinatura do cursor.
+func _rng_cursor(rng: RandomNumberGenerator) -> float:
+	var probe := RandomNumberGenerator.new()
+	probe.state = rng.state
+	return probe.randf()
+
+
+func _test_pack_provider() -> bool:
+	_arm()
+	_pack_session(4)
+	var ws: Array = _pack_wolves()
+	var mounted := true
+	var binds := ""
+	for w: Wolf in ws:
+		var bound: Array = w.pack_provider.get_bound_arguments()
+		mounted = mounted and w.pack_provider.is_valid() and bound.size() == 1 \
+				and int(bound[0]) == w.identity
+		binds += "lobo%d bind=%s " % [w.identity, str(bound)]
+	_check(mounted, "provedor_montado_pela_sessao", binds.strip_edges())
+	# O lobo da fixture, armado sem sessao, nao pode ver matilha nenhuma: e o que
+	# segura os 24 cenarios anteriores inteiros com a leitura nova no caminho.
+	_advance(1)
+	_check(not _wolf.pack_provider.is_valid() and _wolf._pack.is_empty(),
+			"lobo sem provedor nao le matilha", "provedor=%s leitura=%d" % [
+			_wolf.pack_provider.is_valid(), _wolf._pack.size()])
+	_advance_pack(1)
+	_check(int(_session._pack_pairs) == 6, "par_testado_uma_vez_por_passo",
+			"pares=%d esperado=4x3/2=6 buffers=%d" % [
+			_session._pack_pairs, _session._pack_buffers.size()])
+	# Reconstrucao seca, sem passo no meio: assim o valor lido na lista e o valor
+	# atual do vizinho e a conferencia e exata, nao uma aproximacao de intencoes.
+	_session._rebuild_packs()
+	var keys_ok := true
+	var values_ok := true
+	var linhas := ""
+	for w: Wolf in ws:
+		for e: Dictionary in w._pack:
+			if e.size() != 4 or not e.has("identity") or not e.has("pos") \
+					or not e.has("intent") or not e.has("hp_ratio"):
+				keys_ok = false
+				continue
+			var other: Wolf = _wolf_of(ws, int(e["identity"]))
+			if other == null or not (e["pos"] as Vector3).is_equal_approx(other.center()) \
+					or String(e["intent"]) != other.intent \
+					or not is_equal_approx(float(e["hp_ratio"]), other.hp / Wolf.MAX_HP):
+				values_ok = false
+		linhas += "lobo%d<-[%s] " % [w.identity, _ids_of(w._pack)]
+	_check(keys_ok, "leitura_barata_com_as_quatro_chaves", "chaves=identity,pos,intent,hp_ratio  %s" % linhas.strip_edges())
+	_check(values_ok, "leitura_barata_confere_valor_do_vizinho", linhas.strip_edges())
+	var sizes: Array[int] = []
+	for w: Wolf in ws:
+		sizes.append(w._pack.size())
+	_check(sizes[0] == 2 and sizes[1] == 2 and sizes[2] == 2 and sizes[3] == 0,
+			"raio_de_coesao_recorta_o_lobo_isolado",
+			"tamanhos=%s  esperado=[2,2,2,0]  raio=%.1f m" % [sizes, Session.PACK_COHESION_RADIUS])
+	var mutual := true
+	for w: Wolf in ws:
+		for e: Dictionary in w._pack:
+			var other: Wolf = _wolf_of(ws, int(e["identity"]))
+			if other == null or not other.alive or not _pack_lists_ids(other._pack).has(w.identity):
+				mutual = false
+	_check(mutual, "matilha_mutua", _pack_lists())
+	# Prova de que `pack_of` devolve o buffer da sessao e nao uma copia: mexer no
+	# buffer aparece na leitura do lobo, e o rebuild devolve o tamanho anterior.
+	var buf: Array = _session.pack_of(int((ws[0] as Wolf).identity))
+	var antes: int = buf.size()
+	buf.resize(antes + 1)
+	var visto: int = (ws[0] as Wolf)._pack.size()
+	buf.resize(antes)
+	_check(visto == antes + 1 and (ws[0] as Wolf)._pack.size() == antes,
+			"pack_of_devolve_o_buffer_da_sessao",
+			"buffer=%d leitura=%d restaurado=%d" % [antes + 1, visto, (ws[0] as Wolf)._pack.size()])
+	# Passo com matilha completa de verdade, para a checagem 5 nao ser vazia.
+	_pack_place(3, Vector3(PACK_SPOTS[0].x + 6.0, PACK_SPOTS[0].y, PACK_SPOTS[0].z))
+	_advance_pack(1)
+	var completa := true
+	for w: Wolf in ws:
+		completa = completa and w._pack.size() == 3
+	_check(completa, "premissa: o passo da checagem 5 tem matilha completa", _pack_lists())
+	var cursor_antes: float = _rng_cursor(_session._population_rng)
+	seed(4242)
+	var next_global: int = randi()
+	_advance_pack(20)
+	seed(4242)
+	var global_preservado := randi() == next_global
+	var cursor_depois: float = _rng_cursor(_session._population_rng)
+	_check(cursor_depois == cursor_antes and global_preservado,
+			"alcateia_nao_consome_rng_da_sessao",
+			"cursor_population=%.8f->%.8f global_preservado=%s passos=%d  %s" % [
+			cursor_antes, cursor_depois, str(global_preservado), _pack_steps, _pack_lists()])
+	_pack_release()
+	return true
+
+
+func _ids_of(pack: Array) -> String:
+	var out := ""
+	for e: Dictionary in pack:
+		out += "%d " % int(e["identity"])
+	return out.strip_edges()
+
+
+func _pack_lists_ids(pack: Array) -> Array:
+	var out: Array = []
+	for e: Dictionary in pack:
+		out.append(int(e["identity"]))
+	return out
+
+
 func _finish() -> void:
 	Input.mouse_mode = _mouse_mode
+	_pack_release()
 	_check(_ran, "runner retornou", "run=%s" % _ran)
 	_check(_completed == TESTS.size(), "censo de testes completos", "%d/%d" % [_completed, TESTS.size()])
+	# O budget de 400 us por mente e gate publicado, e com a alcateia dentro da
+	# arvore ele passou a valer para duas colonias: a de lobo solo e a da sessao.
+	_check(_bt_trips == 0 and _pack_bt_trips == 0, "nenhum estouro de subtree no budget",
+			"trips_solo=%d trips_matilha=%d" % [_bt_trips, _pack_bt_trips])
 	_check(_checks + 1 == EXPECTED_CHECKS, "censo de checagens", "%d/%d" % [_checks + 1, EXPECTED_CHECKS])
 	print("CENARIO ESTREITO, NAO GATE P1: passos=%d sim_step total=%d us pico=%d us; BT last_us soma=%d pico=%d trips=%d" % [
 		_steps, _sim_us, _sim_worst_us, _bt_us, _bt_worst_us, _bt_trips])
+	print("PASSOS DE MATILHA (sessao real, difusao incluida), NAO GATE P1: passos=%d sim_tick total=%d us pico=%d us; BT last_us soma=%d pico=%d trips=%d" % [
+		_pack_steps, _pack_sim_us, _pack_sim_worst_us, _pack_bt_us, _pack_bt_worst_us, _pack_bt_trips])
 	if is_instance_valid(_stage):
 		_stage.free()
 	print("%d checagens %d falhas %.3f s" % [_checks, _failures, float(Time.get_ticks_usec() - _started_us) / 1000000.0])

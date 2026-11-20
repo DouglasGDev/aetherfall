@@ -34,6 +34,9 @@ const SCENT_MEMORY_CAP: int = 32
 const SCENT_RENEWAL: float = 0.06
 const SIGHT_MEMORY_SECONDS: float = 6.0
 const CORPSE_SECONDS: float = 6.0
+## Leitura compartilhada de "estou sozinho": o lobo nunca aloca lista vazia, e sim
+## aponta para esta, que ninguem escreve.
+const NO_PACK: Array = []
 const DIMS := Vector3(0.75, 0.95, 1.35)
 # agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
 # agua (fuga, perseguicao), boia e rema como o jogador nada e procura a margem.
@@ -74,12 +77,18 @@ var kills: int = 0
 
 var _player: Player = null
 var _sim_clock: SimClock = null
+## A matilha chega injetada, pelo mesmo caminho do `entity_provider` do jogador
+## (dossie 10 §3.1): a sessao e a dona da lista, o lobo so le. Sem provedor -- o
+## fixture do runner arma lobos soltos -- a leitura e vazia e nenhuma rotina de
+## grupo roda, entao o lote novo nao toca no comportamento ja gateado.
+var pack_provider: Callable = Callable()
 var _rng := RandomNumberGenerator.new()
 var _scorer: UtilityScorer = UtilityScorer.new()
 var _tree: BtTree.BtNode = null
 var _guard: BtTree.SubtreeGuard = null
 
 # percepcao: recalculada uma vez por tick de simulacao
+var _pack: Array = NO_PACK
 var _dist_player: float = 999.0
 var _los_player: bool = false
 var _fear_here: float = 0.0
@@ -427,8 +436,15 @@ func _build_scorer() -> void:
 
 
 func _think(elapsed: float) -> void:
-	intent = _scorer.choose(elapsed, {"wolf": self, "elapsed": elapsed}, intent)
+	intent = _scorer.choose(elapsed, {"wolf": self, "elapsed": elapsed, "pack": _pack}, intent)
 	_top_line = _scorer.top_line()
+
+
+## A leitura da matilha e uma chamada por tick de 20 Hz, nunca por frame: o Array
+## devolvido e o buffer da sessao, reescrito no lugar a cada passo, entao ler nao
+## aloca nada (dossie 10 §4 -- se fosse cinco arrays novos por tick, nao entraria).
+func _read_pack() -> void:
+	_pack = pack_provider.call() if pack_provider.is_valid() else NO_PACK
 
 
 # ------------------------------------------------------------------ tick de simulacao (20 Hz)
@@ -453,11 +469,12 @@ func sim_step(elapsed: float, dt: float) -> void:
 			_speed = SPEED_WALK * SWIM_SPEED_FACTOR
 	else:
 		_swim_time = 0.0
+	_read_pack()
 	_sense()
 	_think(elapsed)
 	if intent != "investigate":
 		_inspect_left = 0.0
-	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt})
+	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt, "pack": _pack})
 
 
 func _sense() -> void:
@@ -714,6 +731,9 @@ func load_state(d: Dictionary) -> void:
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
 	_checked_scents.clear()
+	# A leitura da matilha e do passo: depois do load o mundo em volta mudou, entao
+	# ela volta a vazia ate o proximo rebuild da sessao.
+	_pack = NO_PACK
 	_scent_cd = 0.0
 	_scent_clock = 0.0
 	_scent_found = false
