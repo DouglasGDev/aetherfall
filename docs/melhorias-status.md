@@ -2424,7 +2424,7 @@ são desta corrida e não re-pinam nada, porque o merge não toca uma linha de c
   `SAFE_SPAWN_DIST` e as dezessete checagens propostas são `[TARGET]`, declarados como tais no
   `verify_plan_ids.py`.
 
-## Rodada Alcateia — a matilha entra na decisão do lobo, com contagem e citações re-derivadas (2026-11-20, `feat/alcateia-rutinas-10`, base `eb6ec8d`, ponta de código `c42250c`, mergida na `main` em `0c38489`)
+## Rodada Alcateia — a matilha entra na decisão do lobo, com contagem e citações re-derivadas (2026-11-20, `feat/alcateia-rutinas-10`, base `eb6ec8d`, ponta de código `c42250c`, mergida na `main` em `0c38489` e publicada em `252f1e7`)
 
 ### O que estava em aberto
 
@@ -2610,10 +2610,10 @@ zero ou ponta em branco), e a guarda agora está na ferramenta.
 
 ### O que nada disso fecha
 
-- **Nenhum gate de fase**, mas a perna pousou: o clone limpo de `188490b` deu **239 / 0 / 38,6 s**
-  com `--import` frio exit 0 (`clone-gate-*.log`) e a `main` mergida `0c38489` re-rodou **239 / 0 /
-  38,2 s**, exit 0, zero `SCRIPT ERROR` (`merge-0c38489-suite.log`), §6 e §7 de
-  [`readback.md`](evidence/alcateia-rutinas/readback.md). Falta só o `git ls-remote --heads origin`.
+- **Nenhum gate de fase**, mas a perna pousou e está publicada: o clone limpo de `188490b` deu
+  **239 / 0 / 38,6 s** com `--import` frio exit 0 (`clone-gate-*.log`), a `main` mergida `0c38489`
+  re-rodou **239 / 0 / 38,2 s** (`merge-0c38489-suite.log`) e a `main` com esta nota, `252f1e7`, deu
+  **239 / 0 / 38,4 s** (`merge-252f1e7-suite.log`) — §6 a §8 de [`readback.md`](evidence/alcateia-rutinas/readback.md).
 - **Furo #16**: a sessão real nunca montou matilha de dois. É a primeira peça da perna 14.
 - **Furo #17**: **8** das 60 referências a linhas deste arquivo ficaram para trás de propósito — seis
   já apontavam para linha em branco (mis-citação pré-existente, prova vazia) e duas caem dentro de um

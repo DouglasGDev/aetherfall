@@ -211,17 +211,17 @@ A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois ha
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 
-**O pin de hoje é `0c38489`**, a `main` depois do merge `--no-ff` de `feat/alcateia-rutinas-10`
-(dossiê 10 — rotinas de alcateia). A suíte re-rodada nesta árvore dá **239 checagens, 0 falhas,
-38,2 s**, exit 0, zero `SCRIPT ERROR`; `src` = `c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a` e `tests` =
-`03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`, os mesmos hashes da ponta de código da perna. O clone
-limpo daquela ponta (`188490b`, sem `.godot/`, `--import` frio com exit 0) confere por execução o
-que o hash de árvore só sugere: **239 checagens, 0 falhas, 38,6 s**, exit 0. Os dois tempos caem na
-faixa dos degraus da perna (35,8 a 45,1 s). Logs e conferência estão em
-[docs/evidence/alcateia-rutinas/readback.md](docs/evidence/alcateia-rutinas/readback.md), §6 e §7.
-O ruído de saída muda de família aqui: as corridas da perna 10 dão **12 ObjectDB + 6 resources**,
-igual na árvore de trabalho, no clone e na `main` mergida — e atribuí-lo continua aberto, como na
-rodada de rastros.
+**O pin de hoje é `252f1e7`**, a `main` do merge `--no-ff` da nota que fecha o dossiê 10 (rotinas de
+alcateia) sobre o degrau de código `0c38489`. A suíte re-rodada aqui dá **239 checagens, 0 falhas,
+38,4 s**, exit 0, zero `SCRIPT ERROR`; `src` = `c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a` e `tests` =
+`03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`, os mesmos dois hashes de `0c38489` (239 / 0 / 38,2 s),
+porque o delta entre as duas pontas é só `.md` e um `.log`. O clone limpo de `188490b`, sem `.godot/`
+e com `--import` frio exit 0, confere por execução o que o hash de árvore só sugere: **239 / 0 /
+38,6 s**. Os três tempos caem na faixa da escada (35,8 a 45,1 s); a prova de publicação é `git
+ls-remote --heads origin`, não o código de saída do push. Logs e conferência das quatro pontas estão
+em [docs/evidence/alcateia-rutinas/readback.md](docs/evidence/alcateia-rutinas/readback.md), §6-§8.
+O ruído mudou de família: as corridas da perna 10 dão **12 ObjectDB + 6 resources** na árvore de
+trabalho, no clone e nas duas `main` mergidas — atribuí-lo continua aberto, como na rodada de rastros.
 
 Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
