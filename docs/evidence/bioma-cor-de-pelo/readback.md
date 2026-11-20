@@ -15,6 +15,7 @@ trabalho. Árvore medida: `44c9d94` (ponta de `feat/bioma-e-cor-de-pelo-09`), `s
 | 1 | árvore de trabalho, conteúdo de `44c9d94` | `== 237 checagens  0 falhas  35.5 s de teste ==` exit 0, 316 linhas, `SCRIPT ERROR` 0 | `119 checagens 0 falhas 2.064 s` exit 0, `SCRIPT ERROR` 0 |
 | 2 | clone limpo de `44c9d94`, `--import` frio | `== 237 checagens  0 falhas  35.5 s de teste ==` exit 0, 316 linhas, `SCRIPT ERROR` 0 | `119 checagens 0 falhas 2.044 / 2.028 / 2.017 s`, exit 0 nos três, `SCRIPT ERROR` 0 |
 | 3 | clone limpo de `e7e30e6` (chão), `--import` frio | não rodou — o número desta árvore já está publicado na rodada dos rastros | `109 checagens 0 falhas 2.012 / 1.995 / 2.052 s`, exit 0 nos três, `SCRIPT ERROR` 0 |
+| 4 | `main` mergida `9fe5e45` (`--no-ff`, só markdown e logs acima de `44c9d94`: `src` = `9f3a952dc123…` e `tests` = `56e487343728…`, os mesmos hashes) | `== 237 checagens  0 falhas  35.8 s de teste ==` exit 0, 316 linhas, `SCRIPT ERROR` 0 | não rodou — nada em `tests/` mudou entre `44c9d94` e a merge |
 
 Censo interno do runner, conferido em todas as corridas da branch: `censo de testes completos
 24/24` e `censo de checagens 119/119`. Na branch, 21 cenários viraram 24 (`_test_biome`,
@@ -29,11 +30,20 @@ determinística, `cronometro do passo`, `leitura do slot`, `pior passo` do teste
 `wolves_alive=4`, `dropped_ticks=0`, `triangles=214480`, `meshes=147`, `chunks=64`, `edits=13` e
 `aether_energy = 9,44745890423656`.
 
-O ruído do `quit()` não está entre as 14 linhas: a dupla aparece nos **três** logs de suíte desta
-pasta (trabalho, clone e a sabotagem de coluna profunda do §2b), sempre em `WARNING: 8 ObjectDB
-instances were leaked at exit` na linha 313 e `ERROR: 4 resources still in use at exit` na linha 315.
-Dos doze runners — os dez limpos e as duas sabotagens do §2 — nenhum imprime uma linha de cada
-padrão. Ver §5.
+O ruído do `quit()` não está entre as 14 linhas: a dupla aparece nos **quatro** logs de suíte desta
+pasta (trabalho, clone, a sabotagem de coluna profunda do §2b e a `main` mergida), sempre em
+`WARNING: 8 ObjectDB instances were leaked at exit` na linha 313 e `ERROR: 4 resources still in use
+at exit` na linha 315. Dos doze runners — os dez limpos e as duas sabotagens do §2 — nenhum imprime
+uma linha de cada padrão. Ver §5.
+
+A `main` mergida (`9fe5e45`) × clone (`clone-44c9d94-suite.log`), no mesmo corte CR-normalizado, tem
+as mesmas 14 linhas e a mesma natureza: nenhuma checagem muda de veredito (`237 [PASS]` nos dois, zero
+`[FAIL]`), e as oito linhas de `PASS` que diferem são quatro checagens cujo único campo movido é de
+tempo — `pior passo` 8,84 → 8,53 ms, `ms=` 5 549,8 → 5 551,3, `leitura do slot` 4,7 → 4,8 ms,
+`pior passo` do teste inteiro 9,75 → 10,07 ms. Na linha do diagnóstico final só `gen_ms`
+(958,011 → 1 088,051), `mesh_ms` (4 523,613 → 4 755,786) e `worst_sim_ms` (9,754 → 10,07) se movem, e o
+`aether_energy` é `9,44745890423656` nos dois. Os `35,8 s` da última linha são o tempo desta janela de
+sessão, não um número de custo: não entram na comparação pareada do §3.
 
 ## 2. O viés existe, e as duas metades da fronteira podem ficar vermelhas
 
@@ -130,12 +140,13 @@ rodada que uma mudança do dossiê 09 produz um efeito mensurável, não só uma
 ## 5. Ruído do `quit()`
 
 Medido nesta pasta com os dois padrões literais (`ObjectDB instances were leaked`,
-`resources still in use at exit`): os **dois** logs de suíte carregam a dupla, idêntica,
+`resources still in use at exit`): os **quatro** logs de suíte carregam a dupla, idêntica,
 `WARNING: 8 ObjectDB instances were leaked at exit` (linha 313) e `ERROR: 4 resources still in
 use at exit` (linha 315); os **doze** outros logs — todos runners, incluídas as duas sabotagens
 vermelhas — carregam zero de cada padrão. Nada aqui foi descartado por ruído: ele não é
-`SCRIPT ERROR`, nenhuma checagem depende dele, e as 14 corridas têm exit coerente com a última
-linha.
+`SCRIPT ERROR` — zero nos quatro logs de suíte, conferido linha a linha — e nenhuma checagem depende
+dele. Os exit registrados nesta sessão são os da tabela §1 (todos `0`) mais o `1` da sabotagem do §2b;
+não atribuo exit aos runners das sabotagens do §2, porque não observei cada um deles.
 
 A comparação com a rodada anterior é do que foi capturado com stderr lá:
 `rastro-duas-camadas/merge-ff347d2-suite.log` e `main-suite.log` dão **8/4**, os mesmos dois
@@ -150,8 +161,8 @@ revisão medida estão na seção seguinte.
 
 ## 6. Manifestos desta pasta
 
-- [`artifacts.sha256`](artifacts.sha256): os 15 logs acima, byte a byte, computados depois de
-  copiados para cá; `sha256sum -c` na pasta devolve 15 `OK`, zero divergências.
+- [`artifacts.sha256`](artifacts.sha256): os 16 logs acima, byte a byte, computados depois de
+  copiados para cá; `sha256sum -c` na pasta devolve 16 `OK`, zero divergências.
 - [`sources.sha256`](sources.sha256): as mesmas 79 fontes da rodada dos rastros (o conjunto de
   paths é idêntico, conferido por `diff`), verificadas dentro do clone limpo de `44c9d94`: 79
   `OK`, 0 falhas. Conferenzas da rodada anterior permanecem vinculadas ao manifesto delas.

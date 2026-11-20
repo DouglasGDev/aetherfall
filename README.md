@@ -207,6 +207,9 @@ Que "clone limpo da mesma revisão" não é generosidade de redação é conferi
 `git rev-parse 44c9d94:src 44c9d94:tests` devolve `9f3a952dc123…` / `56e487343728…`, e `git diff
 --name-only e7e30e6 44c9d94` conta exatamente os cinco arquivos da perna — `src/world/world_gen.gd`,
 `src/entities/wolf.gd`, `src/main.gd`, `tests/smoke_test.gd` e `tests/aether_reactions_test.gd`.
+A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois hashes de `src` e `tests`:
+o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
+`237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
