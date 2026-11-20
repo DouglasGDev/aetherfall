@@ -145,7 +145,9 @@ Citações que não conferem (verificadas abrindo os arquivos):
 - As citações de `AGENTS.md` às constantes de `src/main.gd` estão certas (`:12` difusão, `:13`
   malha, `:14` visão, `:16` cadáveres); a alegação de deslocamento em +1 foi deste briefing e o
   código a refuta. `WOLF_COUNT` está em `:9`, `SEED` em `:10`, `SLOT` em `:11`.
-- A contagem de 232 checagens / 0 falhas / 33,7 s está publicada (`docs/design/08:44-45` e
-  `docs/melhorias-status.md:91`, `:249`, `:654`, `:691`), mas os logs que eu abri aqui são os
-  locais de `.tools/` e dão 219 (um com 4 falhas) — contagem anterior ao refinamento. Este plano
-  não re-mediu nada: a engine não foi rodada.
+- A contagem publicada é **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
+  (`docs/melhorias-status.md:19` e a nota em `:1133-1213`). As ocorrências antigas de 232 —
+  `docs/design/08:44-45` (que agora diz os dois números) e `melhorias-status.md:91`, `:249`, `:654`,
+  `:691` — são da rodada do `a8967e0` e continuam corretas porque mediram o clone daquele commit.
+  Os logs que eu abri aqui são os locais de `.tools/` e dão 219 (um com 4 falhas) — contagem
+  anterior ao refinamento. Este plano não re-mediu nada: a engine não foi rodada.

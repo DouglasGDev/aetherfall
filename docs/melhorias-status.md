@@ -1148,12 +1148,12 @@ dimensionado em `setup()` ([:51-52](../src/world/aether_field.gd#L51-L52)), zera
 passada e escrito com a massa cortada no fim da varredura
 ([:145-153](../src/world/aether_field.gd#L145-L153)); a docstring nomeia as duas saídas
 ([:115-116](../src/world/aether_field.gd#L115-L116)). Quatro checagens novas na suíte
-([smoke_test.gd:692-712](../tests/smoke_test.gd#L692-L712)): `nenhuma passada cria massa`,
-`saldo fecha com o corte de MIN_VALUE`, `o corte da fronteira explica a perda alem da meia-vida`,
-`teto nao injeta o excedente no campo`. A previsão é em cadeia, passada a passada, sem releitura
-([:674-687](../tests/smoke_test.gd#L674-L687)): o que sai no corte não decai mais, então o saldo é
-`m·keep^8 − Σ cut_k·keep^(7−k)` — é o termo que faltava na conta do dossiê, e a diferença entre
-previsão e medição sai impressa (`pior erro=0,00000046` com tolerância `1e-4`).
+([smoke_test.gd:692-695](../tests/smoke_test.gd#L692-L695), :699-702, :709-712; o `teto de
+valor aplicado` de :704-706, que já existia, fica fora): `nenhuma passada cria massa`, `saldo
+fecha com o corte de MIN_VALUE`, `o corte da fronteira explica a perda alem da meia-vida`, `teto
+nao injeta o excedente no campo`. A previsão é em cadeia, passada a passada, sem releitura
+([:674-687](../tests/smoke_test.gd#L674-L687)): o que sai no corte não decai mais, então o saldo
+é `m·keep^8 − Σ cut_k·keep^(7−k)` — o termo que faltava na conta; a diferença sai impressa.
 
 ### O que foi medido
 
