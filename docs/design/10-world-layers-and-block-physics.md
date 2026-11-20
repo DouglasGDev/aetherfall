@@ -160,7 +160,7 @@ propriedade única não separava perguntas distintas:
 | `quebra_queda` | bloco em queda se destrói sobre este? | `_landing_cell` |
 
 `dureza` = segundos de lavra com a ferramenta básica: a suíte já mede
-`tempo de mineracao == dureza` ([smoke_test.gd:734](../../tests/smoke_test.gd)). Essa
+`tempo de mineracao == dureza` ([smoke_test.gd:782](../../tests/smoke_test.gd)). Essa
 migração **já foi paga**: os sete valores originais vivem 1:1 no registro
 ([block_defs.gd:114-122](../../src/world/block_defs.gd), `_hard` preenchido em
 `init_tables()`; o acesso e `hardness()` em `:171`)
@@ -1043,7 +1043,7 @@ próprio comentário (world_gen.gd:12-27). A mesma rotina fecha esta especifica�
 3. **Probe de orçamento**: soltar N = 1 024 e N = 4 096 colunas de areia e medir
    `worst_sim_ms` (`SimClock`, main.gd:435-446). Gate: nenhum tick perdido, com o
    piso de pior passo medido nestas quatro corridas: 7,68 / 8,66 / 9,01 / 11,21 ms
-   (smoke_test.gd:1958-1960).
+   (smoke_test.gd:2006-2008).
 4. **Ablação do span**: `build_chunk_mesh` com e sem `y_lo..y_hi`, dois `mesh_ms` lado
    a lado, antes de qualquer discussão de seção de 16.
 

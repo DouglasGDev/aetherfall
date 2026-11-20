@@ -29,7 +29,7 @@ Critério numérico, com as checagens **inexistentes** hoje e a primeira tarefa 
 ## Custo — as quatro perguntas (`AGENTS.md`)
 1. Por frame, por tick, às vezes? O censo roda 1× por passo sintético: 1000 × 20 × 2 = 40.000 execuções de `sim_step` por lobo, K × 40.000 de `_physics_process`; difusão 1 a cada 5 passos (`AETHER_PERIOD` 0,25 s em `src/main.gd:12`, `:148-151`); geração 40 vezes, uma por corrida.
 2. Quantas entidades? 5 lobos (`src/main.gd:9`), 1 jogador estático fora de LOS, 64 chunks, campo 32 × 16 × 32 × 3 canais varrido por hash.
-3. Aloco no caminho quente? Sim: 196.608 bytes/tick de cópia Float32 (`src/world/aether_field.gd:218-219`, tamanho conferido no contrato), blackboard novo por lobo por tick (`src/entities/wolf.gd:432`), `keys()` por varredura de rastro (`:462-466`), um `PackedInt32Array` por canal na difusão (`src/world/aether_field.gd:113`). Com hash em memória, o `Array[String]` de 40.000 hex-string (~2,8 MB) é alocação do teste, não do jogo; em disco seriam 40.000 linhas × 71 bytes (426 / 6, `docs/evidence/aether-reactions/candidate-contract.log:127`). Alocação total medida: **não medida** (débito em `docs/melhorias-status.md:354-361`).
+3. Aloco no caminho quente? Sim: 196.608 bytes/tick de cópia Float32 (`src/world/aether_field.gd:233-234`, tamanho conferido no contrato), blackboard novo por lobo por tick (`src/entities/wolf.gd:432`), `keys()` por varredura de rastro (`:462-466`), um `PackedInt32Array` por canal na difusão (`src/world/aether_field.gd:122`). Com hash em memória, o `Array[String]` de 40.000 hex-string (~2,8 MB) é alocação do teste, não do jogo; em disco seriam 40.000 linhas × 71 bytes (426 / 6, `docs/evidence/aether-reactions/candidate-contract.log:127`). Alocação total medida: **não medida** (débito em `docs/melhorias-status.md:354-361`).
 4. Como sei que ficou melhor? Não é otimização: é cobertura. Os números novos são `ticks_conferidos`, `divergencia_primeiro`, `hashes_distintos`, K e o tempo de parede da corrida, em máquina livre e serial; número publicado re-medido no clone limpo do SHA final com `--import`.
 
 ## O que NÃO fazer
@@ -54,4 +54,4 @@ Não chamar o censo de replay: a projeção exclui jogador, corpos, RNG e comand
   `static` (`src/persistence/tick_journal.gd:16`) e recebe o tick como argumento, mas quem o
   carimba em disco é `record()` (`:69-87`), ativo só com journal aberto. O censo pode chamar o
   `static` direto; quem chama na gameplay é `main.state_hash()` (`src/main.gd:486`).
-- O briefing dizia "a única checagem determinística conhecida compara 16 colunas geradas duas vezes": existe a segunda comparação das mesmas 16 colunas após load (`tests/smoke_test.gd:2166-2168`).
+- O briefing dizia "a única checagem determinística conhecida compara 16 colunas geradas duas vezes": existe a segunda comparação das mesmas 16 colunas após load (`tests/smoke_test.gd:2214-2216`).

@@ -33,7 +33,7 @@ A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:2
 ## 6. Gate em headless
 
 - Compilação: `godot --headless --path . --check-only --script src/ai/mind.gd` (e por arquivo alterado). Suíte: `godot --headless --path . tests/smoke_test.tscn`. Contagem publicada na revisão atual: **232 checagens / 0 falhas / 33,7 s** (docs/evidence/third-person-carry/clone-suite.log:307, idem docs/evidence/third-person-carry/readback.log:6 e :22).
-- Runner dedicado em `tests/`, no formato de tests/aether_reactions_test.gd, com critérios que PODEM falhar: (i) no round-trip de save, episódios (≤ 24), crenças e `trust` dos 5 lobos iguais aos valores antes do dump — checagem já existente em tests/smoke_test.gd:2177-2179, que o store não pode regredir; (ii) número de linhas de mente impressas == número de lobos vivos; (iii) considerações impressas == tamanho do `_breakdown` da opção escolhida, com veto valendo zero e não pontuando (src/ai/utility_scorer.gd:68-75).
+- Runner dedicado em `tests/`, no formato de tests/aether_reactions_test.gd, com critérios que PODEM falhar: (i) no round-trip de save, episódios (≤ 24), crenças e `trust` dos 5 lobos iguais aos valores antes do dump — checagem já existente em tests/smoke_test.gd:2225-2227, que o store não pode regredir; (ii) número de linhas de mente impressas == número de lobos vivos; (iii) considerações impressas == tamanho do `_breakdown` da opção escolhida, com veto valendo zero e não pontuando (src/ai/utility_scorer.gd:68-75).
 - Toda checagem nova **soma** na última linha: queda de contagem é `SCRIPT ERROR` matando passo, não sucesso.
 
 ## 7. Custo — as quatro perguntas
