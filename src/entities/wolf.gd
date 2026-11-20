@@ -331,15 +331,33 @@ func _remember_scent() -> void:
 
 
 func _leaf_wander(_ctx: Dictionary) -> bool:
-	_reaction = "patrulhando"
+	var n: int = _pack.size() + 1
+	# Com um lobo so a ronda e exatamente a de antes: o centro e o proprio lar e a
+	# fatia e o circulo inteiro. Nada aqui depende de provedor para funcionar.
+	_reaction = "patrulhando" if n <= 1 else "rondando setor da matilha"
 	_speed = SPEED_WALK
 	if _wander_cd > 0.0 and center().distance_squared_to(_move_target) > 2.0:
 		return true
 	_wander_cd = _rng.randf_range(4.0, 9.0)
+	if n <= 1:
+		_pick_wander(home, 0.0, TAU)
+		return true
+	var arc := TAU / float(n)
+	var seat := float(_territory_rank()) * arc
+	if not _pick_wander(_territory_center(n), seat, arc):
+		# Setor inteiro em agua nao e prisao: o lobo volta a sortear o circulo
+		# completo em torno do proprio lar, que e a ronda de um lobo so.
+		_pick_wander(home, 0.0, TAU)
+	return true
+
+
+## Sorteia ate oito pontos na fatia dada do territorio e grava o primeiro que tem
+## terra seca. Devolve falso so quando a agua ganhou as oito tentativas.
+func _pick_wander(origin: Vector3, seat: float, arc: float) -> bool:
 	for _t in 8:
-		var a := _rng.randf() * TAU
+		var a := seat + _rng.randf() * arc
 		var r := _rng.randf_range(5.0, WANDER_RADIUS)
-		var p := home + Vector3(cos(a) * r, 0.0, sin(a) * r)
+		var p := origin + Vector3(cos(a) * r, 0.0, sin(a) * r)
 		p.x = clampf(p.x, 4.0, float(VoxelConfig.world_size_x()) - 4.0)
 		p.z = clampf(p.z, 4.0, float(VoxelConfig.world_size_z()) - 4.0)
 		if not _dry_ground(p):
@@ -347,7 +365,33 @@ func _leaf_wander(_ctx: Dictionary) -> bool:
 		p.y = float(world.surface_height(int(p.x), int(p.z))) + 0.2
 		_move_target = p
 		return true
-	return true
+	return false
+
+
+## Centro compartilhado da ronda (dossie 10 §3.2): o baricentro das posicoes que a
+## matilha le, e nao o `home` sorteado um por lobo -- cinco lares espalhados nunca
+## foram territorio. A leitura da sessao e mutua, entao todos os membros chegam no
+## mesmo numero e cada um particiona o circulo do seu proprio ponto de vista.
+func _territory_center(n: int) -> Vector3:
+	if n <= 1:
+		return home
+	var sum := center()
+	for e: Dictionary in _pack:
+		var pos: Vector3 = e["pos"]
+		sum += pos
+	return sum / float(n)
+
+
+## Qual fatia do circulo este lobo patrulha: quantos vizinhos tem identidade menor
+## que a dele. `identity % n` daria a mesma fatia a identidades nao consecutivas e
+## nao distribui nada; o rank comparado e sempre distinto dentro da matilha e nao
+## aloca lista nenhuma (dossie 10 §4).
+func _territory_rank() -> int:
+	var rank := 0
+	for e: Dictionary in _pack:
+		if int(e["identity"]) < identity:
+			rank += 1
+	return rank
 
 
 ## Terra seca neste ponto: sem agua acima do leito na coluna.

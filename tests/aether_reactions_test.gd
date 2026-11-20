@@ -14,8 +14,9 @@ const TESTS: Array[StringName] = [
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
+	&"_test_rondar_setor",
 ]
-const EXPECTED_CHECKS: int = 130
+const EXPECTED_CHECKS: int = 135
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -61,6 +62,15 @@ var _pack_bt_trips: int = 0
 const PACK_SPOTS: Array = [
 	Vector3(52.0, 51.001, 56.0), Vector3(58.0, 51.001, 62.0),
 	Vector3(64.0, 51.001, 68.0), Vector3(84.0, 51.001, 84.0),
+]
+
+# Geometria fechada da ronda: quatro lobos a no maximo 8,9 m um do outro, todos
+# dentro do raio de coesao, entao cada um le tres vizinhos (n = 4, fatia de 90
+# graus). O baricentro cai exatamente no lobo 0 -- distancia horizontal dele ao
+# centro e zero, o que da ao teste um centro conferivel a lapis.
+const RONDAR_SPOTS: Array = [
+	Vector3(58.0, 51.001, 62.0), Vector3(54.0, 51.001, 62.0),
+	Vector3(58.0, 51.001, 66.0), Vector3(62.0, 51.001, 58.0),
 ]
 
 
@@ -1431,6 +1441,107 @@ func _test_pack_provider() -> bool:
 			cursor_antes, cursor_depois, str(global_preservado), _pack_steps, _pack_lists()])
 	_pack_release()
 	return true
+
+
+## Checagem 1 do dossie 10 (ronda por setor). Premissa nomeada: quatro lobos que se
+## leem dentro do raio de coesao patrulham fatias DISTINTAS do mesmo territorio, e um
+## lobo sozinho patrulha literalmente como antes (centro = o proprio lar, fatia = TAU).
+## O numero que decide nao e a distancia entre os alvos -- dois setores vizinhos podem
+## dar pontos proximos por sorte -- e o angulo de cada alvo em torno do baricentro cair
+## dentro da fatia do proprio rank, com o raio na faixa sorteada. O segundo braço e o
+## replay a lapis da formula antiga: se o lote tivesse mudado a ronda solitaria por
+## meio grau, os dois lados divergem.
+func _test_rondar_setor() -> bool:
+	_arm(SPAWN, FAR_PLAYER, 1)
+	_advance(1, false)
+	var replay := RandomNumberGenerator.new()
+	replay.seed = ("wolf:%d:%d" % [_world.gen.world_seed, 1]).hash()
+	replay.randf()					# _heading, consumido em setup()
+	replay.randf_range(4.0, 9.0)		# _wander_cd, antes do sorteio do alvo
+	var esperado := Vector3.ZERO
+	for _t in 8:
+		var a := replay.randf() * TAU
+		var rad := replay.randf_range(5.0, Wolf.WANDER_RADIUS)
+		var p := _wolf.home + Vector3(cos(a) * rad, 0.0, sin(a) * rad)
+		p.x = clampf(p.x, 4.0, float(VoxelConfig.world_size_x()) - 4.0)
+		p.z = clampf(p.z, 4.0, float(VoxelConfig.world_size_z()) - 4.0)
+		if not _wolf._dry_ground(p):
+			continue
+		p.y = float(_world.surface_height(int(p.x), int(p.z))) + 0.2
+		esperado = p
+		break
+	_check(_wolf.intent == "patrol" and _wolf.get("_reaction") == "patrulhando"
+			and esperado == _wolf._move_target and _wolf._pack.is_empty(),
+			"um_lobo_so_ronda_identico_a_formula_anterior",
+			"intent=%s reaction=%s alvo=%s replay=%s leitura=%d" % [
+			_wolf.intent, _wolf.get("_reaction"), _wolf._move_target, esperado, _wolf._pack.size()])
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, RONDAR_SPOTS[i])
+	# Baricentro a lapis dos quatro assentos, na horizontal: e o numero que a
+	# sessao devolve e o numero que o teste confere, sem nenhum dos dois vindo do
+	# proprio codigo do lobo.
+	var bar := Vector3.ZERO
+	for s: Vector3 in RONDAR_SPOTS:
+		bar += s
+	bar /= float(RONDAR_SPOTS.size())
+	var n := RONDAR_SPOTS.size()
+	var arc := TAU / float(n)
+	_advance_pack(1)
+	var ws: Array = _pack_wolves()
+	var premissa_ok := true
+	var lists := ""
+	for w: Wolf in ws:
+		premissa_ok = premissa_ok and w._pack.size() == n - 1 and w.intent == "patrol"
+		lists += "lobo%d(%d viz,intent=%s) " % [w.identity, w._pack.size(), w.intent]
+	_check(premissa_ok, "premissa: os quatro se leem por inteiro e patrulham",
+			"n=%d  %s" % [n, lists.strip_edges()])
+	var assentos: Array[float] = []
+	var distintos := true
+	var dentro := true
+	var centro_ok := true
+	var linhas := ""
+	var lares_fora := 0
+	for w: Wolf in ws:
+		var rank := w._territory_rank()
+		var seat := float(rank) * arc
+		assentos.append(seat)
+		var c: Vector3 = w._territory_center(n)
+		if _horizontal(c - bar).length() > 0.001:
+			centro_ok = false
+		if _horizontal(c - w.home).length() > 3.0:
+			lares_fora += 1
+		var v := _horizontal(w._move_target - c)
+		var rel := wrapf(atan2(v.z, v.x) - seat, 0.0, TAU)
+		if rel > arc or v.length() < 5.0 or v.length() > Wolf.WANDER_RADIUS \
+				or w.get("_reaction") != "rondando setor da matilha":
+			dentro = false
+		linhas += "lobo%d rank=%d rel=%.4f raio=%.2f reaction=%s alvo=%s " % [
+				w.identity, rank, rel, v.length(), w.get("_reaction"), w._move_target]
+	for i in assentos.size():
+		for j in range(i + 1, assentos.size()):
+			if absf(assentos[i] - assentos[j]) < 1e-6:
+				distintos = false
+	_check(distintos and assentos.size() == n, "ronda_assentos_distintos_por_rank",
+			"assentos=%s n=%d fatia=%.4f rad" % [assentos, n, arc])
+	_check(dentro, "ronda_alvo_dentro_da_fatia_do_proprio_rank", linhas.strip_edges())
+	# O baricentro tem de ser um so para a matilha inteira e tem de ser outro ponto
+	# para quem nao nasceu nele: sem a segunda metade, "territorio compartilhado"
+	# poderia estar virando `home` por outra porta.
+	_check(centro_ok and lares_fora == n - 1,
+			"ronda_centro_e_baricentro_e_nao_o_lar_do_lobo",
+			"baricentro=%s lares_fora=%d/%d  %s" % [bar, lares_fora, n, _territory_lines(ws)])
+	return true
+
+
+## Linha de conferencia do territorio: o que cada lobo devolve como centro e o que
+## ele chama de lar. Sem isto, "centro compartilhado" poderia estar virando home.
+func _territory_lines(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		out += "lobo%d centro=%s home=%s " % [
+				w.identity, _horizontal(w._territory_center(4)), _horizontal(w.home)]
+	return out.strip_edges()
 
 
 func _ids_of(pack: Array) -> String:
