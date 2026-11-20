@@ -170,9 +170,9 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   receptor em `src/` devolve zero ocorrências. A matilha é sorteada por `_population_rng`
   ([main.gd:45](../src/main.gd#L45), semeado em [:219-220](../src/main.gd#L219-L220), usado em
   [:243-244](../src/main.gd#L243-L244)) e cada lobo por `_rng`
-  ([wolf.gd:99](../src/entities/wolf.gd#L99), semeado em [:175](../src/entities/wolf.gd#L175),
-  usado na patrulha [:301-304](../src/entities/wolf.gd#L302-L305) e no desvio
-  [:538-539](../src/entities/wolf.gd#L563-L564)); a semente dos dois vem da semente real do
+  ([wolf.gd:123](../src/entities/wolf.gd#L123), semeado em [:191](../src/entities/wolf.gd#L191),
+  usado na patrulha ([:425](../src/entities/wolf.gd#L425) e [:442-443](../src/entities/wolf.gd#L442-L443))
+  e no desvio ([:766-767](../src/entities/wolf.gd#L766-L767)); a semente dos dois vem da semente real do
   mundo (`world.gen.world_seed`), não do `SEED` de 32 bits do engine. Suíte nova
   [simulation_rng_test.gd](../tests/simulation_rng_test.gd): vermelho **27 checagens / 11 falhas**
   antes, **27 / 0** depois, em candidato recém-importado; regressões **89 / 0** (rastros),
@@ -311,9 +311,10 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
    registra somente `[tick, hash]`. O sorteio deixou de ser o gerador global: a sessão tem
    `_population_rng` ([main.gd:45](../src/main.gd#L45), sorteado em
    [:243-244](../src/main.gd#L243-L244)) e cada lobo tem `_rng`
-   ([wolf.gd:99](../src/entities/wolf.gd#L99), semeado em
-   [:175](../src/entities/wolf.gd#L175), usado em
-   [:301-304](../src/entities/wolf.gd#L302-L305) e [:538-539](../src/entities/wolf.gd#L563-L564)).
+   ([wolf.gd:123](../src/entities/wolf.gd#L123), semeado em
+   [:191](../src/entities/wolf.gd#L191), usado na ronda
+   ([:425](../src/entities/wolf.gd#L425), [:442-443](../src/entities/wolf.gd#L442-L443)) e no
+   desvio ([:766-767](../src/entities/wolf.gd#L766-L767)).
    Isso é pré-condição de replay, não replay: faltam estado inicial completo, comandos e
    ordem autoritativa — o jogador e os corpos ainda mudam por frame. O save continua
    guardando edições para reconstruir terreno, não para reproduzir uma tarde.
@@ -994,7 +995,7 @@ o lobo de mesma identidade (1). No verde, as mesmas linhas fecham com os número
 `identidades distintas tem sequencias distintas | id1=7abb06aa… id2=70f725c5…`.
 
 **O corte, em três decisões.** `_population_rng` ([main.gd:45](../src/main.gd#L45)) sorteia as
-casas da matilha; `_rng` ([wolf.gd:99](../src/entities/wolf.gd#L99)) sorteia patrulha e desvio.
+casas da matilha; `_rng` ([wolf.gd:123](../src/entities/wolf.gd#L123)) sorteia patrulha e desvio.
 As sementes vêm de `("population:%d" % world.gen.world_seed).hash()` e
 `("wolf:%d:%d" % [world.gen.world_seed, identity]).hash()` — a semente *real* do mundo, de 64
 bits, em vez do inteiro de 32 bits do engine. O gerador da população só é semeado quando
@@ -1428,7 +1429,7 @@ A memória de rastros é publicada por dois números derivados do código — o 
 ([wolf.gd:33](../src/entities/wolf.gd#L33)) e o relógio de 30 s
 ([:32](../src/entities/wolf.gd#L32)) — e nenhuma corrida dizia **qual dos dois limita o jogo**. A
 evicção FIFO que corta a célula mais antiga quando a 33ª entra
-([:291-292](../src/entities/wolf.gd#L292-L293)) é caminho nunca exercitado, e cobertura de rastros é
+([:412-413](../src/entities/wolf.gd#L412-L413)) é caminho nunca exercitado, e cobertura de rastros é
 promessa do slice: "o cache está limitado a 32" só quer dizer alguma coisa depois de medir se ele
 chega lá. O bloco começou pela colheita.
 
@@ -1954,6 +1955,24 @@ então a janela honesta é `303-306` e nenhuma das duas janelas atuais a cobre. 
 é assunto de citação, não de medição, e a lição registrada é que conferir rótulo contra âncora é
 checagem de máquina (o par `rótulo:NN-MM` do texto contra o `#LNN-MM` da URL, arquivo a arquivo),
 e ela não estava sendo feita.
+
+**Esta nota envelheceu na Rodada Alcateia, e o que ela dizia sobre as âncoras era a árvore da nota,
+não a da branch.** Conferidas uma a uma contra `eb6ec8d` (a base, código byte a byte igual ao de
+`4ac5838`): `_unstick`/`_detour` estão em `590-591`, não em `563-564` — aquela faixa é o bloco do
+boiar na água; a evicção por `SCENT_MEMORY_CAP` está em `319-320`, não em `292-293`; e as chamadas
+de `_rng` da patrulha em `303`, `305` e `306` eram do lobo solitário de uma revisão anterior — na
+base aquelas três linhas são o fim de `_leaf_investigate` (`_scent_found = false`,
+`_scent_strength = 0.0`, `_scent_cd = 0.0`) e os sorteios estão em `329`, `331` e `332`. Ou seja:
+das cinco, **zero** tinham âncora certa na base. O caso a mais que a checagem de rótulo não pega é
+do mesmo tamanho e estava na mesma frase: a declaração `_rng` citada como `wolf.gd:99` (real: `123`,
+em `eb6ec8d` era `77`) e a semente citada como `:175` (real: `191`, em `eb6ec8d` era `137`) — rótulo
+e âncora batiam entre si e os dois apontavam para código que a frase não afirma. **Dez ocorrências**
+em quatro lugares deste arquivo — as duas frases que descrevem o `_rng` (o recorte do sorteio em
+"Feito nesta sessão" e o item 2 da fila), a frase do corte em "Notas de medição" e a da evicção na
+rodada do cache de inspeções — foram postas na árvore atual nesta rodada, cada alvo lido: cinco são da classe rótulo ≠
+âncora e cinco da classe rótulo = âncora com alvo errado; as cinco primeiras viraram **seis** âncoras
+porque a faixa `:301-304`, que afirmava três chamadas, foi cortada em duas (`:425` e `:442-443`). A
+tabela e o que ficou de fora estão em "Rodada Alcateia".
 
 ### Observações registradas, sem atribuição
 
