@@ -462,6 +462,10 @@ func _shore_point() -> Vector3:
 func _leaf_bite(_ctx: Dictionary) -> bool:
 	if _bite_cd > 0.0:
 		return false
+	if not _bite_turn():
+		# Assento esperando: a folha devolve falso, a arvore cai em `perseguir` e o
+		# lobo continua circundando a presa ate ser a sua vez.
+		return false
 	_bite_cd = BITE_COOLDOWN
 	bit_player.emit(self, BITE_DAMAGE)
 	var pp := _player.position3()
@@ -469,6 +473,19 @@ func _leaf_bite(_ctx: Dictionary) -> bool:
 	mind.remember(_sim_clock.tick, "hit_land", pp, ACTOR_PLAYER, 0.3)
 	mind.reinforce("prey_wounded", 0.22, "perception")
 	return true
+
+
+## Escalonamento da mordida (dossie 10 §3.5): com n participantes do cerco, o
+## assento r morde nos ticks `tick % n == r`. A janela de `BITE_COOLDOWN` sao 23
+## ticks e o periodo e no maximo n, entao dois assentos nunca chegam ao alcance no
+## mesmo tick e a matilha distribui a pressao em vez de morder toda junto. A
+## referencia e o `clock.tick` da sessao: `Time.get_ticks_*` daria outro padrao
+## conforme a maquina, e o journal nao e reproduzivel com relogio de parede.
+func _bite_turn() -> bool:
+	var n := _hunt_pack_size()
+	if n <= 1:
+		return true
+	return _sim_clock.tick % n == _hunt_pack_rank()
 
 
 # ------------------------------------------------------------------ decisao por utilidade

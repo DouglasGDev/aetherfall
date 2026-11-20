@@ -14,9 +14,9 @@ const TESTS: Array[StringName] = [
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
-	&"_test_rondar_setor", &"_test_cercar_assentos",
+	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 ]
-const EXPECTED_CHECKS: int = 140
+const EXPECTED_CHECKS: int = 142
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -55,6 +55,11 @@ var _pack_sim_worst_us: int = 0
 var _pack_bt_us: int = 0
 var _pack_bt_worst_us: int = 0
 var _pack_bt_trips: int = 0
+# Mordidas colhidas pelo sinal real `bit_player` da sessao, como
+# [tick, identidade, n lido, rank lido, intent]: a contagem por tick e o numero que
+# o escalonamento exige, e o sinal e a unica forma de ver a mordida sem ler um campo
+# escrito a mao.
+var _bite_events: Array = []
 
 # Geometria da matilha no plateau da fixture: tres lobos se enxergam (8,5 m e
 # 17 m), o quarto fica a 25,6 m do vizinho mais proximo -- do lado de la do raio
@@ -81,6 +86,15 @@ const CERCAR_PLAYER := Vector3(58.0, 51.001, 62.0)
 const CERCAR_SPOTS: Array = [
 	Vector3(50.0, 51.001, 62.0), Vector3(66.0, 51.001, 62.0),
 	Vector3(58.0, 51.001, 54.0), Vector3(58.0, 51.001, 70.0),
+]
+
+# Geometria do ataque escalonado: quatro lobos JA dentro de `BITE_RANGE` (1,5 m
+# horizontal, 1,56 m na conta 3D do `_sense`), todos com visada. Sem o
+# escalonamento os quatro mordem no tick zero; com ele, cada assento morde no
+# proprio assento morde na sua fase de tick.
+const ESCALONAR_SPOTS: Array = [
+	Vector3(59.5, 51.001, 62.0), Vector3(56.5, 51.001, 62.0),
+	Vector3(58.0, 51.001, 63.5), Vector3(58.0, 51.001, 60.5),
 ]
 
 
@@ -1660,6 +1674,173 @@ func _test_cercar_assentos() -> bool:
 			"sem_visada=%d restantes=%d espacamento=%.4f  %s" % [
 			0 if vitima._los_player else 1, restantes.size(), TAU / 3.0, cegas.strip_edges()])
 	return true
+
+
+## Checagem 3 do dossie 10 (`ataque_escalonado`). Premissa nomeada: quatro lobos em
+## cerco, todos a alcance de mordida e com o cooldown zerado, nao mordem no mesmo
+## tick. O numero e a contagem de mordidas por tick: `pior_tick` tem de ser 1, as
+## quatro mordidas tem de cair em quatro ticks seguidos, e cada uma na fase em que o
+## proprio rank casa com `clock.tick % n` -- com n = 4 e os quatro caando, o rank de
+## cada um e a sua identidade, entao mordida fora desta igualdade veio de outra porta.
+## O segundo braco e a referencia do relogio: as duas corridas entram no alcance em
+## fases de tick diferentes, decididas pelo teste e nao pelo acaso. O mapa {fase ->
+## identidade} e o mesmo nas duas, e o lobo que morde no tick da entrada e o da fase
+## daquela entrada (0 na primeira, 1 na segunda). Tempo de parede, ou "tempo desde
+## que entrou no alcance", dariam o lobo 0 mordendo na entrada das duas corridas.
+func _test_ataque_escalonado() -> bool:
+	_arm(SPAWN, CERCAR_PLAYER)
+	var corrida_a := _corrida_mordidas(0, 6)
+	# Contraste: os quatro candidatos do primeiro tick saem do estado real deles
+	# (cooldown zerado e corpo dentro do alcance), medido antes da entrada -- sem o
+	# escalonamento os quatro morderiam no tick zero, como mordiam antes do lote.
+	_check(corrida_a["aquecimento"] >= 0 and corrida_a["prontos"] == 4
+			and corrida_a["candidatos"] == 4 and corrida_a["n_cheio"]
+			and corrida_a["mordidas"] == 4 and corrida_a["no_pior_tick"] == 1
+			and corrida_a["consecutivos"] and corrida_a["fora_de_fase"] == 0,
+			"ataque_mordidas_nunca_no_mesmo_tick",
+			"mordidas=%d pior_tick=%d consecutivos=%s candidatos=%d prontos=%d aquecimento_tick=%d fora_de_fase=%d eventos=%s" % [
+			corrida_a["mordidas"], corrida_a["no_pior_tick"],
+			str(corrida_a["consecutivos"]), corrida_a["candidatos"],
+			corrida_a["prontos"], corrida_a["aquecimento"],
+			corrida_a["fora_de_fase"], corrida_a["eventos"]])
+	# O segundo braco re-arma o cenario: campo, relogio e seed voltam ao mesmo ponto
+	# de partida, entao a unica diferenca declarada entre as corridas e a fase de
+	# `clock.tick` em que os quatro entram no alcance -- nao o sangue e o medo que a
+	# primeira corrida deixou no ar.
+	_pack_release()
+	_arm(SPAWN, CERCAR_PLAYER)
+	var corrida_b := _corrida_mordidas(1, 6)
+	var fases_iguais: bool = corrida_a["fase"].size() == 4 and corrida_b["fase"].size() == 4
+	for phase: int in 4:
+		if not corrida_a["fase"].has(phase) or not corrida_b["fase"].has(phase) \
+				or int(corrida_a["fase"][phase]) != int(corrida_b["fase"][phase]):
+			fases_iguais = false
+	_check(fases_iguais and not corrida_a["fase_disputada"]
+			and not corrida_b["fase_disputada"] and corrida_b["prontos"] == 4
+			and corrida_b["candidatos"] == 4 and corrida_b["n_cheio"]
+			and corrida_b["mordidas"] == 4 and corrida_b["no_pior_tick"] == 1
+			and corrida_b["consecutivos"] and corrida_b["fora_de_fase"] == 0
+			and corrida_a["tick_entrada"] % 4 != corrida_b["tick_entrada"] % 4
+			and int(corrida_a["biter_entrada"]) == corrida_a["tick_entrada"] % 4
+			and int(corrida_b["biter_entrada"]) == corrida_b["tick_entrada"] % 4,
+			"ataque_escalonamento_funcao_do_clock_tick",
+			"fases_A=%s fases_B=%s entrada_A=%d fase_A=%d biter_A=%d entrada_B=%d fase_B=%d biter_B=%d mordidas_B=%d pior_B=%d prontos_B=%d candid_B=%d n_cheio_B=%s fora_B=%d eventos_B=%s" % [
+			corrida_a["fase"], corrida_b["fase"], corrida_a["tick_entrada"],
+			corrida_a["tick_entrada"] % 4, corrida_a["biter_entrada"],
+			corrida_b["tick_entrada"], corrida_b["tick_entrada"] % 4,
+			corrida_b["biter_entrada"], corrida_b["mordidas"],
+			corrida_b["no_pior_tick"], corrida_b["prontos"],
+			corrida_b["candidatos"], str(corrida_b["n_cheio"]),
+			corrida_b["fora_de_fase"], corrida_b["eventos"]])
+	_pack_release()
+	return true
+
+
+## Quantos dos lobos da sessao estao em `hunt` lendo `n_espera` caadores na leitura
+## da matilha -- a condicao de entrada do cerco, medida e nao assumida.
+func _caadores(n_espera: int) -> int:
+	var total := 0
+	for w: Wolf in _pack_wolves():
+		if w.intent == "hunt" and w._hunt_pack_size() == n_espera:
+			total += 1
+	return total
+
+
+## Desloca o relogio ate a fase pedida, com os quatro ainda a 8 m da presa e o
+## cooldown zerado: e o unico modo de mudar a fase da entrada sem mudar o mundo, e
+## a unica diferenca declarada entre os dois bracos do contraste.
+func _advance_ate_fase(alvo: int, teto: int) -> void:
+	var i := 0
+	while i < teto and _clock.tick % 4 != alvo:
+		_advance_pack(1)
+		i += 1
+
+
+## Uma corrida do cenario: monta a sessao, religa o jogador pela transicao real
+## (`respawn_at`) e anda a 8 m ate os quatro estarem em `hunt` e cada um lendo os
+## outros tres como caadores -- sem isto a primeira leitura devolve `patrol`, cada
+## lobo se acha sozinho no cerco e todos mordem juntos por outra porta. Alinha a
+## fase do relogio, so entao coloca os quatro dentro de `BITE_RANGE` e roda `passos`
+## ticks de 20 Hz. O `passos` maior que as quatro mordidas mostra que a segunda rodada
+## nao antecipa: com `BITE_COOLDOWN` de 23 ticks nenhuma mordida cai antes do tick 23.
+func _corrida_mordidas(fase_entrada: int, passos: int) -> Dictionary:
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, CERCAR_SPOTS[i])
+	_player.respawn_at(CERCAR_PLAYER)
+	var aquecimento := -1
+	for i: int in 40:
+		_advance_pack(1)
+		if _caadores(4) == 4:
+			aquecimento = _clock.tick
+			break
+	_advance_ate_fase(fase_entrada, 5)
+	var prontos := _caadores(4)
+	var ws: Array = _pack_wolves()
+	for i: int in 4:
+		_pack_place(i, ESCALONAR_SPOTS[i])
+	var candidatos := 0
+	for w: Wolf in ws:
+		if w._bite_cd <= 0.0 and _horizontal(w.center() - _player.position3()).length() \
+				<= Wolf.BITE_RANGE:
+			candidatos += 1
+	var tick_entrada: int = _clock.tick
+	_bite_events.clear()
+	for w: Wolf in ws:
+		w.bit_player.connect(_on_bit_observed.bind(w.identity))
+	for i: int in passos:
+		_advance_pack(1)
+	var por_tick := {}
+	var ticks: Array = []
+	var fase := {}
+	var conflito := false
+	var fora_de_fase := 0
+	var n_cheio := true
+	var ev_str := ""
+	for ev: Array in _bite_events:
+		var t: int = int(ev[0])
+		var ident: int = int(ev[1])
+		por_tick[t] = int(por_tick.get(t, 0)) + 1
+		ticks.append(t)
+		ev_str += "%d:%d(n%d,r%d,%s) " % [t, ident, int(ev[2]), int(ev[3]), String(ev[4])]
+		if int(ev[2]) != 4:
+			n_cheio = false
+		var mod: int = t % 4
+		if fase.has(mod) and int(fase[mod]) != ident:
+			conflito = true
+		fase[mod] = ident
+		# O assento r so pode morder em `tick % n == r`, e com os quatro em `hunt`
+		# o rank de cada um e a sua identidade: qualquer mordida fora desta
+		# igualdade veio de outra porta.
+		if mod != ident:
+			fora_de_fase += 1
+	ticks.sort()
+	var pior := 0
+	for t: int in por_tick:
+		pior = maxi(pior, int(por_tick[t]))
+	var consecutivos: bool = ticks.size() >= 2
+	for i: int in range(1, ticks.size()):
+		if int(ticks[i]) - int(ticks[i - 1]) != 1:
+			consecutivos = false
+	var biter_entrada := -1
+	for ev: Array in _bite_events:
+		if int(ev[0]) == tick_entrada:
+			biter_entrada = int(ev[1])
+	return {
+		"mordidas": _bite_events.size(), "no_pior_tick": pior, "ticks": ticks,
+		"fase": fase, "candidatos": candidatos, "prontos": prontos,
+		"fase_disputada": conflito, "tick_entrada": tick_entrada,
+		"fora_de_fase": fora_de_fase, "n_cheio": n_cheio, "eventos": ev_str,
+		"aquecimento": aquecimento, "consecutivos": consecutivos,
+		"biter_entrada": biter_entrada,
+	}
+
+
+## O sinal da sessao entregue ao runner: `[tick, identidade]` de cada mordida.
+## Os argumentos do `bind` vao DEPOIS dos do sinal, e a assinatura espelha isto.
+func _on_bit_observed(wolf: Wolf, _amount: float, ident: int) -> void:
+	_bite_events.append([_clock.tick, ident, wolf._hunt_pack_size(),
+			wolf._hunt_pack_rank(), wolf.intent])
 
 
 ## Angulo horizontal do alvo escrito pelo lobo em torno da presa, no eixo do mundo.
