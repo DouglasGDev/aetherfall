@@ -53,7 +53,7 @@ binário e independente de máquina. Consequência honesta: a projeção do hash
 corpos, RNG, episódios, relações, timers e comandos (`docs/design/08-roadmap-risks-licensing.md:46-48`),
 então 3 hashes iguais provam determinismo **do que está na projeção**, não da simulação inteira.
 Número publicado volta a ser hipótese se o código mudou depois da medição: re-medir em clone limpo
-com `--import` (`docs/melhorias-status.md:608-623`).
+com `--import` (`docs/melhorias-status.md:619-634`).
 
 ## 4. Bake-off de voxel, com as abordagens que o código permite
 
@@ -65,7 +65,7 @@ O precedente medido está no comentário de `:126-129` (dicionário de chunks �
 congelado ≈ 16 s) e no README: `~0,9 s de geração + ~4,3 s de malharia` dos 64 chunks, 214.480
 triângulos, e a queda de ~16 s para ~7,5 s quando as consultas de vizinhança passaram a ler a
 cópia linear (`README.md:505-512`; os logs locais dão 4.640–4.886 ms de malha,
-`docs/melhorias-status.md:1053`). Braços reais na mesa hoje:
+`docs/melhorias-status.md:1064`). Braços reais na mesa hoje:
 
 | Braço | O que mudaria | Número que decide |
 | --- | --- | --- |
@@ -130,11 +130,11 @@ Citações que não conferem (verificadas abrindo os arquivos):
 
 - `docs/melhorias-status.md:301-302` fixa a "altura certa" do boot em geração **942 ms** e malha
   **4.682 ms**. Nenhuma corrida publicada devolve esse par: a tabela do próprio status dá
-  936,0/944,5/952,3/961,9 ms com malha 4640,6/4847,6/4885,8/4724,2 ms (`:1053`) e 929,7/967,7/
-  932,9 com 4684,0/4661,6/4675,9 (`:1055`); o clone limpo re-medido dá 926,4 / 4.134,9 ms
-  (`:654`). O par de `:302` é arredondamento de uma corrida que não está nomeada ali — e contra o
-  número de `:654` ele está velho em 3,9% na geração e 13% na malha.
-- `README.md:507` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `:1053` e
+  936,0/944,5/952,3/961,9 ms com malha 4640,6/4847,6/4885,8/4724,2 ms (`:1064`) e 929,7/967,7/
+  932,9 com 4684,0/4661,6/4675,9 (`:1066`); o clone limpo re-medido dá 926,4 / 4.134,9 ms
+  (`:665`). O par de `:302` é arredondamento de uma corrida que não está nomeada ali — e contra o
+  número de `:665` ele está velho em 3,9% na geração e 13% na malha.
+- `README.md:507` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `:1064` e
   4.134,9 ms no clone re-medido.
 - `docs/design/06:33` aponta `src/core/sim/tick_clock.gd` (caminho inexistente — o arquivo real é
   `src/core/sim_clock.gd`) e `:200` aponta `src/tools/` (diretório inexistente).
@@ -146,8 +146,8 @@ Citações que não conferem (verificadas abrindo os arquivos):
   malha, `:14` visão, `:16` cadáveres); a alegação de deslocamento em +1 foi deste briefing e o
   código a refuta. `WOLF_COUNT` está em `:9`, `SEED` em `:10`, `SLOT` em `:11`.
 - A contagem publicada é **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
-  (`docs/melhorias-status.md:19` e a nota em `:1133-1213`). As ocorrências antigas de 232 —
-  `docs/design/08:44-45` (que agora diz os dois números) e `melhorias-status.md:91`, `:249`, `:654`,
-  `:691` — são da rodada do `a8967e0` e continuam corretas porque mediram o clone daquele commit.
+  (`docs/melhorias-status.md:19` e a nota em `:1144-1224`). As ocorrências antigas de 232 —
+  `docs/design/08:44-45` (que agora diz os dois números) e `melhorias-status.md:91`, `:249`, `:665`,
+  `:702` — são da rodada do `a8967e0` e continuam corretas porque mediram o clone daquele commit.
   Os logs que eu abri aqui são os locais de `.tools/` e dão 219 (um com 4 falhas) — contagem
   anterior ao refinamento. Este plano não re-mediu nada: a engine não foi rodada.

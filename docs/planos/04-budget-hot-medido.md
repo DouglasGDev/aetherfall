@@ -24,14 +24,14 @@ Orçamento por árvore: 400 µs configurado no lobo (`src/entities/wolf.gd:172-1
 
 ## Gate do bloco (não o gate da fase)
 
-Comandos já existentes: `godot --headless --path . tests/smoke_test.tscn` e `godot --headless --path . --script tests/aether_reactions_test.gd` (`docs/melhorias-status.md:842`). Critérios, todos capazes de falhar:
+Comandos já existentes: `godot --headless --path . tests/smoke_test.tscn` e `godot --headless --path . --script tests/aether_reactions_test.gd` (`docs/melhorias-status.md:853`). Critérios, todos capazes de falhar:
 
 - **P (premissa)**: `pico_mente == 5` ao menos uma vez na corrida. Vermelho aqui significa que a matilha nunca esteve inteira no mesmo tick — o agregado impresso seria amostra de 4, não de 5 (`docs/evidence/third-person-carry/clone-suite.log:305` fecha com 4 vivos).
 - **T (fail-visible)**: `trips` somado = 0 na corrida. Vermelho = a árvore foi cortada por orçamento e o lobo decidiu outra coisa (`src/ai/behavior/bt_tree.gd:134-136`): é defeito de comportamento, não nota de rodapé.
 - **B (orçamento)**: `pico_hot_bt_us ≤ 2500` **e** `pico_decisao_us ≤ 2500`, com `dropped_ticks == 0` (`src/main.gd:443`, já checado em `tests/smoke_test.gd:185-186`). Vermelho = o alvo de P1 já está estourado por medição real: o número vai para `docs/design/08-roadmap-risks-licensing.md:74` como medido e o gate de P1 continua aberto; ninguém corta a checagem para o verde aparecer.
-- **C (censo)**: `EXPECTED_CHECKS` (`tests/aether_reactions_test.gd:16`, hoje 103) e a última linha da suíte (`tests/smoke_test.gd:160`; estado atual 236 checagens / 0 falhas / 34,3 s em `docs/evidence/ether-cache-limite/clone-suite.log:311`) sobem exatamente com as checagens novas, conferidos numa corrida antes do lote (`docs/melhorias-status.md:370-373`).
+- **C (censo)**: `EXPECTED_CHECKS` (`tests/aether_reactions_test.gd:16`, hoje 103) e a última linha da suíte (`tests/smoke_test.gd:160`; estado atual 236 checagens / 0 falhas / 34,0 s em `docs/evidence/passo-lobo-plano/clone-suite.log:311`) sobem exatamente com as checagens novas, conferidos numa corrida antes do lote (`docs/melhorias-status.md:370-373`).
 
-O vermelho **não** fecha nem abre gate de fase: fecha o dono do repositório, com clone limpo reimportado (`godot --headless --path . --import`) e SHA pino (`AGENTS.md`, ciclo de trabalho, itens 6 e 8). O 2,5 ms continua `[TARGET]` até que a linha 74 do §08 receba um número com log; a aritmética 5 × 400 µs = 2 ms é conta de orçamento, não medição, e o status já veta somar picos de instantes distintos para declarar fechamento (`docs/melhorias-status.md:401-404`, `:805-810`).
+O vermelho **não** fecha nem abre gate de fase: fecha o dono do repositório, com clone limpo reimportado (`godot --headless --path . --import`) e SHA pino (`AGENTS.md`, ciclo de trabalho, itens 6 e 8). O 2,5 ms continua `[TARGET]` até que a linha 74 do §08 receba um número com log; a aritmética 5 × 400 µs = 2 ms é conta de orçamento, não medição, e o status já veta somar picos de instantes distintos para declarar fechamento (`docs/melhorias-status.md:401-404`, `:816-821`).
 
 ## Custo, em número (as quatro perguntas)
 
