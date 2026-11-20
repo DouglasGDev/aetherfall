@@ -108,7 +108,7 @@ bench introduz. Um hash estável em 3 execuções é condição do bake-off, nã
 Roda por frame (o `advance` com `delta` real, `src/main.gd:136-142`) ou por tick (o corpo do
 `_sim_tick`, 12 000 vezes por corrida de bench); alcança 5 lobos (`src/main.gd:9`), 64 chunks
 (`src/world/voxel_config.gd:10-11`), 1 jogador. Aloca no caminho quente: `state_bytes()` devolve
-cópia do `_cur` inteiro por registro (`src/world/aether_field.gd:218-219`, tamanho =
+cópia do `_cur` inteiro por registro (`src/world/aether_field.gd:233-234`, tamanho =
 `Channel.COUNT` × `size_x·size_y·size_z`, `:9`, `:45-46`), com serialização + SHA256 + `flush` por
 linha (`src/persistence/tick_journal.gd:74-87`) — **bytes por tick e µs do journal no cenário de
 10 min não medidos**; a cadência de 0,25 s da difusão e o orçamento de 2 chunks/frame ficam

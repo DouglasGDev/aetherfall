@@ -652,16 +652,64 @@ func _check_aether() -> void:
 	_check("energia total subiu", e1 > e0, "%.3f -> %.3f" % [e0, e1])
 	var nb := cell + Vector3i(1, 0, 0)
 	var v0 := a.sample_cell(nb, AetherField.Channel.FEAR)
+	# Saldo medido passada a passada e canal a canal: o que sai e o decaimento previsto
+	# menos o corte de MIN_VALUE (`pass_cut`). Sem essa colheita o deficit real do log
+	# (2,500 -> 2,296 contra 2,471 que a meia-vida previa) fica sem dono, e numero sem
+	# dono e exatamente o que o mandato 1 proibe de publicar.
+	var tol := 1e-4
+	var keeps: Array = []
+	for ch in AetherField.Channel.COUNT:
+		keeps.append(pow(0.5, 0.25 / float(AetherField.HALF_LIFE[ch])))
+	var mass: Array = a.channel_totals()
+	var fear_mass0 := float(mass[AetherField.Channel.FEAR])
+	var keep_fear := float(keeps[AetherField.Channel.FEAR])
+	var cut_fear := 0.0
+	var cut_total := 0.0
+	var created := 0.0
+	var worst_err := 0.0
+	# Previsao em cadeia, dupla e sem releitura: a cada passada o corte sai do campo e
+	# nao decai mais, entao o que falta nao e (1 - keep^8) x massa menos o corte somado,
+	# e o corte de cada passada vezes o keep das passadas seguintes.
+	var pred_fear := fear_mass0
 	for i in 8:
 		a.diffuse_and_decay(0.25)
+		var after: Array = a.channel_totals()
+		var err := 0.0
+		for ch in AetherField.Channel.COUNT:
+			var decayed := float(mass[ch]) * float(keeps[ch])
+			err = maxf(err, absf(float(after[ch]) - decayed + float(a.pass_cut[ch])))
+			created = maxf(created, float(after[ch]) - decayed)
+			cut_total += float(a.pass_cut[ch])
+		var pass_cut_fear := float(a.pass_cut[AetherField.Channel.FEAR])
+		cut_fear += pass_cut_fear
+		pred_fear = pred_fear * keep_fear - pass_cut_fear
+		mass = after
+		worst_err = maxf(worst_err, err)
 	var v1 := a.sample_cell(nb, AetherField.Channel.FEAR)
 	_check("difusao passou para a vizinha", v1 > v0, "%.4f -> %.4f em 2 s" % [v0, v1])
 	var e2 := a.total_energy()
 	_check("meia-vida reduziu a energia", e2 < e1, "%.3f -> %.3f" % [e1, e2])
+	_check("nenhuma passada cria massa", created <= tol,
+			"pior ganho=%.8f acima do decaimento em 8 passadas x 3 canais" % created)
+	_check("saldo fecha com o corte de MIN_VALUE", worst_err <= tol,
+			"pior erro=%.8f corte=%.6f" % [worst_err, cut_total])
+	# O numero que o dossier 03 deixou pendente: 2,500 -> 2,296 onde a meia-vida previa
+	# 2,471. A cadeia acima fecha essa diferenca pelo corte medido, nao por estimativa.
+	var fear_now := float(a.channel_totals()[AetherField.Channel.FEAR])
+	_check("o corte da fronteira explica a perda alem da meia-vida",
+			cut_fear > 0.02 and absf(fear_now - pred_fear) <= tol,
+			"fear %.6f -> %.6f; so meia-vida daria %.6f; cadeia com corte da %.6f (corte %.6f)" % [
+			fear_mass0, fear_now, fear_mass0 * keep_fear ** 8, pred_fear, cut_fear])
 	a.imprint(pos, AetherField.Channel.FEAR, 900.0)
 	_check("teto de valor aplicado",
 		is_equal_approx(a.sample(pos, AetherField.Channel.FEAR), AetherField.MAX_VALUE),
 		"teto=%.1f" % AetherField.MAX_VALUE)
+	# A saida de massa do teto e conhecida: o excedente nao entra no campo.
+	var fear_after_teto := float(a.channel_totals()[AetherField.Channel.FEAR])
+	_check("teto nao injeta o excedente no campo",
+			fear_after_teto <= float(mass[AetherField.Channel.FEAR]) + AetherField.MAX_VALUE + tol,
+			"canal %.6f -> %.6f por imprint de 900.0 (teto %.1f)" % [
+			float(mass[AetherField.Channel.FEAR]), fear_after_teto, AetherField.MAX_VALUE])
 	var totals: Array = a.channel_totals()
 	_check("ledger com 3 canais", totals.size() == 3,
 		"work=%.2f blood=%.2f fear=%.2f" % [totals[0], totals[1], totals[2]])

@@ -228,7 +228,7 @@ Nada aqui está em código — menos as linhas que o
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de
 memória (células que difuem e decaem, legíveis por criatura e pelo jogador com `B`)
-[aether_field.gd:108-146](../../src/world/aether_field.gd), e a mente local que consome
+[aether_field.gd:117-161](../../src/world/aether_field.gd), e a mente local que consome
 esse rastro. Essa inversão é a inovação §02, não uma adaptação.
 
 ## 10. Teclas hoje

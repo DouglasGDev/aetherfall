@@ -11,7 +11,7 @@ O journal grava `[tick, hash]` de uma projeção mínima e recusa tick não-cons
 | Quem escreve | Onde | Quando | Na projeção hoje |
 | --- | --- | --- | --- |
 | edição de voxel | `src/entities/player.gd:667`, `:693` | frame | sim, ordenada (`tick_journal.gd:17-21`) |
-| imprint de trabalho, sangue e medo | `src/main.gd:268-273`, `:306-313`, `:192` | frame / tecla | só os bytes finais (`aether_field.gd:218-219`) |
+| imprint de trabalho, sangue e medo | `src/main.gd:268-273`, `:306-313`, `:192` | frame / tecla | só os bytes finais (`aether_field.gd:233-234`) |
 | corpo, `_stagger`, `_unstick`, `_corpse_timer` | `src/entities/wolf.gd:501-546` | frame | **não** |
 | sorteios do lobo | `src/entities/wolf.gd:538-539`, `:301-304` | misto | **não** |
 | BT, intenção, crenças | `src/entities/wolf.gd:408-433` | tick | sim (`tick_journal.gd:22-35`) |
@@ -22,7 +22,7 @@ Fora também episódios, relações e personalidade (`src/ai/mind.gd:14-22`), `e
 ## O que o plano exige
 
 ### Estado inicial completo `[TARGET]`
-Quase existe: `save_game()` (`src/main.gd:341-364`) grava `schema` (`src/persistence/save_manager.gd:8` = 1), `gen_version` (`src/world/world_gen.gd:6` = 4), `seed`, `tick`, `elapsed`, `stats`, `edits`, Éter, inventário, jogador e o `state_dict()` por lobo (`src/entities/wolf.gd:641-646`). Estado inicial = isso mais os bytes integrais do campo (o save corta ≤ 0,01 em `aether_field.gd:199-202`, o hash usa tudo — comentário em `:217`), os timers por frame da tabela, os geradores, a fila e `_next_identity`. Armadilha lida: `VoxelWorld.generate()` **não** limpa `edits` (`src/world/voxel_world.gd:108-124`; só `apply_edits` limpa, `:164-172`) — restaurar passa por lá, como já faz `load_game` (`src/main.gd:384-388`); `_benches` (`src/main.gd:46`) é derivado do mundo (`:421-425`) e entra como derivado, não como arquivo.
+Quase existe: `save_game()` (`src/main.gd:341-364`) grava `schema` (`src/persistence/save_manager.gd:8` = 1), `gen_version` (`src/world/world_gen.gd:6` = 4), `seed`, `tick`, `elapsed`, `stats`, `edits`, Éter, inventário, jogador e o `state_dict()` por lobo (`src/entities/wolf.gd:641-646`). Estado inicial = isso mais os bytes integrais do campo (o save corta ≤ 0,01 em `aether_field.gd:214-217`, o hash usa tudo — comentário em `:232`), os timers por frame da tabela, os geradores, a fila e `_next_identity`. Armadilha lida: `VoxelWorld.generate()` **não** limpa `edits` (`src/world/voxel_world.gd:108-124`; só `apply_edits` limpa, `:164-172`) — restaurar passa por lá, como já faz `load_game` (`src/main.gd:384-388`); `_benches` (`src/main.gd:46`) é derivado do mundo (`:421-425`) e entra como derivado, não como arquivo.
 
 ### Comandos/input `[TARGET]`
 Não há captura: só o efeito já escrito. Gravar tecla não reproduz — medido no harness, `Input.parse_input_event` chega 6 a 7 iterações depois (`tests/smoke_test.gd:140-144`) e a janela real deu 163 quadros/s contra 59,8 ticks (`:118-121`). O que tem posição reproduzível é a intenção aplicada, que já passa por handlers com evento e relógio à vista (`src/main.gd:268-321`); vocabulário nomeado existe (`src/input/input_actions.gd:18-54`). Fita: `[tick_do_relogio, seq, tipo, args]` com as regras já cobradas de `record()` (negativo, duplicata, regressão, salto — `tick_journal.gd:72-73`). `start()` não escreve cabeçalho (`tests/tick_journal_test.gd:291`) e o leitor exige aridade 2 (`:431-432`): `FORMAT_VERSION` (`tick_journal.gd:4`) mora só dentro do hash, então v2 é indistinguível de v1 para quem lê e nenhuma checagem exige que ele altere o hash. Cabeçalho lateral é pré-requisito da fita.
@@ -52,7 +52,7 @@ godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.j
 2. Entidades alcançadas? 5 lobos (`src/main.gd:9`; 4 vivos no fim da corrida lida), 1 jogador, 64 chunks
    (`src/world/voxel_config.gd:10-11`), 49.152 células de Éter (32×16×32×3) varridas por registro hoje, 359 ticks na
    janela medida.
-3. Aloco no caminho quente? Sim e medido no recorte: 196.608 bytes/tick de cópia Float32 (`aether_field.gd:218-219`) mais
+3. Aloco no caminho quente? Sim e medido no recorte: 196.608 bytes/tick de cópia Float32 (`aether_field.gd:233-234`) mais
    os arrays da projeção (`tick_journal.gd:17-39`); o journal custou 160.000 µs em 205 registros (~780 µs médios), pico
    1,646 ms, pior passo 9,738 ms ON contra 10,574 ms OFF (`docs/melhorias-status.md:1016-1017,1030`). Bytes novos: não
    medidos; a colheita por registro já existe (`tick_journal.gd:84-86,96-98`).

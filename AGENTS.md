@@ -56,7 +56,7 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    lobos vivos ordenados por `wolf.identity` com `mind.identity`, `mind.kind`, `intent` e
    crenças ordenadas por chave (`key/confidence/source`). O SHA256 recebe esses metadados
    via `var_to_bytes` seguidos de todos os bytes Float32 de `_cur`
-   ([aether_field.gd:217-219](src/world/aether_field.gd#L217-L219)), sem o corte do save.
+   ([aether_field.gd:232-234](src/world/aether_field.gd#L232-L234)), sem o corte do save.
    **Não inclui** jogador, corpos, RNG, episódios, relações, timers ou comandos; não torna a
    simulação determinística. `main.state_hash()` expõe a consulta
    ([main.gd:486-487](src/main.gd#L486-L487)); o acesso ao estado autoritativo permanece aberto.
@@ -170,7 +170,7 @@ ainda (regras 5 e 1, nesta ordem):
   dicionários por segundo (o `sim_step` retorna cedo em cadáver, então o número é teto
   derivado do código, não medição de alocação);
 - a difusão aloca um `PackedInt32Array` por canal por passada
-  ([aether_field.gd:113](src/world/aether_field.gd#L113)): 3 a cada 0,25 s;
+  ([aether_field.gd:122](src/world/aether_field.gd#L122)): 3 a cada 0,25 s;
 - a conta das árvores (5 × 400 µs = 2 ms) cabe no teto de 2,5 ms que o gate de P1 ainda
   escreve como `[TARGET]` — e nenhum log mostra a soma real.
 

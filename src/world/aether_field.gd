@@ -30,6 +30,10 @@ var world: VoxelWorld = null
 var _per_channel: int = 0
 var _cur := PackedFloat32Array()
 var _nxt := PackedFloat32Array()
+# Massa que a ultima passada descartou ao zerar o que caiu abaixo de MIN_VALUE, por
+# canal. O corte e a unica saida de massa alem do decaimento, entao sem ele o saldo
+# de uma difusao nao fecha e a perda vira numero nao explicado.
+var pass_cut := PackedFloat32Array()
 # Scratch de _neighbours(): realocar por cada celula activa seria ruido no GC.
 var _nb_i := PackedInt32Array()
 var _nb_w := PackedFloat32Array()
@@ -44,6 +48,8 @@ func setup(p_world: VoxelWorld) -> void:
 	_per_channel = size_x * size_y * size_z
 	_cur.resize(int(Channel.COUNT) * _per_channel)
 	_nxt.resize(int(Channel.COUNT) * _per_channel)
+	pass_cut.resize(int(Channel.COUNT))
+	pass_cut.fill(0.0)
 	_cur.fill(0.0)
 	_nxt.fill(0.0)
 
@@ -105,6 +111,9 @@ func set_cell_value(c: Vector3i, ch: int, v: float) -> void:
 ## fria (`v <= MIN_VALUE`) saia do laco antes de somar os vizinhos e nunca recebia
 ## fluxo: o rastro ficava confinado a celula original para sempre. Como o fluxo
 ## sai todo da fonte, a massa conservada e o custo e proporcional ao que esta aceso.
+##
+## Duas saidas de massa, e so duas: o decaimento (`keep`) e o corte de `MIN_VALUE`,
+## cuja quantia por canal fica em `pass_cut`. O passo de fluxo e neutro por construcao.
 func diffuse_and_decay(elapsed: float) -> void:
 	for ch in Channel.COUNT:
 		var base: int = ch * _per_channel
@@ -133,9 +142,15 @@ func diffuse_and_decay(elapsed: float) -> void:
 				_nxt[base + i] -= share
 	# Troca uma unica vez, depois de todos os canais: trocar dentro do laco de
 	# canais jogava o buffer de um canal sobre o de outro e apagava sangue e medo.
-	for i in _cur.size():
-		if _nxt[i] < MIN_VALUE:
-			_nxt[i] = 0.0
+	pass_cut.fill(0.0)
+	for ch in Channel.COUNT:
+		var cut := 0.0
+		var base: int = ch * _per_channel
+		for i in _per_channel:
+			if _nxt[base + i] < MIN_VALUE:
+				cut += maxf(_nxt[base + i], 0.0)
+				_nxt[base + i] = 0.0
+		pass_cut[ch] = cut
 	var swap := _cur
 	_cur = _nxt
 	_nxt = swap
