@@ -185,14 +185,15 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `520c3b4`, mesmo código desta,
-medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/passo-lobo-plano/sources.sha256`, sem `.godot/`, sem `.tools/` e sem
-`override.cfg`), recém-importado com o `--import` logo acima: **236 checagens, 0 falhas, 34,0 s**, exit 0 — o
+Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `cbaaef5`, mesmo código desta,
+medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/rastro-duas-camadas/sources.sha256`, sem `.godot/`, sem `.tools/` e sem
+`override.cfg`), recém-importado com o `--import` logo acima: **236 checagens, 0 falhas, 34,3 s**, exit 0 — o
 log da suíte é idêntico ao da árvore de trabalho salvo oito pares de linha, todos de tempo, e o estado
 final também confere (`aether_energy` `9,36133219487965`, 4 lobos vivos, `tick=359`, `dropped_ticks=0`),
 com as duas linhas de vazamento do quit que entraram junto com o som (medidas e explicadas em "O jogo
-tem som, e o som não manda no mundo"; nesta árvore a contagem capturada é `8 ObjectDB` / `4 resources`,
-e a observação de que ela mudou está na rodada do passo em
+tem som, e o som não manda no mundo"; nesta árvore a contagem capturada é `8 ObjectDB` / `4 resources` no
+clone e na `main` mergida, e `4` / `2` na ponta da branch — árvore com `src/` e `tests/` idênticos, o que
+é a segunda rodada seguida em que esse par se move; registrada na rodada de rastros em
 [docs/melhorias-status.md](docs/melhorias-status.md)). Na revisão histórica
 `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
@@ -317,7 +318,9 @@ para por 2 s para farejar e grava um episódio sem inventar quem deixou o cheiro
 A memória curta evita repetir a inspeção do mesmo rastro por 30 s; um aumento de 0,06
 na força ponderada (`sangue + 0,35 × trabalho`) pode reabrir a investigação, inclusive
 um novo imprint de construção de 0,20. São até 32 células lembradas por lobo; um golpe
-interrompe a inspeção, que precisa recomeçar depois do atordoamento.
+interrompe a inspeção, que precisa recomeçar depois do atordoamento. O nariz não é cego ao
+andar de baixo: sangue escorrido para dentro de uma caverna sob o teto onde o lobo está é
+farejado, e o destino passa a ser o piso daquela cavidade, não a superfície do teto.
 
 O medo orienta a fuga pelo campo percebido, pela presa visível ou pelo último golpe
 recebido — não pela posição oculta do jogador. Uma fuga causada apenas pelo campo
@@ -332,15 +335,20 @@ godot --headless --path . --script tests/aether_reactions_test.gd
 ```
 
 Esse recorte não acrescenta canais, autoria dos rastros, pathfinding ou replay.
-A busca ainda lê uma camada de altura e projeta o alvo na superfície; um rastro fraco
-pode desaparecer antes da chegada. O cache de inspeções é transitório e se limpa ao
+A busca lê a camada de altura do lobo e, só quando ela não devolve nada acima de
+`0,06`, repete o quadrado uma célula acima e outra abaixo; o alvo é a primeira
+superfície sólida descendo do topo da camada encontrada, não o topo da coluna. Um
+rastro dois andares abaixo continua fora do alcance, e um rastro fraco pode
+desaparecer antes da chegada. O cache de inspeções é transitório e se limpa ao
 carregar; os episódios ficam no save.
 
-O censo publicado deste runner é o da mesma revisão da suíte acima — `520c3b4`, medido no
-mesmo clone limpo: **103 checagens, 0 falhas, 1,912 s** em 20 cenários, exit 0
-([clone-reactions.log](docs/evidence/passo-lobo-plano/clone-reactions.log), com o rodapé de
-colheita estreita `passos=2766 sim_step total=317556 us pico=463 us; BT last_us soma=14403
-pico=45 trips=0`). É um lobo por cenário: não é o HOT agregado dos cinco lobos do jogo nem gate de P1.
+O censo publicado deste runner é o da mesma revisão da suíte acima — `cbaaef5`, medido no
+mesmo clone limpo: **109 checagens, 0 falhas, 1,969 s** em 21 cenários, exit 0
+([clone-reactions.log](docs/evidence/rastro-duas-camadas/clone-reactions.log), com o rodapé de
+colheita estreita `passos=2768 sim_step total=367690 us pico=775 us; BT last_us soma=14551
+pico=42 trips=0`). É um lobo por cenário: não é o HOT agregado dos cinco lobos do jogo nem gate de P1.
+O custo de abrir as camadas vizinhas está medido braço a braço na matriz de ablação da
+[roda de rastros](docs/melhorias-status.md#rodada-éter--o-nariz-desce-e-sobe-medido-2026-11-20-publicado-em-cbaaef5-pelo-merge-de-featrastro-em-duas-camadas-ponta-f89041b).
 
 Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
 rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por

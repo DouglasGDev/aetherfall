@@ -1,0 +1,13 @@
+# Clone limpo de cbaaef5
+
+clone=C:/Users/dougl/AppData/Local/Temp/aetherfall-clean-cbaaef5
+remote.origin.url=https://github.com/DouglasGDev/aetherfall.git
+rev-parse --abbrev-ref HEAD=main
+rev-parse HEAD=cbaaef5c2405cf1a165458190f51525baada7c5f
+reflog=cbaaef5 HEAD@{0}: clone: from https://github.com/DouglasGDev/aetherfall.git
+procedencia=estas linhas foram lidas do clone depois das corridas (git status / rev-parse / reflog), nao o stdout do `git clone`
+antes do `--import` o clone nao tinha .godot/ nem .tools/ nem override.cfg; os dois executaveis de .tools/ foram copiados da arvore de trabalho, porque o `Godot_v4.7.2-stable_win64_console.exe` e um lancador que recusa rodar sem o `Godot_v4.7.2-stable_win64.exe` ao lado
+engine=Godot Engine v4.7.2.stable.official.ed1daf0bf (primeira linha dos tres logs do clone)
+nao-rastreados no clone ao fim=tests/audio_live_probe.gd.uid e tests/audio_test.gd.uid (`git status --short` com 2 linhas `??`; .godot/ e .tools/ sao ignorados pelo .gitignore). Os dois logs de corrida ficaram fora do clone, em /tmp, e so entraram aqui copiados
+exit_codes_medidos=--import frio 0 (299 linhas, sem o 139 da rodada anterior); --script tests/aether_reactions_test.gd 0; tests/smoke_test.tscn 0
+so_a_receita_do_README=clone, --import, runner, suite; nada mais foi escrito no clone
