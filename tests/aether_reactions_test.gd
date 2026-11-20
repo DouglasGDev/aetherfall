@@ -12,9 +12,9 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
-	&"_test_biome",
+	&"_test_biome", &"_test_fur_colour",
 ]
-const EXPECTED_CHECKS: int = 111
+const EXPECTED_CHECKS: int = 115
 
 var _checks: int = 0
 var _failures: int = 0
@@ -1032,6 +1032,78 @@ func _test_biome() -> bool:
 			"divergentes=%d  colunas=%d" % [dif, colunas])
 	_check(biomas > 1, "premissa: a grade 16x16 cobre mais de um bioma",
 			"biomas=%d  %s" % [biomas, nomes.strip_edges()])
+	return true
+
+
+## Lobo montado so para ler o pelo: casa na coluna (x, z) pela altura GERADA dela,
+## sem andar e sem decidir nada.
+func _lobo_na_coluna(x: int, z: int, pid: int) -> Wolf:
+	var w := Wolf.new()
+	_stage.add_child(w)
+	w.setup(_world, _field, _player,
+			Vector3(float(x), float(_world.gen.surface_height(x, z) + 1), float(z)),
+			pid, _clock)
+	return w
+
+
+## Premissa 1 do dossie 09 no que o jogador ve: dois lobos em colunas de biomas
+## diferentes tem de sair com material de pelo diferente, e dois lobos no mesmo
+## bioma com a MESMA cor. As colunas nao sao sorteadas — sao a primeira e a ultima
+## que o proprio `biome_at` do mundo gerado nomeia para cada bioma, porque "lobo
+## no bioma X" so vale se o gen diz X. O numero que decide e o hex de cada pelo,
+## impresso com o bioma do seu `home`.
+func _test_fur_colour() -> bool:
+	_arm()
+	var primeira := {}
+	var ultima := {}
+	for x: int in range(6, VoxelConfig.world_size_x() - 6, 3):
+		for z: int in range(6, VoxelConfig.world_size_z() - 6, 3):
+			var b: int = _world.gen.biome_at(x, z)
+			if not primeira.has(b):
+				primeira[b] = Vector2i(x, z)
+			ultima[b] = Vector2i(x, z)
+	var achados: Array = []
+	var nomes := ""
+	for id: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if primeira.has(id):
+			achados.append(id)
+			nomes += "%s " % WorldGen.BIOME_NAMES[id]
+	_check(achados.size() >= 2, "premissa: a semente da colunas de dois biomas",
+			"biomas=%d  %s" % [achados.size(), nomes.strip_edges()])
+	var letras := ["a", "b", "c"]
+	var lobos: Array = []
+	var linhas := ""
+	for i: int in range(3):
+		var id: int = achados[0]
+		if i == 1 and achados.size() > 1:
+			id = achados[1]
+		# a e c: mesmo bioma em colunas diferentes. b: o bioma seguinte da lista.
+		var tabela: Dictionary = ultima if i == 2 else primeira
+		var coluna: Vector2i = tabela[id]
+		var lobo := _lobo_na_coluna(coluna.x, coluna.y, 90 + i)
+		lobos.append(lobo)
+		linhas += "%s[%s %s] " % [letras[i], WorldGen.BIOME_NAMES[id],
+				lobo._fur.albedo_color.to_html(false)]
+	_check(is_instance_valid(lobos[0]) and is_instance_valid(lobos[1])
+			and is_instance_valid(lobos[2])
+			and lobos[0]._fur.albedo_color != lobos[1]._fur.albedo_color
+			and lobos[0]._fur.albedo_color == lobos[2]._fur.albedo_color,
+			"cor_do_pelo_vem_do_bioma", linhas.strip_edges())
+	for solto in lobos:
+		solto.free()
+	var cores := {}
+	var tabela_hex := ""
+	for cor in Wolf.FUR_COLORS:
+		cores[cor.to_html(false)] = true
+		tabela_hex += "%s " % cor.to_html(false)
+	_check(cores.size() == Wolf.FUR_COLORS.size(),
+			"premissa: os quatro pares da tabela dao quatro cores diferentes",
+			"cores=%d/%d  %s" % [cores.size(), Wolf.FUR_COLORS.size(),
+					tabela_hex.strip_edges()])
+	_check(Wolf.FUR_COLORS[WorldGen.Biome.TEMPERATE] == Color(0.40, 0.36, 0.31),
+			"temperate conserva a cor historica do lobo",
+			"cor=%s" % Wolf.FUR_COLORS[WorldGen.Biome.TEMPERATE].to_html(false))
 	return true
 
 

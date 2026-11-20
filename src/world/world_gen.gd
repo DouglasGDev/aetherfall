@@ -123,6 +123,14 @@ func biome_of(x: int, z: int, h: int) -> int:
 	return Biome.TEMPERATE
 
 
+## Bioma da coluna pela altura GERADA do relevo, nao pela superficie atual do mundo:
+## cavar ou encher nao troca o clima da coluna (que e regra de geracao, nao pauta de
+## edicao) e o chamador nao paga a varredura de ate 64 voxels que
+## `VoxelWorld.surface_height` faz.
+func biome_at(x: int, z: int) -> int:
+	return biome_of(x, z, surface_height(x, z))
+
+
 ## O bloco de topo agora DECIDE a partir do bioma em vez de repetir as comparacoes: a
 ## regra fica uma vez so, e o que sobra aqui e detalhe de bloco (a rocha nua acima de
 ## 57), nao de clima. Nenhum byte de bloco muda — e o que a checagem

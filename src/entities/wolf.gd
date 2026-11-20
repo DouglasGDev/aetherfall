@@ -46,6 +46,18 @@ const SHORE_AFTER: float = 2.0
 const STAGGER_TIME: float = 0.45
 const KNOCKBACK_SPEED: float = 5.0
 const KNOCKBACK_LIFT: float = 2.4
+# Pelo por bioma do `home`, na ordem exata do enum `WorldGen.Biome` (0 frozen,
+# 1 arid, 2 temperate, 3 wetland): o indice da tabela e o id do bioma, entao
+# trocar a ordem de um dos dois lados repinta os lobos sem erro nenhum. Tabela
+# na propria classe (e nao `.tres`) porque o consumidor e um so. A linha de
+# temperate e a cor historica do lobo: a maioria da matilha nasce nela e sai
+# visualmente igual.
+const FUR_COLORS: Array[Color] = [
+	Color(0.78, 0.80, 0.84),    # frozen
+	Color(0.62, 0.47, 0.27),    # arid
+	Color(0.40, 0.36, 0.31),    # temperate
+	Color(0.24, 0.29, 0.26),    # wetland
+]
 
 var world: VoxelWorld = null
 var aether: AetherField = null
@@ -57,6 +69,7 @@ var alive: bool = true
 var intent: String = "patrol"
 var hunger: float = 0.35
 var home := Vector3.ZERO
+var home_biome: int = WorldGen.Biome.TEMPERATE
 var kills: int = 0
 
 var _player: Player = null
@@ -117,6 +130,9 @@ func setup(p_world: VoxelWorld, p_aether: AetherField, p_player: Player,
 	_sim_clock = p_clock
 	identity = p_identity
 	home = p_spawn
+	# Uma pergunta por lobo, sem cadencia: o bioma de onde o lobo nasceu ja esta
+	# nos ruidos que geraram aquela coluna, e nao em dado novo do mundo.
+	home_biome = world.gen.biome_at(int(home.x), int(home.z))
 	body.setup(world, p_spawn, DIMS)
 	_rng.seed = ("wolf:%d:%d" % [world.gen.world_seed, identity]).hash()
 	_heading = _rng.randf() * TAU
@@ -673,6 +689,11 @@ func state_dict() -> Dictionary:
 
 func load_state(d: Dictionary) -> void:
 	home = Vector3(float(d["home"][0]), float(d["home"][1]), float(d["home"][2]))
+	# O load move o `home` sem reconstruir o visual: sem re-derivar o bioma aqui,
+	# o lobo voltaria com a cor do ponto sorteado nesta sessao e nao do seu lar.
+	home_biome = world.gen.biome_at(int(home.x), int(home.z))
+	if _fur:
+		_fur.albedo_color = FUR_COLORS[home_biome]
 	body.feet_pos = Vector3(float(d["feet"][0]), float(d["feet"][1]), float(d["feet"][2]))
 	body.velocity = Vector3.ZERO
 	hp = float(d.get("hp", MAX_HP))
@@ -711,7 +732,7 @@ func _build_visual() -> void:
 	_visual.name = "Visual"
 	add_child(_visual)
 	_fur = StandardMaterial3D.new()
-	_fur.albedo_color = Color(0.40, 0.36, 0.31)
+	_fur.albedo_color = FUR_COLORS[home_biome]
 	_fur.roughness = 0.95
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color(0.16, 0.15, 0.14)
