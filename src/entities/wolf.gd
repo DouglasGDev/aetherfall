@@ -41,6 +41,16 @@ const CORPSE_SECONDS: float = 6.0
 ## Leitura compartilhada de "estou sozinho": o lobo nunca aloca lista vazia, e sim
 ## aponta para esta, que ninguem escreve.
 const NO_PACK: Array = []
+## Contagio do medo (dossie 10 §3.6): quanto o panico de UM vizinho em `flee`,
+## dentro da coesao, soma no meu proprio `_fear_level`. E uma soma por vizinho, e
+## nao uma media: dois em panico somam o dobro (o que satura e a curva de terror
+## do escorredor, sigmoid 9,0 em torno de 0,42 na consideracao "terror no ar").
+## O valor medido do par de bracos esta em `contagio_medo_muda_intent_do_observador`:
+## com um vizinho em panico o `_fear_level` do lobo 1 sai de 0 para 0,55, `flee`
+## marca 0,37 contra o chao de fundo 0,22 do `patrol`, e a margem passa o
+## `min_lead` de 0,05 -- a margem depende da cautela sorteada da mente, nao e um
+## numero valido para qualquer lobo.
+const PACK_PANIC_FEAR: float = 0.55
 const DIMS := Vector3(0.75, 0.95, 1.35)
 # agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
 # agua (fuga, perseguicao), boia e rema como o jogador nada e procura a margem.
@@ -99,6 +109,9 @@ var _guard: BtTree.SubtreeGuard = null
 
 # percepcao: recalculada uma vez por tick de simulacao
 var _pack: Array = NO_PACK
+# Quantos vizinhos da leitura estao em `flee` neste tick. Contado em `_sense()`,
+# uma vez por tick, e lido so por `_fear_level`.
+var _pack_panic: int = 0
 var _dist_player: float = 999.0
 var _los_player: bool = false
 var _fear_here: float = 0.0
@@ -600,7 +613,15 @@ func _sense() -> void:
 	trust_toward_player = mind.trust(ACTOR_PLAYER)
 	if _scent_cd <= 0.00001:
 		_find_scent()
-	_fear_level = clampf(_fear_here * 0.85 + _threat * 0.9 + _blood_here * 0.35, 0.0, 1.5)
+	# Contagio (dossie 10 §3.6): a fuga de quem esta perto e leitura, nao corpo --
+	# o vizinho nao escreve em mim, eu somo o que a leitura devolve. Sem provedor a
+	# lista e vazia e o numero e literalmente o de antes.
+	_pack_panic = 0
+	for e: Dictionary in _pack:
+		if String(e["intent"]) == "flee":
+			_pack_panic += 1
+	_fear_level = clampf(_fear_here * 0.85 + _threat * 0.9 + _blood_here * 0.35
+			+ float(_pack_panic) * PACK_PANIC_FEAR, 0.0, 1.5)
 	# Memoria vira comportamento: quem ja apanhou deste ator evita ca-lo enquanto estiver
 	# ferido. A porta de coragem da opcao "hunt" e exatamente este numero.
 	var fears_actor: bool = mind.believes("danger_from_actor_%d" % ACTOR_PLAYER)

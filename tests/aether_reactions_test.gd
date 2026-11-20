@@ -15,8 +15,9 @@ const TESTS: Array[StringName] = [
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
+	&"_test_contagio_medo",
 ]
-const EXPECTED_CHECKS: int = 143
+const EXPECTED_CHECKS: int = 146
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -95,6 +96,15 @@ const CERCAR_SPOTS: Array = [
 const ESCALONAR_SPOTS: Array = [
 	Vector3(59.5, 51.001, 62.0), Vector3(56.5, 51.001, 62.0),
 	Vector3(58.0, 51.001, 63.5), Vector3(58.0, 51.001, 60.5),
+]
+
+# Geometria do contagio de medo: 20 m separam o observador (lobo 1) do vizinho que
+# foge (lobo 0) -- dentro do raio de coesao de 24 m, mas a cinco celulas de Eter
+# (AETHER_CELL = 4) um do outro, o que a difusao nao cruza na janela medida (3
+# passadas em 16 ticks). O jogador fica a mais de 60 m dos dois e sem visada para
+# nenhum, entao a base do observador e `patrol` e a `hunt` dele esta vetada.
+const MEDO_SPOTS: Array = [
+	Vector3(78.0, 51.001, 62.0), Vector3(58.0, 51.001, 62.0),
 ]
 
 
@@ -1752,6 +1762,83 @@ func _test_ataque_escalonado() -> bool:
 			corrida_b["no_pior_tick"], corrida_b["prontos"],
 			corrida_b["candidatos"], str(corrida_b["n_cheio"]),
 			corrida_b["fora_de_fase"], corrida_b["eventos"]])
+	_pack_release()
+	return true
+
+
+## Checagem 4a do dossie 10 (`medo_contagia`). Premissa nomeada: um vizinho DENTRO
+## do raio de coesao entra em panico pela transicao real (`take_damage`, o unico
+## escritor de `relations` e o que poe o corpo em `flee`), e o observador -- que nao
+## foi tocado, nao ve o jogador a 73 m e nao sente o campo a cinco celulas -- muda
+## de intencao por causa da LEITURA, nao do mundo. O numero que decide e duplo:
+## (i) `contagio_medo_soma_panic_no_fear_level` reproduz a composicao do
+## `_fear_level` a lapis com os coeficientes do codigo (0,85 / 0,9 / 0,35) e o
+## `0,55` por vizinho em panico escrito aqui, e exige igualdade -- se a soma saiu da
+## percepcao por outra porta, ou se o `PACK_PANIC_FEAR` mudou de valor sem o teste
+## mudar, os dois lados divergem; (ii) a subida de 0,55 tem de vir com o par
+## `_fear_here`/`_blood_here` do observador INALTERADO entre os bracos, porque e
+## exatamente isso que separa contagio de difusao. O terceiro numero e a intencao:
+## `patrol` no braco sem panico, `flee` no braco com, nos mesmos 20 m.
+func _test_contagio_medo() -> bool:
+	_arm(SPAWN, FAR_PLAYER, 1)
+	_pack_session(2)
+	for i: int in 2:
+		_pack_place(i, MEDO_SPOTS[i])
+	_advance_pack(6)
+	var ws: Array = _pack_wolves()
+	var obs: Wolf = ws[1]
+	var vitima: Wolf = ws[0]
+	var dist_obs_vitima: float = obs.center().distance_to(vitima.center())
+	var dist_obs_jogador: float = obs.center().distance_to(_player.position3())
+	_check(obs._pack.size() == 1 and vitima._pack.size() == 1 \
+			and int(obs._pack[0]["identity"]) == vitima.identity \
+			and dist_obs_vitima <= Session.PACK_COHESION_RADIUS \
+			and obs.intent == "patrol" and obs._pack_panic == 0 \
+			and absf(obs._fear_level) < 0.001,
+			"premissa: observador patrulha com um vizinho lido e medo zerado",
+			"vizinhos=%d panic=%d fear=%.6f intent=%s dist_vitima=%.3f (raio %.1f) dist_jogador=%.3f los=%s  %s" % [
+			obs._pack.size(), obs._pack_panic, obs._fear_level, obs.intent,
+			dist_obs_vitima, Session.PACK_COHESION_RADIUS, dist_obs_jogador,
+			str(obs._los_player), _pack_lists()])
+	var fear_antes: float = obs._fear_level
+	var here_antes: float = obs._fear_here
+	var blood_antes: float = obs._blood_here
+	var intent_antes: String = obs.intent
+	# A unica diferenca declarada entre os bracos: um golpe real no VIZINHO. O
+	# observador nao e tocado, nao ve o jogador e esta a cinco celulas de Eter do
+	# sangue e do medo impressos.
+	vitima.take_damage(8.0, Wolf.ACTOR_PLAYER, _player.position3())
+	_advance_pack(16)
+	var panic_lido := 0
+	for e: Dictionary in obs._pack:
+		if String(e["intent"]) == "flee":
+			panic_lido += 1
+	# Replay a lapis da composicao, com os coeficientes copiados do codigo desta
+	# revisao e o 0,55 escrito aqui: conferir o lobo contra ele mesmo nao pode falhar.
+	var esperado: float = clampf(obs._fear_here * 0.85 + obs._threat * 0.9
+			+ obs._blood_here * 0.35 + float(obs._pack_panic) * 0.55, 0.0, 1.5)
+	_check(panic_lido == 1 and vitima.intent == "flee" \
+			and obs._pack_panic == panic_lido \
+			and absf(esperado - obs._fear_level) < 0.0001 \
+			and absf(obs._fear_here - here_antes) < 0.0001 \
+			and absf(obs._blood_here - blood_antes) < 0.0001 \
+			and absf(obs._fear_level - fear_antes - 0.55) < 0.0001,
+			"contagio_medo_soma_panic_no_fear_level",
+			"fear_antes=%.6f fear_depois=%.6f delta=%.6f replay=%.6f panic=%d  campo_antes=(medo %.6f sangue %.6f) campo_depois=(medo %.6f sangue %.6f) vitima_intent=%s" % [
+			fear_antes, obs._fear_level, obs._fear_level - fear_antes, esperado,
+			obs._pack_panic, here_antes, blood_antes, obs._fear_here, obs._blood_here,
+			vitima.intent])
+	# O `intent` e o numero que o dossie pede: sem o vizinho em panico o observador
+	# estava em `patrol` com `_fear_level` 0; com ele, `flee` passa o chao de fundo
+	# de 0,22 e o escorredor troca. Os dois valores de `_fear_level` saem na linha.
+	_check(intent_antes == "patrol" and obs.intent == "flee" \
+			and fear_antes < 0.001 and obs._fear_level >= 0.55 \
+			and obs._fear_here < 0.0001,
+			"contagio_medo_muda_intent_do_observador",
+			"intent_antes=%s intent_depois=%s fear_antes=%.6f fear_depois=%.6f cautela=%.4f top=%s panic=%d medo_no_observador=%.6f" % [
+			intent_antes, obs.intent, fear_antes, obs._fear_level,
+			obs.mind.temperament("caution"), obs._top_line, obs._pack_panic,
+			obs._fear_here])
 	_pack_release()
 	return true
 
