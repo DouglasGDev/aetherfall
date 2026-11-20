@@ -671,6 +671,7 @@ func _test_cache_cap() -> bool:
 		if _wolf.mind.count_kind("scent_work") > episodes:
 			episodes += 1
 			arrivals.append(_wolf._scent_clock)
+			print("CHEGADA %d tick=%d celula=%s cache=%d" % [episodes, _clock.tick, _wolf._scent_cell, cache.size()])
 		# Colher na cadencia da percepcao: a varredura de expiracao roda dentro de
 		# _find_scent, entao uma saida so pode aparecer num tick em que o scan aconteceu.
 		if _clock.tick % 5 == 0:

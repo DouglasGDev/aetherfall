@@ -9,12 +9,12 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
   [PASS] 5 lobos na matilha                     lobos=5
   [PASS] spawn em terra firme                   y=31
   [PASS] jogador apoiado no chao                feet=(64.5, 31.0, 64.5)
-       geracao 1043.3 ms   malharia 5141.6 ms
+       geracao 928.9 ms   malharia 4552.6 ms
 
 --- relogio real ---
   [PASS] tick de simulacao avanca               tick=50 em 2.50 s de logica
   [PASS] ritmo de 20 Hz sustentado              tick=50  esperado=49
-  [PASS] nenhum tick perdido                    perdidos=0  pior passo=8.10 ms
+  [PASS] nenhum tick perdido                    perdidos=0  pior passo=7.53 ms
   [PASS] jogador segue no chao                  feet=(64.5, 31.0, 64.5)
   [PASS] ao menos um lobo se moveu na janela real 5/5 se moveram em 2.50 s de logica
   [PASS] nenhum lobo com o corpo dentro do terreno encaixados=0
@@ -22,7 +22,7 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
   [PASS] intento sempre valido                  patrol patrol patrol patrol hunt
 
 --- malha e face-culling ---
-  [PASS] geracao deterministica (16 colunas)    ms=6314.7
+  [PASS] geracao deterministica (16 colunas)    ms=5876.6
   [PASS] malha identica entre mundos            espelho=214448  sessao=214448
   [PASS] regiao do cubo estava em ar            voxel=(20,55,20)
   [PASS] face-culling exato (cubo 3x3x3)        delta=108  esperado=108  sem culling=324
@@ -274,7 +274,7 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
 --- salvar e carregar ---
   [PASS] slot escrito                           caminho=user://saves/world_alpha.json
   [PASS] sem .tmp sobrando                      
-  [PASS] leitura do slot                        5.6 ms
+  [PASS] leitura do slot                        3.9 ms
   [PASS] schema e gen_version gravados          schema=1  gen=4
   [PASS] save com corpo                         11902 bytes
   [PASS] save guarda o diario, nao os voxels    edicoes=13
@@ -304,8 +304,12 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
   [PASS] cadaver recolhido da matilha           5 -> 4 lobos
   [PASS] reposicao enfileirada                  na fila=1  vivos=4
   [PASS] sem no de malha sobrando               nos=64
-  [PASS] nenhum tick perdido no teste inteiro   perdidos=0  pior passo=12.02 ms  tick=359
+  [PASS] nenhum tick perdido no teste inteiro   perdidos=0  pior passo=9.09 ms  tick=359
   [PASS] lobos seguem vivos e decidindo         vivos=4  triangulos=214480
-       diagnostico final: {"aether_energy":9.67776005901396,"chunks":64,"dropped_ticks":0,"edits":13,"feet":"(64.5, 31.0, 64.5)","gen_ms":1043.263,"hp":0.0,"journal":{"active":false,"last_hash":"","last_tick":-1,"last_us":0,"path":"","records":0,"total_us":0,"worst_us":0},"mesh_ms":5141.638,"meshes":147,"on_ground":true,"pending_respawns":1,"tick":359,"triangles":214480,"wolves":4,"wolves_alive":4,"worst_sim_ms":12.017}
+       diagnostico final: {"aether_energy":9.67776005901396,"chunks":64,"dropped_ticks":0,"edits":13,"feet":"(64.5, 31.0, 64.5)","gen_ms":928.936,"hp":0.0,"journal":{"active":false,"last_hash":"","last_tick":-1,"last_us":0,"path":"","records":0,"total_us":0,"worst_us":0},"mesh_ms":4552.586,"meshes":147,"on_ground":true,"pending_respawns":1,"tick":359,"triangles":214480,"wolves":4,"wolves_alive":4,"worst_sim_ms":9.092}
 
-== 236 checagens  0 falhas  37.6 s de teste ==
+== 236 checagens  0 falhas  35.4 s de teste ==
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
