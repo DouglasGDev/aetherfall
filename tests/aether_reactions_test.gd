@@ -14,9 +14,9 @@ const TESTS: Array[StringName] = [
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
-	&"_test_rondar_setor",
+	&"_test_rondar_setor", &"_test_cercar_assentos",
 ]
-const EXPECTED_CHECKS: int = 135
+const EXPECTED_CHECKS: int = 140
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -71,6 +71,16 @@ const PACK_SPOTS: Array = [
 const RONDAR_SPOTS: Array = [
 	Vector3(58.0, 51.001, 62.0), Vector3(54.0, 51.001, 62.0),
 	Vector3(58.0, 51.001, 66.0), Vector3(62.0, 51.001, 58.0),
+]
+
+# Geometria do cerco: presa no centro do plateau e quatro participantes a 8 m em
+# cruz, todos dentro dos 30 m da LOS e dentro dos 24 m de coesao (o par mais
+# distante fica a 16 m). Nem um deles comeca ao alcance da mordida, senao o ramo
+# `morder` engoliria o ramo `perseguir` e o assento nunca seria escrito.
+const CERCAR_PLAYER := Vector3(58.0, 51.001, 62.0)
+const CERCAR_SPOTS: Array = [
+	Vector3(50.0, 51.001, 62.0), Vector3(66.0, 51.001, 62.0),
+	Vector3(58.0, 51.001, 54.0), Vector3(58.0, 51.001, 70.0),
 ]
 
 
@@ -1542,6 +1552,130 @@ func _territory_lines(ws: Array) -> String:
 		out += "lobo%d centro=%s home=%s " % [
 				w.identity, _horizontal(w._territory_center(4)), _horizontal(w.home)]
 	return out.strip_edges()
+
+
+## Checagem 2 do dossie 10 (`cercar_calcula_assentos`). Premissa nomeada: n
+## participantes do MESMO alvo produzem n assentos distintos, espacados por TAU/n,
+## todos a alcance de mordida sem subir em cima do corpo. O angulo esperado sai
+## calculado aqui, a partir da lista de lobos e da identidade de cada um, e nao de
+## `_hunt_pack_rank`: conferir o codigo contra ele mesmo nao pode falhar.
+func _test_cercar_assentos() -> bool:
+	_arm(SPAWN, CERCAR_PLAYER)
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, CERCAR_SPOTS[i])
+	# Quatro passos de aquecimento: no primeiro o `intent` que a leitura devolve
+	# ainda e `patrol`, e um cerco montado sobre censo zero nao e cerco nenhum.
+	_advance_pack(4)
+	_session._rebuild_packs()
+	var ws: Array = _pack_wolves()
+	var ppos: Vector3 = _player.position3()
+	var hunt_ok := true
+	var n_hunt := 0
+	var linhas := ""
+	for w: Wolf in ws:
+		var vizinhos := 0
+		for e: Dictionary in w._pack:
+			if String(e["intent"]) == "hunt":
+				vizinhos += 1
+		hunt_ok = hunt_ok and w.intent == "hunt" and w._los_player and vizinhos == 3
+		if w.intent == "hunt":
+			n_hunt += 1
+		linhas += "lobo%d intent=%s los=%s viz_hunt=%d ang=%.4f dist=%.4f " % [
+				w.identity, w.intent, w._los_player, vizinhos,
+				_seat_angle(w._move_target, ppos), _horizontal(w._move_target - ppos).length()]
+	_check(hunt_ok and n_hunt == 4, "premissa: os quatro perseguem a presa visivel",
+			"participantes=%d  %s" % [n_hunt, linhas.strip_edges()])
+	var angulos: Array[float] = []
+	var distancias: Array[float] = []
+	var assentos_ok := true
+	var anel_ok := true
+	for w: Wolf in ws:
+		var rank := _participantes_antes_de(w, ws)
+		var ang := _seat_angle(w._move_target, ppos)
+		if absf(ang - wrapf(TAU * float(rank) / 4.0, 0.0, TAU)) > 1e-4:
+			assentos_ok = false
+		var d := _horizontal(w._move_target - ppos).length()
+		if d <= 0.9 or d > Wolf.BITE_RANGE:
+			anel_ok = false
+		angulos.append(ang)
+		distancias.append(d)
+	_check(assentos_ok, "cercar_assentos_distintos_espacados_por_tau_over_n",
+			"angulos=%s n=4 espacamento=%.4f" % [angulos, TAU / 4.0])
+	_check(anel_ok, "cercar_assento_a_alcance_de_mordida_sem_subir_na_presa",
+			"distancias=%s ring=%.3f bite_range=%.3f" % [
+			distancias, Wolf.ENCIRCLE_RING, Wolf.BITE_RANGE])
+	# Contraste obrigatorio do dossie: o MESMO cenario com um lobo so nao pode
+	# devolver o mesmo numero. Se o anel fosse um angulo fixo, ou se `n` fosse o
+	# censo da matilha em vez dos participantes, as duas corridas concordariam.
+	var alvo_matilha: float = distancias[0]
+	_pack_session(1)
+	_pack_place(0, CERCAR_SPOTS[0])
+	_advance_pack(4)
+	var solo: Wolf = _pack_wolves()[0]
+	var alvo_solo: float = _horizontal(solo._move_target - _player.position3()).length()
+	_check(solo.intent == "hunt" and solo._los_player \
+			and solo._move_target == _player.position3() + Vector3(0.0, 0.4, 0.0) \
+			and absf(alvo_matilha - alvo_solo) > 0.5,
+			"cercar_contraste_um_lobo_contra_quatro_diverge",
+			"dist_solo=%.4f dist_matilha=%.4f reaction_solo=%s n_lido=%d" % [
+			alvo_solo, alvo_matilha, solo.get("_reaction"), solo._hunt_pack_size()])
+	# Terceira checagem, a que pega o "espacamento derivado de quem participa, e nao
+	# do censo": uma parede real entre o lobo 0 e a presa tira o `hunt` dele pela
+	# porta do proprio codigo (sem visada nao ha caca), sem tira-lo do raio de
+	# coesao. Se o angulo saida de `n = matilha`, os tres que enxergam continuariam
+	# em TAU/4 e o rank do lobo 3 seria 3 -- aqui ele tem de ser 2.
+	var parede: Array = [
+		Vector3(70.0, 51.001, 62.0), Vector3(50.0, 51.001, 62.0),
+		Vector3(58.0, 51.001, 54.0), Vector3(58.0, 51.001, 70.0),
+	]
+	_pack_session(4)
+	_wall(BlockDefs.Block.STONE)
+	for i: int in 4:
+		_pack_place(i, parede[i])
+	_advance_pack(6)
+	_session._rebuild_packs()
+	var ws2: Array = _pack_wolves()
+	var vitima: Wolf = ws2[0]
+	var restantes: Array = []
+	var cegas := ""
+	for w: Wolf in ws2:
+		var viz_hunt := 0
+		for e: Dictionary in w._pack:
+			if String(e["intent"]) == "hunt":
+				viz_hunt += 1
+		cegas += "lobo%d intent=%s los=%s viz_hunt=%d ang=%.4f " % [
+				w.identity, w.intent, w._los_player, viz_hunt,
+				_seat_angle(w._move_target, ppos)]
+		if w != vitima and w.intent == "hunt":
+			restantes.append(w)
+	var espac_ok := restantes.size() == 3 and not vitima._pack.is_empty()
+	for k: int in restantes.size():
+		var w: Wolf = restantes[k]
+		if absf(_seat_angle(w._move_target, ppos) - wrapf(TAU * float(k) / 3.0, 0.0, TAU)) > 1e-4:
+			espac_ok = false
+	_wall(BlockDefs.Block.AIR)
+	_check(not vitima._los_player and vitima.intent != "hunt" and espac_ok,
+			"cercar_espacamento_segue_os_participantes",
+			"sem_visada=%d restantes=%d espacamento=%.4f  %s" % [
+			0 if vitima._los_player else 1, restantes.size(), TAU / 3.0, cegas.strip_edges()])
+	return true
+
+
+## Angulo horizontal do alvo escrito pelo lobo em torno da presa, no eixo do mundo.
+func _seat_angle(target: Vector3, prey: Vector3) -> float:
+	var v := _horizontal(target - prey)
+	return wrapf(atan2(v.z, v.x), 0.0, TAU)
+
+
+## Quantos participantes de identidade menor precedem este lobo -- o rank que o teste
+## exige, calculado pela lista viva e nao pelo metodo do lobo.
+func _participantes_antes_de(w: Wolf, ws: Array) -> int:
+	var rank := 0
+	for other: Wolf in ws:
+		if other.identity < w.identity and other.intent == "hunt":
+			rank += 1
+	return rank
 
 
 func _ids_of(pack: Array) -> String:

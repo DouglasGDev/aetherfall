@@ -33,6 +33,10 @@ const SCENT_MEMORY_SECONDS: float = 30.0
 const SCENT_MEMORY_CAP: int = 32
 const SCENT_RENEWAL: float = 0.06
 const SIGHT_MEMORY_SECONDS: float = 6.0
+## Raio do anel de cerco (dossie 10 §3.4): `BITE_RANGE` menos a folga do corpo, para
+## o assento parar a alcance de mordida em vez de subir em cima da presa -- cinco
+## corpos no mesmo voxel e o mesmo mal que `_volume_clear` registra no spawn.
+const ENCIRCLE_RING: float = BITE_RANGE - 0.45
 const CORPSE_SECONDS: float = 6.0
 ## Leitura compartilhada de "estou sozinho": o lobo nunca aloca lista vazia, e sim
 ## aponta para esta, que ninguem escreve.
@@ -263,10 +267,49 @@ func _leaf_flee(_ctx: Dictionary) -> bool:
 func _leaf_chase(_ctx: Dictionary) -> bool:
 	if not _los_player:
 		return false
-	_reaction = "perseguindo presa visivel"
-	_move_target = _player.position3() + Vector3(0.0, 0.4, 0.0)
+	var n := _hunt_pack_size()
+	if n <= 1:
+		# Um participante sozinho: a perseguicao literal de antes, direto ao corpo.
+		_reaction = "perseguindo presa visivel"
+		_move_target = _player.position3() + Vector3(0.0, 0.4, 0.0)
+	else:
+		var rank := _hunt_pack_rank()
+		_reaction = "fechando cerco no assento %d de %d" % [rank, n]
+		_move_target = _seat_point(_player.position3(), rank, n)
 	_speed = SPEED_RUN if _dist_player > 6.0 else SPEED_WALK
 	return true
+
+
+## Quantos lobos estao no cerco neste tick: eu mais os vizinhos que a leitura da
+## sessao devolve em `hunt`. O espacamento angular sai daqui, entao o assento e
+## funcao de quem caa de fato, nao do censo da matilha nem de um N fixo.
+func _hunt_pack_size() -> int:
+	var n := 1
+	for e: Dictionary in _pack:
+		if String(e["intent"]) == "hunt":
+			n += 1
+	return n
+
+
+## Minha posicao na fila do cerco: quantos participantes de identidade menor estao
+## na leitura. Como a leitura e mutua e a identidade e unica, os assentos nunca
+## se repetem enquanto o conjunto de participantes for o mesmo para todos.
+func _hunt_pack_rank() -> int:
+	var rank := 0
+	for e: Dictionary in _pack:
+		if String(e["intent"]) == "hunt" and int(e["identity"]) < identity:
+			rank += 1
+	return rank
+
+
+## Assento angular em torno da presa: `TAU/n` por participante, medido no eixo do
+## mundo (a leitura da sessao e a mesma para todos, entao o angulo de cada um sai
+## do rank e nao da direcao em que cada um chegou -- duas referencias dariam dois
+## anis girados). O `y` fica no da presa para a locomocao nao ter de adivinhar.
+func _seat_point(prey: Vector3, rank: int, n: int) -> Vector3:
+	var a := TAU * float(rank) / float(n)
+	return Vector3(prey.x + cos(a) * ENCIRCLE_RING, prey.y + 0.4,
+			prey.z + sin(a) * ENCIRCLE_RING)
 
 
 func _leaf_stalk(_ctx: Dictionary) -> bool:
