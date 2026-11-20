@@ -20,8 +20,8 @@ Base da branch: `eb6ec8d` (runner `119 checagens` / 24 cenários, suíte `237`).
 
 Nenhum exit code foi gravado nestes logs — o contrato lido é a última linha (`N checagens M
 falhas T s` no runner, `== N checagens M falhas T s de teste ==` na suíte) e a contagem de
-`SCRIPT ERROR`, que é **0 nos 31 arquivos** (os 28 da escada, o par do clone §6 e o da `main`
-mergida §7).
+`SCRIPT ERROR`, que é **0 nos 32 arquivos** (os 28 da escada, o par do clone §6 e os dois da
+`main` mergida — §7 e §8).
 
 | degrau | commit | runner (cenário / checagens) | log do runner | suíte | log da suíte |
 | --- | --- | --- | --- | --- | --- |
@@ -113,12 +113,14 @@ a leitura da matilha mais o contágio custam ~45 %, ou a janela estava carregada
 - `maior_matilha_lida=1` (furo #16) e a ausência de chão pareado (§4) são os dois buracos reais
   desta perna.
 - O log de ruído de saída tem agora **quatro** famílias nesta branch: `ronda-suite.log` dá **24**
-  ObjectDB + **8** resources, `cerco-suite.log` dá **16/6**, os seis seguintes (`ataque`,
-  `confianca`, `contagio`, `amortecimento`, `pos-merge`, `clone-gate-suite`) dão **12/6** e
+  ObjectDB + **8** resources, `cerco-suite.log` dá **16/6**, os oito seguintes (`ataque`,
+  `confianca`, `contagio`, `amortecimento`, `pos-merge`, `clone-gate-suite`, `merge-0c38489-suite`,
+  `merge-252f1e7-suite`) dão **12/6** e
   `backup-suite.log` dá **8/4** — este último já registrado no status como a exceção antiga da
-  amostra. Não há par de árvores com `src` e `tests` idênticos dando números diferentes aqui (as
-  duas árvores iguais desta perna, `c42250c` e `HEAD`, dão a mesma 12/6, e o clone limpo da ponta —
-  mesmo `src`, mesmo `tests`, cache frio — dá a mesma 12/6), e nenhum log tem `--verbose`, então a
+  amostra. Não há par de árvores com `src` e `tests` idênticos dando números diferentes aqui: `c42250c`,
+  a ponta da branch, `0c38489` e `252f1e7` (duas `main` mergidas, uma delas só com `.md` e `.log` a
+  mais) dão a mesma 12/6, e o clone limpo da ponta — mesmo `src`, mesmo `tests`, cache frio — dá a
+  mesma 12/6. Nenhuma corrida tem `--verbose`, então a
   contagem fica registrada sem atribuição.
 
 ## 6. O clone limpo da ponta, com `--import` frio
@@ -147,7 +149,7 @@ tempo: 239/0/exit 0 valia para `src` + `tests` byte a byte idênticos aos de `c4
 confere isso por execução em vez de só por hash de árvore.
 
 Não confere, e continua faltando: o gate de nenhuma fase fecha com isto (mandato 4). A suíte da
-árvore mergida está na **seção 7**.
+árvore mergida está na **seção 7**, e a da `main` com a nota documental, na **seção 8**.
 
 ## 7. A `main` mergida, re-rodada
 
@@ -167,3 +169,33 @@ clone e dentro dos 35,8 a 45,1 s da escada.
 Com isto a perna 10 pousou na `main`. O que continua aberto não é número de suíte: **nenhum gate de
 fase** (mandato 4), o furo #16 (a sessão real nunca montou matilha de dois) é a primeira peça da
 perna 14, e as 8 referências deixadas no furo #17 seguem pedindo leitura humana.
+
+## 8. Publicada, e a `main` com a nota re-rodada
+
+`git push origin main` moveu `4ac5838` → `252f1e7`: a `main` com o merge `--no-ff` de
+`docs/nota-merge-alcateia-10`, a nota que põe o pin no README e realinha as citações `README.md:NNN`
+que o próprio README deslocou. A única prova de publicação que vale neste repositório é o remote, porque
+ele já teve um `origin` que apontava para si mesmo e saía com código 0 sem publicar nada:
+
+| comando | resultado |
+| --- | --- |
+| `git ls-remote --heads origin refs/heads/main` | `252f1e7aa324ba3a9824c99bffff717466e425cf refs/heads/main` |
+| `git ls-remote --heads origin refs/heads/feat/alcateia-rutinas-10` | `49a594d19985485d94d4cf8b137034182a95df39` — a branch de código fica no ar como registro |
+| `git ls-remote --heads origin refs/heads/docs/nota-merge-alcateia-10` | `7cc79ce206e2e2397b87bbe078466caf1baa7312` |
+
+A suíte re-rodada nesta árvore (`.godot/` quente) deu **239 checagens / 0 falhas / 38,4 s**, exit **0**,
+zero `SCRIPT ERROR`, ruído 12 ObjectDB + 6 resources — `merge-252f1e7-suite.log`, 32ª entrada de
+`artifacts.sha256`, `sha256sum -c` 32/32. Não há checagem de carga ao redor desta corrida registrada
+aqui, então o que decide é o contrato lido (contagem e exit code), não o tempo. O delta entre `0c38489`
+e `252f1e7` é só `.md` mais este `.log`: `git diff --stat 0c38489..252f1e7 -- src tests` vazio, os
+mesmos dois hashes de sempre. Então 38,4 s não re-pina 38,2 s — é a mesma medição confirmada numa
+terceira revisão, e o que os três números (`38,6` do clone, `38,2` de `0c38489`, `38,4` de `252f1e7`)
+decidem é a contagem e o exit code.
+
+Antes do commit desta própria nota a suíte foi re-rodada na árvore de trabalho (o delta sobre
+`252f1e7` já era só estas páginas): **239 / 0 / 38,8 s**, exit 0, zero `SCRIPT ERROR`, 12/6. Esse
+38,8 s é verificação de verde, não pin: a revisão pinada continua `252f1e7`, e o que anda na esteira
+é a mesma suíte sobre os mesmos bytes de `src` e `tests`.
+
+Nada disso fecha gate de fase (mandato 4). O que a perna 10 entrega é isto: código na `main` publicada,
+com a contagem conferida em quatro revisões e as citações re-derivadas com prova de conteúdo.
