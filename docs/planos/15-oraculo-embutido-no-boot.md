@@ -334,7 +334,7 @@ godot --headless --path . tests/smoke_test.tscn                  # a suíte, que
 ```
 
 Cada checagem nomeia a premissa que exige e imprime o número que a decide — regra da casa
-([`AGENTS.md:361-364`](../../AGENTS.md#L361-L364)):
+([`AGENTS.md:372-375`](../../AGENTS.md#L372-L375)):
 
 1. **`host_devolve_health_200`** — *premissa:* `OS.create_process` com o binário pinado levanta um
    servidor que responde **200** no `/health` nesta máquina. Imprime `ms_ate_200`, contagem de
@@ -384,7 +384,7 @@ na suíte, o número vira invariante no mesmo commit, anunciado antes de escreve
 
 Nenhum dos dois existe hoje nesta árvore, e este dossiê não publica estimativa nenhuma. Quem
 implementar mede, com máquina livre — medição de tempo é serial
-([`AGENTS.md:388-390`](../../AGENTS.md#L388-L390)).
+([`AGENTS.md:399-401`](../../AGENTS.md#L399-L401)).
 
 1. **Tempo até `/health` devolver 200 com `-ngl 99`** na RX 9060 XT: o intervalo entre
    `OS.create_process` voltar com o pid e o primeiro `200`, com a contagem de `503` no meio (a
@@ -454,7 +454,7 @@ A fila serializada passa a **09 → 10 → 15 → 14 → 11 → 12 → 13**: a 1
 matilha (é o caminho do boot, e não encosta em `wolf.gd`), enquanto a 14 depende da ronda por
 setor que a perna 10 está escrevendo agora. Escrito **antes** de qualquer linha de `src/`, porque
 é a regra do contrato — [`AGENTS.md:70-74`](../../AGENTS.md#L70-L74) e a cláusula de um escritor
-por arquivo ([`AGENTS.md:414-416`](../../AGENTS.md#L414-L416)); o custo de não ordenar está
+por arquivo ([`AGENTS.md:425-427`](../../AGENTS.md#L425-L427)); o custo de não ordenar está
 medido no incidente do dossiê 03. A fila vive em dois lugares do contrato — o parágrafo de exceção
 em [`AGENTS.md:288-291`](../../AGENTS.md#L288-L291) e a ordem nova em
 [`AGENTS.md:338-340`](../../AGENTS.md#L338-L340) — e a edição dos dois, com o registro no índice
