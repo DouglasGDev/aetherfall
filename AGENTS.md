@@ -288,8 +288,64 @@ dois `world.set_block` de gameplay são os do jogador (`:667`, `:693`).
 A exceção de ordem registrada **antes** do código: as quatro linhas mexem todas em
 `src/entities/wolf.gd` e em `src/main.gd`, que são de escritor único. Elas rodam **serializadas**
 — uma branch fecha (merge + gate na `main` mergeda + publicação) antes da seguinte abrir — e a
-ordem é 09 → 10 → 11 → 12, porque cor depende de bioma, cercar depende de quem mais existe na
-matilha, acasalamento depende de dois adultos próximos, e cavar é folha da árvore já montada.
+ordem é 09 → 10 → 14 → 11 → 12 → 13 (a ordem completa, com o motivo de cada elo, está na
+extensão abaixo), porque cor depende de bioma, cercar depende de quem mais existe na matilha,
+convivência depende das folhas que a matilha reorganiza, acasalamento depende de dois adultos
+próximos, cavar é folha da árvore já montada, e genealogia depende de existir nascimento.
+
+**Extensão de 2026-11-20 (2), autorizada pelo dono na própria conversa — duas linhas novas, cada
+uma com um agente responsável.** Elas entram no "dentro"; a posição de cada uma na fila serializada
+é a que está no fim desta seção, e não é preferência.
+
+1. **Convivência da alcateia** (dossiê
+   [`docs/planos/14-convivio-da-alcateia.md`](docs/planos/14-convivio-da-alcateia.md), branch
+   `feat/alcateia-convivio-14`, dono o agente `convivio-14`). O pedido do dono, em quatro regras:
+   rondar pelos **blocos de terra**, com a **água como último recurso** para nadar; **regras para a
+   matilha não parecer desorganizada**; **nenhum aviso na tela** sobre presença de criatura — "o
+   player tem que achar, ver"; e **nunca spawnar na frente do jogador**, sempre a distância segura.
+   O estado lido antes de prometer qualquer coisa: `src/main.gd:163` ("uma nova matilha entrou no
+   vale") e `src/main.gd:335` ("o lobo caiu o sangue fica no eter") são os **únicos** avisos de
+   criatura; os demais `hud.show_message` (`:107`, `:194`, `:302-303` recebendo `player.notice`
+   de `src/entities/player.gd:309`/`:664`/`:682`, `:376`/`:378`/`:384`/`:388`/`:424` e
+   `src/ui/hud.gd:597`/`:599`) são feedback de ação do próprio jogador ou diagnóstico de save, e
+   **ficam**. Na água, já existe teste de solo seco em `_leaf_wander`
+   (`src/entities/wolf.gd:324-342`, via `_dry_ground` `:345-350`) e resgate por tempo de nado
+   (`SHORE_AFTER` `:44`, aplicado em `sim_step` `:447-455` com `_shore_point` `:353`); as outras
+   **quatro** folhas escolhem alvo sem nenhum teste de solo (`_leaf_flee` `:231`, `_leaf_chase`
+   `:254`, `_leaf_stalk` `:263`, `_leaf_investigate` `:276`). No spawn, `_random_ground_point`
+   (`src/main.gd:218-232`) sorteia o anel de 16–46 m **em torno de `spawn_point()`** — que é o
+   centro fixo do mundo (`:128-131`), não onde o jogador está — exige coluna seca
+   (`y > VoxelConfig.SEA_LEVEL`) e volume livre (`_volume_clear` `:240-242`), cai em silêncio no
+   centro depois de 24 tentativas, e **nenhum caminho de spawn consulta a posição atual do jogador
+   nem `world.line_of_sight`** (`src/world/voxel_world.gd:393`).
+2. **Árvore genealógica de todo ser vivo, com o Éter trabalhando isso** (dossiê
+   [`docs/planos/13-arvore-genealogica-e-ether.md`](docs/planos/13-arvore-genealogica-e-ether.md),
+   branch `feat/arvore-genealogica-13`, dono o agente `genealogia-13`). Recorte lido antes de
+   prometer nível: `src/entities/` tem `player`, `player_avatar`, `fp_viewmodel`, `voxel_body` e
+   `wolf` — **nenhum NPC** e **uma única espécie animal**. Então entra o primitivo (ascendência por
+   entidade viva: identidade, pais, geração) e a **escada de complexidade** — animal simples ×
+   humano/NPC mais complexo — fica documentada como `[TARGET]`, sem estrutura nova antes do segundo
+   comprador (regra da casa: generalize no segundo chamador, não no primeiro). Hoje a personalidade
+   é sorteada da semente do próprio lobo (`Mind._init` `src/ai/mind.gd:24-32`, chamado em
+   `src/entities/wolf.gd:139` com `1000 + identity`) e **nenhum pai contribui com nada**; o pelo vem
+   do bioma do lar (`FUR_COLORS` `src/entities/wolf.gd:55-60`, `home_biome` `:135`), não de
+   herança. Guard-rail registrado **antes** do código: canal novo ou proveniência por célula no
+   `AetherField` não é detalhe de implementação — `Channel.COUNT` (`src/world/aether_field.gd:9`) e
+   `FORMAT_VERSION` (`src/persistence/tick_journal.gd:4`) entram no hash do journal
+   (`src/persistence/tick_journal.gd:16-44`), então mexer aí muda os hashes registrados das rodadas
+   publicadas e é decisão de versão explícita, escrita no status.
+
+A ordem serializada **nova**, com o motivo de dependência de cada elo (registrada antes do código,
+porque as duas linhas também escrevem em `src/entities/wolf.gd` e `src/main.gd`): **09 → 10 → 14 →
+11 → 12 → 13**. 14 vem logo depois de 10 porque mexe nas mesmas folhas de movimento e nos mesmos
+ajudantes de spawn que a alcateia acaba de reorganizar, e porque o predicado "ponto longe dos olhos
+do jogador" tem de existir **antes** de 11 precisar dele para colocar o filhote no mundo; 11 vem
+depois de 14 porque acasalar exige dois adultos próximos e agora exige também onde pôr o recém-nato;
+12 fecha a sequência das quatro originais porque `dig` é folha da árvore já montada e o teto de
+censo decide quantos lobos cavam; 13 é a última porque árvore genealógica só tem o que escrever
+quando existe nascimento por causa interna (11), lê parentesco pela lista de vizinhos que a matilha
+abriu (10), e — se o Éter ganhar canal ou proveniência nova — reimportar e re-mediar as cinco
+pernas anteriores é mais barato do que deixar a mudança de `Channel.COUNT` no meio da fila.
 
 ## Ciclo de trabalho
 
