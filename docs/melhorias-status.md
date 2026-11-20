@@ -2700,3 +2700,25 @@ da `main` mergida recebe nota própria abaixo desta, como fez a perna 10: ela s�
   devendo a perna que as relê.
 - O HOT agregado dos cinco lobos e `MindsInspector` seguem sem peça e sem medição; esta rodada é
   contagem de documento, não coluna de desempenho.
+
+### A corrida da `main` mergida (2026-11-20, ponta `2bf0854`)
+
+O merge desta ponta em `main` — base `b779cee`, merge commit `2bf0854` — rodou a suíte headless com a
+máquina livre, com nenhum outro processo do motor aberto e **nenhuma janela de jogo**: **239 checagens /
+0 falhas / 39,7 s**, exit 0, `SCRIPT ERROR` **0** nas duas correntes (o arquivo de stderr publicado tem
+**0 bytes**, e é esse o número). O log está em `docs/evidence/oracle-embutido-docs/merge-2bf0854-suite.log`
+e o hash dos dois arquivos no `artifacts.sha256` ao lado; `.tools/` segue fora do repositório, então a
+cópia publicada é o que existe para quem chega por clone limpo.
+
+As duas árvores conferem com a nota acima, byte a byte: `src` = `c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a`,
+`tests` = `03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`. O número desta corrida é o mesmo número, medido de
+novo — não herdado. E o diagnóstico final do run fecha com `wolves` = 4 e `pending_respawns` = 1 depois de
+a checagem do censo ter passado com `lobos` = 5 no ponto dela: é o estado conhecido desta suíte, não um
+censo que este merge recusou, e nenhuma linha de código mudou entre as duas medições.
+
+Na mesma ponta mergida as três réguas foram passadas de novo no checkout real, com `.tools/` presente:
+corpus **1 417 / 31 / 0**, trio **415**, âncoras **907 · 99 · 7** — os três números que a nota da rodada
+publica, conferidos depois do merge, não antes. A mesma régua numa worktree sem `.tools/` devolve
+**1 407 / 61 / 0**: dez citações a menos deixam de ser contadas e trinta arquivos entram na lista de
+ausentes, e todos são logs de run. É o furo #14 com outro dígito — contagem que depende de `.tools/`
+não é reproduzível por clone.
