@@ -531,6 +531,18 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     repetir, é ruído de engine que precisava estar escrito em algum lugar.
     Detalhe e números na rodada do passo.
 
+13. **Rótulo de citação e âncora da URL envelhecem separados, e nada no repositório confere os
+    dois.** A conferência por máquina da rodada de rastros achou **5 ocorrências** em que o
+    `:NN-MM` escrito no texto é diferente do `#LNN-MM` da URL — das **79** citações com âncora do
+    repositório, todas neste arquivo, três rótulos distintos (dois escritos duas vezes). Em duas o
+    caso é banal: a âncora foi re-derivada quando `wolf.gd` cresceu e o rótulo ficou 1 ou 25 linhas
+    para trás. A terceira é a pior porque **nenhuma** das duas janelas cobre o que a frase afirma —
+    `:301-304` com âncora `#L302-305` diz "as chamadas de `_rng` na patrulha", e as três chamadas
+    estão em `303`, `305` e `306`. É o furo #3 com o motivo invertido: lá o número do texto era
+    inventado, aqui ele foi verdadeiro e a linha mudou depois. Nada em `tests/` derruba vermelho
+    por isso (grep: `docs/` aparece em `tests/` só em comentário), então a única defesa é o script
+    que compara os dois, e ele não estava sendo rodado. Detalhe na seção de re-derivação da rodada.
+
 ## Contrato dos rastros e reações
 
 - O estado novo pertence a `Wolf`; os três canais e a difusão de `AetherField` não foram
