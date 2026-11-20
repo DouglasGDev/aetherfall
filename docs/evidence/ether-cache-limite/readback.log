@@ -1,0 +1,50 @@
+sources=79 manifest_sha256=41a2362287114f2089bc69d98e1acc13dd1c95e58965a344ab22fc97f7cf3c82
+clone_base_sha=297685b13c3219dd23c89a58d37d78b4bae5e306 (clone do origin da publicacao, https://github.com/DouglasGDev/aetherfall.git; sem .godot/ nem .tools/ antes do --import; sem override.cfg: so a receita do README)
+worktree_vs_clone=sources.sha256 recalculado na arvore de trabalho em 297685b: 79/79 linhas identicas ao manifesto do clone, diff vazio
+engine nos tres logs do clone=Godot Engine v4.7.2.stable.official.ed1daf0bf
+
+binario=.tools/Godot_v4.7.2-stable_win64_console.exe --headless --path .
+comandos=--import (clone-import.log); tests/smoke_test.tscn (clone-suite.log, worktree-branch-suite.log, worktree-main-suite.log); --script tests/aether_reactions_test.gd (clone-reactions.log, worktree-branch-reactions.log, worktree-branch-tip-reactions.log, worktree-main-reactions.log)
+
+clone-suite final_line="236 checagens  0 falhas  34.3 s de teste"
+worktree-branch-suite final_line="236 checagens  0 falhas  35.4 s de teste"  (ponta da branch test/cache-rastro-evicao-03, 891d3a4)
+worktree-main-suite final_line="236 checagens  0 falhas  34.7 s de teste"  (main depois do merge --no-ff 297685b)
+clone-reactions final_line="94 checagens 0 falhas 2.056 s"
+worktree-branch-reactions final_line="94 checagens 0 falhas 2.293 s"  (no commit do instrumento, 60c173b: sem as linhas CHEGADA)
+worktree-branch-tip-reactions final_line="94 checagens 0 falhas 2.034 s"
+worktree-main-reactions final_line="94 checagens 0 falhas 2.023 s"
+censo_reactions="18/18 testes completos e 94/94 checagens nos quatro logs"
+
+cache_medido (linhas 95-99 dos dois logs de runner acima, identicas byte a byte entre clone e arvore de trabalho):
+  "premissa: seis inspecoes reais e uma janela inteira de saidas colhida  episodios=6 chegadas=6 saidas=36 vistas=36 idade=64.750"
+  "cache nunca passa do teto de 32 celulas                                pico=27 teto=32 vistas=36"
+  "nenhuma saida do cache antes do relogio de 30s                        saida_mais_jovem=30.250 mais_velha=30.250 ttl=30.0"
+  "evicao nao roda: a janela de 30s nao comporta o quarto bloco 3x3      intervalo=12.540 janela=30.000 blocos=3 preencheria=27 salto=12.0 metros_por_salto=24.8 progressao=0.957 m/s=1.914"
+  "pico confere com o modelo de blocos vivos dentro da janela            pico=27 previsto=27 blocos=3 intervalo=12.540"
+chegada_celulas=clone e arvore dao as mesmas seis: (11,12,13) tick=40, (14,12,13) tick=255, (17,12,13) tick=495, (17,12,16) tick=685, (11,12,13) tick=1088, (14,12,13) tick=1294 -- quatro celulas distintas em seis inspecoes, cache=9/18/27/27/27/18
+
+massa_conservada (linhas 66-74 do clone-suite.log desta rodada, diff vazio contra as mesmas linhas do clone da rodada anterior em 9f3622b):
+  "meia-vida reduziu a energia                 2.500 -> 2.296"
+  "nenhuma passada cria massa                  pior ganho=0.00000000 acima do decaimento em 8 passadas x 3 canais"
+  "saldo fecha com o corte de MIN_VALUE        pior erro=0.00000046 corte=0.176129"
+  "teto nao injeta o excedente no campo        canal 2.296008 -> 5.170020 por imprint de 900.0 (teto 4.0)"
+aether_energy_final=9.67776005901396 nos tres logs de suite (clone, ponta da branch, main mergida) -- o mesmo valor, nao tres valores proximos
+dropped_ticks=0 nos tres; tick=359, edits=13, meshes=147, triangulos=214480, lobos_vivos=4 nos tres
+
+worst_sim_ms=clone 9,219  ponta da branch 9,092  main mergida 9,289 -- mesma estatistica, spread de 0,2 ms entre corridas da mesma arvore
+gen_ms=clone 923,733  ponta da branch 928,936  main 935,136
+mesh_ms=clone 4238,861  ponta da branch 4552,586  main 4419,945
+
+reactions_custo_clone="passos=3234 sim_step total=371383 us pico=366 us; BT last_us soma=16327 pico=35 trips=0"
+reactions_custo_main="passos=3234 sim_step total=368969 us pico=387 us; BT last_us soma=16446 pico=36 trips=0"
+reactions_custo_branch_instrumento="passos=3234 sim_step total=437350 us pico=812 us; BT last_us soma=20825 pico=271 trips=0"
+reactions_custo_branch_ponta="passos=3234 sim_step total=376723 us pico=431 us; BT last_us soma=16827 pico=55 trips=0"
+reactions_custo_note=colheita estreita, nao gate P1: um lobo por scenario, trips=0 nos quatro logs. Os 437350 us do commit do instrumento sao amostra da mesma arvore de cenarios (passos identicos, 3234) e nao comparavel com os 368969/371383 das outras tres -- e o ponto da nota de ruideo desta rodada.
+
+clone-import.log lines=299 script_error_lines=0 ERROR_lines=0 WARNING_lines=0
+clone-suite.log lines=315 script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+clone-reactions.log lines=104 script_error_lines=0 ERROR_lines=0 WARNING_lines=0
+worktree-branch-suite.log lines=315 script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+worktree-main-suite.log lines=315 script_error_lines=0 FAIL_lines=0 exit_error_lines=1 leaked_or_inuse_lines=2
+worktree-branch-reactions.log / worktree-branch-tip-reactions.log / worktree-main-reactions.log lines=98/104/104 script_error_lines=0 ERROR_lines=0 WARNING_lines=0
+ruido_de_saida_note=a dupla "ObjectDB instances leaked" + "resources still in use at exit" e o ruido de quit ja debitado na rodada do audio; nao e SCRIPT ERROR e nao derruba checagem alguma (as tres suites dao 236/0 e os quatro runners dao 94/0)

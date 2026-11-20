@@ -1,0 +1,11 @@
+clone: C:/Users/dougl/AppData/Local/Temp/aetherfall-clean-297685b
+remote.origin.url=https://github.com/DouglasGDev/aetherfall.git
+rev-parse --abbrev-ref HEAD=main
+rev-parse HEAD=297685b13c3219dd23c89a58d37d78b4bae5e306
+reflog=297685b HEAD@{0}: clone: from https://github.com/DouglasGDev/aetherfall.git
+procedencia=estas linhas foram lidas do clone depois da corrida (git remote / rev-parse / reflog), nao o stdout original do `git clone`
+antes do `--import` o clone nao tinha .godot/ nem .tools/; os dois executaveis de .tools/ foram copiados da arvore de trabalho, porque o `Godot_v4.7.2-stable_win64_console.exe` e um lancador que recusa rodar sem o `Godot_v4.7.2-stable_win64.exe` ao lado (medido: primeira tentativa deu exit 127 e uma linha "Main executable ... not found")
+engine=Godot Engine v4.7.2.stable.official.ed1daf0bf (primeira linha dos tres logs)
+nao-rastreados no clone ao fim=clone-import.log, clone-suite.log, clone-reactions.log, sources.sha256, tests/audio_live_probe.gd.uid, tests/audio_test.gd.uid
+arvore_de_trabalho_vs_clone=sources.sha256 conferido par a par na arvore de trabalho em 297685b: 79/79 linhas identicas ao manifesto do clone, diff vazio
+manifesto=git ls-tree -r --name-only HEAD -- src tests project.godot icon.svg assets/audio/levels.json, ordenado, 79 arquivos, sha256sum -b
