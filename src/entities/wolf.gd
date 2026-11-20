@@ -534,7 +534,7 @@ func _physics_process(delta: float) -> void:
 		body.velocity.x = 0.0
 		body.velocity.z = 0.0
 	body.move_and_collide(delta)
-	if body.blocked_this_frame and _unstick <= 0.0:
+	if body.blocked_horizontal and _unstick <= 0.0:
 		_unstick = _rng.randf_range(0.35, 0.8)
 		_detour = (1.0 if _rng.randf() < 0.5 else -1.0) * _rng.randf_range(0.7, 1.3)
 		if body.on_ground:
