@@ -20,8 +20,8 @@ Base da branch: `eb6ec8d` (runner `119 checagens` / 24 cenários, suíte `237`).
 
 Nenhum exit code foi gravado nestes logs — o contrato lido é a última linha (`N checagens M
 falhas T s` no runner, `== N checagens M falhas T s de teste ==` na suíte) e a contagem de
-`SCRIPT ERROR`, que é **0 nos 32 arquivos** (os 28 da escada, o par do clone §6 e os dois da
-`main` mergida — §7 e §8).
+`SCRIPT ERROR`, que é **0 nos 33 arquivos** (os 28 da escada, o par do clone §6 e os três da `main`
+mergida — um em §7, dois em §8).
 
 | degrau | commit | runner (cenário / checagens) | log do runner | suíte | log da suíte |
 | --- | --- | --- | --- | --- | --- |
@@ -113,15 +113,14 @@ a leitura da matilha mais o contágio custam ~45 %, ou a janela estava carregada
 - `maior_matilha_lida=1` (furo #16) e a ausência de chão pareado (§4) são os dois buracos reais
   desta perna.
 - O log de ruído de saída tem agora **quatro** famílias nesta branch: `ronda-suite.log` dá **24**
-  ObjectDB + **8** resources, `cerco-suite.log` dá **16/6**, os oito seguintes (`ataque`,
-  `confianca`, `contagio`, `amortecimento`, `pos-merge`, `clone-gate-suite`, `merge-0c38489-suite`,
-  `merge-252f1e7-suite`) dão **12/6** e
-  `backup-suite.log` dá **8/4** — este último já registrado no status como a exceção antiga da
-  amostra. Não há par de árvores com `src` e `tests` idênticos dando números diferentes aqui: `c42250c`,
-  a ponta da branch, `0c38489` e `252f1e7` (duas `main` mergidas, uma delas só com `.md` e `.log` a
-  mais) dão a mesma 12/6, e o clone limpo da ponta — mesmo `src`, mesmo `tests`, cache frio — dá a
-  mesma 12/6. Nenhuma corrida tem `--verbose`, então a
-  contagem fica registrada sem atribuição.
+  ObjectDB + **8** resources, `cerco-suite.log` dá **16/6**, os nove seguintes (`ataque`, `confianca`,
+  `contagio`, `amortecimento`, `pos-merge`, `clone-gate-suite`, `merge-0c38489-suite`,
+  `merge-252f1e7-suite`, `merge-99fa0f3-suite`) dão **12/6** e `backup-suite.log` dá **8/4** — este
+  último já registrado no status como a exceção antiga da amostra. Não há par de árvores com `src` e
+  `tests` idênticos dando números diferentes aqui: `c42250c`, a ponta da branch, `0c38489`, `252f1e7`
+  e `99fa0f3` (três `main` mergidas, duas delas só com `.md` e `.log` a mais) dão a mesma 12/6, e o
+  clone limpo da ponta — mesmo `src`, mesmo `tests`, cache frio — dá a mesma 12/6. Nenhuma corrida tem
+  `--verbose`, então a contagem fica registrada sem atribuição.
 
 ## 6. O clone limpo da ponta, com `--import` frio
 
@@ -197,5 +196,24 @@ Antes do commit desta própria nota a suíte foi re-rodada na árvore de trabalh
 38,8 s é verificação de verde, não pin: a revisão pinada continua `252f1e7`, e o que anda na esteira
 é a mesma suíte sobre os mesmos bytes de `src` e `tests`.
 
+O registro desta seção entrou na `main` por `docs/fecho-publicacao-10` → `8cb10e7`, merge `--no-ff`
+`99fa0f3`, e `git push origin main` moveu `252f1e7` → `99fa0f3`. O remote confere:
+
+| comando | resultado |
+| --- | --- |
+| `git ls-remote --heads origin refs/heads/main` | `99fa0f34b91dbf908cadfb8c5fe1a683de721ead refs/heads/main` |
+| `git ls-remote --heads origin refs/heads/docs/fecho-publicacao-10` | `8cb10e7110b8071a6e9c03c41f8feb7bccf2dcde` — a branch do registro fica no ar |
+
+Na árvore mergida a suíte deu **239 / 0 / 39,0 s**, exit 0, zero `SCRIPT ERROR`, 12 ObjectDB + 6
+resources — `merge-99fa0f3-suite.log`, 33ª entrada de `artifacts.sha256`. O delta `252f1e7..99fa0f3`
+é só `.md`, o `artifacts.sha256` e um `.log`: `git diff --stat 252f1e7..99fa0f3 -- src tests` vazio e
+os dois hashes de árvore iguais byte a byte (`src` `c36ab6cd…`, `tests` `03f8da29…`), então o pin do
+README **não** se move para `99fa0f3`: ele nomeia a revisão onde o número que o README publica foi
+medido, e os degraus documentais depois dele são prosa sobre os mesmos bytes de código. A ponta desta
+nota — o parágrafo acima, `.md` e `.log` sobre `99fa0f3` — re-rodou **239 / 0 / 39,1 s**, exit 0,
+zero `SCRIPT ERROR`, 12/6: verificação de verde, não pin.
+
 Nada disso fecha gate de fase (mandato 4). O que a perna 10 entrega é isto: código na `main` publicada,
-com a contagem conferida em quatro revisões e as citações re-derivadas com prova de conteúdo.
+com a mesma contagem conferida em cinco revisões (`188490b` no clone frio, `c42250c` na árvore de
+trabalho, `0c38489`, `252f1e7` e `99fa0f3` nas `main` mergidas) e as citações re-derivadas com prova de
+conteúdo.
