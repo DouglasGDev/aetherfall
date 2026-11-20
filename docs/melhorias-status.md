@@ -288,6 +288,18 @@ continuam vinculados ao manifesto histórico; a validação do recorte de RNG te
 nas notas abaixo. O resto do item 2 — estado inicial completo, comandos, restauração de RNG no
 load e ordem autoritativa — não foi iniciado.
 
+**Exceção de ordem autorizada em 2026-11-20 (2), registrada antes de qualquer linha de código:** o
+dono pediu duas linhas novas — convivência da alcateia (item 12, dossiê 14) e árvore genealógica de
+todo ser vivo com o Éter trabalhando isso (item 13, dossiê 13) — e cada uma com um agente
+responsável. As duas escrevem nos mesmos `src/entities/wolf.gd` e `src/main.gd` de escritor único,
+então a fila serializada passa a **09 → 10 → 14 → 11 → 12 → 13**: o 14 vai logo depois do 10 porque
+mexe nas folhas de movimento e nos ajudantes de spawn que a alcateia reorganiza, e porque o
+predicado "ponto longe dos olhos do jogador" tem de existir antes de o 11 precisar dele para pôr o
+filhote no mundo; o 13 fecha a fila porque ascendência só tem o que gravar depois de existir
+nascimento por causa interna. Nada aqui é trabalho em andamento: as duas pernas estão **abertas
+como dossiê**, nenhum código delas foi escrito, nenhum gate delas foi fechado, e a perna 09
+continua a única das seis já concluída.
+
 ## Falta
 
 Por dependência, não por preferência (cada item aberto tem um dossiê de leitura em [`docs/planos/`](planos/README.md): premissa nomeada, estado do código com `arquivo:linha`, gate headless e custo pelas quatro perguntas — nenhum dossiê rodou a engine e nenhum fecha gate):
@@ -353,7 +365,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     ([main.gd:9](../src/main.gd#L9) `WOLF_COUNT := 5`) e a fila de respawns só repõe
     ([main.gd:162](../src/main.gd#L162) `_spawn_wolves(1)`). Não existe idade, filhote nem corpo
     menor: `DIMS` é constante ([wolf.gd:37](../src/entities/wolf.gd#L37)). O load pareia por índice
-    com teto — [`for i in mini(saved.size(), wolves.size())`](../src/main.gd#L410) — então um censo
+    com teto — [`for i in mini(saved.size(), wolves.size())`](../src/main.gd#L419) — então um censo
     que cresce hoje **descartaria filhote em silêncio**, e
     [tests/tick_journal_test.gd:78](../tests/tick_journal_test.gd#L78) exige
     `wolves.size() == Main.WOLF_COUNT`: as duas peças são re-derivadas junto, não depois.
@@ -361,11 +373,61 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     segurar `break_block` soma progresso por frame até a dureza
     ([player.gd:636-647](../src/entities/player.gd#L636-L647)), o drop do registro entra direto no
     inventário ([player.gd:659-672](../src/entities/player.gd#L659-L672)), e a suíte confere as três
-    promessas ([tests/smoke_test.gd:780-790](../tests/smoke_test.gd#L780-L790) — "segurar break
+    promessas ([tests/smoke_test.gd:862-870](../tests/smoke_test.gd#L862-L870) — "segurar break
     minerou", "tempo de mineracao == dureza", "lavra entrou no inventario como drop"). O buraco real
     é do outro lado: os únicos dois `world.set_block` de gameplay no `src/` são os do jogador
     (`:667`, `:693`) e o `_on_acted` que imprime WORK é sinal do jogador
-    ([main.gd:268-273](../src/main.gd#L268-L273)). Nenhum animal escreve no mundo.
+    ([main.gd:277-282](../src/main.gd#L277-L282)). Nenhum animal escreve no mundo.
+12. **Convivência da alcateia: ronda em terra, nenhum aviso de criatura na tela, spawn fora dos
+    olhos do jogador** (dossiê 14; **executa entre o item 9 e o item 10** pela ordem serializada
+    registrada em [`AGENTS.md`](../AGENTS.md), e a numeração fica no fim para não renumerar a fila).
+    Três buracos lidos, cada um com o número que o define. (a) Aviso de criatura **existe**:
+    [`hud.show_message("uma nova matilha entrou no vale")`](../src/main.gd#L163) e
+    [`hud.show_message("o lobo caiu  o sangue fica no eter")`](../src/main.gd#L335) são os únicos
+    dois textos que noticiam *quem está no mundo* — os outros dez sítios de `show_message`
+    (`:107`, `:194`, `:303` repassando `player.notice` de
+    [player.gd:309](../src/entities/player.gd#L309)/`:664`/`:682`, `:376`, `:378`, `:384`, `:388`,
+    `:424` e [hud.gd:597](../src/ui/hud.gd#L597)/`:599`) são feedback de ação do próprio jogador ou
+    diagnóstico de save, e ficam. (b) O spawn **não sabe onde o jogador está**:
+    `_random_ground_point(16.0, 46.0)` ([main.gd:218-232](../src/main.gd#L218-L232)) sorteia o anel
+    em torno de `spawn_point()` ([:128-131](../src/main.gd#L128-L131)), o centro fixo do mundo, e não
+    o ponto onde o jogador acordou nem para onde ele caminhou; exige coluna seca
+    (`y > VoxelConfig.SEA_LEVEL`) e volume livre (`_volume_clear`
+    [:240-242](../src/main.gd#L240-L242)), **não** consulta posição atual nem
+    `world.line_of_sight` ([voxel_world.gd:393](../src/world/voxel_world.gd#L393)), e depois de 24
+    tentativas cai em silêncio no centro. A distância de 16 m é, hoje, acidental no boot — o
+    jogador nasce no centro — e inexistente depois que ele anda. (c) A água é evitada por **uma
+    folha de cinco**: `_leaf_wander` ([wolf.gd:324-342](../src/entities/wolf.gd#L324-L342)) rejeita
+    ponto molhado via `_dry_ground` ([:345-350](../src/entities/wolf.gd#L345-L350)) e `SHORE_AFTER`
+    de 2,0 s ([:44](../src/entities/wolf.gd#L44), aplicado em `sim_step`
+    [:447-455](../src/entities/wolf.gd#L447-L455) com `_shore_point`
+    [:353](../src/entities/wolf.gd#L353)) resgata quem ficou nadando, mas `_leaf_flee`
+    ([:231](../src/entities/wolf.gd#L231)), `_leaf_chase` ([:254](../src/entities/wolf.gd#L254)),
+    `_leaf_stalk` ([:263](../src/entities/wolf.gd#L263)) e `_leaf_investigate`
+    ([:276](../src/entities/wolf.gd#L276)) escolhem alvo sem nenhum teste de solo — correr atrás do
+    jogador através do lago e farejar no leito são alcançáveis hoje. O "não parecer desorganizado"
+    **não** é comportamento novo: assento angular e mordida escalonada são do dossiê 10, e esta
+    perna não reabre o que ele fecha.
+13. **Árvore genealógica de todo ser vivo, com o Éter trabalhando isso** (dossiê 13; **executa por
+    último**, depois do item 12). O recorte lido antes de prometer nível: `src/entities/` são
+    [`player.gd`](../src/entities/player.gd),
+    [`player_avatar.gd`](../src/entities/player_avatar.gd),
+    [`fp_viewmodel.gd`](../src/entities/fp_viewmodel.gd),
+    [`voxel_body.gd`](../src/entities/voxel_body.gd) e
+    [`wolf.gd`](../src/entities/wolf.gd) — **nenhum NPC** e **uma única
+    espécie animal**, então a escada animal→humano fica `[TARGET]` até existir o segundo comprador.
+    O que falta é o primitivo: a personalidade de cada lobo é sorteada da semente **dele mesmo**
+    (`Mind._init` [mind.gd:24-32](../src/ai/mind.gd#L24-L32), chamado com `1000 + identity` em
+    [wolf.gd:139](../src/entities/wolf.gd#L139)) e nenhum pai contribui com um valor; o pelo vem do
+    bioma do lar ([wolf.gd:55-60](../src/entities/wolf.gd#L55-L60), `home_biome`
+    [:135](../src/entities/wolf.gd#L135), re-derivado no load [:705](../src/entities/wolf.gd#L705)),
+    não de herança; `state_dict` ([:693-698](../src/entities/wolf.gd#L693-L698)) não tem chave de
+    ascendência e nada em `src/` guarda quem é filho de quem. O guard-rail do Éter vai registrado
+    junto do dossiê, não descoberto depois: canal novo no campo (`Channel.COUNT` em
+    [aether_field.gd:9](../src/world/aether_field.gd#L9)) ou campo novo na projeção do journal
+    ([tick_journal.gd:16-44](../src/persistence/tick_journal.gd#L16-L44), `FORMAT_VERSION`
+    [:4](../src/persistence/tick_journal.gd#L4)) muda os hashes que as rodadas publicadas registram
+    — é decisão de versão, não detalhe de implementação.
 
 ## Backlog priorizado (P0 → P1)
 
