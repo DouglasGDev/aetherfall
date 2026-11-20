@@ -28,13 +28,13 @@ Quase existe: `save_game()` (`src/main.gd:341-364`) grava `schema` (`src/persist
 Não há captura: só o efeito já escrito. Gravar tecla não reproduz — medido no harness, `Input.parse_input_event` chega 6 a 7 iterações depois (`tests/smoke_test.gd:140-144`) e a janela real deu 163 quadros/s contra 59,8 ticks (`:118-121`). O que tem posição reproduzível é a intenção aplicada, que já passa por handlers com evento e relógio à vista (`src/main.gd:268-321`); vocabulário nomeado existe (`src/input/input_actions.gd:18-54`). Fita: `[tick_do_relogio, seq, tipo, args]` com as regras já cobradas de `record()` (negativo, duplicata, regressão, salto — `tick_journal.gd:72-73`). `start()` não escreve cabeçalho (`tests/tick_journal_test.gd:291`) e o leitor exige aridade 2 (`:431-432`): `FORMAT_VERSION` (`tick_journal.gd:4`) mora só dentro do hash, então v2 é indistinguível de v1 para quem lê e nenhuma checagem exige que ele altere o hash. Cabeçalho lateral é pré-requisito da fita.
 
 ### RNG no estado `[TARGET]` + `[OPEN]`
-Sementes derivadas já provadas: população (`src/main.gd:200-201`, uso em `:221-222`), lobo (`src/entities/wolf.gd:120`), personalidade por semente (`src/ai/mind.gd:24-32`). Falta a **posição do fluxo**, que não é função do tick: dois dos três sorteios do lobo são em `_physics_process` (`src/entities/wolf.gd:538-539`). `[OPEN]`: qual propriedade do engine faz o fluxo ir e voltar — não há snapshot de gerador em `src/` (grep de `state` sobre `rng` não devolve uso). Sem isso, o caminho sem API nova é gravar por dono o contador de sorteios, número que a suíte de reações já imprime (`frames_bloqueados=679 desvios=22`, `docs/melhorias-status.md:784-786`). Débito lido: `load_state()` não re-semeia (`src/entities/wolf.gd:649-680`). Quarto dono fica fora por motivo medido: o `_rng` do áudio (`src/audio/audio_director.gd:117,140`, sorteios em `:521,529`) não escreve no mundo — grep de `aether`/`imprint` no arquivo devolve 0 ocorrências.
+Sementes derivadas já provadas: população (`src/main.gd:200-201`, uso em `:221-222`), lobo (`src/entities/wolf.gd:120`), personalidade por semente (`src/ai/mind.gd:24-32`). Falta a **posição do fluxo**, que não é função do tick: dois dos três sorteios do lobo são em `_physics_process` (`src/entities/wolf.gd:538-539`). `[OPEN]`: qual propriedade do engine faz o fluxo ir e voltar — não há snapshot de gerador em `src/` (grep de `state` sobre `rng` não devolve uso). Sem isso, o caminho sem API nova é gravar por dono o contador de sorteios, número que a suíte de reações já imprime (`frames_bloqueados=679 desvios=22`, `docs/melhorias-status.md:795-797`). Débito lido: `load_state()` não re-semeia (`src/entities/wolf.gd:649-680`). Quarto dono fica fora por motivo medido: o `_rng` do áudio (`src/audio/audio_director.gd:117,140`, sorteios em `:521,529`) não escreve no mundo — grep de `aether`/`imprint` no arquivo devolve 0 ocorrências.
 
 ### Ordem autoritativa `[TARGET]` + `[OPEN]`
 A regra-alvo está escrita (`docs/design/06-godot-architecture.md:34-38`, que ainda cita `src/core/sim/tick_clock.gd`, caminho inexistente; o real é `src/core/sim_clock.gd`) e o código não obedece: a ordem real é jogador-primeiro, passos-depois (`src/main.gd:136-142`), hash no fim do passo, depois de `clock.tick += 1` (`:164-166`). Decisão `[OPEN]` do dono, dois braços. **A (menor diff)**: a fita carimba o evento com o tick vigente e o passo ganha fases nomeadas — (1) eventos com carimbo ≤ N, (2) cadências, (3) `sim_step` dos lobos, (4) `clock.tick += 1`, (5) hash/registro; exige trazer corpos e timers para a projeção, porque `_sense()` lê a posição do corpo (`src/entities/wolf.gd:435-441`) e isso contamina intenção e crença. **B (autoridade única)**: mover locomoção e timers para o passo com K sub-passos fixos, como o harness de reações faz com K = 3 (`tests/aether_reactions_test.gd:118-120`); custo: mexe na cadência que produziu o conserto medido do buffer de colocação (`src/entities/player.gd:44,650-652`, protegido em `tests/smoke_test.gd:118-126`). Em qualquer braço, fita e snapshot usam o mesmo dono (`src/main.gd:19`) e o mesmo `FORMAT_VERSION`.
 
 ## Gate de fechamento
-Comandos que já existem (`docs/melhorias-status.md:1037-1043`, `AGENTS.md:289-298`):
+Comandos que já existem (`docs/melhorias-status.md:1048-1054`, `AGENTS.md:289-298`):
 
 ```sh
 godot --headless --path . --import
@@ -54,15 +54,15 @@ godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.j
    janela medida.
 3. Aloco no caminho quente? Sim e medido no recorte: 196.608 bytes/tick de cópia Float32 (`aether_field.gd:233-234`) mais
    os arrays da projeção (`tick_journal.gd:17-39`); o journal custou 160.000 µs em 205 registros (~780 µs médios), pico
-   1,646 ms, pior passo 9,738 ms ON contra 10,574 ms OFF (`docs/melhorias-status.md:1016-1017,1030`). Bytes novos: não
+   1,646 ms, pior passo 9,738 ms ON contra 10,574 ms OFF (`docs/melhorias-status.md:1027-1028,1041`). Bytes novos: não
    medidos; a colheita por registro já existe (`tick_journal.gd:84-86,96-98`).
 4. Como sei que ficou melhor? Não é otimização, é propriedade: o censo do contrato (128 → novo `EXPECTED_CHECKS`) mais as
    linhas de cima, em corrida serial com a máquina livre (`AGENTS.md:300-302`), e número publicado re-medido no clone
-   limpo do SHA final (`docs/melhorias-status.md:608-615`).
+   limpo do SHA final (`docs/melhorias-status.md:619-626`).
 
 ## O que NÃO fazer
 Não chamar de replay a igualdade da projeção atual, que exclui jogador, corpos, RNG e comandos
-(`docs/melhorias-status.md:541-544`). Não gravar tecla crua como verdade, nem inventar flag de engine nem o `af-bench`. Não
+(`docs/melhorias-status.md:552-555`). Não gravar tecla crua como verdade, nem inventar flag de engine nem o `af-bench`. Não
 mover locomoção para o tick sem re-medir a borda de input. Não abrir canal novo de Éter, inspector de mentes,
 `HotSet` ou facções. Fita e snapshot nascem das transições reais (`respawn_at`, `close_panel`, `set_block`), não de
 campo escrito à mão.

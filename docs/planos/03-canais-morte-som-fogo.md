@@ -7,7 +7,7 @@ corrida nova: eu não rodei engine nem suíte. Onde não há log, diz "não medi
 sem canal novo — foi rodado, medido e publicado em `9f3622b`; §5, §7, §8 e a nota de contagem do §9
 foram atualizados com os números daquele clone. Nada do §2 em diante (canais MORTE/SOM/FOGO) saiu,
 e `Channel.COUNT` continua 3. A nota de medição está em
-`docs/melhorias-status.md:1133-1213`.
+`docs/melhorias-status.md:1144-1224`.
 
 ## 1. Premissa nomeada
 
@@ -25,7 +25,7 @@ logo o trabalho é ligar fonte a consumidora, não acrescentar linhas em tabelas
 | decaimento | `HALF_LIFE = [90.0, 55.0, 120.0]`, **lido** em `keep = pow(0.5, elapsed / HALF_LIFE[ch])` | `aether_field.gd:13`, uso em `:120` |
 | fluxo | `DIFFUSE_RATE = [0.06, 0.16, 0.10]`; corte `MIN_VALUE 0,004` (`:16`), teto `MAX_VALUE 4,0` (`:17`) | `aether_field.gd:15` |
 | cor | `CHANNEL_COLOR` com 3 entradas | `src/rendering/aether_viz.gd:12-16` |
-| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1015` |
+| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1026` |
 | porta de escrita | `imprint(world_pos, ch, amount)` — posição primeiro, canal segundo | `aether_field.gd:87-89` |
 | fontes reais | medo no spawn `main.gd:192`; lavra 0,42 / colocação 0,20 `main.gd:271-273`; sangue 0,22 `main.gd:307`; morte do jogador `main.gd:312-313`; lobo ferido `wolf.gd:587-588`; lobo morto `wolf.gd:606-607`; medo do lobo `wolf.gd:222`, sangue `wolf.gd:344` | as fontes dos 3 canais novos: **zero ocorrências** |
 | passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:150`, constante `src/main.gd:12` |
@@ -42,7 +42,7 @@ igual para os três" não sai dessa aritmética (11,33% exigiria elapsed/HL = 0,
 s de lógica numa passada). Não há "outro mecanismo que zera o campo": `:128-129` é `if rate <= 0.0:
 continue` e o único zeramento é o corte espacial de `MIN_VALUE` em `:149-152`, com a quantia
 colhida em `pass_cut[ch]` (`:153`). Isto era `[MEASURED]` **de leitura de código**, com o resto sem
-corrida: a checagem `meia-vida reduziu a energia` só afirma `e2 < e1` (`tests/smoke_test.gd:691`) e
+corrida: a checagem `meia-vida reduziu a energia` só afirma `e2 < e1` (`tests/smoke_test.gd:702`) e
 o log da rodada do `a8967e0` mostrava 2.500 → 2.296
 (`docs/evidence/third-person-carry/clone-suite.log:68`), 8,16% de perda onde `HALF_LIFE[FEAR]` prevê
 1,15% em 8 passadas (0,9985570^8 = 0,98850 → 2,471). **A metade não medida saiu em `9f3622b`:** os
@@ -90,7 +90,7 @@ ficou melhor: ainda não sei — não existe log de custo por canal; o primeiro 
 
 Contagem hoje: **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
 (`docs/evidence/ether-massa-conservada/clone-suite.log:311`; as quatro ocorrências antigas de 232
-em `melhorias-status.md` — `:91`, `:249`, `:654`, `:691` — são da rodada do `a8967e0` e continuam
+em `melhorias-status.md` — `:91`, `:249`, `:665`, `:702` — são da rodada do `a8967e0` e continuam
 certas porque mediram o clone daquele commit). O runner dedicado é `godot --headless --path . --script
 tests/aether_reactions_test.gd`, hoje **103 checagens** (`EXPECTED_CHECKS`,
 `tests/aether_reactions_test.gd:16`, 20 cenários `:7-15`).
@@ -195,6 +195,6 @@ aqui porque a regra 1 do contrato não permite herdar número sem fonte.
 - `audio_director.gd:314` como leitura de posição de playback: `:314` é
   `v.max_distance = MAX_DISTANCE`; a posição real vem de `_voice_index()` (`:334+`).
 - "a contagem de checagens mora em `docs/melhorias-status.md:14-17`": não morava — as quatro
-  ocorrências de 232 eram `:91`, `:249`, `:654` e `:691`, todas da rodada do `a8967e0`. Hoje o número
+  ocorrências de 232 eram `:91`, `:249`, `:665` e `:702`, todas da rodada do `a8967e0`. Hoje o número
   da revisão publicada está sim no cabeçalho (`:13-19`, linha 19) e na nota de medição do fim do
-  arquivo (`:1133-1213`); as quatro linhas antigas continuam em 232 porque mediram aquele clone.
+  arquivo (`:1144-1224`); as quatro linhas antigas continuam em 232 porque mediram aquele clone.

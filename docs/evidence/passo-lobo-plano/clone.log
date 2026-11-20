@@ -1,0 +1,13 @@
+clone: C:/Users/dougl/AppData/Local/Temp/aetherfall-clean-520c3b4
+remote.origin.url=https://github.com/DouglasGDev/aetherfall.git
+rev-parse --abbrev-ref HEAD=main
+rev-parse HEAD=520c3b44200bf8e5d96f6baaece702d3af7082c5
+reflog=520c3b4 HEAD@{0}: clone: from https://github.com/DouglasGDev/aetherfall.git
+procedencia=estas linhas foram lidas do clone depois da corrida (git remote / rev-parse / reflog), nao o stdout original do `git clone`
+antes do `--import` o clone nao tinha .godot/ nem .tools/ nem override.cfg; os dois executaveis de .tools/ foram copiados da arvore de trabalho, porque o `Godot_v4.7.2-stable_win64_console.exe` e um lancador que recusa rodar sem o `Godot_v4.7.2-stable_win64.exe` ao lado
+engine=Godot Engine v4.7.2.stable.official.ed1daf0bf (primeira linha dos tres logs)
+nao-rastreados no clone ao fim=clone-import.log, clone-suite.log, clone-reactions.log, sources.sha256, tests/audio_live_probe.gd.uid, tests/audio_test.gd.uid
+arvore_de_trabalho_vs_clone=sources.sha256 conferido par a par na arvore de trabalho (branch docs/medicao-passo-lobo, 8addd23, que so acrescenta logs de evidencia ao commit 520c3b4): 79/79 OK, nenhuma linha fora de OK
+manifesto=git ls-tree -r --name-only HEAD -- src tests project.godot icon.svg assets/audio/levels.json, ordenado, 79 arquivos (37 .gd, 35 .gd.uid, project.godot, assets/audio/levels.json, icon.svg, 4 .tscn), sha256sum -b
+exit_codes_medidos=--import frio 139, --import frio repetido 0 (duas vezes mais), --import morno 0; --script tests/aether_reactions_test.gd 0; tests/smoke_test.tscn 0
+import_frio_note=os quatro logs de `--import` deste clone e do clone de 297685b (arvore anterior) sao byte identicos entre si, 299 linhas, 0 linhas de erro; so o codigo de saida mudou (139 numa das tres tentativas frias desta arvore, 0 em todas as outras seis). Registrado sem atribuicao em docs/melhorias-status.md, secao da rodada.

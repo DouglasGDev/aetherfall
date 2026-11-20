@@ -507,6 +507,17 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     SHA pinado em tabela bateria nunca. O que a linha não toca é o que já estava protegido:
     `.png` e `.wav` são `binary` e nunca foram normalizados.
 
+12. **O `--import` frio do clone limpo deu *segmentation fault* uma vez em três, e a medição
+    anterior não tinha como mostrar isso.** Nenhum `readback.log` de rodada passada grava o código
+    de saída do `--import` — só o das duas gateiras. Na rodada do passo, a primeira importação fria
+    do clone de `520c3b4` terminou com exit 139 depois de `[ DONE ] loading_editor_layout`; as duas
+    repetições frias no mesmo clone e três tentativas frias num clone da árvore anterior (`297685b`)
+    deram exit 0, com os quatro logs byte idênticos (299 linhas, zero erro) e o cache completo — as
+    duas gateiras rodaram nesse clone e saem 0. Não atribuído, e é o tipo de coisa que a receita do
+    README entrega para quem só clonou: se repetir, é defeito nosso de processo de import; se não
+    repetir, é ruído de engine que precisava estar escrito em algum lugar.
+    Detalhe e números na rodada do passo.
+
 ## Contrato dos rastros e reações
 
 - O estado novo pertence a `Wolf`; os três canais e a difusão de `AetherField` não foram
@@ -1382,14 +1393,21 @@ censo de cenários `20/20`.
 | braço B — (a) consertado, rasante de X ainda aplicado | 103 | **103 / 1 falha / 1,941 s**, `encaixados=389` | [braco-encaixe-reactions.log](evidence/passo-lobo-plano/braco-encaixe-reactions.log) |
 | suíte inteira no mesmo braço B, três vezes seguidas | 236 | **236 / 1 falha / 34,7–35,1 s**, sempre `encaixados=1` na **mesma** coordenada | [suite-vermelho-1.log](evidence/passo-lobo-plano/suite-vermelho-1.log), [suite-vermelho-2.log](evidence/passo-lobo-plano/suite-vermelho-2.log), [suite-vermelho-3.log](evidence/passo-lobo-plano/suite-vermelho-3.log) |
 | árvore final na branch (os dois consertos) | 103 + 236 | runner **103 / 0 / 1,901 s** (censo `20/20`), suíte **236 / 0 / 34,7 s**, exit 0, zero `SCRIPT ERROR` | [branch-runner.log](evidence/passo-lobo-plano/branch-runner.log), [branch-suite.log](evidence/passo-lobo-plano/branch-suite.log) |
+| `main` depois do merge `--no-ff` (`520c3b4`) | 103 + 236 | runner **103 / 0 / 1,920 s** (`20/20`), suíte **236 / 0 / 34,9 s**, exit 0, zero `SCRIPT ERROR` | [main-runner.log](evidence/passo-lobo-plano/main-runner.log), [main-suite.log](evidence/passo-lobo-plano/main-suite.log) |
+| clone limpo de `520c3b4`, recém-importado | 103 + 236 | runner **103 / 0 / 1,912 s**, suíte **236 / 0 / 34,0 s**, exit 0 nas duas | [clone.log](evidence/passo-lobo-plano/clone.log), [clone-import.log](evidence/passo-lobo-plano/clone-import.log), [clone-reactions.log](evidence/passo-lobo-plano/clone-reactions.log), [clone-suite.log](evidence/passo-lobo-plano/clone-suite.log), [readback.log](evidence/passo-lobo-plano/readback.log) |
 
 Rodapé da árvore final: `passos=2766 sim_step total=319714 µs pico=354 µs; BT last_us soma=14443
 pico=49 trips=0` ([`tests/aether_reactions_test.gd:938-939`](../tests/aether_reactions_test.gd#L938-L939)).
 Diagnóstico da suíte: `worst_sim_ms=8,646`, `dropped_ticks=0`, `tick=359`, 4 lobos vivos no fim.
-Outra corrida do mesmo código, minutos antes
-([conserto-reactions.log](evidence/passo-lobo-plano/conserto-reactions.log)): `total=317747 µs
-pico=442 µs; BT soma=14492 pico=38` — mesma árvore, 0,6% de diferença no total e 20% no pico. É a
-nota de ruído da rodada anterior valendo de novo: o µs do rodapé é amostra, não assinatura.
+
+O rodapé foi colhido quatro vezes na mesma mecânica (commit do conserto, ponta da branch, `main`
+mergida e clone limpo — três árvores que diferem só em documentação): `total` em 317 747 / 319 714 /
+322 419 / 317 556 µs, `pico` em 442 / 354 / 400 / 463 µs, `trips=0` nas quatro. O `worst_sim_ms` da
+suíte deu 11,692 / 8,646 / 11,107 / 9,237 ms. O que **não** variou foi o estado:
+`aether_energy=9.36133219487965`, `lobo0 reach=7.83 m`, `passos=2766`, `tick=359`, `edits=13`,
+`meshes=147`, `dropped_ticks=0` idênticos nas quatro corridas, e as 111 linhas de resultado do runner
+do clone são byte idênticas às da árvore de trabalho. É a nota de ruído da rodada anterior valendo de
+novo, agora com quatro amostras: o µs do rodapé é amostra, não assinatura; o número de estado é.
 
 ### Sentido 1 da atribuição: o estado é frequente e a assinatura é exata
 
@@ -1443,6 +1461,40 @@ inspeções concluíram nos ticks 40/165/300/426/551/721 (células (11,12,13) �
 limitante publicado** — a pergunta que a rodada anterior disse não poder ser feita foi respondida
 pelos dois números.
 
+### O que o passo consertado mudou dentro da suíte
+
+A suíte lê lobos vivos, então um conserto de passo mexe nos números dela por consequência, não por
+regressão. Na mesma semente, comparando a árvore `297685b` (rodada do cache) com esta:
+`lobo0 reach` cai de `8,85 m` para `7,83 m` em 200 passos, `morte imprinta sangue e medo` dá
+`fear` `4,21` → `4,23` (`blood` `4,16` igual), `save com corpo` passa de `11 902` para `12 237`
+bytes e `aether_energy_final` de `9,67776005901396` para `9,36133219487965`. O que não se moveu é o
+que a suíte cobra: os 236 nomes de checagem, `tick=359`, `edits=13`, `meshes=147`,
+`triangles=214480`, 4 lobos vivos, `dropped_ticks=0`. Os quatro valores novos estão pinados como
+estado desta árvore (quatro corridas, mesmo valor em todas).
+
+### Duas observações do clone limpo, ambas registradas sem atribuição
+
+**O `--import` frio deu 139 uma vez.** No clone recém-clonado de `520c3b4`, a primeira
+`--headless --path . --import` terminou com *segmentation fault* (exit 139) depois de
+`[ DONE ] loading_editor_layout`. As duas repetições frias no mesmo clone, e as três tentativas frias
+num clone de `297685b`, deram exit 0 — e os **quatro logs são byte idênticos**, 299 linhas, zero
+linhas de erro. O cache ficou completo de qualquer jeito: `sha256sum -c` nos 79 arquivos do manifesto
+dá 79/79 OK, 154 assets importados, as classes `VoxelWorld`/`AetherField`/`Wolf`/`SimClock`/
+`VoxelBody` resolvidas, e as duas gateiras rodaram **neste mesmo clone** e saem exit 0. Não se
+atribui: uma amostra vermelha em três não separa "o conserto do passo trouxe o crash" de "o crash é
+intermitente de sempre e as rodadas anteriores não gravavam o exit do `--import`" — e de fato nenhum
+`readback.log` anterior grava. O que fecha isso é N tentativas frias de cada árvore com o exit
+anotado, ou a pilha do engine.
+
+**O ruído de quit dobrou.** Onde o stderr foi capturado (`2>&1`), a dupla de linhas de saída dá
+`8 ObjectDB instances leaked` + `4 resources still in use` nas quatro corridas desta árvore (conserto,
+ponta da branch, `main` mergida, clone limpo) e deu `4/2` nas três da árvore `297685b`. A rodada do
+som (`docs/evidence/audio/smoke.log`, 220 checagens) também dava `8/4`, então o valor não é novidade
+nem é fixo de árvore: ele oscila conforme como a simulação termina. `instrumento-suite.log` e
+`branch-suite.log` desta rodada não têm a linha porque foram capturados só em stdout — presença é
+efeito do comando, contagem é do processo. Nenhuma checagem depende desse número e o exit segue 0; a
+dívida do quit já estava debitada na rodada do som, e aqui ela ganha mais um par de números.
+
 ### Re-derivações desta rodada
 
 O runner ganhou 202 linhas (741 → 943) e o censo mudou de lugar: `_arm` `:91` → `:92` (e o `seed(SEED)` citado
@@ -1452,7 +1504,9 @@ colhido `:736-737` → `:938-939` e a linha de contrato `:740` → `:942`. Corri
 `AGENTS.md:82-83`, `docs/design/08:78-79`, `docs/design/09:266`, `:268-269`, `:274-275`,
 `docs/planos/02:6`, `docs/planos/03:95-96`, `:119`, `:121`, `docs/planos/04:32`, `:54` e
 `docs/planos/README.md:15`, `:80`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
-do plano original: o item que ele numera (canais MORTE/SOM/FOGO) continua não feito.
+do plano original: o item que ele numera (canais MORTE/SOM/FOGO) continua não feito. Pin de revisão
+trocado de `9f3622b` para `520c3b4` no README (§"Como rodar a suíte", com o manifesto de 79 arquivos
+agora em `docs/evidence/passo-lobo-plano/sources.sha256`) e em `docs/planos/04:32`.
 
 ### O que nada disso fecha
 
@@ -1460,6 +1514,12 @@ Nenhum gate de fase. O item 4 da fila (canais MORTE/SOM/FOGO) e o item 5 (HOT ag
 lobos) estão intocados — o rodapé desta corrida é colheita estreita de um lobo por cenário,
 `trips=0`. A dívida que a rodada anterior apontou (falta instrumento de evicção para o teto de 32)
 foi paga por ela mesma, ali em cima. Fica em aberto a **ordem** de evicção: 22 saídas cortaram a
-mais jovem com `19,5 s`, e a pergunta de `:1285-1287` (a mais forte deveria passar na frente?) não
+mais jovem com `19,5 s`, e a pergunta de `:1296-1298` (a mais forte deveria passar na frente?) não
 tem corrida. R3, o rastro em duas camadas, continua esperando o vermelho que o scan de uma camada
-só perca um rastro em caverna. O `worst_sim_ms` continua amostra única — `8,646 ms` aqui.
+só perca um rastro em caverna. Do `worst_sim_ms` há agora quatro amostras desta árvore
+(`11,692 / 8,646 / 11,107 / 9,237 ms`) e nenhuma banda publicada: as duas checagens que o imprimem
+([`tests/smoke_test.gd:186`](../tests/smoke_test.gd#L186) e
+[`tests/smoke_test.gd:2279`](../tests/smoke_test.gd#L2279)) cobram `perdidos=0`, não a distribuição do passo. Somam-se
+à fila as duas observações do clone limpo lá em cima — o exit do `--import` frio e a contagem de
+objetos vazados no quit, ambas precisando de N corridas com o exit anotado para virar coisa que se
+possa chamar de defeito.

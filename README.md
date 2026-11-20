@@ -185,11 +185,15 @@ godot --headless --path . --import            # só no clone ainda não importad
 godot --headless --path . tests/smoke_test.tscn
 ```
 
-Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `9f3622b`, mesmo código desta,
-medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/ether-massa-conservada/sources.sha256`, sem `.godot/` e sem `.tools/`), recém-importado com
-o `--import` logo acima: **236 checagens, 0 falhas, 37,1 s**, exit 0 — o mesmo censo da
-árvore de trabalho, com as duas linhas de vazamento do quit que entraram junto com o som
-(medidas e explicadas em "O jogo tem som, e o som não manda no mundo"). Na revisão histórica
+Sai com código `1` se qualquer checagem falhar. O número publicado é da revisão `520c3b4`, mesmo código desta,
+medida num clone limpo dela mesma (os 79 arquivos de `docs/evidence/passo-lobo-plano/sources.sha256`, sem `.godot/`, sem `.tools/` e sem
+`override.cfg`), recém-importado com o `--import` logo acima: **236 checagens, 0 falhas, 34,0 s**, exit 0 — o
+log da suíte é idêntico ao da árvore de trabalho salvo oito pares de linha, todos de tempo, e o estado
+final também confere (`aether_energy` `9,36133219487965`, 4 lobos vivos, `tick=359`, `dropped_ticks=0`),
+com as duas linhas de vazamento do quit que entraram junto com o som (medidas e explicadas em "O jogo
+tem som, e o som não manda no mundo"; nesta árvore a contagem capturada é `8 ObjectDB` / `4 resources`,
+e a observação de que ela mudou está na rodada do passo em
+[docs/melhorias-status.md](docs/melhorias-status.md)). Na revisão histórica
 `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
@@ -331,6 +335,12 @@ Esse recorte não acrescenta canais, autoria dos rastros, pathfinding ou replay.
 A busca ainda lê uma camada de altura e projeta o alvo na superfície; um rastro fraco
 pode desaparecer antes da chegada. O cache de inspeções é transitório e se limpa ao
 carregar; os episódios ficam no save.
+
+O censo publicado deste runner é o da mesma revisão da suíte acima — `520c3b4`, medido no
+mesmo clone limpo: **103 checagens, 0 falhas, 1,912 s** em 20 cenários, exit 0
+([clone-reactions.log](docs/evidence/passo-lobo-plano/clone-reactions.log), com o rodapé de
+colheita estreita `passos=2766 sim_step total=317556 us pico=463 us; BT last_us soma=14403
+pico=45 trips=0`). É um lobo por cenário: não é o HOT agregado dos cinco lobos do jogo nem gate de P1.
 
 Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
 rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por
