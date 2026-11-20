@@ -16,7 +16,7 @@ const TESTS: Array[StringName] = [
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 ]
-const EXPECTED_CHECKS: int = 142
+const EXPECTED_CHECKS: int = 143
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -1398,6 +1398,10 @@ func _test_pack_provider() -> bool:
 	_check(not _wolf.pack_provider.is_valid() and _wolf._pack.is_empty(),
 			"lobo sem provedor nao le matilha", "provedor=%s leitura=%d" % [
 			_wolf.pack_provider.is_valid(), _wolf._pack.size()])
+	# Um golpe real num da matilha, pela identidade e nao por campo escrito a mao:
+	# `take_damage` e o unico caminho do jogo que escreve `relations`, e e o que da
+	# ao trust publicado um valor proprio antes da conferencia de abaixo.
+	(ws[0] as Wolf).take_damage(8.0, Wolf.ACTOR_PLAYER, _player.position3())
 	_advance_pack(1)
 	_check(int(_session._pack_pairs) == 6, "par_testado_uma_vez_por_passo",
 			"pares=%d esperado=4x3/2=6 buffers=%d" % [
@@ -1407,21 +1411,37 @@ func _test_pack_provider() -> bool:
 	_session._rebuild_packs()
 	var keys_ok := true
 	var values_ok := true
+	var viu_confianca := false
 	var linhas := ""
+	var confiancas := ""
 	for w: Wolf in ws:
+		var um_linhas := ""
 		for e: Dictionary in w._pack:
-			if e.size() != 4 or not e.has("identity") or not e.has("pos") \
-					or not e.has("intent") or not e.has("hp_ratio"):
+			if e.size() != 5 or not e.has("identity") or not e.has("pos") \
+					or not e.has("intent") or not e.has("hp_ratio") or not e.has("trust"):
 				keys_ok = false
 				continue
 			var other: Wolf = _wolf_of(ws, int(e["identity"]))
 			if other == null or not (e["pos"] as Vector3).is_equal_approx(other.center()) \
 					or String(e["intent"]) != other.intent \
-					or not is_equal_approx(float(e["hp_ratio"]), other.hp / Wolf.MAX_HP):
+					or not is_equal_approx(float(e["hp_ratio"]), other.hp / Wolf.MAX_HP) \
+					or not is_equal_approx(float(e["trust"]), other.trust_toward_player):
 				values_ok = false
+			if absf(float(e["trust"])) > 0.001:
+				viu_confianca = true
+			um_linhas += "%d:%.3f " % [int(e["identity"]), float(e["trust"])]
 		linhas += "lobo%d<-[%s] " % [w.identity, _ids_of(w._pack)]
-	_check(keys_ok, "leitura_barata_com_as_quatro_chaves", "chaves=identity,pos,intent,hp_ratio  %s" % linhas.strip_edges())
-	_check(values_ok, "leitura_barata_confere_valor_do_vizinho", linhas.strip_edges())
+		confiancas += "lobo%d<-[%s] " % [w.identity, um_linhas.strip_edges()]
+	_check(keys_ok, "leitura_barata_com_as_cinco_chaves",
+			"chaves=identity,pos,intent,hp_ratio,trust  %s" % linhas.strip_edges())
+	_check(values_ok, "leitura_barata_confere_valor_do_vizinho", confiancas.strip_edges())
+	# O pino do trust so pode falhar se a leitura divergir do vizinho REAL, e contra
+	# 0,0 default de uma mente que ninguem tocou ele nao decide nada: por isto a
+	# premissa exige um valor proprio na mesa. A transicao e `take_damage`, unico
+	# escritor de `relations` no jogo (`mind.adjust_trust(from_actor, -0,35)`),
+	# chamada pela identidade e nao por um campo escrito a mao.
+	_check(viu_confianca, "premissa: a leitura tem trust nao zero para conferir",
+			confiancas.strip_edges())
 	var sizes: Array[int] = []
 	for w: Wolf in ws:
 		sizes.append(w._pack.size())

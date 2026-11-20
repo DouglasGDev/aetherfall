@@ -277,8 +277,9 @@ func wolves_roster() -> Array:
 
 
 ## A matilha do lobo, no formato do dossie 10 §3.1: os vivos a menos do raio de
-## coesao, cada um como `{identity, pos, intent, hp_ratio}`. Devolve o buffer da
-## sessao, nunca uma copia -- e o que permite a leitura de 20 Hz sem alocar.
+## coesao, cada um como `{identity, pos, intent, hp_ratio, trust}`. Devolve o
+## buffer da sessao, nunca uma copia -- e o que permite a leitura de 20 Hz sem
+## alocar.
 func pack_of(identity: int) -> Array:
 	var buf: Variant = _pack_buffers.get(identity)
 	return EMPTY_PACK if not (buf is Array) else buf
@@ -331,6 +332,9 @@ func _pack_put(identity: int, other: Wolf) -> void:
 	e["pos"] = other.center()
 	e["intent"] = other.intent
 	e["hp_ratio"] = other.hp / Wolf.MAX_HP
+	# O trust vem como escalar ja publicado pelo lobo: um `mind.trust()` por par
+	# custaria um `str(ator)` novo por comparacao no caminho quente (dossie 10 §4).
+	e["trust"] = other.trust_toward_player
 	_pack_cursor[identity] = n + 1
 
 

@@ -86,6 +86,12 @@ var _sim_clock: SimClock = null
 ## fixture do runner arma lobos soltos -- a leitura e vazia e nenhuma rotina de
 ## grupo roda, entao o lote novo nao toca no comportamento ja gateado.
 var pack_provider: Callable = Callable()
+## O trust da propria mente para com o jogador, publicado como escalar para a sessao
+## copiar na leitura da matilha. Um `mind.trust()` por lobo por tick de 20 Hz, e nao
+## um `str(ator)` por par: ler alcateia nao pode alocar no caminho quente (dossie 10
+## §4). Vale o do passo anterior, exatamente como `intent` -- mesma cadencia, mesmo
+## atraso.
+var trust_toward_player: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _scorer: UtilityScorer = UtilityScorer.new()
 var _tree: BtTree.BtNode = null
@@ -591,6 +597,7 @@ func _sense() -> void:
 	_fear_here = aether.sample(me, AetherField.Channel.FEAR)
 	_blood_here = aether.sample(me, AetherField.Channel.BLOOD)
 	_work_here = aether.sample(me, AetherField.Channel.WORK)
+	trust_toward_player = mind.trust(ACTOR_PLAYER)
 	if _scent_cd <= 0.00001:
 		_find_scent()
 	_fear_level = clampf(_fear_here * 0.85 + _threat * 0.9 + _blood_here * 0.35, 0.0, 1.5)
