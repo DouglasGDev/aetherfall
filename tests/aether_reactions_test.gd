@@ -12,8 +12,9 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
+	&"_test_biome",
 ]
-const EXPECTED_CHECKS: int = 109
+const EXPECTED_CHECKS: int = 111
 
 var _checks: int = 0
 var _failures: int = 0
@@ -995,6 +996,42 @@ func _test_scent_cave_layer() -> bool:
 			"controle: rastro na camada do lobo acha o alvo na superficie de sempre",
 			"found=%s celula=%s alvo=%s forca=%.4f" % [
 			_wolf._scent_found, _wolf._scent_cell, _wolf._scent_pos, _wolf._scent_strength])
+	return true
+
+
+## Premissa do dossie 09.1: o identificador de bioma tem de ser FUNCAO do mundo
+## (seed, x, z, h), nao da instancia que o calcula. Duas `WorldGen` com a mesma
+## semente, a mesma grade 16x16, e a contagem de celulas divergentes -- 0.
+##
+## A segunda checagem nao e enfeite: sem mais de um bioma na grade amostrada, a
+## primeira passaria sobre um campo constante e "identico" nao decidiria nada.
+func _test_biome() -> bool:
+	var gen_a := WorldGen.new()
+	var gen_b := WorldGen.new()
+	gen_a.setup(SEED)
+	gen_b.setup(SEED)
+	var dif: int = 0
+	var colunas: int = 0
+	var census := {}
+	for x: int in range(0, VoxelConfig.world_size_x(), 8):
+		for z: int in range(0, VoxelConfig.world_size_z(), 8):
+			var bi_a: int = gen_a.biome_of(x, z, gen_a.surface_height(x, z))
+			var bi_b: int = gen_b.biome_of(x, z, gen_b.surface_height(x, z))
+			colunas += 1
+			census[bi_a] = int(census.get(bi_a, 0)) + 1
+			if bi_a != bi_b:
+				dif += 1
+	var nomes := ""
+	var biomas := 0
+	for id: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if int(census.get(id, 0)) > 0:
+			biomas += 1
+		nomes += "%s=%d " % [WorldGen.BIOME_NAMES[id], int(census.get(id, 0))]
+	_check(dif == 0 and colunas == 256, "bioma_deterministico",
+			"divergentes=%d  colunas=%d" % [dif, colunas])
+	_check(biomas > 1, "premissa: a grade 16x16 cobre mais de um bioma",
+			"biomas=%d  %s" % [biomas, nomes.strip_edges()])
 	return true
 
 
