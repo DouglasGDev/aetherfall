@@ -794,7 +794,7 @@ bits, em vez do inteiro de 32 bits do engine. O gerador da população só é se
 continue o fluxo em vez de repetir as primeiras casas. O grep de `randf`/`randi`/`randf_range`
 sem receptor em `src/` devolve zero ocorrências; sobram dois locais com gerador próprio
 ([mind.gd:30-32](../src/ai/mind.gd#L30-L32), [voxel_atlas.gd:50-63](../src/world/voxel_atlas.gd#L50-L63))
-e o `seed(SEED)` de [tests/aether_reactions_test.gd:94](../tests/aether_reactions_test.gd#L94),
+e o `seed(SEED)` de [tests/aether_reactions_test.gd:95](../tests/aether_reactions_test.gd#L95),
 que desde este corte não muda mais decisão nenhuma — é exatamente o que a checagem
 "não consome RNG global" mede.
 
@@ -1227,7 +1227,7 @@ chega lá. O bloco começou pela colheita.
 ### O que entrou
 
 Décimo oitavo cenário do runner dedicado, `_test_cache_cap`
-([aether_reactions_test.gd:639-728](../tests/aether_reactions_test.gd#L639-L728)): seis fontes reais
+([aether_reactions_test.gd:640-740](../tests/aether_reactions_test.gd#L640-L740)): seis fontes reais
 de WORK na grade de células 11/14/17 × 13/16, 12 m por salto, com amplitudes decrescentes
 `0,84 → 0,54` para que a ordem de visita saia da regra de seleção — o máximo de
 `BLOOD + 0,35 × WORK` entre as células não cacheadas
@@ -1269,6 +1269,11 @@ concluída, cada um vivo por 30 s — e ele fecha com o `pico` medido célula po
 antes, que o braço da evicção (ordem FIFO e reabertura depois da remoção) passa a ter código a
 testar.
 
+**Este veredito vale para a revisão `297685b`, e o tripé já disparou.** Na árvore do conserto do
+passo o mesmo cenário dá `intervalo=6.810`, `blocos=5`, `pedido=45` e `pico=32` com 22 saídas por
+evicção: o limitante passou a ser o teto, não o relógio. Os números estão na rodada do passo, ao
+fim deste documento; a linha de `94` aqui em cima é histórico daquela corrida, não o estado atual.
+
 ### Propriedade medida: a expirada mais forte passa na frente da nunca visitada
 
 As seis linhas `CHEGADA` do log da ponta dão as células `(11,12,13)`, `(14,12,13)`, `(17,12,13)`,
@@ -1283,23 +1288,28 @@ não foi medida aqui. Fica como pergunta para a fila do refinamento de rastros.
 
 ### Furo descoberto: o contato com o chão conta como obstáculo
 
+**Estado hoje: consertado**, na branch `fix/passo-do-lobo-pouso-nao-e-obstaculo` — ver a
+[rodada do passo](#rodada-éter--o-passo-do-lobo-em-plano-livre-medido-2026-11-20-branch-fixpasso-do-lobo-pouso-nao-e-obstaculo).
+O texto abaixo é o descoberto, publicado em `297685b`, com a premissa que ele deixou em aberto.
+
 Mecanismo lido no código: `move_and_collide` resolve os três eixos e o Y desce contra o chão em
-todo frame ([voxel_body.gd:50](../src/entities/voxel_body.gd#L50)), e `_collide_axis` marca
+todo frame ([voxel_body.gd:54](../src/entities/voxel_body.gd#L54)), e `_collide_axis` marca
 `blocked_this_frame` para **qualquer** eixo, inclusive o pouso
-([:94](../src/entities/voxel_body.gd#L94)). O passo do lobo trata o flag como parede
+([:98](../src/entities/voxel_body.gd#L98)). O passo do lobo tratava o flag como parede
 ([wolf.gd:537-541](../src/entities/wolf.gd#L537-L541)): re-arma `_unstick` (0,35–0,8 s) e `_detour`
 (±0,7–1,3 rad) e ainda salta (`velocity.y = 5,2`) estando no chão. Em plateau plano, sem nenhum
 obstáculo entre o corpo e a fonte, o steering roda girado — daí os `24,8` metros andados para
 `12,0` metros de ganho (2,07×) e a progressão líquida de `0,957 m/s` contra
 `SPEED_WALK = 2,6` ([:20](../src/entities/wolf.gd#L20)).
 
-Atribuição **não** fechada nos dois sentidos (ciclo de trabalho, item 3): o braço que mostra o
-conserto indiferente ao estado não foi rodado, e locomoção é assunto próprio. Fica como branch
-`fix/` a abrir, com `metros_por_salto=24.8 progressao=0.957` como linha de base. A conta que importa
-para os rastros é derivada do código com o metro medido, não corrida: com o caminho tortuoso de hoje
-e `2,6 m/s` nominais o intervalo seria `24,8/2,6 + 2,0 = 11,5 s` — ainda acima dos 10 s; só com o
-caminho limpo (`12/2,6 + 2,0 = 6,6 s`) o quinto bloco entraria na janela. Ou seja: o que hoje segura
-o cache abaixo do teto é o **desvio**, não a velocidade.
+Atribuição pedida nos dois sentidos (ciclo de trabalho, item 3) e linha de base declarada ali —
+`metros_por_salto=24.8 progressao=0.957` — foram medidas na rodada seguinte, com os dois braços
+rodados e um segundo furo aparendo no meio do caminho. A conta que importa para os rastros era
+derivada do código, não corrida: com o caminho tortuoso de hoje e `2,6 m/s` nominais o intervalo
+seria `24,8/2,6 + 2,0 = 11,5 s` — ainda acima dos 10 s; só com o caminho limpo (`12/2,6 + 2,0 =
+6,6 s`) o quinto bloco entraria na janela. Ou seja: o que hoje segura o cache abaixo do teto é o
+**desvio**, não a velocidade. Isso era hipótese; a rodada do passo mediu `intervalo=6.810` e o
+previsão se cumpriu — o quinto bloco entrou e o teto de 32 passou a limitar.
 
 ### Nota de ruído: o µs do rodapé é amostra
 
@@ -1322,7 +1332,134 @@ anterior porque aquela frase responde por um candidato nomeado, não pelo estado
 
 ### O que nada disso fecha
 
-Nenhum gate de fase. O teto de 32 células continua sem instrumento de evicção — ele depende do
-`fix/` acima. O item 4 da fila (canais MORTE/SOM/FOGO) está intocado, e o item 5 (HOT agregado dos
-cinco lobos) também. O `SCENT_MEMORY_CAP` deixa de poder ser publicado como o limitante da memória
-de rastros: o limitante medido hoje é o relógio de 30 s, com as 36 saídas todas em `30,250 s`.
+Nenhum gate de fase. O teto de 32 células ficou sem instrumento de evicção **nesta** revisão — ele
+dependia do `fix/` do passo, que rodou depois e mudou o regime (ver a rodada seguinte: `pico=32`,
+`por_evicao=22`). O item 4 da fila (canais MORTE/SOM/FOGO) está intocado, e o item 5 (HOT agregado dos
+cinco lobos) também. Aqui `SCENT_MEMORY_CAP` ainda não era o limitante: na medição de `297685b` as 36
+saídas deram todas em `30,250 s`, pelo relógio. Com o passo consertado o limitante passou a ser o
+teto — o veredito do cenário do cache, escrito ali em cima, vale para aquela árvore, não para a
+atual; a rodada do passo mediu o regime novo.
+
+## Rodada Éter — o passo do lobo em plano livre, medido (2026-11-20, branch `fix/passo-do-lobo-pouso-nao-e-obstaculo`)
+
+### O que estava em aberto
+
+A rodada do cache deixou duas coisas pendentes no mesmo parágrafo: uma **conta derivada do código**
+(`24,8/2,6 + 2,0 = 11,5 s` com o caminho tortuoso contra `6,6 s` com caminho limpo, e portanto o
+quinto bloco fora da janela de 30 s) e um **furo lido no código e nunca reproduzido** — o pouso em
+Y contado como obstáculo ([voxel_body.gd:54](../src/entities/voxel_body.gd#L54) →
+[:98](../src/entities/voxel_body.gd#L98) → [wolf.gd:537](../src/entities/wolf.gd#L537)). Nada
+disso era corrida. O ciclo de trabalho (item 3) exige os dois sentidos da atribuição antes do
+conserto, e a linha de base estava declarada: `metros_por_salto=24.8 progressao=0.957`.
+
+### O que entrou
+
+Décimo nono e vigésimo cenários do runner dedicado — `_test_locomotion_flat`
+([aether_reactions_test.gd:743-833](../tests/aether_reactions_test.gd#L743-L833), quatro
+checagens) e `_test_locomotion_wall`
+([:837-930](../tests/aether_reactions_test.gd#L837-L930), cinco) — mais os dois consertos que
+eles decidem:
+
+- **o flag dividido**: `blocked_horizontal` nasce ao lado de `blocked_this_frame`
+  ([voxel_body.gd:21-24](../src/entities/voxel_body.gd#L21-L24)), é marcado só nos eixos de andar
+  ([`:99-100`](../src/entities/voxel_body.gd#L99-L100)) e é **esse** que o passo do lobo lê para
+  re-armar o desvio ([wolf.gd:537](../src/entities/wolf.gd#L537));
+- **a caixa testada volta a ser a caixa aplicada**: o `box.size.x -= WALL_SHAVE` saiu de
+  `_translated` ([voxel_body.gd:118-129](../src/entities/voxel_body.gd#L118-L129)), com o porquê
+  e o número measured na linha de cima ([`:108-117`](../src/entities/voxel_body.gd#L108-L117)). O
+  shave de Y continua ([`:126`](../src/entities/voxel_body.gd#L126)) porque ali ele é o lado
+  conservador.
+
+`EXPECTED_CHECKS` de 94 para 103 ([`tests/aether_reactions_test.gd:16`](../tests/aether_reactions_test.gd#L16)),
+censo de cenários `20/20`.
+
+### O que foi medido
+
+| Corrida | Censo | Última linha | Log |
+| --- | --- | --- | --- |
+| braço A — só o cenário, árvore do `eced18e` (sem conserto) | 97 | **97 / 0 / 2,118 s**, colheita `rearms=19 lancamentos=19` | [instrumento-reactions.log](evidence/passo-lobo-plano/instrumento-reactions.log) |
+| braço A — premissa reproduzida com o conserto de (a) **ausente** | 103 | **103 / 1 falha / 2,165 s**, `horizontais=0` | [braco-pouso-reactions.log](evidence/passo-lobo-plano/braco-pouso-reactions.log) |
+| braço B — (a) consertado, rasante de X ainda aplicado | 103 | **103 / 1 falha / 1,941 s**, `encaixados=389` | [braco-encaixe-reactions.log](evidence/passo-lobo-plano/braco-encaixe-reactions.log) |
+| suíte inteira no mesmo braço B, três vezes seguidas | 236 | **236 / 1 falha / 34,7–35,1 s**, sempre `encaixados=1` na **mesma** coordenada | [suite-vermelho-1.log](evidence/passo-lobo-plano/suite-vermelho-1.log), [suite-vermelho-2.log](evidence/passo-lobo-plano/suite-vermelho-2.log), [suite-vermelho-3.log](evidence/passo-lobo-plano/suite-vermelho-3.log) |
+| árvore final na branch (os dois consertos) | 103 + 236 | runner **103 / 0 / 1,901 s** (censo `20/20`), suíte **236 / 0 / 34,7 s**, exit 0, zero `SCRIPT ERROR` | [branch-runner.log](evidence/passo-lobo-plano/branch-runner.log), [branch-suite.log](evidence/passo-lobo-plano/branch-suite.log) |
+
+Rodapé da árvore final: `passos=2766 sim_step total=319714 µs pico=354 µs; BT last_us soma=14443
+pico=49 trips=0` ([`tests/aether_reactions_test.gd:938-939`](../tests/aether_reactions_test.gd#L938-L939)).
+Diagnóstico da suíte: `worst_sim_ms=8,646`, `dropped_ticks=0`, `tick=359`, 4 lobos vivos no fim.
+Outra corrida do mesmo código, minutos antes
+([conserto-reactions.log](evidence/passo-lobo-plano/conserto-reactions.log)): `total=317747 µs
+pico=442 µs; BT soma=14492 pico=38` — mesma árvore, 0,6% de diferença no total e 20% no pico. É a
+nota de ruído da rodada anterior valendo de novo: o µs do rodapé é amostra, não assinatura.
+
+### Sentido 1 da atribuição: o estado é frequente e a assinatura é exata
+
+No plateu 45×45 verificado sem nenhum sólido acima do piso, com a presa a 23,5 m e visada limpa,
+a colheita diz `apoiados=184 bloqueados=166 pouso_bloqueado=166 frames=627` — **100% dos bloqueios
+chamados são o pouso**, e `horizontais=0`: nenhum eixo de andar esbarrou em nada no caminho. O
+corpo ainda assim re-armou o desvio 19 vezes e foi lançado a 5,2 m/s 19 vezes, e andou `44,8 m`
+para ganhar `24,4` (`razao=1.833`), andamento `2,336 m/s` contra `SPEED_WALK = 2,6` nominais, em
+`10,4 s`. Com a linha lida trocada para `blocked_horizontal`, a mesma colheita dá
+`apoiados=300 bloqueados=300 pouso_bloqueado=300 lancamentos=0 rearms=0` e
+`percorrido=23.5 ganho=23.5 razao=1.000` em `5,0 s` — `andamento=4.707 m/s`. Os `300` frames são
+menos que os `627` porque o corpo chega: a colheita encerra no alcance, não no teto de ticks.
+
+### Sentido 2: o conserto é indiferente ao obstáculo de verdade
+
+Com a mesma parede do cenário de avistamento (x=63, seis blocos, `los=false` porque a visada morre
+no sólido) e um rastro de WORK atrás dela, o integrador ainda chama bloqueio horizontal
+(`horizontais=340`), o desvio ainda re-arma (`rearms=12`) e o corpo ainda salta (`lancamentos=11`),
+e para do lado de cá: `x_max=62.625` contra `teto_bloqueio=63.0`. O que mudou foi o que o contato
+**não** era: `encaixados=0 encaixe_max=0.000 mm face_x=62.9995` em 600 frames.
+
+### Furo descoberto nesta corrida: o rasante de 1 mm virava encaixe
+
+Esse só apareceu **depois** do conserto de (a) — enquanto o corpo saltava ao encostar, ele nunca
+ficava o tempo bastante pressionado contra a face para o defeito se ver. Com (a) consertado e o
+shave de X no lugar, a mesma parede produz `encaixados=389` de 600 frames com
+`encaixe_max=1.000 mm` e `face_x=63.0009`: exatamente o `WALL_SHAVE`
+([`voxel_body.gd:9`](../src/entities/voxel_body.gd#L9)), não um acidente do relevo. Na suíte
+inteira a checagem antiga ("nenhum lobo com o corpo dentro do terreno",
+[`tests/smoke_test.gd:201`](../tests/smoke_test.gd#L201)) passou a cair em
+`encaixados=1 lobo1 em (56.62563, 36.39333, 23.29462)` — **três corridas, a mesma coordenada**, o
+que a torna premissa de teste e não maré. E o resgate não alcança: `escape_embedded()`
+([`voxel_body.gd:65-76`](../src/entities/voxel_body.gd#L65-L76)) só varre para cima, com
+`ESCAPE_LIFT = 2,5`, numa parede de rocha de 6 blocos — a sonda mediu lift necessário nenhum
+(`pra cima=-1, pra baixo=-1` nos 4 m varridos). Corpo congelado dentro do sólido, que é a
+assinatura que o próprio comentário de `escape_embedded` descreve.
+
+O conserto não relaxa o teste nem aperta o corpo: a caixa testada passa a ser a caixa aplicada. O
+contato rente já era tolerado pelo epsilon de `aabb_hits_solid`
+([`voxel_world.gd:305`](../src/world/voxel_world.gd#L305)), que trata face em cima da divisória
+como livre — foi medido `face_x=62.9995`, encostado e não encaixado.
+
+### O que isso muda nos rastros
+
+A conta que a rodada do cache deixou como hipótese se cumpriu: `intervalo=12.540` → `6.810 s` com
+o caminho limpo, `metros_por_salto=24.8` → `12.3`, `progressao=0.957` → `1.762 m/s`. As seis
+inspeções concluíram nos ticks 40/165/300/426/551/721 (células (11,12,13) → (14,12,13) →
+(17,12,13) → (17,12,16) → (14,12,16) → (11,12,13)), e o cache encostou no teto no quarto bloco:
+`pico=32 teto=32 vistas=45`, `por_relogio=0 por_evicao=22`, com as saídas por evicção idades
+`19,500 s` (a mais jovem) e `28,000 s` (a mais velha). **`SCENT_MEMORY_CAP` é, desde aqui, o
+limitante publicado** — a pergunta que a rodada anterior disse não poder ser feita foi respondida
+pelos dois números.
+
+### Re-derivações desta rodada
+
+O runner ganhou 202 linhas (741 → 943) e o censo mudou de lugar: `_arm` `:91` → `:92` (e o `seed(SEED)` citado
+no §RNG, `:94` → `:95`), as variáveis de colheita `:31` → `:32`, `_advance` `:104-121` → `:105-121`,
+`TESTS` `:7-14` → `:7-15` (18 → 20 cenários), `EXPECTED_CHECKS` `:15` → `:16` (94 → 103), o rodapé
+colhido `:736-737` → `:938-939` e a linha de contrato `:740` → `:942`. Corrigidos pelo conteúdo em
+`AGENTS.md:82-83`, `docs/design/08:78-79`, `docs/design/09:266`, `:268-269`, `:274-275`,
+`docs/planos/02:6`, `docs/planos/03:95-96`, `:119`, `:121`, `docs/planos/04:32`, `:54` e
+`docs/planos/README.md:15`, `:80`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
+do plano original: o item que ele numera (canais MORTE/SOM/FOGO) continua não feito.
+
+### O que nada disso fecha
+
+Nenhum gate de fase. O item 4 da fila (canais MORTE/SOM/FOGO) e o item 5 (HOT agregado dos cinco
+lobos) estão intocados — o rodapé desta corrida é colheita estreita de um lobo por cenário,
+`trips=0`. A dívida que a rodada anterior apontou (falta instrumento de evicção para o teto de 32)
+foi paga por ela mesma, ali em cima. Fica em aberto a **ordem** de evicção: 22 saídas cortaram a
+mais jovem com `19,5 s`, e a pergunta de `:1285-1287` (a mais forte deveria passar na frente?) não
+tem corrida. R3, o rastro em duas camadas, continua esperando o vermelho que o scan de uma camada
+só perca um rastro em caverna. O `worst_sim_ms` continua amostra única — `8,646 ms` aqui.

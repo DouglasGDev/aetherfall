@@ -79,8 +79,8 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    `MindsInspector` não existe. O custo de BT sai no F3 (`tree_stats()`,
    [wolf.gd:637-638](src/entities/wolf.gd#L637-L638)); agora há também colheita headless
    estreita de `sim_step` integral e `_guard.last_us`/`trips`, um lobo por cenário
-   ([aether_reactions_test.gd:104-121](tests/aether_reactions_test.gd#L104-L121),
-   [:736-737](tests/aether_reactions_test.gd#L736-L737)). O guard mede só BT, sem
+   ([aether_reactions_test.gd:105-121](tests/aether_reactions_test.gd#L105-L121),
+   [:938-939](tests/aether_reactions_test.gd#L938-L939)). O guard mede só BT, sem
    percepção/utilidade ([wolf.gd:428-432](src/entities/wolf.gd#L428-L432)); isso não mede
    o HOT agregado dos cinco lobos nem fecha P1.
 6. **Mudanças pequenas e atômicas.** Um assunto por commit e suíte verde entre eles, com a

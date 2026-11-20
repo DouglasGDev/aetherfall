@@ -75,8 +75,8 @@ zero violações; budget HOT ≤ `[TARGET]` 2,5 ms medido (número real entra aq
 
 **Colheita atual, não fechamento do gate:** `tests/aether_reactions_test.gd` colhe
 `sim_step` integral e `_guard.last_us`/`trips`, com totais e picos, **um lobo por cenário**
-([aether_reactions_test.gd:91-121](../../tests/aether_reactions_test.gd#L91-L121),
-[:736-737](../../tests/aether_reactions_test.gd#L736-L737)). O guard cronometra só BT,
+([aether_reactions_test.gd:92-121](../../tests/aether_reactions_test.gd#L92-L121),
+[:938-939](../../tests/aether_reactions_test.gd#L938-L939)). O guard cronometra só BT,
 sem percepção/utilidade, que vêm antes dele
 ([wolf.gd:428-432](../../src/entities/wolf.gd#L428-L432),
 [bt_tree.gd:130-137](../../src/ai/behavior/bt_tree.gd#L130-L137)). A soma de amostras desse
