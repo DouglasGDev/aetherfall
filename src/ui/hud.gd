@@ -21,6 +21,10 @@ var clock: SimClock = null
 var stats_provider: Callable = Callable()
 var wolf_provider: Callable = Callable()
 var narration_provider: Callable = Callable()
+## Linha do hospedeiro do servidor de modelo no overlay de debug: cada estado da
+## matriz de falha do dossie 15 §5 tem de aparecer aqui, nao no console do motor
+## nem em popup.
+var llm_status_provider: Callable = Callable()
 
 var _root: Control = null
 var _slots: Array = []
@@ -255,6 +259,8 @@ func _refresh_state() -> void:
 	if aether != null:
 		var t: Array = aether.channel_totals()
 		lines.append("eter  trabalho %.2f  sangue %.2f  medo %.2f" % [t[0], t[1], t[2]])
+	if llm_status_provider.is_valid():
+		lines.append(String(llm_status_provider.call()))
 	if stats_provider.is_valid():
 		lines.append(String(stats_provider.call()))
 	if player != null:
