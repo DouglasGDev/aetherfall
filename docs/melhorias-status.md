@@ -13,10 +13,10 @@ Referência histórica das medições de golpe: `9c6b722` (furo #6 abaixo).
 Bloco atual: o Éter passou a medir o próprio saldo. A difusão tem duas saídas de massa — decaimento
 e corte da fronteira de `MIN_VALUE` — e só a primeira tinha número; `pass_cut` devolve a quantia
 cortada por canal em cada passada e a suíte confere, passada a passada, que nenhum canal ganha massa
-e que a cadeia `2,500 → 2,471 → 2,296` fecha pelo corte medido de `0,176129`. A árvore é a branch
-`test/ether-massa-conservada` (`98f1d63` + `28884ff`) mergida `--no-ff` na `main` como `9f3622b`,
-conferida em `git ls-remote --heads origin`; o clone limpo desse SHA, reimportado sem cache, deu
-236 checagens / 0 falhas / 37,1 s, exit 0 — ver a seção final, "Rodada Éter — o saldo da difusão".
+e que a cadeia `2,500 → 2,471 → 2,296` fecha pelo corte medido de `0,176129`. O código (branch
+`test/ether-massa-conservada`, `98f1d63` + `28884ff`) entrou como `9f3622b`; a re-derivação das
+citações que aquele bloco deixou velhas entrou como `6007809`. Os dois conferidos em `ls-remote`
+— o clone limpo do primeiro deu 236 checagens / 0 falhas / 37,1 s, exit 0; ver a seção final.
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 
 ## Os prompts × o código
