@@ -1952,28 +1952,38 @@ formatados acima. Pelo contrato (medição de tempo é serial com a máquina liv
 como medição**: o `363 680` publicado no AGENTS.md e a ablação de +12 % da rodada dos rastros
 continuam sendo o par de referência, e nenhuma das duas tabelas muda por esta sessão.
 
-Um indício que fica registrado sem virar conclusão: a média das quatro contaminadas (442 967 µs) e
-três dos cinco valores desta sessão passam do braço de **três camadas incondicionais** da ablação
-(427 940 / 427 134, linha 19 do readback). As duas hipóteses que isso não separa são "a máquina
-agora está mais lenta" e "o gate abre camada vizinha mais vezes do que a ablação media". O que
-decide é uma perna `bench/` com a máquina ociosa, na mesma revisão, medindo o braço do gate na mesma
-janela — e ela pertence ao item 5 da fila (dossiê 04, HOT agregado), não a esta branch de docs.
+Um indício que fica registrado sem virar conclusão: os valores desta sessão encostam ou passam do
+braço de **três camadas incondicionais** da ablação (427 940 / 427 134, linha 19 do readback), e a
+média das quatro corridas da branch (442 967 µs) passa. As duas hipóteses que isso não separa são
+"a máquina agora está mais lenta" e "o gate abre camada vizinha mais vezes do que a ablação media".
+O que decide é uma perna `bench/` com a máquina ociosa, na mesma revisão, medindo o braço do gate na
+mesma janela — e ela pertence ao item 5 da fila (dossiê 04, HOT agregado), não a esta branch de docs.
 
-### A quinta corrida, na `main` mergida, é a peça que faltava
+### As duas corridas da `main` mergida são a peça que faltava
 
-`633e653` (merge `--no-ff` desta branch) roda suíte **236 checagens / 0 falhas / 38,3 s**, exit 0,
-zero `SCRIPT ERROR`, ruído `8/4` de quit; e o runner estreito, **109 checagens / 0 falhas /
+`633e653` (merge `--no-ff` da branch do escopo) roda suíte **236 checagens / 0 falhas / 38,3 s**,
+exit 0, zero `SCRIPT ERROR`, ruído `8/4` de quit; e o runner estreito, **109 checagens / 0 falhas /
 2,052 s**, exit 0, com `passos=2768 sim_step total=389 885 µs pico=897 µs; BT soma=16 042 µs
 trips=0`. A igualdade de código é conferida por árvore: `git rev-parse HEAD:src` =
 `9a8dbdfc01f1…` e `HEAD:tests` = `7bcbde99b7d8…`, os mesmos dois hashes do parágrafo anterior.
 
-O `total` desta vez cai **entre** as duas bandas — acima dos 361 464–375 216 publicados, abaixo dos
-420 595–466 263 das quatro anteriores — e é justamente isso que fecha a atribuição sem precisar de
-mais nada: cinco execuções da **mesma árvore de código** nesta sessão deram 389 885, 420 595,
-439 265, 445 745 e 466 263 µs, chão de **−9,8 % a +7,8 %** em torno da média delas (432 351),
-contra uma banda de ±2 % em doze execuções da rodada dos rastros. O instrumento não está cego por
-acaso: ele está sendo lido em cima de carga. `pico=897` e `trips=0` nesta corrida, contra
-`pico=877–989` e um `trips=1` nas anteriores, dizem a mesma coisa.
+`017340a`, o merge desta nota, repete o gate na mesma árvore de código: suíte **236 / 0 / 38,3 s**,
+exit 0, zero `SCRIPT ERROR`; runner **109 / 0 / 2,194 s**, exit 0, `total=428 373 µs pico=958 µs;
+BT soma=17 812 µs trips=0`. O `git diff --name-only 633e653...HEAD -- src tests project.godot assets
+tools` desta revisão devolve zero arquivos.
+
+O primeiro `total` da `main` cai **entre** as duas bandas — acima dos 361 464–375 216 publicados,
+abaixo dos 420 595–466 263 das quatro da branch — e é isso que fecha a atribuição sem precisar de
+mais nada: **seis execuções da mesma árvore de código** nesta sessão deram, em ordem crescente,
+389 885 / 420 595 / 428 373 / 439 265 / 445 745 / 466 263 µs — chão de **−9,7 % a +8,0 %** em torno
+da média delas (431 688), contra uma banda de **±2 %** em doze execuções da rodada dos rastros. O
+instrumento não está cego por acaso: ele está sendo lido em cima de carga. Quatro desses seis
+valores passam do braço de três camadas incondicionais (427 940 / 427 134, linha 19 do readback), e o
+menor deles — 428 373 — está a 0,1 % da linha de cima desse braço.
+
+O rol das seis é o estado da janela no momento da escrita, não uma contagem gateada: cada nova
+execução enquanto esta sessão viver acrescenta um valor e não muda a conclusão. O que muda é o
+número publicado, e ele continua sendo o da rodada dos rastros.
 
 Consequência registrada, e é ela que vale para as próximas pernas: **nenhuma medição de µs desta
 máquina entra como número enquanto houver sessão de agente rodando**, e o que separa um deslocamento
