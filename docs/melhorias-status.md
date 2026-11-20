@@ -2366,9 +2366,10 @@ link), e quatro ponteiros de dossiê caíam em faixa mas em prosa de outra seç�
   promessas da lavra estão em [`smoke_test.gd:881-889`](../tests/smoke_test.gd#L881-L889), não
   `:780-790`; `EXPECTED_CHECKS` é [`aether_reactions_test.gd:17`](../tests/aether_reactions_test.gd#L17)
   com **119**, não `:16` com 109. Nos dossiês: `07:67` e `07:137` apontavam
-  [`README.md:505-512`](../../README.md) (a seção do oráculo local) para a queda de ~16 s para ~7,5 s,
-  que está em `:546-553`, e `12:63` apontava `README.md:533` (linha de lista do Éter) e o par
-  geração/malharia em `:78` quando está em `:83`.
+  [`README.md:505-512`](../../README.md) (a seção do oráculo local — os três números de README desta
+  frase são da numeração de `eb6ec8d`, e o README tem 13 linhas a mais nesta ponta; os de status, `:78`
+  e `:83`, não se moveram) para a queda de ~16 s para ~7,5 s, que está em `:546-553`, e `12:63` apontava
+  `README.md:533` (linha de lista do Éter) e o par geração/malharia em `:78` quando está em `:83`.
 - `91409af` — a página-índice passa a ter **uma regra declarada**: contam-se os catorze dossiês, esta
   página fica fora (ela cita os ponteiros alheios para descrevê-los) e cada link
   `[rótulo](alvo)` vale uma referência, não duas. Sob essa regra: 59 ao status, 8 ao contrato, 6 ao
@@ -2423,7 +2424,7 @@ são desta corrida e não re-pinam nada, porque o merge não toca uma linha de c
   `SAFE_SPAWN_DIST` e as dezessete checagens propostas são `[TARGET]`, declarados como tais no
   `verify_plan_ids.py`.
 
-## Rodada Alcateia — a matilha entra na decisão do lobo, com contagem e citações re-derivadas (2026-11-20, `feat/alcateia-rutinas-10`, base `eb6ec8d`, ponta de código `c42250c`, ainda **não** mergida)
+## Rodada Alcateia — a matilha entra na decisão do lobo, com contagem e citações re-derivadas (2026-11-20, `feat/alcateia-rutinas-10`, base `eb6ec8d`, ponta de código `c42250c`, mergida na `main` em `0c38489`)
 
 ### O que estava em aberto
 
@@ -2569,10 +2570,10 @@ número saído de uma prova que não confere.
 
 ### Contagem de citações, pela regra declarada aqui
 
-`python .tools/verify_plan_cites.py <cada .md rastreado>` sobre o corpus: **1 309** citações com
+`python .tools/verify_plan_cites.py <cada .md rastreado>` sobre o corpus: **1 311** citações com
 número de linha conferidas, **0** números fora do arquivo, **27** arquivos citados que não existem
 (todos `[TARGET]` dos dossiês 13 e 14 — `FamilyTree`, `PackState`, `SAFE_SPAWN_DIST` e cia.). O trio
-que governa a casa (`AGENTS.md`, `README.md` da raiz, este arquivo) dá **413**, 0 fora, com a mesma
+que governa a casa (`AGENTS.md`, `README.md` da raiz, este arquivo) dá **415**, 0 fora, com a mesma
 falta de `docs/engine/simclock.md` que já estava registrada. A checagem de rótulo contra âncora
 ([`_chk_labels.py`](../.tools/_chk_labels.py), corpus `.md` **sem** `.tools/`) dá **848** links com
 `#L`, **97** rótulos sem número e **7** sinalizados — os sete lidos: seis são literal de código na
@@ -2595,12 +2596,24 @@ deslocaram **44** delas (16 já caíam no lugar) — registro no **furo #17**, e
 `python .tools/_rederive_status_refs.py`, com prova de conteúdo linha a linha (o mapa `difflib`
 `HEAD` → árvore só reescreve onde o texto é idêntico) e conferência refeita ao contrário: **52/52**.
 
+A régua é genérica (`python .tools/_rederive_doc_refs.py <alvo>`) e esta nota a passou no `README.md`
+da raiz, que ela mesma fez crescer 13 linhas. O corpus guarda **9** referências numeradas a ele pela
+regra da casa — 12 contando a página-índice, que se exclui — e quem cita linha posterior a 213 desloca
++13. **3** ponteiros vivos mudaram de número com prova de conteúdo: `07:67` → `README.md:559-566`, e
+`07:137` e `12:62` → `:561`. As três de `13` e `14` (`:192`, `:197`) apontam para antes do ponto de
+inserção e não se moveram. Os **4** números que vivem em **prosa histórica** — os ponteiros errados de
+`eb6ec8d` que esta página e a página-índice registram como corrigidos — **não** foram deslocados: a
+frase descreve o que estava errado naquela numeração, então recebeu o rótulo da numeração em vez de um
+número novo. Armadilha achada no caminho: duas páginas se chamam `README.md`, e sem lookbehind o padrão
+casava `docs/design/README.md:12-16` contra o da raiz; aí nenhuma linha foi de fato reescrita (offset
+zero ou ponta em branco), e a guarda agora está na ferramenta.
+
 ### O que nada disso fecha
 
-- **Nenhum gate de fase.** O clone limpo **rodou** em `188490b`: `--import` frio exit 0 e suíte
-  **239 / 0 / 38,6 s**, exit 0, zero `SCRIPT ERROR` (`clone-gate-*.log`, §6 de
-  [`readback.md`](evidence/alcateia-rutinas/readback.md)). Falta o merge `--no-ff` na `main` com a
-  suíte re-rodada na árvore mergida e o `git ls-remote --heads origin`: sem isso a publicação segue vetada.
+- **Nenhum gate de fase**, mas a perna pousou: o clone limpo de `188490b` deu **239 / 0 / 38,6 s**
+  com `--import` frio exit 0 (`clone-gate-*.log`) e a `main` mergida `0c38489` re-rodou **239 / 0 /
+  38,2 s**, exit 0, zero `SCRIPT ERROR` (`merge-0c38489-suite.log`), §6 e §7 de
+  [`readback.md`](evidence/alcateia-rutinas/readback.md). Falta só o `git ls-remote --heads origin`.
 - **Furo #16**: a sessão real nunca montou matilha de dois. É a primeira peça da perna 14.
 - **Furo #17**: **8** das 60 referências a linhas deste arquivo ficaram para trás de propósito — seis
   já apontavam para linha em branco (mis-citação pré-existente, prova vazia) e duas caem dentro de um
