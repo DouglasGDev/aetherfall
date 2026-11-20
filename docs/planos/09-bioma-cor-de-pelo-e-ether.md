@@ -52,7 +52,7 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   três tabelas por canal são constantes
   ([:9-17](../../src/world/aether_field.gd#L9-L17)). Os imprints existentes passam valor fixo por
   evento: `WORK 0,42`/`0,20` no jogador
-  ([main.gd:268-273](../../src/main.gd#L268-L273)), `FEAR 0,4` no spawn
+  ([main.gd:277-282](../../src/main.gd#L277-L282)), `FEAR 0,4` no spawn
   ([:192](../../src/main.gd#L192)), `BLOOD 1,3` + `FEAR 1,0` no cadáver
   ([:312-313](../../src/main.gd#L312-L313)). Uma coluna de gelo e uma de savana imprimem o mesmo
   número.

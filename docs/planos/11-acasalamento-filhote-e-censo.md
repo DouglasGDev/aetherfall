@@ -11,7 +11,7 @@ perto e quem é de fora, e isso é estado de alcateia.
 
 1. **O censo é uma variável real do mundo se um save gravado com 7 lobos carrega 7 lobos.** Hoje o
    `load` tem teto por índice **e** inventa sobrevivente:
-   [`for i in mini(saved.size(), wolves.size()): wolves[i].load_state(saved[i])`](../../src/main.gd#L410)
+   [`for i in mini(saved.size(), wolves.size()): wolves[i].load_state(saved[i])`](../../src/main.gd#L419-L420)
    com `wolves` já cheio pelos 5 do boot
    ([`_spawn_wolves(WOLF_COUNT)`](../../src/main.gd#L124), constante em
    [:9](../../src/main.gd#L9)). Save com 3 lobos → os outros 2 continuam vivos com o estado do
@@ -147,7 +147,7 @@ Checagens:
    `bit_player` vinda dele.
 5. **`load_leva_todo_o_censo`** — gravar com N (inclusive N > 5), recarregar, `wolves.size() == N`
    e cada `identity` do disco confere com a mente carregada. **Esta checagem nasce vermelha** no
-   código atual (`:410` tem teto) — é o vermelho reproduzido antes do conserto, como o contrato
+   código atual (`:419` tem teto) — é o vermelho reproduzido antes do conserto, como o contrato
    pede ([`AGENTS.md`](../../AGENTS.md), ciclo 3).
 6. **`censo_respeita_teto`** — acasalamentos forçados até o teto: o censo para em 12 e a recusa é
    impressa, não silenciosa.
@@ -155,8 +155,8 @@ Checagens:
    o hash do tick: **tem de ser igual** se a projeção mínima não mudou. Se divergir, `FORMAT_VERSION`
    subiu, e isso é decisão escrita, não efeito colateral.
 
-`EXPECTED_CHECKS` ([aether_reactions_test.gd:16](../../tests/aether_reactions_test.gd#L16), hoje
-**109**) e as contagens de suíte (hoje **236 / 0 falhas**, pin [`README.md`](../../README.md)) sobem
+`EXPECTED_CHECKS` ([aether_reactions_test.gd:17](../../tests/aether_reactions_test.gd#L17), hoje
+**119**) e as contagens de suíte (hoje **237 / 0 falhas**, pin [`README.md`](../../README.md)) sobem
 com o lote e são re-medidos no clone limpo com `--import` frio antes de virar número publicado — e
 as **nove** citações de censo do §2 re-derivadas no mesmo commit.
 

@@ -116,9 +116,9 @@ o custo dela. Ele é aplicável porque o projeto **já** tem instrumento — e t
 
 **As duas cadências.** O jogador local roda por *frame de física*
 ([main.gd:136-142](src/main.gd#L136-L142) → `update_local`): lavra e colocação escrevem
-voxels fora do tick ([player.gd:659](src/entities/player.gd#L659),
-[:675](src/entities/player.gd#L675)) e seus sinais também imprimem no Éter
-([main.gd:268-273](src/main.gd#L268-L273)). O lobo não é só 20 Hz:
+voxels fora do tick ([player.gd:667](src/entities/player.gd#L667),
+[:693](src/entities/player.gd#L693)) e seus sinais também imprimem no Éter
+([main.gd:277-282](src/main.gd#L277-L282)). O lobo não é só 20 Hz:
 `wolf._physics_process` locomove o corpo e reduz timers de cadáver, atordoamento e desvio
 por frame ([wolf.gd:526-571](src/entities/wolf.gd#L526-L571)). Decisão de IA, difusão,
 recolha de cadáveres e respawns são agendados pelo tick de 20 Hz, com cadências próprias
@@ -236,7 +236,7 @@ perto ou longe ([wolf.gd:409-433](src/entities/wolf.gd#L409-L433)). A peça do d
 
 **Anti-bloat, com o estado real:**
 
-- `main.gd` é o "objeto deus" conhecido — 501 linhas donas de mundo, relógio, matilha, HUD,
+- `main.gd` é o "objeto deus" conhecido — 510 linhas na `main` em `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
   oráculo, visualização, instância do journal e o nó de áudio ([main.gd:19-31](src/main.gd#L19-L31)). Isso está registrado como
   débito, não como licença: mudança que precisa de estado novo pergunta primeiro **quem é o
   dono** daquele estado.
@@ -280,7 +280,7 @@ Duas recortes que a autorização **não** cobre, porque o código já os entreg
 existe: a lavra contínua do jogador (`player.gd:636-647`, segura `break_block`, o progresso soma
 por frame e o bloco cai quando `hardness` estoura) e a coleta automática no inventário
 (`:659-672`, o drop do registro entra direto) — ambas checadas em
-[`tests/smoke_test.gd:780-790`](tests/smoke_test.gd#L780-L790) ("segurar break minerou", "tempo de
+[`tests/smoke_test.gd:862-870`](tests/smoke_test.gd#L862-L870) ("segurar break minerou", "tempo de
 mineracao == dureza", "lavra entrou no inventario como drop"). Melhorar o que já passou no gate
 continua vetado; o que entra é o buraco real: **nenhum bicho escreve no mundo hoje** — os únicos
 dois `world.set_block` de gameplay são os do jogador (`:667`, `:693`).

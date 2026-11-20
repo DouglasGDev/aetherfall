@@ -365,7 +365,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     ([main.gd:9](../src/main.gd#L9) `WOLF_COUNT := 5`) e a fila de respawns só repõe
     ([main.gd:162](../src/main.gd#L162) `_spawn_wolves(1)`). Não existe idade, filhote nem corpo
     menor: `DIMS` é constante ([wolf.gd:37](../src/entities/wolf.gd#L37)). O load pareia por índice
-    com teto — [`for i in mini(saved.size(), wolves.size())`](../src/main.gd#L410) — então um censo
+    com teto — [`for i in mini(saved.size(), wolves.size())`](../src/main.gd#L419) — então um censo
     que cresce hoje **descartaria filhote em silêncio**, e
     [tests/tick_journal_test.gd:78](../tests/tick_journal_test.gd#L78) exige
     `wolves.size() == Main.WOLF_COUNT`: as duas peças são re-derivadas junto, não depois.
@@ -373,11 +373,11 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     segurar `break_block` soma progresso por frame até a dureza
     ([player.gd:636-647](../src/entities/player.gd#L636-L647)), o drop do registro entra direto no
     inventário ([player.gd:659-672](../src/entities/player.gd#L659-L672)), e a suíte confere as três
-    promessas ([tests/smoke_test.gd:780-790](../tests/smoke_test.gd#L780-L790) — "segurar break
+    promessas ([tests/smoke_test.gd:862-870](../tests/smoke_test.gd#L862-L870) — "segurar break
     minerou", "tempo de mineracao == dureza", "lavra entrou no inventario como drop"). O buraco real
     é do outro lado: os únicos dois `world.set_block` de gameplay no `src/` são os do jogador
     (`:667`, `:693`) e o `_on_acted` que imprime WORK é sinal do jogador
-    ([main.gd:268-273](../src/main.gd#L268-L273)). Nenhum animal escreve no mundo.
+    ([main.gd:277-282](../src/main.gd#L277-L282)). Nenhum animal escreve no mundo.
 12. **Convivência da alcateia: ronda em terra, nenhum aviso de criatura na tela, spawn fora dos
     olhos do jogador** (dossiê 14; **executa entre o item 9 e o item 10** pela ordem serializada
     registrada em [`AGENTS.md`](../AGENTS.md), e a numeração fica no fim para não renumerar a fila).

@@ -179,8 +179,8 @@ Cenários novos no runner dedicado (a lista é `TESTS`
    0,35, [mind.gd:104-105](../../src/ai/mind.gd#L104-L105)); imprime os dois valores.
 5. **`alcateia_nao_consome_rng_da_sessao`** — `_population_rng` intacta depois de um passo com
    matilha completa (o contrato do RNG isolado, registrado no status).
-6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:16](../../tests/aether_reactions_test.gd#L16), hoje
-   **109**) sobe com o lote, e a suíte (hoje **236**) idem — os dois re-medidos no clone limpo com
+6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:17](../../tests/aether_reactions_test.gd#L17), hoje
+   **119**) sobe com o lote, e a suíte (hoje **237**) idem — os dois re-medidos no clone limpo com
    `--import` frio antes de virar número publicado.
 
 ## 6. O que NÃO fazer
