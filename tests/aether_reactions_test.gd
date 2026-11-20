@@ -12,9 +12,18 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
-	&"_test_biome", &"_test_fur_colour",
+	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias",
 ]
-const EXPECTED_CHECKS: int = 115
+const EXPECTED_CHECKS: int = 119
+# Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
+# nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
+# quando a tabela do gen e editada se o par esperado vier de outro lugar.
+const BIAS_MEDIDA: Array = [
+	[0.85, 1.00, 1.30],    # frozen
+	[1.30, 0.90, 0.85],    # arid
+	[1.00, 1.00, 1.00],    # temperate
+	[0.85, 1.15, 0.90],    # wetland
+]
 
 var _checks: int = 0
 var _failures: int = 0
@@ -1104,6 +1113,125 @@ func _test_fur_colour() -> bool:
 	_check(Wolf.FUR_COLORS[WorldGen.Biome.TEMPERATE] == Color(0.40, 0.36, 0.31),
 			"temperate conserva a cor historica do lobo",
 			"cor=%s" % Wolf.FUR_COLORS[WorldGen.Biome.TEMPERATE].to_html(false))
+	return true
+
+
+## Checagem 4 do dossie 09: o vies de imprint por bioma e do chamador, e os dois
+## lados dessa fronteira tem de poder ficar vermelhos. A tabela esperada e a
+## copia literal deste arquivo (BIAS_MEDIDA), nao uma leitura do gen: editar um
+## multiplicador em WorldGen pinica vermelho. Mover o vies para dentro de
+## `AetherField.imprint` pinica a fonte crua, que tem de devolver o valor do
+## evento sem nada, e o helper do lobo passaria a multiplicar duas vezes. O
+## numero que decide e o par sem/com por canal, a razao e o bioma da coluna.
+func _test_imprint_bias() -> bool:
+	var colunas := {}
+	for x: int in range(6, VoxelConfig.world_size_x() - 6, 3):
+		for z: int in range(6, VoxelConfig.world_size_z() - 6, 3):
+			var b: int = _world.gen.biome_at(x, z)
+			if not colunas.has(b):
+				colunas[b] = Vector2i(x, z)
+	# Pino linha a linha por leitura DIRETA da tabela, nao so pela composta: esta
+	# semente nao expoe arid em nenhuma coluna do mundo, e uma linha sem casa nao
+	# pode sair do gate sem conferencia. Onde existe coluna, a leitura composta
+	# (biome_of -> linha -> canal) tambem tem de bater com a copia medida, senao
+	# trocar a ordem das duas tabelas passaria. Guardas de forma antes de indexar
+	# porque tabela encolhida tem de dar vermelho de checagem, nao de script.
+	var pino_ok: bool = WorldGen.IMPRINT_BIAS.size() == BIAS_MEDIDA.size()
+	var linhas_t := ""
+	for bi: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if bi >= WorldGen.IMPRINT_BIAS.size():
+			pino_ok = false
+			linhas_t += "%s sem linha; " % WorldGen.BIOME_NAMES[bi]
+			continue
+		var row: Array = WorldGen.IMPRINT_BIAS[bi]
+		if row.size() != AetherField.Channel.COUNT:
+			pino_ok = false
+		var tem_casa: bool = colunas.has(bi)
+		var cc: Vector2i = colunas[bi] if tem_casa else Vector2i(0, 0)
+		var hh: int = _world.gen.surface_height(cc.x, cc.y) if tem_casa else 0
+		for ch: int in AetherField.Channel.COUNT:
+			var direto: float = float(row[ch]) if ch < row.size() else -1.0
+			var medido: float = float(BIAS_MEDIDA[bi][ch])
+			if absf(direto - medido) > 0.0001:
+				pino_ok = false
+			if tem_casa and absf(_world.gen.imprint_bias(cc.x, cc.y, hh, ch) - medido) > 0.0001:
+				pino_ok = false
+			linhas_t += "%s/%s=%.2f " % [WorldGen.BIOME_NAMES[bi],
+					AetherField.CHANNEL_NAMES[ch], direto]
+	_check(pino_ok, "premissa: vies_lido_confirma_tabela_medida", linhas_t.strip_edges())
+	# A mesma fonte nos mesmos lugares, crua pelo campo e vies pelo helper do
+	# lobo (o caminho real dos eventos), com as quantias lidas do proprio
+	# batch: lavra WORK 0,42, morte BLOOD 1,3 e FEAR 1,0.
+	var amounts: Array = [0.42, 1.3, 1.0]
+	var crua_ok := true
+	var ordem_ok := true
+	var linhas_ab := ""
+	var feitos := 0
+	for bi: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if not colunas.has(bi):
+			continue
+		var cc: Vector2i = colunas[bi]
+		var hh: int = _world.gen.surface_height(cc.x, cc.y)
+		var pos := Vector3(float(cc.x) + 0.5, float(hh + 1), float(cc.y) + 0.5)
+		_arm()
+		var bruto: Array = []
+		for ch: int in AetherField.Channel.COUNT:
+			_field.imprint(pos, ch, float(amounts[ch]))
+			bruto.append(_field.sample(pos, ch))
+		_arm()
+		var vies: Array = []
+		for ch: int in AetherField.Channel.COUNT:
+			_wolf._imprint(pos, ch, float(amounts[ch]))
+			vies.append(_field.sample(pos, ch))
+		feitos += 1
+		for ch: int in AetherField.Channel.COUNT:
+			var medido: float = float(BIAS_MEDIDA[bi][ch])
+			var b0: float = float(bruto[ch])
+			var b1: float = float(vies[ch])
+			var razao: float = b1 / maxf(b0, 1e-9)
+			if not is_equal_approx(b0, float(amounts[ch])):
+				crua_ok = false
+			if not (is_equal_approx(b1, float(amounts[ch]) * medido)
+					and absf(razao - medido) < 0.01
+					and razao >= 0.5 and razao <= 2.0
+					and b1 > 0.0 and b1 < AetherField.MAX_VALUE):
+				ordem_ok = false
+			linhas_ab += "bioma=%d(%s) %s sem=%.4f com=%.4f razao=%.4f  " % [
+					bi, WorldGen.BIOME_NAMES[bi], AetherField.CHANNEL_NAMES[ch],
+					b0, b1, razao]
+	_check(crua_ok, "premissa: imprint cru no campo devolve o valor do evento",
+			"esperado=%.2f/%.2f/%.2f  colhido: %s" % [
+			float(amounts[0]), float(amounts[1]), float(amounts[2]), linhas_ab])
+	_check(ordem_ok and feitos >= 2, "imprint_bioma_tem_mesma_ordem",
+			"biomas_colhidos=%d  %s" % [feitos, linhas_ab.strip_edges()])
+	# Media do vies por canal sobre as quatro linhas da tabela: o pedido e
+	# redistribuicao, nao inflacao — a banda 1,00 +/- 0,10 contem os valores
+	# medidos desta revisao (trabalho 1,0000; sangue e medo 1,0125), e uma linha
+	# grossamente editada sai dela antes mesmo da leitura composta chegar ao
+	# chamador. O pino acima e que confere multiplicador a multiplicador.
+	var banda_ok: bool = WorldGen.IMPRINT_BIAS.size() == BIAS_MEDIDA.size()
+	var soma_tab: Array[float] = [0.0, 0.0, 0.0]
+	var linhas := 0
+	for bi: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,
+			WorldGen.Biome.TEMPERATE, WorldGen.Biome.WETLAND]:
+		if bi >= WorldGen.IMPRINT_BIAS.size() \
+				or (WorldGen.IMPRINT_BIAS[bi] as Array).size() != AetherField.Channel.COUNT:
+			banda_ok = false
+			continue
+		var rw: Array = WorldGen.IMPRINT_BIAS[bi]
+		linhas += 1
+		for ch: int in AetherField.Channel.COUNT:
+			soma_tab[ch] += float(rw[ch]) / float(BIAS_MEDIDA.size())
+	var medias := ""
+	for ch: int in AetherField.Channel.COUNT:
+		var m: float = soma_tab[ch]
+		if m < 0.90 or m > 1.10:
+			banda_ok = false
+		medias += "%s=%.4f " % [AetherField.CHANNEL_NAMES[ch], m]
+	_check(banda_ok, "media do vies por canal dentro da banda medida",
+			"linhas=%d  %s" % [linhas, medias.strip_edges()])
 	return true
 
 

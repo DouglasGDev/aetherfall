@@ -34,6 +34,21 @@ enum Biome { FROZEN = 0, ARID = 1, TEMPERATE = 2, WETLAND = 3 }
 # So os testes nomeiam a coluna por extenso; o jogo escolhe pelo id.
 const BIOME_NAMES: PackedStringArray = ["frozen", "arid", "temperate", "wetland"]
 
+# vies de imprint por bioma: uma linha por bioma, uma coluna por canal na ordem
+# de `AetherField.Channel` (0 trabalho, 1 sangue, 2 medo). O indice composto e o
+# que liga as duas tabelas sem importar estado nenhum, e inverter a ordem de um
+# dos dois lados troca os canais sem erro nenhum. temperate fica em 1,0 nos tres
+# canais, a linha onde nenhuma fonte do jogo muda de numero. Neve segura mais
+# medo, areia segura mais trabalho, banhado segura mais sangue. Array aninhado e
+# nao de PackedFloat32Array porque construtor packed nao e expressao constante em
+# GDScript 4 — o precedente da casa e o HALF_LIFE do campo (aether_field.gd:13).
+const IMPRINT_BIAS: Array = [
+	[0.85, 1.00, 1.30],    # frozen
+	[1.30, 0.90, 0.85],    # arid
+	[1.00, 1.00, 1.00],    # temperate
+	[0.85, 1.15, 0.90],    # wetland
+]
+
 
 var world_seed: int = 0
 var _height := FastNoiseLite.new()
@@ -129,6 +144,25 @@ func biome_of(x: int, z: int, h: int) -> int:
 ## `VoxelWorld.surface_height` faz.
 func biome_at(x: int, z: int) -> int:
 	return biome_of(x, z, surface_height(x, z))
+
+
+## vies do imprint da coluna, por canal: leitura pura da tabela acima, custo de
+## duas amostras de ruido no maximo, as mesmas que `biome_of` ja faz. Quem
+## multiplica e o chamador do lado do evento: o campo nao pode conhecer voxel
+## nenhum, e essa fronteira e o que mantem `diffuse_and_decay` barata (dossie
+## 09). Indice fora da tabela e bug de quem ligou bioma e canal ao contrario,
+## nao caso de mundo: empurra erro na consola em vez de trocar o numero do
+## evento em silencio.
+func imprint_bias(x: int, z: int, h: int, ch: int) -> float:
+	var biome: int = biome_of(x, z, h)
+	if biome < 0 or biome >= IMPRINT_BIAS.size():
+		push_error("imprint_bias: bioma %d fora da tabela" % biome)
+		return 1.0
+	var row: Array = IMPRINT_BIAS[biome]
+	if ch < 0 or ch >= row.size():
+		push_error("imprint_bias: canal %d fora da linha do bioma %d" % [ch, biome])
+		return 1.0
+	return float(row[ch])
 
 
 ## O bloco de topo agora DECIDE a partir do bioma em vez de repetir as comparacoes: a

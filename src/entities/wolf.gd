@@ -158,6 +158,16 @@ func center() -> Vector3:
 	return body.center()
 
 
+## O vies de bioma e do chamador, nao do campo: `AetherField.imprint` continua
+## sem saber que existe voxel, e e a fronteira que mantem a difusao barata
+## (dossie 09). So roda em evento (mordida, golpe, morte); a altura vem do
+## relevo gerado, nao da superficie atual, porque cavar nao troca o clima da
+## coluna.
+func _imprint(pos: Vector3, ch: int, amount: float) -> void:
+	var h: int = world.gen.surface_height(int(pos.x), int(pos.z))
+	aether.imprint(pos, ch, amount * world.gen.imprint_bias(int(pos.x), int(pos.z), h, ch))
+
+
 # ------------------------------------------------------------------ arvore de comportamento
 
 func _build_tree() -> void:
@@ -236,6 +246,7 @@ func _leaf_flee(_ctx: Dictionary) -> bool:
 	_speed = SPEED_FLEE
 	# Reagir ao medo alheio nao pode realimentar o campo para sempre.
 	if _threat > 0.0:
+		# Re-imprint da fuga fica sem vies: a folha roda todo tick com _threat > 0, e ruido+altura ali e o custo que o dossie 09 recusa no caminho quente.
 		aether.imprint(center(), AetherField.Channel.FEAR, 0.06)
 	return true
 
@@ -358,7 +369,7 @@ func _leaf_bite(_ctx: Dictionary) -> bool:
 	_bite_cd = BITE_COOLDOWN
 	bit_player.emit(self, BITE_DAMAGE)
 	var pp := _player.position3()
-	aether.imprint(pp, AetherField.Channel.BLOOD, 0.18)
+	_imprint(pp, AetherField.Channel.BLOOD, 0.18)
 	mind.remember(_sim_clock.tick, "hit_land", pp, ACTOR_PLAYER, 0.3)
 	mind.reinforce("prey_wounded", 0.22, "perception")
 	return true
@@ -625,8 +636,8 @@ func take_damage(amount: float, from_actor: int, hit_from: Vector3) -> void:
 	if push.length_squared() > 0.0001:
 		body.velocity += push.normalized() * KNOCKBACK_SPEED
 		body.velocity.y = maxf(body.velocity.y, KNOCKBACK_LIFT)
-	aether.imprint(me, AetherField.Channel.BLOOD, amount * 0.05)
-	aether.imprint(me, AetherField.Channel.FEAR, amount * 0.035)
+	_imprint(me, AetherField.Channel.BLOOD, amount * 0.05)
+	_imprint(me, AetherField.Channel.FEAR, amount * 0.035)
 	mind.remember(_sim_clock.tick, "hurt", hit_from, from_actor, amount / MAX_HP)
 	mind.adjust_trust(from_actor, -0.35)
 	mind.reinforce("danger_from_actor_%d" % from_actor, 0.3, "perception")
@@ -644,8 +655,8 @@ func die() -> void:
 	intent = "morto"
 	_speed = 0.0
 	var me := center()
-	aether.imprint(me, AetherField.Channel.BLOOD, 1.1)
-	aether.imprint(me, AetherField.Channel.FEAR, 0.55)
+	_imprint(me, AetherField.Channel.BLOOD, 1.1)
+	_imprint(me, AetherField.Channel.FEAR, 0.55)
 	_corpse_timer = CORPSE_SECONDS
 	died.emit(self, me)
 	acted.emit("kill", me)
