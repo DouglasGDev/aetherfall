@@ -1212,7 +1212,7 @@ runner estreito continua um lobo por cenário, com `sim_step total=224134 us`, p
 de alocação no caminho quente permanece: `pass_cut` é realocado uma vez em `setup()`, não por
 passada, e as demais alocações listadas na "Disciplina de otimização" estão como estavam.
 
-## Rodada Éter — o que limita o cache de inspeções, medido (2026-11-20, branch `test/cache-rastro-evicao-03`)
+## Rodada Éter — o que limita o cache de inspeções, medido (2026-11-20, publicado em `297685b` pelo merge de `test/cache-rastro-evicao-03`)
 
 ### O que estava em aberto
 
@@ -1243,7 +1243,17 @@ corpo. Cinco checagens novas, `EXPECTED_CHECKS` de 89 para 94 e censo de cenári
 | runner dedicado no commit do instrumento | 94 | **94 / 0 falhas / 2,293 s**, `18/18` | [worktree-branch-reactions.log](evidence/ether-cache-limite/worktree-branch-reactions.log) |
 | runner dedicado na ponta da branch, com as seis linhas `CHEGADA` | 94 | **94 / 0 / 2,034 s** | [worktree-branch-tip-reactions.log](evidence/ether-cache-limite/worktree-branch-tip-reactions.log) |
 | suíte na ponta da branch | 236 | **236 / 0 / 35,4 s**, zero `SCRIPT ERROR`, zero `FALHA` | [worktree-branch-suite.log](evidence/ether-cache-limite/worktree-branch-suite.log) |
-| clone limpo do `main` mergido | — | **alvo**, ainda não medido: a linha é preenchida pela branch de medição que vem depois do merge | — |
+| `main` depois do merge `--no-ff` `297685b`, árvore de trabalho | 236 + 94 | **236 / 0 / 34,7 s** + runner **94 / 0 / 2,023 s** | [worktree-main-suite.log](evidence/ether-cache-limite/worktree-main-suite.log), [worktree-main-reactions.log](evidence/ether-cache-limite/worktree-main-reactions.log) |
+| clone limpo do `main` publicado (`297685b`, do próprio `origin`) | 236 + 94 | **236 / 0 falhas / 34,3 s** + runner **94 / 0 / 2,056 s**, censo `18/18`, exit 0, zero `SCRIPT ERROR` | [clone-suite.log](evidence/ether-cache-limite/clone-suite.log), [clone-reactions.log](evidence/ether-cache-limite/clone-reactions.log) |
+| `--import` obrigatório antes de qualquer corrida no clone | — | 299 linhas, zero `ERROR`/`WARNING` | [clone-import.log](evidence/ether-cache-limite/clone-import.log) |
+
+O número publicado é o do clone limpo; as corridas de árvore de trabalho ficam aqui como execução
+do gate, não como referência. Assinaturas: `sources.sha256` tem as 79 fontes do commit e foi
+recalculado na árvore de trabalho em `297685b` — 79/79 linhas idênticas, diff vazio;
+`artifacts.sha256` cobre os onze arquivos que o precedem na pasta, e `readback.log` pinha o SHA do
+manifesto (`41a2362…`) com os números de cada log. As cinco linhas do cenário do cache são byte a
+byte idênticas entre o clone e a ponta da branch, incluindo as seis `CHEGADA` com os mesmos ticks e
+as mesmas células.
 
 O que decide a pergunta, impresso nos logs acima: `pico=27 teto=32 vistas=36`; as 36 saídas colhidas
 com idade `30,250 s` (a mais jovem e a mais velha — todas pelo relógio, nenhuma por evicção,
@@ -1293,11 +1303,13 @@ o cache abaixo do teto é o **desvio**, não a velocidade.
 
 ### Nota de ruído: o µs do rodapé é amostra
 
-Duas corridas do runner com o mesmo conjunto de cenários e `passos=3234`, ambas arquivadas acima,
-deram `sim_step total=437350 µs, pico=812 µs` e `376723 µs, pico=431 µs` — 16% de spread na mesma
-árvore. O rodapé continua colheita estreita (um lobo por cenário, `trips=0`); comparar revisions por
-esse número exige mais de uma corrida de cada, exatamente o que a rodada anterior pediu para o
-`worst_sim_ms` da suíte.
+Quatro corridas do runner com o mesmo conjunto de cenários e `passos=3234`, todas arquivadas
+acima, deram `sim_step total=437350 µs, pico=812 µs` (commit do instrumento), `376723 µs, pico=431`
+(ponta da branch), `368969 µs, pico=387` (`main` mergida) e `371383 µs, pico=366` (clone limpo) —
+18,5% de spread entre o pior e o melhor, com as três últimas na mesma árvore. O rodapé continua
+colheita estreita (um lobo por cenário, `trips=0` nas quatro); comparar revisões por esse número
+exige mais de uma corrida de cada, exatamente o que a rodada anterior pediu para o `worst_sim_ms`
+da suíte — que aqui se repetiu: `9,092` / `9,219` / `9,289` ms, spread de 0,2 ms.
 
 ### Re-derivações desta rodada
 
