@@ -10,13 +10,13 @@ Crescimento", que diz *quanto custa*. Este arquivo tem uma tabela por prompt, na
 ordem.
 
 Referência histórica das medições de golpe: `9c6b722` (furo #6 abaixo).
-Bloco atual: porte do corpo em 3ª pessoa com o que está na mão, checagem headless do cubo segurado
-e galeria recapturada — em cima da sessão que já trouxe som, hash/journal, rastros/reações, RNG
-próprio da matilha e a correção da sobreposição na mão. Essa árvore de alterações é o commit
-`a8967e0` (base `1db00cf`) e está no remoto: `git ls-remote --heads origin` respondeu
-`42799fa0f0987b20d58902b4b2f7a4927a93cfd2` em 2026-11-19, o mesmo `HEAD` local depois de
-`git push origin main` devolver `1db00cf..42799fa`. O clone limpo de `a8967e0` foi reimportado e
-re-medido — ver a primeira linha da tabela de porte em 3ª pessoa nas notas de medição.
+Bloco atual: o Éter passou a medir o próprio saldo. A difusão tem duas saídas de massa — decaimento
+e corte da fronteira de `MIN_VALUE` — e só a primeira tinha número; `pass_cut` devolve a quantia
+cortada por canal em cada passada e a suíte confere, passada a passada, que nenhum canal ganha massa
+e que a cadeia `2,500 → 2,471 → 2,296` fecha pelo corte medido de `0,176129`. A árvore é a branch
+`test/ether-massa-conservada` (`98f1d63` + `28884ff`) mergida `--no-ff` na `main` como `9f3622b`,
+conferida em `git ls-remote --heads origin`; o clone limpo desse SHA, reimportado sem cache, deu
+236 checagens / 0 falhas / 37,1 s, exit 0 — ver a seção final, "Rodada Éter — o saldo da difusão".
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 
 ## Os prompts × o código
@@ -274,8 +274,8 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
 4. **Canais morte / som / fogo** em `AetherField`: entram como mais uma entrada nas três
    tabelas paralelas de [aether_field.gd:11-15](../src/world/aether_field.gd#L11-L15) e uma cor
    em [aether_viz.gd:12-16](../src/rendering/aether_viz.gd#L12-L16), com imprint em cada fonte
-   (morte de mob, tiro/passo, lava/fogueira) e leitura nas curvas de utilidade. Não é
-   cosmético, mas os três canais atuais já guiam investigação e fuga sem visão do jogador.
+   (morte de mob, tiro/passo, lava/fogueira) e leitura nas curvas de utilidade. Não é cosmético:
+   os três canais já guiam investigação e fuga sem visão do jogador, e `pass_cut` mede só eles.
    **O som que entrou nesta sessão não fecha nada daqui:** o diretor é puro leitor — grep de
    `aether`/`imprint` em [audio_director.gd](../src/audio/audio_director.gd) devolve zero
    ocorrências, nenhum passo de áudio escreve no campo. O canal SOM continua sendo imprint de
@@ -1129,3 +1129,85 @@ trabalho, sem clone limpo reimportado, e o par publicado continua sendo o do clo
 
 Nenhum gate de fase se fechou aqui, e nenhum item da fila acima mudou de veredito: os dossiês são
 leitura que prepara os itens 1 a 8, não execução deles.
+
+## Rodada Éter — o saldo da difusão medido (2026-11-19, publicado em `9f3622b`)
+
+### O que estava em aberto
+
+O dossiê [`docs/planos/03-canais-morte-som-fogo.md`](planos/03-canais-morte-som-fogo.md), §8,
+registrava que o log publicado não fechava conta com `HALF_LIFE`: o smoke dava `2,500 → 2,296`
+(8,16% em 8 passadas de `diffuse_and_decay(0.25)`) contra `2,471` que a meia-vida do canal FEAR
+prevê, e os `0,175` restantes não tinham causa medida — o único zeramento do código é o corte de
+`MIN_VALUE` ([aether_field.gd:146-153](../src/world/aether_field.gd#L146-L153)). Déficit sem dono
+é o que o mandato 1 proíbe de publicar. O bloco começou pela colheita, não pelo corte.
+
+### O que entrou
+
+`pass_cut` é um `PackedFloat32Array` por canal ([aether_field.gd:36](../src/world/aether_field.gd#L36)),
+dimensionado em `setup()` ([:51-52](../src/world/aether_field.gd#L51-L52)), zerado no topo de cada
+passada e escrito com a massa cortada no fim da varredura
+([:145-153](../src/world/aether_field.gd#L145-L153)); a docstring nomeia as duas saídas
+([:115-116](../src/world/aether_field.gd#L115-L116)). Quatro checagens novas na suíte
+([smoke_test.gd:692-712](../tests/smoke_test.gd#L692-L712)): `nenhuma passada cria massa`,
+`saldo fecha com o corte de MIN_VALUE`, `o corte da fronteira explica a perda alem da meia-vida`,
+`teto nao injeta o excedente no campo`. A previsão é em cadeia, passada a passada, sem releitura
+([:674-687](../tests/smoke_test.gd#L674-L687)): o que sai no corte não decai mais, então o saldo é
+`m·keep^8 − Σ cut_k·keep^(7−k)` — é o termo que faltava na conta do dossiê, e a diferença entre
+previsão e medição sai impressa (`pior erro=0,00000046` com tolerância `1e-4`).
+
+### O que foi medido
+
+| Corrida | Censo | Última linha | Log |
+| --- | --- | --- | --- |
+| clone limpo do `main` publicado (`9f3622b`, do próprio `origin`) | 236 | **236 / 0 falhas / 37,1 s**, exit 0, zero `SCRIPT ERROR` | [clone-suite.log](evidence/ether-massa-conservada/clone-suite.log) |
+| `--import` obrigatório antes de qualquer corrida no clone | — | 299 linhas, zero `ERROR`/`WARNING` | [clone-import.log](evidence/ether-massa-conservada/clone-import.log) |
+| runner estreito no mesmo clone | 89 | **89 / 0 / 1,734 s**, censo `17/17` testes | [clone-reactions.log](evidence/ether-massa-conservada/clone-reactions.log) |
+| ponta da branch (`98f1d63` + `28884ff`), árvore de trabalho | 236 | **236 / 0 / 42,2 s**, exit 0 | [worktree-branch-suite.log](evidence/ether-massa-conservada/worktree-branch-suite.log) |
+| `main` depois do merge `--no-ff`, árvore de trabalho | 236 + 89 | **236 / 0 / 42,1 s** + reações **89 / 0 / 1,740 s** | [worktree-main-suite.log](evidence/ether-massa-conservada/worktree-main-suite.log), [worktree-main-reactions.log](evidence/ether-massa-conservada/worktree-main-reactions.log) |
+
+O número publicado é o do clone limpo; os `42.x s` das duas árvores de trabalho ficam aqui como
+execução do gate, não como referência. Assinaturas: `sources.sha256` tem as 79 fontes do commit e
+foi recalculado na árvore de trabalho — 79/79 bytes idênticos; `artifacts.sha256` cobre os nove
+arquivos que a precedem na pasta.
+
+Os números do saldo, idênticos byte a byte nas três corridas de suíte (linhas 68-73 do log do
+clone): `pior ganho=0,00000000` em 8 passadas × 3 canais; `pior erro=0,00000046` com
+`corte=0,176129`; a cadeia do FEAR `2,500000 → 2,296008`, onde só a meia-vida daria `2,471285`; e
+o teto — um `imprint` de `900,0` numa célula eleva o total do canal de `2,296008` para `5,170020`,
+ou seja, entrou no campo o que o teto de `4,0` comporta e o excedente ficou fora. Os `0,175` que o
+dossiê deixou pendentes são, medidos, `0,176129` de corte, com tolerância de `1e-4` por passada.
+Os dois recortes impressos coincidem: a linha do saldo soma os três canais (`corte=0.176129`) e a
+linha da cadeia imprime o corte só do FEAR, também `0,176129` — porque neste cenário o ledger fecha
+`work=0.00 blood=0.00 fear=5.17` (log `:74`).
+
+O instrumento não moveu nenhum número de mundo: `aether_energy` final é `9,67776005901396` nas
+quatro corridas de suíte citadas aqui, incluindo o clone de `a8967e0`
+([third-person-carry/clone-suite.log:305](evidence/third-person-carry/clone-suite.log)), e o
+`2,296` de agora é o mesmo `2,296` daquela linha 68. `state_bytes()` serializa `_cur`
+([aether_field.gd:233-234](../src/world/aether_field.gd#L233-L234)), não `pass_cut`, então
+`FORMAT_VERSION` e os hashes publicados continuam comparáveis.
+
+### Furo descoberto: o teto do passo não era teto
+
+O critério do dossiê 06 ([`docs/planos/06-decompor-main-gd.md`:53](planos/06-decompor-main-gd.md))
+diz que `worst_sim_ms` fora de 20% do publicado `6,78 ms` é vermelho. Não é operacional assim.
+Lendo os logs desta máquina no mesmo dia: antes da colheita a mesma estatística deu `8,436` /
+`13,106` / `14,474` ms (rodada do som, 220 checagens) e depois dela `12,929` (clone) / `13,186`
+(branch) / `13,898` (`main` mergida). São máximas de corrida de uma distribuição larga, não um
+teto: o `6,78` é uma amostra dela, e a amostra de antes da
+colheita já chegava a `14,47` ms — o que refuta a leitura de que a varredura nova dobrou o custo.
+Nenhuma das seis corridas perdeu tick (`dropped_ticks=0`), e o orçamento continua 50 ms por passo
+([sim_clock.gd:5-7](../src/core/sim_clock.gd#L5-L7)). Fica debitado: o critério precisa de uma
+banda medida em N execuções da mesma árvore, não de um pico solitário; atribuição por ablação da
+varredura de corte não foi rodada porque as amostras antes e depois se sobrepõem.
+
+### O que nada disso fecha
+
+Nenhum gate de fase. O item 4 da fila (canais MORTE/SOM/FOGO) continua com `Channel.COUNT = 3`
+([aether_field.gd:9-15](../src/world/aether_field.gd#L9-L15)) — esta rodada fecha o **passo 1** do
+dossiê 03 (colheita sem canal novo), que era pré-condição do passo 2 (`FORMAT_VERSION` conferido
+com a contagem de canais parametrizada). O item 5 (HOT agregado dos cinco lobos) não foi tocado: o
+runner estreito continua um lobo por cenário, com `sim_step total=224134 us`, pico `360 us` e BT
+`last_us soma=10295 pico=44 trips=0` na corrida do clone (log `:92`) — colheita, não gate. E o débito antigo
+de alocação no caminho quente permanece: `pass_cut` é realocado uma vez em `setup()`, não por
+passada, e as demais alocações listadas na "Disciplina de otimização" estão como estavam.
