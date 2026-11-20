@@ -51,7 +51,7 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 12 | `feat/bicho-cavando-12` | `main`, depois de 11 (a folha `dig` entra na árvore já reorganizada, e o teto de censo decide quantos lobos cavam) |
 | 13 | `feat/arvore-genealogica-13` | `main`, **por último**, depois de 12: sem a 11 não há nascimento por causa interna (o que escrever na árvore) e sem a 10 não há leitura de vizinho (como parentesco vira comportamento) |
 | 14 | `feat/alcateia-convivio-14` | `main`, depois de 10 e **antes** de 11: mexe nas mesmas folhas de movimento que a alcateia reorganizou, e o predicado "longe dos olhos do jogador" tem de existir antes de alguém precisar dele para pôr um filhote no mundo |
-| 15 | `docs/oracle-embutido-15` (estes dois commits) → `feat/oraculo-embutido-no-boot-15` (código) | `main`, **entre 10 e 14**: a 15 não encosta em nenhuma linha do código da matilha nem das outras pernas — em `src/main.gd` só pendura um nó novo no boot — enquanto a 14 depende da ronda por setor que a perna 10 está escrevendo agora |
+| 15 | `docs/oracle-embutido-15` (estes dois commits) → `feat/oraculo-embutido-no-boot-15` (código) | `main`, **entre 10 e 14**: a 15 não encosta em nenhuma linha do código da matilha nem das outras pernas — em `src/main.gd` só pendura um nó novo no boot — enquanto a 14 depende da ronda por setor que a perna 10 já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`) |
 
 A ordem 09 → 10 → 15 → 14 → 11 → 12 → 13 não é preferência: é a exceção de serialização registrada
 **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora", e reafirmada em
@@ -83,23 +83,30 @@ python .tools/verify_plan_ids.py   docs/planos/01-estado-inicial-e-ordem-autorit
 ```
 
 O primeiro confere se todo `arquivo:linha` citado existe e se o número cabe no arquivo: nas quinze
-páginas são **893 citações conferidas, 0 números fora do arquivo** (61 · 47 · 25 · 73 · 67 · 33 · 44 ·
-52 · 36 · 74 · 56 · 54 · 103 · 65 · 103, na ordem da tabela), e nesta página há mais 12 — **905** no
-diretório inteiro. As catorze páginas antigas re-medem aqui, contra a `main` em `4ac5838`, exatamente os
-**790** que esta página publicava na rodada passada, elo a elo igual; a diferença inteira é o elo novo —
-os 103 da página 15 — e por isso o **802** antigo fica citado onde foi medido, e não reescrito por cima
-do número novo. Somando os
+páginas são **895 citações conferidas, 0 números fora do arquivo** (61 · 47 · 25 · 73 · 67 · 33 · 44 ·
+52 · 36 · 76 · 56 · 54 · 103 · 65 · 103, na ordem da tabela), e nesta página há mais **15** — **910** no
+diretório inteiro. Os três que esta página ganhou desde a medida anterior são os ponteiros que o parágrafo
+de re-derivação mais abaixo escreve para registrar o README de 649 a 662 linhas, e a régua conta a página
+índice no momento em que ela é somada ao corpus. Pela
+regra declarada ela continua fora das
+quatro somas. As catorze páginas antigas re-medem aqui **792**, e o único elo que se moveu desde os
+**790** da rodada passada é o dossiê 10: **74 → 76**, dois ponteiros que a própria nota de fechamento da
+perna 10 escreveu naquela página ao realinhar as citações do `README.md`. Nada mais mudou elo a elo, e a
+diferença inteira deste número é o elo novo — os 103 da página 15 — e por isso o **802** antigo fica
+citado onde foi medido, e não reescrito por cima do número novo. Somando os
 três documentos que governam a casa — [`AGENTS.md`](../../AGENTS.md),
 [`README.md`](../../README.md) e [`docs/melhorias-status.md`](../melhorias-status.md) — são mais
-**330 números (85 · 0 · 245), 0 fora do arquivo** — os 245 do status incluem os oito que a nota de
-rodada desta rodada acrescentou ao fim do arquivo. A conta anterior desta página — 622 · 629 no
+**415 números (86 · 0 · 329), 0 fora do arquivo** — 85 → 86 no contrato e 245 → 329 no status, e os dois
+saltos são a perna 10, que re-deriveu citações do próprio `AGENTS.md` (`2e8863e`) e escreveu a sua rodada
+no fim do status; a extensão 15 não acrescenta nenhuma citação numerada ao contrato. A conta anterior desta
+página — 622 · 629 no
 diretório e 261 (72 · 0 · 189) no trio — media **doze** páginas e deixava a página 07 em 39: os cinco
 números que ela cita em `.tools/af-clean-suite*.log` só são conferidos onde `.tools/` existe, porque a
 gateira **não conta** citação de arquivo ausente. Aqui `.tools/` está no `.gitignore` e está na árvore,
 então 44 é o que o comando devolve; numa árvore sem os logs dos runs o mesmo comando devolve 39, e essa
 é a diferença, não um erro de corpo. Os números acima são re-medidos por comando nesta árvore, com
-`src/` e `tests/` na `main` em `4ac5838` e os documentos desta rodada por
-cima; não são herdados do texto. As únicas ausências que a gateira devolve são peças declaradas como
+`src/` e `tests/` na `main` em `b779cee` — o código da perna 10 já dentro — e os documentos desta rodada
+por cima; não são herdados do texto. As únicas ausências que a gateira devolve são peças declaradas como
 inexistentes: `src/core/sim/tick_clock.gd` (caminho que
 [`docs/design/06:33`](../design/06-godot-architecture.md#L33) ainda cita), `docs/engine/simclock.md`
 (entrega de P0 que ainda não existe), `tests/wolf_multiseed_census_test.gd` (o runner que o dossiê 02
@@ -120,7 +127,12 @@ governam a casa. **A página 15 não entra nessas quatro somas**, e a razão é 
 contrário das catorze antigas, ela aponta para os governantes por âncora de linha — contados link a
 link são 15 ao `AGENTS.md`, 7 ao `README.md` da raiz, 4 ao status e 1 à legenda — e cada um foi lido por
 conteúdo ao ser escrito, que é o que o §12 do dossiê registra. Recolher os quinze sob uma só regra é a
-perna separada declarada abaixo, não este parágrafo. A conta publicada antes — **60 · 8 · 6 = 74** — não
+perna separada declarada abaixo, não este parágrafo. Re-contadas por script nesta ponta, as quatro somas
+das catorze páginas são **59 · 8 · 6 · 5**, elo a elo iguais às mesmas catorze medidas em `4ac5838` — a
+perna 10 não mexeu em nenhuma delas. O **59** do status é o próprio número publicado acima: sobre as
+catorze a régua declarada e a régua de script coincidem, e o **60** só aparece quando esta página entra no
+corpus, que é exatamente o que a frase seguinte mede. A conta
+publicada antes — **60 · 8 · 6 = 74** — não
 se reproduce por regra nenhuma:
 somando esta página ao corpus o status dá 60, mas aí o `README.md` da raiz dá 9 (collapsed) ou 12
 (sem colapsar), nunca 6; sobre os doze dossiês antigos dá 59 · 8 · 3 = 70. As duas páginas novas não
@@ -130,14 +142,19 @@ quatro ponteiros estavam errados e **foram corrigidos na própria página**: `12
 `docs/melhorias-status.md:78-78` (prosa da seção anterior; o par geração/malharia está em `:83`) e
 `README.md:533` (linha de lista do Éter; os ~4,3 s de malharia dos 64 chunks estão em `:548`), e `07:67`
 e `07:137` apontavam `README.md:505-512` e `:507` — que é a seção do oráculo local — para a queda de
-~16 s para ~7,5 s com a cópia linear, que está em `:546-553` (os quatro números de README desta frase
-são da numeração de `eb6ec8d`, e o README não mudou entre ela e esta ponta; hoje o mesmo texto cai em
-`:546`, `:518-525` e `:559-566`). Restam **69** referências a estes três
+~16 s para ~7,5 s com a cópia linear, que está em `:546-553`. Cada número de README desta frase é da
+numeração de `eb6ec8d`, que tem **649** linhas, e entre ela e esta ponta o arquivo mudou duas vezes —
+`7cc79ce` (+14/−1, ou seja **649 → 662**) e `8cb10e7` (+11/−11, reescreve sem mover a contagem) — as
+duas notas de fechamento da perna 10. Mapeado por bloco igual contra os **662** desta ponta, o mesmo
+texto cai em `:546`, `:561`, `:518-525`, `:520` e `:559-566`, nesta ordem, e é para lá que as páginas já
+apontam: `12:62` cita `README.md:561`, `07:67` cita `README.md:559-566` e `07:137` cita `README.md:561`,
+re-derivadas no próprio `7cc79ce`. Restam **69** referências a estes três
 arquivos sem conferência de conteúdo, e é por isso que nenhuma delas deve ser lida como conferida. A
 perna de docs que re-derive as 69 pelo conteúdo continua aberta, registrada no furo. Este re-contado mora
 aqui, e não dentro do furo #14, por um motivo que é o próprio furo: escrever no meio do status empurra
 tudo abaixo da linha inserida, e as referências `:1064` e `:1066` que a página 07 já faz sairiam do lugar
-por minha mão — re-derivar o corpus inteiro é uma perna, e ela roda depois de a 10 pousar, porque cada
+por minha mão — re-derivar o corpus inteiro é uma perna, e ela roda **agora que a 10 pousou** (código
+`0c38489`, `main` publicada `b779cee`), porque cada
 merge desta fila move outra vez os números de `wolf.gd` e `main.gd`.
 O segundo script confere
 identificador: todo nome em backticks que não existe em `src/` ou `tests/` é ou nome de
@@ -147,8 +164,14 @@ código. Nas três páginas novas (13, 14 e 15) todos os ausentes são da primei
 checagens propostas, peças propostas (`FamilyTree`, `PackState`, `SAFE_SPAWN_DIST`, `ModelPackFetcher`,
 `oracle_cache`) e commits. A página 15 acrescenta ainda nomes de API do **motor**, não deste repositório
 (`create_process`, `is_process_running`, `get_process_exit_code`) e nomes de estado e de chave de log que
-o dossiê propõe (`carregando`, `reusado`, `estrangeiro`, `ms_ate_200`, `requisicoes_emitidas`) — os três
-primeiros corrigem nomes que vieram do briefing como sendo Godot 3, registrados em **15 §12**. As duas gateiras
+o dossiê propõe (`carregando`, `reusado`, `estrangeiro`, `ms_ate_200`, `requisicoes_emitidas`,
+`retentativas`) — os três primeiros corrigem nomes que vieram do briefing como sendo Godot 3, registrados em
+**15 §12** — e um nome da **PowerShell**: `throw`, palavra-chave do script
+[`tools/run_mind_server.ps1`](../../tools/run_mind_server.ps1), que a gateira lê como identificador porque
+ela só conhece `src/` e `tests/`. Re-contada nesta ponta, a página 15 dá **49** identificadores em backticks,
+dos quais **23** não existem em `src/` nem em `tests/`: **10** nomes de checagem proposta, **3** de API do
+motor, **3** de estado e **3** de chave de log propostos, **2** de peça proposta (`ModelPackFetcher`,
+`oracle_cache`), **1** SHA (`b779cee`, o registro da ordem) e `throw`. As duas gateiras
 moram em `.tools/`, que está no `.gitignore` — o mesmo que já se diz dos logs e do harness de
 capturas: quem for conferir por clone limpo precisa recriá-los, e os números acima valem para a
 árvore de trabalho que os tem.
