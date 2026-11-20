@@ -19,10 +19,13 @@ relevo, histograma de blocos de topo e os 1 048 576 voxels do mundo. O pelo de c
 do seu `home` (tabela de quatro cores na classe, uma pergunta por lobo no `setup`), e o imprint do
 Éter ganhou viés por bioma aplicado **pelo chamador do evento** — o campo continua sem conhecer voxel
 nenhum, e a sabotagem que move o multiplicador para dentro de `AetherField.imprint` está vermelha em
-log (7 falhas, inclusive saturação em `MAX_VALUE 4,0`). Branch `feat/bioma-e-cor-de-pelo-09` (base
-`e7e30e6`, ponta `44c9d94`, quatro commits de código antes deste documento, um assunto cada): suíte
+log (7 falhas, inclusive saturação em `MAX_VALUE 4,0`), e a que viamenta o bioma abaixo do bloco de
+topo fica vermelha na checagem de 1 048 576 voxels (1 falha em 237). Publicado em `9fe5e45` pelo merge
+`--no-ff` de `feat/bioma-e-cor-de-pelo-09` (base `e7e30e6`, ponta de código `44c9d94`, quatro commits,
+um assunto cada): suíte
 **237 checagens / 0 falhas / 35,5 s** e runner dedicado **119 checagens / 0 falhas / 2,044 s** em 24
-cenários, exit 0 nos dois, repetidos na árvore de trabalho e no clone limpo com `--import` frio — as
+cenários, exit 0 nos dois, repetidos na árvore de trabalho e no clone limpo com `--import` frio, e a
+suíte re-rodada na `main` mergida (237 / 0, exit 0) — as
 79 fontes conferidas dentro do clone, 79 `OK` / 0 divergências. O custo do viés não aparece no
 `sim_step`: pareado contra o chão na mesma janela, `+0,59 %` contra `4,05 %` de dispersão do próprio
 chão; o `pico` sobe `+13 %` e é indício, não atribuição — a perna `bench/` decide. O efeito no mundo,
@@ -2035,7 +2038,7 @@ chão medido, ou o delta sai como foi aqui: imprestável para atribuir.
 
 Nenhum gate de fase se fechou aqui, e nenhum item da fila mudou de veredito.
 
-## Rodada Bioma — o bioma decide algo, medido (2026-11-20, branch `feat/bioma-e-cor-de-pelo-09`, base `e7e30e6`, ponta `44c9d94`)
+## Rodada Bioma — o bioma decide algo, medido (2026-11-20, publicado em `9fe5e45` pelo merge de `feat/bioma-e-cor-de-pelo-09`, base `e7e30e6`, ponta de código `44c9d94`)
 
 ### O que estava em aberto
 
@@ -2081,12 +2084,14 @@ coluna de gelo e numa de savana.
 | árvore de trabalho, conteúdo de `44c9d94` | 237 / 0 / 35,5 s, exit 0, `SCRIPT ERROR` 0 | 119 / 0 / 2,064 s, exit 0 |
 | clone limpo de `44c9d94`, `--import` frio | 237 / 0 / 35,5 s, exit 0, `SCRIPT ERROR` 0 | 119 / 0 / 2,044 · 2,028 · 2,017 s, exit 0 nos três |
 | clone limpo do chão `e7e30e6` | não rodou — o número daquela árvore já está publicado | 109 / 0 / 2,012 · 1,995 · 2,052 s, exit 0 nos três |
+| `main` mergida `9fe5e45` (`--no-ff`; 20 arquivos acima de `44c9d94`, todos `README.md` e `docs/`, com `src` = `9f3a952dc123…` e `tests` = `56e487343728…` idênticos) | 237 / 0, exit 0, `SCRIPT ERROR` 0 — `35,8 s` é o tempo desta janela, não entra como custo | não rodou — nada em `tests/` mudou na merge |
 
 Censo interno conferido em todas as corridas da branch: `24/24` cenários e `119/119` checagens — 21→24
 e 109→119 é a conta do lote. O `diff` trabalho × clone tem 14 linhas e **nenhuma é checagem**; os dois
 logs batem `aether_energy`, `tick=359`, `wolves_alive=4`, `dropped_ticks=0`, `triangles=214480`,
-`chunks=64` e `edits=13` dígito a dígito. Manifestos: `sources.sha256` (79 fontes, conferidas dentro do
-clone, 79 `OK` / 0 divergências) e `artifacts.sha256` (15 logs, 15 `OK`).
+`chunks=64` e `edits=13` dígito a dígito — e o `diff` da `main` mergida × clone tem as mesmas 14 linhas
+pela mesma razão. Manifestos: `sources.sha256` (79 fontes, conferidas dentro do clone, 79 `OK` / 0
+divergências) e `artifacts.sha256` (16 logs, 16 `OK`).
 
 ### As três sabotagens, e o que cada uma decide
 
