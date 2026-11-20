@@ -45,6 +45,10 @@ var _t0 := 0
 var _checks := 0
 var _fails := 0
 var _main_ready_ms := 0.0
+## Instante do primeiro estado que libera o oraculo, no relogio da sonda: e com
+## este numero, e nao com a duracao do boot, que a checagem 4 nega a carga do
+## modelo dentro do `_ready`.
+var _boot_done_ms := -1.0
 var _loading_frame0 := -1
 var _tick0 := -1
 var _states: PackedStringArray = []
@@ -79,19 +83,30 @@ func _ready() -> void:
 	_main_ready_ms = float(Time.get_ticks_msec() - _t0)
 	if not url.is_empty():
 		main.oracle.server_url = url
-	host = LlmServerHost.new()
-	if mode == "ci":
-		# Caminhos que nao existem de proposito: o portao do §4.4 fecha antes de
-		# qualquer HTTP, entao este modo roda em arvore sem runtime e sem rede.
-		host.server_path = "res://tests/sem-runtime-15.exe"
-		host.model_path = "res://models/sem-modelo-15.gguf"
-	if not server_flag.is_empty():
-		host.server_path = server_flag
-	if not model_flag.is_empty():
-		host.model_path = model_flag
+	if main.has_llm_host():
+		# Caminho do produto: a janela criou o host dela dentro do `_ready` do
+		# mundo e o proprio host le os caminhos de env/CLI (`_resolve`), entao a
+		# sonda adota em vez de injetar. Injetar um segundo host deixava o spawn
+		# sempre posterior ao `_ready` — a negacao da checagem 4 virava trivial —
+		# e dava dois `create_process` na 8741 (medido na janela: pids 2556 e
+		# 27328, os dois `pronto`).
+		host = main.llm_host
+	else:
+		host = LlmServerHost.new()
+		if mode == "ci":
+			# Caminhos que nao existem de proposito: o portao do §4.4 fecha antes
+			# de qualquer HTTP, entao este modo roda em arvore sem runtime e sem
+			# rede. Em headless o mundo nao monta host nenhum, entao aqui e a
+			# sonda que injeta.
+			host.server_path = "res://tests/sem-runtime-15.exe"
+			host.model_path = "res://models/sem-modelo-15.gguf"
+		if not server_flag.is_empty():
+			host.server_path = server_flag
+		if not model_flag.is_empty():
+			host.model_path = model_flag
+		main.attach_llm_host(host)
 	host.keep_child_on_exit = keep
 	host.state_changed.connect(_on_state)
-	main.attach_llm_host(host)
 	_states.append(host.state)
 	_phase = "ci" if mode == "ci" else "boot"
 	_phase_t0 = Time.get_ticks_msec()
@@ -104,6 +119,8 @@ func _on_state(next_state: String, _detail: String) -> void:
 		_tick0 = int(main.clock.tick)
 	if next_state == host.DIED:
 		_death_seen = true
+	if _boot_done_ms < 0.0 and (next_state == host.READY or next_state == host.REUSED):
+		_boot_done_ms = float(Time.get_ticks_msec() - _t0)
 
 
 func _process(_delta: float) -> void:
@@ -170,8 +187,16 @@ func _report_window() -> void:
 	_check(ticks > 0, "o tick de 20 Hz andou com o modelo carregando", "tick=%d" % ticks)
 	_check(int(d["dropped_ticks"]) == 0, "nenhum tick perdido durante o boot",
 			"perdidos=%d  pior=%.2f ms" % [d["dropped_ticks"], float(d["worst_sim_ms"])])
-	_check(_main_ready_ms < host.boot_ms, "o `_ready` do mundo nao esperou o modelo",
-			"main_ready=%.0f ms  boot=%.0f ms" % [_main_ready_ms, host.boot_ms])
+	if _boot_done_ms >= 0.0:
+		# Checagem 4 na grandeza certa. `main_ready` e a duracao do `_ready` do
+		# mundo; `boot_ms` e a duracao do boot do modelo — os dois nao sao
+		# comparaveis, e comparar os dois deu vermelho na janela real (mundo
+		# 6 373 ms, modelo 3 252 ms) sem que nada estivesse bloqueando. O que se
+		# nega e uma sequencia: se a carga estivesse dentro do `_ready`, o
+		# primeiro 200 teria chegado ANTES de o `_ready` voltar.
+		_check(_boot_done_ms > _main_ready_ms, "o modelo ficou pronto com a janela ja aberta",
+				"main_ready=%.0f ms  primeiro_200=%.0f ms  duracao_do_boot=%.0f ms" % [
+					_main_ready_ms, _boot_done_ms, host.boot_ms])
 
 
 # ------------------------------------------------------------- reuso / estrangeiro

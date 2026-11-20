@@ -168,6 +168,15 @@ func _start_llm_host() -> void:
 ## Entrada do boot normal e da cena de prova. O host e o unico que conhece o pid;
 ## a sessao so empresta o oraculo e o hud para a ligacao.
 func attach_llm_host(host: LlmServerHost) -> void:
+	if llm_host != null and llm_host != host:
+		# Um dono por porta. Medido na janela real: o boot da janela criou o host
+		# dele e a cena de prova injetou o seu por cima — dois `create_process`
+		# na 8741, pids 2556 e 27328, os dois `pronto`. O `remove_child` roda o
+		# `_exit_tree` do retiro na hora, entao o filho dele morre antes do novo
+		# sondar a porta.
+		var retiro: LlmServerHost = llm_host
+		remove_child(retiro)
+		retiro.queue_free()
 	llm_host = host
 	host.name = "LlmServerHost"
 	add_child(host)
