@@ -639,13 +639,14 @@ func _test_place_renewal() -> bool:
 func _test_cache_cap() -> bool:
 	# O cache de celulas checadas tem dois limites: o teto de SCENT_MEMORY_CAP e o relogio
 	# de SCENT_MEMORY_SECONDS. Nao ha escrita continua: o unico ponto de entrada e o fim de
-	# uma inspecao, que grafa um bloco 3x3 (wolf.gd:283-293). Entao o que manda no tamanho
-	# nao e a quantidade de cheiro no chao e o intervalo entre inspecoes: com o relogio de
-	# 30s, o teto de 32 so e alcancado se uma inspecao nova fechar a cada 9*30/32 = 8,4s.
-	# A cadeia abaixo sao seis fontes reais em zigue-zague, forcadas em ordem de forca
-	# decrescente, e o que se mede e o intervalo de chegada das inspecoes, o pico do cache,
-	# a idade de cada saida e quantos metros o corpo anda por inspecao. Com isso a checagem
-	# diz qual dos dois limites manda hoje, e em que numero a evicao deixaria de ser morta.
+	# uma inspecao, que grafa um bloco 3x3 em torno da celula encontrada (wolf.gd:283-293).
+	# O que manda no tamanho e portanto o intervalo entre inspecoes: com o relogio de 30s
+	# cabem floor(30/intervalo)+1 blocos, e o teto de 32 celulas so e tocado quando entra o
+	# quarto bloco, ou seja, intervalo de 10s para baixo. A cadeia abaixo sao seis fontes
+	# reais em zigue-zague, forcadas em ordem de forca decrescente, e o que se colhe e o
+	# instante de cada chegada, o pico do cache, a idade de cada saida e quantos metros o
+	# corpo anda por salto. Com isso a checagem diz qual dos dois limites manda hoje, e em
+	# que numero a evicao deixaria de ser codigo morto.
 	_arm(Vector3(46.0, 51.001, 54.0))
 	var cap: int = Wolf.SCENT_MEMORY_CAP
 	var ttl: float = Wolf.SCENT_MEMORY_SECONDS
