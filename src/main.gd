@@ -34,6 +34,10 @@ var player: Player = null
 var viz: AetherViz = null
 var hud: Hud = null
 var oracle: MindOracle = null
+## Dono do processo filho do oraculo (dossie 15). Null em headless de proposito: a
+## suite nao pode levantar 2,7 GB por rodada — quem exercita o host e a cena de
+## prova, que o constroi com `attach_llm_host`.
+var llm_host: LlmServerHost = null
 var audio: AudioDirector = null
 var wolves: Array = []
 var elapsed: float = 0.0
@@ -67,6 +71,12 @@ var _pack_pairs: int = 0
 func _ready() -> void:
 	InputActions.install()
 	BlockDefs.init_tables()
+	# O hospedeiro entra antes da geracao porque o boot do modelo tem de
+	# sobrepor-se aos ~5,2 s de geracao + malharia (dossie 15 §6):
+	# `OS.create_process` volta com o pid imediatamente e a sonda do host roda por
+	# frame, nunca por tick. Nada aqui espera o modelo de forma sincrona: um
+	# `await` nesta porta e o congelamento de boot que a casa ja contou uma vez.
+	_start_llm_host()
 	_terrain = Node3D.new()
 	_terrain.name = "Terrain"
 	add_child(_terrain)
@@ -130,6 +140,9 @@ func _ready() -> void:
 	oracle.roster_provider = Callable(self, "wolves_roster")
 	add_child(oracle)
 	hud.narration_provider = Callable(oracle, "narration_of")
+	# O hospedeiro pode ser anterior ao oraculo (boot normal) e o hud posterior a
+	# ambos: quem liga os tres e a mesma funcao, chamada nos dois pontos.
+	_wire_llm_host()
 
 	# Ultimo a entrar e o primeiro a ser ouvido: so consome os sinais que ja
 	# existiam, nao escreve mundo nem sorteia nas RNG da simulacao.
@@ -141,6 +154,44 @@ func _ready() -> void:
 
 	_spawn_wolves(WOLF_COUNT)
 	_start_journal_from_args()
+
+
+## Decisao 4.6 do dossie 15: em headless o hospedeiro nao entra na arvore, porque
+## a suite e a corriqueira e o modelo e de 2,7 GB. O nome do display server e o
+## documentado no motor (`DisplayServer.get_name()`).
+func _start_llm_host() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	attach_llm_host(LlmServerHost.new())
+
+
+## Entrada do boot normal e da cena de prova. O host e o unico que conhece o pid;
+## a sessao so empresta o oraculo e o hud para a ligacao.
+func attach_llm_host(host: LlmServerHost) -> void:
+	llm_host = host
+	host.name = "LlmServerHost"
+	add_child(host)
+	_wire_llm_host()
+
+
+## Os tres pontos de ligacao nascem em momentos diferentes do `_ready`, entao a
+## funcao roda duas vezes e so escreve onde a peca ja existe.
+func _wire_llm_host() -> void:
+	if llm_host == null:
+		return
+	if oracle != null:
+		llm_host.oracle = oracle
+		# Portao de prontidao: sem ele a primeira requisicao da sessao cairia num
+		# 503 e o recuo de 30 s engoliria a meia-minuta seguinte (dossie 15 §4.4).
+		oracle.ready_provider = Callable(llm_host, "ready")
+	if hud != null:
+		hud.llm_status_provider = Callable(llm_host, "status_line")
+
+
+## Checagem 8 do gate: a suíte precisa de uma forma de afirmar que a sessão
+## headless não montou dono de processo nenhum.
+func has_llm_host() -> bool:
+	return llm_host != null
 
 
 func spawn_point() -> Vector3:
@@ -541,6 +592,9 @@ func diagnostics() -> Dictionary:
 		"dropped_ticks": clock.dropped_ticks, "hp": player.hp,
 		"on_ground": player.body.on_ground, "feet": player.body.feet_pos,
 		"journal": tick_journal.diagnostics(),
+		# O host so existe fora de headless (dossie 15 §4.6): na suíte a linha e
+		# vazia, e e exatamente esse o numero que a checagem 8 espera.
+		"llm": llm_host.diagnostics() if llm_host != null else {},
 	}
 
 
