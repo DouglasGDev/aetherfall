@@ -20,7 +20,7 @@ segurar `break_block` soma `_mining_accum` por frame até a dureza
 [`_progress_of`](../../src/entities/player.gd#L626-L630)), e o drop do registro entra direto no
 inventário ([`_mine_target`](../../src/entities/player.gd#L659-L672), com a recusa de espaço em
 `:662-666`). As três promessas já são checadas
-([smoke_test.gd:799-809](../../tests/smoke_test.gd#L799-L809): "segurar break minerou", "tempo de
+([smoke_test.gd:862-870](../../tests/smoke_test.gd#L862-L870): "segurar break minerou", "tempo de
 mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é violar o mandato
 "não melhorar um sistema que já passou no gate dele"** — este dossiê não toca `player.gd`.
 
@@ -40,12 +40,12 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   guarda a edição em `edits[p]`, marca chunks sujos em
   [`_touch_chunks_of`](../../src/world/voxel_world.gd#L266-L277) e emite
   `block_changed(pos, prev, now)` ([:6](../../src/world/voxel_world.gd#L6)). O lobo já segura
-  `world` e `aether` desde o [`setup`](../../src/entities/wolf.gd#L166-L182).
+  `world` e `aether` desde o [`setup`](../../src/entities/wolf.gd#L112-L128).
 - **O caminho do WORK hoje é do jogador** — o sinal `acted` do `Player` é o que imprime WORK 0,42
-  (quebra) e 0,20 (coloca) em [main.gd:356-361](../../src/main.gd#L356-L361). Se o lobo cavar sem
+  (quebra) e 0,20 (coloca) em [main.gd:277-282](../../src/main.gd#L277-L282). Se o lobo cavar sem
   imprimir, o rastro de trabalho continua sendo assinatura exclusiva do jogador — e é exatamente
   isso que os cenários `_test_work_cycle` e `_test_work_approach`
-  ([aether_reactions_test.gd:9-13](../../tests/aether_reactions_test.gd#L9-L13)) usam como
+  ([aether_reactions_test.gd:8-12](../../tests/aether_reactions_test.gd#L8-L12)) usam como
   premissa. **Consequência registrada:** um `WORK` vindo de bicho passa a ser lido como se fosse de
   jogador; o lote decide isso **antes** de escrever, com a checagem A/B dos dois canais nomeada no §5.
 - **Durezas que um bicho de pata consegue vencer** (`hardness` em segundos de lavra a mão nua,
@@ -57,10 +57,10 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
 - **O custo de cada voxel removido é a malharia, medida:** `set_block` → `_touch_chunks_of` → fila
   `_dirty`, consumida por [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L178-L186) com
   `MESH_BUDGET := 2` chunks por frame ([main.gd:13](../../src/main.gd#L13), chamada em
-  [[:192-193](../../src/main.gd#L192-L193)](../../src/main.gd#L192-L193)). As duas leituras que o
+  [[:173-174](../../src/main.gd#L173-L174)](../../src/main.gd#L173-L174)). As duas leituras que o
   contrato publica: **64 chunks em ~4,3 s no boot**
-  (`README.md:533`; 4.640–4.886 ms nas cinco corridas históricas,
-  `docs/melhorias-status.md:78`) ≈ 67 ms/chunk, e **3,14 ms no frame de jogo**
+  (`README.md:548`; 4.640–4.886 ms nas cinco corridas históricas,
+  `docs/melhorias-status.md:83`) ≈ 67 ms/chunk, e **3,14 ms no frame de jogo**
   (`_last_mesh_ms` em [voxel_world.gd:186](../../src/world/voxel_world.gd#L186), lido pelo F3 em
   [hud.gd:241-275](../../src/ui/hud.gd#L241-L275)). Os dois números convivem porque o boot congela a
   janela e **não há medição de um chunk sujo isolado** — e é ela que o cavar consome. Instrumento
@@ -68,11 +68,11 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   [`pending_meshes()`](../../src/world/voxel_world.gd#L189) e
   [`meshes_built()`](../../src/world/voxel_world.gd#L197).
 - **Onde a mecânica se encaixa, com nome:** a árvore tem `Selector[flee, hunt, sniff, patrol]`
-  ([wolf.gd:201-227](../../src/entities/wolf.gd#L201-L227)); o desemperto atual termina em desvio
-  geométrico ([`_physics_process`:738-742](../../src/entities/wolf.gd#L738-L742)) e nunca em
+  ([wolf.gd:147-173](../../src/entities/wolf.gd#L147-L173)); o desemperto atual termina em desvio
+  geométrico ([`_physics_process`:562-566](../../src/entities/wolf.gd#L562-L566)) e nunca em
   escavação; a inspeção de rastro é RUNNING por `INSPECT_SECONDS`
   ([`_leaf_investigate`](../../src/entities/wolf.gd#L249-L279)) e o chão encontrado vem de
-  [`_scent_ground_y`](../../src/entities/wolf.gd#L689-L697) — a "boca da caverna farejada" é este
+  [`_scent_ground_y`](../../src/entities/wolf.gd#L513-L521) — a "boca da caverna farejada" é este
   ponto, e a camada é a do achado, não o topo da coluna (regra medida na rodada das duas camadas).
 
 ## 3. O que a peça exige
@@ -95,9 +95,9 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
    - **NÃO entra: "pisar neve/areia patrulhando".** É cosmeticamente tentador e custa um remesh por
      passo de patrulha, sem premissa que ele decida. Vira linha de backlog no status.
 3. **`record: = true` por decisão explícita**: escrever em `edits` significa que a cova **sobrevive
-   ao save** ([main.gd:443](../../src/main.gd#L443) grava a lista,
-   [:474-477](../../src/main.gd#L474-L477) aplica no load). O lote grava (é o mundo real do lobo) e
-   imprime `edits.size()` no `diagnostics()` ([main.gd:523-534](../../src/main.gd#L523-L534)) para a
+   ao save** ([main.gd:355](../../src/main.gd#L355) grava a lista,
+   [:386-389](../../src/main.gd#L386-L389) aplica no load). O lote grava (é o mundo real do lobo) e
+   imprime `edits.size()` no `diagnostics()` ([main.gd:435-446](../../src/main.gd#L435-L446)) para a
    fila de crescimento do save ficar à vista.
 4. **WORK do bicho com assinatura própria**: o imprint acontece no **lobo** (ele tem `aether`), com
    o mesmo valor da lavra do jogador (0,42) se a intenção for "o outro predador está trabalhando
@@ -110,9 +110,9 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
 ## 4. Custo — as quatro perguntas
 
 - **Roda por frame, por tick ou às vezes?** Acumulador e decisão: **tick de 20 Hz**, dentro do
-  `sim_step` cronometrado ([main.gd:158-160](../../src/main.gd#L158-L160),
+  `sim_step` cronometrado ([main.gd:140-142](../../src/main.gd#L140-L142),
   [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)). A escrita no mundo: um evento por
-  bloco removido. O remesh resultante: no `_process` ([main.gd:192-193](../../src/main.gd#L192-L193)),
+  bloco removido. O remesh resultante: no `_process` ([main.gd:173-174](../../src/main.gd#L173-L174)),
   **fora** do passo de simulação, com budget próprio.
 - **Quantas entidades são alcançadas?** 5 lobos (12 com o censo do dossiê 11), e cada um alcança
   **1 voxel** por vez. A grande que assusta é o raio do `7×7` do rastro
@@ -155,14 +155,14 @@ godot --headless --path . tests/smoke_test.tscn
    estado que a rodada do "passo do lobo" produziu, [status — furo do contato com o chão]): um
    braço com a folha `dig` atravessa, o outro **não**. Os dois sentidos, como o contrato exige
    (ciclo 3).
-6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:19](../../tests/aether_reactions_test.gd#L19), hoje
+6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:16](../../tests/aether_reactions_test.gd#L16), hoje
    **109**) e a suíte (hoje **236**) sobem com o lote, re-medidos no clone limpo com `--import`
    frio.
 
 ## 6. O que NÃO fazer
 
 - Não tocar em `player.gd`: a lavra do jogador tem gate próprio e verde
-  ([smoke_test.gd:799-809](../../tests/smoke_test.gd#L799-L809)); refatorar `set_block` "para os dois
+  ([smoke_test.gd:862-870](../../tests/smoke_test.gd#L862-L870)); refatorar `set_block` "para os dois
   chamadores ficarem limpos" é generalizar no primeiro, e o contrato manda no segundo.
 - Não dar ao bicho uma força de escavação maior que a mão do jogador: se o lobo quebra `STONE` em
   0,3 s, o `hardness` do registro ([block_defs.gd:116-122](../../src/world/block_defs.gd#L116-L122))
