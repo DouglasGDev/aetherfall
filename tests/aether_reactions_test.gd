@@ -11,8 +11,9 @@ const TESTS: Array[StringName] = [
 	&"_test_work_diffusion", &"_test_cache_expiry", &"_test_fear_no_feedback",
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
+	&"_test_locomotion_flat",
 ]
-const EXPECTED_CHECKS: int = 94
+const EXPECTED_CHECKS: int = 97
 
 var _checks: int = 0
 var _failures: int = 0
@@ -725,6 +726,93 @@ func _test_cache_cap() -> bool:
 	_check(peak <= predicted and predicted - float(peak) < 9.0,
 			"pico confere com o modelo de blocos vivos dentro da janela",
 			"pico=%d previsto=%.0f blocos=%d intervalo=%.3f" % [peak, predicted, blocos, intervalo])
+	return true
+
+
+func _test_locomotion_flat() -> bool:
+	# O integrador resolve os tres eixos na mesma chamada e marca bloqueio em qualquer um
+	# deles, inclusive no Y quando o corpo desce contra o chao onde ja esta apoiado
+	# (voxel_body.gd:48-50, :94). O passo do lobo le esse flag como parede (wolf.gd:537)
+	# e re-arma o desvio; se estava apoiado, ainda salta ([:538-541]). Este cenario colhe
+	# o corredor sem solido: 26 m de plateu lisa, a presa a vista o tempo todo, e aqui o
+	# alvo e `hunt` e nao `investigate` porque o rastro de WORK so e lido num janela de
+	# 7x7 celulas em torno do corpo ([:467], [:472-474]) -- uma fonte a 32 m nunca virou
+	# investigacao e o que se colheu na primeira tentativa foi o andar da patrulha.
+	# Colhe-se: frames de fisica, quantos o corpo passou apoiado, quantos desses o
+	# integrador chamou de bloqueio, quantos lancamentos de 5,2 m/s sairam dai e quantos
+	# metros o corpo andou por metro ganho. O contador de salto nao pode ser
+	# `velocity.y == 5.2`: no build oficial o Vector3 e float32 e o literal e double, e a
+	# igualdade e falsa para todo salto (medido: 19 lancamentos, 0 por igualdade). Nada
+	# aqui decide ainda: os numeros vao para o commit do conserto, onde a mesma colheita
+	# tem de cair a zero sem apagar o desvio do cenario da parede.
+	_arm(Vector3(44.0, 51.001, 54.0), Vector3(70.0, 51.001, 54.0))
+	var target: Vector3 = _player.position3()
+	_advance(1, false)
+	var solids: int = 0
+	var heights: Dictionary = {}
+	for x: int in range(40, 85):
+		for z: int in range(40, 85):
+			heights[_world.surface_height(x, z)] = true
+			for y: int in range(51, 57):
+				if _world.is_solid_xyz(x, y, z):
+					solids += 1
+	var frames: int = 0
+	var apoiados: int = 0
+	var bloqueados: int = 0
+	var pouso_bloqueado: int = 0
+	var rearms: int = 0
+	var lancamentos: int = 0
+	var fora_da_plateau: int = 0
+	var walked: float = 0.0
+	var last: Vector3 = _wolf.body.feet_pos
+	var start: Vector3 = _wolf.body.feet_pos
+	var ticks: int = 0
+	var hunt_ticks: int = 0
+	for i: int in 600:
+		ticks += 1
+		_advance(1, false)
+		if _wolf.intent == "hunt":
+			hunt_ticks += 1
+		for f: int in 3:
+			var sticking_before: float = _wolf._unstick
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			frames += 1
+			walked += _horizontal(_wolf.body.feet_pos - last).length()
+			last = _wolf.body.feet_pos
+			if _wolf.body.on_ground:
+				apoiados += 1
+			if _wolf.body.blocked_this_frame:
+				bloqueados += 1
+			if _wolf.body.on_ground and _wolf.body.blocked_this_frame:
+				pouso_bloqueado += 1
+			# o re-arme acontece no mesmo frame em que o desvio expira: a linha 527 desconta
+			# o ultimo pedaco e a 538 ja sorteia outro, entao a transicao por `<= 0` nao ve
+			if _wolf._unstick > sticking_before + 0.05:
+				rearms += 1
+			# 5,2 e o impulso do salto (wolf.gd:541); no frame seguinte a gravidade ja o
+			# levou abaixo de 5, entao cada frame acima disso e um lancamento novo
+			if _wolf.body.velocity.y > 5.0:
+				lancamentos += 1
+			var feet := _wolf.body.feet_pos
+			if feet.x < 40.0 or feet.x > 84.0 or feet.z < 40.0 or feet.z > 84.0:
+				fora_da_plateau += 1
+		if _distance(target) < 2.5:
+			break
+	var ganho: float = _horizontal(_wolf.body.feet_pos - start).length()
+	var razao: float = walked / maxf(ganho, 0.001)
+	var tempo: float = float(frames) * (SimClock.STEP / 3.0)
+	_check(solids == 0 and heights.size() == 1 and int(heights.keys()[0]) == 50
+			and fora_da_plateau == 0 and _wolf._los_player and hunt_ticks >= ticks - 1,
+			"premissa: plateu 45x45 sem nenhum solido acima do piso, corpo dentro dela, presa a vista",
+			"solidos=%d alturas=%s fora=%d los=%s hunt=%d/%d ticks=%d" % [
+			solids, heights.keys(), fora_da_plateau, _wolf._los_player, hunt_ticks, ticks, ticks])
+	_check(apoiados > 0 and bloqueados > 0 and pouso_bloqueado >= int(float(apoiados) * 0.9),
+			"premissa: dos frames em que o corpo esteve apoiado, quase todos o integrador chamou bloqueio",
+			"apoiados=%d bloqueados=%d pouso_bloqueado=%d frames=%d lancamentos=%d rearms=%d" % [
+			apoiados, bloqueados, pouso_bloqueado, frames, lancamentos, rearms])
+	_check(_distance(target) < 2.5, "o corpo alcanga a presa no corredor livre",
+			"percorrido=%.1f ganho=%.1f razao=%.3f rearms=%d lancamentos=%d tempo=%.1f s andamento=%.3f m/s SPEED_WALK=%.1f" % [
+			walked, ganho, razao, rearms, lancamentos, tempo, ganho / maxf(tempo, 0.001), Wolf.SPEED_WALK])
 	return true
 
 
