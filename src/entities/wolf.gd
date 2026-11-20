@@ -25,6 +25,7 @@ const BITE_DAMAGE: float = 8.5
 const BITE_COOLDOWN: float = 1.15
 const WANDER_RADIUS: float = 22.0
 const SCENT_RADIUS: int = 3          # em celulas de Eter
+const SCENT_Y_RADIUS: int = 1         # celulas acima/abaixo da camada do lobo
 const SCENT_MIN: float = 0.06
 const SCENT_PERIOD: float = 0.25
 const INSPECT_SECONDS: float = 2.0
@@ -458,7 +459,10 @@ func _sense() -> void:
 		mind.reinforce("player_visible_recent", 0.12, "perception")
 
 
-## Varre a vizinhanca de celulas de Eter atras do rastro mais forte (custo fixo).
+## Varre o quadrado de SCENT_RADIUS na camada do lobo atras do rastro mais forte e, se ela
+## nao devolve nada utilizavel, repete o quadrado nas SCENT_Y_RADIUS camadas acima e abaixo.
+## BLOOD e WORK sao lidos em toda camada varrida; FEAR so na do lobo, porque o empurrao da
+## fuga e horizontal e a suite ja o mede ali.
 func _find_scent() -> void:
 	_scent_cd = SCENT_PERIOD
 	for c: Vector3i in _checked_scents.keys():
@@ -469,22 +473,29 @@ func _find_scent() -> void:
 	var best_cell := c0
 	var channel: int = AetherField.Channel.WORK
 	_fear_away = Vector3.ZERO
-	for dz in range(-SCENT_RADIUS, SCENT_RADIUS + 1):
-		for dx in range(-SCENT_RADIUS, SCENT_RADIUS + 1):
-			var c := Vector3i(c0.x + dx, c0.y, c0.z + dz)
-			var blood := aether.sample_cell(c, AetherField.Channel.BLOOD)
-			var work := aether.sample_cell(c, AetherField.Channel.WORK) * 0.35
-			var fear := aether.sample_cell(c, AetherField.Channel.FEAR)
-			var offset := Vector3(dx, 0.0, dz)
-			if offset.length_squared() > 0.0:
-				_fear_away -= offset * maxf(fear - _fear_here, 0.0) / offset.length_squared()
-			var v := blood + work
-			if _checked_scents.has(c) and v < _checked_scents[c].x + SCENT_RENEWAL:
-				continue
-			if v > best:
-				best = v
-				best_cell = c
-				channel = AetherField.Channel.BLOOD if blood > work else AetherField.Channel.WORK
+	# Camada propria primeiro, vizinhas depois: com rastro no nivel do lobo o nariz nao desce
+	# nem sobe, e cada camada vizinha custa 49 leituras a mais num scan que roda 4x por segundo.
+	for k in (2 * SCENT_Y_RADIUS + 1):
+		var dy: int = 0 if k == 0 else (-1 if k % 2 == 1 else k / 2)
+		if dy != 0 and best > SCENT_MIN:
+			continue
+		for dz in range(-SCENT_RADIUS, SCENT_RADIUS + 1):
+			for dx in range(-SCENT_RADIUS, SCENT_RADIUS + 1):
+				var c := Vector3i(c0.x + dx, c0.y + dy, c0.z + dz)
+				var blood := aether.sample_cell(c, AetherField.Channel.BLOOD)
+				var work := aether.sample_cell(c, AetherField.Channel.WORK) * 0.35
+				var v := blood + work
+				if dy == 0:
+					var fear := aether.sample_cell(c, AetherField.Channel.FEAR)
+					var offset := Vector3(dx, 0.0, dz)
+					if offset.length_squared() > 0.0:
+						_fear_away -= offset * maxf(fear - _fear_here, 0.0) / offset.length_squared()
+				if _checked_scents.has(c) and v < _checked_scents[c].x + SCENT_RENEWAL:
+					continue
+				if v > best:
+					best = v
+					best_cell = c
+					channel = AetherField.Channel.BLOOD if blood > work else AetherField.Channel.WORK
 	if best_cell != _scent_cell or best <= SCENT_MIN:
 		_inspect_left = 0.0
 	_scent_cell = best_cell
@@ -492,8 +503,22 @@ func _find_scent() -> void:
 	_scent_strength = best
 	_scent_found = best > SCENT_MIN
 	var cell_pos := aether.cell_center(best_cell)
-	_scent_pos = Vector3(cell_pos.x, float(world.surface_height(
-		int(cell_pos.x), int(cell_pos.z))) + 0.6, cell_pos.z)
+	_scent_pos = Vector3(cell_pos.x, _scent_ground_y(best_cell), cell_pos.z)
+
+
+## Chao do rastro: a primeira superficie solida descendo do topo da camada encontrada.
+## surface_height() nao serve aqui porque devolve o topo da coluna inteira — para um
+## rastro dentro de caverna isso e o teto, e o episodio lembrado diria que o sangue
+## estava na superficie. Sem solido na janela, fica no topo da propria camada.
+func _scent_ground_y(c: Vector3i) -> float:
+	var cell_pos := aether.cell_center(c)
+	var bx := int(cell_pos.x)
+	var bz := int(cell_pos.z)
+	var top := c.y * aether.cell + aether.cell - 1
+	for y: int in range(top, top - 2 * aether.cell, -1):
+		if world.is_solid_xyz(bx, y, bz):
+			return float(y) + 0.6
+	return float(top)
 
 
 # ------------------------------------------------------------------ locomocao (60 Hz)

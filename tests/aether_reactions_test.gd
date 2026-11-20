@@ -11,9 +11,9 @@ const TESTS: Array[StringName] = [
 	&"_test_work_diffusion", &"_test_cache_expiry", &"_test_fear_no_feedback",
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
-	&"_test_locomotion_flat", &"_test_locomotion_wall",
+	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
 ]
-const EXPECTED_CHECKS: int = 103
+const EXPECTED_CHECKS: int = 109
 
 var _checks: int = 0
 var _failures: int = 0
@@ -927,6 +927,74 @@ func _test_locomotion_wall() -> bool:
 			"encaixados=%d encaixe_max=%.3f mm frames=%d x_max=%.3f face_x=%.4f" % [
 			encaixados, encaixe_mm, frames, x_max, x_max + _wolf.body.dims.x * 0.5])
 	_wall(BlockDefs.Block.AIR)
+	return true
+
+
+## Caverna sob o teto do palco: piso solido em y=44, ar em 45..47, teto em 48..50.
+## A grade de Eter tem celula de 4 blocos (VoxelConfig.AETHER_CELL), entao o ar da
+## caverna inteiro mora na camada 11 enquanto o lobo em cima do teto esta na camada 12.
+func _cave_carve() -> void:
+	for x: int in range(56, 74):
+		for z: int in range(56, 70):
+			_world.set_block(Vector3i(x, 44, z), BlockDefs.Block.STONE)
+			for y: int in range(45, 48):
+				_world.set_block(Vector3i(x, y, z), BlockDefs.Block.AIR)
+			for y: int in range(48, 51):
+				_world.set_block(Vector3i(x, y, z), BlockDefs.Block.STONE)
+
+
+func _test_scent_cave_layer() -> bool:
+	# O leitor varria uma camada de Eter so — a do lobo — e projetava o alvo na superficie
+	# mais alta da coluna. Os dois bracos abaixo tem a mesma amplitude, o mesmo deslocamento
+	# horizontal e a mesma distancia; so a camada de Y muda, entao o que separa um do outro e
+	# a camada, nao a geometria do palco nem o alcance do raio.
+	_cave_carve()
+	var cave := Vector3(70.0, 46.0, 62.0)
+	var above := Vector3(70.0, 51.0, 62.0)
+	var cave_cell: Vector3i = _field.cell_of_world(cave)
+	var above_cell: Vector3i = _field.cell_of_world(above)
+	_arm(Vector3(62.0, 51.001, 62.0), FAR_PLAYER, 3)
+	var wolf_cell: Vector3i = _field.cell_of_world(_wolf.center())
+	_field.imprint(cave, AetherField.Channel.BLOOD, 0.42)
+	_check(cave_cell.y == wolf_cell.y - 1
+			and _horizontal(cave - _wolf.center()).length() <= float(Wolf.SCENT_RADIUS) * 4.0
+			and is_equal_approx(_field.sample(cave, AetherField.Channel.BLOOD), 0.42),
+			"premissa: rastro uma camada abaixo, dentro do raio horizontal",
+			"lobo_cam=%d rastro_cam=%d dxz_cells=%d desloc=%.1f m amplitude=%.3f" % [
+			wolf_cell.y, cave_cell.y, above_cell.x - wolf_cell.x,
+			_horizontal(cave - _wolf.center()).length(),
+			_field.sample(cave, AetherField.Channel.BLOOD)])
+	_check(is_zero_approx(_field.sample_cell(
+			Vector3i(cave_cell.x, wolf_cell.y, cave_cell.z), AetherField.Channel.BLOOD)),
+			"premissa: a camada que o leitor varre esta vazia",
+			"camada_do_lobo=%.4f camada_de_baixo=%.4f" % [_field.sample_cell(
+			Vector3i(cave_cell.x, wolf_cell.y, cave_cell.z), AetherField.Channel.BLOOD),
+			_field.sample_cell(cave_cell, AetherField.Channel.BLOOD)])
+	_advance(1)
+	_check(_wolf._scent_found and _wolf._scent_cell == cave_cell
+			and _wolf._scent_channel == AetherField.Channel.BLOOD,
+			"leitor acha o rastro uma camada abaixo",
+			"found=%s celula=%s esperado=%s forca=%.4f intent=%s %s" % [
+			_wolf._scent_found, _wolf._scent_cell, cave_cell, _wolf._scent_strength,
+			_wolf.intent, _motion()])
+	_check(_wolf._scent_pos.y < 48.0 and _wolf._scent_pos.y > 43.0,
+			"alvo projetado no piso da caverna, nao no teto da superficie",
+			"alvo=%s surface_height=%d" % [_wolf._scent_pos, _world.surface_height(
+			int(_wolf._scent_pos.x), int(_wolf._scent_pos.z))])
+	_arm(Vector3(62.0, 51.001, 62.0), FAR_PLAYER, 3)
+	_field.imprint(above, AetherField.Channel.BLOOD, 0.42)
+	_check(above_cell.y == wolf_cell.y
+			and is_equal_approx(above.y - cave.y, 5.0)
+			and is_zero_approx(_horizontal(above - cave).length()),
+			"premissa do controle: mesma coluna, camada do lobo, 5 m mais alto",
+			"lobo_cam=%d rastro_cam=%d vertical=%.1f m horizontal=%.3f m" % [
+			wolf_cell.y, above_cell.y, above.y - cave.y, _horizontal(above - cave).length()])
+	_advance(1)
+	_check(_wolf._scent_found and _wolf._scent_cell == above_cell
+			and absf(_wolf._scent_pos.y - 50.6) < 0.01,
+			"controle: rastro na camada do lobo acha o alvo na superficie de sempre",
+			"found=%s celula=%s alvo=%s forca=%.4f" % [
+			_wolf._scent_found, _wolf._scent_cell, _wolf._scent_pos, _wolf._scent_strength])
 	return true
 
 
