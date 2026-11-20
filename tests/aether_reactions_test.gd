@@ -15,9 +15,9 @@ const TESTS: Array[StringName] = [
 	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
-	&"_test_contagio_medo",
+	&"_test_contagio_medo", &"_test_amortece_confianca",
 ]
-const EXPECTED_CHECKS: int = 146
+const EXPECTED_CHECKS: int = 150
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -105,6 +105,16 @@ const ESCALONAR_SPOTS: Array = [
 # nenhum, entao a base do observador e `patrol` e a `hunt` dele esta vetada.
 const MEDO_SPOTS: Array = [
 	Vector3(78.0, 51.001, 62.0), Vector3(58.0, 51.001, 62.0),
+]
+
+# Geometria do amortecimento por confianca: tres lobos a 8 m do jogador (que fica
+# no centro do plateau) e a 11,3 m / 11,3 m / 16 m um do outro -- todos dentro dos
+# 24 m de coesao, cada um lendo os outros dois, e todos dentro dos 30 m da LOS,
+# entao a porta de `hunt` e o que decide a intencao dos tres. O lobo 0 e o
+# amansado; 1 e 2 sao os colegas cuja coragem o trust dele amortce.
+const AMORTECE_SPOTS: Array = [
+	Vector3(58.0, 51.001, 54.0), Vector3(50.0, 51.001, 62.0),
+	Vector3(66.0, 51.001, 62.0),
 ]
 
 
@@ -1841,6 +1851,117 @@ func _test_contagio_medo() -> bool:
 			obs._fear_here])
 	_pack_release()
 	return true
+
+
+## Checagem 4b do dossie 10 (`amigo_amortece`). Premissa nomeada: tres lobos a 8 m
+## do jogador, todos dentro da coesao, todos lendo os outros dois e todos em `hunt`.
+## O numero que decide e a PORTA e nao a media: `hunt` carrega o veto "coragem
+## contra este ator" na faixa 0,5..1,0, entao `_courage` 0,46 zera a opcao inteira
+## e o escorredor devolve `patrol`. Tres bracos na mesma sessao:
+## - A, sem vizinho amansado: `_pack_trust` 0, `_courage` 1, porta aberta, 3 caando.
+## - B, vizinho com trust 0,60 (acima de `PACK_TRUST_GATE` 0,35): `_pack_trust`
+##   0,60, `_courage` 0,46 -- igual a `1 - 0,60 * 0,9` reproduzido a lapis aqui --
+##   porta vetada para os DOIS colegas, e o amansado continua com porta aberta e em
+##   `hunt`, porque a leitura dele devolve trust 0 para os outros dois. A assimetria
+##   e o que prova que o numero veio da leitura da matilha, e nao de um global.
+## - C, vizinho com trust 0,30 (abaixo da soleira): `_pack_trust` volta a 0,
+##   `_courage` a 1, a porta reabre e os tres caam de novo. Sem este braco a soleira
+##   seria enfeite: qualquer trust nao zero amorteceria e o 0,35 do codigo nao
+##   decidia nada.
+## O trust alto NAO tem caminho de gameplay hoje, e isso fica no log: `take_damage`
+## e o unico chamador de `adjust_trust` em `src/` e passa -0,35. Entao o valor entra
+## pelo mutador da propria mente (+0,6 / -0,3), a porta pela qual o amansamento dos
+## dossies 14 e 11 chegaria -- nunca por `mind.relations` escrito a mao.
+func _test_amortece_confianca() -> bool:
+	_arm(SPAWN, CERCAR_PLAYER, 1)
+	_pack_session(3)
+	for i: int in 3:
+		_pack_place(i, AMORTECE_SPOTS[i])
+	# O jogador volta ao centro do plateau pela transicao real, como no cerco.
+	_player.respawn_at(CERCAR_PLAYER)
+	var n_antes := 0
+	for _t in 40:
+		_advance_pack(1)
+		n_antes = _caadores(3)
+		if n_antes == 3:
+			break
+	var ws: Array = _pack_wolves()
+	var am: Wolf = ws[0]
+	var c1: Wolf = ws[1]
+	var c2: Wolf = ws[2]
+	var leitura_tres := am._pack.size() == 2 and c1._pack.size() == 2 and c2._pack.size() == 2
+	_check(n_antes == 3 and leitura_tres and absf(c1._pack_trust) < 0.0001 \
+			and absf(c1._courage - 1.0) < 0.0001 and _porta_hunt_aberta(c1) \
+			and _porta_hunt_aberta(c2) and absf(am.trust_toward_player) < 0.0001,
+			"premissa: os tres caam com o vizinho sem confianca e a porta aberta",
+			"caadores=%d leitura=[%d,%d,%d]  %s" % [
+			n_antes, am._pack.size(), c1._pack.size(), c2._pack.size(),
+			_confianca_linhas(ws)])
+	# Braco B: o amansado ganha trust 0,60 pelo mutador da mente, e os colegas so o
+	# veem quando a sessao copiar o escalar publicado no buffer do passo seguinte.
+	var intent_antes_1: String = c1.intent
+	var intent_antes_2: String = c2.intent
+	am.mind.adjust_trust(Wolf.ACTOR_PLAYER, 0.6)
+	_advance_pack(20)
+	# Replay a lapis do amortecimento: `1 - 0,60 * 0,9` com os dois numeros do codigo
+	# escritos aqui. Se o `PACK_TRUST_DAMP` mudar sem o teste mudar, os lados
+	# divergem; se o contagio sair da percepcao por outra porta, idem.
+	var coragem_esperada: float = clampf(1.0 - 0.6 * 0.9, 0.0, 1.0)
+	_check(absf(am.trust_toward_player - 0.6) < 0.0001 \
+			and absf(c1._pack_trust - 0.6) < 0.0001 \
+			and absf(c1._courage - coragem_esperada) < 0.0001 \
+			and absf(c2._courage - coragem_esperada) < 0.0001 \
+			and not _porta_hunt_aberta(c1) and not _porta_hunt_aberta(c2) \
+			and absf(am._pack_trust) < 0.0001 and _porta_hunt_aberta(am),
+			"amortece_confianca_fecha_a_porta_de_hunt_dos_colegas",
+			"coragem_replay=%.6f  %s" % [coragem_esperada, _confianca_linhas(ws)])
+	_check(intent_antes_1 == "hunt" and intent_antes_2 == "hunt" \
+			and c1.intent != "hunt" and c2.intent != "hunt" and am.intent == "hunt",
+			"amortece_confianca_muda_intent_dos_colegas_sem_tocar_no_amansado",
+			"antes=(lobo1 %s, lobo2 %s) depois=(lobo1 %s, lobo2 %s, amansado %s)  %s" % [
+			intent_antes_1, intent_antes_2, c1.intent, c2.intent, am.intent,
+			_confianca_linhas(ws)])
+	# Braco C: 0,30 cai abaixo da soleira de 0,35 que o codigo cobra, e a porta tem
+	# de reabrir sozinha -- sem isso o gate seria decoracao.
+	am.mind.adjust_trust(Wolf.ACTOR_PLAYER, -0.3)
+	_advance_pack(20)
+	var n_depois := _caadores(3)
+	_check(absf(am.trust_toward_player - 0.3) < 0.0001 \
+			and absf(c1._pack_trust) < 0.0001 and absf(c1._courage - 1.0) < 0.0001 \
+			and _porta_hunt_aberta(c1) and _porta_hunt_aberta(c2) and n_depois == 3,
+			"amortece_confianca_soleira_de_035_decide_a_porta",
+			"caadores_depois=%d soleira=0.35 confiado_agora=0.30  %s" % [
+			n_depois, _confianca_linhas(ws)])
+	_pack_release()
+	return true
+
+
+## O veto `hunt` na ultima decisao colhida pelo escorredor do lobo: aberta quer
+## dizer `vetoed == false` e score acima de zero. Le-se no escorredor e nao se
+## deduz do `intent`, porque a histerese (`min_interval` 0,6 s) pode estar segurando
+## a intencao antiga por mais alguns ticks do que a porta.
+func _porta_hunt_aberta(w: Wolf) -> bool:
+	var bd: Dictionary = w._scorer.breakdown()
+	return bd.has("hunt") and not bool(bd["hunt"]["vetoed"]) \
+			and float(bd["hunt"]["score"]) > 0.0
+
+
+## Linha de conferencia do contagio de confianca: o trust publicado pelo vizinho, o
+## que a leitura deixou em `_pack_trust`, o `_courage` resultante, o estado da porta
+## e a intencao -- os cinco numeros de cada lobo, na ordem da sessao.
+func _confianca_linhas(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		var bd: Dictionary = w._scorer.breakdown()
+		var porta := "sem leitura"
+		if bd.has("hunt"):
+			porta = "%s score=%.6f" % [
+					"aberta" if _porta_hunt_aberta(w) else "VETADA",
+					float(bd["hunt"]["score"])]
+		out += "lobo%d trust_pub=%.3f pack_trust=%.3f courage=%.6f hunt=%s intent=%s | " % [
+				w.identity, w.trust_toward_player, w._pack_trust, w._courage,
+				porta, w.intent]
+	return out.strip_edges()
 
 
 ## Quantos dos lobos da sessao estao em `hunt` lendo `n_espera` caadores na leitura
