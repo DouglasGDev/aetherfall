@@ -10,9 +10,9 @@ const TESTS: Array[StringName] = [
 	&"_test_work_cycle", &"_test_blood_cycle", &"_test_fear_interrupt",
 	&"_test_work_diffusion", &"_test_cache_expiry", &"_test_fear_no_feedback",
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
-	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal",
+	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 ]
-const EXPECTED_CHECKS: int = 89
+const EXPECTED_CHECKS: int = 94
 
 var _checks: int = 0
 var _failures: int = 0
@@ -633,6 +633,96 @@ func _test_place_renewal() -> bool:
 	_advance(45)
 	_check(_wolf.mind.count_kind("scent_work") == 2,
 			"construcao renovada termina segunda visita", "count=%d %s" % [_wolf.mind.count_kind("scent_work"), _motion()])
+	return true
+
+
+func _test_cache_cap() -> bool:
+	# O cache de celulas checadas tem dois limites: o teto de SCENT_MEMORY_CAP e o relogio
+	# de SCENT_MEMORY_SECONDS. Nao ha escrita continua: o unico ponto de entrada e o fim de
+	# uma inspecao, que grafa um bloco 3x3 (wolf.gd:283-293). Entao o que manda no tamanho
+	# nao e a quantidade de cheiro no chao e o intervalo entre inspecoes: com o relogio de
+	# 30s, o teto de 32 so e alcancado se uma inspecao nova fechar a cada 9*30/32 = 8,4s.
+	# A cadeia abaixo sao seis fontes reais em zigue-zague, forcadas em ordem de forca
+	# decrescente, e o que se mede e o intervalo de chegada das inspecoes, o pico do cache,
+	# a idade de cada saida e quantos metros o corpo anda por inspecao. Com isso a checagem
+	# diz qual dos dois limites manda hoje, e em que numero a evicao deixaria de ser morta.
+	_arm(Vector3(46.0, 51.001, 54.0))
+	var cap: int = Wolf.SCENT_MEMORY_CAP
+	var ttl: float = Wolf.SCENT_MEMORY_SECONDS
+	var spots: Array[Vector3] = [Vector3(46.0, 50.6, 54.0), Vector3(58.0, 50.6, 54.0),
+			Vector3(70.0, 50.6, 54.0), Vector3(70.0, 50.6, 66.0), Vector3(58.0, 50.6, 66.0),
+			Vector3(46.0, 50.6, 66.0)]
+	var amps: Array[float] = [0.84, 0.78, 0.72, 0.66, 0.60, 0.54]
+	for i: int in spots.size():
+		_field.imprint(spots[i], AetherField.Channel.WORK, amps[i])
+	var cache: Dictionary = _wolf.get("_checked_scents")
+	var peak: int = cache.size()
+	var walked: float = 0.0
+	var last_feet: Vector3 = _wolf.body.feet_pos
+	var exits: Dictionary = {}
+	var arrivals: Array[float] = []
+	var episodes: int = _wolf.mind.count_kind("scent_work")
+	for i: int in 2000:
+		_advance(1)
+		peak = maxi(peak, cache.size())
+		walked += _horizontal(_wolf.body.feet_pos - last_feet).length()
+		last_feet = _wolf.body.feet_pos
+		if _wolf.mind.count_kind("scent_work") > episodes:
+			episodes += 1
+			arrivals.append(_wolf._scent_clock)
+		# Colher na cadencia da percepcao: a varredura de expiracao roda dentro de
+		# _find_scent, entao uma saida so pode aparecer num tick em que o scan aconteceu.
+		if _clock.tick % 5 == 0:
+			var clock: float = _wolf._scent_clock
+			for k: Vector3i in cache.keys():
+				if not exits.has(k):
+					exits[k] = Vector2(float(cache[k].y) - ttl, -1.0)
+			for k: Vector3i in exits.keys():
+				if exits[k].y < 0.0 and not cache.has(k):
+					exits[k] = Vector2(exits[k].x, clock)
+			if episodes == spots.size():
+				break
+	var min_exit: float = 1e9
+	var max_exit: float = -1.0
+	var gone: int = 0
+	for k: Vector3i in exits.keys():
+		if exits[k].y >= 0.0:
+			var age: float = exits[k].y - exits[k].x
+			min_exit = minf(min_exit, age)
+			max_exit = maxf(max_exit, age)
+			gone += 1
+	var idade: float = _wolf._scent_clock
+	var pace: float = walked / idade
+	var gaps: float = 0.0
+	for i: int in range(1, arrivals.size()):
+		gaps += arrivals[i] - arrivals[i - 1]
+	var intervalo: float = gaps / float(maxi(arrivals.size() - 1, 1))
+	var salto: float = 0.0
+	for i: int in range(1, spots.size()):
+		salto += _horizontal(spots[i] - spots[i - 1]).length()
+	salto /= float(spots.size() - 1)
+	var metros_por_salto: float = walked / float(maxi(arrivals.size() - 1, 1))
+	var progressao: float = salto / maxf(intervalo, 0.001)
+	# O modelo do proprio codigo: um bloco 3x3 por inspecao, vivo por ttl. Com o
+	# relogio de 30s cabem floor(30/intervalo)+1 blocos; o teto de 32 celulas so e
+	# tocado quando o quarto bloco entra, ou seja, intervalo de 10s para baixo.
+	var blocos: int = int(floorf(ttl / maxf(intervalo, 0.001))) + 1
+	var predicted: float = 9.0 * float(blocos)
+	_check(episodes == spots.size() and arrivals.size() >= 4 and gone >= cap,
+			"premissa: seis inspecoes reais e uma janela inteira de saidas colhida",
+			"episodios=%d chegadas=%d saidas=%d vistas=%d idade=%.3f" % [
+			episodes, arrivals.size(), gone, exits.size(), idade])
+	_check(peak <= cap, "cache nunca passa do teto de 32 celulas",
+			"pico=%d teto=%d vistas=%d" % [peak, cap, exits.size()])
+	_check(gone > 0 and min_exit >= ttl, "nenhuma saida do cache antes do relogio de 30s",
+			"saida_mais_jovem=%.3f mais_velha=%.3f ttl=%.1f" % [min_exit, max_exit, ttl])
+	_check(float(blocos) * 9.0 < float(cap) and intervalo > ttl / 3.0,
+			"evicao nao roda: a janela de 30s nao comporta o quarto bloco 3x3",
+			"intervalo=%.3f janela=%.3f blocos=%d preencheria=%.0f salto=%.1f metros_por_salto=%.1f progressao=%.3f m/s=%.3f" % [
+			intervalo, ttl, blocos, predicted, salto, metros_por_salto, progressao, pace])
+	_check(peak <= predicted and predicted - float(peak) < 9.0,
+			"pico confere com o modelo de blocos vivos dentro da janela",
+			"pico=%d previsto=%.0f blocos=%d intervalo=%.3f" % [peak, predicted, blocos, intervalo])
 	return true
 
 
