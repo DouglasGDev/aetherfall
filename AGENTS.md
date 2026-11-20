@@ -288,7 +288,7 @@ dois `world.set_block` de gameplay são os do jogador (`:667`, `:693`).
 A exceção de ordem registrada **antes** do código: as quatro linhas mexem todas em
 `src/entities/wolf.gd` e em `src/main.gd`, que são de escritor único. Elas rodam **serializadas**
 — uma branch fecha (merge + gate na `main` mergeda + publicação) antes da seguinte abrir — e a
-ordem é 09 → 10 → 14 → 11 → 12 → 13 (a ordem completa, com o motivo de cada elo, está na
+ordem é 09 → 10 → 15 → 14 → 11 → 12 → 13 (a ordem completa, com o motivo de cada elo, está na
 extensão abaixo), porque cor depende de bioma, cercar depende de quem mais existe na matilha,
 convivência depende das folhas que a matilha reorganiza, acasalamento depende de dois adultos
 próximos, cavar é folha da árvore já montada, e genealogia depende de existir nascimento.
@@ -336,8 +336,8 @@ uma com um agente responsável.** Elas entram no "dentro"; a posição de cada u
    publicadas e é decisão de versão explícita, escrita no status.
 
 A ordem serializada **nova**, com o motivo de dependência de cada elo (registrada antes do código,
-porque as duas linhas também escrevem em `src/entities/wolf.gd` e `src/main.gd`): **09 → 10 → 14 →
-11 → 12 → 13**. 14 vem logo depois de 10 porque mexe nas mesmas folhas de movimento e nos mesmos
+porque as duas linhas também escrevem em `src/entities/wolf.gd` e `src/main.gd`): **09 → 10 → 15 → 14 →
+11 → 12 → 13**. 14 vem depois de 10 porque mexe nas mesmas folhas de movimento e nos mesmos
 ajudantes de spawn que a alcateia acaba de reorganizar, e porque o predicado "ponto longe dos olhos
 do jogador" tem de existir **antes** de 11 precisar dele para colocar o filhote no mundo; 11 vem
 depois de 14 porque acasalar exige dois adultos próximos e agora exige também onde pôr o recém-nato;
@@ -346,6 +346,17 @@ censo decide quantos lobos cavam; 13 é a última porque árvore genealógica s�
 quando existe nascimento por causa interna (11), lê parentesco pela lista de vizinhos que a matilha
 abriu (10), e — se o Éter ganhar canal ou proveniência nova — reimportar e re-mediar as cinco
 pernas anteriores é mais barato do que deixar a mudança de `Channel.COUNT` no meio da fila.
+
+**Extensão de 2026-11-20 (3), autorizada pelo dono na própria conversa — oráculo embutido no boot**
+(dossiê [`docs/planos/15-oraculo-embutido-no-boot.md`](docs/planos/15-oraculo-embutido-no-boot.md),
+branch `feat/oraculo-embutido-no-boot-15`, dono o agente `oraculo-15`). O pedido, nas palavras dele:
+"ao startar o game, tem que carregar o modelo de i.a na maquina [...] sem eu ter que abrir depois...
+tem que ser algo embutido", e "depois vemos como fica pra quem nao tem palca de video" — essa segunda
+metade fica `[OPEN]`, não é tarefa desta perna. A fila passa a **09 → 10 → 15 → 14 → 11 → 12 → 13**,
+com a 15 no meio porque não depende de nenhuma linha do código da matilha: é o caminho do `Rodar.bat`
+e em `src/main.gd` só pendura um nó novo no boot, enquanto a 14 depende da ronda por setor que a perna
+10 já escreveu e pousou. Registrada **antes** de qualquer código, como exige o mandato 4; nada deste
+lote encosta em `src/entities/wolf.gd`, e o processo do oráculo continua fora do caminho de simulação.
 
 ## Ciclo de trabalho
 

@@ -330,9 +330,9 @@ então a fila serializada passa a **09 → 10 → 14 → 11 → 12 → 13**: o 1
 mexe nas folhas de movimento e nos ajudantes de spawn que a alcateia reorganiza, e porque o
 predicado "ponto longe dos olhos do jogador" tem de existir antes de o 11 precisar dele para pôr o
 filhote no mundo; o 13 fecha a fila porque ascendência só tem o que gravar depois de existir
-nascimento por causa interna. Nada aqui é trabalho em andamento: as duas pernas estão **abertas
-como dossiê**, nenhum código delas foi escrito, nenhum gate delas foi fechado, e a perna 09
-continua a única das seis já concluída.
+nascimento por causa interna. Nada aqui é código: as duas pernas estão abertas como dossiê e nenhum
+gate delas foi fechado. A fila acima é a que `5108229` escreveu e `4ac5838` publica, já substituída
+pela extensão (3), abaixo deste parágrafo e no contrato; nesta ponta, concluídas são **duas** — 09 e 10.
 
 ## Falta
 
@@ -2622,3 +2622,81 @@ zero ou ponta em branco), e a guarda agora está na ferramenta.
   existe: a matilha lida hoje se lê no log do runner, não no F3.
 - Memória compartilhada **entre** matilhas continua `[TARGET]`: `Mind.relations` é confiança por ator
   ([mind.gd:20](../src/ai/mind.gd#L20), [:126-131](../src/ai/mind.gd#L126-L131)).
+
+## Rodada Docs 15 — o índice das quinze páginas re-medido depois de a perna 10 pousar (2026-11-20, `docs/oracle-embutido-15`, base `b779cee`, ponta anterior `abf2c07`)
+
+### O que estava em aberto
+
+A página-índice e o dossiê 15 nasceram enquanto a perna 10 ainda mexia em `src/entities/wolf.gd` e em
+`src/main.gd`. Pousada ela (código `0c38489`, `main` publicada `b779cee`), sobravam quatro frases que
+descreviam como futuro o que já tinha acontecido, e uma série de números medidos contra `4ac5838` — a
+ponta de antes do merge. Nada de código: o assunto desta ponta é documento e régua.
+
+### O que entrou (quatro commits, um assunto cada)
+
+1. **Dossiê 15** — oráculo embutido no boot: o jogo levanta o servidor local do modelo e o derruba ao
+   fechar a janela, sem passo manual e sem depender de quem aperta botão. Ponta `43a3329`.
+2. **Registro de ordem + página-índice das quinze** — a fila serializada reescrita **antes** de qualquer
+   linha de código, agora 09 → 10 → 15 → 14 → 11 → 12 → 13, com o motivo de dependência de cada elo.
+   Ponta `abf2c07`.
+3. **Contrato + dossiê: a perna 10 pousou** — as duas frases que diziam "a perna 10 está escrevendo
+   agora" viram passado em `AGENTS.md` e no § de estado do dossiê 15, e a extensão (3) da fila passou a
+   nomear as pernas já concluídas.
+4. **Índice re-medido + esta nota** — os números do índice passados contra a ponta atual, o mapa do
+   `README.md` da raiz entre a numeração antiga e esta, a classe que faltava na taxonomia de
+   identificadores e a correção de uma soma que o próprio índice publicava errada.
+
+### A corrida que sustenta os números
+
+Esta ponta não escreve uma linha de `src` nem de `tests`: o diff entre a `main` e aqui nesses dois
+diretórios é vazio, e as duas árvores de diretório são byte-idênticas às da `main` publicada — `src` em
+`c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a`, `tests` em `03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`. Por
+identidade de árvore, o número da suíte desta ponta é o da `main` doc-only `99fa0f3`: **239 checagens /
+0 falhas / 39,1 s**, exit 0, em `merge-99fa0f3-suite.log` (33ª entrada de `artifacts.sha256`). A corrida
+da `main` mergida recebe nota própria abaixo desta, como fez a perna 10: ela só existe depois do merge.
+
+### As quatro correções de prosa, e o que cada uma custava
+
+- **O README da raiz mudou duas vezes** entre a numeração que as páginas citavam (649 linhas) e esta ponta
+  (662): o primeiro commit moveu linhas, o segundo reescreveu sem mover. Mapeado por bloco igual, o texto
+  que três páginas buscavam caiu em outros lugares, e os três ponteiros vivos foram re-derivados. A frase
+  antiga, que dizia que o arquivo não tinha mudado, estava falsa — e a régua conta ponteiros que a própria
+  nota de correção escreve, o que fez o total desta página subir por causa do texto que explicava a subida.
+- **A soma das catorze páginas antigas** estava publicada como 60 · 8 · 6 · 5; a régua sobre as catorze dá
+  **59 · 8 · 6 · 5**, e 60 só aparece quando esta página entra no corpus. Número publicado que não se
+  reproduz por regra nenhuma é defeito de número, não de régua.
+- **A taxonomia de identificadores** não tinha classe para `throw`, palavra-chave do script de lançamento
+  do servidor de mente, que a gateira lê como nome de código porque só conhece `src` e `tests`.
+- **A atribuição da fila histórica** do parágrafo de exceção (2) foi feita pelo commit que a escreveu e
+  pelo que a publica, não por um único SHA.
+
+### Contagem conferida nesta ponta
+
+- Citações com número de linha nas quinze páginas dos dossiês: **895**; nesta página-índice: **15**; no
+  diretório inteiro: **910**. As catorze páginas antigas, sozinhas: **792**.
+- Trio que governa a casa — `AGENTS.md`, `README.md` da raiz e este arquivo: **415** números, por documento
+  **86 · 0 · 329**, zero número fora do arquivo. A extensão do dossiê 15 não acrescentou citação numerada
+  nenhuma ao contrato.
+- Corpus rastreado inteiro: **1 417** citações conferidas, **31** arquivos citados que não existem, **0**
+  números fora do arquivo. Na `main` desta base a mesma régua deu **1 311 · 27 · 0**; a diferença é o
+  escopo desta ponta, não um regresso.
+- Links de código por âncora de linha: **907**, rótulo sem número: **99**, rótulo diferente do alvo: **7**
+  — as mesmas sete linhas de código literal de sempre, nenhuma nova.
+- Página 15: **49** identificadores em backticks, **23** ausentes em `src` e `tests`, classificados em
+  **10** checagens propostas, **3** de API do motor, **3** de estado, **3** de chave de log, **2** de peça
+  proposta, **1** SHA e `throw`.
+- Os quatro sumidos governantes das catorze páginas: **59 · 8 · 6 · 5**, elo a elo iguais aos medidos em
+  `4ac5838`.
+
+### O que nada disso fecha
+
+- **Nenhum gate de fase.** A perna 15 continua só dossiê: o hospedeiro do servidor de modelo proposto, o
+  probe de boot proposto e as checagens que o dossiê nomeia não existem em código nesta ponta, e a dupla
+  que os declara fica marcada como alvo no dossiê 15 e nesta página-índice.
+- **[OPEN] medir tempo até health e VRAM** — pedido do dono, ainda sem número. O dossiê declara a medição
+  como gate da perna de código; ninguém mediu nada aqui.
+- As quatro frases corrigidas moravam em documento, não em código; nenhuma re-derivação de `wolf.gd` ou
+  `main.gd` foi precisada por esta ponta, e as **69** referências sem conferência de conteúdo continuam
+  devendo a perna que as relê.
+- O HOT agregado dos cinco lobos e `MindsInspector` seguem sem peça e sem medição; esta rodada é
+  contagem de documento, não coluna de desempenho.
