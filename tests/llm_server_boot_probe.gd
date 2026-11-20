@@ -111,6 +111,12 @@ func _process(_delta: float) -> void:
 	match _phase:
 		"ci":
 			if _frames >= 6:
+				# Vira a pagina ANTES de chamar: `_run_ci` espera frames e este braço
+				# roda a cada frame enquanto `_phase` for `ci`. Sem o corte, a função
+				# reentrava, trocava `_ci_second` por um nodo novinho em `ocioso` a cada
+				# volta e as duas checagens do segundo host ficavam vermelhas com
+				# estado=ocioso (medido: 30 linhas `ausente (modelo)` no log).
+				_phase = "ci-medindo"
 				_run_ci()
 		"boot":
 			_run_boot()
@@ -299,8 +305,15 @@ func _run_ci() -> void:
 	_ci_second.server_path = "res://tests/llm_server_boot_probe.gd"
 	_ci_second.model_path = "res://models/sem-modelo-15.gguf"
 	add_child(_ci_second)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Espera pelo estado, nao por contagem de frame: um filho criado dentro de um
+	# `_process` so e tickado no frame seguinte, e o numero de frames ate o host
+	# decidir o motivo e do engine, nao desta sonda — com teto de 30 para a sonda
+	# imprimir o estado em vez de girar para sempre.
+	var _espera := 0
+	while (host.state == host.IDLE or _ci_second.state == host.IDLE) and _espera < 30:
+		await get_tree().process_frame
+		_espera += 1
+	print("sonda 15  ci: %d frame(s) ate os dois estados ficarem decidiveis" % _espera)
 	var l1 := host.status_line()
 	var l2 := _ci_second.status_line()
 	_check(host.state == host.NO_RUNTIME, "binario ausente da o motivo do runtime",
