@@ -270,6 +270,27 @@ Fora, sem autorização explícita do dono do repositório: P2 (facções / `Slo
 em GDExtension, co-op, progressão e chefes, e qualquer "melhoria" de sistema que já passou no
 gate dele. Idéia boa de fase futura vira linha de backlog no status, não código agora.
 
+**Extensão de 2026-11-20, autorizada pelo dono na própria conversa.** Quatro linhas entram no
+"dentro", na ordem dos dossiês ([`docs/planos/README.md`](docs/planos/README.md)): **bioma como
+código + cor do pelo por bioma** (09), **rotinas de alcateia** — rondar, farejar, procurar, cercar
+e atacar em grupo (10), **acasalamento com filhote que cresce e censo variável** (11), **bicho
+cavando voxel** (12). O Éter continua o foco: a definição dele fecha pelo dossiê 03 (canais
+morte/som/fogo) e pelo 05 (difusão fora do tick), e a parte nova dele é o background por bioma.
+Duas recortes que a autorização **não** cobre, porque o código já os entrega e o gate deles já
+existe: a lavra contínua do jogador (`player.gd:636-647`, segura `break_block`, o progresso soma
+por frame e o bloco cai quando `hardness` estoura) e a coleta automática no inventário
+(`:659-672`, o drop do registro entra direto) — ambas checadas em
+[`tests/smoke_test.gd:780-790`](tests/smoke_test.gd#L780-L790) ("segurar break minerou", "tempo de
+mineracao == dureza", "lavra entrou no inventario como drop"). Melhorar o que já passou no gate
+continua vetado; o que entra é o buraco real: **nenhum bicho escreve no mundo hoje** — os únicos
+dois `world.set_block` de gameplay são os do jogador (`:667`, `:693`).
+
+A exceção de ordem registrada **antes** do código: as quatro linhas mexem todas em
+`src/entities/wolf.gd` e em `src/main.gd`, que são de escritor único. Elas rodam **serializadas**
+— uma branch fecha (merge + gate na `main` mergeda + publicação) antes da seguinte abrir — e a
+ordem é 09 → 10 → 11 → 12, porque cor depende de bioma, cercar depende de quem mais existe na
+matilha, acasalamento depende de dois adultos próximos, e cavar é folha da árvore já montada.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do

@@ -304,6 +304,37 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
 7. **Decompor `main.gd`** pelo eixo certo: um dono por sistema (sessão, matilha, HUD, oráculo,
    visualização), preservando o acesso ao estado. A autoridade temporal ainda não é única:
    jogador, corpos dos lobos e timers também mudam por frame.
+8. **Bioma como código, cor do pelo por bioma e background de Éter por bioma** (dossiê 09). Hoje o
+   mundo não tem nenhum identificador de bioma: o que existe é a regra de superfície
+   ([world_gen.gd:100-111](../src/world/world_gen.gd#L100-L111)), que escolhe `SAND`/`SNOW`/`STONE`/
+   `GRASS` por altura e por duas ruídos (`_temp`, `_moist`) sem nunca guardar o resultado. Todos os
+   lobos têm a mesma cor — uma linha, [wolf.gd:714](../src/entities/wolf.gd#L714)
+   `Color(0.40, 0.36, 0.31)`. A palavra "bioma" aparece em `docs/` (design 06 e 07, como estrutura
+   futura) e **zero vezes em `src/`**.
+9. **Rotinas de alcateia** (dossiê 10). A árvore de decisão é de um lobo solitário:
+   `Selector[flee, hunt, sniff, patrol]` ([wolf.gd:147-173](../src/entities/wolf.gd#L147-L173)) e o
+   dicionário do blackboard ([wolf.gd:433](../src/entities/wolf.gd#L433)) não leva nenhum outro lobo.
+   Não existe rondar em área, cercar (nenhum assento angular), atacar em grupo nem memória
+   compartilhada: `Mind.relations` é confiança por **ator** ([mind.gd:20](../src/ai/mind.gd#L20),
+   [:126-131](../src/ai/mind.gd#L126-L131)), não por matilha, e nada hoje decide se a lembrança
+   ajuda ou atrapalha o jogador.
+10. **Acasalamento, filhote que cresce e censo variável** (dossiê 11). A população é uma constante
+    ([main.gd:9](../src/main.gd#L9) `WOLF_COUNT := 5`) e a fila de respawns só repõe
+    ([main.gd:162](../src/main.gd#L162) `_spawn_wolves(1)`). Não existe idade, filhote nem corpo
+    menor: `DIMS` é constante ([wolf.gd:37](../src/entities/wolf.gd#L37)). O load pareia por índice
+    com teto — [`for i in mini(saved.size(), wolves.size())`](../src/main.gd#L410) — então um censo
+    que cresce hoje **descartaria filhote em silêncio**, e
+    [tests/tick_journal_test.gd:78](../tests/tick_journal_test.gd#L78) exige
+    `wolves.size() == Main.WOLF_COUNT`: as duas peças são re-derivadas junto, não depois.
+11. **Bicho cavando voxel** (dossiê 12). A lavra contínua do jogador **já existe e já tem gate**:
+    segurar `break_block` soma progresso por frame até a dureza
+    ([player.gd:636-647](../src/entities/player.gd#L636-L647)), o drop do registro entra direto no
+    inventário ([player.gd:659-672](../src/entities/player.gd#L659-L672)), e a suíte confere as três
+    promessas ([tests/smoke_test.gd:780-790](../tests/smoke_test.gd#L780-L790) — "segurar break
+    minerou", "tempo de mineracao == dureza", "lavra entrou no inventario como drop"). O buraco real
+    é do outro lado: os únicos dois `world.set_block` de gameplay no `src/` são os do jogador
+    (`:667`, `:693`) e o `_on_acted` que imprime WORK é sinal do jogador
+    ([main.gd:268-273](../src/main.gd#L268-L273)). Nenhum animal escreve no mundo.
 
 ## Backlog priorizado (P0 → P1)
 
@@ -542,6 +573,27 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     inventado, aqui ele foi verdadeiro e a linha mudou depois. Nada em `tests/` derruba vermelho
     por isso (grep: `docs/` aparece em `tests/` só em comentário), então a única defesa é o script
     que compara os dois, e ele não estava sendo rodado. Detalhe na seção de re-derivação da rodada.
+
+14. **Os dossiês apontam para linhas deste arquivo e do `AGENTS.md`, e a gateira que confere os
+    números não lê o que está nesses números.** São **59** referências no formato
+    `docs/melhorias-status.md:NNN` dentro de [`docs/planos/`](planos/README.md) e **8** no formato
+    `AGENTS.md:NNN`. `verify_plan_cites.py` confere se o arquivo existe e se o número cabe nele — e
+    devolve **"0 números fora do arquivo"** para as 67, porque o documento só cresceu: um ponteiro
+    que hoje cai em cima de prosa de outra seção continua dentro da faixa. Conferindo o conteúdo de
+    quatro deles contra o texto que os dossiês afirmam: `01:3` chama `:262-271` de "item 2 de Falta"
+    (o item 2 está em `275-284`; `262-271` é o fim de "Em andamento" mais o cabeçalho da seção);
+    `01:46` e `02:27` citam `:370-374` para "a contagem cai de 220 para 216 sem nenhum vermelho"
+    (a frase está em `416`); `02:36` cita `:401-404` para o veto de somar picos de instantes
+    distintos (está em `447`); `02:9` cita `:32` para "não há harness multi-semente em `tests/`"
+    (está na tabela de prompts, `:45`). Os quatro estavam errados **antes** desta rodada e continuam
+    errados: a deriva não é um deslocamento único, são épocas diferentes sobrepostas (a rodada de
+    rastros empurrou a seção "Falta" de `255` para `268`, e esta rodada, que acrescentou os itens
+    8 a 11, empurrou tudo abaixo de `307` em **+31** — **32** das 59 referências — e o `AGENTS.md`
+    recebeu **+21** em `271`, o que moveu **3** das 8). As quatro páginas novas (09 a 12) não
+    adicionam dívida: 09, 10 e 11 não fazem nenhuma referência numerada a estes dois arquivos, e a
+    única de 12 aponta para o `README.md` da raiz. Falta a perna de docs que re-derive as 67 pelo
+    conteúdo — a mesma que o furo #13 deixou pendente — e enquanto ela não roda, nenhum número de
+    `docs/planos/*.md` apontando para cá deve ser lido como conferido.
 
 ## Contrato dos rastros e reações
 
@@ -1837,3 +1889,73 @@ alcança a camada vizinha quando a própria não devolve nada, e isso custa +12 
   ocorrências têm rótulo ≠ âncora (três rótulos, dois escritos duas vezes — ver a seção de
   re-derivação), mais a mis-citação de `docs/design/10:1046`. O contador existe como conta de
   rodada, não como checagem da suíte: nada em `tests/` derruba vermelho quando um rótulo envelhece.
+
+## Rodada de escopo — a corrida da branch e o que ela não mede (2026-11-20, branch `docs/escopo-alcateia-bioma-reproducao`)
+
+### O que rodou
+
+- `tests/smoke_test.tscn` na branch → **236 checagens / 0 falhas / 38,7 s**, exit 0, 311 linhas de
+  saída com zero `SCRIPT ERROR`; ruído de quit `8 ObjectDB instances` + `4 resources still in use`
+  (a família majoritária da nota anterior, não a exceção `4/2`).
+- `--script tests/aether_reactions_test.gd` na branch → **109 checagens / 0 falhas / 2,167 s**,
+  exit 0, censo `109/109`, zero `SCRIPT ERROR`.
+
+As duas contagens valem como execução do gate da branch: são determinísticas e nada aqui toca
+`src/` nem `tests/`. A prova é por árvore, não por palavra — `git rev-parse HEAD:src` =
+`cbaaef5:src` = `9f5256b:src` = `9a8dbdfc01f1…` e `HEAD:tests` = `cbaaef5:tests` = `7bcbde99b7d8…`,
+com `git status --porcelain src tests` devolvendo zero linhas. O engine é o mesmo
+build (`.tools/Godot_v4.7.2-stable_win64.exe`, `4.7.2.stable.official.ed1daf0bf`, exatamente a
+string do cabeçalho dos logs da rodada dos rastros); o md5 dele medido agora é `2afa3142b68f…`, e
+a rodada anterior não publicou md5 nenhum do binário, então isso é coincide por versão, não por
+hash conferido entre sessões.
+
+### O que os µs desta sessão não são
+
+A linha do cenário estreito saiu assim, quatro corridas seguidas, todas com `passos=2768`:
+
+| Corrida | `sim_step` total | pico | BT `last_us` soma | trips |
+| --- | --- | --- | --- | --- |
+| 1 | 420 595 µs | 894 µs | 17 670 µs | 0 |
+| 2 | 439 265 µs | 958 µs | 18 703 µs | 0 |
+| 3 | 445 745 µs | 877 µs | 19 121 µs | 1 |
+| 4 | 466 263 µs | 989 µs | 19 255 µs | 0 |
+
+Nenhuma das quatro cai na banda do **mesmo código** na rodada dos rastros: as 12 corridas gateadas
+de [`docs/evidence/rastro-duas-camadas/`](evidence/rastro-duas-camadas/)
+(`publicado-1/2/3`, `colheita-contadores-1/2`, `main-runner`, `merge-main-runner`,
+`merge-ff347d2-runner`, `docs-runner`, `clone-reactions`, `clone-3ab08db-runner`,
+`clone-ff347d2-runner` — todas na linha 118 de cada log) vão de **361 464 a 375 216 µs** com o
+mesmo `passos=2768`, e o BT `soma` delas é **14 409 a 14 859 µs** contra 17 670–19 255 daqui. A
+média das quatro contaminadas é **442 967 µs**, +21,8 % sobre os `363 680` do braço F
+([readback.log](evidence/rastro-duas-camadas/readback.log), linha 28), e o `pico` acompanha: a
+linha 21 do mesmo arquivo dá 619 / 609 / 545 µs para os três runs publicados e a linha 39 dá 775
+no clone limpo, contra **877–989** aqui.
+
+O `trips=1` da terceira corrida é a peça mais direta dessa atribuição: o `SubtreeGuard` compara
+400 µs de **tempo de parede**, e nas 12 corridas da banda publicada ele nunca disparou. Aqui ele
+disparou uma vez em quatro — e as 109 checagens continuaram 0 falhas, porque a contagem de trips é
+colhida, não gateada. Um disparo que só aparece sob concorrência é o instrumento medindo o
+concorrente, não a árvore.
+
+Deslocamento de +16 % a +27 % no total e +20 % no BT, com a árvore medida byte a byte a mesma, não
+é de código: é da máquina. Duas amostras instantâneas na janela das corridas, ambas com a máquina
+longe de ociosa: `Win32_PerfFormattedData_PerfOS_Processor` (`Name='_Total'`) deu **28 %** de uso,
+e `Win32_PerfFormattedData_PerfProc_Process` deu `_Total=1562` contra `Idle=1380` (**11,7 %** de
+uso) com os maiores consumidores reais sendo `Qoder#2` (38), **`MsMpEng` (27 — o Defender em tempo
+real, que varre exatamente os arquivos que uma corrida headless escreve)**, `QuantumEngine` (16),
+**`obs64` (16 — o OBS aberto)** e `dwm` (16). Não confunda com a lista que um
+`Get-Process | Sort CPU` devolve nesta máquina: ela ordena segundos de CPU **acumulados desde o
+start**, que não dizem nada da janela; o que sustenta a atribuição são os dois contadores
+formatados acima. Pelo contrato (medição de tempo é serial com a máquina livre, e número publicado
+é número medido em clone limpo com `--import` frio), estes µs entram como **teto sob carga, não
+como medição**: o `363 680` publicado no AGENTS.md e a ablação de +12 % da rodada dos rastros
+continuam sendo o par de referência, e nenhuma das duas tabelas muda por esta sessão.
+
+Um indício que fica registrado sem virar conclusão: a média contaminada (442 967) passa até do
+braço de **três camadas incondicionais** da ablação (427 940 / 427 134, linha 19 do readback). As
+duas hipóteses que isso não separa são "a máquina agora está mais lenta" e "o gate abre camada
+vizinha mais vezes do que a ablação media". O que decide é uma perna `bench/` com a máquina
+ociosa, na mesma revisão, medindo o braço do gate na mesma janela — e ela pertence ao item 5 da
+fila (dossiê 04, HOT agregado), não a esta branch de docs.
+
+Nenhum gate de fase se fechou aqui, e nenhum item da fila mudou de veredito.
