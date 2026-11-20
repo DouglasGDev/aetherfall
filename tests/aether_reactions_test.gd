@@ -11,8 +11,9 @@ const TESTS: Array[StringName] = [
 	&"_test_work_diffusion", &"_test_cache_expiry", &"_test_fear_no_feedback",
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
+	&"_test_locomotion_flat", &"_test_locomotion_wall",
 ]
-const EXPECTED_CHECKS: int = 94
+const EXPECTED_CHECKS: int = 103
 
 var _checks: int = 0
 var _failures: int = 0
@@ -678,21 +679,28 @@ func _test_cache_cap() -> bool:
 			var clock: float = _wolf._scent_clock
 			for k: Vector3i in cache.keys():
 				if not exits.has(k):
-					exits[k] = Vector2(float(cache[k].y) - ttl, -1.0)
+					exits[k] = Vector3(float(cache[k].y) - ttl, -1.0, 0.0)
 			for k: Vector3i in exits.keys():
 				if exits[k].y < 0.0 and not cache.has(k):
-					exits[k] = Vector2(exits[k].x, clock)
+					# o tamanho do cache no frame da coleta diz de qual limite saiu:
+					# no teto e evicao por FIFO; abaixo dele so o relogio cortava
+					exits[k] = Vector3(exits[k].x, clock, float(cache.size()))
 			if episodes == spots.size():
 				break
 	var min_exit: float = 1e9
 	var max_exit: float = -1.0
 	var gone: int = 0
+	var por_evicao: int = 0
+	var pico_na_saida: int = 0
 	for k: Vector3i in exits.keys():
 		if exits[k].y >= 0.0:
 			var age: float = exits[k].y - exits[k].x
 			min_exit = minf(min_exit, age)
 			max_exit = maxf(max_exit, age)
 			gone += 1
+			if age < ttl - 0.001:
+				por_evicao += 1
+				pico_na_saida = maxi(pico_na_saida, int(exits[k].z))
 	var idade: float = _wolf._scent_clock
 	var pace: float = walked / idade
 	var gaps: float = 0.0
@@ -705,26 +713,220 @@ func _test_cache_cap() -> bool:
 	salto /= float(spots.size() - 1)
 	var metros_por_salto: float = walked / float(maxi(arrivals.size() - 1, 1))
 	var progressao: float = salto / maxf(intervalo, 0.001)
-	# O modelo do proprio codigo: um bloco 3x3 por inspecao, vivo por ttl. Com o
-	# relogio de 30s cabem floor(30/intervalo)+1 blocos; o teto de 32 celulas so e
-	# tocado quando o quarto bloco entra, ou seja, intervalo de 10s para baixo.
+	# O modelo do proprio codigo: um bloco 3x3 por inspecao, vivo por ttl. Com o relogio
+	# de 30s cabem floor(30/intervalo)+1 blocos, entao o pedido e 9 x blocos celulas e o
+	# cache fica no menor dos dois limites. Nenhuma checagem abaixo escolhe regime: elas
+	# fecham o numero contra o modelo e dizem, pelo que imprimem, qual limite mandou.
 	var blocos: int = int(floorf(ttl / maxf(intervalo, 0.001))) + 1
 	var predicted: float = 9.0 * float(blocos)
-	_check(episodes == spots.size() and arrivals.size() >= 4 and gone >= cap,
+	var limite: float = minf(float(cap), predicted)
+	_check(episodes == spots.size() and arrivals.size() >= 4 and gone > 0,
 			"premissa: seis inspecoes reais e uma janela inteira de saidas colhida",
 			"episodios=%d chegadas=%d saidas=%d vistas=%d idade=%.3f" % [
 			episodes, arrivals.size(), gone, exits.size(), idade])
 	_check(peak <= cap, "cache nunca passa do teto de 32 celulas",
 			"pico=%d teto=%d vistas=%d" % [peak, cap, exits.size()])
-	_check(gone > 0 and min_exit >= ttl, "nenhuma saida do cache antes do relogio de 30s",
-			"saida_mais_jovem=%.3f mais_velha=%.3f ttl=%.1f" % [min_exit, max_exit, ttl])
-	_check(float(blocos) * 9.0 < float(cap) and intervalo > ttl / 3.0,
-			"evicao nao roda: a janela de 30s nao comporta o quarto bloco 3x3",
-			"intervalo=%.3f janela=%.3f blocos=%d preencheria=%.0f salto=%.1f metros_por_salto=%.1f progressao=%.3f m/s=%.3f" % [
-			intervalo, ttl, blocos, predicted, salto, metros_por_salto, progressao, pace])
-	_check(peak <= predicted and predicted - float(peak) < 9.0,
-			"pico confere com o modelo de blocos vivos dentro da janela",
-			"pico=%d previsto=%.0f blocos=%d intervalo=%.3f" % [peak, predicted, blocos, intervalo])
+	_check(por_evicao == 0 or pico_na_saida >= cap,
+			"saida mais jovem que o relogio so existe com o teto em jogo",
+			"por_relogio=%d por_evicao=%d tamanho_na_saida=%d saida_mais_jovem=%.3f mais_velha=%.3f ttl=%.1f" % [
+			gone - por_evicao, por_evicao, pico_na_saida, min_exit, max_exit, ttl])
+	_check(peak == int(limite), "o cache fecha no menor dos dois limites, o teto ou a janela",
+			"intervalo=%.3f janela=%.3f blocos=%d pedido=%.0f teto=%d pico=%d saltocelula=%.1f metros_por_salto=%.1f progressao=%.3f m/s=%.3f" % [
+			intervalo, ttl, blocos, predicted, cap, peak, salto, metros_por_salto, progressao, pace])
+	_check((por_evicao > 0) == (predicted > float(cap)),
+			"a evicao por FIFO roda exatamente quando a janela pede mais celulas que o teto",
+			"por_evicao=%d pedido=%.0f teto=%d intervalo=%.3f" % [
+			por_evicao, predicted, cap, intervalo])
+	return true
+
+
+func _test_locomotion_flat() -> bool:
+	# O integrador resolve os tres eixos na mesma chamada e marca bloqueio em qualquer um
+	# deles, inclusive no Y quando o corpo desce contra o chao onde ja esta apoiado
+	# (voxel_body.gd:52-54, :98). O passo do lobo le esse flag como parede (wolf.gd:537)
+	# e re-arma o desvio; se estava apoiado, ainda salta ([:538-541]). Este cenario colhe
+	# o corredor sem solido: 26 m de plateu lisa, a presa a vista o tempo todo, e aqui o
+	# alvo e `hunt` e nao `investigate` porque o rastro de WORK so e lido num janela de
+	# 7x7 celulas em torno do corpo ([:467], [:472-474]) -- uma fonte a 32 m nunca virou
+	# investigacao e o que se colheu na primeira tentativa foi o andar da patrulha.
+	# Colhe-se: frames de fisica, quantos o corpo passou apoiado, quantos desses o
+	# integrador chamou de bloqueio, quantos lancamentos de 5,2 m/s sairam dai e quantos
+	# metros o corpo andou por metro ganho. O contador de salto nao pode ser
+	# `velocity.y == 5.2`: no build oficial o Vector3 e float32 e o literal e double, e a
+	# igualdade e falsa para todo salto (medido: 19 lancamentos, 0 por igualdade). Nada
+	# aqui decide ainda: os numeros vao para o commit do conserto, onde a mesma colheita
+	# tem de cair a zero sem apagar o desvio do cenario da parede.
+	_arm(Vector3(44.0, 51.001, 54.0), Vector3(70.0, 51.001, 54.0))
+	var target: Vector3 = _player.position3()
+	_advance(1, false)
+	var solids: int = 0
+	var heights: Dictionary = {}
+	for x: int in range(40, 85):
+		for z: int in range(40, 85):
+			heights[_world.surface_height(x, z)] = true
+			for y: int in range(51, 57):
+				if _world.is_solid_xyz(x, y, z):
+					solids += 1
+	var frames: int = 0
+	var apoiados: int = 0
+	var bloqueados: int = 0
+	var pouso_bloqueado: int = 0
+	var rearms: int = 0
+	var lancamentos: int = 0
+	var horizontais: int = 0
+	var fora_da_plateau: int = 0
+	var walked: float = 0.0
+	var last: Vector3 = _wolf.body.feet_pos
+	var start: Vector3 = _wolf.body.feet_pos
+	var ticks: int = 0
+	var hunt_ticks: int = 0
+	for i: int in 600:
+		ticks += 1
+		_advance(1, false)
+		if _wolf.intent == "hunt":
+			hunt_ticks += 1
+		for f: int in 3:
+			var sticking_before: float = _wolf._unstick
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			frames += 1
+			walked += _horizontal(_wolf.body.feet_pos - last).length()
+			last = _wolf.body.feet_pos
+			if _wolf.body.on_ground:
+				apoiados += 1
+			if _wolf.body.blocked_this_frame:
+				bloqueados += 1
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+			if _wolf.body.on_ground and _wolf.body.blocked_this_frame:
+				pouso_bloqueado += 1
+			# o re-arme acontece no mesmo frame em que o desvio expira: a linha 527 desconta
+			# o ultimo pedaco e a 538 ja sorteia outro, entao a transicao por `<= 0` nao ve
+			if _wolf._unstick > sticking_before + 0.05:
+				rearms += 1
+			# 5,2 e o impulso do salto (wolf.gd:541); no frame seguinte a gravidade ja o
+			# levou abaixo de 5, entao cada frame acima disso e um lancamento novo
+			if _wolf.body.velocity.y > 5.0:
+				lancamentos += 1
+			var feet := _wolf.body.feet_pos
+			if feet.x < 40.0 or feet.x > 84.0 or feet.z < 40.0 or feet.z > 84.0:
+				fora_da_plateau += 1
+		if _distance(target) < 2.5:
+			break
+	var ganho: float = _horizontal(_wolf.body.feet_pos - start).length()
+	var razao: float = walked / maxf(ganho, 0.001)
+	var tempo: float = float(frames) * (SimClock.STEP / 3.0)
+	_check(solids == 0 and heights.size() == 1 and int(heights.keys()[0]) == 50
+			and fora_da_plateau == 0 and _wolf._los_player and hunt_ticks >= ticks - 1,
+			"premissa: plateu 45x45 sem nenhum solido acima do piso, corpo dentro dela, presa a vista",
+			"solidos=%d alturas=%s fora=%d los=%s hunt=%d/%d ticks=%d" % [
+			solids, heights.keys(), fora_da_plateau, _wolf._los_player, hunt_ticks, ticks, ticks])
+	_check(apoiados > 0 and bloqueados > 0 and pouso_bloqueado >= int(float(apoiados) * 0.9),
+			"premissa: dos frames em que o corpo esteve apoiado, quase todos o integrador chamou bloqueio",
+			"apoiados=%d bloqueados=%d pouso_bloqueado=%d frames=%d lancamentos=%d rearms=%d" % [
+			apoiados, bloqueados, pouso_bloqueado, frames, lancamentos, rearms])
+	_check(_distance(target) < 2.5, "o corpo alcanga a presa no corredor livre",
+			"percorrido=%.1f ganho=%.1f razao=%.3f rearms=%d lancamentos=%d tempo=%.1f s andamento=%.3f m/s speed=%.1f SPEED_RUN=%.1f" % [
+			walked, ganho, razao, rearms, lancamentos, tempo, ganho / maxf(tempo, 0.001), _wolf._speed, Wolf.SPEED_RUN])
+	_check(horizontais == 0 and rearms == 0 and lancamentos == 0,
+			"contato com o chao nao e obstaculo: sem parede no caminho, nenhum desvio re-arma e nenhum corpo salta",
+			"horizontais=%d rearms=%d lancamentos=%d bloqueados=%d pouso_bloqueado=%d frames=%d" % [
+			horizontais, rearms, lancamentos, bloqueados, pouso_bloqueado, frames])
+	return true
+
+
+func _test_locomotion_wall() -> bool:
+	# O outro braco da atribuicao. O conserto nao pode apagar o desvio diante de um
+	# solido de verdade: com parede no caminho o integrador ainda chama bloqueio em X/Z,
+	# o passo ainda re-arma e ainda salta. A parede e a mesma do cenario de avistamento
+	# (_wall: x=63, seis blocos de altura, a plateau inteira em z) e o alvo e um rastro
+	# de WORK atras dela -- ca o intent nao pode ser hunt, porque a linha de visada morre
+	# no solido (wolf.gd:441) e sem visada nao ha caca. O que os dois bracos comparam e
+	# o caminho, nao a decisao: mesmo chao plano de y=50, mesmo integrador, mesma
+	# cadencia de frames, so muda o solido entre o corpo e o alvo.
+	#
+	# A quinta checagem deste cenario colhe outro defeito, visto pela primeira vez na
+	# suite inteira depois do conserto do passo: o corpo encosta na parede e o
+	# integrador aceita o passo com a face de fora 1 mm DENTRO do solido, porque o teste
+	# de X rala a caixa (box.size.x -= WALL_SHAVE, o 1 mm da constante em
+	# voxel_body.gd:9) e o resultado aplicado nao e a caixa testada. Encostado, para o
+	# smoke ele esta encaixado
+	# ("nenhum lobo com o corpo dentro do terreno" mediu encaixados=1 lobo1 em
+	# (56.62563, 36.39333, 23.29462) em tres corridas seguidas), e o resgate vertical
+	# nao alcanca um pillar de rocha: medido na sonda, o lift necessario era nenhum
+	# (pra cima=-1, pra baixo=-1 nos 4 m varridos) e o lobo congela la dentro.
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_wall(BlockDefs.Block.STONE)
+	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
+	_advance(1, false)
+	var frames: int = 0
+	var apoiados: int = 0
+	var bloqueados: int = 0
+	var horizontais: int = 0
+	var rearms: int = 0
+	var lancamentos: int = 0
+	var pouso_bloqueado: int = 0
+	var invest_ticks: int = 0
+	var x_max: float = 0.0
+	var ticks: int = 0
+	var encaixados: int = 0
+	var encaixe_mm: float = 0.0
+	for i: int in 200:
+		ticks += 1
+		_advance(1, false)
+		if _wolf.intent == "investigate":
+			invest_ticks += 1
+		for f: int in 3:
+			var sticking_before: float = _wolf._unstick
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			frames += 1
+			x_max = maxf(x_max, _wolf.body.feet_pos.x)
+			if _wolf.body.on_ground:
+				apoiados += 1
+				if _wolf.body.blocked_this_frame:
+					pouso_bloqueado += 1
+			if _wolf.body.blocked_this_frame:
+				bloqueados += 1
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+			if _wolf._unstick > sticking_before + 0.05:
+				rearms += 1
+			if _wolf.body.velocity.y > 5.0:
+				lancamentos += 1
+			# Encosto ou encaixe? O que a checagem abaixo exige e o volume do corpo
+			# inteiro fora de solido em todo frame. Quando ha sobreposicao, a sonda mede
+			# tambem a profundidade: quanto falta empurrar o corpo de volta em -x ate
+			# ele caber. No braco sem conserto a profundidade medida foi exatamente 1 mm
+			# -- o WALL_SHAVE (voxel_body.gd:9) que o teste de X aplicava, nao um
+			# acidente do relevo.
+			if _world.aabb_hits_solid(_wolf.body.aabb()):
+				encaixados += 1
+				var k: float = 0.0
+				while k <= 0.05:
+					var box := _wolf.body.aabb()
+					box.position.x -= k
+					if not _world.aabb_hits_solid(box):
+						break
+					k += 0.001
+				encaixe_mm = maxf(encaixe_mm, k * 1000.0)
+	_check(_world.is_solid_xyz(63, 52, 54) and not _wolf._los_player and invest_ticks >= ticks - 2
+			and x_max > 60.0,
+			"premissa: parede real no caminho e o corpo encosta nela atrae pelo rastro",
+			"parede=%s los=%s investigate=%d/%d x_max=%.3f alvo=%s" % [
+			_world.is_solid_xyz(63, 52, 54), _wolf._los_player, invest_ticks, ticks, x_max,
+			_wolf._move_target])
+	_check(horizontais > 0, "na parede o integrador chama bloqueio horizontal",
+			"horizontais=%d bloqueados=%d frames=%d apoiados=%d pouso_bloqueado=%d" % [
+			horizontais, bloqueados, frames, apoiados, pouso_bloqueado])
+	_check(rearms > 0 and lancamentos > 0, "com parede de verdade o desvio re-arma e o corpo salta",
+			"rearms=%d lancamentos=%d horizontais=%d frames=%d" % [
+			rearms, lancamentos, horizontais, frames])
+	_check(x_max < 63.0, "o corpo para do lado de ca da parede",
+			"x_max=%.3f teto_bloqueio=63.0 percorrido=%.1f" % [x_max, x_max - 54.0])
+	_check(encaixados == 0,
+			"encostar na parede nao e encaixar: nenhum frame com o volume dentro de solido",
+			"encaixados=%d encaixe_max=%.3f mm frames=%d x_max=%.3f face_x=%.4f" % [
+			encaixados, encaixe_mm, frames, x_max, x_max + _wolf.body.dims.x * 0.5])
+	_wall(BlockDefs.Block.AIR)
 	return true
 
 

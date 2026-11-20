@@ -31,7 +31,7 @@ arquivo de dados deles. Ver §08 "Licenças".
 Aceleramos no chão com `46 m/s²` e no ar com `11 m/s²`, com atrito `13`
 [player.gd:34-36](../../src/entities/player.gd). No ar não há teto horizontal: a velocidade
 só converge para a mesma meta do solo (`6,9` correndo) [player.gd:462-470](../../src/entities/player.gd),
-e a queda para em `42 m/s` [voxel_body.gd:6,39-40](../../src/entities/voxel_body.gd) —
+e a queda para em `42 m/s` [voxel_body.gd:6,42-43](../../src/entities/voxel_body.gd) —
 números nossos, escolhidos por sensação medida nos probes de câmera, não copiados de lá.
 
 `Ctrl` é a mesma tecla de agachar e de planar, como no Veloren: no chão é agachar, caindo
@@ -261,17 +261,18 @@ documento.
 
 O runner específico `tests/aether_reactions_test.gd` cobre aproximação, pesos dos rastros,
 inspeção/renovação, expiração do cache, difusão, fuga por FEAR/último golpe, perda de visão,
-expiração do avistamento, presa morta e golpe durante inspeção
-([aether_reactions_test.gd:7-14](../../tests/aether_reactions_test.gd#L7-L14)). Ele usa
+expiração do avistamento, presa morta, golpe durante inspeção e o passo do lobo em plano livre
+e diante de parede
+([aether_reactions_test.gd:7-15](../../tests/aether_reactions_test.gd#L7-L15)). Ele usa
 uma semente e **um lobo por cenário**, com decisão a 20 Hz e corpo a 60 Hz controlados;
 o campo é estático por padrão, com difusão explícita no cenário dedicado
-([:91-121](../../tests/aether_reactions_test.gd#L91-L121),
-[:329-374](../../tests/aether_reactions_test.gd#L329-L374)).
+([:92-121](../../tests/aether_reactions_test.gd#L92-L121),
+[:330-375](../../tests/aether_reactions_test.gd#L330-L375)).
 
 A colheita cronometra `sim_step` integral e lê `_guard.last_us`/`trips`, imprimindo
 soma/pico de ambos e estouros do guard
-([:104-121](../../tests/aether_reactions_test.gd#L104-L121),
-[:736-737](../../tests/aether_reactions_test.gd#L736-L737)). O guard mede só BT, não
+([:105-121](../../tests/aether_reactions_test.gd#L105-L121),
+[:938-939](../../tests/aether_reactions_test.gd#L938-L939)). O guard mede só BT, não
 percepção/utilidade; `sim_step` não inclui a física executada depois pelo runner.
 Isso não é medição do HOT agregado de cinco lobos, teste multi-semente ou replay, nem
 fecha P1. O candidato local passou nas 89 checagens específicas e nas regressões de

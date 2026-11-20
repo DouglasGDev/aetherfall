@@ -18,7 +18,10 @@ var gravity: float = 24.0
 var on_ground: bool = false
 var step_up: float = 0.62
 var in_water: bool = false
+## Contato com o chao nao e obstaculo no caminho: blocked_this_frame conta qualquer
+## eixo, inclusive o Y do pouso, e blocked_horizontal so os eixos de andar.
 var blocked_this_frame: bool = false
+var blocked_horizontal: bool = false
 
 
 func setup(p_world: VoxelWorld, p_pos: Vector3, p_dims: Vector3) -> void:
@@ -43,6 +46,7 @@ func apply_gravity(delta: float, factor: float = 1.0) -> void:
 ## Mover com resolucao eixo a eixo + auto step-up. Retorna true se houve colissao.
 func move_and_collide(delta: float) -> bool:
 	blocked_this_frame = false
+	blocked_horizontal = false
 	escape_embedded()
 	var disp := velocity * delta
 	_collide_axis(0, disp.x)
@@ -92,6 +96,8 @@ func _collide_axis(axis: int, amount: float) -> void:
 					_apply(axis, inc)
 					continue
 		blocked_this_frame = true
+		if axis != 1:
+			blocked_horizontal = true
 		match axis:
 			0: velocity.x = 0.0
 			1: velocity.y = 0.0
@@ -99,12 +105,21 @@ func _collide_axis(axis: int, amount: float) -> void:
 		return
 
 
+## A caixa testada tem de ser a caixa aplicada. Em X o volume era ralado
+## (box.size.x -= WALL_SHAVE) para deixar o corpo encostado num solido sem o teste
+## reclamar, mas o passo aplicado e a caixa inteira: aceito assim, o corpo termina
+## o frame com a face de fora ate 1 mm dentro da parede. Encostado vira encaixado
+## para o resgate vertical -- e o resgate nao alcanca um pilar de rocha, entao o lobo
+## congela la dentro (medido no cenario da parede: encaixados=389 de 600 frames,
+## encaixe_max=1,000 mm, face_x=63,0009). O contato rente de verdade ja e tolerado
+## pelo epsilon de aabb_hits_solid (voxel_world.gd:305), que trata face em cima da
+## divisoria como livre. Em Y o shave continua, mas do lado conservador: testar 1 mm
+## mais baixo significa parar antes de cavar o chao.
 func _translated(axis: int, amount: float) -> AABB:
 	var box := aabb()
 	match axis:
 		0:
 			box.position.x += amount
-			box.size.x -= WALL_SHAVE
 		1:
 			box.position.y += amount
 			if amount < 0.0:
