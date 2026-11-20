@@ -18,12 +18,15 @@ e passou a ser a primeira superfície sólida descendo do topo da camada encontr
 `feat/rastro-em-duas-camadas`, `f89041b`) entrou como `cbaaef5`, com a ablação braço a braço no
 colhedor estreito: `sim_step total` de 322 128 / 326 189 µs no leitor de um andar contra
 361 464 / 364 589 / 364 987 µs no publicado (+12%); a varredura incondicional dos três andares custa
-+32% e foi recusada por medida, não por gosto. Clone limpo de `cbaaef5`, sem `.godot/`, reimportado
-com `--import` frio exit 0: **236 checagens / 0 falhas / 34,3 s** na suíte e
-**109 checagens / 0 falhas / 1,969 s** no runner dedicado, exit 0 nos dois, com as 79 fontes
-conferidas dentro do clone ([readback.log](evidence/rastro-duas-camadas/readback.log), linha
-`verificacao=`) e os 22 artefatos desta página re-conferidos na árvore de docs desta rodada
-(20/20 antes de entrar os dois logs novos, 22/22 depois, exit 0 nos dois).
++32% e foi recusada por medida, não por gosto. A revisão publicada desta perna é `3ab08db`, cujo
+`src/` e `tests/` são byte a byte os de `cbaaef5` (só markdown e logs entraram): clone limpo dela,
+sem `.godot/`, reimportado com `--import` frio exit 0, deu **236 checagens / 0 falhas / 34,7 s** na
+suíte e **109 checagens / 0 falhas / 1,953 s** no runner dedicado, exit 0 nos dois, com as 79 fontes
+e os 27 artefatos desta página conferidos **dentro do clone** (`sha256sum -c` 79/79 e 27/27, exit 0
+nos dois) — é isso que fecha o furo da evidência que não estava no repositório, na seção da rodada.
+No clone de `cbaaef5` foram **236 / 0 / 34,3 s** e **109 / 0 / 1,969 s**, com as 79 fontes já
+conferidas lá dentro ([readback.log](evidence/rastro-duas-camadas/readback.log), linha
+`verificacao=`).
 Rodadas anteriores do Éter, cada uma com sua seção no fim: o saldo da difusão medido (`9f3622b`), o
 teto do cache de inspeções (`297685b`) e o passo do lobo em plano livre (`520c3b4` + `a1405e4`).
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
@@ -1546,10 +1549,16 @@ varredor hoje lê ±1 andar (`cbaaef5`). Do `worst_sim_ms` há agora quatro amos
 [`tests/smoke_test.gd:2279`](../tests/smoke_test.gd#L2279)) cobram `perdidos=0`, não a distribuição do passo. Somam-se
 à fila as duas observações do clone limpo lá em cima — o exit do `--import` frio e a contagem de
 objetos vazados no quit, ambas precisando de N corridas com o exit anotado para virar coisa que se
-possa chamar de defeito. A primeira ganhou uma terceira amostra na seção seguinte (exit 0); a
-segunda ganhou duas, e elas se movem entre corridas da mesma árvore.
+possa chamar de defeito. A primeira ganhou uma terceira e uma quarta amostra nas seções seguintes
+(exit 0 nas duas, com o log do `--import` byte a byte igual entre os dois clones); a segunda ganhou
+seis, cinco delas `8 ObjectDB / 4 resources` e uma `4/2`, e elas se movem entre corridas da mesma
+árvore.
 
 ## Rodada Éter — o nariz desce e sobe, medido (2026-11-20, publicado em `cbaaef5` pelo merge de `feat/rastro-em-duas-camadas`, ponta `f89041b`)
+
+O código é o de `cbaaef5`; a conta dele, as citações re-derivadas e as assinaturas desta página
+entraram depois, pelos merges de `docs/medicao-rastro-duas-camadas` (`3ab08db`) e de
+`docs/medicao-merge-e-clone-3ab08db`, cada perna com suas duas gateiras corridas.
 
 ### O que estava em aberto
 
@@ -1652,7 +1661,7 @@ publicado e não se reescreve; a leitura conferida é a da tabela acima e a do
 
 ### O que o jogo real custa
 
-Quatro árvores, mesma receita, cada uma com as duas gateiras. A suíte larga em 4 lobos neste
+Seis árvores, mesma receita, cada uma com as duas gateiras. A suíte larga em 4 lobos neste
 `SEED` e o `aether_energy` não se moveu em nenhuma delas — o varredor em camadas troca o custo
 do scan, não o estado do mundo:
 
@@ -1662,24 +1671,31 @@ do scan, não o estado do mundo:
 | `main` mergida (`cbaaef5`) | 109 / 0 / 1,941 s, `total=366 192 pico=553` | 236 / 0 / 34,8 s | 10,031 | [main-runner.log](evidence/rastro-duas-camadas/main-runner.log), [main-suite.log](evidence/rastro-duas-camadas/main-suite.log) |
 | clone limpo de `cbaaef5`, `--import` frio | 109 / 0 / 1,969 s, `total=367 690 pico=775` | 236 / 0 / 34,3 s | 12,939 | [clone-reactions.log](evidence/rastro-duas-camadas/clone-reactions.log), [clone-suite.log](evidence/rastro-duas-camadas/clone-suite.log) |
 | árvore de docs desta rodada, `src/` e `tests/` byte a byte iguais a `cbaaef5` | 109 / 0 / 1,963 s, `total=368 658 pico=666` | 236 / 0 / 35,1 s | 11,426 | [docs-runner.log](evidence/rastro-duas-camadas/docs-runner.log), [docs-suite.log](evidence/rastro-duas-camadas/docs-suite.log) |
+| `main` mergida (`3ab08db`), depois do merge da perna de docs | 109 / 0 / 1,959 s, `total=367 176 pico=624` | 236 / 0 / 34,8 s | 10,887 | [merge-main-runner.log](evidence/rastro-duas-camadas/merge-main-runner.log), [merge-main-suite.log](evidence/rastro-duas-camadas/merge-main-suite.log) |
+| clone limpo de `3ab08db`, `--import` frio | 109 / 0 / 1,953 s, `total=363 658 pico=610` | 236 / 0 / 34,7 s | 9,655 | [clone-3ab08db-runner.log](evidence/rastro-duas-camadas/clone-3ab08db-runner.log), [clone-3ab08db-suite.log](evidence/rastro-duas-camadas/clone-3ab08db-suite.log), [clone-3ab08db-import.log](evidence/rastro-duas-camadas/clone-3ab08db-import.log) |
 
-As quatro dão `tick=359`, `edits=13`, `meshes=147`, `dropped_ticks=0`, `wolves_alive=4` e
-`aether_energy=9,36133219487965` — a assinatura de estado é idêntica, o µs é amostra. A quarta
-linha existe porque o contrato diz que número publicado é número medido na revisão, e esta
-revisão é feita de markdown: `sha256sum -c sources.sha256` na árvore de docs devolve **79/79 OK,
-exit 0** — os 79 arquivos que as duas gateiras medem não mudaram um byte desde o clone, e o que
-se mede aqui é o efeito de nada ter mudado, que é a banda de µs das quatro linhas acima
-(361 464 a 368 658, 2 % de ponta a ponta). O pin do README passou de `520c3b4` para `cbaaef5` com
-o manifesto de 79 arquivos
-([sources.sha256](evidence/rastro-duas-camadas/sources.sha256), `sha256sum -c` 79/79 OK na
-árvore de trabalho e no clone, linha `verificacao=` do
-[readback.log](evidence/rastro-duas-camadas/readback.log)). O
-[artifacts.sha256](evidence/rastro-duas-camadas/artifacts.sha256) desta página, que entra no
-repositório com este commit, tinha 20 entradas e passou a ter 22: conferido **20/20 OK** antes de
-entrar os dois logs da linha de cima e **22/22 OK, exit 0** depois, e o `diff` dos dois manifestos
-é exatamente essas duas linhas. Os `.log` ficam fora da normalização de fim de linha
+As seis dão `tick=359`, `edits=13`, `meshes=147`, `dropped_ticks=0`, `wolves_alive=4` e
+`aether_energy=9,36133219487965` — a assinatura de estado é idêntica, o µs é amostra, e a banda
+das seis linhas é 361 464 a 368 658 (2 % de ponta a ponta, e nenhum dos lados do `git diff` das
+revisões toca `src/`). As duas últimas linhas existem porque o contrato diz que número publicado é
+número medido na revisão, e esta revisão é feita de markdown: conferido, não afirmado —
+`git rev-parse cbaaef5:src 3ab08db:src` devolve `9a8dbdf…` nos dois, `…:tests` devolve `7bcbde9…`
+nos dois, e `git diff --name-only cbaaef5 3ab08db -- src tests project.godot assets tools` conta
+**zero** arquivos contra 37 no total. O `sha256sum -c sources.sha256` no clone de `3ab08db` é
+**79/79 OK, exit 0**. A mesma igualdade vale para os merges seguintes desta perna, que só movem
+markdown e log: quem quiser conferir não roda nada, lê `git rev-parse <rev>:src <rev>:tests` e vê
+os dois hashes repetidos.
+
+O [artifacts.sha256](evidence/rastro-duas-camadas/artifacts.sha256) desta página acompanhou: 20
+entradas na perna de código, 22 com os dois logs da árvore de docs e **27** com os cinco desta
+perna (dois da `main` mergida + três do clone). Cada regravação foi conferida antes e depois —
+**20/20**, **22/22** e **27/27 OK, exit 0** na árvore de trabalho, e **27/27 OK, exit 0 dentro do
+clone limpo**, que é onde o número vale. O `diff` entre os manifestos é exatamente as linhas novas,
+nenhum artefato antigo mudou de hash; o `clone-3ab08db-import.log` tem o mesmo SHA do
+`clone-import.log` de `cbaaef5` (`6778e5a…`), ou seja, a saída do `--import` frio byte a byte igual
+entre as duas revisões. Os `.log` ficam fora da normalização de fim de linha
 (`docs/evidence/** -text` no [.gitattributes](../.gitattributes)), que é o que faz o hash do
-manifesto bater em qualquer clone.
+manifesto bater em qualquer clone — e foi isso que se provou acima, rodando o `-c` do lado de dentro.
 
 ### Furo desta perna: a evidência da rodada não estava no repositório
 
@@ -1694,8 +1710,10 @@ a rodada do passo do lobo registrou e consertou para a pasta anterior.
 
 Não é vermelho de suíte — nenhuma checagem lê o manifesto — e por isso passou: o contrato de
 "número publicado aponta um `.log` real" se cumpre no clone, não na máquina de quem mediu. A
-correção é este commit, que traz as 23 assinaturas junto; a re-confência no checkout limpo da
-revisão mergida é a perna seguinte, e está listada em aberto abaixo enquanto não houver log dela.
+correção entrou com `3ab08db` (merge de `docs/medicao-rastro-duas-camadas`), que trouxe as
+23 assinaturas; a re-confência que faltava é a das duas últimas linhas da tabela acima — clone
+limpo de `3ab08db`, `--import` frio exit 0, duas gateiras verdes e `sha256sum -c` **27/27** dos
+artefatos e **79/79** das fontes rodados **dentro do clone**. Fica fechado, com log.
 
 ### Prosa que a medição obrigou a reescrever
 
@@ -1744,16 +1762,18 @@ conteúdo a conteúdo). Registramos onde está; consertá-la é um commit de ass
 
 ### Observações registradas, sem atribuição
 
-**O `--import` frio do clone limpo deu exit 0** — terceira amostra depois do 139 isolado da
-rodada do passo. Continua sem atribuição: três zeros seguidos em árvores diferentes não separam
+**O `--import` frio do clone limpo deu exit 0 também em `3ab08db`** — quarta amostra depois do 139
+isolado da rodada do passo, e a saída é byte a byte a do clone de `cbaaef5` (mesmo SHA de log,
+`6778e5a…`). Continua sem atribuição: quatro zeros seguidos em árvores diferentes não separam
 "o 139 era intermitente" de "a árvore nova não o dispara".
 
-**A contagem de quit voltou a se mover entre árvores de conteúdo idêntico:**
-`branch-suite.log` dá `4 ObjectDB instances` + `2 resources still in use`, `main-suite.log` e
-`clone-suite.log` dão `8` + `4`. `tree(f89041b) == tree(cbaaef5)` em `src/` e `tests/` — o merge
-não trouxe nada além do próprio commit — mesmo binário, mesma máquina, minutos apartados. É a
-segunda rodada seguida com o par variando, o que reforça a leitura de que a contagem é do
-processo no `quit()`, não da árvore. Nenhuma checagem depende dela e o exit segue 0.
+**A contagem de quit voltou a se mover entre árvores de conteúdo idêntico, e agora com mais
+amostras:** `branch-suite.log` dá `4 ObjectDB instances` + `2 resources still in use`;
+`main-suite.log`, `clone-suite.log`, `docs-suite.log`, `merge-main-suite.log` e
+`clone-3ab08db-suite.log` dão `8` + `4`. As cinco árvores são iguais em `src/` e `tests/`
+(`git rev-parse cbaaef5:src` = `3ab08db:src`), mesmo binário, mesma máquina, corrida serial. A
+leitura de que a contagem é do processo no `quit()`, não da árvore, fica mais forte e o par
+`4/2` passa a ser a exceção da amostra. Nenhuma checagem depende dela e o exit segue 0.
 
 ### O que nada disso fecha
 
@@ -1762,9 +1782,6 @@ alcança a camada vizinha quando a própria não devolve nada, e isso custa +12 
 +32 %. Fica em aberto:
 
 - o **HOT agregado dos cinco lobos** (dossiê 04) — o rodapé daqui é um lobo por cenário;
-- a **re-confência no clone limpo desta revisão**: as 23 assinaturas entram com este merge, e o
-  `sha256sum -c` dos 22 artefatos *dentro do clone*, mais as duas gateiras na ponta mergida, ainda
-  não têm log desta perna — é o que fecha o furo acima com evidência em vez de intenção;
 - a **ordem de evicção** do cache de 32, deixada pela rodada anterior;
 - se o gate de um andar basta: `SCENT_Y_RADIUS = 1` é escolha derivada do custo medido, não
   varrida em rampa. Ninguém mediu 2 ou 3 andares, nem o caso em que o rastro está dois andares
