@@ -20,10 +20,10 @@ colhedor estreito: `sim_step total` de 322 128 / 326 189 µs no leitor de um and
 361 464 / 364 589 / 364 987 µs no publicado (+12%); a varredura incondicional dos três andares custa
 +32% e foi recusada por medida, não por gosto. Clone limpo de `cbaaef5`, sem `.godot/`, reimportado
 com `--import` frio exit 0: **236 checagens / 0 falhas / 34,3 s** na suíte e
-**109 checagens / 0 falhas / 1,969 s** no runner dedicado, exit 0 nos dois, com as 79 fontes e os
-artefatos conferidos em
-[`docs/evidence/rastro-duas-camadas/readback.log`](evidence/rastro-duas-camadas/readback.log) — 20/20
-na corrida publicada e 22/22 depois dos dois logs desta rodada de documentação, sempre exit 0.
+**109 checagens / 0 falhas / 1,969 s** no runner dedicado, exit 0 nos dois, com as 79 fontes
+conferidas dentro do clone ([readback.log](evidence/rastro-duas-camadas/readback.log), linha
+`verificacao=`) e os 22 artefatos desta página re-conferidos na árvore de docs desta rodada
+(20/20 antes de entrar os dois logs novos, 22/22 depois, exit 0 nos dois).
 Rodadas anteriores do Éter, cada uma com sua seção no fim: o saldo da difusão medido (`9f3622b`), o
 teto do cache de inspeções (`297685b`) e o passo do lobo em plano livre (`520c3b4` + `a1405e4`).
 Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
@@ -1668,14 +1668,34 @@ As quatro dão `tick=359`, `edits=13`, `meshes=147`, `dropped_ticks=0`, `wolves_
 linha existe porque o contrato diz que número publicado é número medido na revisão, e esta
 revisão é feita de markdown: `sha256sum -c sources.sha256` na árvore de docs devolve **79/79 OK,
 exit 0** — os 79 arquivos que as duas gateiras medem não mudaram um byte desde o clone, e o que
-se mede aqui é o efeito de nada ter mudado, que é a banda de µs de sempre (361 464–368 658). O pin
-do README passou de `520c3b4` para `cbaaef5` com o manifesto de 79 arquivos
+se mede aqui é o efeito de nada ter mudado, que é a banda de µs das quatro linhas acima
+(361 464 a 368 658, 2 % de ponta a ponta). O pin do README passou de `520c3b4` para `cbaaef5` com
+o manifesto de 79 arquivos
 ([sources.sha256](evidence/rastro-duas-camadas/sources.sha256), `sha256sum -c` 79/79 OK na
-árvore de trabalho e no clone) e os artefatos desta página
-([artifacts.sha256](evidence/rastro-duas-camadas/artifacts.sha256), agora 22 entradas: 20/20 OK no
-`readback.log` publicado e **22/22 OK, exit 0** re-conferido nesta árvore depois de entrar os dois
-logs da linha de cima — o delta do manifesto é exatamente esses dois arquivos, verificado por
-`diff` antes da regravação).
+árvore de trabalho e no clone, linha `verificacao=` do
+[readback.log](evidence/rastro-duas-camadas/readback.log)). O
+[artifacts.sha256](evidence/rastro-duas-camadas/artifacts.sha256) desta página, que entra no
+repositório com este commit, tinha 20 entradas e passou a ter 22: conferido **20/20 OK** antes de
+entrar os dois logs da linha de cima e **22/22 OK, exit 0** depois, e o `diff` dos dois manifestos
+é exatamente essas duas linhas. Os `.log` ficam fora da normalização de fim de linha
+(`docs/evidence/** -text` no [.gitattributes](../.gitattributes)), que é o que faz o hash do
+manifesto bater em qualquer clone.
+
+### Furo desta perna: a evidência da rodada não estava no repositório
+
+Contado arquivo por arquivo contra `cbaaef5`: das dez pastas de
+[`docs/evidence/`](evidence/), nove entraram com suas rodadas (`aether-reactions` 16, `audio` 17,
+`ether-cache-limite` 12, `ether-massa-conservada` 10, `fp-hand` 40, `passo-lobo-plano` 20,
+`simulation-rng` 20, `third-person-carry` 13, `tick-journal` 16). `rastro-duas-camadas` tinha
+**zero** — os 23 arquivos desta rodada existiam só na árvore de trabalho, enquanto o README, o
+AGENTS.md e o status já citavam `evidence/rastro-duas-camadas/…` desde `cbaaef5`. Quem clonasse a
+`main` receberia citações de tabela apontando para arquivos inexistentes: exatamente o defeito que
+a rodada do passo do lobo registrou e consertou para a pasta anterior.
+
+Não é vermelho de suíte — nenhuma checagem lê o manifesto — e por isso passou: o contrato de
+"número publicado aponta um `.log` real" se cumpre no clone, não na máquina de quem mediu. A
+correção é este commit, que traz as 23 assinaturas junto; a re-confência no checkout limpo da
+revisão mergida é a perna seguinte, e está listada em aberto abaixo enquanto não houver log dela.
 
 ### Prosa que a medição obrigou a reescrever
 
@@ -1742,6 +1762,9 @@ alcança a camada vizinha quando a própria não devolve nada, e isso custa +12 
 +32 %. Fica em aberto:
 
 - o **HOT agregado dos cinco lobos** (dossiê 04) — o rodapé daqui é um lobo por cenário;
+- a **re-confência no clone limpo desta revisão**: as 23 assinaturas entram com este merge, e o
+  `sha256sum -c` dos 22 artefatos *dentro do clone*, mais as duas gateiras na ponta mergida, ainda
+  não têm log desta perna — é o que fecha o furo acima com evidência em vez de intenção;
 - a **ordem de evicção** do cache de 32, deixada pela rodada anterior;
 - se o gate de um andar basta: `SCENT_Y_RADIUS = 1` é escolha derivada do custo medido, não
   varrida em rampa. Ninguém mediu 2 ou 3 andares, nem o caso em que o rastro está dois andares
