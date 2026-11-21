@@ -16,8 +16,9 @@ const TESTS: Array[StringName] = [
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 	&"_test_contagio_medo", &"_test_amortece_confianca",
+	&"_test_lobo_escolhe_trilha_seca", &"_test_resgate_de_margem_sobrevive_a_arvore",
 ]
-const EXPECTED_CHECKS: int = 150
+const EXPECTED_CHECKS: int = 160
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -1933,6 +1934,184 @@ func _test_amortece_confianca() -> bool:
 			"caadores_depois=%d soleira=0.35 confiado_agora=0.30  %s" % [
 			n_depois, _confianca_linhas(ws)])
 	_pack_release()
+	return true
+
+
+# ------------------------------------------------------- convivencia (dossie 14)
+
+## Lago artificial sobre o plateau: `WATER` em y=51, o piso de pedra em y=50 fica
+## intacto, entao `surface_height` continua 50 e a coluna passa a contar como
+## molhada pelo predicado real do lobo (`_dry_ground` le a superficie atual). A
+## saida seca do cenario 1 e geometrica e nao uma aposta na seed, e o mesmo
+## `set_block` que a fixture ja usa para o planalto e para a parede.
+func _flood(x0: int, z0: int, x1: int, z1: int) -> void:
+	for x: int in range(x0, x1 + 1):
+		for z: int in range(z0, z1 + 1):
+			_world.set_block(Vector3i(x, 51, z), BlockDefs.Block.WATER)
+
+
+## Restaura o retangulo exatamente como a fixture o deixou: pedra em y=50, ar
+## acima. Sem isto a agua do cenario 1 vazaria nos cenarios seguintes.
+func _unflood(x0: int, z0: int, x1: int, z1: int) -> void:
+	for x: int in range(x0, x1 + 1):
+		for z: int in range(z0, z1 + 1):
+			_world.set_block(Vector3i(x, 51, z), BlockDefs.Block.AIR)
+
+
+## Raio do primeiro ponto seco no espelho exato do anel de `_shore_point()` (os
+## mesmos 5 raios, as mesmas 8 direcoes, o mesmo `+0,3`), ou -1 quando nao ha
+## saida nenhuma. A premissa do cenario tem de usar o varredura da folha, e nao
+## uma busca mais frouxa que deixaria passar um "quase seco".
+func _exit_ring(origin: Vector3) -> float:
+	for r: float in [1.6, 2.6, 4.0, 6.0, 8.0]:
+		for i: int in 8:
+			var a := TAU * float(i) / 8.0 + 0.3
+			if _wolf._dry_ground(origin + Vector3(cos(a) * r, 0.0, sin(a) * r)):
+				return r
+	return -1.0
+
+
+## Distancia horizontal ate a primeira coluna seca ao redor de `p` (passo de 0,5 m
+## em 16 direcoes ate 20 m), 0,0 se `p` ja e seco, -1 se so ha agua nesse raio.
+## Servico de report: e o numero que o cenario imprime como "distancia a margem",
+## e o teto que decide comportamento continua sendo o anel de 8 m de `_shore_point`.
+func _nearest_dry(p: Vector3) -> float:
+	if _wolf._dry_ground(p):
+		return 0.0
+	for r: int in range(1, 41):
+		var d := float(r) * 0.5
+		for i: int in 16:
+			var a := TAU * float(i) / 16.0
+			if _wolf._dry_ground(p + Vector3(cos(a) * d, 0.0, sin(a) * d)):
+				return d
+	return -1.0
+
+
+## Cenario 1 (dossie 14 §5, premissa 1 nos dois sentidos). Braco A: o alvo que a
+## arvore elegeu esta na agua e ha coluna seca a <= 8 m -- nenhum tick pode
+## terminar com alvo molhado. Braco B e a direcao oposta obrigatoria: no meio de
+## um lago sem saida nenhuma no anel, o conserto tem de ser indiferente ao estado,
+## o alvo continua molhado e o corpo ancora avanca nadando. Sem o braco B o filtro
+## poderia virar "finge que achou seco" e o mandato 1 nao deixa.
+func _test_lobo_escolhe_trilha_seca() -> bool:
+	_flood(63, 59, 69, 65)
+	_arm()
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	_advance(1)
+	var alvo: Vector3 = _wolf._scent_pos
+	var saida := _exit_ring(alvo)
+	# A premissa se mede no rastro e nao no `_move_target` do passo: o filtro roda
+	# no fim do mesmo `sim_step`, entao ler o alvo depois seria ler o conserto.
+	# `_leaf_investigate` escreve `_move_target = _scent_pos` sem perguntar ao chao
+	# (wolf.gd:376), entao rastro na agua e a arvore mirando a agua.
+	_check(_wolf.intent == "investigate" and _wolf._scent_found
+			and not _wolf._dry_ground(alvo) and saida > 0.0 and saida <= 8.0,
+			"premissa A: o nariz escolhe uma coluna de agua com saida seca no anel",
+			"rastro=%s seco=%s saida_do_rastro=%.1f m intent=%s forca=%.3f" % [
+			alvo, _wolf._dry_ground(alvo), saida, _wolf.intent, _wolf._scent_strength])
+	var molhados := 0
+	var corpo_molhado := 0
+	for i: int in 200:
+		_advance(1)
+		if not _wolf._dry_ground(_wolf._move_target):
+			molhados += 1
+		if _wolf.body.in_water:
+			corpo_molhado += 1
+	_check(molhados == 0, "ticks_com_alvo_molhado_final == 0 (200 passos)",
+			"molhados=%d/200 alvo_final=%s a %.1f m de terra seca pes=%s" % [
+			molhados, _wolf._move_target, _nearest_dry(_wolf._move_target),
+			_wolf.body.feet_pos])
+	_check(not _wolf.body.in_water and _wolf._dry_ground(_wolf.body.feet_pos),
+			"o corpo nao termina dentro da agua quando havia saida",
+			"in_water=%s ticks_corpo_na_agua=%d/200 pes=%s" % [
+			_wolf.body.in_water, corpo_molhado, _wolf.body.feet_pos])
+	# Braco B: lago de 28 x 28 colunas -- do centro ate a borda seca mais proxima
+	# sao 13,5 m, entao nenhum dos cinco raios de `_shore_point` devolve terra.
+	_flood(46, 49, 73, 76)
+	_arm(Vector3(59.0, 51.001, 62.0), FAR_PLAYER, 2)
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	_advance(1)
+	var saida_b := _exit_ring(_wolf.body.feet_pos)
+	_check(not _wolf._dry_ground(_wolf._move_target) and saida_b < 0.0
+			and _wolf.body.in_water and _nearest_dry(_wolf.body.feet_pos) > 8.0,
+			"premissa B: lago sem nenhuma saida no anel de 8 m",
+			"alvo=%s saida=%.1f m terra_real=%.1f m in_water=%s intent=%s" % [
+			_wolf._move_target, saida_b, _nearest_dry(_wolf.body.feet_pos),
+			_wolf.body.in_water, _wolf.intent])
+	var inicio := _wolf.body.feet_pos
+	var travessias := 0
+	var mentirosos := 0
+	for i: int in 200:
+		_advance(1)
+		if not _wolf._dry_ground(_wolf._move_target):
+			# Um alvo molhado so e honesto se a saida nao existe: medido no mesmo
+			# corpo e no mesmo passo em que o filtro decidiu, e nao depois.
+			if _exit_ring(_wolf.body.feet_pos) >= 0.0:
+				mentirosos += 1
+			else:
+				travessias += 1
+	var avanco := _horizontal(_wolf.body.feet_pos - inicio).length()
+	_check(mentirosos == 0, "o nado so acontece onde nao ha saida (o filtro nao mente)",
+			"alvos_molhados_sem_saida=%d com_saida=%d/200 terra_real=%.1f m" % [
+			travessias, mentirosos, _nearest_dry(_wolf.body.feet_pos)])
+	_check(avanco > 1.2, "sem saida o corpo avanca nadando",
+			"deslocamento=%.2f m (> 1,2 m) passos=200 in_water=%s pes=%s" % [
+			avanco, _wolf.body.in_water, _wolf.body.feet_pos])
+	_unflood(46, 49, 73, 76)
+	_unflood(63, 59, 69, 65)
+	return true
+
+
+## Cenario 3 (dossie 14 §5): o resgate de margem sobrevive a arvore. O comentario
+## de `sim_step` jura que a margem proxima manda "acima de qualquer outra intencao
+## da arvore", mas a atribuicao roda ANTES de `_sense`/`_think`/`_tree.tick` e a
+## folha `perseguir` reescrevia o alvo molhado por cima dela. Aqui o lobo nada
+## 6 m ate a borda (mais de 2 s de travessia, por isso `_swim_time` cruza
+## `SHORE_AFTER` com a presa ainda a vista dentro da agua) e o que se colhe e o
+## passo do cruzamento, nao o ultimo passo de uma janela qualquer: depois do
+## conserto o corpo ate sai da agua, e `SHORE_AFTER` deixa de ser alcancavel.
+func _test_resgate_de_margem_sobrevive_a_arvore() -> bool:
+	_flood(55, 59, 71, 65)
+	_arm(Vector3(60.0, 51.001, 62.0), Vector3(66.0, 51.001, 62.0), 3)
+	var presa: Vector3 = _player.position3()
+	_advance(1)
+	_check(_wolf.intent == "hunt" and _wolf._los_player
+			and not _wolf._dry_ground(presa) and _distance(presa) > Wolf.BITE_RANGE,
+			"premissa: cauda com presa visivel dentro da agua",
+			"los=%s intent=%s presa=%s presa_seca=%s dist=%.2f m saida=%.1f m" % [
+			_wolf._los_player, _wolf.intent, presa, _wolf._dry_ground(presa),
+			_distance(presa), _exit_ring(_wolf.body.feet_pos)])
+	var tick_resgate := -1
+	var swim_no_resgate := 0.0
+	var alvo_no_resgate := _wolf._move_target
+	var molhados_soaked := 0
+	var ticks_soaked := 0
+	for i: int in 160:
+		_advance(1)
+		if _wolf._swim_time > Wolf.SHORE_AFTER:
+			ticks_soaked += 1
+			if not _wolf._dry_ground(_wolf._move_target):
+				molhados_soaked += 1
+			if tick_resgate < 0:
+				tick_resgate = _clock.tick
+				swim_no_resgate = _wolf._swim_time
+				alvo_no_resgate = _wolf._move_target
+	_check(tick_resgate > 0 and ticks_soaked > 0,
+			"o estado ensopado existe de verdade (SHORE_AFTER cruzado em passo de 20 Hz)",
+			"tick=%d _swim_time=%.3f s (piso %.1f s) ticks_ensopados=%d in_water=%s" % [
+			tick_resgate, swim_no_resgate, Wolf.SHORE_AFTER, ticks_soaked,
+			_wolf.body.in_water])
+	_check(_wolf._dry_ground(alvo_no_resgate)
+			and _horizontal(alvo_no_resgate - presa).length() > 1.0,
+			"resgate_de_margem_sobrevive_a_arvore: alvo do passo do resgate e seco",
+			"intent=%s alvo=%s seco=%s a %.1f m da presa molhada (%.1f m de terra)" % [
+			_wolf.intent, alvo_no_resgate, _wolf._dry_ground(alvo_no_resgate),
+			_horizontal(alvo_no_resgate - presa).length(),
+			_nearest_dry(alvo_no_resgate)])
+	_check(molhados_soaked == 0, "nenhum passo ensopado termina com alvo molhado",
+			"molhados=%d/%d ensopados in_water_final=%s _swim_time=%.3f s" % [
+			molhados_soaked, ticks_soaked, _wolf.body.in_water, _wolf._swim_time])
+	_unflood(55, 59, 71, 65)
 	return true
 
 

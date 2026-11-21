@@ -500,6 +500,22 @@ func _shore_point() -> Vector3:
 	return me
 
 
+## Filtro de validade do alvo (dossie 14 §3.1): a arvore decide PARA ONDE e o chao
+## decide se esse para onde existe. Depois do `_tree.tick` e o unico ponto que
+## cobre as quatro folhas que escrevem alvo sem perguntar pelo solo (`_leaf_flee`,
+## `_leaf_chase`, `_leaf_stalk`, `_leaf_investigate`) sem copiar o teste cinco
+## vezes -- e sem brigar com o escorredor, que decide intencao e nao geometria.
+## Uma pergunta por lobo por passo de 20 Hz, fora dos 400 us do `SubtreeGuard`.
+## Sem saida seca no anel o alvo molhado fica onde esta e o nado segue o caminho
+## que ja existe: nao ha aqui fallback que finja ter achado terra (mandato 1).
+func _resolve_dry_target() -> void:
+	if _dry_ground(_move_target):
+		return
+	var shore := _shore_point()
+	if _dry_ground(shore):
+		_move_target = shore
+
+
 func _leaf_bite(_ctx: Dictionary) -> bool:
 	if _bite_cd > 0.0:
 		return false
@@ -608,7 +624,10 @@ func sim_step(elapsed: float, dt: float) -> void:
 	if body.in_water:
 		_swim_time += dt
 		# preso na agua por tempo demais: a margem mais proxima manda, acima de
-		# qualquer outra intencao da arvore (a mordida no jogador pode esperar)
+		# qualquer outra intencao da arvore (a mordida no jogador pode esperar).
+		# A promessa e cumprida no fim do passo por `_resolve_dry_target()` (dossie
+		# 14 §3.1) -- aqui mesmo a atribuicao e sobrescrita por qualquer folha com
+		# alvo, porque roda antes de `_sense`, `_think` e `_tree.tick`.
 		if _swim_time > SHORE_AFTER:
 			_move_target = _shore_point()
 			_speed = SPEED_WALK * SWIM_SPEED_FACTOR
@@ -620,6 +639,7 @@ func sim_step(elapsed: float, dt: float) -> void:
 	if intent != "investigate":
 		_inspect_left = 0.0
 	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt, "pack": _pack})
+	_resolve_dry_target()
 
 
 func _sense() -> void:
