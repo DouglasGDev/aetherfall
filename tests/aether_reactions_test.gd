@@ -16,9 +16,10 @@ const TESTS: Array[StringName] = [
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 	&"_test_contagio_medo", &"_test_amortece_confianca",
-	&"_test_lobo_escolhe_trilha_seca", &"_test_resgate_de_margem_sobrevive_a_arvore",
+	&"_test_lobo_escolhe_trilha_seca", &"_test_nadar_so_sem_saida_seca",
+	&"_test_resgate_de_margem_sobrevive_a_arvore",
 ]
-const EXPECTED_CHECKS: int = 160
+const EXPECTED_CHECKS: int = 165
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -2059,6 +2060,103 @@ func _test_lobo_escolhe_trilha_seca() -> bool:
 			avanco, _wolf.body.in_water, _wolf.body.feet_pos])
 	_unflood(46, 49, 73, 76)
 	_unflood(63, 59, 69, 65)
+	return true
+
+
+## A coluna de agua mais funda da seed, medida como no passo de nado do smoke
+## (varredura de 2 em 2 blocos, profundidade `SEA_LEVEL - leito` mais os quatro
+## vizinhos molhados como desempate). Lago REAL e nao o que a fixture inundou: o
+## "nada por necessidade" tem de existir no terreno gerado, senao o conserto so
+## seria indiferente a um estado que o mundo nunca produz.
+func _deepest_lake() -> Dictionary:
+	var best := Vector3i.ZERO
+	var best_score := -1
+	for x: int in range(4, VoxelConfig.world_size_x() - 4, 2):
+		for z: int in range(4, VoxelConfig.world_size_z() - 4, 2):
+			var top := _world.surface_height(x, z)
+			if not _world.is_water_xyz(x, top + 1, z):
+				continue
+			var vizinhos := 0
+			for off: Vector3i in [Vector3i(2, 0, 0), Vector3i(-2, 0, 0), Vector3i(0, 0, 2), Vector3i(0, 0, -2)]:
+				var t2 := _world.surface_height(x + off.x, z + off.z)
+				if _world.is_water_xyz(x + off.x, t2 + 1, z + off.z):
+					vizinhos += 1
+			var score := (VoxelConfig.SEA_LEVEL - top) * 10 + vizinhos
+			if score > best_score:
+				best_score = score
+				best = Vector3i(x, top, z)
+	return {"col": best, "leito": best.y, "pontuacao": best_score,
+			"profundidade": VoxelConfig.SEA_LEVEL - best.y}
+
+
+## Cenario 2 (dossie 14 §5, segundo sentido da premissa 1): o mesmo lobo no lago
+## mais fundo da seed nada e avanca, e o filtro continua indiferente a esse
+## estado. Braco B mede o compromisso de travessia (dossie 14 §3.2): com a presa
+## visivel dentro da agua o alvo seco e re-escolhido na cadencia do nariz
+## (SCENT_PERIOD = 5 passos), nao a cada passo de 50 ms -- re-escolher todo passo
+## e exatamente o "parece desorganizado" do pedido.
+func _test_nadar_so_sem_saida_seca() -> bool:
+	var lago: Dictionary = _deepest_lake()
+	var col: Vector3i = lago["col"]
+	var pes := Vector3(float(col.x) + 0.5, float(col.y) + 1.05, float(col.z) + 0.5)
+	_arm(pes, FAR_PLAYER, 4)
+	_field.imprint(pes + Vector3(4.0, 0.0, 0.0), AetherField.Channel.WORK, 0.42)
+	_advance(1)
+	var saida_lago := _exit_ring(_wolf.body.feet_pos)
+	_check(lago["pontuacao"] > 0 and lago["profundidade"] >= 2
+			and not _wolf._dry_ground(_wolf.body.feet_pos) and _wolf.body.in_water,
+			"premissa: lago fundo da seed, corpo na agua por necessidade",
+			"coluna=(%d,%d) profundidade=%d leito=%d saida_anel=%.1f m terra_real=%.1f m" % [
+			col.x, col.z, lago["profundidade"], lago["leito"], saida_lago,
+			_nearest_dry(_wolf.body.feet_pos)])
+	var inicio_lago := _wolf.body.feet_pos
+	var molhados_lago := 0
+	var mentirosos_lago := 0
+	for i: int in 200:
+		_advance(1)
+		if not _wolf._dry_ground(_wolf._move_target):
+			molhados_lago += 1
+			if _exit_ring(_wolf.body.feet_pos) >= 0.0:
+				mentirosos_lago += 1
+	var avanco_lago := _horizontal(_wolf.body.feet_pos - inicio_lago).length()
+	_check(avanco_lago > 1.2, "no lago da seed o corpo nada e avanca (> 1,2 m)",
+			"deslocamento=%.2f m alvos_molhados=%d/200 in_water=%s pes=%s" % [
+			avanco_lago, molhados_lago, _wolf.body.in_water, _wolf.body.feet_pos])
+	_check(mentirosos_lago == 0, "no lago da seed tambem so nada onde nao ha saida",
+			"molhados_sem_saida=%d molhados_com_saida=%d/200" % [
+			molhados_lago - mentirosos_lago, mentirosos_lago])
+	# Braco B: lago artificial com saida, presa visivel dentro da agua -- todo tick
+	# de cauda termina com um alvo em terra, e o que se conta sao as vezes em que
+	# esse rumo foi TROCADO, medida no alvo escrito e nao num campo do lobo.
+	_flood(55, 59, 71, 65)
+	_arm(Vector3(60.0, 51.001, 62.0), Vector3(66.0, 51.001, 62.0), 5)
+	_advance(1)
+	var alvo_anterior := _wolf._move_target
+	var reescolhas := 0
+	var passos_cauda := 0
+	var secos := 0
+	for i: int in 200:
+		_advance(1)
+		if _wolf.intent != "hunt":
+			alvo_anterior = _wolf._move_target
+			continue
+		passos_cauda += 1
+		if _wolf._dry_ground(_wolf._move_target):
+			secos += 1
+			if _horizontal(_wolf._move_target - alvo_anterior).length() > 0.01:
+				reescolhas += 1
+		alvo_anterior = _wolf._move_target
+	var segundos := float(passos_cauda) * SimClock.STEP
+	var taxa := float(reescolhas) / maxf(segundos, 0.001)
+	_check(passos_cauda > 100 and secos == passos_cauda,
+			"premissa B: a cauda na agua troca o alvo por um ponto em terra todo passo",
+			"passos_hunt=%d alvos_secos=%d presa_seca=%s saida=%.1f m" % [
+			passos_cauda, secos, _wolf._dry_ground(_player.position3()),
+			_exit_ring(_wolf.body.feet_pos)])
+	_check(taxa <= 5.0, "rumo de travessia re-escolhe na cadencia do nariz (4/s), nao todo passo",
+			"reescolhas=%d em %.1f s de cauda = %.2f por passo de 20 Hz (%.1f/s, teto declarado 5/s)" % [
+			reescolhas, segundos, float(reescolhas) / maxf(float(passos_cauda), 1.0), taxa])
+	_unflood(55, 59, 71, 65)
 	return true
 
 
