@@ -18,8 +18,9 @@ const TESTS: Array[StringName] = [
 	&"_test_contagio_medo", &"_test_amortece_confianca",
 	&"_test_lobo_escolhe_trilha_seca", &"_test_nadar_so_sem_saida_seca",
 	&"_test_resgate_de_margem_sobrevive_a_arvore",
+	&"_test_dois_lobos_nao_farejam_a_mesma_celula", &"_test_alvo_estavel_por_segundo",
 ]
-const EXPECTED_CHECKS: int = 165
+const EXPECTED_CHECKS: int = 173
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -118,6 +119,33 @@ const AMORTECE_SPOTS: Array = [
 	Vector3(58.0, 51.001, 54.0), Vector3(50.0, 51.001, 62.0),
 	Vector3(66.0, 51.001, 62.0),
 ]
+
+
+# Geometria da célula de rastro (dossie 14 §5.4): quatro lobos a 7,2 m de um unico
+# imprint de WORK, todos dentro dos 12 m do nariz (SCENT_RADIUS = 3 celulas) e
+# dentro dos 24 m de coesao, entao os quatro leem a MESMA celula. Sem assento, os
+# quatro escrevem o mesmo centro -- e o "cinco corpos no mesmo ponto" que a
+# premissa 2 declara por ausencia.
+const FAREJAR_SPOTS: Array = [
+	Vector3(60.0, 51.001, 58.0), Vector3(72.0, 51.001, 58.0),
+	Vector3(60.0, 51.001, 66.0), Vector3(72.0, 51.001, 66.0),
+]
+
+
+## Sessao de spawn puro: os cinco lobos vem do `_spawn_wolves` real e ficam onde o
+## sorteados colocou, sem `_pack_place`. E o unico jeito de conferir os lares
+## (dossie 14 §3.3.(iii)) pela transicao verdadeira e nao por posicao escrita a mao.
+func _spawn_session(n: int) -> void:
+	_pack_release()
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s.clock = _clock
+	s.player = _player
+	s._entities = Node3D.new()
+	_stage.add_child(s._entities)
+	s._spawn_wolves(n)
+	_session = s
 
 
 func _initialize() -> void:
@@ -2211,6 +2239,183 @@ func _test_resgate_de_margem_sobrevive_a_arvore() -> bool:
 			molhados_soaked, ticks_soaked, _wolf.body.in_water, _wolf._swim_time])
 	_unflood(55, 59, 71, 65)
 	return true
+
+
+## Cenario 4 (dossie 14 §5, premissa 2 no espaco): quantos lobos miram a MESMA
+## celula de Eter por tick e quantos param no mesmo ponto. Vermelho por ausencia:
+## `_find_scent` devolve o centro da celula, entao os quatro que leem o mesmo
+## rastro escrevem o mesmo alvo e cinco corpos cabem no mesmo voxel.
+func _test_dois_lobos_nao_farejam_a_mesma_celula() -> bool:
+	_arm()
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, FAREJAR_SPOTS[i])
+	var celula_rastro: Vector3i = _field.cell_of_world(SOURCE)
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	_advance_pack(1)
+	var ws: Array = _pack_wolves()
+	var mesma_celula := true
+	var todos_investigate := true
+	for w: Wolf in ws:
+		mesma_celula = mesma_celula and w._scent_cell == celula_rastro
+		todos_investigate = todos_investigate and w.intent == "investigate"
+	_check(mesma_celula and todos_investigate,
+			"premissa: os quatro leem a mesma celula de rastro",
+			"celula=%s leituras=[%s] intent=[%s]" % [
+			str(celula_rastro), _cels_str(ws), _intents_str(ws)])
+	var pior_tick := 0
+	var pior_na_celula := 0
+	var pior_no_ponto := 0
+	var passos_investigue := 0
+	var fora_da_celula := 0
+	for t: int in 150:
+		_advance_pack(1)
+		var na_celula := 0
+		var alvos: Array = []
+		for w: Wolf in ws:
+			if w.intent == "investigate":
+				passos_investigue += 1
+				if _field.cell_of_world(w._move_target) == celula_rastro:
+					na_celula += 1
+				else:
+					fora_da_celula += 1
+			alvos.append(w._move_target)
+		if na_celula > 0 and t > 5:
+			pior_tick = t
+		pior_na_celula = maxi(pior_na_celula, na_celula)
+		pior_no_ponto = maxi(pior_no_ponto, _cluster_maximo(alvos, 1.0))
+	_check(pior_na_celula <= 1, "pico de lobos mirando a mesma celula por tick",
+			"pior=%d lobos na celula %s (teto 1) ultimo_tick=%d passos_investigue=%d alvos_fora_da_celula=%d" % [
+			pior_na_celula, str(celula_rastro), pior_tick, passos_investigue, fora_da_celula])
+	_check(pior_no_ponto <= 1, "pico de lobos com o mesmo ponto de chegada",
+			"pior_cluster=%d alvos a <= 1,0 m entre si (teto 1)" % pior_no_ponto)
+	# Lares em colunas diferentes (dossie 14 §3.3.(iii)): medidos no spawn real,
+	# sem `_pack_place`. Se dois lobos herdam a mesma coluna, a ronda dos dois
+	# setores sortea o mesmo circulo e a matilha parece um corpo so.
+	_spawn_session(5)
+	var colunas: Dictionary = {}
+	var lares := ""
+	for w: Wolf in _pack_wolves():
+		var col := Vector2i(int(w.home.x), int(w.home.z))
+		colunas[col] = true
+		lares += "lobo%d=(%d,%d) " % [w.identity, col.x, col.y]
+	_check(colunas.size() == 5 and _pack_wolves().size() == 5,
+			"lares do spawn real em colunas diferentes",
+			"distintas=%d/5 %s" % [colunas.size(), lares])
+	# Mecanismo, nao sorte: no vermelho desta perna os cinco lares ja caíam em
+	# colunas distintas (`distinctas=5/5` sem codigo novo), entao a checagem de
+	# cima so prova que a seed teve sorte. O que a perna acrescenta e a RECUSA,
+	# e recusa se confere marcando as colunas ocupadas -- e tambem a coluna do
+	# centro, que e exatamente onde o fallback jogaria o sexto lobo -- e pedindo
+	# lares de novo pela funcao real. Coluna ocupada nao pode voltar.
+	colunas[Vector2i(int(_session.spawn_point().x), int(_session.spawn_point().z))] = true
+	var violacoes := 0
+	var dadas: Dictionary = {}
+	for _k: int in 8:
+		var novo := _session._random_ground_point(16.0, 46.0, colunas)
+		var col_nova := Vector2i(int(novo.x), int(novo.z))
+		if colunas.has(col_nova):
+			violacoes += 1
+		dadas[col_nova] = true
+	_check(violacoes == 0, "mecanismo: coluna ocupada nao volta como lar",
+			"violacoes=%d em 8 pedidos, ocupadas=%d, colunas_devolvidas=%d" % [
+			violacoes, colunas.size(), dadas.size()])
+	_pack_release()
+	return true
+
+
+## Cenario 5 (dossie 14 §5, premissa 2 no tempo): trocas de `_move_target` por
+## lobo por segundo de logica. Organizado e numero, nao adjetivo -- a media por
+## lobo e o pior segundo de um lobo saem no log com o teto declarado.
+##
+## De onde vem o teto: uma troca so conta quando o alvo escrito se move mais de
+## 0,5 m no horizontal. Dois canais re-escrevem o alvo na mata e os dois tem
+## cadencia de 4 Hz -- o nariz (`SCENT_PERIOD` 0,25 s) e o compromisso de
+## travessia da perna (b) -- entao o pior segundo legitimo e a soma: 8 trocas/s,
+## uma a cada dois passos de 20 Hz. A media se declara em 2/s, um quarto do pior
+## caso, porque a patrulha e a cauda tambem tem de escrever o MESMO alvo por
+## varios passos seguidos para o corpo chegar a algum lugar.
+func _test_alvo_estavel_por_segundo() -> bool:
+	_arm()
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, FAREJAR_SPOTS[i])
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	var segundos := 20
+	var ws: Array = _pack_wolves()
+	var anterior: Array = []
+	var por_segundo: Array = []
+	for w: Wolf in ws:
+		anterior.append(w._move_target)
+		var linha: Array = []
+		for s: int in segundos:
+			linha.append(0)
+		por_segundo.append(linha)
+	var passos := 0
+	for s: int in segundos:
+		for t: int in 20:
+			_advance_pack(1)
+			passos += 1
+			for i: int in ws.size():
+				var w: Wolf = ws[i]
+				if _horizontal(w._move_target - anterior[i]).length() > 0.5:
+					por_segundo[i][s] += 1
+				anterior[i] = w._move_target
+	var soma := 0
+	var pior_segundo := 0
+	var pior_lobo := -1
+	var linhas := ""
+	for i: int in ws.size():
+		var total := 0
+		var pior_do_lobo := 0
+		for s: int in segundos:
+			total += por_segundo[i][s]
+			pior_do_lobo = maxi(pior_do_lobo, por_segundo[i][s])
+		soma += total
+		if pior_do_lobo > pior_segundo:
+			pior_segundo = pior_do_lobo
+			pior_lobo = (ws[i] as Wolf).identity
+		linhas += "lobo%d media=%.2f/s pior_segundo=%d | " % [
+				(ws[i] as Wolf).identity, float(total) / float(segundos), pior_do_lobo]
+	var media_geral := float(soma) / float(segundos * ws.size())
+	_check(soma > 0, "premissa: a janela tem trocas suficientes para contar",
+			"passos_por_lobo=%d trocas_total=%d %s" % [
+			segundos * 20, soma, linhas.strip_edges()])
+	_check(media_geral <= 2.0, "trocas de alvo por lobo por segundo de logica (media)",
+			"media=%.3f/s por lobo (teto 2/s), trocas=%d em %d s com 4 lobos" % [
+			media_geral, soma, segundos])
+	_check(pior_segundo <= 8, "nenhum lobo troca o alvo acima do teto no pior segundo",
+			"pior_segundo=%d trocas no lobo%d (teto 8/s) %s" % [
+			pior_segundo, pior_lobo, linhas.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Maior conjunto de alvos que cae dentro de `raio` um do outro -- o "cinco corpos
+## no mesmo ponto" da premissa 2, medido no alvo escrito e nao no corpo.
+func _cluster_maximo(alvos: Array, raio: float) -> int:
+	var pior := 0
+	for a: int in alvos.size():
+		var n := 0
+		for b: int in alvos.size():
+			if _horizontal(alvos[a] - alvos[b]).length() <= raio:
+				n += 1
+		pior = maxi(pior, n)
+	return pior
+
+
+func _cels_str(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		out += str(w._scent_cell) + " "
+	return out.strip_edges()
+
+
+func _intents_str(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		out += w.intent + " "
+	return out.strip_edges()
 
 
 ## O veto `hunt` na ultima decisao colhida pelo escorredor do lobo: aberta quer

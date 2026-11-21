@@ -280,7 +280,12 @@ func _spawn_wolves(n: int) -> void:
 		_population_rng.seed = ("population:%d" % world.gen.world_seed).hash()
 	for i in n:
 		var w := Wolf.new()
-		var home := _random_ground_point(16.0, 46.0)
+		# Dossie 14 §3.3.(iii): dois lobos com o mesmo lar rondam o mesmo setor e a
+		# matilha parece um corpo so. O conjunto de colunas ocupadas sai dos lobos
+		# vivos, entao criar cinco de uma vez e criar cinco um a um consomem a
+		# mesma sequencia da `_population_rng` -- a assinatura que a suíte de RNG
+		# pinça nao muda com o lote.
+		var home := _random_ground_point(16.0, 46.0, _home_columns())
 		_entities.add_child(w)
 		w.setup(world, aether, player, home, _next_identity, clock)
 		# A matilha entra pelo mesmo caminho do `entity_provider` do jogador: o
@@ -297,7 +302,16 @@ func _spawn_wolves(n: int) -> void:
 		wolves.append(w)
 
 
-func _random_ground_point(rmin: float, rmax: float) -> Vector3:
+## Colunas de lar já ocupadas. Dicionário pequeno (até o censo), construído uma vez
+## por spawn -- o spawn é raro: cinco no boot e um por fila de 45 s (dossie 14 §4).
+func _home_columns() -> Dictionary:
+	var taken: Dictionary = {}
+	for w: Wolf in wolves:
+		taken[Vector2i(int(w.home.x), int(w.home.z))] = true
+	return taken
+
+
+func _random_ground_point(rmin: float, rmax: float, taken: Dictionary) -> Vector3:
 	var c := spawn_point()
 	for _attempt in 24:
 		var a := _population_rng.randf() * TAU
@@ -305,6 +319,9 @@ func _random_ground_point(rmin: float, rmax: float) -> Vector3:
 		var p := Vector3(c.x + cos(a) * r, 0.0, c.z + sin(a) * r)
 		p.x = clampf(p.x, 6.0, float(VoxelConfig.world_size_x()) - 6.0)
 		p.z = clampf(p.z, 6.0, float(VoxelConfig.world_size_z()) - 6.0)
+		var column := Vector2i(int(p.x), int(p.z))
+		if taken.has(column):
+			continue
 		var y := world.surface_height(int(p.x), int(p.z))
 		if y > VoxelConfig.SEA_LEVEL:
 			var feet := Vector3(p.x, float(y + 1), p.z)
