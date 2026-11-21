@@ -13,7 +13,9 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall",
-	&"_test_degrau_de_um_bloco_lobo_sobe", &"_test_predicado_degrau_recusa_teto_baixo",
+	&"_test_degrau_de_um_bloco_lobo_sobe",
+	&"_test_degrau_de_um_bloco_jogador_sobe_sem_tecla", &"_test_agachado_nao_e_arremessado",
+	&"_test_predicado_degrau_recusa_teto_baixo",
 	&"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
@@ -24,7 +26,7 @@ const TESTS: Array[StringName] = [
 	&"_test_spawn_fora_da_vista_do_jogador",
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 ]
-const EXPECTED_CHECKS: int = 192
+const EXPECTED_CHECKS: int = 195
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -179,6 +181,12 @@ func _check(ok: bool, label: String, values: String) -> void:
 
 func _test_fixture() -> bool:
 	BlockDefs.init_tables()
+	# O InputMap deste jogo nao esta no project.godot: e o boot que o registra, na
+	# linha `InputActions.install()` de main.gd:78. Este runner monta a sessao sem
+	# `_ready`, entao sem esta chamada nenhum `get_action_strength` existe -- eram 15
+	# erros por corrida no log verde e o auto-pulo do jogador nao teria como ser
+	# pedido pelo caminho real do teclado.
+	InputActions.install()
 	_stage = Node3D.new()
 	_stage.process_mode = Node.PROCESS_MODE_DISABLED
 	root.add_child(_stage)
@@ -1116,6 +1124,91 @@ func _test_degrau_de_um_bloco_lobo_sobe() -> bool:
 			float(frames) * SimClock.STEP / 3.0])
 	# A limpeza vem DEPOIS das checagens: apagada a coluna antes, a premissa acima
 	# perguntaria por um degrau que nao existe mais e acusaria o palco, nao o corpo.
+	_step_column([])
+	return true
+
+
+## Os dois bracos do auto-pulo do jogador (dossie 19 §3.3) no MESMO degrau de um
+## bloco do cenario do lobo. O `wish` nao e escrito na mao: vem de
+## `_wish_direction()` lendo a acao `move_forward`, que e o caminho que o teclado
+## percorre no jogo, e a tecla `jump` fica solta o tempo todo -- exatamente o
+## "quando estou andando, ter um auto pular o bloco" que o dono pediu. O segundo
+## braco passa `crouch` apertado: agachar e o "nao me arremesse" do jogador.
+func _walk_player_into_step(crouch_held: bool) -> Dictionary:
+	_step_column([51])
+	var p := _player
+	p.feet_to_spawn(Vector3(52.0, 51.001, 54.0))
+	# yaw = -PI/2 porque `forward = (-sin(yaw), 0, -cos(yaw))`: assim o
+	# `move_forward` aponta para leste, a mesma direcao do degrau em x=56.
+	p.yaw = -PI / 2.0
+	_launch_watch(p.body)
+	var frames := 0
+	var lancamentos := 0
+	var horizontais := 0
+	var na_face := 0
+	var predicado := false
+	var x_max := p.body.feet_pos.x
+	var y_max := p.body.feet_pos.y
+	Input.action_press("move_forward")
+	if crouch_held:
+		Input.action_press("crouch")
+	for i: int in 300:
+		p.update_local(1.0 / 60.0)
+		frames += 1
+		x_max = maxf(x_max, p.body.feet_pos.x)
+		y_max = maxf(y_max, p.body.feet_pos.y)
+		if _launched(p.body):
+			lancamentos += 1
+		if p.body.blocked_horizontal:
+			horizontais += 1
+			# A amostra e o frame da decisao: na face do degrau, com o corpo ainda no
+			# piso de baixo. Depois do lancamento nao ha mais o que perguntar -- e o pe
+			# ja subiu, entao "uma celula acima" cai duas celulas acima do parapeito e
+			# o predicado responde falso por construcao, nao por defeito.
+			if lancamentos == 0 and p.body.feet_pos.x + Player.DIMS_STAND.x * 0.5 > 55.9:
+				na_face += 1
+				predicado = predicado or p.body.can_step_over(Vector3(1.0, 0.0, 0.0))
+		if x_max > 58.0:
+			break
+	Input.action_release("move_forward")
+	Input.action_release("crouch")
+	return {
+		"frames": frames, "lancamentos": lancamentos, "horizontais": horizontais,
+		"na_face": na_face, "predicado": predicado, "x_max": x_max, "y_max": y_max,
+		"dims": str(p.body.dims), "agachado": p.crouching, "painel": p.panel_open,
+	}
+
+
+func _test_degrau_de_um_bloco_jogador_sobe_sem_tecla() -> bool:
+	var d := _walk_player_into_step(false)
+	_check(not Input.is_action_pressed("jump") and not bool(d["painel"])
+			and int(d["na_face"]) > 0 and bool(d["predicado"]),
+			"premissa: o jogador anda contra o degrau com a tecla de salto solta",
+			"jump=%s painel=%s horizontais=%d na_face=%d predicado=%s dims=%s x_max=%.3f" % [
+			Input.is_action_pressed("jump"), d["painel"], d["horizontais"],
+			d["na_face"], d["predicado"], d["dims"], d["x_max"]])
+	_check(float(d["y_max"]) >= 51.001 + 0.95 and float(d["x_max"]) > 57.0
+			and int(d["lancamentos"]) >= 1,
+			"o jogador sobe o degrau de um bloco sem apertar espaco",
+			"y_max=%.3f ganho=%.3f m x_max=%.3f lancamentos=%d frames=%d tempo=%.1f s" % [
+			d["y_max"], float(d["y_max"]) - 51.001, d["x_max"], d["lancamentos"],
+			d["frames"], float(d["frames"]) / 60.0])
+	_step_column([])
+	return true
+
+
+func _test_agachado_nao_e_arremessado() -> bool:
+	var d := _walk_player_into_step(true)
+	# O dente da recusa: o mesmo degrau, o MESMO predicado aprovando, e mesmo assim
+	# nenhum arremesso. Sem o `predicado=true` aqui em cima a checagem verde estaria
+	# afirmando apenas que o corpo agachado nao acha degrau nenhum.
+	_check(bool(d["agachado"]) and int(d["na_face"]) > 0 and bool(d["predicado"])
+			and float(d["y_max"]) < 51.001 + 0.05 and int(d["lancamentos"]) == 0
+			and float(d["x_max"]) < 56.0,
+			"agachado encosta no degrau que o predicado aprova e continua do lado de ca",
+			"agachado=%s dims=%s na_face=%d predicado=%s y_max=%.3f ganho=%.3f m lancamentos=%d x_max=%.3f frames=%d" % [
+			d["agachado"], d["dims"], d["na_face"], d["predicado"], d["y_max"],
+			float(d["y_max"]) - 51.001, d["lancamentos"], d["x_max"], d["frames"]])
 	_step_column([])
 	return true
 
