@@ -98,7 +98,7 @@ func narration_of(wolf_id: int) -> String:
 
 
 ## Cabecalhos do pedido. Um dono para a chave: quem levanta o servidor e quem o
-## procura leem a mesma constante, e a checagem da suite confere o launcher.
+## procura leem a mesma resolucao, e a checagem da suite confere o launcher.
 func auth_headers() -> PackedStringArray:
 	return ["Content-Type: application/json", "Authorization: Bearer " + api_key]
 

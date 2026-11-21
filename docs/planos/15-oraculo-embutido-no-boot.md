@@ -219,14 +219,15 @@ isto que o `--api-key` entra, e **não** por segurança: a chave local é o *imp
 com `--api-key` no servidor, todo `/v1/chat/completions` sem o header `Authorization: Bearer` é
 `401` — e `401` cai no `text.is_empty()` de
 [`mind_oracle.gd:162-174`](../../src/ai/mind_oracle.gd#L162-L174), que hoje vira recuo de 30 s em
-silêncio. Então a chave vive numa constante ao lado de `SERVER_URL`
-([`:11-13`](../../src/ai/mind_oracle.gd#L11-L13)), `run_mind_server.ps1` passa a mesma chave
-([`:30-37`](../../tools/run_mind_server.ps1#L30-L37)) e o `_request` manda o header
-([`:122-124`](../../src/ai/mind_oracle.gd#L122-L124), pelos `auth_headers()` de
-[`:102-103`](../../src/ai/mind_oracle.gd#L102-L103)). A porta continua tendo **um** dono: o
-`server_url` do oráculo ([`:32`](../../src/ai/mind_oracle.gd#L32)); o host lê o valor do oracle em
-vez de repetir `8741`, que hoje já aparece em dois lugares ([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11)
-e [`run_mind_server.ps1:12`](../../tools/run_mind_server.ps1#L12)).
+silêncio. Desde 2026-11-21 a chave **não mora no repositório**: `resolve_api_key()` lê
+([`KEY_ENV` e `KEY_FILE`](../../src/ai/mind_oracle.gd#L19-L20)) e, sem as duas fontes,
+sorteia 32 hex e grava o arquivo ([`:219-241`](../../src/ai/mind_oracle.gd#L219-L241));
+o `run_mind_server.ps1` lê as **mesmas duas fontes** e recusa sem nenhuma
+([`:35-42`](../../tools/run_mind_server.ps1#L35-L42)). O `_request` manda o header pelos
+`auth_headers()` de ([`:102-103`](../../src/ai/mind_oracle.gd#L102-L103)). A porta continua
+tendo **um** dono: o `server_url` do oráculo ([`:32`](../../src/ai/mind_oracle.gd#L32)); o
+host lê o valor do oracle em vez de repetir `8741`, que aparece em dois lugares
+([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11) e [`ps1:20`](../../tools/run_mind_server.ps1#L20)).
 
 **4.3 — Ciclo de vida nos três pontos de saída, com os nomes certos da API.** No fecho da janela
 e em [`main.gd:_exit_tree`](../../src/main.gd#L661-L662) (onde o journal já é fechado — o único
