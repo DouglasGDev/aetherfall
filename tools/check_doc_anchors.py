@@ -1,6 +1,6 @@
 """Verificador de âncoras `arquivo:linha` dos documentos.
 
-Confere o que uma régua de existência não vê. Quatro classes objetivas:
+Confere o que uma régua de existência não vê. Seis classes objetivas:
 
 1. arquivo que não existe;
 2. número **fora do arquivo**;
@@ -10,6 +10,21 @@ Confere o que uma régua de existência não vê. Quatro classes objetivas:
    linha em que ele é declarado **ou** cair inteiro dentro do corpo daquela
    declaração. É uma afirmação verificável, não uma opinião: a frase diz o
    nome, o arquivo diz onde o nome vive.
+5. **rótulo que não existe no alvo** — o nome afirmado pelo link não aparece
+   em lugar nenhum do arquivo citado. É a classe que a régua 4 não vê, porque
+   ela só confere os nomes que ainda existem: quando a função morre, o corpo
+   some e o ponteiro passa a apontar para outra coisa com o número em faixa.
+   Vem daqui, por exemplo, um ponteiro que ainda dizia `_random_ground_point`
+   depois de a perna 14 trocar o sorteio por `_spawn_home_point`. O rótulo com
+   argumentos (`nome(16.0, 46.0)`) conta pelo mesmo nome — era a forma que
+   escapava da régua 4.
+6. **link relativo que não resolve** — `[rotulo](caminho)` sem `#LNNN` nenhum: a
+   linha pode estar certa e o arquivo não existir. Medido primeiro num script
+   descartável, porque um link do status para a evidência do oráculo estava
+   escrito `](oracle-embutido-15/readback.md)` — faltava o `evidence/`, e as
+   cinco réguas acima só olham âncora de `.gd`. O que está dentro de código
+   inline (`` `[rotulo](alvo)` ``) não é link: é exemplo de sintaxe, e contá-lo
+   seria error do instrumento, não do documento.
 
 O que continua fora daqui: a prosa livre que cita um número sem nomear símbolo
 nenhum — número dentro do arquivo, linha com texto, e a frase podendo afirmar
@@ -22,12 +37,14 @@ que a saída é uma lista de casos, não um "docs ok".
 
 Com `--ref` os **documentos** vêm do git daquela revisão e os **alvos** continuam
 do disco: é o par antes/depois de uma passada de re-derivação, medido pela mesma
-régua, sem depender de memória. Cada corrida imprime o total de ponteiros e de
-rótulos conferidos, os casos encontrados e termina com código 1 se houver caso.
+régua, sem depender de memória. Cada corrida imprime o total de ponteiros, de
+rótulos e de links relativos conferidos, os casos encontrados e termina com
+código 1 se houver caso.
 """
 
 import io
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -39,10 +56,16 @@ LINK = re.compile(r"\]\((?:\.\./)*((?:src|tests|docs)/[\w./-]+\.(?:gd|md))#L(\d+
 BARE = re.compile(r"((?:\.\./)*/?(?:src|tests|docs)/[\w./-]+\.(?:gd|md)):(\d+)(?:-(\d+))?")
 CONT = re.compile(r"(?<![\w./-]):(\d+)(?:-(\d+))?")
 
-# [`nome`](../src/x.gd#L12)  |  [`nome()`](../src/x.gd#L12-L13)
-LABEL = re.compile(r"\[`([A-Za-z_][\w]*)(?:\(\))?`\]\((?:\.\./)*((?:src|tests|docs)/[\w./-]+\.gd)#L(\d+)(?:-L(\d+))?\)")
+# [`nome`](../src/x.gd#L12)  |  [`nome()`](../src/x.gd#L12-L13)  |  [`nome(16.0, 46.0)`](...)
+LABEL = re.compile(r"\[`([A-Za-z_][\w]*)(?:\([^)\n]{0,40}\))?`\]\((?:\.\./)*"
+                   r"((?:src|tests|docs)/[\w./-]+\.gd)#L(\d+)(?:-L(\d+))?\)")
 # declaracoes de topo em GDScript: sem recuo
 DEFPAT = re.compile(r"^(\s*)(?:static\s+)?(func|var|const|enum)\s+(_?[A-Za-z_][\w]*)")
+
+# [rotulo](../docs/x.md)  |  [rotulo](evidence/x/readback.md)  |  com #fragmento conta igual
+REL = re.compile(r"\[[^\]]*\]\((?![a-zA-Z]+:)([^)#\s]+)(#[^)\s]*)?\)")
+# codigo inline nao e link: `[rotulo](alvo)` e exemplo de sintaxe
+CODE = re.compile(r"`[^`\n]*`")
 
 cache = {}
 defs_cache = {}
@@ -156,6 +179,7 @@ def main(argv):
         docs = {rel: read_doc(rel) for rel in doc_files(prefixes)}
     checked = 0
     labels = 0
+    links = 0
     rows = []
     for rel in sorted(docs):
         for n, line in enumerate(docs[rel].split("\n"), 1):
@@ -178,6 +202,12 @@ def main(argv):
                 if all(s.strip() == "" for s in src[a - 1:b]):
                     rows.append("%s:%d  %s:%d-%d  BRANCO" % (rel, n, last, a, b))
             for (name, path, a, b) in label_events(line):
+                alvo = lines_of(path)
+                if alvo is not None and name not in "\n".join(alvo):
+                    labels += 1
+                    rows.append("%s:%d  %s:%d-%d  ROTULO NAO EXISTE NO ALVO [%s]"
+                                % (rel, n, path, a, b, name))
+                    continue
                 sp = defs_of(path).get(name)
                 if not sp:
                     continue
@@ -187,9 +217,17 @@ def main(argv):
                     rows.append("%s:%d  %s:%d-%d  ROTULO FORA DO CORPO [%s] em %s"
                                 % (rel, n, path, a, b, name,
                                    ",".join("%d-%d" % s for s in sp[:2])))
-    print("%s  arquivos: %d  ponteiros conferidos: %d  rotulos conferidos: %d"
+            for m in REL.finditer(CODE.sub("", line)):
+                alvo = posixpath.normpath(posixpath.join(posixpath.dirname(rel), m.group(1)))
+                links += 1
+                if alvo.startswith(".."):
+                    rows.append("%s:%d  %s  LINK SAI DO REPOSITORIO" % (rel, n, m.group(1)))
+                elif not os.path.exists(os.path.join(ROOT, alvo.replace("/", os.sep))):
+                    rows.append("%s:%d  %s  LINK QUEBRADO" % (rel, n, m.group(1)))
+    print("%s  arquivos: %d  ponteiros conferidos: %d  rotulos conferidos: %d  "
+          "links relativos conferidos: %d"
           % (("corpus em " + ref) if ref else "corpus na arvore de trabalho",
-             len(docs), checked, labels))
+             len(docs), checked, labels, links))
     for r in sorted(set(rows)):
         print(r)
     print("casos objetivos: %d" % len(set(rows)))

@@ -29,7 +29,7 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:547-559](../../src/entities/player.gd) |
 | Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:261` |
 | Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:300-310](../../src/world/voxel_world.gd) |
-| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:424-427](../../src/main.gd#L424-L427); coleta em [player.gd:652-665](../../src/entities/player.gd#L652-L665) |
+| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:547-549](../../src/main.gd#L547-L549); coleta em [player.gd:652-665](../../src/entities/player.gd#L652-L665) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
 pelo [documento 11](11-inventory-crafting.md):** a dureza saiu de `Player._hardness()`
@@ -438,14 +438,14 @@ coluna de células (`0.5 ± 0.49 ⊂ [0, 1)`), que é o que permite derivar a c�
 do corpo sem ambiguidade.
 
 Integração `[TARGET]` no tick de simulação, em `Main._sim_tick()`
-([main.gd:223-249](../../src/main.gd#L223-L249)), 20 Hz (`SimClock.HZ`,
+([main.gd:229-259](../../src/main.gd#L229-L259)), 20 Hz (`SimClock.HZ`,
 [sim_clock.gd:5-7](../../src/core/sim_clock.gd)) — nunca em `_process`: queda de
 bloco é estado de mundo, e o hash de estado do gate P0 depende disso. O `TickJournal`
 atual só assina uma projeção mínima, **sem corpos nem comandos**
 ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)); não cobre a
 entidade de queda proposta nem fecha esse gate. Hoje, jogador e locomoção/timers do lobo
-ainda mudam por frame de física ([main.gd:215](../../src/main.gd#L215),
-[wolf.gd:702-747](../../src/entities/wolf.gd#L702-L747)).
+ainda mudam por frame de física ([main.gd:221](../../src/main.gd#L221),
+[wolf.gd:777-822](../../src/entities/wolf.gd#L777-L822)).
 
 ### Matemática
 
@@ -603,10 +603,10 @@ func _overlapping(cell: Vector3i) -> Array:
 ```
 
 `e.has_method("body_aabb")` não é decoração: `body_aabb()` já é o contrato de
-entidade visada do projeto (player.gd:598, [wolf.gd:185-186](../../src/entities/wolf.gd#L185-L186)),
+entidade visada do projeto (player.gd:598, [wolf.gd:195-196](../../src/entities/wolf.gd#L195-L196)),
 e `entity_provider` é o `Callable` que `Main` injeta hoje no jogador
-([main.gd:109](../../src/main.gd#L109) → `targets_under_crosshair`,
-[main.gd:327-332](../../src/main.gd#L327-L332)).
+([main.gd:115](../../src/main.gd#L115) → `targets_under_crosshair`,
+[main.gd:449-454](../../src/main.gd#L449-L454)).
 
 ### Da fila para a entidade
 
@@ -652,7 +652,7 @@ bloco cair para sempre em cima de um suporte recém-colocado.)
 | Necessidade | Estado hoje | Custo real |
 |---|---|---|
 | Entidade física de bloco | inexistente | `src/entities/falling_block.gd` + spawner e step em `Main` |
-| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:424-427](../../src/main.gd#L424-L427)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
+| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:547-549](../../src/main.gd#L547-L549)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
 | Sufocamento em jogador | o medidor `air` existe, mas `_update_breath` só olha água (player.gd:548-549) | uma linha: `no_air := world.is_water_xyz(olho) or BlockDefs.blocks_air(world.get_block(olho))` — `blocks_air` é derivado dos campos de §10.3, não um décimo flag |
 | Sufocamento em NPC | o lobo **não tem medidor de ar** | ou um `Breath` comum aos dois, ou dano por tick direto no NPC enterrado |
 | Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:361-363); nenhum `is Player` dentro da física |
@@ -749,7 +749,7 @@ func stats() -> Dictionary:
 	return {"queued": _pending.size(), "overflow": _overflow}
 ```
 
-`Main.diagnostics()` ([main.gd:583-594](../../src/main.gd#L583-L594)) ganha `"block_updates":
+`Main.diagnostics()` ([main.gd:708-719](../../src/main.gd#L708-L719)) ganha `"block_updates":
 updates.stats()` junto de `"dropped_ticks"` — os dois são a mesma categoria de medida
 (quantos ticks de simulação o orçamento não absorveu), e sem o número a discussão sobre
 `MAX_PER_TICK` e `MAX_QUEUED` seria opinião.
@@ -1003,7 +1003,7 @@ mundo velho não tinha nada ali, e o novo tem faixa profunda, lava e bedrock. Re
 fechamento `[DECIDED]`: migrar por translação e **recusar o slot se qualquer edição
 antiga cair em faixa que o novo mundo não conhece** (`y_novo < Y_BEDROCK_TOP + 1`).
 A gravação/conferência de `gen_version` já existe em `save_game`/`load_game`
-([main.gd:498](../../src/main.gd#L498), [main.gd:526-528](../../src/main.gd#L526-L528)):
+([main.gd:623](../../src/main.gd#L623), [main.gd:651-651](../../src/main.gd#L651)):
 hoje o save incompatível é recusado antes da restauração. A migração proposta precisa
 atualizar essa versão junto das edições; não há migração implementada aqui.
 

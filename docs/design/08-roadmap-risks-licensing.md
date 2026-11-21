@@ -26,7 +26,7 @@ código que existe hoje.
 | Fase | Situação | O que já está em `src/` | O que falta para o gate |
 |---|---|---|---|
 | **P0** | parcial, sem o gate | mundo de 64 chunks gerado e malhado; `SimClock` 20 Hz com ticks perdidos visíveis [core/sim_clock.gd:5-27](../../src/core/sim_clock.gd); voxel com meshing e face-culling; jogador em 1ª/3ª pessoa com corpo animado; lavrar/colocar com buffer e guarda; save/load atômico por diário de edições [persistence/save_manager.gd:8-10](../../src/persistence/save_manager.gd); vocabulário de coordenadas canônico [world/coords.gd](../../src/world/coords.gd); `TickJournal` com hash SHA256 de projeção mínima e journal JSONL `[tick,hash]` sob demanda, em arquivo novo por corrida [persistence/tick_journal.gd:16-87](../../src/persistence/tick_journal.gd#L16-L87) | `af-bench --scenario boot_walk_10min` com hash de estado estável em 3 execuções; bake-off de voxel decidido com números (§06.4); `docs/engine/simclock.md` |
-| **P1** | parcial, sem o gate | BT runtime com blackboard, cooldown e `SubtreeGuard` [ai/behavior](../../src/ai/behavior); `UtilityScorer` + curvas de resposta [ai/utility_scorer.gd](../../src/ai/utility_scorer.gd); `Mind` com 24 episódios, crenças com decaimento e soleira, confiança, *drift* de personalidade e *trust* [ai/mind.gd:7-9](../../src/ai/mind.gd); `AetherField` de **3** canais (trabalho/sangue/medo) com difusão e decaimento [world/aether_field.gd:9-17](../../src/world/aether_field.gd); lobo que caça por visão ou último avistamento, investiga/para/registra visita ao rastro, foge por perigo percebido e **veta a caçada por memória** [wolf.gd:255-304](../../src/entities/wolf.gd#L255-L304), [:205-294](../../src/entities/wolf.gd#L205-L294), [:786-789](../../src/entities/wolf.gd#L786-L789); ciclo e limites em [§09.8](09-veloren-mechanics-adaptation.md#8-criaturas-o-que-virou-comportamento) | canais de morte/som/fogo (6 no total), difusão em thread, `MindStore`, `MindsInspector` (observabilidade **é** parte de P1), cenário com hash igual em 20 sementes × 1000 ticks, budget HOT agregado dos cinco lobos medido |
+| **P1** | parcial, sem o gate | BT runtime com blackboard, cooldown e `SubtreeGuard` [ai/behavior](../../src/ai/behavior); `UtilityScorer` + curvas de resposta [ai/utility_scorer.gd](../../src/ai/utility_scorer.gd); `Mind` com 24 episódios, crenças com decaimento e soleira, confiança, *drift* de personalidade e *trust* [ai/mind.gd:7-9](../../src/ai/mind.gd); `AetherField` de **3** canais (trabalho/sangue/medo) com difusão e decaimento [world/aether_field.gd:9-17](../../src/world/aether_field.gd); lobo que caça por visão ou último avistamento, investiga/para/registra visita ao rastro, foge por perigo percebido e **veta a caçada por memória** [wolf.gd:265-314](../../src/entities/wolf.gd#L265-L314), [:215-304](../../src/entities/wolf.gd#L215-L304), [:861-864](../../src/entities/wolf.gd#L861-L864); ciclo e limites em [§09.8](09-veloren-mechanics-adaptation.md#8-criaturas-o-que-virou-comportamento) | canais de morte/som/fogo (6 no total), difusão em thread, `MindStore`, `MindsInspector` (observabilidade **é** parte de P1), cenário com hash igual em 20 sementes × 1000 ticks, budget HOT agregado dos cinco lobos medido |
 | **P2** | não iniciada | — | tudo |
 | **P3** | não iniciada | — | tudo |
 | **P4** | degrau existe, gate distante | `MindOracle` falando HTTP com um `llama-server` local, uma requisição em voo, degradação com recuo de 30 s e a linha `ia:` no HUD [ai/mind_oracle.gd](../../src/ai/mind_oracle.gd); pacote `mind-small` (Qwen3.5-4B Q4_K_M, Apache-2.0) baixado por `tools/fetch_models.ps1` com SHA256 e licença registrados; throughput medido em §04.5.1 | `native/af_mind` embutido, schemas GBNF, `oracle_cache`, embeddings/`semantic_index`, grounding, `ModelPackFetcher` dentro do jogo, `ai_eval` com % de saídas válidas |
@@ -47,8 +47,8 @@ inclui versões, seed real, tick, dimensões, edições ordenadas, identidades/i
 dos lobos vivos e todos os bytes Float32 do Éter; exclui jogador, corpos, RNG, episódios,
 relações, timers e comandos. O contrato completo está em [AGENTS.md](../../AGENTS.md).
 A CLI `-- --tick-journal=path` ativa a gravação após o incremento do tick, dentro do
-cronômetro ([main.gd:262-268](../../src/main.gd#L262-L268), cronometrado em [:237-239](../../src/main.gd#L237-L239),
-[:642-650](../../src/main.gd#L642-L650)). Isso não é hash completo, replay nem prova de
+cronômetro ([main.gd:272-276](../../src/main.gd#L272-L276), cronometrado em [:243-245](../../src/main.gd#L243-L245),
+[:767-775](../../src/main.gd#L767-L775)). Isso não é hash completo, replay nem prova de
 determinismo da simulação: **hash estável em 3 execuções continua sem gate fechado**.
 
 ### P0 — Fundação `[gate mais importante do projeto]`
@@ -75,10 +75,10 @@ zero violações; budget HOT ≤ `[TARGET]` 2,5 ms medido (número real entra aq
 
 **Colheita atual, não fechamento do gate:** `tests/aether_reactions_test.gd` colhe
 `sim_step` integral e `_guard.last_us`/`trips`, com totais e picos, **um lobo por cenário**
-([aether_reactions_test.gd:238-267](../../tests/aether_reactions_test.gd#L238-L267),
-[:1084-1085](../../tests/aether_reactions_test.gd#L1084-L1085)). O guard cronometra só BT,
+([aether_reactions_test.gd:270-299](../../tests/aether_reactions_test.gd#L270-L299),
+[:1116-1117](../../tests/aether_reactions_test.gd#L1116-L1117)). O guard cronometra só BT,
 sem percepção/utilidade, que vêm antes dele
-([wolf.gd:618-622](../../src/entities/wolf.gd#L618-L622),
+([wolf.gd:692-696](../../src/entities/wolf.gd#L692-L696),
 [bt_tree.gd:130-137](../../src/ai/behavior/bt_tree.gd#L130-L137)). A soma de amostras desse
 runner não é o HOT agregado dos cinco lobos no mesmo tick. Tampouco o runner demonstra
 hash igual em 20 sementes × 1000 ticks: usa uma semente e controla as cadências, com

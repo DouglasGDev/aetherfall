@@ -20,7 +20,7 @@ mesma seção do contrato, não deduzida depois.
 | 05 | [Difusão do Éter fora do tick](05-difusao-fora-do-tick.md) | P1 `:447`, Falta 6 `:336-338` | hoje a difusão é síncrona e o lobo vê o resultado por isso | primeiro a colheita (nenhum µs de `diffuse_and_decay` existe); o corte só com o hash por semente **inalterado** |
 | 06 | [Decompor `main.gd` pelo eixo do dono](06-decompor-main-gd.md) | Falta 7 `:339-341` | ônibus não é dono: um bloco vira dono quando já tem comprador fora de `main.gd` | K1 bancadas → K2 fila/cadáveres → K3 matilha; K4 (persistência) fica `[OPEN]` até aparecer o segundo consumidor |
 | 07 | [`af-bench`, bake-off de voxel e o doc do `SimClock`](07-af-bench-bake-off-voxel-e-doc-do-simclock.md) | P0 `:437`, `:438-439`, `:440` | três premissas, uma por peça; hash é função do passo, fps é função da máquina | ordem interna: doc → runner de `dt` fixo → 3 execuções de 12 000 ticks → bake-off com ≥ 2 braços tabelados |
-| 08 | [`MindStore` e `MindsInspector`](08-mindstore-e-mindsinspector.md) | P1 `:448-449`, `:450-451` | `MindStore` muda **posse**, `MindsInspector` mostra **composição** — nenhuma das duas decide | recomendação lida: F3 estendido (reaproveita `src/main.gd:305-310` e `src/ui/hud.gd:273-280`) antes de qualquer `.tscn` novo |
+| 08 | [`MindStore` e `MindsInspector`](08-mindstore-e-mindsinspector.md) | P1 `:448-449`, `:450-451` | `MindStore` muda **posse**, `MindsInspector` mostra **composição** — nenhuma das duas decide | recomendação lida: F3 estendido (reaproveita `src/main.gd:710-716` e `src/ui/hud.gd:273-280`) antes de qualquer `.tscn` novo |
 | 09 | [Bioma, cor do pelo e fundo de Éter por bioma](09-bioma-cor-de-pelo-e-ether.md) | Falta 8 `:342-356` | bioma só existe se decidir algo observável: cor do pelo e viés de imprint; derivar **não** pode alterar terreno nem hash | `bioma_deterministico`, `bioma_nao_altera_terreno` (a que fecha o lote), `cor_do_pelo_vem_do_bioma`, `imprint_bioma_tem_mesma_ordem` |
 | 10 | [Rotinas de alcateia](10-alcateia-rutinas.md) | Falta 9 `:357-363` | a intenção de um lobo muda quando outro está por perto — 1 lobo vs 4 lobos no mesmo cenário tem de **divergir** | `contraste_de_alcateia`, `cercar_calcula_assentos`, `ataque_escalonado`, `medo_contagia` / `amigo_amortece`, `alcateia_nao_consome_rng_da_sessao` |
 | 11 | [Acasalamento, filhote que cresce e censo variável](11-acasalamento-filhote-e-censo.md) | Falta 10 `:364-371` | um save gravado com 7 lobos carrega 7 lobos — e crescer é função do `clock.tick`, não de parede | `acasalar_aumenta_censo`, `filhote_cresce_por_tick`, `filhote_nao_morde`, `load_leva_todo_o_censo` (nasce **vermelha** no código atual), `censo_respeita_teto`, `journal_hash_inalterado_sem_escolha` |
@@ -184,9 +184,9 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
 - meia-vida "morta", "11,33% por passada", "4,8 s efetivos", `TrailReader`, `_sample_trail`,
   `_sighting_cache_cap`, `_sighting_cache_ttl`, `_scan_interval`, `DECAY_PER_SEC`, `SOURCE_RATE`,
   `SATURATION`, `imprint(channel, cell, amount)`, "três dicionários paralelos em
-  `tests/aether_reactions_test.gd:57-73`", pesos WORK/BLOOD/FEAR em `src/ai/utility_scorer.gd` e
+  `tests/aether_reactions_test.gd:62-78`", pesos WORK/BLOOD/FEAR em `src/ai/utility_scorer.gd` e
   `audio_director.gd:314` como posição de playback → **03 §9**;
-- `worst_sim_us` (o nome real é `_sim_worst_us`, `tests/aether_reactions_test.gd:32`) → **03 §5**;
+- `worst_sim_us` (o nome real é `_sim_worst_us`, `tests/aether_reactions_test.gd:37`) → **03 §5**;
 - deslocamento de +1 nas constantes de `src/main.gd` citadas por `AGENTS.md` → **07 §8** (as
   citações do contrato estão certas: `:12` difusão, `:13` malha, `:14` visão, `:16` cadáveres;
   `WOLF_COUNT` é `:9`);
@@ -213,7 +213,7 @@ uma, depois de lidas as duas pontas: `player.gd:659`/`:675` são os cabeçalhos 
 `_try_place()`, e o `world.set_block` que escreve no mundo está em `:667`/`:693`; o `_on_acted` que
 imprime WORK saiu de `main.gd:328-333` para `:337-342` quando o viés de imprint entrou; o teto do load
 que pareia por índice é `main.gd:479`, não `:470`; as três promessas da lavra estão em
-`tests/smoke_test.gd:877-885`, não `:795-805`; e a conta do "objeto deus" passa a estar pinada na
+`tests/smoke_test.gd:884-892`, não `:802-812`; e a conta do "objeto deus" passa a estar pinada na
 revisão medida — **510 linhas em `src/main.gd` na `main` em `eb6ec8d`** — porque a perna 10 em curso vai
 mover esse número, e um número sem pino é exatamente o que estes furos cobram. Nada disso muda
 mandato: é deriva de linha.
