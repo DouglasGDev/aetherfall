@@ -3302,8 +3302,8 @@ ao último degrau — o degrau (f) mudou uma asserção
   com `trips = 0` em todas as corridas, inclusive nas vermelhas. `[NAO GATE P1]`, como impresso no log.
 
 Linhas literais de cada vermelho pago, e o verde do degrau seguinte, estão em
-[`readback.md`](evidence/alcateia-convivio-14/readback.md) §2, com o corpus de 50 logs e
-`artifacts.sha256` (50 entradas, `sha256sum -c` OK em todas) ao lado.
+[`readback.md`](evidence/alcateia-convivio-14/readback.md) §2, com o corpus de 51 logs e
+`artifacts.sha256` (51 entradas, `sha256sum -c` OK em todas) ao lado.
 
 ### O censo da sessão real — furo #16 pago
 
@@ -3342,7 +3342,7 @@ prova pinada descreve a revisão em que foi medida): 24 ponteiros, 2 rótulos, 1
 ### O que nada disso fecha
 
 - **Nenhum gate de fase** (mandato 4). A perna pousou e está medida na `main` mergida
-  (`e7e0a1f`: **246 / 0 / 39,8 s**, §8 do readback), e nenhum número dela encerra P0 ou P1.
+  (`d4dee0f`: **246 / 0 / 38,9 s**, §9 e §10 do readback), e nenhum número dela encerra P0 ou P1.
 - HOT agregado dos cinco lobos continua sem medição; a colheita do runner é um lobo por cenário e o
   `SubtreeGuard` cronometra só a árvore.
 - O `[OPEN]` de "como fica para quem não tem placa de vídeo" (extensão (3)) não é desta perna.
@@ -3384,7 +3384,8 @@ mesma, e é a seção 2 do log.
 mergida, o log das âncoras e as duas correntes da re-corrida do fecho. `sha256sum -c` dá OK nas 50 e
 nenhuma das 45 anteriores mudou de hash. Antes de arquivar, os cinco foram varridos para conteúdo de
 credencial: nenhuma linha `--api-key`, `Bearer` ou `sk-` com valor, porque em headless o hospedeiro do
-modelo não levanta. O corpus inteiro é 50 `.log` + `readback.md` + os dois manifestos.
+modelo não levanta. O corpus, naquele fecho, era 50 `.log` + `readback.md` + os dois manifestos; a
+entrada 51 é `registro-d4dee0f-anchors.log`, o log das âncoras do registro do pin.
 
 A re-corrida do fecho (`fecho-suite.log`) é **verificação, não pin**: 246 checagens / 0 falhas /
 38,9 s, exit 0, zero `SCRIPT ERROR`, os mesmos cinco lares e `spawn RECUSADO:` zero, com
@@ -3392,3 +3393,27 @@ A re-corrida do fecho (`fecho-suite.log`) é **verificação, não pin**: 246 ch
 `6e35b64`. O pin do README saiu de `252f1e7` (239 / 0 / 38,4 s, perna 10) e nomeia `e7e0a1f` com
 **246 / 0 / 39,8 s**. Nada aqui fecha gate de fase (mandato 4), e o furo #18 — a recusa de lar no boot
 sem corrida própria — continua aberto do lado da corrida.
+
+## O pin da convivência fica no fecho (2026-11-21, ponta `d4dee0f`)
+
+O pin do README saiu de `e7e0a1f` e nomeia `d4dee0f`, a `main` do merge `--no-ff` de
+`docs/fecho-convivio-14`. Não é corrida nova nem medição a mais: é o `fecho-suite.log` do §9 lido como
+número do pin, e o que autoriza a leitura é o hash da árvore inteira — `git rev-parse d4dee0f^{tree}` e
+`857c8e6^{tree}` são o mesmo objeto `45890848547997c1e6ecf3322851489af6fe7721`, porque o commit do
+fecho já estava dentro da merge e o que ela trouxe sobre `e7e0a1f` são 10 arquivos de `.md` e `.log`
+(`+873 / −47`), nenhum `.gd`. Em código as três pontas são uma só: `git rev-parse d4dee0f:src e7e0a1f:src
+6e35b64:src` devolve `3eb42835a0e1f54086937d63258388f52e1db932` e idem `tests`
+(`8b8a5e471d737d6474eb6171bab6fdbeec75c06a`).
+
+O número registrado: **246 checagens / 0 falhas / 38,9 s**, exit 0, zero `SCRIPT ERROR` nas duas
+correntes, `dropped_ticks` **0**, `gen_ms` **1 017,212**, `mesh_ms` **4 977,391**, `worst_sim_ms`
+**16,127**, os cinco lares de sempre (48,3 / 50,4 / 42,5 / 55,1 / 51,6 m), `spawn RECUSADO:` zero vezes
+e `maior_matilha_lida=4`. Esse `worst_sim_ms` é agora o maior da perna, e por 359 µs sobre o
+**15,768** do `e7e0a1f` — duas corridas na mesma árvore, `dropped_ticks = 0` nelas duas, o que mede a
+variação desta máquina e não atribui custo a sistema nenhum.
+
+Publicação: `origin/main` estava em `a898fb2`, a base da branch, **11 commits** atrás da ponta local —
+a perna inteira, código e evidência, ainda não tinha subido. O que publica é o push desta ponta, e a
+prova continua sendo `git ls-remote --heads origin`, nunca o código de saída do push (memória do
+repositório: o `origin` já apontou para o próprio repositório, de onde um push saía 0 sem publicar
+nada).
