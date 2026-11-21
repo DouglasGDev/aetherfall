@@ -11,12 +11,32 @@ signal narration_ready(wolf_id: int, text: String)
 const SERVER_URL := "http://127.0.0.1:8741"
 const REQUEST_TIMEOUT: float = 8.0
 const RETRY_COOLDOWN: float = 30.0
+## Chave do servidor local. Nao e seguranca — o trafego continua 127.0.0.1 — e o
+## imprint que o `LlmServerHost` usa para separar "o nosso servidor sobrou de um
+## crash" de "tem um llama-server de terceiro na porta" (dossie 15 §4.2). Terceiro
+## lugar onde a mesma string aparece: o `--api-key` de `tools/run_mind_server.ps1`,
+## e a suite confere as duas pontas porque derivacao entre linguagem aqui e
+## exatamente o tipo de furo que este repositorio cobra.
+const API_KEY := "aetherfall-mind-2026"
+## Nome publicado pelo servidor (`--alias` no lancador e no `LlmServerHost`). Um
+## dono so para a string: pedido e servidor tem de dizer o mesmo nome, e o
+## `404 model not found` do b12499 nao aparece no F3 de outra forma.
+const MODEL_ALIAS := "mind-small"
+## 503 e "Loading model", nao falha: 30 s de recuo sobre um modelo que ainda esta
+## carregando engoliria a primeira narrativa da sessao inteira (dossie 15 §2). O
+## tempo real desta maquina e o numero da perna 15, nao um estimativo aqui.
+const LOADING_COOLDOWN: float = 2.0
 
 ## Enderecos e prazos sao const para o jogo; a suite comprime os dois para
 ## exercer a degradacao (porta fechada -> timeout -> recuo) sem esperar 8 s.
 var server_url: String = SERVER_URL
 var request_timeout: float = REQUEST_TIMEOUT
+var api_key: String = API_KEY
 
+## Portao de prontidao (dossie 15 §4.4): quando existe um hospedeiro de processo,
+## ele diz quando o modelo esta no ar. Sem portao — o caso da suite e o de quem
+## sobe o servidor na mao — o ciclo de requisicao segue como sempre.
+var ready_provider: Callable = Callable()
 var roster_provider: Callable = Callable()
 
 var _http: HTTPRequest = null
@@ -26,6 +46,16 @@ var _server_cd := 0.0
 var _pending_id := -1
 var _narrations := {}
 var _cooldowns := {}
+## Nomes da enum `HTTPRequest.Result`, lidos uma vez do registro da classe: a
+## traducao do `result` nao vem de tabela escrita a mao, vem do proprio engine.
+var _result_names: PackedStringArray = PackedStringArray()
+
+## Numeros do caminho, para a checagem nomear a premissa em vez de adjetivar:
+## quantas requisicoes sairam, e qual foi o ultimo codigo ou erro que produziu
+## resposta vazia. Um 401 silencioso e o mandato 1 ao contrario.
+var requests_issued := 0
+var last_status := -1
+var last_reason := ""
 
 
 func _ready() -> void:
@@ -34,6 +64,8 @@ func _ready() -> void:
 	_http.timeout = request_timeout
 	add_child(_http)
 	_http.request_completed.connect(_on_response)
+	for n in ClassDB.class_get_enum_constants("HTTPRequest", "Result"):
+		_result_names.append(String(n))
 
 
 func _process(delta: float) -> void:
@@ -41,6 +73,11 @@ func _process(delta: float) -> void:
 	for k in _cooldowns.keys():
 		_cooldowns[k] = maxf(float(_cooldowns[k]) - delta, 0.0)
 	if _busy or _server_cd > 0.0 or not roster_provider.is_valid():
+		return
+	# O portao vem antes de qualquer pedido: com o hospedeiro levantando o modelo
+	# junto do jogo, a primeira requisicao cairia num 503 e o recuo de 30 s
+	# engoliria a meia-minuta seguinte (dossie 15 §2 e §4.4).
+	if ready_provider.is_valid() and not bool(ready_provider.call()):
 		return
 	var roster: Array = roster_provider.call()
 	if roster.is_empty():
@@ -60,14 +97,21 @@ func narration_of(wolf_id: int) -> String:
 	return String(_narrations.get(wolf_id, ""))
 
 
+## Cabecalhos do pedido. Um dono para a chave: quem levanta o servidor e quem o
+## procura leem a mesma constante, e a checagem da suite confere o launcher.
+func auth_headers() -> PackedStringArray:
+	return ["Content-Type: application/json", "Authorization: Bearer " + api_key]
+
+
 func _request(w) -> void:
 	_busy = true
+	requests_issued += 1
 	_pending_id = int(w.identity)
 	var sys := "Voce narra o interior de um lobo de um jogo para uma linha de " \
 			+ "debug. Responda com UMA frase curta em portugues, sem nomes de " \
 			+ "sistemas, sem listas, sem pense em voz alta."
 	var payload := {
-		"model": "mind-small",
+		"model": MODEL_ALIAS,
 		"messages": [
 			{"role": "system", "content": sys},
 			{"role": "user", "content": _prompt_for(w)},
@@ -76,10 +120,11 @@ func _request(w) -> void:
 		"temperature": 0.7,
 	}
 	var err := _http.request(server_url + "/v1/chat/completions",
-			["Content-Type: application/json"], HTTPClient.METHOD_POST,
+			auth_headers(), HTTPClient.METHOD_POST,
 			JSON.stringify(payload))
 	if err != OK:
 		_busy = false
+		last_reason = "abrir pedido: %s" % error_string(err)
 		_server_cd = RETRY_COOLDOWN
 
 
@@ -103,9 +148,10 @@ func _prompt_for(w) -> String:
 	]
 
 
-func _on_response(_result: int, code: int, _headers: PackedStringArray,
+func _on_response(result: int, code: int, _headers: PackedStringArray,
 		body: PackedByteArray) -> void:
 	_busy = false
+	last_status = code
 	var text := ""
 	if code == 200:
 		var data = JSON.parse_string(body.get_string_from_utf8())
@@ -114,12 +160,38 @@ func _on_response(_result: int, code: int, _headers: PackedStringArray,
 			if not choices.is_empty() and choices[0] is Dictionary:
 				text = _clean(String(choices[0].get("message", {}).get("content", "")))
 	if text.is_empty():
-		# servidor ausente, modelo ausente ou resposta inutil: recuo global
+		# Sem narrativa o recuo muda de tamanho conforme a assinatura do erro, e
+		# cada ramo nomeia o codigo que o produziu: 503 e "carregando" (espera
+		# curta), conexao recusada e o caminho degradado ja checado pela suite
+		# (recuo cheio), e 401/400/`resposta inutil` tambem recuo cheio — so que
+		# impresso, nao anonimizado (dossie 15 §9).
+		if code == 503:
+			last_reason = "503 carregando o modelo"
+			_server_cd = LOADING_COOLDOWN
+			return
+		last_reason = "sem resposta (%s)" % _reason_of(result, code)
 		_server_cd = RETRY_COOLDOWN
 		return
+	last_reason = ""
 	_narrations[_pending_id] = text
 	_cooldowns[_pending_id] = RETRY_COOLDOWN
 	narration_ready.emit(_pending_id, text)
+
+
+## Nomeia o numero em vez de devolver a enum crua: `result` e o codigo de
+## `HTTPRequest.Result` (nao o `Error` do motor), entao o nome vem do registro da
+## classe. Nao e `get_result_string`: medido em headless nesta arvore,
+## `ClassDB.class_has_method("HTTPRequest", "get_result_string")` devolve false e
+## a chamada derrubava este ramo no meio — sem `last_reason` e sem o recuo de 30 s,
+## que e o mandato 1 ao contrario. Um 401 ou um timeout anonimizados num recuo
+## silencioso tambem seriam.
+func _reason_of(result: int, code: int) -> String:
+	if result == HTTPRequest.RESULT_SUCCESS:
+		return "codigo http %d" % code
+	var nome := "result %d" % result
+	if result >= 0 and result < _result_names.size():
+		nome = _result_names[result]
+	return "%s (codigo http %d)" % [nome, code]
 
 
 ## Modelos de raciocinio podem cuspir <think> antes da resposta; a narrativa

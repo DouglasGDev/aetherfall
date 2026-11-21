@@ -47,8 +47,8 @@ inclui versões, seed real, tick, dimensões, edições ordenadas, identidades/i
 dos lobos vivos e todos os bytes Float32 do Éter; exclui jogador, corpos, RNG, episódios,
 relações, timers e comandos. O contrato completo está em [AGENTS.md](../../AGENTS.md).
 A CLI `-- --tick-journal=path` ativa a gravação após o incremento do tick, dentro do
-cronômetro ([main.gd:202-208](../../src/main.gd#L202-L208), cronometrado em [:177-179](../../src/main.gd#L177-L179),
-[:579-587](../../src/main.gd#L579-L587)). Isso não é hash completo, replay nem prova de
+cronômetro ([main.gd:262-268](../../src/main.gd#L262-L268), cronometrado em [:237-239](../../src/main.gd#L237-L239),
+[:642-650](../../src/main.gd#L642-L650)). Isso não é hash completo, replay nem prova de
 determinismo da simulação: **hash estável em 3 execuções continua sem gate fechado**.
 
 ### P0 — Fundação `[gate mais importante do projeto]`
@@ -78,7 +78,7 @@ zero violações; budget HOT ≤ `[TARGET]` 2,5 ms medido (número real entra aq
 ([aether_reactions_test.gd:238-267](../../tests/aether_reactions_test.gd#L238-L267),
 [:1084-1085](../../tests/aether_reactions_test.gd#L1084-L1085)). O guard cronometra só BT,
 sem percepção/utilidade, que vêm antes dele
-([wolf.gd:429-433](../../src/entities/wolf.gd#L429-L433),
+([wolf.gd:618-622](../../src/entities/wolf.gd#L618-L622),
 [bt_tree.gd:130-137](../../src/ai/behavior/bt_tree.gd#L130-L137)). A soma de amostras desse
 runner não é o HOT agregado dos cinco lobos no mesmo tick. Tampouco o runner demonstra
 hash igual em 20 sementes × 1000 ticks: usa uma semente e controla as cadências, com

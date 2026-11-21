@@ -65,6 +65,10 @@ var _swim_max_leg := 0.0
 var _swim_seek := false
 var _lake := Vector3i.ZERO
 var _oracle_probe: MindOracle = null
+## Host de mentira da checagem do portao (dossie 15 §7.8): caminhos inexistentes,
+## entao nem processo nem porta sao tocados.
+var _gate_host: LlmServerHost = null
+var _gate_oracle: MindOracle = null
 
 
 func _ready() -> void:
@@ -103,6 +107,11 @@ func _ready() -> void:
 		["regeneracao fora de combate", 0, _check_regen],
 		["oraculo: sonda em porta fechada", 0, _check_oracle_arm],
 		["oraculo degrada sem servidor", 90, _check_oracle],
+		["hospedeiro: portao fechado", 0, _check_llm_gate_arm],
+		["portao fechado nao pede nada", 20, _check_llm_gate_closed],
+		["portao aberto volta a pedir", 20, _check_llm_gate_open],
+		["recuo nomeia a porta fechada", 90, _check_llm_backoff],
+		["chave do servidor e a do oraculo", 0, _check_llm_key_drift],
 		["hud, morte e renascer", 0, _check_hud],
 		["salvar e carregar", 0, _check_save],
 		["cadaver no chao", 0, _check_corpse],
@@ -186,6 +195,12 @@ func _check_boot() -> void:
 	_check("5 lobos na matilha", int(d["wolves"]) == 5, "lobos=%d" % d["wolves"])
 	_check("spawn em terra firme", _spawn.y > float(VoxelConfig.SEA_LEVEL), "y=%d" % int(_spawn.y))
 	_check("jogador apoiado no chao", bool(d["on_ground"]), "feet=%s" % d["feet"])
+	# Checagem 8 do gate (dossie 15 §7): a suíte inteira não pode depender de
+	# modelo nem de rede, e o dono do processo filho é a primeira coisa que poderia
+	# quebrar isso. Em headless o `main` não monta host nenhum — os 2,7 GB ficam do
+	# lado de fora da rodada, e o número da banda de tempo continua valendo.
+	_check("suite nao levanta modelo", not main.has_llm_host(),
+			"display=%s  llm=%s" % [DisplayServer.get_name(), str(d["llm"])])
 	print("       geracao %.1f ms   malharia %.1f ms" % [d["gen_ms"], d["mesh_ms"]])
 	for w in main.wolves:
 		_spawn_pos.append(w.global_position)
@@ -2085,6 +2100,71 @@ func _check_oracle() -> void:
 	_check("mente segue decidindo sem narrador", w.mind != null and w.intent != "",
 		"intento=%s" % w.intent)
 	oracle.queue_free()
+
+
+## Premissa da decisao 4.4 (dossie 15): com um hospedeiro levantando o modelo
+## junto do jogo, a primeira requisicao cairia num 503 de "Loading model" e o
+## recuo de 30 s engoliria a meia-minuta seguinte. Os caminhos falsos garantem
+## que o host nunca chega a tocar a porta: nem processo, nem HTTP, nem rede.
+func _check_llm_gate_arm() -> void:
+	_gate_host = LlmServerHost.new()
+	_gate_host.name = "GateHost"
+	_gate_host.server_path = "res://tests/sem-runtime-15.exe"
+	_gate_host.model_path = "res://models/sem-modelo-15.gguf"
+	add_child(_gate_host)
+	_gate_oracle = MindOracle.new()
+	_gate_oracle.name = "GateOracle"
+	_gate_oracle.server_url = "http://127.0.0.1:1"
+	_gate_oracle.request_timeout = 1.0
+	_gate_oracle.roster_provider = Callable(main, "wolves_roster")
+	_gate_oracle.ready_provider = Callable(_gate_host, "ready")
+	add_child(_gate_oracle)
+
+
+func _check_llm_gate_closed() -> void:
+	_check("hospedeiro sem pack nao sonda a porta",
+			_gate_host.requests_issued == 0 and _gate_host.state == _gate_host.NO_RUNTIME,
+			"estado=%s  pedidos=%d" % [_gate_host.state, _gate_host.requests_issued])
+	_check("portao fechado: oraculo nao emite pedido", _gate_oracle.requests_issued == 0,
+			"pedidos=%d  recuo=%.1f s" % [_gate_oracle.requests_issued, _gate_oracle._server_cd])
+	# Sentido oposto no mesmo par de passos (regra 3 do ciclo): sem o portao aberto
+	# o pedido ate sai, entao o zero acima nao e o oraculo quebrado.
+	_gate_host.state = _gate_host.READY
+
+
+func _check_llm_gate_open() -> void:
+	_check("portao aberto volta a pedir", _gate_oracle.requests_issued > 0,
+			"pedidos=%d  motivo=%s" % [_gate_oracle.requests_issued, _gate_oracle.last_reason])
+
+
+## Contra-prova do `SCRIPT ERROR` que este ramo produzia: traduzir o `result` com
+## um metodo que o 4.7 nao tem aborta `_on_response` no meio, e a suíte segue com
+## "0 falhas" tendo perdido o motivo e o recuo. Os dois numeros abaixo sao o que
+## sobra quando o ramo chega ao fim: o nome do erro e o recuo cheio armado.
+func _check_llm_backoff() -> void:
+	_check("recuo nomeia o erro da conexao", _gate_oracle.last_reason.contains("RESULT_"),
+			"motivo=%s  codigo_http=%d" % [_gate_oracle.last_reason, _gate_oracle.last_status])
+	_check("porta fechada arma o recuo cheio", _gate_oracle._server_cd > 20.0,
+			"recuo=%.1f s  teto=%.0f s" % [_gate_oracle._server_cd, MindOracle.RETRY_COOLDOWN])
+	_gate_oracle.queue_free()
+	_gate_host.queue_free()
+
+
+## Derivacao entre linguagem: a mesma string de chave vive no GDScript do oraculo e
+## no `--api-key` do lancador PowerShell. O servidor e levantado pelo host com a
+## constante e por quem roda o lancador na mao com o literal; se os dois divergirem
+## a narrativa morre em 401 e nenhum dos dois lados avisa.
+func _check_llm_key_drift() -> void:
+	var f := FileAccess.open("res://tools/run_mind_server.ps1", FileAccess.READ)
+	if f == null:
+		_check("chave do servidor bate com a do oraculo", false,
+				"sem tools/run_mind_server.ps1 nesta arvore")
+		return
+	var src := f.get_as_text()
+	var quoted := '"%s"' % MindOracle.API_KEY
+	_check("chave do servidor bate com a do oraculo",
+			src.contains(quoted) and src.contains("--api-key"),
+			"lancador=%s  oracle=%s" % [quoted, MindOracle.API_KEY])
 
 
 ## Um braco do experimento. A posicao, o hp, o campo de Eter ao redor e a ameaca

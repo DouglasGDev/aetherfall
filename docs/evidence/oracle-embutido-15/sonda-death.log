@@ -1,0 +1,26 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+sonda 15  modo=death  display=headless  keep=false  expect=reusado
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (sem servidor na porta 8741)
+llm_host  carregando  pid 27104  boot do modelo iniciado  (1/1 spawn)
+llm_host  pronto  boot 2649 ms  503=10  pid 27104
+janela  main_ready=6377 ms  frames_no_braco=386  tick_no_braco=53  pior_passo=11.24 ms  estado=pronto  boot=2649 ms  503=10  pid=27104
+OK     a janela contou frames com o modelo carregando  [frames=386]
+OK     o tick de 20 Hz andou com o modelo carregando  [tick=53]
+OK     nenhum tick perdido durante o boot  [perdidos=0  pior=11.24 ms]
+OK     o modelo ficou pronto com a janela ja aberta  [main_ready=6377 ms  primeiro_200=10554 ms  duracao_do_boot=2649 ms]
+sonda 15  esperando morte externa do pid 27104  (taskkill /PID 27104 /F)
+llm_host  caiu  is_process_running falso no pid 27104  (codigo 1)  retentativa 1/1
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (retentativa 1/1 apos is_process_running falso no pid 27104)
+llm_host  carregando  pid 10556  boot do modelo iniciado  (2/1 spawn)
+llm_host  pronto  boot 2614 ms  503=20  pid 10556
+OK     morte externa vista pelo host  [estados=ocioso, sondando, carregando, pronto, caiu, carregando, pronto]
+OK     uma unica retentativa  [retentativas=1]
+OK     dois spawns: o boot e a retentativa  [spawns=2]
+sonda 15  modo=death  7 checagens  0 falhas  14.2 s  llm=llm: pronto  porta 8741  pid 10556  boot 2614 ms  503=20  oraculo: sem resposta (RESULT_CONNECTION_ERROR (codigo http 0))
+llm_host  encerrando pid 10556  OK
+WARNING: 12 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 6 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

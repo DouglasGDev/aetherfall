@@ -1,0 +1,27 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+sonda 15  modo=boot  display=Windows  keep=false  expect=reusado
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (sem servidor na porta 8741)
+llm_host  carregando  pid 2556  boot do modelo iniciado  (1/1 spawn)
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (sem servidor na porta 8741)
+llm_host  carregando  pid 27328  boot do modelo iniciado  (1/1 spawn)
+llm_host  pronto  boot 3255 ms  503=13  pid 2556
+llm_host  pronto  boot 3252 ms  503=13  pid 27328
+janela  main_ready=6373 ms  frames_no_braco=536  tick_no_braco=65  pior_passo=10.84 ms  estado=pronto  boot=3252 ms  503=13  pid=27328
+OK     a janela contou frames com o modelo carregando  [frames=536]
+OK     o tick de 20 Hz andou com o modelo carregando  [tick=65]
+OK     nenhum tick perdido durante o boot  [perdidos=0  pior=10.84 ms]
+FALHA  o `_ready` do mundo nao esperou o modelo  [main_ready=6373 ms  boot=3252 ms]
+lobo0  +12.1 s  ia: O lobo varre o horizonte com o olhar, calculando distâncias e tempos para a próxima rota de patrulha enquanto seu cérebro processa a ausênci...
+lobo1  +12.8 s  ia: A visão de um humano ao longe acende um alerta vermelho na mente do lobo, transformando sua rotina de patrulha em uma vigilância predatória...
+OK     narrativa chega sem passo manual  [narrativas=2  pedidos=2]
+OK     o carregamento nao deixou recuo de 30 s no oraculo  [recuo=0.0 s  ultimo=]
+OK     pedido sem a chave devolve 401  [codigo=401]
+OK     pedido com a chave devolve 200  [codigo=200]
+OK     a chave nao calou a resposta  [texto='ok']
+sonda 15  modo=boot  9 checagens  1 falhas  18.5 s  llm=llm: pronto  porta 8741  pid 27328  boot 3252 ms  503=13
+llm_host  encerrando pid 27328  OK
+llm_host  encerrando pid 2556  OK

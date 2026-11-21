@@ -1,0 +1,11 @@
+janela pid=18864  iniciada 19:37:58.366
+t+ 2281 ms  janela=True  porta=sem conexao  filhos=conhost.exe,Godot_v4.7.2-stable_win64.exe  
+t+ 5400 ms  janela=True  porta=sem conexao  filhos=conhost.exe,Godot_v4.7.2-stable_win64.exe  
+t+ 8519 ms  janela=True  porta=sem conexao  filhos=conhost.exe,Godot_v4.7.2-stable_win64.exe  
+t+10165 ms  janela=True  porta=http 503  filhos=conhost.exe,Godot_v4.7.2-stable_win64.exe  pid Win32_Process: llama-server.exe (Handle = "26852") (26852) pai 11512
+t+11292 ms  janela=True  porta=http 503  filhos=conhost.exe,Godot_v4.7.2-stable_win64.exe  pid Win32_Process: llama-server.exe (Handle = "26852") (26852) pai 11512
+t+12536 ms  janela=True  porta=200 mind-small  filhos=conhost.exe,Godot_v4.7.2-stable_win64.exe  pid Win32_Process: llama-server.exe (Handle = "26852") (26852) pai 11512
+esperando a janela fechar sozinha (--quit-after 2400)...
+janela saiu com codigo   t+12738 ms
+apos o fecho: porta=200 mind-small  llama-server restantes=26852
+subiu filho durante a janela? True

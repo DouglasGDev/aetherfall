@@ -14,7 +14,7 @@ linha do código da matilha — não encosta em `src/entities/wolf.gd`, e em `sr
 um nó novo no boot — e é o caminho do `Rodar.bat`; a 14 depende da ronda por setor que a perna 10
 já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`). A exceção está registrada
 **antes** do código, como exige
-[`AGENTS.md`, mandato 4](../../AGENTS.md#L70-L74) ("a exceção se registra **antes** de escrever o
+[`AGENTS.md`, mandato 4](../../AGENTS.md#L74-L78) ("a exceção se registra **antes** de escrever o
 código, nunca na justificativa do commit") — ver §11.
 
 ## 0. Sondas locais que este arquivo fez (e o que elas derrubam)
@@ -77,8 +77,8 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
    documentado. Hoje o passo manual é instrução oficial ([`README.md:501-505`](../../README.md#L501-L505)).
 2. **O boot não espera o modelo.** Nada em `_ready` nem em `_physics_process` bloqueia sobre um
    processo filho: `_ready` já bloqueia a janela com geração e malharia
-   ([`main.gd:63`](../../src/main.gd#L63), [`:66`](../../src/main.gd#L66); ~0,9 s + ~4,3 s
-   publicados em [`README.md:548`](../../README.md#L548)) e é exatamente por isso que o modelo
+   ([`main.gd:91`](../../src/main.gd#L91), [`:94`](../../src/main.gd#L94); ~0,9 s + ~4,3 s
+   publicados em [`README.md:561`](../../README.md#L561)) e é exatamente por isso que o modelo
    **não** entra por essa porta. Vermelho por construção: um `await` síncrono no boot é a
    assinatura do congelamento que a casa já contou no boot do mesher.
 3. **Reusar é diferente de matar.** Um servidor na porta que responde 200 ao `/v1/models` **com a
@@ -86,14 +86,14 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
    expõe o alias `mind-small`, é de terceiro e continua intocado. A checagem que prova o segundo
    caso é obrigatória, porque matar processo alheio é o dano mais caro que este lote pode causar.
 4. **Nada do oráculo entra no caminho de simulação.** O mandato 2 do contrato
-   ([`AGENTS.md:35-46`](../../AGENTS.md#L35-L46)) é citação deste dossiê, não paráfrase: "LLM/oráculo
+   ([`AGENTS.md:35-50`](../../AGENTS.md#L35-L50)) é citação deste dossiê, não paráfrase: "LLM/oráculo
    nunca decide movimento, dano, posição ou estado de mundo". Embutir **processo** não muda
    **autoridade**: a única saída do oráculo continua sendo `_narrations`
-   ([`mind_oracle.gd:27`](../../src/ai/mind_oracle.gd#L27)) lida por `narration_of()`
-   ([`:59-60`](../../src/ai/mind_oracle.gd#L59-L60)) e entregue só ao HUD
-   ([`main.gd:114`](../../src/main.gd#L114) → [`hud.gd:270-273`](../../src/ui/hud.gd#L270-L273)).
+   ([`mind_oracle.gd:47`](../../src/ai/mind_oracle.gd#L47)) lida por `narration_of()`
+   ([`:96-97`](../../src/ai/mind_oracle.gd#L96-L97)) e entregue só ao HUD
+   ([`main.gd:142`](../../src/main.gd#L142) → [`hud.gd:276-279`](../../src/ui/hud.gd#L276-L279)).
 5. **A suíte não levanta 2,7 GB.** `tests/smoke_test.gd` instancia a sessão real
-   ([`:2`](../../tests/smoke_test.gd#L2), [`:72`](../../tests/smoke_test.gd#L72)), então qualquer
+   ([`:2`](../../tests/smoke_test.gd#L2), [`:76`](../../tests/smoke_test.gd#L76)), então qualquer
    host que `main.gd` subir sem condição de modo põe um modelo de
    [2.740.937.888 B](../../tools/fetch_models.ps1#L111) dentro do rodapé pinado da suíte
    (35,5 s, [`README.md:192`](../../README.md#L192)). A checagem 8 do
@@ -104,15 +104,16 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
 - **O oráculo é um cliente puro: ele não é dono de processo nenhum.** `SERVER_URL` é uma constante
   de porta ([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11)), `REQUEST_TIMEOUT` 8,0 s e
   `RETRY_COOLDOWN` 30,0 s ([`:12-13`](../../src/ai/mind_oracle.gd#L12-L13)); `server_url` é `var`
-  ([`:17`](../../src/ai/mind_oracle.gd#L17)) — ou seja, a porta **já é injetável**, e é por aí que
+  ([`:32`](../../src/ai/mind_oracle.gd#L32)) — ou seja, a porta **já é injetável**, e é por aí que
   o host passa a chave sem duplicar o `8741`. A sonda de boot usa o mesmo
-  `HTTPRequest` do padrão da casa ([`:31-36`](../../src/ai/mind_oracle.gd#L31-L36),
-  `request()` com headers em [`:78-80`](../../src/ai/mind_oracle.gd#L78-L80)); o ciclo de
-  requisição nem roda enquanto `_busy` ou `_server_cd > 0` ([`:43-44`](../../src/ai/mind_oracle.gd#L43-L44)).
+  `HTTPRequest` do padrão da casa ([`:61-66`](../../src/ai/mind_oracle.gd#L61-L66),
+  `request()` com headers em [`:122-124`](../../src/ai/mind_oracle.gd#L122-L124) (hoje o
+  `auth_headers()` de [:102-103](../../src/ai/mind_oracle.gd#L102-L103)); o ciclo de
+  requisição nem roda enquanto `_busy` ou `_server_cd > 0` ([`:75-76`](../../src/ai/mind_oracle.gd#L75-L76)).
 - **A recuo global de 30 s é o que faz a primeira narrativa demorar.** Resposta vazia — servidor
   ausente, modelo ausente, resposta inútil — dispara `_server_cd = RETRY_COOLDOWN`
-  ([`:116-119`](../../src/ai/mind_oracle.gd#L116-L119)) e o `_process` seguinte não tenta nada por
-  30 s ([`:43`](../../src/ai/mind_oracle.gd#L43)). Numa sessão em que jogo e servidor sobem
+  ([`:162-174`](../../src/ai/mind_oracle.gd#L162-L174)) e o `_process` seguinte não tenta nada por
+  30 s ([`:75`](../../src/ai/mind_oracle.gd#L75)). Numa sessão em que jogo e servidor sobem
   juntos, o primeiro pedido sai **antes** de o modelo estar pronto, leva 503/`401` ou falha de
   conexão, e o recuo engole a meia-minuta seguinte. É o defeito que a decisão 4 ataca, e ele já
   está visível no log do probe atual, que imprime `recuo do servidor=`
@@ -148,16 +149,16 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
   ([`docs/design/08:32`](../../docs/design/08-roadmap-risks-licensing.md#L32)) ao lado de
   `native/af_mind` **embutido** — ver §3, onde a palavra é desambiguada.
 - **A degradação já tem checagem, e ela é a que não pode quebrar.** A suíte aponta uma sonda para
-  a porta 1 de propósito ([`smoke_test.gd:2045-2055`](../../tests/smoke_test.gd#L2045-L2055)),
-  com passo armado em `:104` e verificação em `:105`
-  ([`:2058-2068`](../../tests/smoke_test.gd#L2058-L2068)): narrativa vazia, recuo global > 0 e a
+  a porta 1 de propósito ([`smoke_test.gd:2083-2089`](../../tests/smoke_test.gd#L2083-L2089)),
+  com passo armado em `:108` e verificação em `:109`
+  ([`:2092-2101`](../../tests/smoke_test.gd#L2092-L2101)): narrativa vazia, recuo global > 0 e a
   mente decidindo sem narrador. O caminho feliz, ele, depende de servidor de fora
   ([`docs/design/04:209-213`](../../docs/design/04-local-ai-architecture.md#L209-L213)) e é o único
   que este dossiê tenta tirar da mão do humano.
-- **Onde o estado novo mora hoje.** `main.gd` é o objeto deus conhecido: 510 linhas donas de
-  mundo, relógio, matilha, HUD, oráculo, visualização, journal e áudio
-  ([`:19-31`](../../src/main.gd#L19-L31)), com `_exit_tree` já existente fechando só o journal
-  ([`:509-510`](../../src/main.gd#L509-L510)). É o único ponto do boot que hoje tem ciclo de vida
+- **Onde o estado novo mora hoje.** `main.gd` é o objeto deus conhecido: 662 linhas donas de
+  mundo, relógio, matilha, HUD, oráculo, visualização, journal, áudio e o hospedeiro do
+  modelo ([`:9-68`](../../src/main.gd#L9-L68)), com `_exit_tree` já existente fechando só o
+  journal ([`:661-662`](../../src/main.gd#L661-L662)). É o único ponto do boot que hoje tem ciclo de vida
   de recurso externo — e é o encaixe da decisão 1.
 
 ## 3. O que "embutido" exige — e o que a palavra não é aqui
@@ -191,15 +192,15 @@ Exigências mínimas, cada uma com o motivo:
    num que não é meu, e detectar morte antecipada sem virar loop de reinício.
 5. **Verificação em headless com log**, cena própria (§7) — o precedente é a sonda de oráculo
    vivo, isolada em cena exatamente para não virar fallback silencioso dentro de `MindOracle`
-   ([`AGENTS.md:247-249`](../../AGENTS.md#L247-L249)).
+   ([`AGENTS.md:251-253`](../../AGENTS.md#L251-L253)).
 
 ## 4. As sete decisões, `[DECIDED]`
 
 **4.1 — Dono novo: `src/ai/llm_server_host.gd`.** Uma classe `LlmServerHost extends Node` que
 segura o pid, a máquina de estados e o `HTTPRequest` da sonda. `main.gd` não recebe estado novo
 por gosto: ele é o objeto deus documentado como débito
-([`AGENTS.md:239-242`](../../AGENTS.md#L239-L242)), e a posse de processo filho é um estado com
-nome próprio. O host entra na árvore ao lado do `MindOracle` ([`main.gd:110-114`](../../src/main.gd#L110-L114))
+([`AGENTS.md:243-246`](../../AGENTS.md#L243-L246)), e a posse de processo filho é um estado com
+nome próprio. O host entra na árvore ao lado do `MindOracle` ([`main.gd:138-145`](../../src/main.gd#L138-L145))
 e é o único que conhece `pid`.
 
 **4.2 — Sonda de boot: `GET /v1/models`, três respostas, três destinos.** Antes de criar
@@ -217,17 +218,18 @@ isto que o `--api-key` entra, e **não** por segurança: a chave local é o *imp
 "nosso" de "estrangeiro" num `localhost` compartilhado. Consequência obrigatória, no mesmo lote:
 com `--api-key` no servidor, todo `/v1/chat/completions` sem o header `Authorization: Bearer` é
 `401` — e `401` cai no `text.is_empty()` de
-[`mind_oracle.gd:116-119`](../../src/ai/mind_oracle.gd#L116-L119), que hoje vira recuo de 30 s em
+[`mind_oracle.gd:162-174`](../../src/ai/mind_oracle.gd#L162-L174), que hoje vira recuo de 30 s em
 silêncio. Então a chave vive numa constante ao lado de `SERVER_URL`
 ([`:11-13`](../../src/ai/mind_oracle.gd#L11-L13)), `run_mind_server.ps1` passa a mesma chave
 ([`:30-37`](../../tools/run_mind_server.ps1#L30-L37)) e o `_request` manda o header
-([`:78-80`](../../src/ai/mind_oracle.gd#L78-L80)). A porta continua tendo **um** dono: o
-`server_url` do oráculo ([`:17`](../../src/ai/mind_oracle.gd#L17)); o host lê o valor do oracle em
+([`:122-124`](../../src/ai/mind_oracle.gd#L122-L124), pelos `auth_headers()` de
+[`:102-103`](../../src/ai/mind_oracle.gd#L102-L103)). A porta continua tendo **um** dono: o
+`server_url` do oráculo ([`:32`](../../src/ai/mind_oracle.gd#L32)); o host lê o valor do oracle em
 vez de repetir `8741`, que hoje já aparece em dois lugares ([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11)
 e [`run_mind_server.ps1:12`](../../tools/run_mind_server.ps1#L12)).
 
 **4.3 — Ciclo de vida nos três pontos de saída, com os nomes certos da API.** No fecho da janela
-e em [`main.gd:_exit_tree`](../../src/main.gd#L509-L510) (onde o journal já é fechado — o único
+e em [`main.gd:_exit_tree`](../../src/main.gd#L661-L662) (onde o journal já é fechado — o único
 precedente de liberação de recurso externo que existe na casa), `OS.kill(pid)` no filho **que o
 host criou**; `pid = -1` em caso de reuso significa "nada a matar". Morte antecipada se detecta
 com `OS.is_process_running(pid)` em cadência própria, **uma** retentativa por sessão — a segunda
@@ -239,7 +241,7 @@ para o caso de morte por erro (imprime o código em vez de adivinhar).
 
 **4.4 — O oráculo espera o primeiro `/health` 200 (ou um prazo explícito).** Hoje a primeira
 narrativa de uma sessão que abriu o servidor junto com o jogo demora ~30 s por culpa do recuo
-([`mind_oracle.gd:116-119`](../../src/ai/mind_oracle.gd#L116-L119) + [`:43`](../../src/ai/mind_oracle.gd#L43)).
+([`mind_oracle.gd:162-174`](../../src/ai/mind_oracle.gd#L162-L174) + [`:75`](../../src/ai/mind_oracle.gd#L75)).
 O host expõe `ready()`/sinal próprio; o `MindOracle` não emite pedido nenhum antes dele, e um
 `503` de "Loading model" **não** é falha — é "espera mais um pouco", que é justamente o que o
 recuo de 30 s transforma em silêncio. O prazo é uma constante nomeada com o valor que a medição 1
@@ -247,20 +249,20 @@ do §8 decidir; até lá ele é `[OPEN]`, não `120 s` herdado do probe
 ([`live_oracle_probe.gd:9`](../../tests/live_oracle_probe.gd#L9)).
 
 **4.5 — Nada disto entra no caminho de simulação, e a citação é do mandato.**
-[`AGENTS.md:35-46`](../../AGENTS.md#L35-L46): *"**A mente propõe, as regras dispõem.**
+[`AGENTS.md:35-50`](../../AGENTS.md#L35-L50): *"**A mente propõe, as regras dispõem.**
 LLM/oráculo nunca decide movimento, dano, posição ou estado de mundo"*. O host vive em
-`_process`/timers próprios, **fora** de [`main.gd:_sim_tick`](../../src/main.gd#L145-L169) e fora
+`_process`/timers próprios, **fora** de [`main.gd:_sim_tick`](../../src/main.gd#L223-L249) e fora
 dos 50 ms que o passo divide com os lobos; o `--reasoning off` já é condição do servidor
 ([`run_mind_server.ps1:37`](../../tools/run_mind_server.ps1#L37)) e continua. A saída do oráculo
-não muda de tipo: `_narrations` ([`mind_oracle.gd:27`](../../src/ai/mind_oracle.gd#L27)) →
-`narration_of()` → F3 ([`hud.gd:270-273`](../../src/ui/hud.gd#L270-L273)).
+não muda de tipo: `_narrations` ([`mind_oracle.gd:47`](../../src/ai/mind_oracle.gd#L47)) →
+`narration_of()` → F3 ([`hud.gd:276-279`](../../src/ui/hud.gd#L276-L279)).
 
 **4.6 — Verificação é headless, e por uma razão que é fato de engine.** `OS.create_process` é
 implementado no Windows e não depende de janela — a sonda roda em `--headless`. O boot real do
 servidor é colhido por cena de prova **própria** (`tests/llm_server_boot_probe.tscn`), no estilo
 de [`live_oracle_probe.tscn`](../../tests/live_oracle_probe.tscn), isolada em cena justamente
 para não virar fallback silencioso dentro de `MindOracle`
-([`AGENTS.md:247-249`](../../AGENTS.md#L247-L249)). A suíte **não** levanta o modelo: em
+([`AGENTS.md:251-253`](../../AGENTS.md#L251-L253)). A suíte **não** levanta o modelo: em
 `DisplayServer.get_name() == "headless"` (nome documentado no motor) `main.gd` **não** instancia o
 host, e é a cena de prova que o constrói explicitamente. O motivo é a premissa 5 do §1, e a
 checagem 8 do §7 é o guarda dela.
@@ -272,7 +274,7 @@ alvo de design existe ([`docs/design/04:164-166`](../../docs/design/04-local-ai-
 na mesma frase do pedido, então nada aqui escolhe backend CPU, `--n-gpu-layers 0` ou servidor
 remoto; é a primeira linha do §8 quando ele for aberto. (iv) Porta fixa ocupada por outro app:
 a decisão 4.2 recusa matar e recusa adivinhar; se um dia o custo aparecer, a alternativa é porta
-dinâmica + `oracle.server_url` escrito pelo host ([`:17`](../../src/ai/mind_oracle.gd#L17) já é
+dinâmica + `oracle.server_url` escrito pelo host ([`:32`](../../src/ai/mind_oracle.gd#L32) já é
 `var`), e isso é escolha de versão, não detalhe.
 
 ## 5. Matriz de falha
@@ -291,33 +293,33 @@ não em popup.
 
 O último caso é o único com degradação conhecida e aceita: se a janela **dona** do processo fecha
 primeiro, a outra perde o oráculo no meio da partida e cai no caminho já checado pela suíte
-([`smoke_test.gd:2058-2068`](../../tests/smoke_test.gd#L2058-L2068)). Registro aqui, não em
+([`smoke_test.gd:2092-2101`](../../tests/smoke_test.gd#L2092-L2101)). Registro aqui, não em
 surpresa depois: o host mata o que ele subiu, e "não matar o que não é meu" tem este preço.
 
 ## 6. Custo — as quatro perguntas
 
 - **Frame, tick ou às vezes?** O host roda **por frame** (`_process`), não por tick: é um nó I/O
   com um `HTTPRequest` em voo, no mesmo padrão do oráculo
-  ([`mind_oracle.gd:39-54`](../../src/ai/mind_oracle.gd#L39-L54)), e nada do que ele faz é
-  determinístico nem entra em `state_hash()` ([`main.gd:495-496`](../../src/main.gd#L495-L496)). Enquanto carrega: uma sonda por cadência
+  ([`mind_oracle.gd:71-91`](../../src/ai/mind_oracle.gd#L71-L91)), e nada do que ele faz é
+  determinístico nem entra em `state_hash()` ([`main.gd:647-648`](../../src/main.gd#L647-L648)). Enquanto carrega: uma sonda por cadência
   curta (~0,2 s, **proposto**, não medido). Depois de pronto: só a verificação de vida por
   cadência de 1 s, seguindo o precedente de [`main.gd:16`](../../src/main.gd#L16). O custo pesado
   (carga do modelo, inferência) é **de outro processo**, fora dos 50 ms do passo
-  ([`main.gd:145-169`](../../src/main.gd#L145-L169)) e fora dos 400 µs do `SubtreeGuard`.
+  ([`main.gd:214-220`](../../src/main.gd#L214-L220)) e fora dos 400 µs do `SubtreeGuard`.
 - **Quantas entidades são alcançadas?** Um processo filho, uma porta TCP local, zero lobos. A
   matilha inteira é alcançada **só** pelo caminho que já existe (o round-robin do oráculo,
-  [`:43-54`](../../src/ai/mind_oracle.gd#L43-L54)).
+  [`:75-91`](../../src/ai/mind_oracle.gd#L75-L91)).
 - **Aloco no caminho quente?** Não: `PackedStringArray` de argv **uma vez** por boot, um
   `HTTPRequest` filho do host, um `Dictionary` de estado. O que continua sendo débito da casa são
   os dicionários do BT e o `PackedInt32Array` da difusão
-  ([`AGENTS.md:165-170`](../../AGENTS.md#L165-L170)) — este lote não melhora
+  ([`AGENTS.md:169-174`](../../AGENTS.md#L169-L174)) — este lote não melhora
   nem piora essa conta.
 - **Como sei que ficou melhor?** Ainda não existe: os dois números do §8 são a resposta, e até
   eles existirem o lote não pode dizer "o boot ficou N s mais caro/barato". O que **dá** para
   afirmar agora, derivado de número publicado e não medido para este fim: subir o servidor no topo
-  do `_ready` ([`main.gd:49`](../../src/main.gd#L49), antes da geração em `:63` e da malharia em
+  do `_ready` ([`main.gd:71`](../../src/main.gd#L71), antes da geração em `:91` e da malharia em
   `:66`) compra ~5,2 s de sobreposição com os ~0,9 + ~4,3 s de boot de mundo
-  ([`README.md:548`](../../README.md#L548)) — **derivado**, e a checagem 2 imprime o número real.
+  ([`README.md:561`](../../README.md#L561)) — **derivado**, e a checagem 2 imprime o número real.
 - **Licenças e rede, para fechar o tripé:** nada novo. O runtime e o modelo já são MIT/Apache-2.0
   ([THIRD_PARTY_LICENSES.md:13-14](../../THIRD_PARTY_LICENSES.md#L13-L14)), o `.gguf` continua
   fora do repositório ([`.gitignore:13`](../../.gitignore#L13)) e o tráfego continua
@@ -335,14 +337,14 @@ godot --headless --path . tests/smoke_test.tscn                  # a suíte, que
 ```
 
 Cada checagem nomeia a premissa que exige e imprime o número que a decide — regra da casa
-([`AGENTS.md:372-375`](../../AGENTS.md#L372-L375)):
+([`AGENTS.md:377-380`](../../AGENTS.md#L377-L380)):
 
 1. **`host_devolve_health_200`** — *premissa:* `OS.create_process` com o binário pinado levanta um
    servidor que responde **200** no `/health` nesta máquina. Imprime `ms_ate_200`, contagem de
    `503` vistos, `pid`. Vermelho no prazo; `503` **não** é vermelho (é o "Loading model" do §0).
 2. **`boot_nao_bloqueia_janela`** — *premissa:* nada espera o modelo de forma síncrona. Enquanto o
    host está em `carregando`, a cena conta frames e `clock.tick`
-   ([`main.gd:136-142`](../../src/main.gd#L136-L142)); imprime os dois. Vermelho com `frames == 0`
+   ([`main.gd:214-220`](../../src/main.gd#L214-L220)); imprime os dois. Vermelho com `frames == 0`
    ou `worst_step_ms` fora da banda da revisão.
 3. **`reuso_nao_cria_segundo_processo`** — *premissa:* servidor nosso já na porta ⇒ pid próprio
    `-1`, estado `reusado`, nenhuma narrativa perdida. Feito com a flag **da cena** `--keep` no run
@@ -374,9 +376,9 @@ Cada checagem nomeia a premissa que exige e imprime o número que a decide — r
 10. **`chave_do_oraculo_bate_com_a_do_host`** — *premissa:* `--api-key` no servidor não silenciou a
     narrativa. Dois sentidos, um só run: `POST /v1/chat/completions` **sem** header ⇒ `401` (e o
     `401` tem de ser impresso como `llm: 401`, não como recuo anônimo em
-    [`mind_oracle.gd:116-119`](../../src/ai/mind_oracle.gd#L116-L119)); **com** o header ⇒ `200`.
+    [`mind_oracle.gd:162-174`](../../src/ai/mind_oracle.gd#L162-L174)); **com** o header ⇒ `200`.
 
-`EXPECTED_CHECKS` (hoje 119 em [`aether_reactions_test.gd:17`](../../tests/aether_reactions_test.gd#L17)),
+`EXPECTED_CHECKS` (hoje 150 em [`aether_reactions_test.gd:20`](../../tests/aether_reactions_test.gd#L20)),
 os censores irmãos (audio 73, simulation_rng 27, journal 128) e o rodapé da suíte **não mudam por
 este lote se as checagens 1-10 viverem na cena de prova** — que é o plano. Se alguma delas entrar
 na suíte, o número vira invariante no mesmo commit, anunciado antes de escrever.
@@ -385,7 +387,7 @@ na suíte, o número vira invariante no mesmo commit, anunciado antes de escreve
 
 Nenhum dos dois existe hoje nesta árvore, e este dossiê não publica estimativa nenhuma. Quem
 implementar mede, com máquina livre — medição de tempo é serial
-([`AGENTS.md:399-401`](../../AGENTS.md#L399-L401)).
+([`AGENTS.md:404-406`](../../AGENTS.md#L404-L406)).
 
 1. **Tempo até `/health` devolver 200 com `-ngl 99`** na RX 9060 XT: o intervalo entre
    `OS.create_process` voltar com o pid e o primeiro `200`, com a contagem de `503` no meio (a
@@ -408,25 +410,25 @@ implementar mede, com máquina livre — medição de tempo é serial
 ## 9. O que NÃO fazer
 
 - Nenhum `await` síncrono no `_ready`, nenhum laço que trave a janela esperando o modelo. O
-  congelamento de boot já foi contado uma vez nesta casa ([`README.md:548-553`](../../README.md#L548-L553)).
+  congelamento de boot já foi contado uma vez nesta casa ([`README.md:561-562`](../../README.md#L561-L562)).
 - Não matar processo que não foi criado por este host, sob pretexto nenhum — inclusive "era o
   nosso de ontem". Reuso sim, `kill` só em pid próprio.
 - Não baixar modelo nem descompactar runtime dentro do jogo: `fetch_models.ps1` continua sendo o
   passo manual único, e o fetch embutido é P4 (`ModelPackFetcher`,
   [`docs/design/08:32`](../../docs/design/08-roadmap-risks-licensing.md#L32)).
 - Não duplicar a porta: `8741` tem um dono em `src/` ([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11));
-  o host lê `server_url` ([`:17`](../../src/ai/mind_oracle.gd#L17)). Uma constante repetida é
+  o host lê `server_url` ([`:32`](../../src/ai/mind_oracle.gd#L32)). Uma constante repetida é
   exatamente a deriva que os furos deste repositório cobram.
 - Não transformar `401`/`503`/timeout num recuo anônimo de 30 s: cada estado tem de imprimir o
   código que o produziu. Silenciar a falha é o mandato 1 ao contrário.
 - Não deixar o host subir em headless "para testar": a suíte é a corriqueira; o modelo é de 2,7 GB
   e o §7 tem cena própria para isso.
 - Não botar nada disto em `_sim_tick`, em `_physics_process` do lobo, nem no hash do journal
-  ([`main.gd:145-169`](../../src/main.gd#L145-L169), [`:495-496`](../../src/main.gd#L495-L496)):
+  ([`main.gd:214-249`](../../src/main.gd#L214-L249), [`:647-648`](../../src/main.gd#L647-L648)):
   processo de oráculo não é estado de mundo.
 - Não propor GDExtension, `native/af_mind`, GBNF, embeddings ou `oracle_cache` "porque já estamos
   mexendo no oráculo": é P4 e está fora do escopo autorizado
-  ([`AGENTS.md:269-271`](../../AGENTS.md#L269-L271)).
+  ([`AGENTS.md:273-275`](../../AGENTS.md#L273-L275)).
 - Não resolver "máquina sem placa de vídeo" agora: o dono adiou, e adiado é `[OPEN]`.
 
 ## 10. Commits atômicos
@@ -454,19 +456,24 @@ sem o log da corrida que o produziu.
 A fila serializada passa a **09 → 10 → 15 → 14 → 11 → 12 → 13**: a 15 não depende do código da
 matilha (é o caminho do boot, e não encosta em `wolf.gd`), enquanto a 14 depende da ronda por
 setor que a perna 10 já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`). Escrito **antes** de qualquer linha de `src/`, porque
-é a regra do contrato — [`AGENTS.md:70-74`](../../AGENTS.md#L70-L74) e a cláusula de um escritor
-por arquivo ([`AGENTS.md:425-427`](../../AGENTS.md#L425-L427)); o custo de não ordenar está
+é a regra do contrato — [`AGENTS.md:74-78`](../../AGENTS.md#L74-L78) e a cláusula de um escritor
+por arquivo ([`AGENTS.md:430-432`](../../AGENTS.md#L430-L432)); o custo de não ordenar está
 medido no incidente do dossiê 03. A fila vive em dois lugares do contrato — o parágrafo de exceção
-em [`AGENTS.md:288-291`](../../AGENTS.md#L288-L291) e a ordem nova em
-[`AGENTS.md:338-340`](../../AGENTS.md#L338-L340) — e a edição dos dois, com o registro no índice
+em [`AGENTS.md:292-295`](../../AGENTS.md#L292-L295) e a ordem nova em
+[`AGENTS.md:343-345`](../../AGENTS.md#L343-L345) — e a edição dos dois, com o registro no índice
 ([`docs/planos/README.md`](README.md)), é o commit 2 desta branch.
 
-Fica **sabido e não corrigido por esta branch**: as duas strings de ordem antigas continuam em
-[`docs/melhorias-status.md:295`](../../docs/melhorias-status.md#L295) e
-[`docs/melhorias-status.md:2291`](../../docs/melhorias-status.md#L2291). Editar o meio do status
-empurra cada linha abaixo dele — é o mecanismo que a própria página índice explica — e re-derivar
-o corpus por conteúdo é perna separada. Quem pousar a 15 atualiza as duas linhas no mesmo passe
-de status, e nenhuma delas deve ser lida como vigente enquanto isso não acontecer.
+Fica **sabido, e corrigido no passe de status desta ponta**: as duas strings de ordem antigas
+estavam em [`docs/melhorias-status.md:295`](../../docs/melhorias-status.md#L295) e
+[`:2291`](../../docs/melhorias-status.md#L2291) na numeração em que este dossiê foi escrito
+(`4ac5838`), e ambos os alvos eram verdadeiros ali. O que os moveu foi o crescimento do próprio
+status — a perna 10 escreveu 285 linhas aqui dentro e esta nota, mais 206. Lidos pelo conteúdo na
+ponta, os dois alvos são [`:329`](../../docs/melhorias-status.md#L329) e
+[`:2410`](../../docs/melhorias-status.md#L2410), e cada um agora diz a ordem da época **e** a
+ordem vigente, em vez de ser reescrito: o mandato 4 registrava a exceção antes do código, e o
+passe de status era o mesmo commit que a fecha. Editar o meio do status empurra cada linha
+abaixo dele — é o mecanismo que a página índice explica — e por isso o número novo foi achado
+lendo a frase, não transladando a diferença de tamanho do arquivo.
 
 ## 12. Âncoras que não conferem (registradas, não consertadas aqui)
 
@@ -489,6 +496,21 @@ delas muda mandato: é deriva de linha e nome de API.
   [`:499-506`](../../src/main.gd#L499-L506) (diz `490-498`) e `_exit_tree` em
   [`:509-510`](../../src/main.gd#L509-L510) (diz `500-501`). As demais do contrato não foram
   relidas por mim, e é a perna de re-derivação por conteúdo que as alcança.
+- **Estes números são os de `4ac5838` e ficam como foram escritos**: a seção é registro do que
+  estava em pé naquela árvore, e transladá-la apagaria a medição — inclusive o `+9` do parágrafo
+  acima, que é a diferença *daquela* base. Na ponta desta branch, lidos por conteúdo (a fatia de
+  linha confere linha a linha, sem offset adivinhado), os alvos são `diagnostics()`
+  [`:592-607`](../../src/main.gd#L592-L607), a linha do journal dentro dela
+  [`:603`](../../src/main.gd#L603), `state_hash()`
+  [`:647-648`](../../src/main.gd#L647-L648), a CLI [`:651-658`](../../src/main.gd#L651-L658) e
+  `_exit_tree` [`:661-662`](../../src/main.gd#L661-L662); na suíte o passo de planar é
+  [`:2001-2007`](../../tests/smoke_test.gd#L2001-L2007) (+34), o bloco do oráculo
+  [`:2079-2102`](../../tests/smoke_test.gd#L2079-L2102) com a porta 1 armada em
+  [`:2086`](../../tests/smoke_test.gd#L2086), e os dois passos em
+  [`:108-109`](../../tests/smoke_test.gd#L108-L109). Dos dois ponteiros para o status, o `:70`
+  continua na linha (a tabela de prompts) e já cita `smoke_test.gd:2081-2086`; o `:522-523` era o
+  item de débito do gate do oráculo, que hoje está em
+  [`:575-577`](../../docs/melhorias-status.md#L575-L577) e com o alvo da degradação já corrigido.
 - `llama-server.exe` **não é** o programa inteiro: 9.728 B de stub com a lógica em DLLs ao lado
   (§0.2). Qualquer texto futuro que proponha "copiar o `.exe`" está errado.
 - O `--timeout` do servidor não é ociosidade, e `--watch-file` não existe no b12499 (§0.1) — as

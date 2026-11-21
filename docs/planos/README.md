@@ -20,7 +20,7 @@ mesma seção do contrato, não deduzida depois.
 | 05 | [Difusão do Éter fora do tick](05-difusao-fora-do-tick.md) | P1 `:447`, Falta 6 `:336-338` | hoje a difusão é síncrona e o lobo vê o resultado por isso | primeiro a colheita (nenhum µs de `diffuse_and_decay` existe); o corte só com o hash por semente **inalterado** |
 | 06 | [Decompor `main.gd` pelo eixo do dono](06-decompor-main-gd.md) | Falta 7 `:339-341` | ônibus não é dono: um bloco vira dono quando já tem comprador fora de `main.gd` | K1 bancadas → K2 fila/cadáveres → K3 matilha; K4 (persistência) fica `[OPEN]` até aparecer o segundo consumidor |
 | 07 | [`af-bench`, bake-off de voxel e o doc do `SimClock`](07-af-bench-bake-off-voxel-e-doc-do-simclock.md) | P0 `:437`, `:438-439`, `:440` | três premissas, uma por peça; hash é função do passo, fps é função da máquina | ordem interna: doc → runner de `dt` fixo → 3 execuções de 12 000 ticks → bake-off com ≥ 2 braços tabelados |
-| 08 | [`MindStore` e `MindsInspector`](08-mindstore-e-mindsinspector.md) | P1 `:448-449`, `:450-451` | `MindStore` muda **posse**, `MindsInspector` mostra **composição** — nenhuma das duas decide | recomendação lida: F3 estendido (reaproveita `src/main.gd:245-250` e `src/ui/hud.gd:267-274`) antes de qualquer `.tscn` novo |
+| 08 | [`MindStore` e `MindsInspector`](08-mindstore-e-mindsinspector.md) | P1 `:448-449`, `:450-451` | `MindStore` muda **posse**, `MindsInspector` mostra **composição** — nenhuma das duas decide | recomendação lida: F3 estendido (reaproveita `src/main.gd:305-310` e `src/ui/hud.gd:273-280`) antes de qualquer `.tscn` novo |
 | 09 | [Bioma, cor do pelo e fundo de Éter por bioma](09-bioma-cor-de-pelo-e-ether.md) | Falta 8 `:342-356` | bioma só existe se decidir algo observável: cor do pelo e viés de imprint; derivar **não** pode alterar terreno nem hash | `bioma_deterministico`, `bioma_nao_altera_terreno` (a que fecha o lote), `cor_do_pelo_vem_do_bioma`, `imprint_bioma_tem_mesma_ordem` |
 | 10 | [Rotinas de alcateia](10-alcateia-rutinas.md) | Falta 9 `:357-363` | a intenção de um lobo muda quando outro está por perto — 1 lobo vs 4 lobos no mesmo cenário tem de **divergir** | `contraste_de_alcateia`, `cercar_calcula_assentos`, `ataque_escalonado`, `medo_contagia` / `amigo_amortece`, `alcateia_nao_consome_rng_da_sessao` |
 | 11 | [Acasalamento, filhote que cresce e censo variável](11-acasalamento-filhote-e-censo.md) | Falta 10 `:364-371` | um save gravado com 7 lobos carrega 7 lobos — e crescer é função do `clock.tick`, não de parede | `acasalar_aumenta_censo`, `filhote_cresce_por_tick`, `filhote_nao_morde`, `load_leva_todo_o_censo` (nasce **vermelha** no código atual), `censo_respeita_teto`, `journal_hash_inalterado_sem_escolha` |
@@ -193,10 +193,10 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
 - `src/session/`, `wolf_roster.gd`, `scene_readiness.gd` como peças esperadas → **01, "Estado real"**
   (nenhum desses nomes existe em `src/` nem em `docs/design/`);
 - linhas 27-28 da tabela do prompt master (reais: `:29` e `:30`) e `MemoryGate` como código → **08 §8**;
-- `EXPECTED_CHECKS` em `tests/aether_reactions_test.gd:16` com 109, e a suíte em 236 checagens, vindos
-  como premissa dos dossiês da ampliação → reais: `:17` com **119**, e **237 / 0 falhas / 35,5 s**
-  (pino em `README.md:192`). E o blackboard não está em `wolf.gd:433` (linha de fim de
-  `_build_scorer`): os dois dicionários por lobo por tick são `:430` e `:460` → **14 §2**;
+- premissa dos dossiês da ampliação: "`EXPECTED_CHECKS` está na linha 16 do runner, com 109,
+  e a suíte em 236 checagens" → conferido na época: era a linha 17, com **119**, e a suíte
+  **237 / 0 falhas / 35,5 s** (pino em `README.md:192`); nesta ponta o censo travado é a
+  linha 20 de `tests/aether_reactions_test.gd`, com **150**. O blackboard é um só → **14 §2**;
 - "todo ser vivo" como escada já implementada: `src/entities/` tem **uma** espécie animal, **nenhum**
   NPC e o jogador sem `Mind` nem `identity` (grep devolve zero ocorrências dos dois nomes em
   `player.gd`), então os três degraus acima do lobo ficam `[TARGET]`, com zero código → **13 §1, §3.4**;
@@ -211,9 +211,9 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
 As imprecisões reais achadas em `AGENTS.md` nesta rodada foram corrigidas no próprio contrato, uma por
 uma, depois de lidas as duas pontas: `player.gd:659`/`:675` são os cabeçalhos de `_mine_target()` e
 `_try_place()`, e o `world.set_block` que escreve no mundo está em `:667`/`:693`; o `_on_acted` que
-imprime WORK saiu de `main.gd:268-273` para `:277-282` quando o viés de imprint entrou; o teto do load
-que pareia por índice é `main.gd:419`, não `:410`; as três promessas da lavra estão em
-`tests/smoke_test.gd:862-870`, não `:780-790`; e a conta do "objeto deus" passa a estar pinada na
+imprime WORK saiu de `main.gd:328-333` para `:337-342` quando o viés de imprint entrou; o teto do load
+que pareia por índice é `main.gd:479`, não `:470`; as três promessas da lavra estão em
+`tests/smoke_test.gd:877-885`, não `:795-805`; e a conta do "objeto deus" passa a estar pinada na
 revisão medida — **510 linhas em `src/main.gd` na `main` em `eb6ec8d`** — porque a perna 10 em curso vai
 mover esse número, e um número sem pino é exatamente o que estes furos cobram. Nada disso muda
 mandato: é deriva de linha.

@@ -34,15 +34,15 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   [`surface_block(x, z, h)`](../../src/world/world_gen.gd#L100-L111) escolhe o bloco de topo por
   três condições: `h <= SEA_LEVEL + 1` → `SAND`; `h >= 52` → `SNOW` abaixo de 57, `STONE` acima;
   depois `_temp < -0.35` → `SNOW`, `_moist < -0.30` → `SAND`, senão `GRASS`. Os dois ruídos vêm de
-  [`_moist`](../../src/world/world_gen.gd#L33) (semente `p_seed + 3`, frequência 0,0045,
+  [`_moist`](../../src/world/world_gen.gd#L56), configurada em [:68](../../src/world/world_gen.gd#L68) (semente `p_seed + 3`, frequência 0,0045,
   [:45](../../src/world/world_gen.gd#L45)) e
-  [`_temp`](../../src/world/world_gen.gd#L34) (semente `p_seed + 4`, frequência 0,0030,
+  [`_temp`](../../src/world/world_gen.gd#L57) (semente `p_seed + 4`, frequência 0,0030,
   [:46](../../src/world/world_gen.gd#L46)). `SEA_LEVEL` é 26
   ([voxel_config.gd:13](../../src/world/voxel_config.gd#L13)). O resultado **não é guardado**:
   depois de `generate_chunk` ([world_gen.gd:114-137](../../src/world/world_gen.gd#L114-L137))
   escrever os blocos, ninguém sabe de que regra cada coluna veio — só de que bloco ela é feita.
 - **O pelo é uma linha só, e é compartilhada.**
-  [`_build_visual()`](../../src/entities/wolf.gd#L885) cria um `StandardMaterial3D` por lobo
+  [`_build_visual()`](../../src/entities/wolf.gd#L920) cria um `StandardMaterial3D` por lobo
   ([:889](../../src/entities/wolf.gd#L889)) e pinta todos com
   `Color(0.40, 0.36, 0.31)` ([:890](../../src/entities/wolf.gd#L890)); as caixas do corpo usam essa
   material de [:892](../../src/entities/wolf.gd#L892) até [:738](../../src/entities/wolf.gd#L738).
@@ -52,15 +52,15 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   três tabelas por canal são constantes
   ([:9-17](../../src/world/aether_field.gd#L9-L17)). Os imprints existentes passam valor fixo por
   evento: `WORK 0,42`/`0,20` no jogador
-  ([main.gd:365-370](../../src/main.gd#L365-L370)), `FEAR 0,4` no spawn
-  ([:211](../../src/main.gd#L211)), `BLOOD 1,3` + `FEAR 1,0` no cadáver
-  ([:400-401](../../src/main.gd#L400-L401)). Uma coluna de gelo e uma de savana imprimem o mesmo
+  ([main.gd:425-430](../../src/main.gd#L425-L430)), `FEAR 0,4` no spawn
+  ([:271](../../src/main.gd#L271)), `BLOOD 1,3` + `FEAR 1,0` no cadáver
+  ([:460-461](../../src/main.gd#L460-L461)). Uma coluna de gelo e uma de savana imprimem o mesmo
   número.
 - **Onde o bioma seria lido, hoje:** `setup` do lobo recebe `p_spawn` e sorteia `_rng` com a semente
   do mundo ([wolf.gd:166-182](../../src/entities/wolf.gd#L166-L182), `:121`) — o ponto natural de
   perguntar "que bioma é este?" uma vez por lobo, sem cadência. A sessão já sorteia o
-  `home` num raio de 16–46 ([main.gd:199-215](../../src/main.gd#L199-L215), via
-  [`_random_ground_point`](../../src/main.gd#L240-L254)).
+  `home` num raio de 16–46 ([main.gd:259-275](../../src/main.gd#L259-L275), via
+  [`_random_ground_point`](../../src/main.gd#L300-L314)).
 
 ## 3. O que a peça exige
 

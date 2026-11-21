@@ -101,7 +101,7 @@ bloco, sem ferramenta e sem XP:
   [documento 11](11-inventory-crafting.md).
 
 Cada bloco lavrado injeta **0,42 no canal de trabalho** do Éter e cada colocação `0,20`
-[main.gd:356-361](../../src/main.gd#L356-L361) — nada disso existe no Veloren; é a nossa trilha
+[main.gd:416-421](../../src/main.gd#L416-L421) — nada disso existe no Veloren; é a nossa trilha
 auditável (§8).
 
 ## 5. Respiração e afogamento
@@ -144,7 +144,7 @@ superfície de comportamento por uma rota diferente — utilidade escolhe a inte
 - água: patrulha sorteia terra seca; se acabar nela, boia/rema e, após `2 s`, consulta
   a margem [wolf.gd:75-79](../../src/entities/wolf.gd#L75-L79),
   [:297-336](../../src/entities/wolf.gd#L297-L336), [:574-582](../../src/entities/wolf.gd#L574-L582),
-  [:710-716](../../src/entities/wolf.gd#L710-L716).
+  [:490-502](../../src/entities/wolf.gd#L490-L502).
 
 **Rastro: aproxima → para → registra → suprime → renova.** O leitor varre `7 × 7`
 células na camada Y atual do Éter (raio `3`), a cada `0,25 s`, com novo scan no tick
@@ -153,7 +153,7 @@ seguinte à inspeção concluída. Seleciona o maior `BLOOD + 0,35 × WORK`, exi
 não devolve nada acima de `0,06`, o mesmo quadrado se repete uma célula acima e, ainda sem
 resultado, uma célula abaixo — só BLOOD e WORK nas camadas vizinhas, sem FEAR
 ([wolf.gd:27-35](../../src/entities/wolf.gd#L27-L35),
-[:462-506](../../src/entities/wolf.gd#L462-L506)). O custo das camadas extras é medido na
+[:669-714](../../src/entities/wolf.gd#L669-L714)). O custo das camadas extras é medido na
 matriz de ablação da [página de evidência](../evidence/rastro-duas-camadas/readback.log).
 
 A folha aproxima até `1,2 m` horizontais do alvo e então para o corpo para farejar por
@@ -166,11 +166,11 @@ por `30 s`; a borda difusa também é suprimida. Antes da expiração, um aument
 menos `0,06` **na soma ponderada** reabre a célula; a expiração é recolhida no scan e
 permite revisita mesmo sem imprint novo
 ([wolf.gd:373-387](../../src/entities/wolf.gd#L373-L387),
-[:466-504](../../src/entities/wolf.gd#L466-L504)). Não é identificação de uma causa nova.
+[:400-416](../../src/entities/wolf.gd#L400-L416)). Não é identificação de uma causa nova.
 Trocar de alvo, perder o rastro ou sair de `investigate` zera a inspeção; durante
 `stagger`, a folha suspende a inspeção e zera seu timer, sem concluir episódio
 ([wolf.gd:249-263](../../src/entities/wolf.gd#L249-L263),
-[:431-433](../../src/entities/wolf.gd#L431-L433), [:675-676](../../src/entities/wolf.gd#L675-L676)).
+[:370-372](../../src/entities/wolf.gd#L370-L372), [:675-676](../../src/entities/wolf.gd#L675-L676)).
 O load limpa cache e estado transitório de inspeção
 ([wolf.gd:850-871](../../src/entities/wolf.gd#L850-L871)).
 
@@ -188,7 +188,7 @@ exige jogador vivo, mesmo se a histerese mantiver `intent = hunt`; a distância 
 [:281-300](../../src/entities/wolf.gd#L281-L300), [:369-383](../../src/entities/wolf.gd#L369-L383)).
 A LOS é consultada a cada tick quando o jogador está vivo e a menos de `30 m`; o registro
 de avistamento tem intervalo de `2 s`
-([wolf.gd:436-459](../../src/entities/wolf.gd#L436-L459)).
+([wolf.gd:625-637](../../src/entities/wolf.gd#L625-L637)).
 
 **Limites.** O refinamento de produção está somente em `Wolf`: `AetherField` permanece
 com **3 canais**, mesmas meias-vidas e difusão
@@ -200,7 +200,7 @@ não pathfinding nem prova de alcançabilidade
 ([wolf.gd:681-682](../../src/entities/wolf.gd#L681-L682),
 [:689-697](../../src/entities/wolf.gd#L689-L697)); o alvo horizontal continua achatado em
 `offset.y = 0.0` na folha
-([:257-258](../../src/entities/wolf.gd#L257-L258)), então o cheiro é lembrado no andar
+([:377-378](../../src/entities/wolf.gd#L377-L378)), então o cheiro é lembrado no andar
 certo e perseguido no andar do lobo.
 Inspeção não atribui autoria/causalidade, e cache transitório e episódios não fazem
 parte da projeção mínima do journal: não há replay deste ciclo. O contrato e as
@@ -209,10 +209,10 @@ não são validação automática deste refinamento.
 
 A decisão roda no tick de 20 Hz (`sim_step`), mas corpo e timers de cadáver,
 atordoamento e desvio mudam por frame em `_physics_process`
-([wolf.gd:409-433](../../src/entities/wolf.gd#L409-L433),
-[:702-747](../../src/entities/wolf.gd#L702-L747)); não é simulação inteira a 20 Hz.
+([wolf.gd:597-622](../../src/entities/wolf.gd#L597-L622),
+[:729-774](../../src/entities/wolf.gd#L729-L774)); não é simulação inteira a 20 Hz.
 O F3 inclui reação, canal/força/célula escolhidos, tamanho do cache e custo do BT
-([wolf.gd:830-839](../../src/entities/wolf.gd#L830-L839)).
+([wolf.gd:857-866](../../src/entities/wolf.gd#L857-L866)).
 
 ## 9. Não adaptado — lista explícita
 
@@ -233,7 +233,7 @@ Nada aqui está em código — menos as linhas que o
 | Arcos, lanças arremessadas, cetros e magia de projétil | `[TARGET]` P6; magia existe como **Tecelagem** editando o Éter (§02), não como cast bar |
 | 6 espécies, personagens, opção *hardcore* | fora de escopo — solo humano + mentes locais (premissa 3 do README) |
 | Multiplayer | `[TARGET]` P5 |
-| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:540-548](../../src/main.gd#L540-L548). `[TARGET]` P7 |
+| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:600-608](../../src/main.gd#L600-L608). `[TARGET]` P7 |
 | Agricultura/plantação | **não existe no código**: só `_plant_tree` no gerador. `[TARGET]` P7 |
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de
@@ -265,7 +265,7 @@ Os passos que cobrem este documento, por nome na suíte: `minerar e colocar`,
 `respiracao e afogamento`, `regeneracao fora de combate`, `lobo nada e busca margem`,
 `corpo encaixado se solta` (resgate do integrador) e `relogio real`, onde mora o
 gate `steering e colisao movem o lobo`, `memoria muda comportamento`
-[smoke_test.gd:63-95](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
+[smoke_test.gd:63-99](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
 publicados no [`README.md`](../../README.md) da raiz, derivados da corrida — não deste
 documento.
 

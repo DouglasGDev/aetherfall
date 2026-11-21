@@ -1,6 +1,6 @@
 # 08 — `MindStore` e `MindsInspector`
 
-Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:345-348), decididas pelas linhas docs/melhorias-status.md:29-29 e :30 da tabela do prompt master. Nada aqui roda engine; nenhum número de desempenho é publicado.
+Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:501-504), decididas pelas linhas docs/melhorias-status.md:47-47 e :48 da tabela do prompt master. Nada aqui roda engine; nenhum número de desempenho é publicado.
 
 ## 1. Premissa nomeada por peça
 
@@ -9,31 +9,31 @@ Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:345-348), de
 
 ## 2. Estado real (lido, não medido)
 
-- `Mind`: `EPISODIC_CAP = 24` (src/ai/mind.gd:7), FIFO com consolidação do átomo mais velho (:44-45). `_consolidate` converte só `hurt` e `saw_player` (:61-68); `hit_land`, `win` e `fed` (src/entities/wolf.gd:346, :616, :621) nunca viram crença. Decaimento `exp(-0,14 × min)` com corte em `0,02` (src/ai/mind.gd:8, :108-119). O save perde a origem da crença: `to_dict` grava só `confidence` (:142-144) e `from_dict` escreve `"loaded"` (:167).
-- Transitório por lobo, e fora da projeção do hash (mandato 3 do AGENTS.md): cache de rastros `_checked_scents` (src/entities/wolf.gd:83) com teto de 32 células, 30 s e renovação 0,06 (:29-33), limpo no load (:659-666), além de episódios e relações. Mover posse não muda isso sem re-medição.
-- Quem lê hoje: o lobo (`last_atom` src/entities/wolf.gd:187, :194, :211, :236; `temperament` nas curvas :359, :371, :387; `decay` por tick :418), o oráculo via `w.mind.to_dict()` (src/ai/mind_oracle.gd:87), o HUD via `debug_line()` (:629-634) e o save (:645, :657). Nenhuma outra classe segura uma `Mind`.
-- Caminho exato do F3: src/main.gd:103-104 injeta `stats_provider` e `wolf_provider` = `targets_under_crosshair` (:245-250, os vivos dos 5 de :9) → src/ui/hud.gd:267-274 imprime um `w.debug_line()` por mente e anexa `ia: ` + `narration_provider(w.identity)` → src/main.gd:114 → `narration_of()` (src/ai/mind_oracle.gd:59-60). Corpo do overlay: src/ui/hud.gd:241-275 (35 linhas); flag :41, liga/desliga :161-166.
+- `Mind`: `EPISODIC_CAP = 24` (src/ai/mind.gd:7), FIFO com consolidação do átomo mais velho (:44-45). `_consolidate` converte só `hurt` e `saw_player` (:61-68); `hit_land`, `win` e `fed` (src/entities/wolf.gd:514, :844, :849) nunca viram crença. Decaimento `exp(-0,14 × min)` com corte em `0,02` (src/ai/mind.gd:8, :108-119). O save perde a origem da crença: `to_dict` grava só `confidence` (:142-144) e `from_dict` escreve `"loaded"` (:167).
+- Transitório por lobo, e fora da projeção do hash (mandato 3 do AGENTS.md): cache de rastros `_checked_scents` (src/entities/wolf.gd:150) com teto de 32 células, 30 s e renovação 0,06 (:32-34), limpo no load (:892), além de episódios e relações. Mover posse não muda isso sem re-medição.
+- Quem lê hoje: o lobo (`last_atom` src/entities/wolf.gd:267, :275, :292, :357; `temperament` nas curvas :541, :553, :569; `decay` por tick :607), o oráculo via `w.mind.to_dict()` (src/ai/mind_oracle.gd:132), o HUD via `debug_line()` (src/entities/wolf.gd:857-862) e o save (src/main.gd:502-504, src/entities/wolf.gd:869). Nenhuma outra classe segura uma `Mind`.
+- Caminho exato do F3: src/main.gd:131-132 injeta `stats_provider` e `wolf_provider` = `targets_under_crosshair` (:327-332, os vivos dos 5 de :9) → src/ui/hud.gd:273-281 imprime um `w.debug_line()` por mente e anexa `ia: ` + `narration_provider(w.identity)` → src/main.gd:142 → `narration_of()` (src/ai/mind_oracle.gd:96-97). Corpo do overlay: src/ui/hud.gd:245-281 (37 linhas); flag :45, liga/desliga :164-169.
 
 ## 3. Por que os vereditos estão corretos hoje
 
 - `MindStore` = "metade feito": a consolidação existe e é persistida (src/ai/mind.gd:44-45, :61-68, contador :148 e :157), mas vive dentro da entidade; `MindStore`/`mind_store` não ocorre em `src/` — só como intenção de design (docs/design/07-project-structure.md:124, docs/design/06-godot-architecture.md:60, docs/design/08-roadmap-risks-licensing.md:67).
 - `MindsInspector` = "não existe": nenhum `.gd`/`.tscn` com esse nome; o arquivo planejado está em docs/design/07-project-structure.md:155. O que cobre é texto do F3, não inspector.
-- O que tornaria os vereditos falsos: (a) coleções vivas fora do `Wolf`, com round-trip de save preservado; (b) linha por consideração (cru→moldado→peso→veto) e trilha do BT — hoje o guard só devolve `last_us`/`trips` (src/entities/wolf.gd:662-663) e a trilha por nó prometida em docs/design/04-local-ai-architecture.md:50-52 não existe.
+- O que tornaria os vereditos falsos: (a) coleções vivas fora do `Wolf`, com round-trip de save preservado; (b) linha por consideração (cru→moldado→peso→veto) e trilha do BT — hoje o guard só devolve `last_us`/`trips` (src/entities/wolf.gd:865-866) e a trilha por nó prometida em docs/design/04-local-ai-architecture.md:50-52 não existe.
 
 ## 4. As duas formas de inspector, com custo
 
-- **F3 estendida**: reaproveita o roster (src/main.gd:245-250), o laço por mente (src/ui/hud.gd:267-274) e a linha de narrativa. Custo em código que já existe: uma função ao lado de `debug_line()` (src/entities/wolf.gd:654-659) devolvendo o `_breakdown` inteiro (src/ai/utility_scorer.gd:109-110), mais 1 a 3 linhas no laço do HUD. Nada é jogado fora.
-- **UI nova** (`minds_inspector.tscn`): cena + tecla + três providers injetados (src/main.gd:103, :104, :114) + render, duplicando o que `debug_line()` já imprime. Linhas reaproveitáveis: nenhuma, porque o arquivo não existe para medir.
+- **F3 estendida**: reaproveita o roster (src/main.gd:335-336), o laço por mente (src/ui/hud.gd:273-281) e a linha de narrativa. Custo em código que já existe: uma função ao lado de `debug_line()` (src/entities/wolf.gd:857-862) devolvendo o `_breakdown` inteiro (src/ai/utility_scorer.gd:109-110), mais 1 a 3 linhas no laço do HUD. Nada é jogado fora.
+- **UI nova** (`minds_inspector.tscn`): cena + tecla + três providers injetados (src/main.gd:131, :132, :142) + render, duplicando o que `debug_line()` já imprime. Linhas reaproveitáveis: nenhuma, porque o arquivo não existe para medir.
 - **Recomendação: F3 estendida** — é a mais barata que não desperdiça o existente e a única que fecha dentro de `--check-only` + suíte sem cena nova. A UI só se justifica se a trilha por nó do BT for exigida.
 
 ## 5. Constraint do mandato 2
 
-A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:27), escrita em :120 e lida só por `narration_of()` (:59-60) → HUD (src/main.gd:114 → src/ui/hud.gd:270-271). É verdade por fiação, não por verifier (docs/melhorias-status.md:50-50). O inspector **mostra, não decide**: pode ler `narration_of()` e as coleções; não pode chamar `reinforce()`/`remember()` (src/ai/mind.gd:86, :39) nem tocar `intent`. A escrita continua só nas transições do lobo (src/entities/wolf.gd:347, :453-458, :591).
+A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:47), escrita em :176 e lida só por `narration_of()` (:96-97) → HUD (src/main.gd:142 → src/ui/hud.gd:276-277). É verdade por fiação, não por verifier (docs/melhorias-status.md:68-68). O inspector **mostra, não decide**: pode ler `narration_of()` e as coleções; não pode chamar `reinforce()`/`remember()` (src/ai/mind.gd:86, :39) nem tocar `intent`. A escrita continua só nas transições do lobo (src/entities/wolf.gd:402, :514-515, :657-662, :817-819).
 
 ## 6. Gate em headless
 
 - Compilação: `godot --headless --path . --check-only --script src/ai/mind.gd` (e por arquivo alterado). Suíte: `godot --headless --path . tests/smoke_test.tscn`. Contagem publicada na revisão atual (`9f3622b`): **236 checagens / 0 falhas / 37,1 s** (docs/evidence/ether-massa-conservada/clone-suite.log:311, idem docs/evidence/ether-massa-conservada/readback.log:9 e as contagens de erro em :37). A rodada anterior, do `a8967e0`, é a de 232 / 0 / 33,7 s (docs/evidence/third-person-carry/clone-suite.log:307, readback.log:6 e :22).
-- Runner dedicado em `tests/`, no formato de tests/aether_reactions_test.gd, com critérios que PODEM falhar: (i) no round-trip de save, episódios (≤ 24), crenças e `trust` dos 5 lobos iguais aos valores antes do dump — checagem já existente em tests/smoke_test.gd:2225-2227, que o store não pode regredir; (ii) número de linhas de mente impressas == número de lobos vivos; (iii) considerações impressas == tamanho do `_breakdown` da opção escolhida, com veto valendo zero e não pontuando (src/ai/utility_scorer.gd:68-75).
+- Runner dedicado em `tests/`, no formato de tests/aether_reactions_test.gd, com critérios que PODEM falhar: (i) no round-trip de save, episódios (≤ 24), crenças e `trust` dos 5 lobos iguais aos valores antes do dump — checagem já existente em tests/smoke_test.gd:2305-2307, que o store não pode regredir; (ii) número de linhas de mente impressas == número de lobos vivos; (iii) considerações impressas == tamanho do `_breakdown` da opção escolhida, com veto valendo zero e não pontuando (src/ai/utility_scorer.gd:68-75).
 - Toda checagem nova **soma** na última linha: queda de contagem é `SCRIPT ERROR` matando passo, não sucesso.
 
 ## 7. Custo — as quatro perguntas

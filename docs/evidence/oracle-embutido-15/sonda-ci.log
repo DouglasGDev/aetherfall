@@ -1,0 +1,16 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+sonda 15  modo=ci  display=headless  keep=false  expect=reusado
+llm_host  ausente (runtime)  sem llama-server em res://tests/sem-runtime-15.exe
+llm_host  ausente (modelo)  sem modelo em res://models/sem-modelo-15.gguf
+sonda 15  ci: 2 frame(s) ate os dois estados ficarem decidiveis
+OK     binario ausente da o motivo do runtime  [estado=ausente (runtime)]
+OK     modelo ausente da o motivo do modelo  [estado=ausente (modelo)]
+OK     o F3 do runtime diz qual pack rodar  [llm: ausente (runtime)  rode tools\fetch_models.ps1 -Pack runtime]
+OK     o F3 do modelo diz qual pack rodar  [llm: ausente (modelo)  rode tools\fetch_models.ps1 -Pack mind-small]
+OK     os dois motivos nao sao a mesma frase  [runtime x modelo]
+OK     sem packs, zero pedidos HTTP  [pedidos=0+0]
+OK     sem packs, zero processos criados  [spawns=0+0]
+OK     o portao fecha o oraculo do jogo  [pedidos=0  estado=ausente (runtime)]
+OK     o diagnostico do jogo traz o bloco llm  [["state", "pid", "boot_ms", "loading_503", "retries", "requests", "kills", "spawned", "detail", "url"]]
+sonda 15  modo=ci  9 checagens  0 falhas  6.6 s  llm=llm: ausente (runtime)  rode tools\fetch_models.ps1 -Pack runtime
