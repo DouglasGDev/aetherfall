@@ -245,9 +245,9 @@ func _check_live() -> void:
 		if not (w.intent in ["patrol", "hunt", "investigate", "flee"]):
 			legal = false
 	_check("intento sempre valido", legal, intents.strip_edges())
-	# A matilha e injetada na sessao real, nao so no fixture do runner: o provedor
-	# tem de chegar bindado na identidade de cada lobo, e o rebuild do passo tem de
-	# ter visto par -- sem isso, "alcateia" seria numero de teste e nada no jogo.
+	# A matilha e injetada na sessao real, nao so no fixture do runner: o provedor tem
+	# de chegar bindado na identidade de cada lobo, e a premissa da checagem de baixo e
+	# mais forte que "o rebuild viu par" (furo #16): >= 2 vizinhos lidos, verde do mundo.
 	var pack_ok := true
 	var pack_lines := ""
 	var biggest := 0
@@ -261,9 +261,9 @@ func _check_live() -> void:
 	var n_alive: int = int(d["wolves_alive"])
 	var esperado: int = n_alive * (n_alive - 1) / 2
 	_check("alcateia existe na sessao real",
-			int(d["pack_pairs"]) == esperado and biggest >= 1,
-			"pares=%d  esperado=%d  maior_matilha_lida=%d lobos_vivos=%d" % [
-			int(d["pack_pairs"]), esperado, biggest, n_alive])
+			int(d["pack_pairs"]) == esperado and biggest >= 2,
+			"pares=%d  esperado=%d  maior_matilha_lida=%d lobos_vivos=%d  vizinhos=[%s]" % [
+			int(d["pack_pairs"]), esperado, biggest, n_alive, pack_lines.strip_edges()])
 
 
 ## O gate do movimento, medido em ticks proprios e com a situacao montada. O engine
