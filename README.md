@@ -211,17 +211,21 @@ A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois ha
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 
-**O pin de hoje é `252f1e7`**, a `main` do merge `--no-ff` da nota que fecha o dossiê 10 (rotinas de
-alcateia) sobre o degrau de código `0c38489`. A suíte re-rodada aqui dá **239 checagens, 0 falhas,
-38,4 s**, exit 0, zero `SCRIPT ERROR`; `src` = `c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a` e `tests` =
-`03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`, os mesmos dois hashes de `0c38489` (239 / 0 / 38,2 s),
-porque o delta entre as duas pontas é só `.md` e um `.log`. O clone limpo de `188490b`, sem `.godot/`
-e com `--import` frio exit 0, confere por execução o que o hash de árvore só sugere: **239 / 0 /
-38,6 s**. Os três tempos caem na faixa da escada (35,8 a 45,1 s); a prova de publicação é `git
-ls-remote --heads origin`, não o código de saída do push. Logs e conferência das quatro pontas estão
-em [docs/evidence/alcateia-rutinas/readback.md](docs/evidence/alcateia-rutinas/readback.md), §6-§8.
-O ruído mudou de família: as corridas da perna 10 dão **12 ObjectDB + 6 resources** na árvore de
-trabalho, no clone e nas duas `main` mergidas — atribuí-lo continua aberto, como na rodada de rastros.
+**O pin de hoje é `e7e0a1f`**, a `main` do merge `--no-ff` da perna 14 (convivência da alcateia) sobre
+a ponta de código `6e35b64`. A suíte na árvore mergida dá **246 checagens, 0 falhas, 39,8 s**, exit 0,
+zero `SCRIPT ERROR` nas duas correntes; `src` = `3eb42835a0e1f54086937d63258388f52e1db932` e `tests` =
+`8b8a5e471d737d6474eb6171bab6fdbeec75c06a` — os mesmos dois hashes do `6e35b64`, porque o delta entre
+as duas pontas é só `.md` e `.log`. O clone limpo de `6e35b64`, sem `.godot/` e com `--import` frio
+exit 0, confere por execução o que o hash de árvore só sugere: **246 / 0 / 37,0 s**. A escada da perna
+vai de 36,9 a 37,6 s na árvore de trabalho, e o `worst_sim_ms` do pin (**15,768 ms** dos 50 ms do
+passo, com `dropped_ticks = 0`) é o maior número da perna — uma corrida, não uma faixa: os degraus
+deram 10,338 a 12,971 ms e a re-corrida do fecho, na mesma árvore de código, deu 16,127 ms, que é o
+tamanho da variação desta máquina. A prova de publicação continua sendo `git ls-remote --heads origin`,
+não o código de saída do push. Logs e conferência dos degraus, do clone, do merge e do fecho estão em
+[docs/evidence/alcateia-convivio-14/readback.md](docs/evidence/alcateia-convivio-14/readback.md), com
+50 arquivos e `artifacts.sha256` (50 entradas) conferido. O par de vazamento do quit é, nesta
+perna, **8 a 12 ObjectDB com 4 resources** — o `resources` caiu de 6 para 4 em relação à perna 10 (pin anterior,
+`252f1e7`: 239 / 0 / 38,4 s), e atribuí-lo continua aberto.
 
 Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`

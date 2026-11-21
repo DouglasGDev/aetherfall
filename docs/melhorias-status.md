@@ -3289,7 +3289,7 @@ Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactio
 [:19-23](../tests/aether_reactions_test.gd#L19-L23). A suíte ficou em **246 checagens** do primeiro
 ao último degrau — o degrau (f) mudou uma asserção
 ([`biggest >= 2`](../tests/smoke_test.gd#L263-L266)), não o censo. Irmãos verdes em todos os degraus:
-áudio **73**, RNG **27**, journal **128**. Zero `SCRIPT ERROR` nos 45 logs arquivados.
+áudio **73**, RNG **27**, journal **128**. Zero `SCRIPT ERROR` nos 47 logs arquivados.
 
 - Base `a898fb2`: suíte `246 / 0 / 37,4 s`; runner `150 / 0`.
 - Ponto mais carregado da escada: `246 / 0 / 37,6 s` (`e_smoke2`); clone limpo:
@@ -3302,13 +3302,13 @@ ao último degrau — o degrau (f) mudou uma asserção
   com `trips = 0` em todas as corridas, inclusive nas vermelhas. `[NAO GATE P1]`, como impresso no log.
 
 Linhas literais de cada vermelho pago, e o verde do degrau seguinte, estão em
-[`readback.md`](evidence/alcateia-convivio-14/readback.md) §2, com o corpus de 45 logs e
-`artifacts.sha256` (45 entradas, `sha256sum -c` OK em todas) ao lado.
+[`readback.md`](evidence/alcateia-convivio-14/readback.md) §2, com o corpus de 50 logs e
+`artifacts.sha256` (50 entradas, `sha256sum -c` OK em todas) ao lado.
 
 ### O censo da sessão real — furo #16 pago
 
 O boot de `f_smoke.log` e o do clone imprimem os mesmos cinco lares: **42,5 / 48,3 / 50,4 / 51,6 /
-55,1 m** do jogador, `spawn RECUSADO` **zero** vezes nos dois, `maior_matilha_lida=4` com
+55,1 m** do jogador, `spawn RECUSADO:` **zero** vezes nos dois, `maior_matilha_lida=4` com
 `lobos_vivos=5`. Jogo e suíte partilham `SEED := 20261116`
 ([`src/main.gd:16`](../src/main.gd#L16), [`tests/smoke_test.gd:10`](../tests/smoke_test.gd#L10)),
 então são os mesmos cinco pontos do vale real. O que mudou o número não foi o raio de coesão: foi a
@@ -3318,7 +3318,7 @@ significa que um lobo a 42 m não se anuncia: o observável é o F3, uma linha p
 
 ### Furo #18 aberto por esta ponta
 
-O caminho de recusa no boot existe, foi escrito nesta perna e **nenhuma das 45 corridas o exerceu**:
+O caminho de recusa no boot existe, foi escrito nesta perna e **nenhuma corrida do corpus o exerceu**:
 se `_spawn_home_point` recusar, a vaga vai para a fila em [main.gd:303](../src/main.gd#L303) e só
 volta com `RESPAWN_DELAY` — e como a política de aviso é nenhuma frase de criatura na tela, um vale
 com um lobo a menos fica silencioso. O predicado está provado; a recuperação depois de uma recusa no
@@ -3331,17 +3331,64 @@ caminho normalizado, e um ponteiro que não aterrissa em arquivo existe entra na
 o `furo #14` tinha deixado de fora: um link `](oracle-embutido-15/readback.md)` escrito de
 `docs/melhorias-status.md` não achava `evidence/` e a gateira só olhava `#LNN` de `.gd`. Span de
 código inline é descartado antes do casamento, porque `` `[rótulo](alvo)` `` é exemplo de sintaxe,
-não link. O corpus inteiro, com este lote: **1 704 ponteiros, 109 rótulos, 1 605 links relativos,
-0 casos objetivos**, exit 0. O `readback.md` desta rodada, conferido por chamada explícita no
-instrumento (a regra do furo #14 mantém `docs/evidence/` fora do corpus varrido, porque prova pinada
-descreve a revisão em que foi medida): 24 ponteiros, 2 rótulos, 16 links, 0 casos.
+não link. O corpus inteiro, medido na ponta `b7a0120` desta branch (`python tools/check_doc_anchors.py
+--ref b7a0120`): **1 723 ponteiros, 117 rótulos, 1 623 links relativos, 0 casos objetivos**, exit 0. A
+escada do corpus, no mesmo instrumento: `a898fb2` e `6e35b64` dão 1 641 / 95 / 1 542 com **99** casos
+(as citações que a perna deixou velhas), `c4b48d1` dá 1 672 / 103 / 1 566 com **18** (as re-derivações
+de (i), antes da nota da rodada) e `b7a0120` zera. O `readback.md` desta rodada, conferido por chamada
+explícita no instrumento (a regra do furo #14 mantém `docs/evidence/` fora do corpus varrido, porque
+prova pinada descreve a revisão em que foi medida): 24 ponteiros, 2 rótulos, 16 links, 0 casos.
 
 ### O que nada disso fecha
 
-- **Nenhum gate de fase** (mandato 4). A suíte da `main` mergida ainda não está no corpus de
-  evidência: ela roda depois do `--no-ff` e entra como registro de fecho, como na perna 10.
+- **Nenhum gate de fase** (mandato 4). A perna pousou e está medida na `main` mergida
+  (`e7e0a1f`: **246 / 0 / 39,8 s**, §8 do readback), e nenhum número dela encerra P0 ou P1.
 - HOT agregado dos cinco lobos continua sem medição; a colheita do runner é um lobo por cenário e o
   `SubtreeGuard` cronometra só a árvore.
 - O `[OPEN]` de "como fica para quem não tem placa de vídeo" (extensão (3)) não é desta perna.
 - Fica do lado de fora, e continua sendo a próxima da fila: acasalamento com filhote que cresce e
   censo variável (11), bicho cavando voxel (12), árvore genealógica (13).
+
+## A `main` mergida da convivência (2026-11-21, ponta `e7e0a1f`)
+
+`git merge --no-ff feat/alcateia-convivio-14` trouxe a perna inteira: 7 arquivos de `src`/`tests`
+(`+1 028 / −42`), um de `tools/` (`+45 / −7`) e 72 de documentos, contrato e logs (`+10 361 / −668`),
+80 ao todo. A árvore de código da `main` mergida é a árvore da ponta
+da branch — `git rev-parse e7e0a1f:src 6e35b64:src` devolve o mesmo
+`3eb42835a0e1f54086937d63258388f52e1db932`, idem `tests` (`8b8a5e471d737d6474eb6171bab6fdbeec75c06a`)
+— então o clone limpo do §6 da evidência vale byte a byte para esta revisão, e o que se re-rodou aqui
+foi a suíte, não a confiança.
+
+Suíte headless em `e7e0a1f`: **246 checagens / 0 falhas / 39,8 s**, zero `SCRIPT ERROR` nas duas
+correntes, stderr de 249 bytes com o par de sempre (8 ObjectDB + 4 resources). Os cinco lares do boot
+são os mesmos valores da branch e do clone (48,3 / 50,4 / 42,5 / 55,1 / 51,6 m, linha
+`spawn RECUSADO:` zero vezes) e `maior_matilha_lida=4`. Diagnóstico: `gen_ms` **949,919**,
+`mesh_ms` **4 609,266**, `worst_sim_ms` **15,768**, `dropped_ticks` **0**.
+
+O `worst_sim_ms` é o maior número da perna e é uma corrida só, não uma faixa. A re-corrida deste fecho,
+na **mesma árvore de código**, deu **16,127** ms de pior passo com `gen_ms` 1 017,212 e `mesh_ms`
+4 977,391 (§9 do readback): entre as duas, o delta de `src` e `tests` é zero, então o que as duas
+medições dizem é o tamanho da variação desta máquina de corrida a corrida — maior que qualquer
+delta que a convivência pudesse introduzir, e sem atribuir custo a sistema nenhum. Os degraus da escada
+ficaram em 10,338–12,971 ms com a mesma janela de 20 Hz e nenhum tick perdido.
+
+Instrumento de âncoras na ponta mergida, agora com corrida arquivada em
+`merge-e7e0a1f-anchors.log`: o corpus pinado com `python tools/check_doc_anchors.py --ref e7e0a1f` dá
+**1 723 ponteiros, 117 rótulos, 1 623 links relativos, 0 casos objetivos**, exit 0 — os três mesmos
+números de `b7a0120`, e era isso que a merge tinha de devolver: `git rev-parse e7e0a1f^{tree}` e
+`b7a0120^{tree}` são o mesmo objeto `f50f0aa0`, porque o que a merge trouxe além de `.gd` foi só `.md`
+e `.log`. A leitura na árvore de trabalho deste fecho (a nota acima e o pin do README já dentro) é a
+mesma, e é a seção 2 do log.
+
+`artifacts.sha256` chegou a **50 entradas**: às 45 da branch somaram-se as duas correntes da suíte
+mergida, o log das âncoras e as duas correntes da re-corrida do fecho. `sha256sum -c` dá OK nas 50 e
+nenhuma das 45 anteriores mudou de hash. Antes de arquivar, os cinco foram varridos para conteúdo de
+credencial: nenhuma linha `--api-key`, `Bearer` ou `sk-` com valor, porque em headless o hospedeiro do
+modelo não levanta. O corpus inteiro é 50 `.log` + `readback.md` + os dois manifestos.
+
+A re-corrida do fecho (`fecho-suite.log`) é **verificação, não pin**: 246 checagens / 0 falhas /
+38,9 s, exit 0, zero `SCRIPT ERROR`, os mesmos cinco lares e `spawn RECUSADO:` zero, com
+`git rev-parse HEAD:src HEAD:tests` devolvendo os mesmos `3eb42835…` e `8b8a5e47…` da ponta de código
+`6e35b64`. O pin do README saiu de `252f1e7` (239 / 0 / 38,4 s, perna 10) e nomeia `e7e0a1f` com
+**246 / 0 / 39,8 s**. Nada aqui fecha gate de fase (mandato 4), e o furo #18 — a recusa de lar no boot
+sem corrida própria — continua aberto do lado da corrida.

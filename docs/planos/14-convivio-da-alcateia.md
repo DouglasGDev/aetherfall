@@ -33,7 +33,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
    *(Entregue: quem sorteia é [`_spawn_home_point`](../../src/main.gd#L385-L436) sobre as
    [`SPAWN_BANDS`](../../src/main.gd#L336), e cada candidata passa antes por
    [`_spawn_point_ok`](../../src/main.gd#L361-L366) — distância e visada contra o olho do jogador;
-   a recusa conta os motivos e imprime "spawn RECUSADO" em
+   a recusa conta os motivos e imprime "spawn RECUSADO:" em
    [:434-436](../../src/main.gd#L434-L436), sem fallback para o centro.)*
 
 ## 2. Estado real do código (lido, não medido)
