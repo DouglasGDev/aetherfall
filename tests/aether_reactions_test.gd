@@ -13,7 +13,8 @@ const TESTS: Array[StringName] = [
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
 	&"_test_locomotion_flat", &"_test_locomotion_wall",
-	&"_test_predicado_degrau_recusa_teto_baixo", &"_test_scent_cave_layer",
+	&"_test_degrau_de_um_bloco_lobo_sobe", &"_test_predicado_degrau_recusa_teto_baixo",
+	&"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 	&"_test_contagio_medo", &"_test_amortece_confianca",
@@ -23,7 +24,7 @@ const TESTS: Array[StringName] = [
 	&"_test_spawn_fora_da_vista_do_jogador",
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 ]
-const EXPECTED_CHECKS: int = 189
+const EXPECTED_CHECKS: int = 192
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -235,6 +236,24 @@ func _advance(ticks: int, move_body: bool = true) -> void:
 		if move_body:
 			for frame: int in 3:
 				_wolf._physics_process(SimClock.STEP / 3.0)
+
+
+## Lancamento = o frame em que a velocidade vertical SOU. Comparar com um limiar fixo
+## nao presta e ja enganou esta suite: com o impulso de 5,2 o frame seguinte caia abaixo
+## de 5 e cada salto contava um, por acaso; com o de 7,6 (STEP_JUMP, o conserto do
+## degrau) sete frames seguidos passariam de 5 e um unico salto viraria sete lancamentos.
+## O `> 0,0` importa: o pouso zera o vy no eixo Y (voxel_body.gd:103) e isso e parar, nao
+## subir. Chamar `_launch_watch` antes do laco, depois de armar o corpo.
+var _vy_prev: float = 0.0
+
+func _launch_watch(body: VoxelBody) -> void:
+	_vy_prev = body.velocity.y
+
+
+func _launched(body: VoxelBody) -> bool:
+	var up := body.velocity.y > _vy_prev + 0.5 and body.velocity.y > 0.0
+	_vy_prev = body.velocity.y
+	return up
 
 
 func _horizontal(v: Vector3) -> Vector3:
@@ -919,9 +938,7 @@ func _test_locomotion_flat() -> bool:
 			# o ultimo pedaco e a 538 ja sorteia outro, entao a transicao por `<= 0` nao ve
 			if _wolf._unstick > sticking_before + 0.05:
 				rearms += 1
-			# 5,2 e o impulso do salto (wolf.gd:541); no frame seguinte a gravidade ja o
-			# levou abaixo de 5, entao cada frame acima disso e um lancamento novo
-			if _wolf.body.velocity.y > 5.0:
+			if _launched(_wolf.body):
 				lancamentos += 1
 			var feet := _wolf.body.feet_pos
 			if feet.x < 40.0 or feet.x > 84.0 or feet.z < 40.0 or feet.z > 84.0:
@@ -974,6 +991,7 @@ func _test_locomotion_wall() -> bool:
 	_wall(BlockDefs.Block.STONE)
 	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
 	_advance(1, false)
+	_launch_watch(_wolf.body)
 	var frames: int = 0
 	var apoiados: int = 0
 	var bloqueados: int = 0
@@ -1006,7 +1024,7 @@ func _test_locomotion_wall() -> bool:
 				horizontais += 1
 			if _wolf._unstick > sticking_before + 0.05:
 				rearms += 1
-			if _wolf.body.velocity.y > 5.0:
+			if _launched(_wolf.body):
 				lancamentos += 1
 			# Encosto ou encaixe? O que a checagem abaixo exige e o volume do corpo
 			# inteiro fora de solido em todo frame. Quando ha sobreposicao, a sonda mede
@@ -1033,7 +1051,8 @@ func _test_locomotion_wall() -> bool:
 	_check(horizontais > 0, "na parede o integrador chama bloqueio horizontal",
 			"horizontais=%d bloqueados=%d frames=%d apoiados=%d pouso_bloqueado=%d" % [
 			horizontais, bloqueados, frames, apoiados, pouso_bloqueado])
-	_check(rearms > 0 and lancamentos > 0, "com parede de verdade o desvio re-arma e o corpo salta",
+	_check(rearms > 0 and lancamentos == 0,
+			"contra um muro de seis o desvio re-arma, mas nenhum salto e gasto: saltar ai e so perder altura",
 			"rearms=%d lancamentos=%d horizontais=%d frames=%d" % [
 			rearms, lancamentos, horizontais, frames])
 	_check(x_max < 63.0, "o corpo para do lado de ca da parede",
@@ -1043,6 +1062,61 @@ func _test_locomotion_wall() -> bool:
 			"encaixados=%d encaixe_max=%.3f mm frames=%d x_max=%.3f face_x=%.4f" % [
 			encaixados, encaixe_mm, frames, x_max, x_max + _wolf.body.dims.x * 0.5])
 	_wall(BlockDefs.Block.AIR)
+	return true
+
+
+func _test_degrau_de_um_bloco_lobo_sobe() -> bool:
+	# O braco que falta ao "ficam bugados" que o dono ve: o MESMO palco do cenario da
+	# parede -- plateu liso, rastro de WORK atras do solido, jogador longe para isso nao
+	# virar caca -- com um degrau de UM bloco em vez de seis. Nao entra um salto novo no
+	# lobo: o que ele ja dava era baixo demais, e isso e aritmetica do codigo, nao opiniao
+	# (5,2 m/s com gravidade 24 da apice de 0,563 m contra os 1,00 m da celula).
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_step_column([51])
+	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
+	_advance(1, false)
+	_launch_watch(_wolf.body)
+	var frames: int = 0
+	var ticks: int = 0
+	var invest_ticks: int = 0
+	var lancamentos: int = 0
+	var horizontais: int = 0
+	var x_max: float = _wolf.body.feet_pos.x
+	var y_max: float = _wolf.body.feet_pos.y
+	var encostou: bool = false
+	for i: int in 400:
+		ticks += 1
+		_advance(1, false)
+		if _wolf.intent == "investigate":
+			invest_ticks += 1
+		for f: int in 3:
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			frames += 1
+			x_max = maxf(x_max, _wolf.body.feet_pos.x)
+			y_max = maxf(y_max, _wolf.body.feet_pos.y)
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+			if _wolf.body.blocked_horizontal and _wolf.body.feet_pos.y < 51.5 \
+					and _wolf.body.feet_pos.x + Wolf.DIMS.x * 0.5 > 55.9:
+				encostou = true
+			if _launched(_wolf.body):
+				lancamentos += 1
+		if x_max > 58.0:
+			break
+	_check(_world.is_solid_xyz(56, 51, 54) and not _world.is_solid_xyz(56, 52, 54)
+			and invest_ticks >= 20 and encostou and horizontais > 0,
+			"premissa: degrau de um bloco no caminho, ar livre acima dele, rastro atras e o corpo encosta apoiado",
+			"degrau=%s ar_acima=%s investigate=%d/%d encostou=%s horizontais=%d x_max=%.3f y_max=%.3f alvo=%s" % [
+			_world.is_solid_xyz(56, 51, 54), _world.is_solid_xyz(56, 52, 54),
+			invest_ticks, ticks, encostou, horizontais, x_max, y_max, _wolf._move_target])
+	_check(y_max >= 51.001 + 0.95 and x_max > 57.0 and lancamentos > 0,
+			"o corpo sobe o degrau de um bloco e passa para o outro lado",
+			"y_max=%.3f ganho=%.3f m x_max=%.3f lancamentos=%d frames=%d tempo=%.1f s" % [
+			y_max, y_max - 51.001, x_max, lancamentos, frames,
+			float(frames) * SimClock.STEP / 3.0])
+	# A limpeza vem DEPOIS das checagens: apagada a coluna antes, a premissa acima
+	# perguntaria por um degrau que nao existe mais e acusaria o palco, nao o corpo.
+	_step_column([])
 	return true
 
 
@@ -2873,6 +2947,14 @@ func _test_feedback_do_jogador_continua_no_hud() -> bool:
 	_boot_session(5)
 	var s: Session = _session
 	var p: Player = _player
+	# O jogador e vivo por transicao real de morte, nao por campo escrito na mao: a
+	# suite roda uma vez e o cenario do spawn entrega o corpo no chao (os lobos agora
+	# sobem o degrau de um bloco e alcancam a plataforma), e `update_local` devolve
+	# cedo em corpo morto sem chamar `_update_target` -- a mira de (3) nao existiria.
+	# `s.respawn()` nao serve aqui: este runner monta a sessao a mao, sem o boot, e o
+	# `player.spawn_point` que ele usa so e escrito em `start()`/load (main.gd:114,
+	# :681), entao o respawn da sessao teletransportaria para o canto do mundo.
+	p.respawn_at(s.spawn_point())
 	p.inv.reset_default()
 	# (1) e (2) craft: a primeira receita de mao (1 madeira -> 4 tabuas) sem o
 	# ingrediente, depois com ele -- as duas branches do `_craft()` do painel.
@@ -2888,6 +2970,16 @@ func _test_feedback_do_jogador_continua_no_hud() -> bool:
 	p.pitch = -0.9
 	for _i: int in 2:
 		p.update_local(1.0 / 60.0)
+	# Premissa nomeada, com o numero que a decide: sem ela o silencio de (3) pode ser
+	# "a mira nao achou chao nenhum" (`_try_place` devolve em `not target_valid`,
+	# player.gd:676), que e outro defeito e merece outro letreiro.
+	var aim := _world.ray_voxel(p.eye_position(),
+			p.camera.global_transform.basis.z * -1.0, Player.REACH)
+	_check(p.alive and p.target_valid and aim.valid and aim.distance <= Player.REACH,
+			"premissa: vivo, sem entidade na mira e o raio achando o chao",
+			"vivo=%s hp=%.0f alvo='%s' valid=%s d=%.2f/%.1f voxel=%s" % [
+			p.alive, p.hp, p.look_target_name, p.target_valid,
+			aim.distance, Player.REACH, p.target_voxel])
 	p._try_place()
 	var slot_vazio: String = s.hud._toast.text
 	# (4) lavrar o que nao cabe: o inventario fecha antes do golpe, e `_mine_target`
