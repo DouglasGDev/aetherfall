@@ -513,7 +513,7 @@ func _pack_put(identity: int, other: Wolf) -> void:
 	e["identity"] = other.identity
 	e["pos"] = other.center()
 	e["intent"] = other.intent
-	e["hp_ratio"] = other.hp / Wolf.MAX_HP
+	e["hp_ratio"] = other.hp / other.max_hp()
 	# O trust vem como escalar ja publicado pelo lobo: um `mind.trust()` por par
 	# custaria um `str(ator)` novo por comparacao no caminho quente (dossie 10 §4).
 	e["trust"] = other.trust_toward_player

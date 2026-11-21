@@ -142,7 +142,7 @@ func _prompt_for(w) -> String:
 		+ "confianca no jogador %.2f; memorias recentes: %s; crencas: %s. "
 		+ "O que passa na cabeca dele agora?"
 	) % [
-		w.identity, w.intent, w.hp / w.MAX_HP * 100.0,
+		w.identity, w.intent, w.hp / w.max_hp() * 100.0,
 		w.hunger * 100.0, float(w.mind.trust(0)),
 		", ".join(recent), bl.strip_edges(),
 	]

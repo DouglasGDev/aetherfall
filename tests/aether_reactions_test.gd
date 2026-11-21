@@ -21,8 +21,9 @@ const TESTS: Array[StringName] = [
 	&"_test_dois_lobos_nao_farejam_a_mesma_celula", &"_test_alvo_estavel_por_segundo",
 	&"_test_spawn_fora_da_vista_do_jogador",
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
+	&"_test_filhote_cresce_por_tick",
 ]
-const EXPECTED_CHECKS: int = 183
+const EXPECTED_CHECKS: int = 190
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -1481,7 +1482,7 @@ func _test_pack_provider() -> bool:
 			var other: Wolf = _wolf_of(ws, int(e["identity"]))
 			if other == null or not (e["pos"] as Vector3).is_equal_approx(other.center()) \
 					or String(e["intent"]) != other.intent \
-					or not is_equal_approx(float(e["hp_ratio"]), other.hp / Wolf.MAX_HP) \
+					or not is_equal_approx(float(e["hp_ratio"]), other.hp / other.max_hp()) \
 					or not is_equal_approx(float(e["trust"]), other.trust_toward_player):
 				values_ok = false
 			if absf(float(e["trust"])) > 0.001:
@@ -2833,4 +2834,72 @@ func _test_feedback_do_jogador_continua_no_hud() -> bool:
 			"'%s' voxel=%d->%d espaco=%d" % [
 			cheio, antes, _world.get_block(p.target_voxel), p.inv.space_for(drop, 1)])
 	_pack_release()
+	return true
+
+
+## Checagem 3 do dossie 11 §5: o filhote cresce com o TICK de simulacao, e o corpo
+## que muda e o colisor, nao so o desenho (dossie 11 §3.2 -- `DIMS` para de ser o
+## corpo de todo mundo).
+##
+## A premissa nomeada e a que decide o numero: os unios limiares sao
+## `CUB_STEPS` e `JUVENILE_STEPS` PASSOS de 20 Hz, entao a fase tem de virar no
+## passo exato em que `age_ticks` cruza -- e um passo antes ainda nao. Um
+## relogio de parede (`Time.get_ticks_*`, `delta` de frame) nao teria como
+## reproduzir essa fronteira, e e ela que o journal podera conferir depois.
+##
+## O filhote entra em cena pela porta publica `set_phase()`, a mesma que a sessao
+## chama no nascimento (cenario 1, dossie 11 §3.4), e o `age_ticks = 0` e o que
+## aquela porta poe: nenhum campo interno escrito a mao. O ferimento vem de
+## `take_damage`, a unica transicao que fere um lobo no jogo.
+func _test_filhote_cresce_por_tick() -> bool:
+	_arm()
+	_wolf.set_phase(Wolf.Phase.CUB)
+	_wolf.age_ticks = 0
+	var escala_filhote: float = Wolf.PHASE_SCALE[Wolf.Phase.CUB]
+	var escala_jovem: float = Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]
+	_check(is_equal_approx(_wolf.dims.x, Wolf.DIMS.x * escala_filhote)
+			and is_equal_approx(_wolf.body.dims.y, Wolf.DIMS.y * escala_filhote)
+			and is_equal_approx(_wolf._visual.scale.x, escala_filhote)
+			and is_equal_approx(_wolf.max_hp(), Wolf.MAX_HP * escala_filhote)
+			and is_equal_approx(_wolf.bite_damage(), Wolf.BITE_DAMAGE * escala_filhote),
+			"premissa: filhote nasce com corpo, teto e boca da fase",
+			"escala=%.2f dims=%s colisor=%s max_hp=%.2f mordida=%.2f (adulto: dims=%s hp=%.1f)" % [
+			escala_filhote, _wolf.dims, _wolf.body.dims, _wolf.max_hp(), _wolf.bite_damage(),
+			Wolf.DIMS, Wolf.MAX_HP])
+	# Ferido de verdade, para a proporcao de vida ser um numero que nao pode
+	# coincidir por constricao: 0,5 atravessa os dois crescimentos.
+	_wolf.take_damage(_wolf.max_hp() * 0.5, Wolf.ACTOR_PLAYER, _wolf.center())
+	var proporcao: float = _wolf.hp / _wolf.max_hp()
+	_advance(Wolf.CUB_STEPS - 1, true)
+	_check(_wolf.phase == Wolf.Phase.CUB and _wolf.age_ticks == Wolf.CUB_STEPS - 1,
+			"um passo antes do limiar ainda e filhote",
+			"age_ticks=%d limiar=%d fase=%s" % [_wolf.age_ticks, Wolf.CUB_STEPS, _wolf.phase_name()])
+	_check(is_equal_approx(_wolf.body.aabb().size.y, _wolf.dims.y)
+			and _wolf.body.aabb().size.y < Wolf.DIMS.y and _wolf.body.on_ground,
+			"o colisor encolhe de verdade e o corpo continua apoiado",
+			"altura_colisor=%.3f altura_adulto=%.3f no_chao=%s andou=%s" % [
+			_wolf.body.aabb().size.y, Wolf.DIMS.y, str(_wolf.body.on_ground),
+			str(_wolf.body.feet_pos.distance_to(SPAWN) > 0.05)])
+	_advance(1)
+	_check(_wolf.phase == Wolf.Phase.JUVENILE and _wolf.age_ticks == Wolf.CUB_STEPS
+			and is_equal_approx(_wolf.dims.y, Wolf.DIMS.y * escala_jovem),
+			"no passo exato do limiar vira jovem",
+			"age_ticks=%d limiar=%d fase=%s dims=%s passos_andados=%d" % [
+			_wolf.age_ticks, Wolf.CUB_STEPS, _wolf.phase_name(), _wolf.dims, _wolf.age_ticks])
+	_advance(Wolf.JUVENILE_STEPS - Wolf.CUB_STEPS - 1)
+	_check(_wolf.phase == Wolf.Phase.JUVENILE,
+			"o jovem nao vira adulto antes do segundo limiar",
+			"age_ticks=%d faltam=%d para=%d" % [
+			_wolf.age_ticks, Wolf.JUVENILE_STEPS - _wolf.age_ticks, Wolf.JUVENILE_STEPS])
+	_advance(1)
+	_check(_wolf.phase == Wolf.Phase.ADULT and is_equal_approx(_wolf.dims.y, Wolf.DIMS.y)
+			and is_equal_approx(_wolf._visual.scale.x, 1.0),
+			"no passo do segundo limiar volta ao corpo historico medido nas rodadas 09 e 14",
+			"age_ticks=%d fase=%s dims=%s escala=%.2f" % [
+			_wolf.age_ticks, _wolf.phase_name(), _wolf.dims, _wolf._visual.scale.x])
+	_check(is_equal_approx(_wolf.hp / _wolf.max_hp(), proporcao)
+			and is_equal_approx(_wolf.max_hp(), Wolf.MAX_HP),
+			"a proporcao de vida atravessa os dois crescimentos sem perder sangue",
+			"proporcao %.4f -> %.4f  hp %.2f/%.2f" % [
+			proporcao, _wolf.hp / _wolf.max_hp(), _wolf.hp, _wolf.max_hp()])
 	return true
