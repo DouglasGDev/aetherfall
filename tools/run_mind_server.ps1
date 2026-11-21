@@ -19,13 +19,26 @@ param(
     [int]$Port = 8741,
     [int]$Ctx = 4096,
     [int]$GpuLayers = 99,
-    [string]$ApiKey = "aetherfall-mind-2026"
+    [string]$AppDataName = "Aetherfall"
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Server = Join-Path $Root ".tools\llama\runtime\llama-server.exe"
 $Model = Join-Path $Root "models\qwen3.5-4b-q4_k_m.gguf"
+
+# A chave nao mora neste arquivo. O jogo resolve ambiente -> arquivo -> 32 hex
+# sorteados e gravados (src/ai/mind_oracle.gd), e aqui leem-se as MESMAS duas
+# fontes. Subir com chave de gosto proprio e o 401 que o host le como servidor
+# estrangeiro, entao a ausencia recusa em vez de inventar.
+$KeyFile = Join-Path $env:APPDATA "Godot\app_userdata\$AppDataName\mind_key.txt"
+$ApiKey = $env:AETHERFALL_MIND_KEY
+if (-not $ApiKey -and (Test-Path $KeyFile)) {
+    $ApiKey = (Get-Content -Raw -Path $KeyFile).Trim()
+}
+if (-not $ApiKey) {
+    throw "sem chave: rode o jogo uma vez (ela nasce em $KeyFile) ou defina AETHERFALL_MIND_KEY"
+}
 
 if (-not (Test-Path $Server)) {
     throw "runtime ausente: rode tools\fetch_models.ps1 -Pack runtime"
