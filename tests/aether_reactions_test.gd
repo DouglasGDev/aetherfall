@@ -23,9 +23,9 @@ const TESTS: Array[StringName] = [
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 	&"_test_filhote_cresce_por_tick",
 	&"_test_acasalar_aumenta_censo", &"_test_cooldown_segunda_copula",
-	&"_test_censo_respeita_teto",
+	&"_test_censo_respeita_teto", &"_test_filhote_nao_morde",
 ]
-const EXPECTED_CHECKS: int = 202
+const EXPECTED_CHECKS: int = 206
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -65,7 +65,7 @@ var _pack_bt_us: int = 0
 var _pack_bt_worst_us: int = 0
 var _pack_bt_trips: int = 0
 # Mordidas colhidas pelo sinal real `bit_player` da sessao, como
-# [tick, identidade, n lido, rank lido, intent]: a contagem por tick e o numero que
+# [tick, identidade, n lido, rank lido, intent, fase]: a contagem por tick e o numero que
 # o escalonamento exige, e o sinal e a unica forma de ver a mordida sem ler um campo
 # escrito a mao.
 var _bite_events: Array = []
@@ -105,6 +105,13 @@ const ESCALONAR_SPOTS: Array = [
 	Vector3(59.5, 51.001, 62.0), Vector3(56.5, 51.001, 62.0),
 	Vector3(58.0, 51.001, 63.5), Vector3(58.0, 51.001, 60.5),
 ]
+
+# Geometria da checagem 4 (dossie 11 §5): o filhote no MESMO anel de mordida dos
+# quatro adultos, na diagonal -- 1,5 m horizontal do jogador (1,52 m na conta 3D
+# do `_sense`, com o corpo 0,45 do filhote baixando o centro) e 1,15 m dos dois
+# vizinhos de anel. Os quatro cardeais ja estao tomados, entao a unica diferenca
+# entre ele e eles e a fase do corpo.
+const FILHOTE_SPOT := Vector3(59.0607, 51.001, 63.0607)
 
 # Geometria do contagio de medo: 20 m separam o observador (lobo 1) do vizinho que
 # foge (lobo 0) -- dentro do raio de coesao de 24 m, mas a cinco celulas de Eter
@@ -2609,11 +2616,14 @@ func _corrida_mordidas(fase_entrada: int, passos: int) -> Dictionary:
 	}
 
 
-## O sinal da sessao entregue ao runner: `[tick, identidade]` de cada mordida.
-## Os argumentos do `bind` vao DEPOIS dos do sinal, e a assinatura espelha isto.
+## O sinal da sessao entregue ao runner: `[tick, identidade, n lido, rank lido,
+## intent, fase]` de cada mordida. Os argumentos do `bind` vao DEPOIS dos do sinal,
+## e a assinatura espelha isto. A fase entra com a checagem 4 do dossie 11: separar
+## a mordida que nao deveria existir de nenhuma outra exige saber de que corpo ela
+## saiu, e nao so de que identidade.
 func _on_bit_observed(wolf: Wolf, _amount: float, ident: int) -> void:
 	_bite_events.append([_clock.tick, ident, wolf._hunt_pack_size(),
-			wolf._hunt_pack_rank(), wolf.intent])
+			wolf._hunt_pack_rank(), wolf.intent, wolf.phase_name()])
 
 
 ## Angulo horizontal do alvo escrito pelo lobo em torno da presa, no eixo do mundo.
@@ -3135,5 +3145,131 @@ func _test_censo_respeita_teto() -> bool:
 			"censo=%d nascimentos=%d recusas=%d adultos=%d fechamento=%d" % [
 			d2["wolves"], d2["births"], d2["census_refusals"], adultos,
 			int(d0["wolves"]) + int(d2["births"]) - int(d0["births"])])
+	_pack_release()
+	return true
+
+
+## Checagem 4 do dossie 11 §5: o filhote nunca emite `bit_player`. A geometria e a
+## do ataque escalonado, ja provada nesta suíte: quatro adultos a 1,5 m do jogador,
+## todos em `hunt`, cada assento mordendo no seu `tick % 4`. O filhote entra no
+## mesmo anel pela unica porta que poe um lobo no mundo -- `_make_wolf` com a fase e
+## a idade que `_born_from` passa (§3.4) -- entao a diferenca entre ele e os quatro
+## e so a fase do corpo: mesmo alcance, mesma visada, mesma leitura da matilha.
+##
+## O portao esta no scorer e nao na arvore, e a checagem 4 e o que paga essa
+## escolha: travar só o `Selector` deixaria o filhote publicando `hunt`, os irmãos
+## contando um assento a mais e o F3 mentindo. Aqui os quatro numeros se fecham:
+## 1. premissa -- o filhote esta ao alcance, visado, vivo e lido pelos quatro;
+##    sem isto "zero mordidas" e ausencia de bicho na cena, nao portao.
+## 2. controle -- na MESMA janela os quatro adultos mordem; sem isto o zero poderia
+##    ser o caminho da mordida quebrado (ciclo 3: a atribuicao fecha nos dois
+##    sentidos).
+## 3. nenhum `bit_player` do filhote em 120 passos -- cinco janelas de
+##    `BITE_COOLDOWN` de 1,15 s -- e nenhum passo dele com `intent == hunt`.
+## 4. o assento nao o conta: cada adulto le quatro vizinhos (tres adultos + o
+##    filhote) e no tick em que os quatro caçam o cerco continua com quatro assentos
+##    -- contando o filhote seriam 5, e nenhum `n` de mordida chega lá. No fim da
+##    janela a conta e relida contra os cacadores daquele momento, porque o sangue
+##    que as próprias mordidas imprimem puxa parte da matilha para `investigate`:
+##    isso e o mundo reagindo, nao folga escondendo o numero.
+func _test_filhote_nao_morde() -> bool:
+	_arm()
+	_pack_session(4)  # roda de acasalamento congelada: aqui o censo nao e a variavel
+	for i: int in 4:
+		_pack_place(i, CERCAR_SPOTS[i])
+	_player.respawn_at(CERCAR_PLAYER)
+	var aquecimento := -1
+	for i: int in 40:
+		_advance_pack(1)
+		if _caadores(4) == 4:
+			aquecimento = _clock.tick
+			break
+	var s: Session = _session
+	for i: int in 4:
+		_pack_place(i, ESCALONAR_SPOTS[i])
+	var filhote: Wolf = s._make_wolf(FILHOTE_SPOT, s._next_identity, Wolf.Phase.CUB, 0)
+	s._next_identity += 1
+	s.wolves.append(filhote)
+	var adultos: Array = []
+	for w: Wolf in _pack_wolves():
+		if w != filhote:
+			adultos.append(w)
+			w.bit_player.connect(_on_bit_observed.bind(w.identity))
+	filhote.bit_player.connect(_on_bit_observed.bind(filhote.identity))
+	_bite_events.clear()
+	# Um passo antes de medir: sem ele a leitura da matilha ainda seria a do tick
+	# anterior ao recem-chegado, e a premissa 1 seria conferida numa lista velha.
+	_advance_pack(1)
+	var lidos := 0
+	for w: Wolf in adultos:
+		for e: Dictionary in w._pack:
+			if int(e["identity"]) == filhote.identity:
+				lidos += 1
+	_check(filhote.alive and filhote.phase == Wolf.Phase.CUB
+			and filhote._dist_player <= Wolf.BITE_RANGE and filhote._los_player
+			and lidos == 4,
+			"premissa: o filhote esta no anel da mordida, visado e lido pelos quatro",
+			"dist=%.2f m alcance=%.2f los=%s fase=%s lidos=%d/4 censo=%d" % [
+			filhote._dist_player, Wolf.BITE_RANGE, str(filhote._los_player),
+			filhote.phase_name(), lidos, s.wolves.size()])
+	var n_max := 0
+	var n_com_quatro := -1
+	var cacadores_max := 0
+	var intents := {}
+	for i: int in 120:
+		_advance_pack(1)
+		intents[filhote.intent] = int(intents.get(filhote.intent, 0)) + 1
+		var caando := 0
+		var n_do_tick := 0
+		for w: Wolf in adultos:
+			if w.intent == "hunt":
+				caando += 1
+				n_do_tick = w._hunt_pack_size()
+				n_max = maxi(n_max, n_do_tick)
+		# O numero que importa: no tick em que os quatro cacam, com o filhote na
+		# leitura de todos, o cerco tem de continuar tendo quatro assentos. Se o
+		# filhote entrasse na conta, aqui seria 5.
+		if caando == 4 and n_com_quatro < 0:
+			n_com_quatro = n_do_tick
+		cacadores_max = maxi(cacadores_max, caando)
+	var mordidas_adultas := 0
+	var mordidas_filhote := 0
+	var mordedores := {}
+	var por_n := {}
+	for ev: Array in _bite_events:
+		if String(ev[5]) == "filhote":
+			mordidas_filhote += 1
+		else:
+			mordidas_adultas += 1
+			mordedores[int(ev[1])] = true
+		por_n[int(ev[2])] = int(por_n.get(int(ev[2]), 0)) + 1
+	var n_str := ""
+	for k: int in por_n:
+		n_str += "n%d=%d " % [k, por_n[k]]
+	var intents_str := ""
+	for k: String in intents:
+		intents_str += "%s:%d " % [k, intents[k]]
+	_check(mordidas_adultas >= 4 and mordedores.size() == 4 and cacadores_max == 4,
+			"controle: na mesma janela os quatro adultos mordem e estao no cerco",
+			"mordidas_adultas=%d mordedores=%d cacadores_max=%d passos=120 cooldown=%.2f s aquecimento_tick=%d" % [
+			mordidas_adultas, mordedores.size(), cacadores_max, Wolf.BITE_COOLDOWN,
+			aquecimento])
+	_check(mordidas_filhote == 0 and not intents.has("hunt"),
+			"o filhote nunca emite bit_player e nunca intenta caar",
+			"mordidas_filhote=%d intents_do_filhote=[%s] alcance=%.2f m" % [
+			mordidas_filhote, intents_str.strip_edges(), filhote._dist_player])
+	var primeiro: Wolf = adultos[0]
+	var vizinhos := primeiro._pack.size()
+	var no_cerca := primeiro._hunt_pack_size()
+	var cacadores_agora := 0
+	for w: Wolf in adultos:
+		if w != primeiro and w.intent == "hunt":
+			cacadores_agora += 1
+	_check(vizinhos == 4 and n_com_quatro == 4 and n_max == 4 and not por_n.has(5)
+			and no_cerca == 1 + cacadores_agora,
+			"o assento angular le o filhote na matilha mas nunca o conta no cerco",
+			"vizinhos_lidos=%d com_quatro_cacando_n=%d n_max=%d n_agora=%d cacadores_agora=%d esperados=%d mordidas_por_n=[%s] (contando o filhote seriam 5)" % [
+			vizinhos, n_com_quatro, n_max, no_cerca, cacadores_agora,
+			1 + cacadores_agora, n_str.strip_edges()])
 	_pack_release()
 	return true

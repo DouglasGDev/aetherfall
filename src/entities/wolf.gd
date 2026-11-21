@@ -446,6 +446,9 @@ func _leaf_chase(_ctx: Dictionary) -> bool:
 ## Quantos lobos estao no cerco neste tick: eu mais os vizinhos que a leitura da
 ## sessao devolve em `hunt`. O espacamento angular sai daqui, entao o assento e
 ## funcao de quem caa de fato, nao do censo da matilha nem de um N fixo.
+## O filhote nunca entra nesta conta -- e nao por um filtro de fase aqui: o portao
+## do scorer (dossie 11 §3.3) impede que ele alguma vez publique `hunt`, entao o
+## mesmo portao fecha a mordida, o assento e a linha do debug.
 func _hunt_pack_size() -> int:
 	var n := 1
 	for e: Dictionary in _pack:
@@ -744,6 +747,16 @@ func _build_scorer() -> void:
 			0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
 	hunt.add("coragem contra este ator", func(_c: Dictionary) -> float: return _courage,
 			0.5, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
+	# Dossie 11 §3.3: o filhote fica FORA do ramo de caca -- nao morde, nao persegue,
+	# nao ocupa assento no cerco. O portao mora aqui e nao na arvore porque `intent`
+	# tem tres leitores: a arvore, o assento angular (`_hunt_pack_size`/`_rank`
+	# contam vizinhos POR INTENT, dossie 10 §3.5) e o F3/journal. Travar so o
+	# `Selector` deixaria o filhote no papel de cacador aos olhos dos irmaos -- o
+	# cerco ficaria com um assento a mais, vazio -- e com o numero mentindo no debug.
+	# O jovem (0,72 do corpo) ja caa: o portao e da fase filhote, nao da idade.
+	hunt.add("filhote nao caa", func(_c: Dictionary) -> float:
+			return 0.0 if phase == Phase.CUB else 1.0,
+			0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
 
 	var sniff := _scorer.add_option("investigate")
 	sniff.add("rastro no ar", func(_c: Dictionary) -> float: return _scent_strength,
