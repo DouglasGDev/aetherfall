@@ -391,7 +391,9 @@ predicado "ponto longe dos olhos do jogador" tem de existir antes de o 11 precis
 filhote no mundo; o 13 fecha a fila porque ascendência só tem o que gravar depois de existir
 nascimento por causa interna. Nada aqui é código: as duas pernas estão abertas como dossiê e nenhum
 gate delas foi fechado. A fila acima é a que `5108229` escreveu e `4ac5838` publica, já substituída
-pela extensão (3), abaixo deste parágrafo e no contrato; nesta ponta, concluídas são **duas** — 09 e 10.
+pela extensão (3), abaixo deste parágrafo e no contrato. Desde aquela nota, concluídas são **quatro**
+— 09, 10, 15 e 14 (a 14 publicada na ponta `630c25a`, pin `d4dee0f`), e o elo aberto seguinte da fila é
+a 11.
 
 ## Falta
 
@@ -3153,7 +3155,9 @@ do repositório: `tools/check_doc_anchors.py` entrou versionado em `b86c360`, en
 clone limpo roda a mesma conferência, e é assim que o furo #14 deixa de ser dívida.
 
 Nada disso fecha gate de fase. A perna 15 é o hospedeiro do modelo no boot; o próximo elo da fila
-serializada é a 14 (convivência da alcateia), e o HOT agregado dos cinco lobos continua por colher.
+serializada era a 14 (convivência da alcateia), que fechou depois desta nota e hoje tem pin próprio
+(`d4dee0f`), e o elo seguinte passou a ser a 11 (acasalamento, filhote que cresce e censo variável).
+O HOT agregado dos cinco lobos continua por colher.
 
 ## A chave do oráculo sai do repositório (2026-11-21, ponta `f4ca1bb` em `fix/chave-do-oraculo-fora-do-git-15`)
 
