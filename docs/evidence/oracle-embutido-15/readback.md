@@ -10,10 +10,13 @@ caminho inventado para a corrida passar.
 
 Assets da corrida: `.tools/llama/runtime/llama-server.exe` (9 728 B, llama.cpp
 `b12499-401563f10`, lido do `/props`) e `models/qwen3.5-4b-q4_k_m.gguf`
-(2 740 937 888 B). A chave que aparece nos `create_process` e nos curls —
-`aetherfall-mind-2026` — é a constante do próprio repositório
-(`src/ai/mind_oracle.gd:20`), servida só em `127.0.0.1`; não é credencial a
-proteger, e por isso pode ficar literal nos logs.
+(2 740 937 888 B). A chave que aparece nos `create_process` e nos curls está
+mascarada aqui como `<chave-redactada>`, em todos os arquivos deste diretório. Na
+corrida ela era a constante do repositório (`src/ai/mind_oracle.gd:20` à época),
+servida só em `127.0.0.1`; em 2026-11-21 o dono decidiu que nenhuma credencial fica
+num repo público, e a chave hoje nasce de ambiente ou de arquivo
+(`MindOracle.resolve_api_key()`). O resto das linhas continua literal — só o valor
+da chave saiu daqui, e os SHA-256 de `artifacts.sha256` são dos arquivos mascarados.
 
 Os arquivos abaixo são tudo o que a perna mediu: quatro suítes com seus `-err`,
 o par da janela de produto, as cinco sondas com os dois vermelhos antes/depois,
@@ -73,7 +76,7 @@ não se reproduz nesta máquina.
 
 ```
 llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
-llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (sem servidor na porta 8741)
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key <chave-redactada>  (sem servidor na porta 8741)
 llm_host  carregando  pid 26852  boot do modelo iniciado  (1/1 spawn)
 llm_host  pronto  boot 2762 ms  503=11  pid 26852
 llm_host  encerrando pid 26852  OK
@@ -160,7 +163,7 @@ cadeia de estados depois da morte:
 
 ```
 llm_host  caiu  is_process_running falso no pid 27104  (codigo 1)  retentativa 1/1
-llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (retentativa 1/1 apos is_process_running falso no pid 27104)
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key <chave-redactada>  (retentativa 1/1 apos is_process_running falso no pid 27104)
 llm_host  carregando  pid 10556  boot do modelo iniciado  (2/1 spawn)
 llm_host  pronto  boot 2614 ms  503=20  pid 10556
 OK     uma unica retentativa  [retentativas=1]

@@ -8,7 +8,7 @@ $Proj  = "C:\Aetherfall\.tools\wt-code-15"
 $Log   = "C:\Aetherfall\.tools\logs15\janela-embedded.log"
 $env:AETHERFALL_LLM_SERVER = "C:/Aetherfall/.tools/llama/runtime/llama-server.exe"
 $env:AETHERFALL_LLM_MODEL  = "C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf"
-$Hdr = @{ Authorization = "Bearer aetherfall-mind-2026" }
+$Hdr = @{ Authorization = "Bearer <chave-redactada>" }
 
 function Probe-Port() {
     try {

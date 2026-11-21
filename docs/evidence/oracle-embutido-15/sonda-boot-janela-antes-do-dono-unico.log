@@ -4,9 +4,9 @@ Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
 sonda 15  modo=boot  display=Windows  keep=false  expect=reusado
 llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
 llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
-llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (sem servidor na porta 8741)
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key <chave-redactada>  (sem servidor na porta 8741)
 llm_host  carregando  pid 2556  boot do modelo iniciado  (1/1 spawn)
-llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key aetherfall-mind-2026  (sem servidor na porta 8741)
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key <chave-redactada>  (sem servidor na porta 8741)
 llm_host  carregando  pid 27328  boot do modelo iniciado  (1/1 spawn)
 llm_host  pronto  boot 3255 ms  503=13  pid 2556
 llm_host  pronto  boot 3252 ms  503=13  pid 27328

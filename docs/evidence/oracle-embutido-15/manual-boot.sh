@@ -6,7 +6,7 @@
 set -u
 SERVER="/c/Aetherfall/.tools/llama/runtime/llama-server.exe"
 MODEL="/c/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf"
-KEY="aetherfall-mind-2026"
+KEY="<chave-redactada>"
 OUT="/c/Aetherfall/.tools/logs15/manual-server.log"
 HDR="Authorization: Bearer $KEY"
 
