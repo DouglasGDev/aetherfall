@@ -1,13 +1,13 @@
 # 03 — Canais MORTE / SOM / FOGO no `AetherField`
 
-Plano do item 4 de "Falta" (`docs/melhorias-status.md:308-312`). Nenhum número aqui é de
+Plano do item 4 de "Falta" (`docs/melhorias-status.md:359-367`). Nenhum número aqui é de
 corrida nova: eu não rodei engine nem suíte. Onde não há log, diz "não medido".
 
 **Estado em 2026-11-19 (mudado por execução, não por leitura):** o **passo 1 do §7** — a colheita
 sem canal novo — foi rodado, medido e publicado em `9f3622b`; §5, §7, §8 e a nota de contagem do §9
 foram atualizados com os números daquele clone. Nada do §2 em diante (canais MORTE/SOM/FOGO) saiu,
 e `Channel.COUNT` continua 3. A nota de medição está em
-`docs/melhorias-status.md:1236-1316`.
+`docs/melhorias-status.md:1437-1518`.
 
 ## 1. Premissa nomeada
 
@@ -25,34 +25,34 @@ logo o trabalho é ligar fonte a consumidora, não acrescentar linhas em tabelas
 | decaimento | `HALF_LIFE = [90.0, 55.0, 120.0]`, **lido** em `keep = pow(0.5, elapsed / HALF_LIFE[ch])` | `aether_field.gd:13`, uso em `:120` |
 | fluxo | `DIFFUSE_RATE = [0.06, 0.16, 0.10]`; corte `MIN_VALUE 0,004` (`:16`), teto `MAX_VALUE 4,0` (`:17`) | `aether_field.gd:15` |
 | cor | `CHANNEL_COLOR` com 3 entradas | `src/rendering/aether_viz.gd:12-16` |
-| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1118-1118` |
+| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:855-856` |
 | porta de escrita | `imprint(world_pos, ch, amount)` — posição primeiro, canal segundo | `aether_field.gd:87-89` |
-| fontes reais | medo no spawn `main.gd:192`; lavra 0,42 / colocação 0,20 `main.gd:271-273`; sangue 0,22 `main.gd:307`; morte do jogador `main.gd:312-313`; lobo ferido `wolf.gd:612-613`; lobo morto `wolf.gd:631-632`; medo do lobo `wolf.gd:223`, sangue `wolf.gd:345` | as fontes dos 3 canais novos: **zero ocorrências** |
-| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:150`, constante `src/main.gd:12` |
+| fontes reais | medo no spawn `main.gd:252`; lavra 0,42 / colocação 0,20 `main.gd:331-333`; sangue 0,22 `main.gd:367`; morte do jogador `main.gd:372-373`; lobo ferido `wolf.gd:612-613`; lobo morto `wolf.gd:631-632`; medo do lobo `wolf.gd:223`, sangue `wolf.gd:345` | as fontes dos 3 canais novos: **zero ocorrências** |
+| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:228`, constante `src/main.gd:12` |
 | alocação | `var hot := PackedInt32Array()` **por canal por passada** (3/s de lógica → 12/s); o scratch `_nb_i`/`_nb_w` é reusado (`:38-39`, `:162-163`) | `aether_field.gd:122` |
 | rastreamento | `_find_scent()`: 7×7 = 49 células × 3 `sample_cell` = **147 leituras na camada própria**; se nenhuma passa de `0,06` ali, o mesmo 7×7 se repete em ±1 camada com 2 canais — **98 por camada vizinha aberta**, 196 se as duas abrem. Peso `blood + work*0,35`, camada Y vem de `cell_of_world(center())`; memória 32 células / 30 s / renovação 0,06 | `src/entities/wolf.gd:462-506` (gate do escalonamento `:478-481`, loops `:482-483`, célula `:484`, peso `:486-487`, canal `:498`, `cell_of_world` `:471`), constantes `wolf.gd:27-34`; custo medido em `docs/evidence/rastro-duas-camadas/readback.log` |
 | consumidoras | `flee`: `_fear_level` peso 1,7 e `1-_fear_level` 0,8; `investigate`: `_scent_strength` 1,6 + veto `ha rastro`; `_fear_level = fear*0,85 + threat*0,9 + blood*0,35`; amostras por tick `wolf.gd:443-445` | `wolf.gd:357-399`, `wolf.gd:448`; mecanismo e normalização por `weight_sum` em `src/ai/utility_scorer.gd:73-75`, histerese `min_lead 0,06` em `:41` |
 | som | `AudioDirector` é leitor por contrato ("nao toca no Eter", `:3-5`); constantes `:11-44`; pool `:310-325` (`:314` é `max_distance`); posição de playback real em `_voice_index()` `:334+` | `src/audio/audio_director.gd` |
 
 **Meia-vida: a afirmação de quem veio antes está errada.** `diffuse_and_decay` lê `HALF_LIFE` a
-cada canal (`aether_field.gd:120`) e `elapsed` é 0,25 s (`main.gd:12`, `:150`), então o fator por
+cada canal (`aether_field.gd:120`) e `elapsed` é 0,25 s (`main.gd:12`, `:210`), então o fator por
 passada é 0,9980764 (WORK, perda 0,192%), 0,9968542 (BLOOD, 0,315%) e 0,9985570 (FEAR, 0,144%) —
 três valores distintos, razão 2,18× entre sangue e medo. O "11,33% por passada, 4,8 s efetivos,
 igual para os três" não sai dessa aritmética (11,33% exigiria elapsed/HL = 0,1736, ou seja, ~20,8
 s de lógica numa passada). Não há "outro mecanismo que zera o campo": `:128-129` é `if rate <= 0.0:
 continue` e o único zeramento é o corte espacial de `MIN_VALUE` em `:149-152`, com a quantia
 colhida em `pass_cut[ch]` (`:153`). Isto era `[MEASURED]` **de leitura de código**, com o resto sem
-corrida: a checagem `meia-vida reduziu a energia` só afirma `e2 < e1` (`tests/smoke_test.gd:702`) e
+corrida: a checagem `meia-vida reduziu a energia` só afirma `e2 < e1` (`tests/smoke_test.gd:717`) e
 o log da rodada do `a8967e0` mostrava 2.500 → 2.296
 (`docs/evidence/third-person-carry/clone-suite.log:68`), 8,16% de perda onde `HALF_LIFE[FEAR]` prevê
 1,15% em 8 passadas (0,9985570^8 = 0,98850 → 2,471). **A metade não medida saiu em `9f3622b`:** os
-0,175 de diferença são `0,176129` de corte, colhidos na cadeia de `tests/smoke_test.gd:674-687` e
+0,175 de diferença são `0,176129` de corte, colhidos na cadeia de `tests/smoke_test.gd:689-702` e
 impressos por `:692-702`. O parágrafo acima deixa de ser débito e passa a ser §8.
 
 ## 3. Por canal novo
 
 **MORTE.** Fonte: os caminhos de morte já existem e já imprimem sangue+medo
-(`wolf.gd:631-632`, `main.gd:312-313`); o canal MORTE seria um quarto registro no mesmo ponto,
+(`wolf.gd:631-632`, `main.gd:372-373`); o canal MORTE seria um quarto registro no mesmo ponto,
 com `amount` e meia-vida próprios. Leitor: `investigate` (carcaça vale mais que rastro) e uma
 nova consideração em `flee`. Curva que muda: `sniff` hoje soma 3,3 de peso e `flee` 5,3
 (`wolf.gd:357-399`); como a pontuação é normalizada por `weight_sum` (`utility_scorer.gd:75`),
@@ -60,7 +60,7 @@ toda consideração nova **reescala as opções existentes** — com `min_lead` 
 intenção sem que ninguém queira. Custo: +16.384 células (65.536 B em `_cur` + 65.536 B em `_nxt`),
 +1 `PackedInt32Array` por passada, +49 leituras por scan de lobo e +1 leitura por `sim_step`
 (100 reads/s para 5 lobos).
-**SOM.** Fonte legítima é o evento de mundo (lavra `main.gd:271`, colocação `:273`, dano
+**SOM.** Fonte legítima é o evento de mundo (lavra `main.gd:331`, colocação `:333`, dano
 `wolf.gd:612`, morte `:606`), **nunca** o `AudioDirector`: imprimir do diretor acoplaria áudio ao
 hash por tick, e a invariância do hash com som ligado é medida (`audio_director.gd:3-5`). Passo do
 jogador como evento de mundo: não verifiquei `player.gd` aqui. Leitor: `investigate` (virar o
@@ -73,7 +73,7 @@ sem fonte, seria a tabela do §1 violada. Fica `[TARGET]` até existir bloco ou 
 
 ## 4. Custo — as quatro perguntas
 
-Roda **por passada de 0,25 s** (difusão, `main.gd:150`) e **por evento** (imprint), não por frame;
+Roda **por passada de 0,25 s** (difusão, `main.gd:210`) e **por evento** (imprint), não por frame;
 a leitura é **por tick de simulação** por lobo vivo (`wolf.gd:443-445`) e **a cada 0,25 s** no scan
 (`wolf.gd:467`). Entidades alcançadas: 5 lobos (`main.gd:9`), 1 jogador, 16.384 células por canal
 — com 6 canais o laço de `:123` e o de zeramento `:149` dobram (49.152 → 98.304 iterações por
@@ -90,7 +90,7 @@ ficou melhor: ainda não sei — não existe log de custo por canal; o primeiro 
 
 Contagem hoje: **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
 (`docs/evidence/ether-massa-conservada/clone-suite.log:311`; as quatro ocorrências antigas de 232
-em `melhorias-status.md` — `:91`, `:249`, `:665`, `:702` — são da rodada do `a8967e0` e continuam
+em `melhorias-status.md` (91, 249, 665 e 702 na numeração da época) são da rodada do `a8967e0` e continuam
 certas porque mediram o clone daquele commit). O runner dedicado é `godot --headless --path . --script
 tests/aether_reactions_test.gd`, hoje **109 checagens** (`EXPECTED_CHECKS`,
 `tests/aether_reactions_test.gd:16`, 21 cenários `:7-15`), medida no clone limpo de `ff347d2`:
@@ -105,7 +105,7 @@ tests/aether_reactions_test.gd`, hoje **109 checagens** (`EXPECTED_CHECKS`,
    (b) meia-vida por canal: com um imprint isolado, **uma** passada de `diffuse_and_decay(0.25)`
    deve devolver `keep` dentro de ±0,0002 do previsto (`0,9980764 / 0,9968542 / 0,9985570`) e os
    três `keep` distintos — hoje nada no repositório distingue sangue de medo; **entrou em parte**:
-   os três `keep` por canal agora são calculados (`smoke_test.gd:660-662`) e comparados nas 8
+   os três `keep` por canal agora são calculados (`smoke_test.gd:675-677`) e comparados nas 8
    passadas (`:674-687`) com tolerância de `1e-4` sobre a massa, não ±0,0002 sobre o fator — o
    cenário de imprint isolado com uma única passada, esse não foi rodado;
    (c) conservação de massa: `channel_totals()` após 8 passadas ≥ 0,985 × imprint — **esta
@@ -113,9 +113,9 @@ tests/aether_reactions_test.gd`, hoje **109 checagens** (`EXPECTED_CHECKS`,
    única saída de massa, e não é. Medido, 8 passadas devolvem 0,9184 do imprint (2,296/2,500) e a
    diferença é o corte de `MIN_VALUE`, hoje colhido em `pass_cut`. O que entrou no lugar é a cadeia
    `nenhuma passada cria massa` / `saldo fecha com o corte de MIN_VALUE` /
-   `o corte da fronteira explica a perda alem da meia-vida` (`smoke_test.gd:692-702`), mais
+   `o corte da fronteira explica a perda alem da meia-vida` (`smoke_test.gd:707-717`), mais
    `teto nao injeta o excedente no campo` (`:709-712`) — quatro checagens, não três.
-   A existente `ledger com 3 canais` (`smoke_test.gd:714`) tem o `3` literal e precisa passar a
+   A existente `ledger com 3 canais` (`smoke_test.gd:729`) tem o `3` literal e precisa passar a
    ler `Channel.COUNT`.
 2. Runner dedicado: 109 → o número dos cenários acrescentados, exit 0, com um cenário por canal
    novo que nomeia a premissa (imprint → leitura → mudança de intenção) e imprime o `keep` e o
@@ -146,7 +146,7 @@ das curvas na mesma mudança do imprint, nada de ler o canal no `AudioDirector`.
 
 ## 8. Citações que não conferem no repositório
 
-- `docs/melhorias-status.md:308-311`: "três tabelas paralelas de `aether_field.gd:11-15`" e "uma
+- `docs/melhorias-status.md:359-360`: "três tabelas paralelas de `aether_field.gd:11-15`" e "uma
   cor em `aether_viz.gd:12-16"`. No arquivo há duas tabelas (`:13`, `:15`), mais `CHANNEL_NAMES`
   (`:11`) e o `enum Channel` (`:9`); a cor é a quinta superfície com largura e a sexta é
   `Channel.COUNT` dentro da projeção do journal (`src/persistence/tick_journal.gd:38`) — abrir
@@ -154,7 +154,7 @@ das curvas na mesma mudança do imprint, nada de ler o canal no `AudioDirector`.
 - `:276` lista "tiro/passo" e "lava/fogueira" como fontes. Não há projétil nem fogo: `Block`
   (`src/world/block_defs.gd:10-23`) tem 13 entradas, `COUNT = 23` (`:37`) e nenhum tile de fogo
   (`:40-53`); grep de `lava|burn|flame|fogueira` em `src/` devolve só comentários e o verbo lavar
-  (`recipes.gd:41`, `main.gd:477`, `voxel_atlas.gd:174`). "Passo" existe apenas como leitor de
+  (`recipes.gd:41`, `main.gd:537`, `voxel_atlas.gd:174`). "Passo" existe apenas como leitor de
   corpo no diretor (`audio_director.gd:435-457`), que o contrato proíbe de escrever.
 - `:277` ("leitura nas curvas de utilidade") não diz que a leitura é hoje fixa nos três canais
   (`wolf.gd:443-445`) nem que a escolha de canal do rastro descarta o medo (`wolf.gd:498`).
@@ -164,7 +164,7 @@ das curvas na mesma mudança do imprint, nada de ler o canal no `AudioDirector`.
 - `AGENTS.md` publica 196 608 B/tick e 3 canais: os dois valores caem com o commit 2.
 - ~~O log publicado não fecha conta com `HALF_LIFE`~~ — **fechado por medição em `9f3622b`**:
   `docs/evidence/third-person-carry/clone-suite.log:68` mostrava 2.500 → 2.296 (8,16%) em 8 passadas
-  de `diffuse_and_decay(0.25)` — hoje o laço está em `tests/smoke_test.gd:674-687` e o par
+  de `diffuse_and_decay(0.25)` — hoje o laço está em `tests/smoke_test.gd:689-702` e o par
   `2.500 -> 2.296` é impresso por `:690-691` — onde `HALF_LIFE[FEAR] = 120` prevê
   0,9985570^8 = 0,98850 → 2,471. Os 0,175 que faltavam
   são, medidos, **`0,176129` de corte de `MIN_VALUE`** (`aether_field.gd:146-153`, colhidos em
@@ -195,7 +195,7 @@ aqui porque a regra 1 do contrato não permite herdar número sem fonte.
   0,06` `:41`) e não cita canal nenhum; as considerações com peso estão em `wolf.gd:357-399`.
 - `audio_director.gd:314` como leitura de posição de playback: `:314` é
   `v.max_distance = MAX_DISTANCE`; a posição real vem de `_voice_index()` (`:334+`).
-- "a contagem de checagens mora em `docs/melhorias-status.md:14-17`": não morava — as quatro
-  ocorrências de 232 eram `:91`, `:249`, `:665` e `:702`, todas da rodada do `a8967e0`. Hoje o número
-  da revisão publicada está sim no cabeçalho (`:13-19`, linha 19) e na nota de medição do fim do
-  arquivo (`:1144-1224`); as quatro linhas antigas continuam em 232 porque mediram aquele clone.
+- "a contagem de checagens mora nas linhas 14 a 17 do cabeçalho do status": não morava — as quatro
+  ocorrências de 232 estavam nas linhas 91, 249, 665 e 702 daquela numeração, todas da rodada do
+  `a8967e0`. Hoje o número da ponta publicada está na linha 26 do cabeçalho do status, e cada
+  rodada tem a sua nota a partir de "Notas de medição", linha 910; as quatro antigas continuam.

@@ -29,7 +29,7 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:547-559](../../src/entities/player.gd) |
 | Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:261` |
 | Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:300-310](../../src/world/voxel_world.gd) |
-| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:364-367](../../src/main.gd#L364-L367); coleta em [player.gd:652-665](../../src/entities/player.gd#L652-L665) |
+| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:424-427](../../src/main.gd#L424-L427); coleta em [player.gd:652-665](../../src/entities/player.gd#L652-L665) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
 pelo [documento 11](11-inventory-crafting.md):** a dureza saiu de `Player._hardness()`
@@ -160,7 +160,7 @@ propriedade única não separava perguntas distintas:
 | `quebra_queda` | bloco em queda se destrói sobre este? | `_landing_cell` |
 
 `dureza` = segundos de lavra com a ferramenta básica: a suíte já mede
-`tempo de mineracao == dureza` ([smoke_test.gd:782](../../tests/smoke_test.gd)). Essa
+`tempo de mineracao == dureza` ([smoke_test.gd:797](../../tests/smoke_test.gd)). Essa
 migração **já foi paga**: os sete valores originais vivem 1:1 no registro
 ([block_defs.gd:114-122](../../src/world/block_defs.gd), `_hard` preenchido em
 `init_tables()`; o acesso e `hardness()` em `:171`)
@@ -438,13 +438,13 @@ coluna de células (`0.5 ± 0.49 ⊂ [0, 1)`), que é o que permite derivar a c�
 do corpo sem ambiguidade.
 
 Integração `[TARGET]` no tick de simulação, em `Main._sim_tick()`
-([main.gd:145-170](../../src/main.gd#L145-L170)), 20 Hz (`SimClock.HZ`,
+([main.gd:223-249](../../src/main.gd#L223-L249)), 20 Hz (`SimClock.HZ`,
 [sim_clock.gd:5-7](../../src/core/sim_clock.gd)) — nunca em `_process`: queda de
 bloco é estado de mundo, e o hash de estado do gate P0 depende disso. O `TickJournal`
 atual só assina uma projeção mínima, **sem corpos nem comandos**
 ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)); não cobre a
 entidade de queda proposta nem fecha esse gate. Hoje, jogador e locomoção/timers do lobo
-ainda mudam por frame de física ([main.gd:155](../../src/main.gd#L155),
+ainda mudam por frame de física ([main.gd:215](../../src/main.gd#L215),
 [wolf.gd:702-747](../../src/entities/wolf.gd#L702-L747)).
 
 ### Matemática
@@ -495,7 +495,7 @@ var body: VoxelBody = VoxelBody.new()
 enum Landing { NONE, FIX, SHATTER }
 
 ## Quem aplica dano em entidade do mundo e o dono da cena, no mesmo padrao de
-## Player.attacked -> Main._on_attacked (main.gd:301-303): as assinaturas de
+## Player.attacked -> Main._on_attacked (main.gd:361-363): as assinaturas de
 ## take_damage diferentes entre Player (amount, from) e Wolf (amount, actor, from)
 ## nao permitem chamar de dentro daqui sem um `is Player` que nao existe hoje.
 signal impact(targets: Array, at: Vector3, amount: float, suffocate: bool)
@@ -605,8 +605,8 @@ func _overlapping(cell: Vector3i) -> Array:
 `e.has_method("body_aabb")` não é decoração: `body_aabb()` já é o contrato de
 entidade visada do projeto (player.gd:598, [wolf.gd:185-186](../../src/entities/wolf.gd#L185-L186)),
 e `entity_provider` é o `Callable` que `Main` injeta hoje no jogador
-([main.gd:99](../../src/main.gd#L99) → `targets_under_crosshair`,
-[main.gd:267-272](../../src/main.gd#L267-L272)).
+([main.gd:109](../../src/main.gd#L109) → `targets_under_crosshair`,
+[main.gd:327-332](../../src/main.gd#L327-L332)).
 
 ### Da fila para a entidade
 
@@ -652,10 +652,10 @@ bloco cair para sempre em cima de um suporte recém-colocado.)
 | Necessidade | Estado hoje | Custo real |
 |---|---|---|
 | Entidade física de bloco | inexistente | `src/entities/falling_block.gd` + spawner e step em `Main` |
-| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:364-367](../../src/main.gd#L364-L367)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
+| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:424-427](../../src/main.gd#L424-L427)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
 | Sufocamento em jogador | o medidor `air` existe, mas `_update_breath` só olha água (player.gd:548-549) | uma linha: `no_air := world.is_water_xyz(olho) or BlockDefs.blocks_air(world.get_block(olho))` — `blocks_air` é derivado dos campos de §10.3, não um décimo flag |
 | Sufocamento em NPC | o lobo **não tem medidor de ar** | ou um `Breath` comum aos dois, ou dano por tick direto no NPC enterrado |
-| Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:301-303); nenhum `is Player` dentro da física |
+| Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:361-363); nenhum `is Player` dentro da física |
 | Blocos com geometria própria | a malharia só conhece cubos (`FACE_CORNERS`, voxel_world.gd:14-21) | SLAB grátis via `top_drop`; LAVA pede surface emissivo; TORCH/PLANT pedem shape table |
 
 ## 10.5 Block Update Event — o que nunca varre o mundo
@@ -749,7 +749,7 @@ func stats() -> Dictionary:
 	return {"queued": _pending.size(), "overflow": _overflow}
 ```
 
-`Main.diagnostics()` ([main.gd:523-534](../../src/main.gd#L523-L534)) ganha `"block_updates":
+`Main.diagnostics()` ([main.gd:583-594](../../src/main.gd#L583-L594)) ganha `"block_updates":
 updates.stats()` junto de `"dropped_ticks"` — os dois são a mesma categoria de medida
 (quantos ticks de simulação o orçamento não absorveu), e sem o número a discussão sobre
 `MAX_PER_TICK` e `MAX_QUEUED` seria opinião.
@@ -889,7 +889,7 @@ Determinismo: `_rand2`/`_rand3` são extensões de `_mix`/`_hash_mix`
 ([world_gen.gd:193-204](../../src/world/world_gen.gd)), **semeadas por `world_seed`** e
 por coordenada. Nenhuma função nova pode usar um `RandomNumberGenerator` global —
 se não, a geração deixa de ser reproduzível e a checagem
-`geracao deterministica (16 colunas)` (smoke_test.gd:290-294) quebra, junto com o
+`geracao deterministica (16 colunas)` (smoke_test.gd:305-309) quebra, junto com o
 princípio declarado no cabeçalho de `WorldGen` (:2-4).
 
 A regra de feature por chunk continua valendo: `decorate_chunk` escreve só dentro do
@@ -936,9 +936,9 @@ silencioso que se quer evitar. Lista completa dos sítios que mudam:
 | world_gen.gd:132 | guard `y > 1` | `y > ceil` (o `1` era o fundo do mundo velho) |
 | world_gen.gd:184 `_column_top` | desce de 63 | span do chunk |
 | world_gen.gd:209-247 (`_plant_tree`, `_place_boulder`) | clampam em `SIZE_Y` | clampam em `Y_BUILD_LIMIT`; seguem válidos |
-| [smoke_test.gd:376-379](../../tests/smoke_test.gd) | `for y in CHUNK_SIZE_Y` + `c.get_block(x, y, z)` | **Y global**: `range(Y_MIN, Y_BUILD_LIMIT)` |
-| smoke_test.gd:299, :596 | `CHUNK_SIZE_Y - 5`, `get_block_xyz(10, CHUNK_SIZE_Y, 10)` | continuam válidos (topo virou 383/320) |
-| smoke_test.gd:593-594 | "parede invisivel solida" == STONE | X/Z continua STONE; o **piso** vira BEDROCK e pede checagem nova |
+| [smoke_test.gd:391-394](../../tests/smoke_test.gd) | `for y in CHUNK_SIZE_Y` + `c.get_block(x, y, z)` | **Y global**: `range(Y_MIN, Y_BUILD_LIMIT)` |
+| smoke_test.gd:314, :596 | `CHUNK_SIZE_Y - 5`, `get_block_xyz(10, CHUNK_SIZE_Y, 10)` | continuam válidos (topo virou 383/320) |
+| smoke_test.gd:608-609 | "parede invisivel solida" == STONE | X/Z continua STONE; o **piso** vira BEDROCK e pede checagem nova |
 | `.tools/shot_gallery.gd` (gitignored) | `_heights` do `surface_height` | continua valendo: as alturas transdam +38 junto |
 
 ### Memória e tempo, com a aritmética sobre o número medido
@@ -971,7 +971,7 @@ silencioso que se quer evitar. Lista completa dos sítios que mudam:
   totalmente vazias. `[OPEN]`, decidido com número no mesmo formato do bake-off de
   voxel de §06.4.
 - **Gate de boot proposto `[TARGET]`:** `gen_ms + mesh_ms ≤ 12,0 s` em headless, com a
-  linha `diagnostico final` (main.gd:435-446) como fonte. Se estourar, streaming de
+  linha `diagnostico final` (main.gd:495-506) como fonte. Se estourar, streaming de
   chunk entra na frente do gate P1 em [08-roadmap](08-roadmap-risks-licensing.md); o
   que não se faz é cortar qualidade de camadas para caber no tempo.
 
@@ -1003,7 +1003,7 @@ mundo velho não tinha nada ali, e o novo tem faixa profunda, lava e bedrock. Re
 fechamento `[DECIDED]`: migrar por translação e **recusar o slot se qualquer edição
 antiga cair em faixa que o novo mundo não conhece** (`y_novo < Y_BEDROCK_TOP + 1`).
 A gravação/conferência de `gen_version` já existe em `save_game`/`load_game`
-([main.gd:438](../../src/main.gd#L438), [main.gd:466-468](../../src/main.gd#L466-L468)):
+([main.gd:498](../../src/main.gd#L498), [main.gd:526-528](../../src/main.gd#L526-L528)):
 hoje o save incompatível é recusado antes da restauração. A migração proposta precisa
 atualizar essa versão junto das edições; não há migração implementada aqui.
 
@@ -1041,9 +1041,9 @@ próprio comentário (world_gen.gd:12-27). A mesma rotina fecha esta especifica�
    (% de ar, % de colunas com corredor ≥ 4 blocos, % de pilares flutuantes), e o
    comentário registra o que foi medido, não o que foi escolhido.
 3. **Probe de orçamento**: soltar N = 1 024 e N = 4 096 colunas de areia e medir
-   `worst_sim_ms` (`SimClock`, main.gd:435-446). Gate: nenhum tick perdido, com o
+   `worst_sim_ms` (`SimClock`, main.gd:592-607). Gate: nenhum tick perdido, com o
    piso de pior passo medido nestas quatro corridas: 7,68 / 8,66 / 9,01 / 11,21 ms
-   (smoke_test.gd:2006-2008).
+   (smoke_test.gd:215-216 e 2459-2461).
 4. **Ablação do span**: `build_chunk_mesh` com e sem `y_lo..y_hi`, dois `mesh_ms` lado
    a lado, antes de qualquer discussão de seção de 16.
 

@@ -123,7 +123,7 @@ Total: **51 arquivos, 1.677.718 bytes (1.60 MiB)**.
 
 Nenhum byte dos arquivos muda em runtime. O que se aplica em runtime é ganho,
 cadência e roteamento, no [src/audio/audio_director.gd](../src/audio/audio_director.gd)
-(`AudioDirector`, 619 linhas), que o [src/main.gd:136-140](../src/main.gd#L136-L140)
+(`AudioDirector`, 619 linhas), que o [src/main.gd:149-153](../src/main.gd#L149-L153)
 cria por último no `_ready` — "último a entrar e o primeiro a ser ouvido".
 
 **Barramentos.** `default_bus_layout.tres` (carregado por
@@ -156,13 +156,13 @@ avança e um SFX não-looping termina sozinho.
 **O diretor não manda no mundo.** Ele escuta seis sinais do jogador
 (`block_broken`, `block_placed`, `attacked`, `damaged`, `died`, `panel_changed`) e três de
 cada lobo (`bit_player`, `wounded`, `died`, conectados em
-[main.gd:235-236](../src/main.gd#L235-L236)); não escreve voxel, não imprime no Éter e
+[main.gd:295-296](../src/main.gd#L295-L296)); não escreve voxel, não imprime no Éter e
 sorteja variante numa RNG própria, semente 20261118. Medido em headless
 ([tests/audio_test.gd](../tests/audio_test.gd)): nove eventos disparados não mexem no
 hash autoritativo do tick (`98313688c61a → 98313688c61a`), nem no `_rng.state` de cada
 lobo, nem no `_population_rng.state`. O transitório por corpo (posição anterior,
 acumulador de passo, água, cooldown) é chaveado por `wolf.identity` e limpo no load
-([main.gd:495](../src/main.gd#L495)) — nunca vira save.
+([main.gd:555](../src/main.gd#L555)) — nunca vira save.
 
 **Custo.** 743 µs uma vez no boot (montagem das vozes e leitura dos níveis), ~3 µs por
 frame de física em `update_audio`, ~100 µs por avaliação de ambiência (1×/s) e ~0,66 ms

@@ -15,7 +15,7 @@ Legenda de status é a do [`README.md`](README.md) da pasta.
 |---|---|---|
 | Quantidade por bloco | `Inventory._ids`/`_counts` [inventory.gd:29-30](../../src/items/inventory.gd) | `tecla 1 comeca no capim com 32`, `colocar gastou um da pilha` |
 | Teto diferente por bloco | `BlockDefs.stack_max` [block_defs.gd:161](../../src/world/block_defs.gd) | `pilha maxima vem do registro`, `bancada tem teto menor que bloco comun` |
-| Inventário | 36 slots, grade 4×9, painel em `I` [hud.gd:445-537](../../src/ui/hud.gd) | `painel com 36 celulas`, `sem bancada so mostra as receitas de mao` |
+| Inventário | 36 slots, grade 4×9, painel em `I` [hud.gd:451-543](../../src/ui/hud.gd) | `painel com 36 celulas`, `sem bancada so mostra as receitas de mao` |
 | Hotbar | 10 pinos sobre os mesmos slots [inventory.gd:153-165](../../src/items/inventory.gd) | `hotbar tem 10 teclas pinadas nos slots`, `tecla 3 troca o pino` |
 | Criar item novo | lista de receitas [recipes.gd:31-43](../../src/items/recipes.gd) | `1 madeira -> 4 tabuas, com o preco cobrado`, `a cadeia ate a bancada fecha` |
 | Estação de craft | bancada é um bloco, casado por distância [player.gd:216-225](../../src/entities/player.gd) | `sem bancada so mostra as receitas de mao` |
@@ -23,7 +23,7 @@ Legenda de status é a do [`README.md`](README.md) da pasta.
 | Construir com o que tem | `consume_selected` no colocar [player.gd:668-690](../../src/entities/player.gd) | `colocar gastou um da pilha` |
 
 Os nomes de checagem acima vivem na suíte, e a lista `_steps`
-([smoke_test.gd:63-95](../../tests/smoke_test.gd)) é a ordem dos passos que os medem.
+([smoke_test.gd:63-99](../../tests/smoke_test.gd)) é a ordem dos passos que os medem.
 Contagem de checagens e tempo de corrida não vivem aqui: são publicados no
 [`README.md`](../../README.md) da raiz, derivados da corrida.
 
@@ -138,9 +138,9 @@ Quatro receitas ([recipes.gd:31-43](../../src/items/recipes.gd)):
 | 1 vidro | 2 areia | bancada | areia em vidro **no lugar** de forja/caldeirão: simplificação explícita, até existir estação de calor (o documento 10 trata de lava) `[TARGET]` |
 
 A estação é um bloco no mundo, casado por distância, no modelo do sprite do Veloren:
-`Main._benches` mantém a lista ([main.gd:364-373](../../src/main.gd#L364-L373)) — entra no
+`Main._benches` mantém a lista ([main.gd:424-433](../../src/main.gd#L424-L433)) — entra no
 `block_placed`, sai no `block_broken`, e é **reconstruída do diário de edições** no load
-([main.gd:509-513](../../src/main.gd#L509-L513)), então não há estado de bancada para corromper.
+([main.gd:569-573](../../src/main.gd#L569-L573)), então não há estado de bancada para corromper.
 `Player.bench_near()` pergunta ao `bench_provider` (um `Callable` injetado, não uma
 referência de cena) e compara com `Recipes.BENCH_RANGE = 5,0`
 ([player.gd:216-225](../../src/entities/player.gd)). A varredura é de ~5 entradas, não do
@@ -174,7 +174,7 @@ e a malharia decide a face por ela
 ## 11.8 HUD: hotbar com número e painel de 36 celulas
 
 A hotbar são 10 células com swatch, nome quando selecionada e **quantidade** quando > 1
-(`build_hotbar` + `_refresh_slots`, [hud.gd:101-238](../../src/ui/hud.gd)); a legenda de
+(`build_hotbar` + `_refresh_slots`, [hud.gd:105-242](../../src/ui/hud.gd)); a legenda de
 teclas passou a ser `1-9,0` porque o `0` é a décima tecla física, não a primeira
 ([input_actions.gd:10-15](../../src/input/input_actions.gd)).
 
@@ -182,24 +182,24 @@ O painel (`I`) é o inventário inteiro em 4×9, com o badge do pino em cada cel
 em ambar, coluna de receitas à direita e rodapé de teclas. Sem mouse: o cursor anda com
 o mesmo teclado que anda o personagem, `E` pega/solta, `Q` parte, `TAB` troca de receita,
 `ENTER` crafta, e as dez teclas **repinam** o celula sob o cursor
-([hud.gd:554-600](../../src/ui/hud.gd)). Com o painel aberto o `Player` segura o
+([hud.gd:560-606](../../src/ui/hud.gd)). Com o painel aberto o `Player` segura o
 movimento, o sprint, o planar e as mãos ([player.gd:411,481,489,627](../../src/entities/player.gd))
 — senão abrir o inventário seria andar de lado para sempre.
 
 Quem abre a tela é o `Player`, não o HUD: `panel_changed` é um sinal e o HUD escuta
-([player.gd:20](../../src/entities/player.gd), [main.gd:111](../../src/main.gd#L111)). O
+([player.gd:20](../../src/entities/player.gd), [main.gd:121](../../src/main.gd#L121)). O
 refresh do conteúdo roda na cadência `REFRESH = 0,1 s` do `_process` do HUD, igual aos
 slots.
 
 ## 11.9 Persistência: campo aditivo, sem bump de schema
 
-`save_game` escreve `"inv": player.inv.to_dict()` ([main.gd:445](../../src/main.gd#L445)); o
+`save_game` escreve `"inv": player.inv.to_dict()` ([main.gd:505](../../src/main.gd#L505)); o
 formato é `{slots: [[i,b,n]…], pins: […], sel: n, hand: [id,n]}` — só os slots com
 quantidade, então um inventário vazio custa ~2 bytes de JSON e não 36 triples.
 
 `SaveManager.SCHEMA` continua **1**. O campo é aditivo e o loader não tem whitelist de
 chaves: `load_game` usa `inv` quando existe e, quando não existe, aplica o kit
-([main.gd:490-493](../../src/main.gd#L490-L493)) — um save de antes da hotbar infinita não
+([main.gd:550-553](../../src/main.gd#L550-L553)) — um save de antes da hotbar infinita não
 acordaria um jogador sem blocos. O `SCHEMA = 2` está reservado ao rebase de Y do
 documento 10, que é a única mudança que invalida saves de verdade. O `from_dict` faz
 `clampi` em índice, id e quantidade, então um save corrompido não indexa fora do
@@ -208,7 +208,7 @@ registro.
 Esse save não é o novo `TickJournal`: a projeção mínima do hash **não inclui jogador nem
 inventário** ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)).
 O load válido fecha o journal antes da restauração
-([main.gd:469-471](../../src/main.gd#L469-L471)); o JSONL não é replay do inventário.
+([main.gd:529-531](../../src/main.gd#L529-L531)); o JSONL não é replay do inventário.
 
 ## 11.10 Decidido × aberto
 
