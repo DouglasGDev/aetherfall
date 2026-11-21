@@ -1,0 +1,16 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+sonda 15  modo=foreign  display=headless  keep=false  expect=estrangeiro
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  estrangeiro  401 na porta 8741
+janela  main_ready=6288 ms  frames_no_braco=8  tick_no_braco=3  pior_passo=2.85 ms  estado=estrangeiro  boot=-1 ms  503=0  pid=-1
+OK     a sonda sabia o que esperar do fixture  [esperado=estrangeiro]
+OK     o estado da porta e o esperado  [estado=estrangeiro  esperado=estrangeiro  401 na porta 8741]
+OK     nada foi morto na porta alheia  [kills=0  spawns=0]
+OK     novo processo nao e criado em porta ocupada  [spawns=0]
+sonda 15  F3: llm: porta 8741 ocupada por outro servidor  oraculo desligado
+sonda 15  modo=foreign  4 checagens  0 falhas  6.4 s  llm=llm: porta 8741 ocupada por outro servidor  oraculo desligado
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

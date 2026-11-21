@@ -1,0 +1,18 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+sonda 15  modo=reuse  display=headless  keep=false  expect=reusado
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  reusado  200 com o alias mind-small na porta 8741
+janela  main_ready=6484 ms  frames_no_braco=8  tick_no_braco=4  pior_passo=2.62 ms  estado=reusado  boot=0 ms  503=0  pid=-1
+OK     reuso nao cria segundo processo  [spawns=0  estados=ocioso, sondando, reusado]
+OK     reuso nao assume o pid alheio  [pid=-1]
+OK     reuso libera o oraculo  [estado=reusado]
+lobo0  +8.6 s  ia: O lobo processa sua aproximação como uma ameaça e decide manter vigilância, reprimindo qualquer instinto de ataque por falta de sinais de pr...
+lobo1  +9.2 s  ia: O lobo varre a floresta em busca de presas, desconfiado por ver o jogador como um inimigo potencial enquanto sua fome o mantém alerta.
+OK     narrativa chega sem passo manual  [narrativas=2  pedidos=2]
+OK     o carregamento nao deixou recuo de 30 s no oraculo  [recuo=0.0 s  ultimo=]
+sonda 15  modo=reuse  5 checagens  0 falhas  9.2 s  llm=llm: reuso do servidor existente  porta 8741
+WARNING: 12 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 6 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
