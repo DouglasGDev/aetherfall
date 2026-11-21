@@ -412,6 +412,28 @@ obrigaria a 12 a re-rodar o gate dela; 18 depois de 17 porque o crescimento é o
 `BlockUpdateQueue` que a 17 escreve (generalizar no segundo chamador, não no primeiro); e 13 fecha por
 ser a última justamente para nenhuma mudança de `Channel.COUNT` cair no meio da fila.
 
+**Extensão de 2026-11-21 (2), autorizada pelo dono na própria conversa — o pedido urgente dele: lobos
+presos diante de bloco e jogador parado na frente de um degrau.** Entra no "dentro" como
+[`docs/planos/19-auto-pulo-de-bloco.md`](docs/planos/19-auto-pulo-de-bloco.md). É uma página diferente das
+duas de cima por um motivo lido no código, não por gosto: **não é mecânica nova, é defeito do jogo em
+execução**. O *step-up* do corpo (`step_up` em `src/entities/voxel_body.gd`) sobe 0,62 m e uma célula é 1 m;
+o impulso de escape do lobo (`velocity.y = 5.2` em `src/entities/wolf.gd`, ápice 0,563 m com a gravidade de
+24 m/s² do mesmo corpo) também não sobe; e `blocked_horizontal` tem **um** leitor em `src/` — o lobo, na
+própria linha de locomovência. O corpo do jogador escreve a flag e ninguém a lê: por isso ele tem salto
+manual suficiente e mesmo assim para na frente do degrau. Nada desta perna toca `Channel.COUNT`,
+`FORMAT_VERSION` nem a projeção do `TickJournal`; o que muda é o mundo que entra nela, então uma corrida com
+lobos subindo degrau **não** reproduz os hashes das rodadas publicadas — pelo mesmo motivo declarado agora
+para a 17 e a 18, e não porque a projeção mudou.
+
+A exceção de ordem, registrada **antes** do código (mandato 4) porque a perna encosta em
+`src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 — hoje em voo, ponta
+`3e8f9ba` — também escreve: a fila passa a **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13**. A 19
+entra logo depois de 11 porque um defeito em execução custa a cada sessão do dono, enquanto as pernas
+restantes são mecânicas novas que ainda não existem. Consequência assumida e escrita no §7 do dossiê: quando
+a 19 pousar na `main`, a 11 **re-rome o gate** — traz a `main` para dentro de si e roda a suíte de novo,
+porque a árvore resultante é outra revisão (item 5 de "Branches"), e as linhas de `wolf.gd` e do runner que
+a 11 cita passam a valer as depois do merge dela.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do

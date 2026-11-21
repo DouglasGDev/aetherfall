@@ -1,6 +1,6 @@
 # Dossiês por item da fila
 
-Dezessete arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
+Dezoito arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
 ("Falta", `:303-430`, e os checklists P0/P1, `:434-451`). Cada dossiê é **leitura de código, não
 corrida**: nenhuma engine foi rodada aqui, nenhum número publicado foi re-medido por estes arquivos
 e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
@@ -14,7 +14,11 @@ prompts do dono ("Física de Blocos + Mundo Reativo" e "Física de Blocos + Mund
 grave dos blocos que caem e **18** com a grama que cresce e o mato. O número **16 está reservado e não
 tem página**: é o pedido dele de espalhar a matilha em 2–3 tocas depois de ter percorrido o mapa inteiro
 vendo um lobo só, e quem escrever aquela página usa o 16 e a posição que ele escolheu (logo depois da 11).
-Nenhuma das três páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
+No mesmo dia o pedido urgente dele abre a **19**, e ela é de outro tipo: não é mecânica nova, é **defeito do
+jogo em execução** — lobos pulsando encostados num talude de um bloco e o jogador parado na frente de um
+degrau que ele não sobe sem apertar espaço. Por isso ela fura a fila e entra logo depois da 11, com a
+exceção e o motivo escritos no §7 da própria página e no contrato antes de qualquer linha. Nenhuma das
+páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
 
 | # | Dossiê | Linha da fila | Premissa nomeada | O que decide, em headless |
 |---|---|---|---|---|
@@ -35,6 +39,7 @@ Nenhuma das três páginas novas fecha escopo: elas registram a pauta, e o regis
 | 15 | [Oráculo embutido no boot: o jogo levanta o llama-server](15-oraculo-embutido-no-boot.md) | autorização nova do dono em 2026-11-20, fora da lista `Falta` do status | com `Rodar.bat` e **nenhum** PowerShell aberto, a linha `ia:` do F3 enche dentro do prazo da cena de prova | `host_devolve_health_200`, `boot_nao_bloqueia_janela`, `reuso_nao_cria_segundo_processo`, `porta_alheia_continua_viva`, `fechar_janela_mata_o_filho`, `suite_nao_levanta_modelo` — colhidas em cena própria, nunca na suíte |
 | 17 | [Física de blocos que caem (o evento que ninguém assina)](17-fisica-de-blocos-que-caem.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Reativo" item A; a especificação já estava no doc 10, o código não | um `SAND` sem apoio **some** do grid num tick e **reaparece** mais baixo noutro, `queued` volta a zero e **nenhuma varredura do mapa** aconteceu no meio | `queda_sem_varredura_de_mundo`, `queda_move_a_celula` (nasce **vermelha**: `block_changed` não tem um `.connect(` em lugar nenhum), `queda_cascade_em_passos`, `bloco_em_queda_nao_sobe` (o *auto step-up* do `VoxelBody` tem de ser zerado), `queda_pousa_antes_do_save`, `queda_nao_custou_tempo_de_ninguem`, `journal_hash_muda_so_com_movimento` |
 | 18 | [Mundo vivo: grama que cresce e o mato decorativo](18-mundo-vivo-grama-e-mato.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Vivo" itens B e C; **sem** especificação no doc 10 — esta página é a primeira vez que a regra é escrita | `DIRT` com ar acima e `GRASS` ao lado vira `GRASS` em tempo finito **sem varrer nada** — e sem vizinha não muda em 10 000 ticks | `grama_precisa_de_vizinha` (o par vermelho), `crescimento_nao_varre_nada`, `crescimento_sobrevive_ao_save`, `grama_nao_cresce_onde_nao_ha_grama`, `crescimento_nao_estoura_a_malha`, `mato_e_nao_solidez_nem_pedra`, `mato_nao_engole_o_clique` (o campo `substituivel` lido pelo `_try_place`), `crescimento_nao_consome_rng_da_sessao` |
+| 19 | [Pulo de bloco: o degrau de 1 m que ninguém sobe](19-auto-pulo-de-bloco.md) | **defeito** pedido pelo dono em 2026-11-21 como urgente, fora da lista `Falta` — não é mecânica nova; a fila serializada ganha a exceção de ordem no §7 | um corpo que anda contra um degrau de **exatamente um bloco** sobe o degrau (o jogador sem tecla nenhuma), e um corpo que anda contra parede mais alta que um bloco **não** gasta salto | `degrau_de_um_bloco_lobo_sobe` e `degrau_de_um_bloco_jogador_sobe_sem_tecla` (nascem **vermelhas**: ápice 0,563 m e `step_up` 0,62 contra uma célula de 1,00 m), `penhasico_nao_gasta_salto` (a asserção de `aether_reactions_test.gd:1035` lida do outro lado), `agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem` |
 
 ## Uma branch por dossiê
 
@@ -62,13 +67,16 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 16 | `feat/tocas-espalhadas-16` (nome provisório — **a página ainda não existe**) | `main`, **logo depois de 11**, escolha do dono nesta fila: é a resposta a ele ter percorrido o mapa inteiro e visto um lobo só. Antes de abrir branch, escreve-se o dossiê |
 | 17 | `feat/fisica-de-blocos-que-caem-17` | `main`, **depois de 12**: as duas pernas escrevem pelo mesmo `set_block` e pelo mesmo `block_changed`, e a fila de gravidade muda o custo medido do cavar — abrir a 17 antes obrigaria a 12 a re-rodar o gate dela com a fila anexada. Não encosta em `wolf.gd` |
 | 18 | `feat/mundo-vivo-grama-e-mato-18` | `main`, **depois de 17**: é o segundo comprador do `BlockUpdateQueue` que a 17 escreve (regra da casa — generalizar no segundo chamador, não no primeiro), e o `PLANT` gasta o id 17 da reserva que a 17 não toca |
+| 19 | `feat/auto-pulo-de-bloco-19` | `main`, **fura a fila e entra logo depois de 11** (exceção do §7 do dossiê, registrada antes do código): é o único item da lista que é defeito do jogo em execução, não mecânica nova. Encosta em `src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 também escreve — por isso a 11, hoje em voo, re-rome o gate depois do merge desta |
 
-A ordem 09 → 10 → 15 → 14 → 11 → 16 → 12 → 17 → 18 → 13 não é preferência: é a exceção de serialização registrada
+A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13 não é preferência: é a exceção de serialização registrada
 **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora", e reafirmada em
 [`docs/melhorias-status.md`](../melhorias-status.md#em-andamento). O encadeamento é de dados, não de
 cerimônia: cor depende de bioma, cercar depende de quem mais existe na matilha, a convivência reusa as
 folhas que a alcateia reorganizou e entrega à 11 o ponto de spawn, acasalamento depende de dois adultos
-próximos, as tocas dependem do censo que a 11 variabilizou, cavar é folha da árvore já montada, a gravidade
+próximos, o pulo de degrau entra depois da 11 porque é o único item da lista que é defeito do jogo que já
+roda — nada depende dele e ele não espera por nada —, as tocas dependem do censo que a 11 variabilizou,
+cavar é folha da árvore já montada, a gravidade
 de blocos é o segundo consumidor do `block_changed` que o cavar acabou de abrir, o crescimento é o segundo
 comprador da fila que a gravidade escreveu, e a árvore genealógica depende de nascimento por causa
 interna — e a 15 entra no meio porque é o caminho do `Rodar.bat`, não do código da matilha. Além disso,
@@ -87,14 +95,32 @@ com `arquivo:linha` → o que a peça exige → gate em headless com comando que
 pelas quatro perguntas do contrato → o que NÃO fazer → commits atômicos (um assunto, uma corrida) →
 citações que não conferem.
 
-## Verificação destas dezessete páginas
+## Verificação destas dezoito páginas
 
 ```sh
 python .tools/verify_plan_cites.py docs/planos/01-estado-inicial-e-ordem-autoritativa.md
 python .tools/verify_plan_ids.py   docs/planos/01-estado-inicial-e-ordem-autoritativa.md
 ```
 
-**Medida desta rodada (as dezessete páginas, `main` em `86e63c4` + estes dois arquivos novos):**
+**Medida desta rodada (as dezoito páginas, `main` em `8ac761d` + o dossiê 19 e esta página índice):**
+**1 067 citações conferidas nos dezoito dossiês, 0 números fora do arquivo** — as quinze antigas somam
+**935** (64 · 50 · 24 · 75 · 68 · 34 · 51 · 55 · 39 · 77 · 57 · 53 · 106 · 68 · 114), mais **54** da 17,
+**50** da 18 e **28** da 19. Com esta página índice no corpus, o diretório inteiro dá **1 081** e continuam
+**8** as referências a arquivos que não existem, todas peças já declaradas inexistentes
+(`src/core/sim/tick_clock.gd`, `docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd`) — a página
+19 não acrescenta nenhuma. No `verify_plan_ids.py` a 19 devolve **39** identificadores em backticks, dos
+quais **8** não existem em `src/` nem em `tests/`: **6** nomes de checagem proposta
+(`degrau_de_um_bloco_lobo_sobe`, `degrau_de_um_bloco_jogador_sobe_sem_tecla`, `penhasico_nao_gasta_salto`,
+`agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem`), **1**
+de predicado que o §3 do dossiê propõe e o §2 diz que ainda não está no código (`can_step_over`) e **1** de
+bloco que o doc 10 numera e o registro não tem (`SLAB`). Somando os três documentos que governam a casa
+nesta árvore — [`AGENTS.md`](../../AGENTS.md), [`README.md`](../../README.md) e
+[`docs/melhorias-status.md`](../melhorias-status.md) — são **113 · 0 · 416 = 529 números, 0 fora do
+arquivo**, elo a elo iguais aos da rodada 17/18 medida abaixo: esta página e o contrato ganharam prosa, não
+citações numeradas novas. Nada dos parágrafos abaixo é reescrito por cima desta medida: eles dizem o que foi
+medido na rodada em que foram escritos, e é essa a regra da casa.
+
+**Medida da rodada 17/18 (as dezessete páginas, `main` em `86e63c4` + aqueles dois arquivos novos):**
 **1 039 citações conferidas nos dezessete dossiês, 0 números fora do arquivo** — por página, na ordem da
 tabela, 64 · 50 · 24 · 75 · 68 · 34 · 51 · 55 · 39 · 77 · 57 · 53 · 106 · 68 · 114 (as quinze antigas,
 **935** somadas) mais **54** da página 17 e **50** da página 18. Com esta página índice no corpus, o
@@ -259,6 +285,12 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
   primeira vez (por isso `[TARGET]`), e sem o campo `substituivel` lido pela colocação o mato é um
   obstáculo invisível que come o clique do jogador. "Dropa pouco" também não tem como ser dito:
   não existe item de semente nem quantidade fracionária no drop.
+- "os mobs/npcs tem que saber pular os blocos, pois ficam bugados": em `src/entities/` existe **uma**
+  espécie animal e **nenhum** NPC, e a causa não é o pathfinding — são três alturas que não fecham
+  (§2): `step_up` 0,62 m e ápice do impulso do lobo 0,563 m contra uma célula de **1,00 m**, e o
+  `blocked_horizontal` do jogador sem nenhum leitor em `src/`. "Auto pular o bloco" também não é
+  "aumentar o step-up": a formulação mais curta teletransporta o corpo e mata a animação de voo
+  → **19 §2, §3.4 e §9**.
 
 As imprecisões reais achadas em `AGENTS.md` nesta rodada foram corrigidas no próprio contrato, uma por
 uma, depois de lidas as duas pontas: `player.gd:659`/`:675` são os cabeçalhos de `_mine_target()` e
