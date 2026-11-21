@@ -3140,3 +3140,25 @@ número publicado aqui é o de ocorrências (`grep -ro | wc -l`), não o de linh
 não segurança, e o tráfego é `127.0.0.1`. A quarentena de sugestões do oráculo segue por escrever. O
 furo dos dois `.uid` órfãos (`tests/audio_test.gd.uid`, `tests/audio_live_probe.gd.uid`) continua
 registrado acima e não foi tocado neste lote. Nada aqui fecha gate de fase.
+
+## A `main` mergida da chave do oráculo (2026-11-21, ponta `f2823a8`)
+
+A árvore do merge é a árvore da branch: `git diff --stat 1e24df1 f2823a8` é **vazio**, e o merge não
+trouxe arquivo novo — por isso não houve `--import` antes da corrida.
+
+Na `main` mergida, suíte headless: **246 checagens / 0 falhas / 37,1 s**, exit 0, **0** `SCRIPT ERROR`
+nas duas correntes, stderr de 250 bytes com SHA-256 `6d256047…` — o mesmo hash das duas corridas
+anteriores desta linha (a da `main` `3ae8e71` e a da ponta `0da1391`), o que é a assinatura de sempre
+do engine, não um ruído novo. Diagnóstico final: `worst_sim_ms` **11,181** dos 50 ms, `dropped_ticks`
+**0**, `gen_ms` **939,996**, `mesh_ms` **4 290,5**, tick 403, `wolves` 4 com `pending_respawns` 1. O
+instrumento de âncoras na mesma ponta: **1 641 ponteiros, 91 rótulos, 0 casos objetivos**, exit 0 — os
+sete ponteiros a mais são os que a seção anterior abriu, conferidos um a um no alvo.
+
+Os três logs desta corrida estão em `docs/evidence/oracle-embutido-15/` (`merge-f2823a8-suite.log`,
+`merge-f2823a8-suite-err.log`, `merge-f2823a8-anchors.log`) e no `artifacts.sha256`, agora com 42
+entradas; `sha256sum -c artifacts.sha256` devolve OK em todas, e as 39 anteriores não mudaram de hash
+— a máscara de `a39005d` continua sendo o conteúdo publicado daqueles arquivos. O que se conferiu
+antes de arquivar: a chave viva desta máquina (`grep -o` do valor do arquivo) aparece **0** vezes nos
+três logs, e não há nenhuma linha `--api-key` / `Bearer` no stdout, porque em headless o hospedeiro
+não levanta. Ou seja: a evidência desta perna é publicável sem nada mascarar, que é exatamente a
+diferença para a rodada anterior.
