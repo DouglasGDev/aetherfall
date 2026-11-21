@@ -20,8 +20,9 @@ const TESTS: Array[StringName] = [
 	&"_test_resgate_de_margem_sobrevive_a_arvore",
 	&"_test_dois_lobos_nao_farejam_a_mesma_celula", &"_test_alvo_estavel_por_segundo",
 	&"_test_spawn_fora_da_vista_do_jogador",
+	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 ]
-const EXPECTED_CHECKS: int = 177
+const EXPECTED_CHECKS: int = 183
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -1374,6 +1375,11 @@ func _pack_release() -> void:
 		return
 	if is_instance_valid(_session._entities):
 		_session._entities.free()
+	# O hud e da sessao: sem libera-lo, cada `_boot_session` empilharía um Label
+	# vivo no palco e a leitura do toast deixaria de apontar para o hud que a
+	# sessao atual usa.
+	if is_instance_valid(_session.hud):
+		_session.hud.free()
 	_session.free()
 	_session = null
 
@@ -2636,6 +2642,10 @@ func _boot_session(n: int) -> void:
 	s.hud.world = _world
 	s.hud.aether = _field
 	s.hud.clock = _clock
+	# A linha 127 do boot real: sem ela o aviso do jogador nao tem porta, e o
+	# cenario 8 acusaria ausencia onde o instrumento e que esta incompleto.
+	if not _player.notice.is_connected(s._on_notice):
+		_player.notice.connect(s._on_notice)
 	_player.feet_to_spawn(s.spawn_point())
 	s._spawn_wolves(n)
 	_session = s
@@ -2702,5 +2712,125 @@ func _test_spawn_fora_da_vista_do_jogador() -> bool:
 			"lobo reposto nasce fora da distancia segura e da visada",
 			"dist=%.1f m seguro=%.0f los=%s home=%s" % [
 			dn, Session.SAFE_SPAWN_DIST, str(vn), str(novo.home) if novo != null else "nenhum"])
+	_pack_release()
+	return true
+
+
+## Verdade unica do cenario 7: uma linha de toast fala de criatura quando nomeia
+## o bicho ou a matilha. "Fala de criatura" e a cláusula do pedido do dono ("nada
+## de avisos na tela, simplesmente o player tem que achar, ver"), e a palavra e o
+## numero que a decide -- nao uma lista de frases congeladas, que sobreviveria a
+## um aviso novo com outra redacao.
+func _toast_de_criatura(t: String) -> bool:
+	return t.findn("lobo") >= 0 or t.findn("matilha") >= 0
+
+
+## Cenario 7 (dossie 14 §1.3, §5): nenhuma string de presenca ou destino de
+## criatura chega ao toast em 1 200 passos. Nasce VERMELHA porque o `main.gd` tem
+## as duas frases. A janela nao e escolha de gosto: a morte abate na hora, a
+## recolha de cadaver roda em cadencia de 1 s e a fila de reposicao cobra 45 s --
+## 1 041 passos ate o lobo novo nascer, o numero medido no cenario 6.
+##
+## O par de checagens existe porque ausencia sozinha nao prova nada: a primeira
+## medida aqui e que os DOIS caminhos que falavam do toast rodaram de dentro da
+## janela (abatidos e repostos contados pelo estado autoritativo, nao escritos na
+## mao). Sem ela, "nenhum aviso" poderia ser canal quebrado, e o cenario 8 é o
+## outro lado dessa mesma moeda.
+func _test_nenhum_aviso_de_matilha_no_hud() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var vistos := {}
+	var abates := 0
+	var repostos := 0
+	var passo := 0
+	while passo < 1200 and (abates < 2 or repostos < 1):
+		if passo % 240 == 120:
+			var vitima: Wolf = null
+			for w: Wolf in _pack_wolves():
+				if w.alive:
+					vitima = w
+					break
+			if vitima != null:
+				vitima.die()
+		passo += 1
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+		var t: String = s.hud._toast.text
+		if t != "" and not vistos.has(t):
+			vistos[t] = passo
+		abates = int(s.stats["wolves_felled"])
+		repostos = int(s._next_identity) - int(Session.WOLF_COUNT)
+	var criatura := ""
+	var quantas := 0
+	var todas := ""
+	for t in vistos:
+		todas += "'%s'@%d " % [t, vistos[t]]
+		if _toast_de_criatura(String(t)):
+			quantas += 1
+			criatura += "'%s' " % t
+	_check(abates >= 2 and repostos >= 1,
+			"os dois caminhos de criatura rodaram dentro da janela",
+			"abatidos=%d repostos=%d passos=%d fila=%d" % [
+			abates, repostos, passo, s._respawn_queue.size()])
+	_check(quantas == 0, "nenhum aviso de criatura chega ao toast do hud",
+			"de_criatura=%d [%s] | visto: %s" % [
+			quantas, criatura.strip_edges(), todas.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Cenario 8, o par obrigatorio do 7: as quatro portas de feedback da acao do
+## jogador continuam chegando ao MESMO Label da MESMA sessao. Cada uma pela
+## transicao real (`_craft()` do painel, `_try_place()` e `_mine_target()` da
+## mira), nunca chamando `show_message` a mao -- o que se testa e a porta, nao a
+## frase. Save/load fica de fora daqui de proposito: `load_game()` regenera o
+## `_world` compartilhado deste runner, entao o par do toast de save e a suíte
+## completa (`smoke_test`), nao este instrumento.
+func _test_feedback_do_jogador_continua_no_hud() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var p: Player = _player
+	p.inv.reset_default()
+	# (1) e (2) craft: a primeira receita de mao (1 madeira -> 4 tabuas) sem o
+	# ingrediente, depois com ele -- as duas branches do `_craft()` do painel.
+	p.inv.take(BlockDefs.Block.WOOD, 999)
+	s.hud._craft()
+	var sem_material: String = s.hud._toast.text
+	p.inv.add(BlockDefs.Block.WOOD, 1)
+	s.hud._craft()
+	var craftado: String = s.hud._toast.text
+	# (3) construir com a tecla apontando para um slot vazio: a mira acha o chao e
+	# `_try_place` recusa antes de gastar bloco.
+	p.inv.select(7)
+	p.pitch = -0.9
+	for _i: int in 2:
+		p.update_local(1.0 / 60.0)
+	p._try_place()
+	var slot_vazio: String = s.hud._toast.text
+	# (4) lavrar o que nao cabe: o inventario fecha antes do golpe, e `_mine_target`
+	# devolve o aviso em vez de tirar o bloco do mundo.
+	var drop := BlockDefs.drop_of(_world.get_block(p.target_voxel))
+	var enchimentos := 0
+	while p.inv.space_for(drop, 1) > 0 and enchimentos < Inventory.SLOTS:
+		enchimentos += 1
+		p.inv.add(drop, BlockDefs.stack_max(drop))
+	var antes := _world.get_block(p.target_voxel)
+	p._mine_target()
+	var cheio: String = s.hud._toast.text
+	_check(sem_material.begins_with("sem material"),
+			"o craft sem material continua avisando", "'%s'" % sem_material)
+	_check(craftado.begins_with("craftado"),
+			"o craft com material continua avisando", "'%s'" % craftado)
+	_check(slot_vazio.begins_with("slot vazio"),
+			"construir em slot vazio continua avisando", "'%s'" % slot_vazio)
+	_check(cheio.begins_with("inventario cheio")
+			and _world.get_block(p.target_voxel) == antes,
+			"lavra sem espaco continua avisando e nao tira o bloco",
+			"'%s' voxel=%d->%d espaco=%d" % [
+			cheio, antes, _world.get_block(p.target_voxel), p.inv.space_for(drop, 1)])
 	_pack_release()
 	return true

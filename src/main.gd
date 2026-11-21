@@ -244,8 +244,12 @@ func _sim_tick() -> void:
 		_respawn_queue[i] -= dt
 		if _respawn_queue[i] <= 0.0:
 			_respawn_queue.remove_at(i)
+			# Dossie 14 §1.3: nenhum aviso de criatura na tela -- o jogador acha a
+			# matilha pelos rastros, não por um letreiro. A frase que morava aqui
+			# mentia alem de tudo: `_spawn_wolves(1)` pode recusar o ponto e a vaga
+			# volta para a fila, e "uma nova matilha entrou no vale" seria dita com
+			# o vale vazio.
 			_spawn_wolves(1)
-			hud.show_message("uma nova matilha entrou no vale")
 	clock.tick += 1
 	if tick_journal.active():
 		var err := tick_journal.record(clock.tick, world, aether, wolves)
@@ -355,8 +359,8 @@ func _band_edge(at: Vector3) -> float:
 
 ## Lar de um lobo novo, ou a recusa com os motivos contados. Nao ha fallback para o
 ## centro: o centro e justamente onde o jogador e posto no boot ([_ready] chama
-## `spawn_point()` para os dois), e cair ali em silencio era o aviso que o mandato 1
-## proibe -- um sucesso fingido.
+## `spawn_point()` para os dois), e cair ali em silencio era um sucesso fingido --
+## o que o mandato 1 proibe, nao apenas um aviso a menos na tela.
 func _spawn_home_point(taken: Dictionary) -> Dictionary:
 	var c := player.position3()
 	var edge := _band_edge(c)
@@ -569,8 +573,11 @@ func _on_wolf_bit(w: Wolf, amount: float) -> void:
 
 
 func _on_wolf_died(_w: Wolf, _pos: Vector3) -> void:
+	# O contador fica: e ele que a suíte e o F3 leem (`stats["wolves_felled"]`), e
+	# nenhuma das duas precisa de um letreiro para existir. Sai só a frase
+	# (dossie 14 §1.3) -- o sangue no Éter é o aviso, e quem tem que vê-lo é o
+	# jogador, não a HUD.
 	stats["wolves_felled"] += 1
-	hud.show_message("o lobo caiu  o sangue fica no eter")
 
 
 func _toggle_debug() -> void:
