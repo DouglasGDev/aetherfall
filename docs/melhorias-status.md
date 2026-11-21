@@ -3035,3 +3035,36 @@ O resíduo, com o tamanho dele — é isto que separa "zero casos objetivos" de 
 Nada disso fecha gate de fase. O HOT agregado dos cinco lobos continua por colher (dossiê 04, item 5
 de "Falta"), e o instrumento entra na fila como o primeiro comando a rodar depois de qualquer
 arquivo que cresce — que é o jeito de a régua não voltar a ser dívida.
+
+## A `main` mergida da perna 15 (2026-11-21, ponta `3ae8e71`)
+
+O merge — base `27800eb`, `feat/oraculo-embutido-no-boot-15` na ponta `3fccbb2`, `--no-ff`, merge
+commit `3ae8e71` — rodou a suíte headless no checkout real da `main`, com a máquina livre, nenhum
+processo do motor aberto e **nenhuma janela de jogo**: **246 checagens / 0 falhas / 38,2 s**, exit 0,
+`SCRIPT ERROR` **0** nas duas correntes. O stderr publicado tem **250 bytes** e são os dois avisos de
+término do motor (12 instâncias ObjectDB vazando e 4 recursos ainda em uso), **byte a byte o mesmo das
+corridas da branch**: `merge-3ae8e71-suite-err.log` e `branch-suite-dono-unico-err.log` têm o mesmo
+SHA-256 `6d256047…`. Os três arquivos desta corrida estão em `docs/evidence/oracle-embutido-15/`
+(`merge-3ae8e71-suite.log`, `merge-3ae8e71-suite-err.log`, `merge-3ae8e71-anchors.log`) e no
+`artifacts.sha256` ao lado.
+
+A árvore do merge é a árvore da branch: `git diff --stat 3fccbb2 3ae8e71` é **vazio** e os dois hashes
+de diretório coincidem — `src` = `854c4793cacb7c2a1ce82ddaf560e0bd4a285441`, `tests` =
+`2f47fdc645307d1bdf6e90e998d11de76cd88f09`. A base `27800eb` continua
+`c36ab6cd2380b3dc7d584b7b4ebbd009ec445b5a` / `03f8da29fce069ce25dac5ddad4fe49ce7bbb3e8`, os mesmos que
+a nota da ponta `2bf0854` publicou: este merge não reescreveu nada da perna anterior.
+
+O diagnóstico final dessa corrida fecha com `worst_sim_ms` **11,914** dos 50 ms do passo,
+`dropped_ticks` **0**, `gen_ms` **991,3** e `mesh_ms` **4 539,0** — em tick 403. Continua sendo o boot
+o caro, não o caminho quente. E o censo do fim de corrida é `wolves` = 4 com `pending_respawns` = 1
+depois de a checagem do censo ter passado com 5 no ponto dela: estado conhecido desta suíte, não uma
+recusa deste merge.
+
+Na mesma ponta mergida o instrumento de âncoras passou de novo no checkout real e devolveu
+**1 634 ponteiros conferidos, 91 rótulos, 0 casos objetivos**, exit 0 — os três números da seção
+anterior, medidos depois do merge. A diferença para a rodada `2bf0854` é que a régua agora é arquivo
+do repositório: `tools/check_doc_anchors.py` entrou versionado em `b86c360`, então quem chega por
+clone limpo roda a mesma conferência, e é assim que o furo #14 deixa de ser dívida.
+
+Nada disso fecha gate de fase. A perna 15 é o hospedeiro do modelo no boot; o próximo elo da fila
+serializada é a 14 (convivência da alcateia), e o HOT agregado dos cinco lobos continua por colher.
