@@ -3068,3 +3068,75 @@ clone limpo roda a mesma conferência, e é assim que o furo #14 deixa de ser d�
 
 Nada disso fecha gate de fase. A perna 15 é o hospedeiro do modelo no boot; o próximo elo da fila
 serializada é a 14 (convivência da alcateia), e o HOT agregado dos cinco lobos continua por colher.
+
+## A chave do oráculo sai do repositório (2026-11-21, ponta `f4ca1bb` em `fix/chave-do-oraculo-fora-do-git-15`)
+
+**O furo tem duas camadas, e a segunda é a que doeu.** O scan de credenciais antes do push da perna 15
+barrou o push: a chave do servidor local vivia como literal em três arquivos — o `const API_KEY` do
+oráculo, o default do parâmetro no lançador PowerShell e a checagem da suíte, que imprimia as duas
+pontas no log. Nada foi publicado no GitHub e a chave nunca saiu desta máquina, então não há
+vazamento a registrar. O problema é de desenho: **(a)** o repositório é público, e uma "chave" que todo
+clone lê não separa "o nosso servidor sobrou de um crash" de "um `llama-server` de terceiro na porta"
+para quem chega de fora — era um imprint decorativo; **(b)** `_check_llm_key_drift` comparava o
+literal do `.ps1` com o literal do `.gd`, ou seja, provava que os dois lados do *mesmo* repositório
+concordavam. Uma checagem assim não pode falhar pelo motivo que importa, e é exatamente o tipo de
+verde que o mandato 1 cobra: conforto, não régua. A decisão do dono em 2026-11-21 foi tirar a
+credencial do git antes de publicar, e o que segue é o que ela custou.
+
+**Resolução, não string.** `MindOracle.resolve_api_key()`
+([mind_oracle.gd:219-241](../src/ai/mind_oracle.gd#L219-L241)) vale, nesta ordem, o ambiente
+`AETHERFALL_MIND_KEY`, o arquivo `user://mind_key.txt` e, sem as duas fontes, 32 hex sorteados por
+`Crypto.generate_random_bytes(16)` gravados no arquivo ([`:19-20`](../src/ai/mind_oracle.gd#L19-L20)
+para as duas constantes, leitura em [:244-250](../src/ai/mind_oracle.gd#L244-L250), escrita em
+[:253-259](../src/ai/mind_oracle.gd#L253-L259)). A origem fica nomeada em `key_source` — `ambiente`,
+`arquivo`, `sorteada`, `sorteada-sem-gravar`, `sem-entropia` — porque gravação que falha tem de ser
+estado visível e não chave silenciosa: sem arquivo, quem roda o lançador por fora não tem como bater a
+mesma chave e o `401` que vem depois é dele. O lançador lê as **mesmas duas fontes** e recusa sem
+nenhuma ([tools/run_mind_server.ps1:34-41](../tools/run_mind_server.ps1#L34-L41)). O host passou a
+imprimir a linha de comando com `<chave>` no lugar do valor
+([llm_server_host.gd:310](../src/ai/llm_server_host.gd#L310), `_redacted` em
+[:423-433](../src/ai/llm_server_host.gd#L423-L433)): o imprint continua vivo no processo e fora do
+log. A checagem da suíte ([smoke_test.gd:2156-2167](../tests/smoke_test.gd#L2156-L2167)) deixou de
+conferir string e passou a conferir **fonte**: o `.ps1` nomeia `KEY_ENV`, nomeia `mind_key.txt`, nomeia
+a pasta real do `user://` lida de `application/config/name`, tem `--api-key` na linha de comando, e a
+chave resolvida pelo oráculo é não-vazia.
+
+**Medido, por fonte.** Sondinha `SceneTree` (`extends SceneTree` + `resolve_api_key()` estático, sem
+jogo aberto) nas quatro situações, na mesma revisão: com ambiente apontado e arquivo presente →
+`origem=ambiente`, 28 chars, o ambiente vence; sem ambiente com arquivo → `origem=arquivo`, 32 chars;
+sem ambiente e arquivo fora do caminho → `origem=sorteada`, 32 chars novos e o arquivo criado com 33
+bytes (32 hex + `\n`); segunda execução depois do sorteio → `origem=arquivo` com o **mesmo** valor,
+que é o que torna o lançador externo compatível. O bloco de resolução do `.ps1`, rodado sozinho,
+devolveu `origem=arquivo  bytes=32  prefixo=6850` — o mesmo prefixo que a sondinha leu do arquivo
+naquele momento. O arquivo de chave real do jogo foi copiado antes do teste e restaurado depois
+(`cmp` idêntico); o sorteio nunca foi escrito no caminho definitivo fora deste teste.
+
+**Verde da ponta.** Suíte headless em `0da1391`: **246 checagens / 0 falhas / 37,5 s**, exit 0,
+**0** `SCRIPT ERROR` nas duas correntes, stderr de 250 bytes com SHA-256
+`6d256047fb3a05293fbb83004eaf0f1183e6371544c030ef2200f9e8fe9cd9b0` — o mesmo hash da corrida da
+`main` mergida `3ae8e71`, ou seja, o mesmo ruído de engine e nada novo. A linha da checagem reescrita
+é `[PASS] chave do servidor bate com a do oraculo fontes_lidas=true pasta=Aetherfall origem=arquivo`.
+Diagnóstico final: `worst_sim_ms` **13,797** dos 50 ms, `dropped_ticks` **0**, `gen_ms` **935,81**,
+`mesh_ms` **4 358,2**, tick 403, `wolves` 4 com `pending_respawns` 1. Os três scripts tocados passaram
+no `--check-only` com exit 0. Antes do verde houve um vermelho honesto: `Crypto.random_bytes` não
+existe no 4.7 (o método é `generate_random_bytes`) e o `SCRIPT ERROR` derrubou a resolução em três
+passos da suíte — o que só não virou "0 falhas" com contagem menor porque a checagem confere também a
+chave resolvida, e foi assim que o erro apareceu em vez de virar sucesso silencioso.
+
+**Âncoras e evidência.** O bloco de chave empurrou 15 linhas no `.ps1`, e os ponteiros `:11-15`,
+`:19-20`, `:22-27`, `:30-37`, `:37`, `:22-24` e `:25-27` do dossiê 15 estavam caindo em comentário de
+cabeçalho e em `param`: cada um foi lido no alvo e re-escrito contra a árvore atual
+(`:19-21`, `:27-28`, `:43-48`, `:51-59`, `:58`, `:43-45`, `:46-48`), inclusive a frase que dizia "não
+há `--api-key` na linha de comando de hoje" — hoje há, e sem literal. `python tools/check_doc_anchors.py`
+na ponta: **1 634 ponteiros conferidos, 91 rótulos, 0 casos objetivos**, exit 0. Varredura separada
+dos 36 ponteiros que apontam para os quatro arquivos tocados: nenhum alvo em branco e nenhum caindo
+além do crescimento de fim de arquivo, o que é o motivo de os deslocamentos serem só no `.ps1`.
+`git grep "aetherfall-mind-2026"` sobre conteúdo rastreado devolve **0 arquivos**. A máscara da
+evidência (`a39005d`) troca as **27** ocorrências por `<chave-redactada>` em **15** arquivos — e o
+número publicado aqui é o de ocorrências (`grep -ro | wc -l`), não o de linhas (`grep -c`, que dá
+**21**): as duas grandezas se confundem fácil e a régua é a primeira.
+
+**Fica aberto.** O mandamento 2 não mudou de natureza: a chave continua sendo imprint de localhost,
+não segurança, e o tráfego é `127.0.0.1`. A quarentena de sugestões do oráculo segue por escrever. O
+furo dos dois `.uid` órfãos (`tests/audio_test.gd.uid`, `tests/audio_live_probe.gd.uid`) continua
+registrado acima e não foi tocado neste lote. Nada aqui fecha gate de fase.

@@ -120,13 +120,13 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
   ([`live_oracle_probe.gd:38`](../../tests/live_oracle_probe.gd#L38)).
 - **Quem sobe o servidor hoje é um script, e ele é sincero sobre isso.**
   [`run_mind_server.ps1`](../../tools/run_mind_server.ps1): parâmetros `Port 8741`, `Ctx 4096`,
-  `GpuLayers 99` ([`:11-15`](../../tools/run_mind_server.ps1#L11-L15)), binário e modelo
+  `GpuLayers 99` ([`:19-21`](../../tools/run_mind_server.ps1#L19-L21)), binário e modelo
   resolvidos em `.tools\llama\runtime\llama-server.exe` e `models\qwen3.5-4b-q4_k_m.gguf`
-  ([`:19-20`](../../tools/run_mind_server.ps1#L19-L20)), `throw` se faltar qualquer um dos dois
-  ([`:22-27`](../../tools/run_mind_server.ps1#L22-L27)) e as flags
-  `-m --host --port -c -ngl --alias mind-small --reasoning off`
-  ([`:30-37`](../../tools/run_mind_server.ps1#L30-L37)). Não há `--api-key` na linha de comando de
-  hoje — é o que a decisão 2 acrescenta, com a consequência obrigatória do §4.2.
+  ([`:27-28`](../../tools/run_mind_server.ps1#L27-L28)), `throw` se faltar qualquer um dos dois
+  ([`:43-48`](../../tools/run_mind_server.ps1#L43-L48)) e as flags
+  `-m --host --port -c -ngl --alias mind-small --reasoning off --api-key`
+  ([`:51-59`](../../tools/run_mind_server.ps1#L51-L59)). O `--api-key` entrou com a decisão 2 e
+  não é literal: o valor vem das duas fontes do §4.2, e o script recusa sem nenhuma delas.
 - **O caminho de 1 clique não menciona llama.** [`Rodar.bat:5`](../../Rodar.bat#L5) chama
   `tools\run_game.ps1`; o launcher resolve o motor pinado
   ([`:60-64`](../../tools/run_game.ps1#L60-L64)), roda `--import` quando falta o cache de classes
@@ -219,14 +219,15 @@ isto que o `--api-key` entra, e **não** por segurança: a chave local é o *imp
 com `--api-key` no servidor, todo `/v1/chat/completions` sem o header `Authorization: Bearer` é
 `401` — e `401` cai no `text.is_empty()` de
 [`mind_oracle.gd:162-174`](../../src/ai/mind_oracle.gd#L162-L174), que hoje vira recuo de 30 s em
-silêncio. Então a chave vive numa constante ao lado de `SERVER_URL`
-([`:11-13`](../../src/ai/mind_oracle.gd#L11-L13)), `run_mind_server.ps1` passa a mesma chave
-([`:30-37`](../../tools/run_mind_server.ps1#L30-L37)) e o `_request` manda o header
-([`:122-124`](../../src/ai/mind_oracle.gd#L122-L124), pelos `auth_headers()` de
-[`:102-103`](../../src/ai/mind_oracle.gd#L102-L103)). A porta continua tendo **um** dono: o
-`server_url` do oráculo ([`:32`](../../src/ai/mind_oracle.gd#L32)); o host lê o valor do oracle em
-vez de repetir `8741`, que hoje já aparece em dois lugares ([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11)
-e [`run_mind_server.ps1:12`](../../tools/run_mind_server.ps1#L12)).
+silêncio. Desde 2026-11-21 a chave **não mora no repositório**: `resolve_api_key()` lê
+([`KEY_ENV` e `KEY_FILE`](../../src/ai/mind_oracle.gd#L19-L20)) e, sem as duas fontes,
+sorteia 32 hex e grava o arquivo ([`:219-241`](../../src/ai/mind_oracle.gd#L219-L241));
+o `run_mind_server.ps1` lê as **mesmas duas fontes** e recusa sem nenhuma
+([`:34-41`](../../tools/run_mind_server.ps1#L34-L41)). O `_request` manda o header pelos
+`auth_headers()` de ([`:102-103`](../../src/ai/mind_oracle.gd#L102-L103)). A porta continua
+tendo **um** dono: o `server_url` do oráculo ([`:32`](../../src/ai/mind_oracle.gd#L32)); o
+host lê o valor do oracle em vez de repetir `8741`, que aparece em dois lugares
+([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11) e [`ps1:19`](../../tools/run_mind_server.ps1#L19)).
 
 **4.3 — Ciclo de vida nos três pontos de saída, com os nomes certos da API.** No fecho da janela
 e em [`main.gd:_exit_tree`](../../src/main.gd#L661-L662) (onde o journal já é fechado — o único
@@ -253,7 +254,7 @@ do §8 decidir; até lá ele é `[OPEN]`, não `120 s` herdado do probe
 LLM/oráculo nunca decide movimento, dano, posição ou estado de mundo"*. O host vive em
 `_process`/timers próprios, **fora** de [`main.gd:_sim_tick`](../../src/main.gd#L223-L249) e fora
 dos 50 ms que o passo divide com os lobos; o `--reasoning off` já é condição do servidor
-([`run_mind_server.ps1:37`](../../tools/run_mind_server.ps1#L37)) e continua. A saída do oráculo
+([`run_mind_server.ps1:58`](../../tools/run_mind_server.ps1#L58)) e continua. A saída do oráculo
 não muda de tipo: `_narrations` ([`mind_oracle.gd:47`](../../src/ai/mind_oracle.gd#L47)) →
 `narration_of()` → F3 ([`hud.gd:276-279`](../../src/ui/hud.gd#L276-L279)).
 
@@ -284,8 +285,8 @@ não em popup.
 
 | Gatilho | Como se detecta | O que o host faz | O que aparece | O que a checagem prova |
 |---|---|---|---|---|
-| **Sem binário** (`llama-server.exe` ausente; o `throw` do passo manual hoje é em [`run_mind_server.ps1:22-24`](../../tools/run_mind_server.ps1#L22-L24)) | `FileAccess.file_exists` no caminho resolvido, **antes** de qualquer `create_process` | estado `ausente`; nenhum pedido HTTP é emitido | `llm: ausente (runtime)  rode tools\fetch_models.ps1 -Pack runtime` | 7: nenhuma requisição saiu, narrativa vazia, jogo íntegro |
-| **Sem modelo** (`.gguf` ausente — [`:25-27`](../../tools/run_mind_server.ps1#L25-L27)) | idem, caminho do `models/` | estado `ausente` com o motivo **diferente** do anterior | `llm: ausente (modelo)  rode tools\fetch_models.ps1 -Pack mind-small` | 7: os dois motivos não se confundem (mandato 1: sem placeholder bonito) |
+| **Sem binário** (`llama-server.exe` ausente; o `throw` do passo manual hoje é em [`run_mind_server.ps1:43-45`](../../tools/run_mind_server.ps1#L43-L45)) | `FileAccess.file_exists` no caminho resolvido, **antes** de qualquer `create_process` | estado `ausente`; nenhum pedido HTTP é emitido | `llm: ausente (runtime)  rode tools\fetch_models.ps1 -Pack runtime` | 7: nenhuma requisição saiu, narrativa vazia, jogo íntegro |
+| **Sem modelo** (`.gguf` ausente — [`:46-48`](../../tools/run_mind_server.ps1#L46-L48)) | idem, caminho do `models/` | estado `ausente` com o motivo **diferente** do anterior | `llm: ausente (modelo)  rode tools\fetch_models.ps1 -Pack mind-small` | 7: os dois motivos não se confundem (mandato 1: sem placeholder bonito) |
 | **Porta ocupada por terceiro** (`401`, ou 200 sem o alias `mind-small`, ou um não-llama) | a sonda de `GET /v1/models` com a nossa chave | **nada**: não mata, não reusa, não muda de porta; estado `estrangeiro` | `llm: porta 8741 ocupada por outro servidor  oraculo desligado` | 4: o listener **continua vivo** depois do run, e nenhum `OS.kill` foi chamado com pid alheio |
 | **Servidor morre no meio da sessão** (crash, OOM, usuário no Task Manager) | `OS.is_process_running(pid)` na cadência do host; código por `get_process_exit_code` | **uma** retentativa; segunda morte = sessão sem oráculo, sem novo retry | `llm: caiu (codigo N)  retentativa 1/1` e depois `llm: desligado` | 5: transições impressas, contagem de retentativas == 1 (não 2, não infinito) |
 | **Janela fechada** (fecha normal, `quit()`, ou morte do processo do jogo) | `_exit_tree` roda nos dois primeiros; no terceiro, não | `OS.kill` no pid **que ele criou**; pid de reuso não é tocado | nada na tela — o filho some, e a porta recusa conexão no próximo boot | 6: após o término, a porta está fechada; se estava aberta, o teste dá vermelho com o pid impresso (órfão) |

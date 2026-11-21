@@ -206,7 +206,7 @@ func _port() -> int:
 
 
 func _headers() -> PackedStringArray:
-	return ["Authorization: Bearer " + MindOracle.API_KEY]
+	return ["Authorization: Bearer " + MindOracle.resolve_api_key()]
 
 
 ## Sonda de boot: `GET /v1/models`, nao `/health`. O `/health` e publico no
@@ -303,11 +303,11 @@ func _spawn(reason: String) -> void:
 		"--host", "127.0.0.1", "--port", str(_port()),
 		"-c", str(ctx_size), "-ngl", str(gpu_layers),
 		"--alias", ALIAS, "--reasoning", "off",
-		# A chave local nao e seguranca: e o imprint que a sonda usa para separar
-		# "nosso" de "estrangeiro" num localhost compartilhado (dossie 15 §4.2).
-		"--api-key", MindOracle.API_KEY,
+		# O imprint que separa "nosso" de "estrangeiro" (dossie 15 §4.2) nao e
+		# seguranca, e por isso ele tambem nao vai para o log que vira evidencia.
+		"--api-key", MindOracle.resolve_api_key(),
 	])
-	print("llm_host  create_process  %s %s  (%s)" % [_resolved_server(), " ".join(argv), reason])
+	print("llm_host  create_process  %s %s  (%s)" % [_resolved_server(), _redacted(argv), reason])
 	pid = OS.create_process(_resolved_server(), argv, false)
 	if pid <= 0:
 		# `create_process` devolve -1 quando o SO recusa: sem pid nao ha o que
@@ -415,3 +415,19 @@ func _stop_child() -> void:
 		print("llm_host  encerrando pid %d  %s" % [pid, error_string(err)])
 	pid = -1
 	_owns_child = false
+
+
+## A linha de `create_process` e a assinatura da corrida, e ela nao pode carregar
+## a chave: log de headless vira `docs/evidence/` e evidencia vira repo publico.
+## O resto do comando continua literal — so o valor da chave sai mascarado.
+func _redacted(argv: PackedStringArray) -> String:
+	var out := PackedStringArray()
+	var mask := false
+	for a in argv:
+		if mask:
+			out.append("<chave>")
+			mask = false
+			continue
+		out.append(a)
+		mask = a == "--api-key"
+	return " ".join(out)

@@ -2150,10 +2150,9 @@ func _check_llm_backoff() -> void:
 	_gate_host.queue_free()
 
 
-## Derivacao entre linguagem: a mesma string de chave vive no GDScript do oraculo e
-## no `--api-key` do lancador PowerShell. O servidor e levantado pelo host com a
-## constante e por quem roda o lancador na mao com o literal; se os dois divergirem
-## a narrativa morre em 401 e nenhum dos dois lados avisa.
+## Derivacao entre linguagem: o lancador e o oraculo nao partilham uma string de
+## chave — partilham as duas FONTES: o ambiente `AETHERFALL_MIND_KEY` e o
+## `mind_key.txt` da pasta de dados nomeada por `application/config/name`.
 func _check_llm_key_drift() -> void:
 	var f := FileAccess.open("res://tools/run_mind_server.ps1", FileAccess.READ)
 	if f == null:
@@ -2161,10 +2160,11 @@ func _check_llm_key_drift() -> void:
 				"sem tools/run_mind_server.ps1 nesta arvore")
 		return
 	var src := f.get_as_text()
-	var quoted := '"%s"' % MindOracle.API_KEY
-	_check("chave do servidor bate com a do oraculo",
-			src.contains(quoted) and src.contains("--api-key"),
-			"lancador=%s  oracle=%s" % [quoted, MindOracle.API_KEY])
+	var app := str(ProjectSettings.get_setting("application/config/name"))
+	var ok := src.contains(MindOracle.KEY_ENV) and src.contains("mind_key.txt")
+	ok = ok and src.contains(app) and src.contains("--api-key") and MindOracle.resolve_api_key() != ""
+	_check("chave do servidor bate com a do oraculo", ok,
+			"fontes_lidas=%s  pasta=%s  origem=%s" % [ok, app, MindOracle.key_source])
 
 
 ## Um braco do experimento. A posicao, o hp, o campo de Eter ao redor e a ameaca

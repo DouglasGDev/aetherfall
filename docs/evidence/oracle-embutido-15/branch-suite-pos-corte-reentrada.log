@@ -265,7 +265,7 @@ llm_host  ausente (runtime)  sem llama-server em res://tests/sem-runtime-15.exe
   [PASS] porta fechada arma o recuo cheio       recuo=29.2 s  teto=30 s
 
 --- chave do servidor e a do oraculo ---
-  [PASS] chave do servidor bate com a do oraculo lancador="aetherfall-mind-2026"  oracle=aetherfall-mind-2026
+  [PASS] chave do servidor bate com a do oraculo lancador="<chave-redactada>"  oracle=<chave-redactada>
 
 --- hud, morte e renascer ---
   [PASS] hotbar com 10 pinos no hud             slots=10

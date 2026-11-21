@@ -21,7 +21,7 @@ for i in $(seq 1 200); do
     if [ "$CODE" = "200" ]; then
         echo "estrangeiro  health 200 em $(( $(date +%s%3N) - T0 )) ms  (a chave do jogo nao serve)"
         # prova de que a chave do jogo e recusada por este servidor:
-        C=$(curl -s -o /dev/null -w '%{http_code}' -m 3 -H "Authorization: Bearer aetherfall-mind-2026" \
+        C=$(curl -s -o /dev/null -w '%{http_code}' -m 3 -H "Authorization: Bearer <chave-redactada>" \
             http://127.0.0.1:8741/v1/models)
         echo "estrangeiro  /v1/models com a chave do jogo -> $C"
         exit 0
