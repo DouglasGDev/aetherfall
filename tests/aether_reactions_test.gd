@@ -16,6 +16,7 @@ const TESTS: Array[StringName] = [
 	&"_test_degrau_de_um_bloco_lobo_sobe",
 	&"_test_degrau_de_um_bloco_jogador_sobe_sem_tecla", &"_test_agachado_nao_e_arremessado",
 	&"_test_predicado_degrau_recusa_teto_baixo",
+	&"_test_pulo_nao_custou_passo_de_ninguem",
 	&"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
@@ -26,7 +27,7 @@ const TESTS: Array[StringName] = [
 	&"_test_spawn_fora_da_vista_do_jogador",
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 ]
-const EXPECTED_CHECKS: int = 195
+const EXPECTED_CHECKS: int = 198
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -1288,6 +1289,118 @@ func _test_predicado_degrau_recusa_teto_baixo() -> bool:
 			"zero=%s vertical=%s plano_coluna_limpa=%s" % [
 			bare.can_step_over(Vector3.ZERO), bare.can_step_over(Vector3(0.0, 5.0, 0.0)),
 			bare.can_step_over(east)])
+	return true
+
+
+## Os 1 000 frames de sessao de um braco de custo (dossie 19, checagem 6). O caminho
+## e o frame real do jogo: `_physics_process` de `main.gd` e `player.update_local` +
+## `clock.advance` + `_sim_tick` entre o `begin_step`/`end_step` do proprio relógio,
+## entao `worst_sim_ms` e `dropped_ticks` que saem daqui sao os mesmos dois numeros
+## que o overlay F3 mostra -- colhidos pela API publica `diagnostics()`, nao por um
+## cronometro paralelo inventado aqui.
+## O braco da face e o pior caso honesto: degrau com teto a uma celula do parapeito
+## (o mesmo `[51, 53]` da checagem 5), onde o auto-pulo e perguntado em todo frame
+## de bloqueio e responde "nao" -- o corpo encosta para sempre e gasta o predicado
+## sem gastar um salto. O lobo fica do outro lado do palco, em (70, 74), para o delta
+## entre os bracos ser o do jogador, nao uma ronda que atravessa a coluna.
+func _cost_arm(rows: Array) -> Dictionary:
+	_pack_release()
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_step_column(rows)
+	_pack_session(1)
+	_pack_place(0, Vector3(70.0, 51.001, 74.0))
+	var p := _player
+	p.feet_to_spawn(Vector3(52.0, 51.001, 54.0))
+	# yaw = -PI/2: `forward = (-sin(yaw), 0, -cos(yaw))` aponta para leste, a mesma
+	# direcao da coluna em x=56. O `move_forward` apertado o tempo todo e o que faz o
+	# passo ler `wish != ZERO` -- sem mapa de acao instalado nada andaria, e o braco
+	# mediria um corpo parado chamando-se de workload.
+	p.yaw = -PI / 2.0
+	_launch_watch(p.body)
+	var frames := 0
+	var horizontais := 0
+	var na_face := 0
+	var lancamentos := 0
+	var viradas := 0
+	var total_us := 0
+	var pior_us := 0
+	var tick0: int = int(_session.diagnostics()["tick"])
+	var para_leste := true
+	Input.action_press("move_forward")
+	for i: int in 1000:
+		var t0: int = Time.get_ticks_usec()
+		_session._physics_process(SimClock.STEP)
+		var cost: int = Time.get_ticks_usec() - t0
+		total_us += cost
+		pior_us = maxi(pior_us, cost)
+		frames += 1
+		if p.body.blocked_horizontal:
+			horizontais += 1
+			if p.body.feet_pos.x + Player.DIMS_STAND.x * 0.5 > 55.9:
+				na_face += 1
+		if _launched(p.body):
+			lancamentos += 1
+		# O plateu da fixture vai de 40 a 85 em cada eixo: virar o corpo no fim do
+		# corredor e o unico jeito de caminhar 1 000 frames sem sair do chao plano. A
+		# virada e por banda, nao por frame: `velocity` tem inercia, entao testar so a
+		# coordenada prendia o corpo no limiar com o yaw trocando de sinal a cada frame
+		# (medido: 869 viradas em 1 000 frames, o braco "andando" parado em x=80).
+		if para_leste and p.body.feet_pos.x > 78.0:
+			p.yaw += PI
+			para_leste = false
+			viradas += 1
+		elif not para_leste and p.body.feet_pos.x < 46.0:
+			p.yaw += PI
+			para_leste = true
+			viradas += 1
+	Input.action_release("move_forward")
+	var d: Dictionary = _session.diagnostics()
+	return {
+		"frames": frames, "horizontais": horizontais, "na_face": na_face,
+		"lancamentos": lancamentos, "viradas": viradas,
+		"total_us": total_us, "pior_us": pior_us,
+		"media_us": float(total_us) / float(maxi(frames, 1)),
+		"passos": int(d["tick"]) - tick0,
+		"worst_sim_ms": float(d["worst_sim_ms"]),
+		"dropped": int(d["dropped_ticks"]),
+		"x_max": p.body.feet_pos.x, "vivo": p.alive,
+	}
+
+
+func _test_pulo_nao_custou_passo_de_ninguem() -> bool:
+	# O contrato de custo do dossie 19 §4: o pulo novo mora no frame de fisica, e o
+	# que ele nao pode fazer e estourar a regua. Comparar os bracos por tempo absoluto
+	# seria um gate de ruido da maquina -- dois processo na mesma arvore ja trocaram de
+	# lugar aqui -- entao o gate e a regua dentro de cada braco (25 ms, a mesma do
+	# dossie 17 para cascata) e a atribuicao e pela composicao impressa: quantos frames
+	# de bloqueio, quantos pedidos de predicado na face e quantos saltos existem em um
+	# e no outro. O `lancamentos == 0` da face e o dente: sem ele o braco verde poderia
+	# estar dizendo apenas que o corpo andou livre.
+	var flat := _cost_arm([])
+	var face := _cost_arm([51, 53])
+	_step_column([])
+	_check(bool(flat["vivo"]) and bool(face["vivo"])
+			and int(flat["frames"]) == 1000 and int(face["frames"]) == 1000
+			and int(flat["passos"]) == 1000 and int(face["passos"]) == 1000
+			and int(flat["horizontais"]) == 0 and int(face["na_face"]) > 0
+			and int(face["lancamentos"]) == 0,
+			"premissa: 1 000 frames de sessao por braco, nenhum bloqueio no plano e o predicado perguntado na face sem um salto",
+			"plano: vivo=%s frames=%d passos=%d horizontais=%d | face: vivo=%s frames=%d passos=%d horizontais=%d na_face=%d lancamentos=%d x_max=%.3f viradas=%d/%d" % [
+			flat["vivo"], flat["frames"], flat["passos"], flat["horizontais"],
+			face["vivo"], face["frames"], face["passos"], face["horizontais"],
+			face["na_face"], face["lancamentos"], face["x_max"],
+			flat["viradas"], face["viradas"]])
+	_check(float(flat["worst_sim_ms"]) <= 25.0 and float(face["worst_sim_ms"]) <= 25.0
+			and int(flat["dropped"]) == 0 and int(face["dropped"]) == 0,
+			"nenhum passo de simulacao acima da regua de 25 ms e nenhum tick perdido, nos dois bracos",
+			"plano worst_sim=%.2f ms dropped=%d | face worst_sim=%.2f ms dropped=%d" % [
+			flat["worst_sim_ms"], flat["dropped"], face["worst_sim_ms"], face["dropped"]])
+	_check(float(flat["pior_us"]) <= 25000 and float(face["pior_us"]) <= 25000,
+			"o frame integral onde o pulo mora fica abaixo da mesma regua nos dois bracos",
+			"plano total=%d us media=%.1f us pior=%d us | face total=%d us media=%.1f us pior=%d us" % [
+			flat["total_us"], flat["media_us"], flat["pior_us"],
+			face["total_us"], face["media_us"], face["pior_us"]])
+	_pack_release()
 	return true
 
 
