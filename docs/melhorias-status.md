@@ -3131,7 +3131,7 @@ há `--api-key` na linha de comando de hoje" — hoje há, e sem literal. `pytho
 na ponta: **1 634 ponteiros conferidos, 91 rótulos, 0 casos objetivos**, exit 0. Varredura separada
 dos 36 ponteiros que apontam para os quatro arquivos tocados: nenhum alvo em branco e nenhum caindo
 além do crescimento de fim de arquivo, o que é o motivo de os deslocamentos serem só no `.ps1`.
-`git grep "aetherfall-mind-2026"` sobre conteúdo rastreado devolve **0 arquivos**. A máscara da
+`git grep` do valor que a constante antiga tinha, sobre conteúdo rastreado, devolve **0 arquivos**. A máscara da
 evidência (`a39005d`) troca as **27** ocorrências por `<chave-redactada>` em **15** arquivos — e o
 número publicado aqui é o de ocorrências (`grep -ro | wc -l`), não o de linhas (`grep -c`, que dá
 **21**): as duas grandezas se confundem fácil e a régua é a primeira.
