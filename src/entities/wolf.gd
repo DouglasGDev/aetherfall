@@ -169,6 +169,16 @@ var _saw_cd: float = 0.0
 var _bite_cd: float = 0.0
 var _corpse_timer: float = 0.0
 var _swim_time: float = 0.0
+## Chao do estado ensopado, nao porta de tudo (dossie 14 §3.2): `SHORE_AFTER` diz
+## ha quanto tempo o lobo esta na agua, mas o RUMO de travessia e um compromisso
+## proprio -- `_cross_target` vale `_cross_cd` (a cadencia do nariz, `SCENT_PERIOD`
+## = 5 passos de 20 Hz) e vence antes se a intencao trocar. Re-escolher a direcao a
+## cada passo de 50 ms e exatamente o "parece desorganizado" do pedido, e o anel de
+## `_shore_point` e caro demais para rodar 100 vezes por segundo por lobo (dossie
+## 14 §4). Todo o tempo aqui desconta `dt` de simulacao: nada de `Time.get_ticks_*`.
+var _cross_cd: float = 0.0
+var _cross_target: Vector3 = Vector3.ZERO
+var _cross_intent: String = ""
 var _stagger: float = 0.0
 var _swim_phase: float = 0.0
 var _visual: Node3D = null
@@ -373,7 +383,7 @@ func _leaf_investigate(ctx: Dictionary) -> int:
 		_move_target = body.feet_pos
 		_speed = 0.0
 		return BtStatus.RUNNING
-	_move_target = _scent_pos
+	_move_target = _scent_seat()
 	var offset := _move_target - body.feet_pos
 	offset.y = 0.0
 	if offset.length_squared() > 1.44:
@@ -395,6 +405,33 @@ func _leaf_investigate(ctx: Dictionary) -> int:
 	_scent_strength = 0.0
 	_scent_cd = 0.0
 	return BtStatus.SUCCESS
+
+
+## Assento de celula de rastro (dossie 14 §3.3.(i)): `_find_scent` devolve o
+## CENTRO da celula, entao N lobos sobre o mesmo rastro recebem exatamente o mesmo
+## ponto e cinco corpos param no mesmo voxel -- o mesmo mal que `_volume_clear`
+## recusa no spawn. Fica com o centro quem tem a menor identidade; os demais se
+## espalham em angulo deterministico do proprio rank a uma celula de Eter
+## (`AETHER_CELL` = 4 blocos) do centro, ou seja, do lado de la da borda da
+## celula. Precedencia por "quem chegou primeiro" pediria posse da celula escrita
+## no lobo, e a perna 10 nao deixou estado novo no caminho quente: a identidade e o
+## unico sinal mutuo, unico e sem alocacao que a leitura da sessao ja devolve, e o
+## rank sai igual para todos porque a leitura e mutua. Sem leitura -- o lobo
+## sozinho da fixture e do jogo antes da alcateia -- o centro e o alvo de sempre.
+func _scent_seat() -> Vector3:
+	var n := 1
+	var rank := 0
+	for e: Dictionary in _pack:
+		if String(e["intent"]) != "investigate":
+			continue
+		n += 1
+		if int(e["identity"]) < identity:
+			rank += 1
+	if rank == 0:
+		return _scent_pos
+	var a := TAU * float(rank) / float(n)
+	var folga := float(aether.cell)
+	return _scent_pos + Vector3(cos(a) * folga, 0.0, sin(a) * folga)
 
 
 func _remember_scent() -> void:
@@ -500,6 +537,39 @@ func _shore_point() -> Vector3:
 	return me
 
 
+## Rumo de travessia com compromisso (dossie 14 §3.2): enquanto o alvo escolhido
+## esta de pe e dentro da janela de `SCENT_PERIOD`, reusa -- o anel de
+## `_shore_point()` nao roda. Sem saida nenhuma no anel o alvo molhado fica onde
+## esta: o nado segue o caminho que ja existe e nao ha fallback que finja ter
+## achado terra (mandato 1).
+func _demand_shore() -> void:
+	if _cross_cd > 0.0 and _cross_intent == intent and _dry_ground(_cross_target):
+		_move_target = _cross_target
+		return
+	var shore := _shore_point()
+	if not _dry_ground(shore):
+		_cross_cd = 0.0
+		return
+	_move_target = shore
+	_cross_target = shore
+	_cross_intent = intent
+	_cross_cd = SCENT_PERIOD
+
+
+## Filtro de validade do alvo (dossie 14 §3.1): a arvore decide PARA ONDE e o chao
+## decide se esse para onde existe. Depois do `_tree.tick` e o unico ponto que
+## cobre as quatro folhas que escrevem alvo sem perguntar pelo solo (`_leaf_flee`,
+## `_leaf_chase`, `_leaf_stalk`, `_leaf_investigate`) sem copiar o teste cinco
+## vezes -- e sem brigar com o escorredor, que decide intencao e nao geometria.
+## Uma pergunta por lobo por passo de 20 Hz, fora dos 400 us do `SubtreeGuard`.
+## Alvo em terra derruba o compromisso: a travessia acabou.
+func _resolve_dry_target() -> void:
+	if _dry_ground(_move_target):
+		_cross_cd = 0.0
+		return
+	_demand_shore()
+
+
 func _leaf_bite(_ctx: Dictionary) -> bool:
 	if _bite_cd > 0.0:
 		return false
@@ -600,6 +670,7 @@ func sim_step(elapsed: float, dt: float) -> void:
 	_bite_cd = maxf(_bite_cd - dt, 0.0)
 	_wander_cd = maxf(_wander_cd - dt, 0.0)
 	_saw_cd = maxf(_saw_cd - dt, 0.0)
+	_cross_cd = maxf(_cross_cd - dt, 0.0)
 	_scent_clock += dt
 	_scent_cd = maxf(_scent_cd - dt, 0.0)
 	_threat = maxf(_threat - dt * 0.05, 0.0)
@@ -608,10 +679,13 @@ func sim_step(elapsed: float, dt: float) -> void:
 	if body.in_water:
 		_swim_time += dt
 		# preso na agua por tempo demais: a margem mais proxima manda, acima de
-		# qualquer outra intencao da arvore (a mordida no jogador pode esperar)
+		# qualquer outra intencao da arvore (a mordida no jogador pode esperar).
+		# O rumo e o compromisso de travessia, e a promessa e cumprida de novo no
+		# fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- esta
+		# atribuicao aqui, sozinha, e sobrescrita por qualquer folha com alvo.
 		if _swim_time > SHORE_AFTER:
-			_move_target = _shore_point()
 			_speed = SPEED_WALK * SWIM_SPEED_FACTOR
+			_demand_shore()
 	else:
 		_swim_time = 0.0
 	_read_pack()
@@ -620,6 +694,7 @@ func sim_step(elapsed: float, dt: float) -> void:
 	if intent != "investigate":
 		_inspect_left = 0.0
 	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt, "pack": _pack})
+	_resolve_dry_target()
 
 
 func _sense() -> void:
@@ -904,6 +979,10 @@ func load_state(d: Dictionary) -> void:
 	_swim_time = 0.0
 	_swim_phase = 0.0
 	_stagger = 0.0
+	# O compromisso de travessia e geometria do passo, e nao historia: depois do load
+	# o mundo em volta mudou, entao ele so pode valer de novo se for re-escolhido.
+	_cross_cd = 0.0
+	_cross_intent = ""
 	if _visual:
 		_visual.rotation.z = 0.0
 	if not alive:

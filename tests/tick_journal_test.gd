@@ -74,9 +74,15 @@ func _test_setup() -> bool:
 	# Desabilitar antes de entrar na arvore impede fisica, oraculo HTTP e remalharia.
 	_main.process_mode = Node.PROCESS_MODE_DISABLED
 	root.add_child(_main)
+	# Censo variavel (dossie 14 §3.5): o spawn real pode recusar ponto e devolver a
+	# vaga para a fila, entao o que o journal exige e a conta fechar, nao "nasceram
+	# cinco". Nada nasce nem se perde por fora da soma.
+	var fila := int(_main.diagnostics()["pending_respawns"])
 	if not _check(_main.is_node_ready() and _main.world != null and _main.clock != null
-			and _main.player != null and _main.wolves.size() == Main.WOLF_COUNT,
-			"boot real concluiu", "lobos=%d" % _main.wolves.size()):
+			and _main.player != null
+			and _main.wolves.size() + fila == Main.WOLF_COUNT,
+			"boot real concluiu", "lobos=%d fila=%d teto=%d" % [
+				_main.wolves.size(), fila, Main.WOLF_COUNT]):
 		return false
 	_world = _main.world
 	_field = AetherField.new()
@@ -92,6 +98,18 @@ func _make_wolf(identity: int) -> Wolf:
 	_main.add_child(wolf)
 	wolf.setup(_world, _field, _main.player, _main.spawn_point(), identity, _main.clock)
 	return wolf
+
+
+## Primeiro lobo VIVO do boot real. O censo agora e variavel (dossie 14 §3.5: o
+## spawn pode recusar ponto e devolver a vaga para a fila), entao indexar
+## `wolves[0]` a mao e SCRIPT ERROR -- e o erro derruba em silencio as checagens
+## do passo. Vivo, nao indice: as comparacoes de hash desta perna so tem dente
+## contra uma mente que participa do roster projetado pelo journal.
+func _lobo_da_matilha() -> Wolf:
+	for w in _main.wolves:
+		if (w as Wolf).alive:
+			return w
+	return null
 
 
 func _hash() -> String:
@@ -250,7 +268,9 @@ func _test_hash_minds() -> bool:
 
 
 func _test_observation() -> bool:
-	var wolf: Wolf = _main.wolves[0]
+	var wolf: Wolf = _lobo_da_matilha()
+	if wolf == null:
+		return _check(false, "boot deixou um lobo na matilha", "lobos=%d" % _main.wolves.size())
 	var base: String = _main.state_hash()
 	var old_us: int = wolf._guard.last_us
 	var old_trips: int = wolf._guard.trips
@@ -355,7 +375,9 @@ func _test_journal() -> bool:
 
 
 func _test_main_journal() -> bool:
-	var wolf: Wolf = _main.wolves[0]
+	var wolf: Wolf = _lobo_da_matilha()
+	if wolf == null:
+		return _check(false, "boot deixou um lobo na matilha", "lobos=%d" % _main.wolves.size())
 	_check(_main.process_mode == Node.PROCESS_MODE_DISABLED and not _main.player.can_process()
 			and not wolf.can_process() and not _main.oracle.can_process() and _main.clock.tick == 0,
 			"integracao sem processos automaticos", "tick=%d" % _main.clock.tick)

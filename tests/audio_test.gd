@@ -277,6 +277,12 @@ func _test_consumers() -> bool:
 			wolf_wired += 1
 	_check(wolf_wired == _main.wolves.size(), "cada lobo do spawn entrega seus tres sinais ao diretor",
 			"ligados=%d/%d" % [wolf_wired, _main.wolves.size()])
+	# Censo variavel (dossie 14 §3.5): o predicado de spawn pode recusar todos os
+	# pontos e a matilha borna vir vazia. Sem corpo na matriz, os eventos abaixo
+	# seriam SCRIPT ERROR -- e o erro derruba em silencio as checagens do passo.
+	if _main.wolves.is_empty():
+		_check(false, "o boot deixou um lobo para os consumidores", "lobos=0")
+		return false
 
 	var hash0 := _main.state_hash()
 	var hp0 := p.hp

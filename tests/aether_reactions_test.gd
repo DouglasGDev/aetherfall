@@ -16,8 +16,13 @@ const TESTS: Array[StringName] = [
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 	&"_test_contagio_medo", &"_test_amortece_confianca",
+	&"_test_lobo_escolhe_trilha_seca", &"_test_nadar_so_sem_saida_seca",
+	&"_test_resgate_de_margem_sobrevive_a_arvore",
+	&"_test_dois_lobos_nao_farejam_a_mesma_celula", &"_test_alvo_estavel_por_segundo",
+	&"_test_spawn_fora_da_vista_do_jogador",
+	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 ]
-const EXPECTED_CHECKS: int = 150
+const EXPECTED_CHECKS: int = 183
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -116,6 +121,33 @@ const AMORTECE_SPOTS: Array = [
 	Vector3(58.0, 51.001, 54.0), Vector3(50.0, 51.001, 62.0),
 	Vector3(66.0, 51.001, 62.0),
 ]
+
+
+# Geometria da célula de rastro (dossie 14 §5.4): quatro lobos a 7,2 m de um unico
+# imprint de WORK, todos dentro dos 12 m do nariz (SCENT_RADIUS = 3 celulas) e
+# dentro dos 24 m de coesao, entao os quatro leem a MESMA celula. Sem assento, os
+# quatro escrevem o mesmo centro -- e o "cinco corpos no mesmo ponto" que a
+# premissa 2 declara por ausencia.
+const FAREJAR_SPOTS: Array = [
+	Vector3(60.0, 51.001, 58.0), Vector3(72.0, 51.001, 58.0),
+	Vector3(60.0, 51.001, 66.0), Vector3(72.0, 51.001, 66.0),
+]
+
+
+## Sessao de spawn puro: os cinco lobos vem do `_spawn_wolves` real e ficam onde o
+## sorteados colocou, sem `_pack_place`. E o unico jeito de conferir os lares
+## (dossie 14 §3.3.(iii)) pela transicao verdadeira e nao por posicao escrita a mao.
+func _spawn_session(n: int) -> void:
+	_pack_release()
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s.clock = _clock
+	s.player = _player
+	s._entities = Node3D.new()
+	_stage.add_child(s._entities)
+	s._spawn_wolves(n)
+	_session = s
 
 
 func _initialize() -> void:
@@ -1343,6 +1375,11 @@ func _pack_release() -> void:
 		return
 	if is_instance_valid(_session._entities):
 		_session._entities.free()
+	# O hud e da sessao: sem libera-lo, cada `_boot_session` empilharía um Label
+	# vivo no palco e a leitura do toast deixaria de apontar para o hud que a
+	# sessao atual usa.
+	if is_instance_valid(_session.hud):
+		_session.hud.free()
 	_session.free()
 	_session = null
 
@@ -1936,6 +1973,469 @@ func _test_amortece_confianca() -> bool:
 	return true
 
 
+# ------------------------------------------------------- convivencia (dossie 14)
+
+## Lago artificial sobre o plateau: `WATER` em y=51, o piso de pedra em y=50 fica
+## intacto, entao `surface_height` continua 50 e a coluna passa a contar como
+## molhada pelo predicado real do lobo (`_dry_ground` le a superficie atual). A
+## saida seca do cenario 1 e geometrica e nao uma aposta na seed, e o mesmo
+## `set_block` que a fixture ja usa para o planalto e para a parede.
+func _flood(x0: int, z0: int, x1: int, z1: int) -> void:
+	for x: int in range(x0, x1 + 1):
+		for z: int in range(z0, z1 + 1):
+			_world.set_block(Vector3i(x, 51, z), BlockDefs.Block.WATER)
+
+
+## Restaura o retangulo exatamente como a fixture o deixou: pedra em y=50, ar
+## acima. Sem isto a agua do cenario 1 vazaria nos cenarios seguintes.
+func _unflood(x0: int, z0: int, x1: int, z1: int) -> void:
+	for x: int in range(x0, x1 + 1):
+		for z: int in range(z0, z1 + 1):
+			_world.set_block(Vector3i(x, 51, z), BlockDefs.Block.AIR)
+
+
+## Raio do primeiro ponto seco no espelho exato do anel de `_shore_point()` (os
+## mesmos 5 raios, as mesmas 8 direcoes, o mesmo `+0,3`), ou -1 quando nao ha
+## saida nenhuma. A premissa do cenario tem de usar o varredura da folha, e nao
+## uma busca mais frouxa que deixaria passar um "quase seco".
+func _exit_ring(origin: Vector3) -> float:
+	for r: float in [1.6, 2.6, 4.0, 6.0, 8.0]:
+		for i: int in 8:
+			var a := TAU * float(i) / 8.0 + 0.3
+			if _wolf._dry_ground(origin + Vector3(cos(a) * r, 0.0, sin(a) * r)):
+				return r
+	return -1.0
+
+
+## Distancia horizontal ate a primeira coluna seca ao redor de `p` (passo de 0,5 m
+## em 16 direcoes ate 20 m), 0,0 se `p` ja e seco, -1 se so ha agua nesse raio.
+## Servico de report: e o numero que o cenario imprime como "distancia a margem",
+## e o teto que decide comportamento continua sendo o anel de 8 m de `_shore_point`.
+func _nearest_dry(p: Vector3) -> float:
+	if _wolf._dry_ground(p):
+		return 0.0
+	for r: int in range(1, 41):
+		var d := float(r) * 0.5
+		for i: int in 16:
+			var a := TAU * float(i) / 16.0
+			if _wolf._dry_ground(p + Vector3(cos(a) * d, 0.0, sin(a) * d)):
+				return d
+	return -1.0
+
+
+## Cenario 1 (dossie 14 §5, premissa 1 nos dois sentidos). Braco A: o alvo que a
+## arvore elegeu esta na agua e ha coluna seca a <= 8 m -- nenhum tick pode
+## terminar com alvo molhado. Braco B e a direcao oposta obrigatoria: no meio de
+## um lago sem saida nenhuma no anel, o conserto tem de ser indiferente ao estado,
+## o alvo continua molhado e o corpo ancora avanca nadando. Sem o braco B o filtro
+## poderia virar "finge que achou seco" e o mandato 1 nao deixa.
+func _test_lobo_escolhe_trilha_seca() -> bool:
+	_flood(63, 59, 69, 65)
+	_arm()
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	_advance(1)
+	var alvo: Vector3 = _wolf._scent_pos
+	var saida := _exit_ring(alvo)
+	# A premissa se mede no rastro e nao no `_move_target` do passo: o filtro roda
+	# no fim do mesmo `sim_step`, entao ler o alvo depois seria ler o conserto.
+	# `_leaf_investigate` escreve `_move_target = _scent_pos` sem perguntar ao chao
+	# (wolf.gd:376), entao rastro na agua e a arvore mirando a agua.
+	_check(_wolf.intent == "investigate" and _wolf._scent_found
+			and not _wolf._dry_ground(alvo) and saida > 0.0 and saida <= 8.0,
+			"premissa A: o nariz escolhe uma coluna de agua com saida seca no anel",
+			"rastro=%s seco=%s saida_do_rastro=%.1f m intent=%s forca=%.3f" % [
+			alvo, _wolf._dry_ground(alvo), saida, _wolf.intent, _wolf._scent_strength])
+	var molhados := 0
+	var corpo_molhado := 0
+	for i: int in 200:
+		_advance(1)
+		if not _wolf._dry_ground(_wolf._move_target):
+			molhados += 1
+		if _wolf.body.in_water:
+			corpo_molhado += 1
+	_check(molhados == 0, "ticks_com_alvo_molhado_final == 0 (200 passos)",
+			"molhados=%d/200 alvo_final=%s a %.1f m de terra seca pes=%s" % [
+			molhados, _wolf._move_target, _nearest_dry(_wolf._move_target),
+			_wolf.body.feet_pos])
+	_check(not _wolf.body.in_water and _wolf._dry_ground(_wolf.body.feet_pos),
+			"o corpo nao termina dentro da agua quando havia saida",
+			"in_water=%s ticks_corpo_na_agua=%d/200 pes=%s" % [
+			_wolf.body.in_water, corpo_molhado, _wolf.body.feet_pos])
+	# Braco B: lago de 28 x 28 colunas -- do centro ate a borda seca mais proxima
+	# sao 13,5 m, entao nenhum dos cinco raios de `_shore_point` devolve terra.
+	_flood(46, 49, 73, 76)
+	_arm(Vector3(59.0, 51.001, 62.0), FAR_PLAYER, 2)
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	_advance(1)
+	var saida_b := _exit_ring(_wolf.body.feet_pos)
+	_check(not _wolf._dry_ground(_wolf._move_target) and saida_b < 0.0
+			and _wolf.body.in_water and _nearest_dry(_wolf.body.feet_pos) > 8.0,
+			"premissa B: lago sem nenhuma saida no anel de 8 m",
+			"alvo=%s saida=%.1f m terra_real=%.1f m in_water=%s intent=%s" % [
+			_wolf._move_target, saida_b, _nearest_dry(_wolf.body.feet_pos),
+			_wolf.body.in_water, _wolf.intent])
+	var inicio := _wolf.body.feet_pos
+	var travessias := 0
+	var mentirosos := 0
+	for i: int in 200:
+		_advance(1)
+		if not _wolf._dry_ground(_wolf._move_target):
+			# Um alvo molhado so e honesto se a saida nao existe: medido no mesmo
+			# corpo e no mesmo passo em que o filtro decidiu, e nao depois.
+			if _exit_ring(_wolf.body.feet_pos) >= 0.0:
+				mentirosos += 1
+			else:
+				travessias += 1
+	var avanco := _horizontal(_wolf.body.feet_pos - inicio).length()
+	_check(mentirosos == 0, "o nado so acontece onde nao ha saida (o filtro nao mente)",
+			"alvos_molhados_sem_saida=%d com_saida=%d/200 terra_real=%.1f m" % [
+			travessias, mentirosos, _nearest_dry(_wolf.body.feet_pos)])
+	_check(avanco > 1.2, "sem saida o corpo avanca nadando",
+			"deslocamento=%.2f m (> 1,2 m) passos=200 in_water=%s pes=%s" % [
+			avanco, _wolf.body.in_water, _wolf.body.feet_pos])
+	_unflood(46, 49, 73, 76)
+	_unflood(63, 59, 69, 65)
+	return true
+
+
+## A coluna de agua mais funda da seed, medida como no passo de nado do smoke
+## (varredura de 2 em 2 blocos, profundidade `SEA_LEVEL - leito` mais os quatro
+## vizinhos molhados como desempate). Lago REAL e nao o que a fixture inundou: o
+## "nada por necessidade" tem de existir no terreno gerado, senao o conserto so
+## seria indiferente a um estado que o mundo nunca produz.
+func _deepest_lake() -> Dictionary:
+	var best := Vector3i.ZERO
+	var best_score := -1
+	for x: int in range(4, VoxelConfig.world_size_x() - 4, 2):
+		for z: int in range(4, VoxelConfig.world_size_z() - 4, 2):
+			var top := _world.surface_height(x, z)
+			if not _world.is_water_xyz(x, top + 1, z):
+				continue
+			var vizinhos := 0
+			for off: Vector3i in [Vector3i(2, 0, 0), Vector3i(-2, 0, 0), Vector3i(0, 0, 2), Vector3i(0, 0, -2)]:
+				var t2 := _world.surface_height(x + off.x, z + off.z)
+				if _world.is_water_xyz(x + off.x, t2 + 1, z + off.z):
+					vizinhos += 1
+			var score := (VoxelConfig.SEA_LEVEL - top) * 10 + vizinhos
+			if score > best_score:
+				best_score = score
+				best = Vector3i(x, top, z)
+	return {"col": best, "leito": best.y, "pontuacao": best_score,
+			"profundidade": VoxelConfig.SEA_LEVEL - best.y}
+
+
+## Cenario 2 (dossie 14 §5, segundo sentido da premissa 1): o mesmo lobo no lago
+## mais fundo da seed nada e avanca, e o filtro continua indiferente a esse
+## estado. Braco B mede o compromisso de travessia (dossie 14 §3.2): com a presa
+## visivel dentro da agua o alvo seco e re-escolhido na cadencia do nariz
+## (SCENT_PERIOD = 5 passos), nao a cada passo de 50 ms -- re-escolher todo passo
+## e exatamente o "parece desorganizado" do pedido.
+func _test_nadar_so_sem_saida_seca() -> bool:
+	var lago: Dictionary = _deepest_lake()
+	var col: Vector3i = lago["col"]
+	var pes := Vector3(float(col.x) + 0.5, float(col.y) + 1.05, float(col.z) + 0.5)
+	_arm(pes, FAR_PLAYER, 4)
+	_field.imprint(pes + Vector3(4.0, 0.0, 0.0), AetherField.Channel.WORK, 0.42)
+	_advance(1)
+	var saida_lago := _exit_ring(_wolf.body.feet_pos)
+	_check(lago["pontuacao"] > 0 and lago["profundidade"] >= 2
+			and not _wolf._dry_ground(_wolf.body.feet_pos) and _wolf.body.in_water,
+			"premissa: lago fundo da seed, corpo na agua por necessidade",
+			"coluna=(%d,%d) profundidade=%d leito=%d saida_anel=%.1f m terra_real=%.1f m" % [
+			col.x, col.z, lago["profundidade"], lago["leito"], saida_lago,
+			_nearest_dry(_wolf.body.feet_pos)])
+	var inicio_lago := _wolf.body.feet_pos
+	var molhados_lago := 0
+	var mentirosos_lago := 0
+	for i: int in 200:
+		_advance(1)
+		if not _wolf._dry_ground(_wolf._move_target):
+			molhados_lago += 1
+			if _exit_ring(_wolf.body.feet_pos) >= 0.0:
+				mentirosos_lago += 1
+	var avanco_lago := _horizontal(_wolf.body.feet_pos - inicio_lago).length()
+	_check(avanco_lago > 1.2, "no lago da seed o corpo nada e avanca (> 1,2 m)",
+			"deslocamento=%.2f m alvos_molhados=%d/200 in_water=%s pes=%s" % [
+			avanco_lago, molhados_lago, _wolf.body.in_water, _wolf.body.feet_pos])
+	_check(mentirosos_lago == 0, "no lago da seed tambem so nada onde nao ha saida",
+			"molhados_sem_saida=%d molhados_com_saida=%d/200" % [
+			molhados_lago - mentirosos_lago, mentirosos_lago])
+	# Braco B: lago artificial com saida, presa visivel dentro da agua -- todo tick
+	# de cauda termina com um alvo em terra, e o que se conta sao as vezes em que
+	# esse rumo foi TROCADO, medida no alvo escrito e nao num campo do lobo.
+	_flood(55, 59, 71, 65)
+	_arm(Vector3(60.0, 51.001, 62.0), Vector3(66.0, 51.001, 62.0), 5)
+	_advance(1)
+	var alvo_anterior := _wolf._move_target
+	var reescolhas := 0
+	var passos_cauda := 0
+	var secos := 0
+	for i: int in 200:
+		_advance(1)
+		if _wolf.intent != "hunt":
+			alvo_anterior = _wolf._move_target
+			continue
+		passos_cauda += 1
+		if _wolf._dry_ground(_wolf._move_target):
+			secos += 1
+			if _horizontal(_wolf._move_target - alvo_anterior).length() > 0.01:
+				reescolhas += 1
+		alvo_anterior = _wolf._move_target
+	var segundos := float(passos_cauda) * SimClock.STEP
+	var taxa := float(reescolhas) / maxf(segundos, 0.001)
+	_check(passos_cauda > 100 and secos == passos_cauda,
+			"premissa B: a cauda na agua troca o alvo por um ponto em terra todo passo",
+			"passos_hunt=%d alvos_secos=%d presa_seca=%s saida=%.1f m" % [
+			passos_cauda, secos, _wolf._dry_ground(_player.position3()),
+			_exit_ring(_wolf.body.feet_pos)])
+	_check(taxa <= 5.0, "rumo de travessia re-escolhe na cadencia do nariz (4/s), nao todo passo",
+			"reescolhas=%d em %.1f s de cauda = %.2f por passo de 20 Hz (%.1f/s, teto declarado 5/s)" % [
+			reescolhas, segundos, float(reescolhas) / maxf(float(passos_cauda), 1.0), taxa])
+	_unflood(55, 59, 71, 65)
+	return true
+
+
+## Cenario 3 (dossie 14 §5): o resgate de margem sobrevive a arvore. O comentario
+## de `sim_step` jura que a margem proxima manda "acima de qualquer outra intencao
+## da arvore", mas a atribuicao roda ANTES de `_sense`/`_think`/`_tree.tick` e a
+## folha `perseguir` reescrevia o alvo molhado por cima dela. Aqui o lobo nada
+## 6 m ate a borda (mais de 2 s de travessia, por isso `_swim_time` cruza
+## `SHORE_AFTER` com a presa ainda a vista dentro da agua) e o que se colhe e o
+## passo do cruzamento, nao o ultimo passo de uma janela qualquer: depois do
+## conserto o corpo ate sai da agua, e `SHORE_AFTER` deixa de ser alcancavel.
+func _test_resgate_de_margem_sobrevive_a_arvore() -> bool:
+	_flood(55, 59, 71, 65)
+	_arm(Vector3(60.0, 51.001, 62.0), Vector3(66.0, 51.001, 62.0), 3)
+	var presa: Vector3 = _player.position3()
+	_advance(1)
+	_check(_wolf.intent == "hunt" and _wolf._los_player
+			and not _wolf._dry_ground(presa) and _distance(presa) > Wolf.BITE_RANGE,
+			"premissa: cauda com presa visivel dentro da agua",
+			"los=%s intent=%s presa=%s presa_seca=%s dist=%.2f m saida=%.1f m" % [
+			_wolf._los_player, _wolf.intent, presa, _wolf._dry_ground(presa),
+			_distance(presa), _exit_ring(_wolf.body.feet_pos)])
+	var tick_resgate := -1
+	var swim_no_resgate := 0.0
+	var alvo_no_resgate := _wolf._move_target
+	var molhados_soaked := 0
+	var ticks_soaked := 0
+	for i: int in 160:
+		_advance(1)
+		if _wolf._swim_time > Wolf.SHORE_AFTER:
+			ticks_soaked += 1
+			if not _wolf._dry_ground(_wolf._move_target):
+				molhados_soaked += 1
+			if tick_resgate < 0:
+				tick_resgate = _clock.tick
+				swim_no_resgate = _wolf._swim_time
+				alvo_no_resgate = _wolf._move_target
+	_check(tick_resgate > 0 and ticks_soaked > 0,
+			"o estado ensopado existe de verdade (SHORE_AFTER cruzado em passo de 20 Hz)",
+			"tick=%d _swim_time=%.3f s (piso %.1f s) ticks_ensopados=%d in_water=%s" % [
+			tick_resgate, swim_no_resgate, Wolf.SHORE_AFTER, ticks_soaked,
+			_wolf.body.in_water])
+	_check(_wolf._dry_ground(alvo_no_resgate)
+			and _horizontal(alvo_no_resgate - presa).length() > 1.0,
+			"resgate_de_margem_sobrevive_a_arvore: alvo do passo do resgate e seco",
+			"intent=%s alvo=%s seco=%s a %.1f m da presa molhada (%.1f m de terra)" % [
+			_wolf.intent, alvo_no_resgate, _wolf._dry_ground(alvo_no_resgate),
+			_horizontal(alvo_no_resgate - presa).length(),
+			_nearest_dry(alvo_no_resgate)])
+	_check(molhados_soaked == 0, "nenhum passo ensopado termina com alvo molhado",
+			"molhados=%d/%d ensopados in_water_final=%s _swim_time=%.3f s" % [
+			molhados_soaked, ticks_soaked, _wolf.body.in_water, _wolf._swim_time])
+	_unflood(55, 59, 71, 65)
+	return true
+
+
+## Cenario 4 (dossie 14 §5, premissa 2 no espaco): quantos lobos miram a MESMA
+## celula de Eter por tick e quantos param no mesmo ponto. Vermelho por ausencia:
+## `_find_scent` devolve o centro da celula, entao os quatro que leem o mesmo
+## rastro escrevem o mesmo alvo e cinco corpos cabem no mesmo voxel.
+func _test_dois_lobos_nao_farejam_a_mesma_celula() -> bool:
+	_arm()
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, FAREJAR_SPOTS[i])
+	var celula_rastro: Vector3i = _field.cell_of_world(SOURCE)
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	_advance_pack(1)
+	var ws: Array = _pack_wolves()
+	var mesma_celula := true
+	var todos_investigate := true
+	for w: Wolf in ws:
+		mesma_celula = mesma_celula and w._scent_cell == celula_rastro
+		todos_investigate = todos_investigate and w.intent == "investigate"
+	_check(mesma_celula and todos_investigate,
+			"premissa: os quatro leem a mesma celula de rastro",
+			"celula=%s leituras=[%s] intent=[%s]" % [
+			str(celula_rastro), _cels_str(ws), _intents_str(ws)])
+	var pior_tick := 0
+	var pior_na_celula := 0
+	var pior_no_ponto := 0
+	var passos_investigue := 0
+	var fora_da_celula := 0
+	for t: int in 150:
+		_advance_pack(1)
+		var na_celula := 0
+		var alvos: Array = []
+		for w: Wolf in ws:
+			if w.intent == "investigate":
+				passos_investigue += 1
+				if _field.cell_of_world(w._move_target) == celula_rastro:
+					na_celula += 1
+				else:
+					fora_da_celula += 1
+			alvos.append(w._move_target)
+		if na_celula > 0 and t > 5:
+			pior_tick = t
+		pior_na_celula = maxi(pior_na_celula, na_celula)
+		pior_no_ponto = maxi(pior_no_ponto, _cluster_maximo(alvos, 1.0))
+	_check(pior_na_celula <= 1, "pico de lobos mirando a mesma celula por tick",
+			"pior=%d lobos na celula %s (teto 1) ultimo_tick=%d passos_investigue=%d alvos_fora_da_celula=%d" % [
+			pior_na_celula, str(celula_rastro), pior_tick, passos_investigue, fora_da_celula])
+	_check(pior_no_ponto <= 1, "pico de lobos com o mesmo ponto de chegada",
+			"pior_cluster=%d alvos a <= 1,0 m entre si (teto 1)" % pior_no_ponto)
+	# Lares em colunas diferentes (dossie 14 §3.3.(iii)): medidos no spawn real,
+	# sem `_pack_place`. Se dois lobos herdam a mesma coluna, a ronda dos dois
+	# setores sortea o mesmo circulo e a matilha parece um corpo so.
+	_spawn_session(5)
+	var colunas: Dictionary = {}
+	var lares := ""
+	for w: Wolf in _pack_wolves():
+		var col := Vector2i(int(w.home.x), int(w.home.z))
+		colunas[col] = true
+		lares += "lobo%d=(%d,%d) " % [w.identity, col.x, col.y]
+	# Censo variavel (dossie 14 §3.5): o que vale nao e "nasceram cinco", e "os que
+	# nasceram tem colunas distintas e nada se perdeu por fora" -- o que nao nasce
+	# volta para a fila, entao matilha + fila fecha o teto.
+	var fila_boot := int(_session.diagnostics()["pending_respawns"])
+	_check(colunas.size() == _pack_wolves().size()
+			and _pack_wolves().size() + fila_boot == int(Session.WOLF_COUNT),
+			"lares do spawn real em colunas diferentes, censo fechado pela fila",
+			"distintas=%d de %d borna + %d na fila = teto %d | %s" % [
+			colunas.size(), _pack_wolves().size(), fila_boot, Session.WOLF_COUNT, lares])
+	# Mecanismo, nao sorte: um censo que pode nascer menor que cinco nao pode contar
+	# com a sorte da seed, entao a checagem de cima fecha a conta e esta marca as
+	# colunas ocupadas -- incluida a do centro, o ponto que o fallback antigo
+	# devolvia em silencio e que hoje tem de ser recusado por distancia ou por
+	# visada -- e pede lares de novo pela funcao real. Coluna ocupada nao pode
+	# voltar, e recusa contada nao e violacao.
+	colunas[Vector2i(int(_session.spawn_point().x), int(_session.spawn_point().z))] = true
+	var violacoes := 0
+	var recusados := 0
+	var dadas: Dictionary = {}
+	for _k: int in 8:
+		var pedido: Dictionary = _session._spawn_home_point(colunas)
+		if not bool(pedido["ok"]):
+			recusados += 1
+			continue
+		var novo: Vector3 = pedido["feet"]
+		var col_nova := Vector2i(int(novo.x), int(novo.z))
+		if colunas.has(col_nova):
+			violacoes += 1
+		dadas[col_nova] = true
+	_check(violacoes == 0, "mecanismo: coluna ocupada nao volta como lar",
+			"violacoes=%d em 8 pedidos, recusados=%d, ocupadas=%d, colunas_devolvidas=%d" % [
+			violacoes, recusados, colunas.size(), dadas.size()])
+	_pack_release()
+	return true
+
+
+## Cenario 5 (dossie 14 §5, premissa 2 no tempo): trocas de `_move_target` por
+## lobo por segundo de logica. Organizado e numero, nao adjetivo -- a media por
+## lobo e o pior segundo de um lobo saem no log com o teto declarado.
+##
+## De onde vem o teto: uma troca so conta quando o alvo escrito se move mais de
+## 0,5 m no horizontal. Dois canais re-escrevem o alvo na mata e os dois tem
+## cadencia de 4 Hz -- o nariz (`SCENT_PERIOD` 0,25 s) e o compromisso de
+## travessia da perna (b) -- entao o pior segundo legitimo e a soma: 8 trocas/s,
+## uma a cada dois passos de 20 Hz. A media se declara em 2/s, um quarto do pior
+## caso, porque a patrulha e a cauda tambem tem de escrever o MESMO alvo por
+## varios passos seguidos para o corpo chegar a algum lugar.
+func _test_alvo_estavel_por_segundo() -> bool:
+	_arm()
+	_pack_session(4)
+	for i: int in 4:
+		_pack_place(i, FAREJAR_SPOTS[i])
+	_field.imprint(SOURCE, AetherField.Channel.WORK, 0.42)
+	var segundos := 20
+	var ws: Array = _pack_wolves()
+	var anterior: Array = []
+	var por_segundo: Array = []
+	for w: Wolf in ws:
+		anterior.append(w._move_target)
+		var linha: Array = []
+		for s: int in segundos:
+			linha.append(0)
+		por_segundo.append(linha)
+	var passos := 0
+	for s: int in segundos:
+		for t: int in 20:
+			_advance_pack(1)
+			passos += 1
+			for i: int in ws.size():
+				var w: Wolf = ws[i]
+				if _horizontal(w._move_target - anterior[i]).length() > 0.5:
+					por_segundo[i][s] += 1
+				anterior[i] = w._move_target
+	var soma := 0
+	var pior_segundo := 0
+	var pior_lobo := -1
+	var linhas := ""
+	for i: int in ws.size():
+		var total := 0
+		var pior_do_lobo := 0
+		for s: int in segundos:
+			total += por_segundo[i][s]
+			pior_do_lobo = maxi(pior_do_lobo, por_segundo[i][s])
+		soma += total
+		if pior_do_lobo > pior_segundo:
+			pior_segundo = pior_do_lobo
+			pior_lobo = (ws[i] as Wolf).identity
+		linhas += "lobo%d media=%.2f/s pior_segundo=%d | " % [
+				(ws[i] as Wolf).identity, float(total) / float(segundos), pior_do_lobo]
+	var media_geral := float(soma) / float(segundos * ws.size())
+	_check(soma > 0, "premissa: a janela tem trocas suficientes para contar",
+			"passos_por_lobo=%d trocas_total=%d %s" % [
+			segundos * 20, soma, linhas.strip_edges()])
+	_check(media_geral <= 2.0, "trocas de alvo por lobo por segundo de logica (media)",
+			"media=%.3f/s por lobo (teto 2/s), trocas=%d em %d s com 4 lobos" % [
+			media_geral, soma, segundos])
+	_check(pior_segundo <= 8, "nenhum lobo troca o alvo acima do teto no pior segundo",
+			"pior_segundo=%d trocas no lobo%d (teto 8/s) %s" % [
+			pior_segundo, pior_lobo, linhas.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Maior conjunto de alvos que cae dentro de `raio` um do outro -- o "cinco corpos
+## no mesmo ponto" da premissa 2, medido no alvo escrito e nao no corpo.
+func _cluster_maximo(alvos: Array, raio: float) -> int:
+	var pior := 0
+	for a: int in alvos.size():
+		var n := 0
+		for b: int in alvos.size():
+			if _horizontal(alvos[a] - alvos[b]).length() <= raio:
+				n += 1
+		pior = maxi(pior, n)
+	return pior
+
+
+func _cels_str(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		out += str(w._scent_cell) + " "
+	return out.strip_edges()
+
+
+func _intents_str(ws: Array) -> String:
+	var out := ""
+	for w: Wolf in ws:
+		out += w.intent + " "
+	return out.strip_edges()
+
+
 ## O veto `hunt` na ultima decisao colhida pelo escorredor do lobo: aberta quer
 ## dizer `vetoed == false` e score acima de zero. Le-se no escorredor e nao se
 ## deduz do `intent`, porque a histerese (`min_interval` 0,6 s) pode estar segurando
@@ -2119,3 +2619,218 @@ func _finish() -> void:
 		_stage.free()
 	print("%d checagens %d falhas %.3f s" % [_checks, _failures, float(Time.get_ticks_usec() - _started_us) / 1000000.0])
 	quit(1 if _failures > 0 else 0)
+
+
+## Sessao na ordem do boot: o jogador primeiro, posto em `spawn_point()`, e a
+## matilha depois -- `main._ready` faz exatamente isso (`player.setup(world,
+## spawn_point())` antes de `_spawn_wolves(WOLF_COUNT)`), e o predicado de spawn e
+## medido a partir dos pes dele. O hud real entra porque o caminho da reposicao
+## fala com ele: sem hud, o `die()` da transicao derruba o passo com SCRIPT ERROR
+## e as checagens do passo vao embora em silencio.
+func _boot_session(n: int) -> void:
+	_pack_release()
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s.clock = _clock
+	s.player = _player
+	s._entities = Node3D.new()
+	_stage.add_child(s._entities)
+	s.hud = Hud.new()
+	_stage.add_child(s.hud)
+	s.hud.player = _player
+	s.hud.world = _world
+	s.hud.aether = _field
+	s.hud.clock = _clock
+	# A linha 127 do boot real: sem ela o aviso do jogador nao tem porta, e o
+	# cenario 8 acusaria ausencia onde o instrumento e que esta incompleto.
+	if not _player.notice.is_connected(s._on_notice):
+		_player.notice.connect(s._on_notice)
+	_player.feet_to_spawn(s.spawn_point())
+	s._spawn_wolves(n)
+	_session = s
+
+
+## Cenario 6 (dossie 14 §5): "nunca spawnar na frente do player, sempre numa
+## distancia segura", medido e nao adjetivado.
+##
+## Duas camadas porque o pedido tem dois momentos: os lares do boot e o lobo novo
+## que nasce da fila. A fila esvazia pela transicao real -- `die()` emite `died`, a
+## recolha de cadaver de 1 s enfileira a reposicao e o `_sim_tick` conta os 45 s --
+## nunca por um numero escrito na mao. Nasce vermelha por construcao: o anel
+## historico sorteia 16-46 m em torno do MESMO ponto onde o boot poe o jogador, e as
+## 24 tentativas caem em silencio no centro quando nao acham nada.
+func _test_spawn_fora_da_vista_do_jogador() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var olho: Vector3 = _player.eye_position()
+	var pes: Vector3 = _player.position3()
+	var dentro := 0
+	var visiveis := 0
+	var lares := ""
+	for w: Wolf in _pack_wolves():
+		var d: float = w.home.distance_to(pes)
+		var ve: bool = s.world.line_of_sight(olho, w.home + Vector3(0.0, Wolf.DIMS.y * 0.5, 0.0))
+		if d < float(Session.SAFE_SPAWN_DIST):
+			dentro += 1
+		if ve:
+			visiveis += 1
+		lares += "lobo%d=%.1fm los=%s " % [w.identity, d, str(ve)]
+	var d0: Dictionary = s.diagnostics()
+	_check(int(d0["wolves"]) + int(d0["pending_respawns"]) == int(Session.WOLF_COUNT),
+			"censo do boot fecha a conta: o que nao nasce volta para a fila",
+			"matilha=%d fila=%d teto=%d" % [d0["wolves"], d0["pending_respawns"], Session.WOLF_COUNT])
+	_check(dentro == 0 and visiveis == 0,
+			"lares do boot fora da distancia segura e da visada do jogador",
+			"seguro=%.0f m dentro=%d visiveis=%d de %d | %s" % [
+			Session.SAFE_SPAWN_DIST, dentro, visiveis, _pack_wolves().size(), lares])
+	var id_novo: int = int(s._next_identity)
+	var vitima: Wolf = _pack_wolves()[0]
+	vitima.die()
+	var passos := 0
+	while passos < 1400 and int(s._next_identity) == id_novo:
+		passos += 1
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+	var novo: Wolf = null
+	var ids := ""
+	for w: Wolf in _pack_wolves():
+		if w.identity == id_novo:
+			novo = w
+		ids += "%d " % w.identity
+	var dn := -1.0
+	var vn := true
+	if novo != null:
+		dn = novo.home.distance_to(pes)
+		vn = s.world.line_of_sight(olho, novo.home + Vector3(0.0, Wolf.DIMS.y * 0.5, 0.0))
+	_check(novo != null, "a fila de 45 s devolve um lobo pela transicao real",
+			"passos=%d ids=[%s] fila=%d" % [passos, ids.strip_edges(), s._respawn_queue.size()])
+	_check(novo != null and dn >= float(Session.SAFE_SPAWN_DIST) and not vn,
+			"lobo reposto nasce fora da distancia segura e da visada",
+			"dist=%.1f m seguro=%.0f los=%s home=%s" % [
+			dn, Session.SAFE_SPAWN_DIST, str(vn), str(novo.home) if novo != null else "nenhum"])
+	_pack_release()
+	return true
+
+
+## Verdade unica do cenario 7: uma linha de toast fala de criatura quando nomeia
+## o bicho ou a matilha. "Fala de criatura" e a cláusula do pedido do dono ("nada
+## de avisos na tela, simplesmente o player tem que achar, ver"), e a palavra e o
+## numero que a decide -- nao uma lista de frases congeladas, que sobreviveria a
+## um aviso novo com outra redacao.
+func _toast_de_criatura(t: String) -> bool:
+	return t.findn("lobo") >= 0 or t.findn("matilha") >= 0
+
+
+## Cenario 7 (dossie 14 §1.3, §5): nenhuma string de presenca ou destino de
+## criatura chega ao toast em 1 200 passos. Nasce VERMELHA porque o `main.gd` tem
+## as duas frases. A janela nao e escolha de gosto: a morte abate na hora, a
+## recolha de cadaver roda em cadencia de 1 s e a fila de reposicao cobra 45 s --
+## 1 041 passos ate o lobo novo nascer, o numero medido no cenario 6.
+##
+## O par de checagens existe porque ausencia sozinha nao prova nada: a primeira
+## medida aqui e que os DOIS caminhos que falavam do toast rodaram de dentro da
+## janela (abatidos e repostos contados pelo estado autoritativo, nao escritos na
+## mao). Sem ela, "nenhum aviso" poderia ser canal quebrado, e o cenario 8 é o
+## outro lado dessa mesma moeda.
+func _test_nenhum_aviso_de_matilha_no_hud() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var vistos := {}
+	var abates := 0
+	var repostos := 0
+	var passo := 0
+	while passo < 1200 and (abates < 2 or repostos < 1):
+		if passo % 240 == 120:
+			var vitima: Wolf = null
+			for w: Wolf in _pack_wolves():
+				if w.alive:
+					vitima = w
+					break
+			if vitima != null:
+				vitima.die()
+		passo += 1
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+		var t: String = s.hud._toast.text
+		if t != "" and not vistos.has(t):
+			vistos[t] = passo
+		abates = int(s.stats["wolves_felled"])
+		repostos = int(s._next_identity) - int(Session.WOLF_COUNT)
+	var criatura := ""
+	var quantas := 0
+	var todas := ""
+	for t in vistos:
+		todas += "'%s'@%d " % [t, vistos[t]]
+		if _toast_de_criatura(String(t)):
+			quantas += 1
+			criatura += "'%s' " % t
+	_check(abates >= 2 and repostos >= 1,
+			"os dois caminhos de criatura rodaram dentro da janela",
+			"abatidos=%d repostos=%d passos=%d fila=%d" % [
+			abates, repostos, passo, s._respawn_queue.size()])
+	_check(quantas == 0, "nenhum aviso de criatura chega ao toast do hud",
+			"de_criatura=%d [%s] | visto: %s" % [
+			quantas, criatura.strip_edges(), todas.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Cenario 8, o par obrigatorio do 7: as quatro portas de feedback da acao do
+## jogador continuam chegando ao MESMO Label da MESMA sessao. Cada uma pela
+## transicao real (`_craft()` do painel, `_try_place()` e `_mine_target()` da
+## mira), nunca chamando `show_message` a mao -- o que se testa e a porta, nao a
+## frase. Save/load fica de fora daqui de proposito: `load_game()` regenera o
+## `_world` compartilhado deste runner, entao o par do toast de save e a suíte
+## completa (`smoke_test`), nao este instrumento.
+func _test_feedback_do_jogador_continua_no_hud() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var p: Player = _player
+	p.inv.reset_default()
+	# (1) e (2) craft: a primeira receita de mao (1 madeira -> 4 tabuas) sem o
+	# ingrediente, depois com ele -- as duas branches do `_craft()` do painel.
+	p.inv.take(BlockDefs.Block.WOOD, 999)
+	s.hud._craft()
+	var sem_material: String = s.hud._toast.text
+	p.inv.add(BlockDefs.Block.WOOD, 1)
+	s.hud._craft()
+	var craftado: String = s.hud._toast.text
+	# (3) construir com a tecla apontando para um slot vazio: a mira acha o chao e
+	# `_try_place` recusa antes de gastar bloco.
+	p.inv.select(7)
+	p.pitch = -0.9
+	for _i: int in 2:
+		p.update_local(1.0 / 60.0)
+	p._try_place()
+	var slot_vazio: String = s.hud._toast.text
+	# (4) lavrar o que nao cabe: o inventario fecha antes do golpe, e `_mine_target`
+	# devolve o aviso em vez de tirar o bloco do mundo.
+	var drop := BlockDefs.drop_of(_world.get_block(p.target_voxel))
+	var enchimentos := 0
+	while p.inv.space_for(drop, 1) > 0 and enchimentos < Inventory.SLOTS:
+		enchimentos += 1
+		p.inv.add(drop, BlockDefs.stack_max(drop))
+	var antes := _world.get_block(p.target_voxel)
+	p._mine_target()
+	var cheio: String = s.hud._toast.text
+	_check(sem_material.begins_with("sem material"),
+			"o craft sem material continua avisando", "'%s'" % sem_material)
+	_check(craftado.begins_with("craftado"),
+			"o craft com material continua avisando", "'%s'" % craftado)
+	_check(slot_vazio.begins_with("slot vazio"),
+			"construir em slot vazio continua avisando", "'%s'" % slot_vazio)
+	_check(cheio.begins_with("inventario cheio")
+			and _world.get_block(p.target_voxel) == antes,
+			"lavra sem espaco continua avisando e nao tira o bloco",
+			"'%s' voxel=%d->%d espaco=%d" % [
+			cheio, antes, _world.get_block(p.target_voxel), p.inv.space_for(drop, 1)])
+	_pack_release()
+	return true

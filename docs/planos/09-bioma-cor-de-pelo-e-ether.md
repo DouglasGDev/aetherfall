@@ -30,37 +30,48 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   `biome_table.gd`, `climate.gd`, `soil.gd`, `rivers.gd` (`docs/design/07-project-structure.md:99`)
   não existe, assim como `biomes/*.tres` (`docs/design/07-project-structure.md:263`).
   `[TARGET]`.
-- **O que existe é uma regra, não um estado.**
-  [`surface_block(x, z, h)`](../../src/world/world_gen.gd#L100-L111) escolhe o bloco de topo por
+- **O que existia era uma regra, não um estado.** *(leitura anterior à perna 09; o que
+  ela entregou está em [../melhorias-status.md](../melhorias-status.md))*
+  `surface_block(x, z, h)` escolhia o bloco de topo por
   três condições: `h <= SEA_LEVEL + 1` → `SAND`; `h >= 52` → `SNOW` abaixo de 57, `STONE` acima;
   depois `_temp < -0.35` → `SNOW`, `_moist < -0.30` → `SAND`, senão `GRASS`. Os dois ruídos vêm de
-  [`_moist`](../../src/world/world_gen.gd#L56), configurada em [:68](../../src/world/world_gen.gd#L68) (semente `p_seed + 3`, frequência 0,0045,
-  [:45](../../src/world/world_gen.gd#L45)) e
-  [`_temp`](../../src/world/world_gen.gd#L57) (semente `p_seed + 4`, frequência 0,0030,
-  [:46](../../src/world/world_gen.gd#L46)). `SEA_LEVEL` é 26
+  [`_moist`](../../src/world/world_gen.gd#L56), configurada em [:68](../../src/world/world_gen.gd#L68) (semente `p_seed + 3`, frequência 0,0045) e
+  [`_temp`](../../src/world/world_gen.gd#L57), configurada em [:69](../../src/world/world_gen.gd#L69) (semente `p_seed + 4`, frequência 0,0030). `SEA_LEVEL` é 26
   ([voxel_config.gd:13](../../src/world/voxel_config.gd#L13)). O resultado **não é guardado**:
-  depois de `generate_chunk` ([world_gen.gd:114-137](../../src/world/world_gen.gd#L114-L137))
+  depois de `generate_chunk` ([world_gen.gd:174-197](../../src/world/world_gen.gd#L174-L197))
   escrever os blocos, ninguém sabe de que regra cada coluna veio — só de que bloco ela é feita.
-- **O pelo é uma linha só, e é compartilhada.**
-  [`_build_visual()`](../../src/entities/wolf.gd#L920) cria um `StandardMaterial3D` por lobo
-  ([:889](../../src/entities/wolf.gd#L889)) e pinta todos com
-  `Color(0.40, 0.36, 0.31)` ([:890](../../src/entities/wolf.gd#L890)); as caixas do corpo usam essa
-  material de [:892](../../src/entities/wolf.gd#L892) até [:738](../../src/entities/wolf.gd#L738).
-  Não há cor por semente, por bioma nem por indivíduo.
-- **O Éter não sabe onde está.** `setup` aloca `_cur`/`_nxt` de
+  **Relida nesta ponta:** a cadeia das três condições saiu do bloco e virou
+  [`biome_of(x, z, h)`](../../src/world/world_gen.gd#L129-L138); o que restou em
+  [`surface_block`](../../src/world/world_gen.gd#L165-L171) é tradução de bioma em bloco, e a
+  checagem `bioma_nao_altera_terreno` é quem garante que nenhum byte de solo mudou na troca.
+- **O pelo era uma linha só, e compartilhada.** *(leitura anterior à perna 09; o que
+  ela entregou está em [../melhorias-status.md](../melhorias-status.md))*
+  [`_build_visual()`](../../src/entities/wolf.gd#L999) criava um `StandardMaterial3D` por lobo
+  ([:1003](../../src/entities/wolf.gd#L1003)) e pintava todos com o mesmo cinza — hoje o
+  `temperate` de `FUR_COLORS` ([:93](../../src/entities/wolf.gd#L93)) — e as caixas do corpo
+  usavam essa material ([:1013-1014](../../src/entities/wolf.gd#L1013-L1014)). Não havia cor
+  por semente, por bioma nem por indivíduo.
+- **O Éter não sabia onde está.** *(leitura anterior à perna 09; o que
+  ela entregou está em [../melhorias-status.md](../melhorias-status.md))*
+  `setup` aloca `_cur`/`_nxt` de
   `COUNT * _per_channel` ([aether_field.gd:42-54](../../src/world/aether_field.gd#L42-L54)) e as
   três tabelas por canal são constantes
   ([:9-17](../../src/world/aether_field.gd#L9-L17)). Os imprints existentes passam valor fixo por
   evento: `WORK 0,42`/`0,20` no jogador
-  ([main.gd:425-430](../../src/main.gd#L425-L430)), `FEAR 0,4` no spawn
-  ([:271](../../src/main.gd#L271)), `BLOOD 1,3` + `FEAR 1,0` no cadáver
-  ([:460-461](../../src/main.gd#L460-L461)). Uma coluna de gelo e uma de savana imprimem o mesmo
+  ([main.gd:547-552](../../src/main.gd#L547-L552)), `FEAR 0,4` no spawn
+  ([:281](../../src/main.gd#L281)), `BLOOD 1,3` + `FEAR 1,0` no cadáver
+  ([:591-592](../../src/main.gd#L591-L592)). Uma coluna de gelo e uma de savana imprimem o mesmo
   número.
-- **Onde o bioma seria lido, hoje:** `setup` do lobo recebe `p_spawn` e sorteia `_rng` com a semente
-  do mundo ([wolf.gd:166-182](../../src/entities/wolf.gd#L166-L182), `:121`) — o ponto natural de
+- **Onde o bioma seria lido:** `setup` do lobo recebe `p_spawn` e sorteia `_rng` com a semente
+  do mundo ([wolf.gd:189-208](../../src/entities/wolf.gd#L189-L208), `:201`) — o ponto natural de
   perguntar "que bioma é este?" uma vez por lobo, sem cadência. A sessão já sorteia o
-  `home` num raio de 16–46 ([main.gd:259-275](../../src/main.gd#L259-L275), via
-  [`_random_ground_point`](../../src/main.gd#L300-L314)).
+  `home` por lobo em [`_spawn_wolves`](../../src/main.gd#L288-L324), que chama
+  [`_spawn_home_point`](../../src/main.gd#L385). *(leitura desta ponta: na ponta do dossiê o
+  sorteio era `_random_ground_point(16.0, 46.0)` num anel fixo em torno do **centro** do mundo; a
+  perna 14 trocou o anel único pelas [`SPAWN_BANDS`](../../src/main.gd#L336) medidas a partir do
+  jogador, e a pergunta do bioma foi respondida — `home_biome` é lido uma vez por lobo em
+  [:199](../../src/entities/wolf.gd#L199) e o viés saiu do `aether.imprint` por
+  [`imprint_bias`](../../src/world/world_gen.gd#L156-L158).)*
 
 ## 3. O que a peça exige
 
@@ -73,7 +84,7 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
    Propriedade exigida: **nenhum byte de bloco muda**; `surface_height`
    ([world_gen.gd:71-85](../../src/world/world_gen.gd#L71-L85)) e `generate_chunk` ficam intactos.
 2. **Cor do pelo derivada do bioma do `home`**, escolhida em `setup` e aplicada em `_build_visual`
-   no lugar da linha [:890](../../src/entities/wolf.gd#L890). Tabela de quatro cores na própria
+   no lugar da linha [:965](../../src/entities/wolf.gd#L965). Tabela de quatro cores na própria
    classe do lobo (não em `.tres`: um consumidor só, e o padrão da casa é dado no código até haver
    motivo para dado em arquivo — [`AGENTS.md`](../../AGENTS.md), anti-bloat).
 3. **Fundo de Éter por bioma como viés de imprint, não como semeadura de grade.** O imprint sabe a
@@ -96,11 +107,11 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   existem (`grep imprint` em `src/` devolve 12 linhas). Custo por chamada: duas amostras de ruído
   2D — as mesmas que `surface_block` já faz na geração, coluna por coluna, 64 chunks.
 - **Aloco no caminho quente?** Não: assinatura `-> int`, sem Array, sem Dictionary novo. O material
-  de pelo já é um por lobo ([wolf.gd:889](../../src/entities/wolf.gd#L889)) — mudar a cor não muda
+  de pelo já é um por lobo ([wolf.gd:964](../../src/entities/wolf.gd#L964)) — mudar a cor não muda
   o número de recursos nem de draw calls.
 - **Como sei que ficou melhor?** Não é "melhor", é "existe": as checagens do §5. E o custo que
   aparece é o de sempre — o rodapé de colheita de `sim_step` do runner de reações
-  ([aether_reactions_test.gd:178-194](../../tests/aether_reactions_test.gd#L178-L194)) tem de sair
+  ([aether_reactions_test.gd:210-226](../../tests/aether_reactions_test.gd#L210-L226)) tem de sair
   na banda das oito árvores medidas (361 464–375 216 µs em 2 768 passos,
   [nota da rodada](../melhorias-status.md)); se sair, o imprint com bioma não custou nada.
 
@@ -133,7 +144,7 @@ Checagens novas, com o número que decide cada uma impresso:
    [aether_field.gd:17](../../src/world/aether_field.gd#L17)) e o valor médio por canal do cenário
    estreito não sai da banda medida.
 
-`EXPECTED_CHECKS` ([aether_reactions_test.gd:19](../../tests/aether_reactions_test.gd#L19), hoje
+`EXPECTED_CHECKS` ([aether_reactions_test.gd:25](../../tests/aether_reactions_test.gd#L25), na leitura
 **109**) e a contagem da suíte (hoje **236 / 0 falhas**, pin [`README.md`](../../README.md)) sobem
 com o lote e são re-medidos no clone limpo antes de qualquer número ir para o texto.
 
@@ -146,7 +157,7 @@ com o lote e são re-medidos no clone limpo antes de qualquer número ir para o 
   journal ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)) — este lote não
   muda nem terreno nem a projeção do hash. Mudar é reabrir o dossiê 01.
 - Não dar cor aleatória por lobo: o pedido é **por bioma**, e aleatoriedade sem semente do mundo
-  quebraria o que `setup` já garante ([:175](../../src/entities/wolf.gd#L175)).
+  quebraria o que `setup` já garante ([:185](../../src/entities/wolf.gd#L185)).
 - Não colocar o viés dentro de `AetherField`: o campo hoje não conhece voxel nenhum, e essa
   fronteira é o que mantém a difusão barata.
 - Não prometer "bioma deserto" na galeria sem re-bake: as capturas são cena própria
