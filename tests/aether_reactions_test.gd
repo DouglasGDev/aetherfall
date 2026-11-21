@@ -19,8 +19,9 @@ const TESTS: Array[StringName] = [
 	&"_test_lobo_escolhe_trilha_seca", &"_test_nadar_so_sem_saida_seca",
 	&"_test_resgate_de_margem_sobrevive_a_arvore",
 	&"_test_dois_lobos_nao_farejam_a_mesma_celula", &"_test_alvo_estavel_por_segundo",
+	&"_test_spawn_fora_da_vista_do_jogador",
 ]
-const EXPECTED_CHECKS: int = 173
+const EXPECTED_CHECKS: int = 177
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -2299,27 +2300,38 @@ func _test_dois_lobos_nao_farejam_a_mesma_celula() -> bool:
 		var col := Vector2i(int(w.home.x), int(w.home.z))
 		colunas[col] = true
 		lares += "lobo%d=(%d,%d) " % [w.identity, col.x, col.y]
-	_check(colunas.size() == 5 and _pack_wolves().size() == 5,
-			"lares do spawn real em colunas diferentes",
-			"distintas=%d/5 %s" % [colunas.size(), lares])
-	# Mecanismo, nao sorte: no vermelho desta perna os cinco lares ja caíam em
-	# colunas distintas (`distinctas=5/5` sem codigo novo), entao a checagem de
-	# cima so prova que a seed teve sorte. O que a perna acrescenta e a RECUSA,
-	# e recusa se confere marcando as colunas ocupadas -- e tambem a coluna do
-	# centro, que e exatamente onde o fallback jogaria o sexto lobo -- e pedindo
-	# lares de novo pela funcao real. Coluna ocupada nao pode voltar.
+	# Censo variavel (dossie 14 §3.5): o que vale nao e "nasceram cinco", e "os que
+	# nasceram tem colunas distintas e nada se perdeu por fora" -- o que nao nasce
+	# volta para a fila, entao matilha + fila fecha o teto.
+	var fila_boot := int(_session.diagnostics()["pending_respawns"])
+	_check(colunas.size() == _pack_wolves().size()
+			and _pack_wolves().size() + fila_boot == int(Session.WOLF_COUNT),
+			"lares do spawn real em colunas diferentes, censo fechado pela fila",
+			"distintas=%d de %d borna + %d na fila = teto %d | %s" % [
+			colunas.size(), _pack_wolves().size(), fila_boot, Session.WOLF_COUNT, lares])
+	# Mecanismo, nao sorte: um censo que pode nascer menor que cinco nao pode contar
+	# com a sorte da seed, entao a checagem de cima fecha a conta e esta marca as
+	# colunas ocupadas -- incluida a do centro, o ponto que o fallback antigo
+	# devolvia em silencio e que hoje tem de ser recusado por distancia ou por
+	# visada -- e pede lares de novo pela funcao real. Coluna ocupada nao pode
+	# voltar, e recusa contada nao e violacao.
 	colunas[Vector2i(int(_session.spawn_point().x), int(_session.spawn_point().z))] = true
 	var violacoes := 0
+	var recusados := 0
 	var dadas: Dictionary = {}
 	for _k: int in 8:
-		var novo := _session._random_ground_point(16.0, 46.0, colunas)
+		var pedido: Dictionary = _session._spawn_home_point(colunas)
+		if not bool(pedido["ok"]):
+			recusados += 1
+			continue
+		var novo: Vector3 = pedido["feet"]
 		var col_nova := Vector2i(int(novo.x), int(novo.z))
 		if colunas.has(col_nova):
 			violacoes += 1
 		dadas[col_nova] = true
 	_check(violacoes == 0, "mecanismo: coluna ocupada nao volta como lar",
-			"violacoes=%d em 8 pedidos, ocupadas=%d, colunas_devolvidas=%d" % [
-			violacoes, colunas.size(), dadas.size()])
+			"violacoes=%d em 8 pedidos, recusados=%d, ocupadas=%d, colunas_devolvidas=%d" % [
+			violacoes, recusados, colunas.size(), dadas.size()])
 	_pack_release()
 	return true
 
@@ -2601,3 +2613,94 @@ func _finish() -> void:
 		_stage.free()
 	print("%d checagens %d falhas %.3f s" % [_checks, _failures, float(Time.get_ticks_usec() - _started_us) / 1000000.0])
 	quit(1 if _failures > 0 else 0)
+
+
+## Sessao na ordem do boot: o jogador primeiro, posto em `spawn_point()`, e a
+## matilha depois -- `main._ready` faz exatamente isso (`player.setup(world,
+## spawn_point())` antes de `_spawn_wolves(WOLF_COUNT)`), e o predicado de spawn e
+## medido a partir dos pes dele. O hud real entra porque o caminho da reposicao
+## fala com ele: sem hud, o `die()` da transicao derruba o passo com SCRIPT ERROR
+## e as checagens do passo vao embora em silencio.
+func _boot_session(n: int) -> void:
+	_pack_release()
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s.clock = _clock
+	s.player = _player
+	s._entities = Node3D.new()
+	_stage.add_child(s._entities)
+	s.hud = Hud.new()
+	_stage.add_child(s.hud)
+	s.hud.player = _player
+	s.hud.world = _world
+	s.hud.aether = _field
+	s.hud.clock = _clock
+	_player.feet_to_spawn(s.spawn_point())
+	s._spawn_wolves(n)
+	_session = s
+
+
+## Cenario 6 (dossie 14 §5): "nunca spawnar na frente do player, sempre numa
+## distancia segura", medido e nao adjetivado.
+##
+## Duas camadas porque o pedido tem dois momentos: os lares do boot e o lobo novo
+## que nasce da fila. A fila esvazia pela transicao real -- `die()` emite `died`, a
+## recolha de cadaver de 1 s enfileira a reposicao e o `_sim_tick` conta os 45 s --
+## nunca por um numero escrito na mao. Nasce vermelha por construcao: o anel
+## historico sorteia 16-46 m em torno do MESMO ponto onde o boot poe o jogador, e as
+## 24 tentativas caem em silencio no centro quando nao acham nada.
+func _test_spawn_fora_da_vista_do_jogador() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var olho: Vector3 = _player.eye_position()
+	var pes: Vector3 = _player.position3()
+	var dentro := 0
+	var visiveis := 0
+	var lares := ""
+	for w: Wolf in _pack_wolves():
+		var d: float = w.home.distance_to(pes)
+		var ve: bool = s.world.line_of_sight(olho, w.home + Vector3(0.0, Wolf.DIMS.y * 0.5, 0.0))
+		if d < float(Session.SAFE_SPAWN_DIST):
+			dentro += 1
+		if ve:
+			visiveis += 1
+		lares += "lobo%d=%.1fm los=%s " % [w.identity, d, str(ve)]
+	var d0: Dictionary = s.diagnostics()
+	_check(int(d0["wolves"]) + int(d0["pending_respawns"]) == int(Session.WOLF_COUNT),
+			"censo do boot fecha a conta: o que nao nasce volta para a fila",
+			"matilha=%d fila=%d teto=%d" % [d0["wolves"], d0["pending_respawns"], Session.WOLF_COUNT])
+	_check(dentro == 0 and visiveis == 0,
+			"lares do boot fora da distancia segura e da visada do jogador",
+			"seguro=%.0f m dentro=%d visiveis=%d de %d | %s" % [
+			Session.SAFE_SPAWN_DIST, dentro, visiveis, _pack_wolves().size(), lares])
+	var id_novo: int = int(s._next_identity)
+	var vitima: Wolf = _pack_wolves()[0]
+	vitima.die()
+	var passos := 0
+	while passos < 1400 and int(s._next_identity) == id_novo:
+		passos += 1
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+	var novo: Wolf = null
+	var ids := ""
+	for w: Wolf in _pack_wolves():
+		if w.identity == id_novo:
+			novo = w
+		ids += "%d " % w.identity
+	var dn := -1.0
+	var vn := true
+	if novo != null:
+		dn = novo.home.distance_to(pes)
+		vn = s.world.line_of_sight(olho, novo.home + Vector3(0.0, Wolf.DIMS.y * 0.5, 0.0))
+	_check(novo != null, "a fila de 45 s devolve um lobo pela transicao real",
+			"passos=%d ids=[%s] fila=%d" % [passos, ids.strip_edges(), s._respawn_queue.size()])
+	_check(novo != null and dn >= float(Session.SAFE_SPAWN_DIST) and not vn,
+			"lobo reposto nasce fora da distancia segura e da visada",
+			"dist=%.1f m seguro=%.0f los=%s home=%s" % [
+			dn, Session.SAFE_SPAWN_DIST, str(vn), str(novo.home) if novo != null else "nenhum"])
+	_pack_release()
+	return true

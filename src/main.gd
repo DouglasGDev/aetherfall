@@ -7,6 +7,12 @@ extends Node3D
 ## difusao do Eter e tick de simulacao a 20 Hz.
 
 const WOLF_COUNT := 5
+# Distancia minima de um lobo que nasce. Os tres numeros abaixo sao os unicos que
+# o definem (dossie 14 §3.4): acima dos 30 m em que o proprio lobo ja consulta a
+# visada (`_sense`), acima dos 14 m do latido (`BARK_RANGE` do diretor de audio) e
+# dentro dos 46 m do anel historico, para que um ponto conforme exista na primeira
+# banda sem ter de varrer o mapa atras dele.
+const SAFE_SPAWN_DIST := 32.0
 const SEED := 20261116
 const SLOT := "alpha"
 const AETHER_PERIOD := 0.25        # 4 passadas de difusao por segundo de logica
@@ -279,13 +285,20 @@ func _spawn_wolves(n: int) -> void:
 	if _next_identity == 0:
 		_population_rng.seed = ("population:%d" % world.gen.world_seed).hash()
 	for i in n:
-		var w := Wolf.new()
 		# Dossie 14 §3.3.(iii): dois lobos com o mesmo lar rondam o mesmo setor e a
 		# matilha parece um corpo so. O conjunto de colunas ocupadas sai dos lobos
 		# vivos, entao criar cinco de uma vez e criar cinco um a um consomem a
 		# mesma sequencia da `_population_rng` -- a assinatura que a suíte de RNG
 		# pinça nao muda com o lote.
-		var home := _random_ground_point(16.0, 46.0, _home_columns())
+		var pedido := _spawn_home_point(_home_columns())
+		if not bool(pedido["ok"]):
+			# Dossie 14 §3.5: o motivo ja saiu impresso na funcao de busca. O lobo nao
+			# nasce agora e a vaga volta para o fim da fila com o mesmo atraso -- o
+			# contrario do fallback antigo, que punha o bicho no centro em silencio.
+			_respawn_queue.append(RESPAWN_DELAY)
+			continue
+		var w := Wolf.new()
+		var home: Vector3 = pedido["feet"]
 		_entities.add_child(w)
 		w.setup(world, aether, player, home, _next_identity, clock)
 		# A matilha entra pelo mesmo caminho do `entity_provider` do jogador: o
@@ -311,24 +324,84 @@ func _home_columns() -> Dictionary:
 	return taken
 
 
-func _random_ground_point(rmin: float, rmax: float, taken: Dictionary) -> Vector3:
-	var c := spawn_point()
-	for _attempt in 24:
-		var a := _population_rng.randf() * TAU
-		var r := _population_rng.randf_range(rmin, rmax)
-		var p := Vector3(c.x + cos(a) * r, 0.0, c.z + sin(a) * r)
-		p.x = clampf(p.x, 6.0, float(VoxelConfig.world_size_x()) - 6.0)
-		p.z = clampf(p.z, 6.0, float(VoxelConfig.world_size_z()) - 6.0)
-		var column := Vector2i(int(p.x), int(p.z))
-		if taken.has(column):
+## Bandas de spawn em torno do JOGADOR (dossie 14 §3.5), na ordem: o anel historico
+## de 16-46 m, depois 46-70 m, depois 70 m ate a borda util do mapa. Cada banda
+## gasta o budget de tentativas que o sorteio unico gastava, entao o pior caso custa
+## tres vezes um caminho que roda cinco vezes no boot e uma a cada fila de 45 s.
+const SPAWN_BANDS: Array = [[16.0, 46.0], [46.0, 70.0]]
+const SPAWN_ATTEMPTS := 24
+
+
+## Predicado unico dos dois compradores (dossie 14 §3.4; a 11 poe o filhote por
+## aqui tambem): longe o bastante e, acima disso, nao visivel. Sem cone de camera --
+## "fora da visada" e estritamente mais forte que "nao na frente" e custa uma DDA,
+## por isso so roda aqui, no caminho raro, nunca por tick.
+func _spawn_point_ok(feet: Vector3) -> bool:
+	var seg := SAFE_SPAWN_DIST * SAFE_SPAWN_DIST
+	if feet.distance_squared_to(player.position3()) < seg:
+		return false
+	var peito := feet + Vector3(0.0, Wolf.DIMS.y * 0.5, 0.0)
+	return not world.line_of_sight(player.eye_position(), peito)
+
+
+## Maior raio que ainda tem mapa dentro da caixa util (6 blocos de margem, o mesmo
+## clamp do sorteio). Perto da borda a terceira banda encolhe e pode ficar vazia, e
+## isso e impresso como motivo, nao disfarçado de sucesso.
+func _band_edge(at: Vector3) -> float:
+	var dx := maxf(at.x - 6.0, float(VoxelConfig.world_size_x()) - 6.0 - at.x)
+	var dz := maxf(at.z - 6.0, float(VoxelConfig.world_size_z()) - 6.0 - at.z)
+	return sqrt(dx * dx + dz * dz)
+
+
+## Lar de um lobo novo, ou a recusa com os motivos contados. Nao ha fallback para o
+## centro: o centro e justamente onde o jogador e posto no boot ([_ready] chama
+## `spawn_point()` para os dois), e cair ali em silencio era o aviso que o mandato 1
+## proibe -- um sucesso fingido.
+func _spawn_home_point(taken: Dictionary) -> Dictionary:
+	var c := player.position3()
+	var edge := _band_edge(c)
+	var bands: Array = [SPAWN_BANDS[0], SPAWN_BANDS[1], [SPAWN_BANDS[1][1], edge]]
+	var motivos := {"perto": 0, "visivel": 0, "coluna": 0, "molhado": 0, "encaixado": 0, "vazia": 0}
+	for b in bands.size():
+		var rmin := float(bands[b][0])
+		var rmax := float(bands[b][1])
+		if rmax <= rmin:
+			# Jogador encostado na borda: nao ha mapa alem de `rmin`, e a banda que
+			# sobra e vazia por geometria, nao por azar. Vai para a contagem.
+			motivos["vazia"] += 1
 			continue
-		var y := world.surface_height(int(p.x), int(p.z))
-		if y > VoxelConfig.SEA_LEVEL:
+		for _attempt in SPAWN_ATTEMPTS:
+			var a := _population_rng.randf() * TAU
+			var r := _population_rng.randf_range(rmin, rmax)
+			var p := Vector3(c.x + cos(a) * r, 0.0, c.z + sin(a) * r)
+			p.x = clampf(p.x, 6.0, float(VoxelConfig.world_size_x()) - 6.0)
+			p.z = clampf(p.z, 6.0, float(VoxelConfig.world_size_z()) - 6.0)
+			var column := Vector2i(int(p.x), int(p.z))
+			if taken.has(column):
+				motivos["coluna"] += 1
+				continue
+			var y := world.surface_height(int(p.x), int(p.z))
+			if y <= VoxelConfig.SEA_LEVEL:
+				motivos["molhado"] += 1
+				continue
 			var feet := Vector3(p.x, float(y + 1), p.z)
-			if _volume_clear(feet, Wolf.DIMS):
-				return feet
-	var fallback_y := world.surface_height(int(c.x), int(c.z))
-	return Vector3(c.x, float(fallback_y + 1), c.z)
+			if not _volume_clear(feet, Wolf.DIMS):
+				motivos["encaixado"] += 1
+				continue
+			if not _spawn_point_ok(feet):
+				# Os dois portoes separam-se na contagem porque pedem coisas
+				# diferentes: um e geometria do mapa, o outro e relevo.
+				if feet.distance_squared_to(c) < SAFE_SPAWN_DIST * SAFE_SPAWN_DIST:
+					motivos["perto"] += 1
+				else:
+					motivos["visivel"] += 1
+				continue
+			var d := feet.distance_to(c)
+			print("spawn banda %d (%.0f-%.0f m): lar aceito a %.1f m do jogador" % [b + 1, rmin, rmax, d])
+			return {"ok": true, "feet": feet, "banda": b + 1, "motivo": ""}
+	var recusa := "nenhum ponto em %d bandas (%s)" % [bands.size(), str(motivos)]
+	print("spawn RECUSADO: " + recusa)
+	return {"ok": false, "feet": Vector3.ZERO, "banda": bands.size(), "motivo": recusa}
 
 
 ## Pe em cima do voxel mais alto da coluna nao basta: o corpo do lobo faz 1,35 m

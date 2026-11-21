@@ -192,7 +192,14 @@ func _check_boot() -> void:
 	_check("64 chunks gerados", int(d["chunks"]) == 64, "chunks=%d" % d["chunks"])
 	_check("64 chunks malhados", int(d["meshes"]) == 64, "meshes=%d" % d["meshes"])
 	_check("mundo com triangulos", int(d["triangles"]) > 0, "triangulos=%d" % d["triangles"])
-	_check("5 lobos na matilha", int(d["wolves"]) == 5, "lobos=%d" % d["wolves"])
+	# Censo variavel (dossie 14 §3.5): um lobo que nao acha ponto conforme nas tres
+	# bandas nao nasce -- a vaga volta para a fila com o motivo impresso. O que nao
+	# pode e faltar na conta ou passar do teto; "nasceram cinco" deixa de ser
+	# premissa e vira invariante.
+	_check("censo do boot fecha com a fila",
+			int(d["wolves"]) <= main.WOLF_COUNT
+			and int(d["wolves"]) + int(d["pending_respawns"]) == main.WOLF_COUNT,
+			"lobos=%d fila=%d teto=%d" % [d["wolves"], d["pending_respawns"], main.WOLF_COUNT])
 	_check("spawn em terra firme", _spawn.y > float(VoxelConfig.SEA_LEVEL), "y=%d" % int(_spawn.y))
 	_check("jogador apoiado no chao", bool(d["on_ground"]), "feet=%s" % d["feet"])
 	# Checagem 8 do gate (dossie 15 §7): a suíte inteira não pode depender de
@@ -1671,8 +1678,11 @@ func _recipe_for(out: int) -> Dictionary:
 # --------------------------------------------------------------------- memoria
 
 func _check_memory() -> void:
+	var w: Wolf = _wolf_vivo(3)
+	if w == null:
+		_check("ha quatro lobos vivos para a memoria", false, "matilha=%d" % main.wolves.size())
+		return
 	main.process_mode = Node.PROCESS_MODE_DISABLED
-	var w: Wolf = main.wolves[3]
 	var p: Player = main.player
 	p.feet_to_spawn(_spawn)
 	var spot := _experiment_spot(w, p)
@@ -1741,7 +1751,10 @@ func _check_swim_setup() -> void:
 		_swim_wolf = null
 		return
 	_swim_bed_y = float(best.y)
-	_swim_wolf = main.wolves[1]
+	_swim_wolf = _wolf_vivo(1)
+	if _swim_wolf == null:
+		_check("ha dois lobos vivos para o lago", false, "matilha=%d" % main.wolves.size())
+		return
 	_swim_wolf.body.feet_pos = Vector3(float(best.x) + 0.5, _swim_bed_y + 0.4, float(best.z) + 0.5)
 	_swim_wolf.body.velocity = Vector3.ZERO
 	_swim_wolf._move_target = _swim_wolf.body.feet_pos + Vector3(6.0, 0.0, 0.0)
@@ -1804,10 +1817,19 @@ func _unpause_after(p: Player) -> void:
 ## o que a corrida natural tinha (abatidos=1, ou seja, nenhum lobo morto ainda),
 ## mas era um buraco do mesmo tamanho parado no caminho.
 func _alive_wolf() -> Wolf:
+	return _wolf_vivo(0)
+
+
+## I-esimo lobo VIVO do censo atual, ou null quando a matilha borna e menor que i.
+## Com o spawn em bandas e recusa honesta (dossie 14 §3.5) o censo do boot pode
+## vir abaixo de `WOLF_COUNT`, entao indexar `main.wolves[i]` a mao e SCRIPT ERROR
+## -- e o erro derruba em silencio todas as checagens do passo, sem vermelho.
+func _wolf_vivo(i: int) -> Wolf:
+	var vivos: Array[Wolf] = []
 	for w in main.wolves:
 		if (w as Wolf).alive:
-			return w
-	return null
+			vivos.append(w)
+	return vivos[i] if i < vivos.size() else null
 
 
 ## Distancia do lobo vivo mais proximo do olho que nao seja o alvo do passo;
@@ -2092,7 +2114,11 @@ func _check_oracle_arm() -> void:
 func _check_oracle() -> void:
 	var oracle := _oracle_probe
 	_oracle_probe = null
-	var w: Wolf = main.wolves[0]
+	var w: Wolf = _wolf_vivo(0)
+	if w == null:
+		_check("ha um lobo vivo para o oraculo", false, "matilha=%d" % main.wolves.size())
+		oracle.queue_free()
+		return
 	_check("narrativa vazia sem servidor", oracle.narration_of(w.identity) == "",
 		"narr='%s'" % oracle.narration_of(w.identity))
 	_check("recuo global apos falha", oracle._server_cd > 0.0,
@@ -2326,7 +2352,10 @@ func _check_hud() -> void:
 func _check_save() -> void:
 	var w: VoxelWorld = main.world
 	var p: Player = main.player
-	var wolf0: Wolf = main.wolves[0]
+	var wolf0: Wolf = _wolf_vivo(0)
+	if wolf0 == null:
+		_check("ha um lobo vivo para o save", false, "matilha=%d" % main.wolves.size())
+		return
 	# (20,20) de proposito: as 16 colunas amostradas no boot incluem (12,12), e uma
 	# edicao ali faria o "relevo identico apos carregar" comparar contra si mesmo.
 	var extra := Vector3i(20, w.surface_height(20, 20) + 4, 20)

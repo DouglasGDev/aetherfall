@@ -90,7 +90,7 @@ func _population(mode: int) -> Dictionary:
 			if mode == 1:
 				_noise()
 			session._spawn_wolves(1)
-			if mode == 3:
+			if mode == 3 and i < session.wolves.size():
 				(session.wolves[i] as Wolf)._leaf_wander({})
 	var global_untouched: bool = randi() == next_global
 	var signature: Array = []
@@ -101,16 +101,26 @@ func _population(mode: int) -> Dictionary:
 				and not _world.is_water_xyz(int(wolf.home.x), int(wolf.home.y), int(wolf.home.z)):
 			valid += 1
 	var ready: bool = session.is_node_ready()
+	var fila: int = session._respawn_queue.size()
 	session._entities.free()
 	session.free()
-	return {"signature": signature, "valid": valid, "ready": ready, "global_untouched": global_untouched}
+	return {"signature": signature, "valid": valid, "ready": ready, "fila": fila,
+		"global_untouched": global_untouched}
 
 
 func _test_population() -> bool:
 	var arms: Array[Dictionary] = [_population(0), _population(0), _population(1), _population(2), _population(3)]
 	for i: int in arms.size():
-		_check(arms[i]["valid"] == 5 and not arms[i]["ready"],
-				"spawn real sem executar boot completo", "braco=%d livres=%d/5 ready=%s" % [i, arms[i]["valid"], arms[i]["ready"]])
+		var borna: int = (arms[i]["signature"] as Array).size()
+		# Censo variavel (dossie 14 §3.5): o que este braço pinça é a assinatura da
+		# sequência, não "nasceram cinco". Um ponto recusado devolve a vaga para a
+		# fila, então a conta que não pode fechar é matilha + fila != teto, e um
+		# lobo livre que não bate com seu índice continua sendo defeito.
+		_check(arms[i]["valid"] == borna and borna + int(arms[i]["fila"]) == Session.WOLF_COUNT
+				and not arms[i]["ready"],
+				"spawn real sem executar boot completo",
+				"braco=%d livres=%d/%d fila=%d teto=%d ready=%s" % [
+				i, arms[i]["valid"], borna, arms[i]["fila"], Session.WOLF_COUNT, arms[i]["ready"]])
 	_population_signature = arms[0]["signature"]
 	for i: int in range(1, arms.size()):
 		var labels: Array[String] = ["", "repeticao de controle", "sorteios globais", "criacao em lotes distintos", "patrulha de outro lobo"]
