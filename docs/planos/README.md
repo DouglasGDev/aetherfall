@@ -1,6 +1,6 @@
 # Dossiês por item da fila
 
-Quinze arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
+Dezessete arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
 ("Falta", `:303-430`, e os checklists P0/P1, `:434-451`). Cada dossiê é **leitura de código, não
 corrida**: nenhuma engine foi rodada aqui, nenhum número publicado foi re-medido por estes arquivos
 e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
@@ -9,7 +9,12 @@ e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
 Os sete últimos (09 → 10 → 15 → 14 → 11 → 12 → 13) existem porque o dono ampliou o escopo em 2026-11-20 —
 bioma/cor, alcateia, oráculo embutido no boot, convivência da matilha, acasalamento com filhote, bicho
 cavando e a árvore genealógica com o Éter lendo parentesco — e a ordem serializada deles está escrita na
-mesma seção do contrato, não deduzida depois.
+mesma seção do contrato, não deduzida depois. Os dois que faltavam chegaram em 2026-11-21, por dois
+prompts do dono ("Física de Blocos + Mundo Reativo" e "Física de Blocos + Mundo Vivo"): **17** fica com a
+grave dos blocos que caem e **18** com a grama que cresce e o mato. O número **16 está reservado e não
+tem página**: é o pedido dele de espalhar a matilha em 2–3 tocas depois de ter percorrido o mapa inteiro
+vendo um lobo só, e quem escrever aquela página usa o 16 e a posição que ele escolheu (logo depois da 11).
+Nenhuma das três páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
 
 | # | Dossiê | Linha da fila | Premissa nomeada | O que decide, em headless |
 |---|---|---|---|---|
@@ -28,6 +33,8 @@ mesma seção do contrato, não deduzida depois.
 | 13 | [Árvore genealógica de todo ser vivo, e o Éter lendo parentesco](13-arvore-genealogica-e-ether.md) | Falta 13 `:411-430` | ascendência só existe se nascer de dois adultos, sobreviver ao save e **mudar algo observável**; herdar é genoma-base, nunca a memória nem o trauma do pai | `genealogia_muda_algo_observavel` e `load_preserva_ascendencia` (nascem **vermelhas**), `pelo_de_fundador_vem_do_bioma`, `heranca_nao_repete_deriva`, `eter_devolve_quem_sangrou`, `journal_hash_inalterado_sem_nascimento`, `genealogia_nao_consome_rng_da_sessao`, `ascendencia_e_int_nao_referencia` |
 | 14 | [Convivência da alcateia: terra seca, matilha legível e spawn fora dos olhos](14-convivio-da-alcateia.md) | Falta 12 `:381-410` | seco é regra de validade do **alvo** (água é último recurso); "organizado" é teto numérico, não adjetivo; criatura nunca vira texto; spawn nunca a menos de `SAFE_SPAWN_DIST` nem com LOS livre | `lobo_escolhe_trilha_seca`, `resgate_de_margem_sobrevive_a_arvore` e `spawn_fora_da_vista_do_jogador` (nascem **vermelhas**), `nadar_so_sem_saida_seca`, `dois_lobos_nao_farejam_a_mesma_celula`, `alvo_estavel_por_segundo`, `nenhum_aviso_de_matilha_no_hud` + `feedback_do_jogador_continua_no_hud` (par obrigatório), `convivio_nao_estoura_orcamento` |
 | 15 | [Oráculo embutido no boot: o jogo levanta o llama-server](15-oraculo-embutido-no-boot.md) | autorização nova do dono em 2026-11-20, fora da lista `Falta` do status | com `Rodar.bat` e **nenhum** PowerShell aberto, a linha `ia:` do F3 enche dentro do prazo da cena de prova | `host_devolve_health_200`, `boot_nao_bloqueia_janela`, `reuso_nao_cria_segundo_processo`, `porta_alheia_continua_viva`, `fechar_janela_mata_o_filho`, `suite_nao_levanta_modelo` — colhidas em cena própria, nunca na suíte |
+| 17 | [Física de blocos que caem (o evento que ninguém assina)](17-fisica-de-blocos-que-caem.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Reativo" item A; a especificação já estava no doc 10, o código não | um `SAND` sem apoio **some** do grid num tick e **reaparece** mais baixo noutro, `queued` volta a zero e **nenhuma varredura do mapa** aconteceu no meio | `queda_sem_varredura_de_mundo`, `queda_move_a_celula` (nasce **vermelha**: `block_changed` não tem um `.connect(` em lugar nenhum), `queda_cascade_em_passos`, `bloco_em_queda_nao_sobe` (o *auto step-up* do `VoxelBody` tem de ser zerado), `queda_pousa_antes_do_save`, `queda_nao_custou_tempo_de_ninguem`, `journal_hash_muda_so_com_movimento` |
+| 18 | [Mundo vivo: grama que cresce e o mato decorativo](18-mundo-vivo-grama-e-mato.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Vivo" itens B e C; **sem** especificação no doc 10 — esta página é a primeira vez que a regra é escrita | `DIRT` com ar acima e `GRASS` ao lado vira `GRASS` em tempo finito **sem varrer nada** — e sem vizinha não muda em 10 000 ticks | `grama_precisa_de_vizinha` (o par vermelho), `crescimento_nao_varre_nada`, `crescimento_sobrevive_ao_save`, `grama_nao_cresce_onde_nao_ha_grama`, `crescimento_nao_estoura_a_malha`, `mato_e_nao_solidez_nem_pedra`, `mato_nao_engole_o_clique` (o campo `substituivel` lido pelo `_try_place`), `crescimento_nao_consome_rng_da_sessao` |
 
 ## Uma branch por dossiê
 
@@ -49,16 +56,21 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 10 | `feat/alcateia-rutinas-10` | `main`, depois de 09 (a cor e o viés por bioma mudam o que a matilha lê) |
 | 11 | `feat/acasalamento-e-censo-11` | `main`, depois de **14**: acasalar exige saber quem é adulto e quem está perto, e o filhote nasce pelo predicado de spawn seguro que a 14 entrega |
 | 12 | `feat/bicho-cavando-12` | `main`, depois de 11 (a folha `dig` entra na árvore já reorganizada, e o teto de censo decide quantos lobos cavam) |
-| 13 | `feat/arvore-genealogica-13` | `main`, **por último**, depois de 12: sem a 11 não há nascimento por causa interna (o que escrever na árvore) e sem a 10 não há leitura de vizinho (como parentesco vira comportamento) |
+| 13 | `feat/arvore-genealogica-13` | `main`, **por último**, depois de 18: sem a 11 não há nascimento por causa interna (o que escrever na árvore) e sem a 10 não há leitura de vizinho (como parentesco vira comportamento) — e se o Éter ganhar canal novo, re-mediar as pernas anteriores é mais barato do que deixar `Channel.COUNT` no meio da fila |
 | 14 | `feat/alcateia-convivio-14` | `main`, depois de 10 e **antes** de 11: mexe nas mesmas folhas de movimento que a alcateia reorganizou, e o predicado "longe dos olhos do jogador" tem de existir antes de alguém precisar dele para pôr um filhote no mundo |
 | 15 | `docs/oracle-embutido-15` (estes dois commits) → `feat/oraculo-embutido-no-boot-15` (código) | `main`, **entre 10 e 14**: a 15 não encosta em nenhuma linha do código da matilha nem das outras pernas — em `src/main.gd` só pendura um nó novo no boot — enquanto a 14 depende da ronda por setor que a perna 10 já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`) |
+| 16 | `feat/tocas-espalhadas-16` (nome provisório — **a página ainda não existe**) | `main`, **logo depois de 11**, escolha do dono nesta fila: é a resposta a ele ter percorrido o mapa inteiro e visto um lobo só. Antes de abrir branch, escreve-se o dossiê |
+| 17 | `feat/fisica-de-blocos-que-caem-17` | `main`, **depois de 12**: as duas pernas escrevem pelo mesmo `set_block` e pelo mesmo `block_changed`, e a fila de gravidade muda o custo medido do cavar — abrir a 17 antes obrigaria a 12 a re-rodar o gate dela com a fila anexada. Não encosta em `wolf.gd` |
+| 18 | `feat/mundo-vivo-grama-e-mato-18` | `main`, **depois de 17**: é o segundo comprador do `BlockUpdateQueue` que a 17 escreve (regra da casa — generalizar no segundo chamador, não no primeiro), e o `PLANT` gasta o id 17 da reserva que a 17 não toca |
 
-A ordem 09 → 10 → 15 → 14 → 11 → 12 → 13 não é preferência: é a exceção de serialização registrada
+A ordem 09 → 10 → 15 → 14 → 11 → 16 → 12 → 17 → 18 → 13 não é preferência: é a exceção de serialização registrada
 **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora", e reafirmada em
 [`docs/melhorias-status.md`](../melhorias-status.md#em-andamento). O encadeamento é de dados, não de
 cerimônia: cor depende de bioma, cercar depende de quem mais existe na matilha, a convivência reusa as
 folhas que a alcateia reorganizou e entrega à 11 o ponto de spawn, acasalamento depende de dois adultos
-próximos, cavar é folha da árvore já montada, e a árvore genealógica depende de nascimento por causa
+próximos, as tocas dependem do censo que a 11 variabilizou, cavar é folha da árvore já montada, a gravidade
+de blocos é o segundo consumidor do `block_changed` que o cavar acabou de abrir, o crescimento é o segundo
+comprador da fila que a gravidade escreveu, e a árvore genealógica depende de nascimento por causa
 interna — e a 15 entra no meio porque é o caminho do `Rodar.bat`, não do código da matilha. Além disso,
 deixar uma mudança de `Channel.COUNT` no meio da fila custaria re-mediar as
 pernas anteriores, porque o número entra no hash do journal. Duas branches abertas tocando
@@ -75,12 +87,40 @@ com `arquivo:linha` → o que a peça exige → gate em headless com comando que
 pelas quatro perguntas do contrato → o que NÃO fazer → commits atômicos (um assunto, uma corrida) →
 citações que não conferem.
 
-## Verificação destas quinze páginas
+## Verificação destas dezessete páginas
 
 ```sh
 python .tools/verify_plan_cites.py docs/planos/01-estado-inicial-e-ordem-autoritativa.md
 python .tools/verify_plan_ids.py   docs/planos/01-estado-inicial-e-ordem-autoritativa.md
 ```
+
+**Medida desta rodada (as dezessete páginas, `main` em `86e63c4` + estes dois arquivos novos):**
+**1 039 citações conferidas nos dezessete dossiês, 0 números fora do arquivo** — por página, na ordem da
+tabela, 64 · 50 · 24 · 75 · 68 · 34 · 51 · 55 · 39 · 77 · 57 · 53 · 106 · 68 · 114 (as quinze antigas,
+**935** somadas) mais **54** da página 17 e **50** da página 18. Com esta página índice no corpus, o
+diretório inteiro dá **1 053** e continuam **8** as referências a arquivos que não existem, todas elas peças
+declaradas como inexistentes (`src/core/sim/tick_clock.gd`, `docs/engine/simclock.md`,
+`tests/wolf_multiseed_census_test.gd`) e nenhuma delas uma citação mal escrita: a gateira **não** conta
+arquivo ausente como número conferido. As duas páginas novas não acrescentam nenhum arquivo ausente.
+No `verify_plan_ids.py`, a 17 devolve **98** identificadores em backticks, dos quais **38** não existem em
+`src/` nem em `tests/`, e a 18 devolve **68**, dos quais **16** não existem. Nas duas páginas a totalidade
+dos ausentes é de checagem proposta (7 na 17 — `queda_move_a_celula`, `bloco_em_queda_nao_sobe`, … — e 8 na
+18, `grama_precisa_de_vizinha`, `mato_nao_engole_o_clique`, …), de peça/API/chave que o dossiê propõe e o §2
+diz expressamente que ainda não está no código (`BlockUpdateQueue`, `FallingBlock`, `FallingBlockSpawner`,
+`DropItem`, `DropSpawner`, `is_supported`, `place_falling_block`, `has_gravity`, `_due`, `_landing_cell`,
+`_shatter`, `overflow`, e do lado da 18 `substituivel`, `growth_queued`, `growth_converted`), de constante
+prometida (`MAX_PER_TICK`, `MAX_FALL_TICKS`, `fall_class`, `breaks_a_fall`, `blocks_air`, `is_replaceable`,
+`destructible`, `sofre_gravidade`; `GROW_PERIOD`, `GROW_CHANCE`, `GROW_MAX_PER_TICK`, `GROW_RECHECK`), ou de
+bloco que o doc 10 numera e o registro não tem (`ANVIL`, `BEDROCK`, `GRAVEL`, `PLANT`, `POWDER_SNOW`,
+`ROCK_LOOSE`, `SLAB`, `TORCH`, mais as duas saídas de pouso `FIX`/`SHATTER`). Nenhuma classe dessas é
+invenção de fato: é o que as duas páginas declaram comprar. Somando os três documentos que governam a casa
+nesta árvore — [`AGENTS.md`](../../AGENTS.md), [`README.md`](../../README.md) e
+[`docs/melhorias-status.md`](../melhorias-status.md) — são **113 · 0 · 416 = 529 números, 0 fora do
+arquivo** — 86 → 113 no contrato e 329 → 416 no status: os saltos são as pernas 11 e 14, que escreveram
+rodadas novas nesses dois arquivos, mais os quatro números que esta rodada de docs acrescentou ao status.
+O `README.md` da raiz segue em **0** porque cita por seção, não por linha. Nada dos parágrafos abaixo é
+reescrito por cima desta medida: eles dizem o que foi
+medido na rodada em que foram escritos, e é essa a regra da casa.
 
 O primeiro confere se todo `arquivo:linha` citado existe e se o número cabe no arquivo: nas quinze
 páginas são **895 citações conferidas, 0 números fora do arquivo** (61 · 47 · 25 · 73 · 67 · 33 · 44 ·
@@ -207,6 +247,18 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
   `--watch-file` não existe no b12499 e `--timeout` é timeout de socket do servidor, default 3600 s —
   ou seja, o servidor **não** morre junto com o jogo por conta própria, que é o motivo de o ciclo de
   vida do §4.3 existir.
+- `GRAVEL` como bloco que cai, `BlockUpdateQueue` e `FallingBlock` como peças já existentes a
+  serem "ligadas", `Landing.SHATTER` como item no chão, "processar no tick com orçamento" lido como
+  `MESH_BUDGET`, e a geometria `Y_MIN = -64` / `SEA_LEVEL = 64` do doc 10 como o mundo de hoje →
+  **17 §6 e §9**: `GRAVEL` é o id 10 reservado e não está no registro, as três peças dão zero
+  ocorrências em `src/` e `tests/`, não existe entidade de item no chão, os dois tetos são de
+  subsistemas diferentes, e o código tem `CHUNK_SIZE_Y = 64` com `SEA_LEVEL = 26`;
+- "a física de blocos do doc 10 cobre crescimento de grama" e "o mato decorativo é só um bloco
+  novo": o grep de espalhamento no doc devolve **zero** ocorrências, e o `_try_place` recusa
+  qualquer célula que não seja `AIR`/`WATER` → **18 §2, §3.5 e §9**: a regra A é escrita aqui pela
+  primeira vez (por isso `[TARGET]`), e sem o campo `substituivel` lido pela colocação o mato é um
+  obstáculo invisível que come o clique do jogador. "Dropa pouco" também não tem como ser dito:
+  não existe item de semente nem quantidade fracionária no drop.
 
 As imprecisões reais achadas em `AGENTS.md` nesta rodada foram corrigidas no próprio contrato, uma por
 uma, depois de lidas as duas pontas: `player.gd:659`/`:675` são os cabeçalhos de `_mine_target()` e

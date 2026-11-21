@@ -3421,3 +3421,59 @@ a perna inteira, código e evidência, ainda não tinha subido. O que publica é
 prova continua sendo `git ls-remote --heads origin`, nunca o código de saída do push (memória do
 repositório: o `origin` já apontou para o próprio repositório, de onde um push saía 0 sem publicar
 nada).
+
+## Rodada Docs 17/18 — a pauta dos dois prompts do dono, registrada antes do código (2026-11-21)
+
+### O que estava em aberto
+
+O dono mandou pôr em pauta o conteúdo de dois prompts seus, por escrito, e pediu que a pauta fosse de
+agentes — não implementação deste bloco. Nada dos itens dele tinha página: **queda de blocos** (item A do
+primeiro prompt, e do segundo) estava especificada no doc 10 e sem consumidor nenhum no código; **grama que
+cresce** (B) e **mato decorativo** (C) nem especificação tinham. Havia também uma decisão dele sem número
+de dossiê: espalhar a matilha em 2–3 tocas, depois de ele ter percorrido o mapa inteiro e visto um lobo só.
+
+### O que entrou (dois arquivos novos, um por assunto, e o índice e o contrato atualizados)
+
+- [`docs/planos/17-fisica-de-blocos-que-caem.md`](planos/17-fisica-de-blocos-que-caem.md): a premissa
+  falsificável (um `SAND` sem apoio some num tick e reaparece mais baixo noutro, com `queued` voltando a
+  zero e nenhuma varredura do mapa), o estado real lido — `block_changed` declarado em
+  [`voxel_world.gd:6`](../src/world/voxel_world.gd#L6) e emitido em [`:262`](../src/world/voxel_world.gd#L262),
+  com **zero** `.connect(` em `src/` e `tests/` — as sete checagens nomeadas e os sete commits atômicos na
+  branch `feat/fisica-de-blocos-que-caem-17`;
+- [`docs/planos/18-mundo-vivo-grama-e-mato.md`](planos/18-mundo-vivo-grama-e-mato.md): as duas premissas
+  (A sem especificação nenhuma, escrita aqui pela primeira vez e portanto `[TARGET]`; B/C gastando o id 17
+  e o tile 18 já prometidos no doc 10), o par vermelho `grama_precisa_de_vizinha`, o campo `substituivel`
+  como único jeito de o mato não engolir o clique do `_try_place`
+  ([`player.gd:684-685`](../src/entities/player.gd#L684-L685) só aceita `AIR`/`WATER`), e o riacho de RNG
+  próprio para não derrubar `tests/simulation_rng_test.gd`;
+- o índice [`docs/planos/README.md`](planos/README.md) passou de quinze para **dezessete** páginas, com as
+  duas linhas novas nas duas tabelas e a fila serializada reescrita;
+- [`AGENTS.md`](../AGENTS.md) ganhou a **Extensão de 2026-11-21**: os dois dossiês entram no "dentro", o
+  número **16 fica reservado** às tocas (página ainda não escrita — e o 16 da fila não é o furo #16 do
+  status, que a perna 14 já pagou), e a fila passa a **09 → 10 → 15 → 14 → 11 → 16 → 12 → 17 → 18 → 13**
+  com o motivo de dados de cada elo. A consequência de versão está declarada antes do código:
+  `Channel.COUNT` e `FORMAT_VERSION`
+  ([`tick_journal.gd:4`](../src/persistence/tick_journal.gd#L4)) não são tocados, e uma corrida com areia
+  caindo ou grama crescendo **não** reproduz os hashes das rodadas publicadas, porque o que muda é o mundo,
+  não a projeção.
+
+### A contagem conferida nesta ponta
+
+`python .tools/verify_plan_cites.py docs/planos/*.md` sobre as dezessete páginas: **1 039 citações
+conferidas nos dossiês** (as quinze antigas somam **935**; a 17 traz **54** e a 18 **50**), **0 números
+fora do arquivo** e as mesmas **8** referências a arquivos inexistentes, todas peças declaradas como
+inexistentes (`src/core/sim/tick_clock.gd`, `docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd`)
+— com esta página índice no corpus, o diretório dá **1 053**. Pelo `verify_plan_ids.py`, a 17 devolve
+**98** identificadores em backticks, dos quais **38** não existem em `src/` nem em `tests/`, e a 18
+**68**, dos quais **16**; cada ausente é checagem proposta, peça/flag/constante que o dossiê propõe ou
+bloco que o doc 10 numera e o registro não tem — nenhuma virou fato. Os três governantes, medidos nesta
+árvore com estes dois arquivos em cima: **113 · 0 · 416 = 529** números (`AGENTS.md` 113, `README.md` da
+raiz 0, este status 416), 0 fora do arquivo. Na primeira medida desta ponta o status dava **412**, e os
+quatro números que ele ganhou são exatamente as quatro âncoras que a seção acima escreveu.
+
+### O que nada disso fecha
+
+Nenhum gate de fase (mandato 4) e nenhuma linha de código: as duas pernas ainda não abriram branch, e
+nenhuma das peças nomeadas (`BlockUpdateQueue`, `FallingBlock`, `PLANT`, `substituivel`) existe. O que a
+rodada entrega é a pauta com premissa, custo e gate escritos contra o código de hoje — e a proibição de
+varredura global, que é o ponto dos dois prompts que o código ainda não tem como garantir.

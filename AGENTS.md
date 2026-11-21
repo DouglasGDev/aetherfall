@@ -387,6 +387,31 @@ e em `src/main.gd` só pendura um nó novo no boot, enquanto a 14 depende da ron
 10 já escreveu e pousou. Registrada **antes** de qualquer código, como exige o mandato 4; nada deste
 lote encosta em `src/entities/wolf.gd`, e o processo do oráculo continua fora do caminho de simulação.
 
+**Extensão de 2026-11-21, autorizada pelo dono na própria conversa — dois prompts, dois dossiês e
+uma vaga.** Ele mandou pôr em pauta o conteúdo de dois prompts seus ("Resolver Pontos Críticos do
+Aetherfall — Física de Blocos + Mundo Reativo" e "Prompt Master — Física de Blocos + Mundo Vivo"),
+itens A (queda de blocos), B (grama que cresce) e C (mato decorativo). Eles entram no "dentro" como
+[`docs/planos/17-fisica-de-blocos-que-caem.md`](docs/planos/17-fisica-de-blocos-que-caem.md) e
+[`docs/planos/18-mundo-vivo-grama-e-mato.md`](docs/planos/18-mundo-vivo-grama-e-mato.md), e o número
+**16 fica reservado** ao pedido dele de espalhar a matilha em 2–3 tocas — a página ainda não existe,
+e quem a escrever usa o 16 e a posição que ele escolheu (logo depois da 11). Nada aqui é código: a
+pauta registrada **antes** de qualquer linha escrita (mandato 4).
+
+Três recortes que a autorização **não** cobre, lidos no código antes de dizer isso: o **rebase das
+camadas verticais** (o prompt fala em `Y_MIN = -64`, `Y_BUILD_LIMIT = 320`, `SEA_LEVEL = 64`; o
+registro tem `CHUNK_SIZE_Y = 64` e `SEA_LEVEL = 26`) porque quebra formato de save e ninguém o pediu;
+**fluidos, luz/`TORCH`, biomas e cavernas novos**, que o doc 10 já mantém `[OPEN]`; e a **lavra
+contínua do jogador**, que tem gate próprio verde. Consequência de versão declarada agora, não depois:
+`Channel.COUNT` e `FORMAT_VERSION` não são tocados por nenhuma das duas pernas, e uma corrida com areia
+caindo ou grama crescendo **não** reproduz os hashes das rodadas publicadas — não porque a projeção do
+journal mudou, mas porque o mundo mudou. A fila serializada passa a **09 → 10 → 15 → 14 → 11 → 16 → 12
+→ 17 → 18 → 13**: 16 logo depois de 11 porque é o censo variável da 11 que decide quantas tocas
+alimentam; 12 continua depois de 16 porque `dig` é folha da árvore já montada; 17 depois de 12 porque
+as duas escrevem pelo mesmo `set_block` e pelo mesmo `block_changed`, e anexar a fila de gravidade antes
+obrigaria a 12 a re-rodar o gate dela; 18 depois de 17 porque o crescimento é o **segundo** comprador do
+`BlockUpdateQueue` que a 17 escreve (generalizar no segundo chamador, não no primeiro); e 13 fecha por
+ser a última justamente para nenhuma mudança de `Channel.COUNT` cair no meio da fila.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do
