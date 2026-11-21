@@ -7,6 +7,15 @@ extends Node3D
 ## difusao do Eter e tick de simulacao a 20 Hz.
 
 const WOLF_COUNT := 5
+## Teto de censo (dossie 11 §4, resposta 2): ate onde a populacao pode crescer --
+## e nao a quantidade com que o mundo nasce, que e `WOLF_COUNT`. 12 porque
+## 12 x 400 us = 4,8 ms dos 50 ms do passo de 20 Hz, e o gate de P1 ainda escreve
+## 2,5 ms como [TARGET] para as arvores: 12 e teto de censo, nao orcamento
+## liberado -- o que mantem a soma dentro do numero e o filhote pagar menos arvore
+## (a porta de coragem fecha a cacada dele, dossie 11 §3.3). Vale para as duas
+## portas que incham a lista, o nascimento (`_scan_breeding`) e o load (§3.6), e
+## a recusa de cada uma e contada e impressa, nunca silenciosa.
+const CENSUS_CAP := 12
 # Distancia minima de um lobo que nasce. Os tres numeros abaixo sao os unicos que
 # o definem (dossie 14 §3.4): acima dos 30 m em que o proprio lobo ja consulta a
 # visada (`_sense`), acima dos 14 m do latido (`BARK_RANGE` do diretor de audio) e
@@ -54,6 +63,13 @@ var _entities: Node3D = null
 var _next_identity: int = 0
 var _population_rng := RandomNumberGenerator.new()
 var _respawn_queue: Array = []
+## Quantos bichos o ultimo load criou e retirou, e quantas vezes o teto de censo
+## disse nao (nascimento e load). Os tres numero vao para `diagnostics()` porque a
+## recusa tem de ser contada e lida, nao apenas impressa uma vez: um censo que
+## para no teto sem dizer nada e o mesmo fallback que o dossie 11 §3.6 recusa.
+var _load_created: int = 0
+var _load_retired: int = 0
+var _census_refusals: int = 0
 var _aether_cd: float = AETHER_PERIOD
 var _viz_cd: float = 0.0
 var _corpse_cd: float = 0.0
@@ -302,22 +318,52 @@ func _spawn_wolves(n: int) -> void:
 			# contrario do fallback antigo, que punha o bicho no centro em silencio.
 			_respawn_queue.append(RESPAWN_DELAY)
 			continue
-		var w := Wolf.new()
 		var home: Vector3 = pedido["feet"]
-		_entities.add_child(w)
-		w.setup(world, aether, player, home, _next_identity, clock)
-		# A matilha entra pelo mesmo caminho do `entity_provider` do jogador: o
-		# Callable e montado pela sessao, com a identidade presa, e o lobo so le.
-		w.pack_provider = Callable(self, "pack_of").bind(_next_identity)
+		var w := _make_wolf(home, _next_identity)
 		_next_identity += 1
-		w.bit_player.connect(_on_wolf_bit)
-		w.died.connect(_on_wolf_died)
-		# O diretor nasce em `_ready`, e `simulation_rng_test.gd` chama este spawn numa
-		# sessao fora da arvore de proposito (o contrato la e "spawnar sem boot
-		# completo"): aqui o som e opcional, a mente nao.
-		if audio != null:
-			audio.on_wolf_registered(w)
 		wolves.append(w)
+
+
+## O unico caminho que poe um lobo no mundo: `setup` com a identidade que a sessao
+## entrega, a matilha injetada pelo `Callable` preso nessa identidade, os dois
+## sinais ligados e o registro no diretor de audio.
+##
+## Tres portas passam por aqui -- o sorteio (`_spawn_wolves`), o nascimento
+## (`_born_from`, dossie 11 §3.4) e o disco (`load_game`, §3.6). enquanto o
+## construtor era privativo do sorteio, as outras duas teriam de escolher entre
+## duplicar a linha do `bit_player.connect` (e o filhote nasceria mudo para o som
+## e para a morte) ou nascer sem provedor de matilha (e o filhote nao veria irmao
+## nenhum). `phase` e `age_ticks` entram por parametro porque o disco e o
+## nascimento os conhecem antes do primeiro passo; o sorteio nao, e fica adulto.
+func _make_wolf(feet: Vector3, p_identity: int, p_phase: Wolf.Phase = Wolf.Phase.ADULT,
+		p_age: int = Wolf.JUVENILE_STEPS) -> Wolf:
+	var w := Wolf.new()
+	_entities.add_child(w)
+	w.setup(world, aether, player, feet, p_identity, clock)
+	# A matilha entra pelo mesmo caminho do `entity_provider` do jogador: o
+	# Callable e montado pela sessao, com a identidade presa, e o lobo so le.
+	w.pack_provider = Callable(self, "pack_of").bind(p_identity)
+	if p_phase != Wolf.Phase.ADULT or p_age != Wolf.JUVENILE_STEPS:
+		w.age_ticks = p_age
+		w.set_phase(p_phase)
+	w.bit_player.connect(_on_wolf_bit)
+	w.died.connect(_on_wolf_died)
+	# O diretor nasce em `_ready`, e `simulation_rng_test.gd` chama este spawn numa
+	# sessao fora da arvore de proposito (o contrato la e "spawnar sem boot
+	# completo"): aqui o som e opcional, a mente nao.
+	if audio != null:
+		audio.on_wolf_registered(w)
+	return w
+
+
+## A porta que tira um bicho da lista, a mesma da recolha de cadaver: o buffer de
+## matilha e o cursor saem junto, sena a leitura do morto ficaria orphan no
+## dicionario para sempre (a identidade nao e reutilizada).
+func _retire_wolf(w: Wolf) -> void:
+	wolves.erase(w)
+	_pack_buffers.erase(w.identity)
+	_pack_cursor.erase(w.identity)
+	w.queue_free()
 
 
 ## Colunas de lar já ocupadas. Dicionário pequeno (até o censo), construído uma vez
@@ -663,6 +709,17 @@ func load_game() -> void:
 	if tick_journal.active():
 		tick_journal.close()
 		print("journal encerrado antes do load: ", tick_journal.path)
+	# Dossie 11 §3.6: o teto de censo vale no load tambem, e a recusa vem antes de
+	# qualquer escrita no mundo -- metade do load aplicada seria pior que nenhum
+	# load, e truncar o excedente em silencio e o mandato 1 violado (nada de
+	# fallback que finja sucesso). A conta e so `size()`: nenhuma chave do disco e
+	# tocada aqui, senao o mundo seria regenerado para uma sessao recusada.
+	var saved: Array = d.get("wolves", [])
+	if saved.size() > CENSUS_CAP:
+		print("load RECUSADO: censo %d acima do teto %d" % [saved.size(), CENSUS_CAP])
+		_census_refusals += 1
+		hud.show_message("save com %d bichos: teto %d, nada mudado" % [saved.size(), CENSUS_CAP])
+		return
 	world.generate(SEED)
 	var edit_list := {}
 	for k in d.get("edits", {}):
@@ -688,9 +745,57 @@ func load_game() -> void:
 	_rebuild_benches()
 	audio.clear_transient()
 	aether.from_dict(d.get("aether", {}))
-	var saved: Array = d.get("wolves", [])
-	for i in mini(saved.size(), wolves.size()):
-		wolves[i].load_state(saved[i])
+	# Dossie 11 §3.6: o censo do disco e a autoridade, e o pareamento e por
+	# identidade. Eram `mini(saved.size(), wolves.size())` -- dois erros no mesmo
+	# numero, os dois impressos em `censo do disco`: sobrava bicho no disco que
+	# nunca chegava ao mundo (`disco=6 depois=5`), e o que chegava era posto no
+	# corpo do vizinho pela posicao do array (`mentes=[1<-0 2<-1 ...]`), com a
+	# memoria de outro lobo dentro e o journal hashando um no corpo do outro.
+	var vivos := {}
+	for w: Wolf in wolves:
+		vivos[w.identity] = w
+	var lidos := {}
+	var maior_id := -1
+	for e: Dictionary in saved:
+		var id: int = int(e["identity"])
+		lidos[id] = e
+		maior_id = maxi(maior_id, id)
+	_load_retired = 0
+	_load_created = 0
+	for i in range(wolves.size() - 1, -1, -1):
+		var w: Wolf = wolves[i]
+		if lidos.has(w.identity):
+			w.load_state(lidos[w.identity])
+			continue
+		# O bicho que a sessao tem e o disco nao tem nao pode ficar: ele voltaria
+		# como um nascimento nao registrado, e o censo carregado deixaria de ser o
+		# censo gravado -- a mesma conta que a premissa 1 do dossie recusa.
+		_retire_wolf(w)
+		_load_retired += 1
+	for e: Dictionary in saved:
+		var id: int = int(e["identity"])
+		if vivos.has(id):
+			continue
+		var feet := Vector3(
+				float(e["feet"][0]), float(e["feet"][1]), float(e["feet"][2]))
+		var w := _make_wolf(feet, id, Wolf.phase_of_save(int(e.get("phase", Wolf.Phase.ADULT))),
+				int(e.get("age_ticks", Wolf.JUVENILE_STEPS)))
+		w.load_state(e)
+		wolves.append(w)
+		_load_created += 1
+	# A ordem do array e so a ordem de criacao; o que a checagem confere e o
+	# conjunto de identidades, entao ordenar por identidade nao muda nenhum numero
+	# medido e faz o F3 e o `wolves_roster` do audio lerem a matilha na mesma ordem
+	# com que o disco a gravou.
+	wolves.sort_custom(func(a: Wolf, b: Wolf) -> bool: return a.identity < b.identity)
+	# A vaga de reposicao e da sessao que gravou, nao desta: deixar um pedido na
+	# fila seria inventar um setimo bicho contra o censo do disco (medido em
+	# `censo do disco`: fila=1 com o mundo ja recarregado, teto=6 no disco).
+	_respawn_queue.clear()
+	# A identidade mais alta do disco nao pode ser sorteada de novo: dois bichos
+	# com a mesma identidade quebrariam o pareamento do proximo load e o journal
+	# (que ordena minds por identidade) deixaria de ser uma funcao do estado.
+	_next_identity = maxi(_next_identity, maior_id + 1)
 	clock.tick = int(d.get("tick", 0))
 	elapsed = float(d.get("elapsed", 0.0))
 	world.generate_meshes_all()
@@ -722,6 +827,12 @@ func diagnostics() -> Dictionary:
 		"wolves": wolves.size(), "wolves_alive": targets_under_crosshair().size(),
 		"pack_pairs": _pack_pairs,
 		"pending_respawns": _respawn_queue.size(), "triangles": world.triangle_count(),
+		# Dossie 11 §3.6: o censo que o disco trouxe, quantos nasceram dele e quantos
+		# sairam, e quantas vezes o teto disse nao. Sem esses tres numeros a recusa
+		# seria uma linha impressa uma vez e nada lido -- o mandato 1 nao aceita
+		# "censo parado no teto" como estado silencioso.
+		"census_cap": CENSUS_CAP, "load_created": _load_created,
+		"load_retired": _load_retired, "census_refusals": _census_refusals,
 		"tick": clock.tick, "worst_sim_ms": clock.worst_step_ms,
 		"dropped_ticks": clock.dropped_ticks, "hp": player.hp,
 		"on_ground": player.body.on_ground, "feet": player.body.feet_pos,
