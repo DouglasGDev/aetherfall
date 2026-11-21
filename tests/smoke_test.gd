@@ -116,6 +116,7 @@ func _ready() -> void:
 		["salvar e carregar", 0, _check_save],
 		["cadaver no chao", 0, _check_corpse],
 		["recolhimento e reposicao", 460, _check_reap],
+		["censo do disco", 0, _check_censo_disk],
 	]
 	_until = int(_steps[0][1])
 	print("== aetherfall smoke test  seed %d ==" % SEED)
@@ -2356,6 +2357,17 @@ func _check_save() -> void:
 	if wolf0 == null:
 		_check("ha um lobo vivo para o save", false, "matilha=%d" % main.wolves.size())
 		return
+	# Dossie 11 §5, cena do censo: para o disco ter MAIS bichos do que a matilha
+	# viva de uma sessao nova, a populacao tem de variar. A porta e a da sessao
+	# (`_spawn_wolves`, a mesma que o filhote do cenario 1 vai usar -- dossie 11
+	# §3.4 poe o nascimento na sessao e nao no lobo), porque um lobo inventado por
+	# um dicionario escrito a mao nao provaria nada contra o load.
+	var censo_antes: int = main.wolves.size()
+	main._spawn_wolves(1)
+	_check("a porta de povoamento da sessao abre um bicho novo",
+			main.wolves.size() == censo_antes + 1,
+			"censo %d -> %d  WOLF_COUNT=%d (o teto de censo e outro numero)" % [
+			censo_antes, main.wolves.size(), main.WOLF_COUNT])
 	# (20,20) de proposito: as 16 colunas amostradas no boot incluem (12,12), e uma
 	# edicao ali faria o "relevo identico apos carregar" comparar contra si mesmo.
 	var extra := Vector3i(20, w.surface_height(20, 20) + 4, 20)
@@ -2491,3 +2503,66 @@ func _check_reap() -> void:
 	_check("lobos seguem vivos e decidindo", int(d["wolves_alive"]) >= 3,
 		"vivos=%d  triangulos=%d" % [d["wolves_alive"], d["triangles"]])
 	print("       diagnostico final: ", JSON.stringify(d))
+
+
+## Checagem 5 do dossie 11 §5 (`load_leva_todo_o_censo`), e nasce VERMELHA por
+## projeto: o contrato (AGENTS.md ciclo 3, dossie 11 §3.6) quer o furo impresso
+## antes do conserto, nao um conserto antecipado que faria o verde dizer pouco.
+##
+## A premissa e montada por transicoes reais, nenhuma delas escrita a mao: o passo
+## `salvar e carregar` abriu o sexto bicho pela porta de povoamento da sessao e
+## gravou o disco com seis; depois dai a matilha viva so encolheu pela unica porta
+## que existe para isso -- a recolha de cadaver do passo anterior. Um load que
+## pareia por indice (`mini(saved.size(), wolves.size())`) devolve quantos lobos a
+## sessao ja tinha e joga o resto do disco fora em silencio: e o exato numero que
+## faz o censo nao ser variavel de mundo (dossie 11 §2, premissa 1).
+func _check_censo_disk() -> void:
+	var rd := SaveManager.read_slot(SLOT)
+	var saved: Array = (rd["data"] as Dictionary).get("wolves", [])
+	var ids_disco := ""
+	var chaves_ok := true
+	for e: Dictionary in saved:
+		ids_disco += "%d " % int(e["identity"])
+		if not e.has("phase") or not e.has("age_ticks"):
+			chaves_ok = false
+	var ids_antes := ""
+	var n_antes: int = main.wolves.size()
+	for w: Wolf in main.wolves:
+		ids_antes += "%d " % w.identity
+	main.load_game()
+	var d: Dictionary = main.diagnostics()
+	var ids_vivos := ""
+	var mentes := ""
+	var mente_ok := true
+	var fases_ok := true
+	var fases_vivas := ""
+	for w: Wolf in main.wolves:
+		ids_vivos += "%d " % w.identity
+		fases_vivas += "%d:%s/%d " % [w.identity, w.phase_name(), w.age_ticks]
+		# A identidade da mente e a do bicho tem de bater: se o pareamento for por
+		# posicao do array, o lobo 1 acorda com a memoria do lobo 0 e o journal
+		# passa a hash de um no corpo do outro -- e e a mente que o disco traz.
+		if int(w.mind.identity) != w.identity:
+			mente_ok = false
+		mentes += "%d<-%d " % [w.identity, int(w.mind.identity)]
+		for e: Dictionary in saved:
+			if int(e["identity"]) != w.identity:
+				continue
+			if int(w.phase) != int(e["phase"]) or int(w.age_ticks) != int(e["age_ticks"]):
+				fases_ok = false
+	var fila := int(d["pending_respawns"])
+	_check("o save carrega fase e idade como chaves aditivas", chaves_ok,
+			"bichos_no_disco=%d chaves=identity,hp,phase,age_ticks,mind  ids=[%s]" % [
+			saved.size(), ids_disco.strip_edges()])
+	_check("censo do disco carrega inteiro (load_leva_todo_o_censo)",
+			int(d["wolves"]) == saved.size(),
+			"disco=%d antes=%d depois=%d  disco_ids=[%s] vivo_ids=[%s]" % [
+			saved.size(), n_antes, int(d["wolves"]), ids_disco.strip_edges(),
+			ids_vivos.strip_edges()])
+	_check("cada identidade do disco confere com a mente carregada", mente_ok,
+			"antes=[%s] agora=[%s] mentes=[%s]" % [
+			ids_antes.strip_edges(), ids_vivos.strip_edges(), mentes.strip_edges()])
+	_check("fase e idade do disco voltam para o bicho certo", fases_ok,
+			"vivos=[%s]" % fases_vivas.strip_edges())
+	_check("a fila de reposicao nao inventa bicho fora do censo gravado", fila == 0,
+			"fila=%d  disco=%d  vivos=%d" % [fila, saved.size(), int(d["wolves"])])

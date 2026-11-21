@@ -278,6 +278,17 @@ static func phase_of_age(age: int) -> Phase:
 	return Phase.CUB
 
 
+## A fase vinda do disco, conferida antes de virar corpo: um numero fora do enum
+## indexaria `PHASE_SCALE` fora da tabela e o load morreria no meio de uma matilha
+## ja recarregada. A recusa e impressa (mandato 1 -- nada de clamp silencioso) e o
+## animal entra adulto, que e o unico corpo que este save sempre teve.
+static func phase_of_save(v: int) -> Phase:
+	if v < 0 or v >= PHASE_SCALE.size():
+		print("load: fase %d fora do enum das fases, entrando adulto" % v)
+		return Phase.ADULT
+	return Phase.values()[v]
+
+
 ## Cruzar um limiar e um evento e nao uma conta por passo: a comparacao com a fase
 ## atual nao dispara nada entre limiares, e o corpo so e reescrito no tick em que
 ## muda. O `age_ticks` de um adulto do boot comeca em `JUVENILE_STEPS` de
@@ -958,8 +969,8 @@ func _animate(delta: float) -> void:
 		# mesmo parado na agua (o gait de terra depende da velocidade horizontal)
 		_swim_phase += delta * 6.5
 		for i in _legs.size():
-			var phase: float = _swim_phase + (PI if (i == 1 or i == 2) else 0.0)
-			(_legs[i] as Node3D).rotation.x = sin(phase) * 0.38
+			var swing: float = _swim_phase + (PI if (i == 1 or i == 2) else 0.0)
+			(_legs[i] as Node3D).rotation.x = sin(swing) * 0.38
 		_visual.position.y = sin(_swim_phase * 0.5) * 0.05
 		return
 	_visual.position.y = 0.0
@@ -967,8 +978,8 @@ func _animate(delta: float) -> void:
 	if sp > 0.2:
 		_gait += delta * (2.6 + sp * 1.5)
 		for i in _legs.size():
-			var phase: float = _gait + (PI if (i == 1 or i == 2) else 0.0)
-			(_legs[i] as Node3D).rotation.x = sin(phase) * minf(0.7, 0.18 + sp * 0.08)
+			var swing: float = _gait + (PI if (i == 1 or i == 2) else 0.0)
+			(_legs[i] as Node3D).rotation.x = sin(swing) * minf(0.7, 0.18 + sp * 0.08)
 	elif _visual:
 		for leg in _legs:
 			leg.rotation.x = lerpf(leg.rotation.x, 0.0, clampf(delta * 8.0, 0.0, 1.0))
@@ -1052,7 +1063,11 @@ func state_dict() -> Dictionary:
 	return {
 		"identity": identity, "home": [home.x, home.y, home.z],
 		"feet": [body.feet_pos.x, body.feet_pos.y, body.feet_pos.z],
-		"hp": hp, "alive": alive, "hunger": hunger, "kills": kills, "mind": mind.to_dict(),
+		"hp": hp, "alive": alive, "hunger": hunger, "kills": kills,
+		# Dossie 11 §3.5: fase e idade sao estado do animal, entao vao para o disco
+		# com ele. Somente isto -- nenhuma chave nova na projeção do journal
+		# (`FORMAT_VERSION` continua 1, medido em `journal_hash_inalterado`).
+		"phase": phase, "age_ticks": age_ticks, "mind": mind.to_dict(),
 	}
 
 
@@ -1065,7 +1080,15 @@ func load_state(d: Dictionary) -> void:
 		_fur.albedo_color = FUR_COLORS[home_biome]
 	body.feet_pos = Vector3(float(d["feet"][0]), float(d["feet"][1]), float(d["feet"][2]))
 	body.velocity = Vector3.ZERO
-	hp = float(d.get("hp", MAX_HP))
+	# Dossie 11 §3.5: chaves aditivas com default explícito. Um save anterior ao
+	# lote nao tem fase nem idade, e o animal que ele gravou existiu adulto; a
+	# recusa por `gen_version` nao cobre isso de proposito, porque o terreno nao
+	# mudou -- mudou a entidade. A ordem e idade, fase, hp: `set_phase` re-escala
+	# a vida pela proporcao, entao o `hp` do disco tem de ser lido contra o teto
+	# ja novo, e nao contra o corpo sorteado desta sessao.
+	age_ticks = int(d.get("age_ticks", JUVENILE_STEPS))
+	set_phase(phase_of_save(int(d.get("phase", Phase.ADULT))))
+	hp = float(d.get("hp", max_hp()))
 	alive = bool(d.get("alive", true))
 	hunger = float(d.get("hunger", 0.35))
 	kills = int(d.get("kills", 0))
