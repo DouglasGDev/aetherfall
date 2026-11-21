@@ -3,20 +3,22 @@
 Motor Godot 4.7.2-stable (`ed1daf0bf`), binário `.tools/Godot_v4.7.2-stable_win64_console.exe`, md5
 `daf6bba3d9c99634f146e220ce4de160` conferido nesta sessão. `.tools/` está no `.gitignore`, então
 **nenhum destes logs existe num clone recém-baixado** — os arquivos deste diretório são a cópia
-publicada, e `artifacts.sha256` (50 entradas) fecha sobre elas.
+publicada, e `artifacts.sha256` (51 entradas) fecha sobre elas.
 
 Árvore atual: `src` = `3eb42835a0e1f54086937d63258388f52e1db932`, `tests` =
 `8b8a5e471d737d6474eb6171bab6fdbeec75c06a`. Base da branch: `a898fb2` (ponta da `main` na abertura da
 perna), com `src` = `1177048d5f1c1f8068e356c30b6b8e4ca8d6f12c`, `tests` =
 `8a04330bcbf91c5ac58709fef9b7c7b8c9dad60e`. Seções 1 a 5 são **árvore de trabalho**; o clone limpo
-está na **seção 6**, a `main` mergida na **seção 8** e a re-corrida do fecho na **seção 9**.
+está na **seção 6**, a `main` mergida na **seção 8**, a re-corrida do fecho na **seção 9** e o
+registro do pin na **seção 10**.
 
 Nenhum exit code foi gravado nestes logs. O contrato lido é a última linha de cada corrida (`N
 checagens M falhas T s` no runner, `== N checagens M falhas T s de teste ==` na suíte) e a contagem
-de `SCRIPT ERROR`, que é **0 nos 47 arquivos com banner de engine**. Os outros três não correm engine:
-os dois stderr de suíte (`merge-e7e0a1f-suite-err.log`, `fecho-suite-err.log`) e
-`merge-e7e0a1f-anchors.log`, saída do script Python das âncoras. Do corpus: **40** logs terminam com
-`0 falhas`, **6** trazem a falha impressa (as vermelhas do §2) e quatro — `f_clone-import.log` e os três
+de `SCRIPT ERROR`, que é **0 nos 47 arquivos com banner de engine**. Os outros quatro não correm engine:
+os dois stderr de suíte (`merge-e7e0a1f-suite-err.log`, `fecho-suite-err.log`) e os dois logs das
+âncoras (`merge-e7e0a1f-anchors.log`, `registro-d4dee0f-anchors.log`), saída do script Python do
+instrumento. Do corpus: **40** logs terminam com
+`0 falhas`, **6** trazem a falha impressa (as vermelhas do §2) e cinco — `f_clone-import.log` e os quatro
 acima — não têm contagem porque não rodam suíte. A contagem se confere **antes** de qualquer lote
 (mandato 1): nenhuma corrida aqui perdeu checagens em silêncio.
 
@@ -263,3 +265,28 @@ código `6e35b64` — que é exatamente o hash que o clone limpo do §6 executou
 Os cinco lares deste log são os mesmos cinco decimais de sempre (48,3 / 50,4 / 42,5 / 55,1 / 51,6 m),
 `spawn RECUSADO:` zero vezes e `maior_matilha_lida=4`. É corrida de **verificação**, não um pin novo: o
 pin publicado continua sendo `e7e0a1f`, a `main` do merge, com o log do §8.
+
+## 10. O registro: o pin passa a ser `d4dee0f`
+
+O §9 terminou dizendo que a sua corrida era **verificação, não pin** e que o pin continuava sendo
+`e7e0a1f`. Este registro amarra essa ponta. O `fecho-suite.log` já era corrida da árvore
+de código `3eb42835…` / `8b8a5e47…`, e a merge `--no-ff` que trouxe o lote de documentos do §9 para a
+`main` deu `d4dee0f` — uma árvore **idêntica** à do commit que rodou a suíte: `git rev-parse
+d4dee0f^{tree}` e `857c8e6^{tree}` são o mesmo objeto `45890848547997c1e6ecf3322851489af6fe7721`.
+O que a merge acrescentou sobre `e7e0a1f` são 10 arquivos de `.md` e `.log`, `+873 / −47`, e nenhum
+`.gd`; `git rev-parse d4dee0f:src e7e0a1f:src 6e35b64:src` devolve os três hashes iguais, idem
+`tests`. Com identidade de árvore inteira, a corrida arquivada do §9 **é** a corrida desta revisão, e
+ela passa a ser o número do pin: **246 checagens / 0 falhas / 38,9 s**, `dropped_ticks` 0, `gen_ms`
+1 017,212, `mesh_ms` 4 977,391, `worst_sim_ms` **16,127**.
+
+| passo | resultado | log |
+| --- | --- | --- |
+| suíte na árvore registrada (`d4dee0f` = `857c8e6` por hash de árvore) | **246 checagens / 0 falhas / 38,9 s**, exit 0, zero `SCRIPT ERROR` | `fecho-suite.log`, `fecho-suite-err.log` (já arquivados no §9) |
+| instrumento de âncoras, corpus pinado em `d4dee0f` (`--ref d4dee0f`) | 1 723 ponteiros, 117 rótulos, 1 623 links relativos, **0** casos objetivos, exit 0 | `registro-d4dee0f-anchors.log` §1 |
+| mesmo instrumento na árvore de trabalho deste registro (pin do README, nota do status e esta seção dentro) | 1 723 / 117 / 1 623, **0** casos, exit 0 — os mesmos três números das pontas `b7a0120`, `e7e0a1f` e `d4dee0f` (escada na seção 3 do log) | `registro-d4dee0f-anchors.log` §2 |
+| o próprio `readback.md`, por chamada explícita (a regra do furo #14 mantém `docs/evidence/` fora do corpus varrido) | 24 ponteiros, 2 rótulos, 16 links relativos, **0** casos, exit 0 | `registro-d4dee0f-anchors.log` §4 |
+
+A linha `spawn RECUSADO:` não aparece em nenhum dos 51 logs, os cinco lares deste registro são os
+mesmos decimais das quatro pontas anteriores e `maior_matilha_lida=4` se repete. Nada aqui fecha gate
+de fase (mandato 4): o que mudou entre `e7e0a1f` e `d4dee0f` é documento, e o `worst_sim_ms` do pin
+subiu 359 µs na mesma árvore de código — o que é a variação desta máquina, não um custo novo.
