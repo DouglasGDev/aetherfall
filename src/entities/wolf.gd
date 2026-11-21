@@ -137,6 +137,12 @@ var kills: int = 0
 var phase: Phase = Phase.ADULT
 var age_ticks: int = JUVENILE_STEPS
 var dims: Vector3 = DIMS
+## Cooldown de acasalamento, em segundos de simulacao (dossie 11 §3.4). O numero
+## mora no animal porque a recusa tem de ser por lobo -- um par que gerou nao pode
+## gerar de novo no passo seguinte, e a sessao que decide o valor, nao o corpo.
+## Quem zera a mao no cenario monta a premissa; quem vence o tempo anda pelo mesmo
+## `dt` do passo de 20 Hz que envelhece a idade.
+var mate_cd: float = 0.0
 
 var _player: Player = null
 var _sim_clock: SimClock = null
@@ -777,6 +783,7 @@ func sim_step(elapsed: float, dt: float) -> void:
 	_wander_cd = maxf(_wander_cd - dt, 0.0)
 	_saw_cd = maxf(_saw_cd - dt, 0.0)
 	_cross_cd = maxf(_cross_cd - dt, 0.0)
+	mate_cd = maxf(mate_cd - dt, 0.0)
 	_scent_clock += dt
 	_scent_cd = maxf(_scent_cd - dt, 0.0)
 	_threat = maxf(_threat - dt * 0.05, 0.0)
@@ -1064,10 +1071,14 @@ func state_dict() -> Dictionary:
 		"identity": identity, "home": [home.x, home.y, home.z],
 		"feet": [body.feet_pos.x, body.feet_pos.y, body.feet_pos.z],
 		"hp": hp, "alive": alive, "hunger": hunger, "kills": kills,
-		# Dossie 11 §3.5: fase e idade sao estado do animal, entao vao para o disco
-		# com ele. Somente isto -- nenhuma chave nova na projeção do journal
-		# (`FORMAT_VERSION` continua 1, medido em `journal_hash_inalterado`).
-		"phase": phase, "age_ticks": age_ticks, "mind": mind.to_dict(),
+		# Dossie 11 §3.5: fase, idade e cooldown sao estado do animal, entao vao
+		# para o disco com ele. Nada disso toca a projeção do journal:
+		# `TickJournal.state_hash` monta os lobos a partir de `identity`,
+		# `mind.identity`, `mind.kind`, `intent` e `mind.beliefs`
+		# (tick_journal.gd:16-44) e nao le `state_dict()`. `FORMAT_VERSION`
+		# continua 1 -- a igualdade de hash e a checagem 7 do gate, ainda por
+		# medir, e nao um numero desta linha.
+		"phase": phase, "age_ticks": age_ticks, "mate_cd": mate_cd, "mind": mind.to_dict(),
 	}
 
 
@@ -1092,6 +1103,9 @@ func load_state(d: Dictionary) -> void:
 	alive = bool(d.get("alive", true))
 	hunger = float(d.get("hunger", 0.35))
 	kills = int(d.get("kills", 0))
+	# Default 0,0 = pronto: um save anterior ao lote gravou um animal que nunca
+	# namorou, e "sem chave" nao pode significar "casado ha 300 s".
+	mate_cd = float(d.get("mate_cd", 0.0))
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
 	_checked_scents.clear()

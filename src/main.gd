@@ -70,6 +70,12 @@ var _respawn_queue: Array = []
 var _load_created: int = 0
 var _load_retired: int = 0
 var _census_refusals: int = 0
+## Quantos filhotes a roda de acasalamento poe no mundo. Counter, nao log: o numero
+## que a checagem do dossie 11 le e `wolves.size()` antes e depois, e o print diz
+## qual par gerou -- sem o counter nao ha como a suíte de censo conferir duas
+## varreduras sem reler o mundo inteiro.
+var _births: int = 0
+var _mate_cd: float = 0.0
 var _aether_cd: float = AETHER_PERIOD
 var _viz_cd: float = 0.0
 var _corpse_cd: float = 0.0
@@ -266,6 +272,14 @@ func _sim_tick() -> void:
 			# volta para a fila, e "uma nova matilha entrou no vale" seria dita com
 			# o vale vazio.
 			_spawn_wolves(1)
+	# Dossie 11 §3.4: a roda de acasalamento roda AQUI, e nao dentro do
+	# `sim_step` do lobo, porque quem poe um bicho no mundo e dono de `wolves` e de
+	# `_next_identity`. Rodar no lobo seria o spawn ter dois donos e o filhote
+	# nascer de dentro de uma iteracao sobre a lista que ele esta mudando.
+	_mate_cd -= dt
+	if _mate_cd <= 0.0:
+		_mate_cd = MATE_PERIOD
+		_scan_breeding()
 	clock.tick += 1
 	if tick_journal.active():
 		var err := tick_journal.record(clock.tick, world, aether, wolves)
@@ -366,6 +380,70 @@ func _retire_wolf(w: Wolf) -> void:
 	w.queue_free()
 
 
+## O bicho esta disponivel para criar? Adulto, descansado, alimentado e inteiro.
+## A fase entra porque filhote nao acasala (dossie 11 §3.3), e o `hp` e lido contra
+## `max_hp()` do proprio bicho: comparar contra a constante do adulto daria ao
+## filhote que virou jovem uma barra de vida que ele nunca teve.
+func _breedable(w: Wolf) -> bool:
+	return w.alive and w.phase == Wolf.Phase.ADULT and w.mate_cd <= 0.0 \
+			and w.hunger <= MATE_HUNGER_MAX \
+			and w.hp >= MATE_HP_MIN * w.max_hp()
+
+
+## A roda (dossie 11 §3.4): o PRIMEIRO par adulto, saciado, sao e sem cooldown que
+## se encontra a `MATE_RADIUS` metros, e desse par nasce UMA cria. Parar no
+## primeiro é escolha, não descuido: com o teto de 12 no ar, varrer todos os pares
+## num mesmo tick poderia nascer tres filhotes de uma passada e o censo entraria
+## no teto por velocidade de natacao em vez de por tempo de sessao.
+func _scan_breeding() -> void:
+	for i in wolves.size():
+		var a: Wolf = wolves[i]
+		if not _breedable(a):
+			continue
+		for j in range(i + 1, wolves.size()):
+			var b: Wolf = wolves[j]
+			if not _breedable(b):
+				continue
+			if a.center().distance_squared_to(b.center()) > MATE_RADIUS * MATE_RADIUS:
+				continue
+			_born_from(a, b)
+			return
+
+
+## Quem poe o filhote no mundo e a sessao, nunca o lobo (dossie 11 §3.4): a lista
+## `wolves`, o `_next_identity` e o `_home_columns()` tem um dono so, e e este.
+##
+## Os dois caminhos de recusa custam o cooldown ao par DE PROPOSITO. Sem isso a
+## roda de 1 s imprimiria a mesma recusa 20 vezes por passo durante os 300 s em
+## que o censo esta no teto, e "recusa impressa, nunca silenciosa" (mandato 1)
+## viraria spam -- o numero continuaria lido em `diagnostics()`, mas o log do
+## jogador seria uma linha repetida. O ponto de nascimento passa pelo MESMO
+## predicado do spawn da perna 14 (`_spawn_point_ok` via `_spawn_home_point`): um
+## recem-nato na frente do jogador seria o pedido "nunca spawnar na frente"
+## cumprido no boot e traído no primeiro parto.
+func _born_from(a: Wolf, b: Wolf) -> void:
+	a.mate_cd = MATE_COOLDOWN
+	b.mate_cd = MATE_COOLDOWN
+	if wolves.size() >= CENSUS_CAP:
+		print("nascimento RECUSADO: censo %d no teto %d (par %d+%d)" % [
+				wolves.size(), CENSUS_CAP, a.identity, b.identity])
+		_census_refusals += 1
+		return
+	var pedido := _spawn_home_point(_home_columns(), (a.home + b.home) * 0.5)
+	if not bool(pedido["ok"]):
+		# O motivo ja saiu impresso dentro da busca, com a contagem por portao.
+		# Sem lar aceito nao ha filhote: a alternativa historica era cair no centro
+		# em silencio, e o centro e onde o jogador acorda.
+		return
+	var w := _make_wolf(pedido["feet"], _next_identity, Wolf.Phase.CUB, 0)
+	_next_identity += 1
+	wolves.append(w)
+	_births += 1
+	print("nascimento: filhote %d dos adultos %d+%d a %.1f m do centro do par" % [
+			w.identity, a.identity, b.identity,
+			w.home.distance_to((a.home + b.home) * 0.5)])
+
+
 ## Colunas de lar já ocupadas. Dicionário pequeno (até o censo), construído uma vez
 ## por spawn -- o spawn é raro: cinco no boot e um por fila de 45 s (dossie 14 §4).
 func _home_columns() -> Dictionary:
@@ -389,6 +467,33 @@ const SPAWN_ATTEMPTS := 24
 ## raramente deixavam dois lobos se enxergarem -- `maior_matilha_lida=1` em todas
 ## as corridas ate aqui, inclusive as cinco da perna 14.
 const PACK_LEASH := 18.0
+
+
+## Roda de acasalamento (dossie 11 §3.4): os cinco numeros abaixo SAO a regra, e a
+## regra e da sessao -- o lobo guarda apenas o cooldown, porque a recusa tem de ser
+## por animal e nao por indice do array.
+##
+## Cadencia de 1 s, e nao do passo: a roda olha pares, e com o teto de 12 bichos
+## sao 66 pares. Sessenta e seis contas de distancia dentro dos 50 ms do
+## `sim_step` seria trabalho de caminho quente para um evento que, quando
+## acontece, trava o par por `MATE_COOLDOWN` segundos.
+const MATE_PERIOD := 1.0
+## Os dois tem de se encontrar de corpo: 8 m e menos que a coesao de matilha
+## (`PACK_COHESION_RADIUS` = 24 m) e menos que o alcance em que um lobo ja le o
+## outro, entao "perto" aqui e posicao, nao intencao compartilhada.
+const MATE_RADIUS := 8.0
+## Criar custa fome e sangue: abaixo destes limiares o bicho nao esta disponivel.
+## `hunger` cresce `dt * 0,006` (fome plena a 1,0) e `hp` e lido contra o teto da
+## FASE dele (`max_hp()`), nao contra a constante do adulto: um jovem de escala
+## 0,72 com 25 de vida esta inteiro, e conta-lo como 60 % seria mentir pela
+## constante errada.
+const MATE_HUNGER_MAX := 0.55
+const MATE_HP_MIN := 0.60
+## 300 s = 6 000 passos de 20 Hz. O filhote vira jovem em `CUB_STEPS` = 1 200
+## passos (60 s) e adulto em 4 800 (240 s): o cooldown e maior que a infancia
+## inteira de proposito, senao o par voltaria a procurar cria antes de o primeiro
+## filhote ter crescido e o censo estouraria o teto por velocidade de natacao.
+const MATE_COOLDOWN := 300.0
 
 
 ## Centro da mordaca: o lar de um irmao vivo, ou null quando ainda nao ha matilha
@@ -833,6 +938,7 @@ func diagnostics() -> Dictionary:
 		# "censo parado no teto" como estado silencioso.
 		"census_cap": CENSUS_CAP, "load_created": _load_created,
 		"load_retired": _load_retired, "census_refusals": _census_refusals,
+		"births": _births,
 		"tick": clock.tick, "worst_sim_ms": clock.worst_step_ms,
 		"dropped_ticks": clock.dropped_ticks, "hp": player.hp,
 		"on_ground": player.body.on_ground, "feet": player.body.feet_pos,

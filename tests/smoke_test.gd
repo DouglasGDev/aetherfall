@@ -43,7 +43,11 @@ var _scratch: VoxelWorld = null
 var _scratch_root: Node3D = null
 var _spawn := Vector3.ZERO
 var _heights := {}
-var _spawn_pos: Array = []
+## Posicoes de lar por IDENTIDADE, nao por indice do array (dossie 11 §2, o nono
+## sitio que tratava o censo como constante): com o nascimento na sessao o array
+## cresce no meio da janela real, e `wolves[i]` contra `_spawn_pos[i]` passava a
+## comparar o lobo certo contra a posicao do irmao -- ou a ler indice inexistente.
+var _spawn_pos: Dictionary = {}
 var _corpse_n := 0
 var _place_voxel := Vector3i.ZERO
 var _place_sel := 0
@@ -211,7 +215,7 @@ func _check_boot() -> void:
 			"display=%s  llm=%s" % [DisplayServer.get_name(), str(d["llm"])])
 	print("       geracao %.1f ms   malharia %.1f ms" % [d["gen_ms"], d["mesh_ms"]])
 	for w in main.wolves:
-		_spawn_pos.append(w.global_position)
+		_spawn_pos[w.identity] = w.global_position
 
 
 func _check_live() -> void:
@@ -224,11 +228,16 @@ func _check_live() -> void:
 		"perdidos=%d  pior passo=%.2f ms" % [d["dropped_ticks"], d["worst_sim_ms"]])
 	_check("jogador segue no chao", bool(d["on_ground"]), "feet=%s" % d["feet"])
 	var live_moved := 0
-	for i in main.wolves.size():
-		if (main.wolves[i] as Node3D).global_position.distance_to(_spawn_pos[i]) > 0.5:
+	var desde_boot := 0
+	for w: Wolf in main.wolves:
+		if not _spawn_pos.has(w.identity):
+			continue
+		desde_boot += 1
+		if w.global_position.distance_to(_spawn_pos[w.identity]) > 0.5:
 			live_moved += 1
 	_check("ao menos um lobo se moveu na janela real", live_moved >= 1,
-		"%d/%d se moveram em %.2f s de logica" % [live_moved, main.wolves.size(), float(main.elapsed)])
+		"%d/%d se moveram em %.2f s de logica  nasceram_depois=%d" % [
+		live_moved, desde_boot, float(main.elapsed), main.wolves.size() - desde_boot])
 	var encaixados := ""
 	var n_enc := 0
 	for w in main.wolves:
