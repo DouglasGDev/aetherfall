@@ -91,8 +91,10 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
 1. **Um predicado compartilhado, não duas cópias.** `VoxelBody.can_step_over(dir)` — resposta
    honesta à pergunta "a um bloco acima, na direção `dir`, existe onde ficar de pé?", construída
    sobre `can_stand_at` com o pé horizontal fora do corpo (`maxf(dims.x, dims.z) * 0,5 + 0,6`) e a
-   altura `+1,0 + margem`. Duas chamadas `aabb_hits_solid` no pior caso, e só quando já houve
-   bloqueio.
+   altura **exatamente `+1,0`, sem margem**: a margem de 0,05 que a primeira formulação desta página
+   pedia negaria ao lobo (0,95 de altura) a própria célula de 1,00 em que ele cabe, e o `floori` do
+   `aabb_hits_solid` já trata a face encostada como livre. Duas chamadas `aabb_hits_solid` no pior
+   caso, e só quando já houve bloqueio.
 2. **O salto do lobo limpa o degrau, e só limpa degrau.** Trocar o literal `5,2` por constante
    nomeada com o ápice escrito ao lado, e exigir o predicado antes de gastar o impulso. Os sorteios
    de `_rng` de `:841-842` **continuam na mesma ordem e na mesma quantidade**: a regra nova decide
@@ -137,9 +139,13 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
 ```sh
 godot --headless --path . --check-only --script src/entities/wolf.gd
 godot --headless --path . --check-only --script src/entities/player.gd
-godot --headless --path . tests/aether_reactions_test.gd
+godot --headless --path . --script res://tests/aether_reactions_test.gd
 godot --headless --path . tests/smoke_test.tscn
 ```
+
+O runner de reações é um script `SceneTree`, não uma cena: sem o `--script res://` a linha vira
+caminho de cena, o `main.tscn` do projeto assume, e a corrida abre o jogo headless e nunca sai —
+medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testando nada.
 
 1. **`degrau_de_um_bloco_lobo_sobe`** — coluna de 1 bloco à frente do alvo, corpo a 2 m dela,
    `_move_target` do outro lado; avança frames e exige `feet_pos.y` ≥ `y0 + 0,95` e que o corpo
@@ -153,9 +159,13 @@ godot --headless --path . tests/smoke_test.tscn
    e é por isso que ela é re-derivada neste lote em vez de apagada.
 4. **`agachado_nao_e_arremessado`** — o mesmo degrau com `crouching` true: corpo continua do lado de
    cá, `Δy == 0`. A checagem que dá dente à recusa do §3.3.
-5. **`predicado_degrau_recusa_teto_baixo`** — o bloco do degrau encimado por um sólido (vão de
-   0,95 m): o predicado devolve falso e nenhum dos dois corpos salta. É o lado que impede o
-   auto-pulo de virar "pular em tudo que é parede".
+5. **`predicado_degrau_recusa_teto_baixo`** — o predicado sozinho, em cinco braços montados com a
+   régua do grid (célula inteira, sem meio bloco), lidos da caixa real de cada corpo: degrau de um
+   bloco com ar acima → **true** nos dois; muro de dois → **false**; degrau encimado por um sólido a
+   uma célula do parapeito → **true para o lobo** (0,95 cabe no vão de 1,00) e **false para o
+   jogador** (1,80 não cabe) — é este braço que impede o auto-pulo de virar "pular em tudo que é
+   parede", e a resposta depende da altura do corpo por design, não por sorteio; penhasco de seis →
+   **false**; direção zero → **false**.
 6. **`pulo_nao_custou_passo_de_ninguem`** — 1 000 ticks andando em plano sem bloqueio e 1 000 ticks
    com um degrau no caminho, `worst_sim_ms` e `dropped_ticks` lado a lado; atribuição por
    composição, como o contrato exige.
@@ -215,3 +225,9 @@ Branch `feat/auto-pulo-de-bloco-19`, um assunto por commit, suíte verde entre e
   menor que a altura do bloco** (§2). Um pathfinder novo não consertaria isso.
 - O pedido de auto-pulo do jogador **não** é "aumentar o step-up": a primeira formulação que
   parecerá mais curta (`step_up = 1,02`) mata a animação de voo e é recusada em §3.4 com motivo.
+- Duas receitas **desta página** caíram antes do código, contra a régua do grid. A margem do §3.1
+  ("`+1,0` + margem"): com 0,05 de margem o lobo de 0,95 perde a célula de 1,00 em que ele cabe, e o
+  `floori` de `aabb_hits_solid` já trata a face encostada como livre — o predicado ficou em `+1,0`
+  cru. E o "vão de 0,95 m" da checagem 5: não existe meio bloco no mundo, o vão é de **uma célula**,
+  e aí a resposta é por corpo — o lobo cabe e salta, o jogador de 1,80 não cabe e recusa. Medido com
+  sonda descartável (cinco braços, as mesmas caixas de `wolf.gd:72` e `player.gd:25`), não presumido.

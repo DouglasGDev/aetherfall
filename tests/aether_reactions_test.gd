@@ -12,7 +12,8 @@ const TESTS: Array[StringName] = [
 	&"_test_work_diffusion", &"_test_cache_expiry", &"_test_fear_no_feedback",
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
-	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
+	&"_test_locomotion_flat", &"_test_locomotion_wall",
+	&"_test_predicado_degrau_recusa_teto_baixo", &"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 	&"_test_contagio_medo", &"_test_amortece_confianca",
@@ -22,7 +23,7 @@ const TESTS: Array[StringName] = [
 	&"_test_spawn_fora_da_vista_do_jogador",
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 ]
-const EXPECTED_CHECKS: int = 183
+const EXPECTED_CHECKS: int = 189
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -1042,6 +1043,84 @@ func _test_locomotion_wall() -> bool:
 			"encaixados=%d encaixe_max=%.3f mm frames=%d x_max=%.3f face_x=%.4f" % [
 			encaixados, encaixe_mm, frames, x_max, x_max + _wolf.body.dims.x * 0.5])
 	_wall(BlockDefs.Block.AIR)
+	return true
+
+
+## A coluna de teste do degrau: so as linhas de y listadas ficam solidas em x=56, o resto
+## do canudo vira ar de proposito, porque o braco de teto baixo precisa de um solido
+## SUSPENSO (y=53) com uma celula livre embaixo dele (y=52).
+func _step_column(rows: Array) -> void:
+	for z: int in range(40, 85):
+		for y: int in range(51, 58):
+			_world.set_block(Vector3i(56, y, z),
+					BlockDefs.Block.STONE if y in rows else BlockDefs.Block.AIR)
+
+
+## O pe nao e escrito a mao: e onde o integrador para o corpo. Andar para leste com a
+## velocidade do lobo ate o bloqueio horizontal, e devolver o corpo parado -- o mesmo
+## caminho que o jogo percorre antes de perguntar qualquer coisa sobre salto.
+func _walked_into_step(dims: Vector3) -> VoxelBody:
+	var b := VoxelBody.new()
+	b.setup(_world, Vector3(52.0, 51.001, 54.0), dims)
+	b.velocity = Vector3(Wolf.SPEED_WALK, 0.0, 0.0)
+	for i: int in 200:
+		b.move_and_collide(SimClock.STEP / 3.0)
+		if b.blocked_horizontal:
+			break
+	return b
+
+
+func _test_predicado_degrau_recusa_teto_baixo() -> bool:
+	# O predicado sozinho, sem um salto disparado: "a um bloco acima, na direcao que eu
+	# quero ir, existe onde ficar de pe?". E a pergunta que separa o talude de um bloco,
+	# que se sobe, do muro onde saltar e desperdicio -- e a resposta so depende da caixa
+	# do corpo, por isso os bracos usam as constantes reais dos dois (Wolf.DIMS,
+	# wolf.gd:72; Player.DIMS_STAND, player.gd:25) em corpos andando de verdade contra a
+	# coluna. O braco de teto e o que da dente ao "nao e pular em tudo que encosta":
+	# o lobo de 0,95 cabe no vao de 1,00 e salta, o jogador de 1,80 nao cabe e recusa.
+	var east := Vector3(1.0, 0.0, 0.0)
+	var premise := ""
+	var face_gap: float = 0.0
+	# [rotulo, linhas solidas em x=56, esperado lobo, esperado jogador]
+	var arms: Array = [
+		["degrau de um bloco, ar acima", [51], true, true],
+		["muro de dois blocos", [51, 52], false, false],
+		["degrau com teto a uma celula do parapeito", [51, 53], true, false],
+		["penhasco de seis", [51, 52, 53, 54, 55, 56], false, false],
+	]
+	for arm: Array in arms:
+		var label: String = arm[0]
+		_step_column(arm[1])
+		var wb := _walked_into_step(Wolf.DIMS)
+		var pb := _walked_into_step(Player.DIMS_STAND)
+		var got_lobo: bool = wb.can_step_over(east)
+		var got_jogador: bool = pb.can_step_over(east)
+		if premise == "":
+			# A face do corpo encosta no degrau e o corpo para antes dela, nunca dentro:
+			# sem essa premissa o "parado colado no bloco" dos bracos abaixo seria um pe
+			# inventado, e o predicado estaria sendo perguntado longe de qualquer bloqueio.
+			face_gap = 56.0 - (wb.feet_pos.x + Wolf.DIMS.x * 0.5)
+			var embedded := _world.aabb_hits_solid(wb.aabb()) or _world.aabb_hits_solid(pb.aabb())
+			premise = "gap_face=%.4f m" % face_gap
+			_check(wb.blocked_horizontal and pb.blocked_horizontal and not embedded
+					and face_gap >= 0.0 and face_gap < 0.05,
+					"premissa: o integrador para os dois corpos diante da face de x=56, sem encaixe",
+					"%s bloqueio=%s/%s pe=%s/%s encaixado=%s" % [
+					premise, wb.blocked_horizontal, pb.blocked_horizontal, wb.feet_pos, pb.feet_pos, embedded])
+		_check(got_lobo == bool(arm[2]) and got_jogador == bool(arm[3]),
+				"%s: lobo %s, jogador %s" % [label, arm[2], arm[3]],
+				"obtido lobo=%s jogador=%s %s rows=%s alcance=%.3f/%.3f" % [
+				got_lobo, got_jogador, premise, arm[1],
+				maxf(wb.dims.x, wb.dims.z) * 0.5 + 0.6, maxf(pb.dims.x, pb.dims.z) * 0.5 + 0.6])
+	_step_column([])
+	var bare := VoxelBody.new()
+	bare.setup(_world, Vector3(52.0, 51.001, 54.0), Wolf.DIMS)
+	_check(not bare.can_step_over(Vector3.ZERO) and not bare.can_step_over(Vector3(0.0, 5.0, 0.0))
+			and not bare.can_step_over(Vector3(1.0, 0.0, 0.0)),
+			"sem parede no caminho e sem direcao plana o predicado nao e um convite ao salto",
+			"zero=%s vertical=%s plano_coluna_limpa=%s" % [
+			bare.can_step_over(Vector3.ZERO), bare.can_step_over(Vector3(0.0, 5.0, 0.0)),
+			bare.can_step_over(east)])
 	return true
 
 
