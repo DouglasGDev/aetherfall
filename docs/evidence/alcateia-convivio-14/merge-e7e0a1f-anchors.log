@@ -1,0 +1,35 @@
+# instrumento de ancoras - perna 14 (convivencia da alcateia)
+# revisao da main mergida: e7e0a1f (= mesma arvore de documentos de b7a0120; git rev-parse e7e0a1f^{tree} == b7a0120^{tree} == f50f0aa07894a1042b8067bf4c7a519e8fcc73e1)
+# engine: nao aplica (script python, sem Godot) | medido em 2026-11-21
+
+## 1) corpus pinado na ponta mergida
+$ python tools/check_doc_anchors.py --ref e7e0a1f
+corpus em e7e0a1f  arquivos: 32  ponteiros conferidos: 1723  rotulos conferidos: 117  links relativos conferidos: 1623
+casos objetivos: 0
+exit=0
+
+## 2) corpus na arvore de trabalho do fecho (nota da main mergida, pin do README e as correcoes de numeros dentro)
+$ python tools/check_doc_anchors.py
+corpus na arvore de trabalho  arquivos: 32  ponteiros conferidos: 1723  rotulos conferidos: 117  links relativos conferidos: 1623
+casos objetivos: 0
+exit=0
+
+## 3) escada do corpus nas quatro pontas
+$ python tools/check_doc_anchors.py --ref a898fb2
+corpus em a898fb2  arquivos: 32  ponteiros conferidos: 1641  rotulos conferidos: 95  links relativos conferidos: 1542
+casos objetivos: 99
+$ python tools/check_doc_anchors.py --ref 6e35b64
+corpus em 6e35b64  arquivos: 32  ponteiros conferidos: 1641  rotulos conferidos: 95  links relativos conferidos: 1542
+casos objetivos: 99
+$ python tools/check_doc_anchors.py --ref c4b48d1
+corpus em c4b48d1  arquivos: 32  ponteiros conferidos: 1672  rotulos conferidos: 103  links relativos conferidos: 1566
+casos objetivos: 18
+$ python tools/check_doc_anchors.py --ref b7a0120
+corpus em b7a0120  arquivos: 32  ponteiros conferidos: 1723  rotulos conferidos: 117  links relativos conferidos: 1623
+casos objetivos: 0
+
+## 4) readback desta rodada, por chamada explicita (docs/evidence/ fica fora do corpus varrido)
+$ python tools/check_doc_anchors.py docs/evidence/alcateia-convivio-14/readback.md
+corpus na arvore de trabalho  arquivos: 1  ponteiros conferidos: 24  rotulos conferidos: 2  links relativos conferidos: 16
+casos objetivos: 0
+exit=0

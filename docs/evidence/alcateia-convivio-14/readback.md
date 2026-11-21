@@ -3,20 +3,22 @@
 Motor Godot 4.7.2-stable (`ed1daf0bf`), binário `.tools/Godot_v4.7.2-stable_win64_console.exe`, md5
 `daf6bba3d9c99634f146e220ce4de160` conferido nesta sessão. `.tools/` está no `.gitignore`, então
 **nenhum destes logs existe num clone recém-baixado** — os arquivos deste diretório são a cópia
-publicada, e `artifacts.sha256` (45 entradas) fecha sobre elas.
+publicada, e `artifacts.sha256` (50 entradas) fecha sobre elas.
 
 Árvore atual: `src` = `3eb42835a0e1f54086937d63258388f52e1db932`, `tests` =
 `8b8a5e471d737d6474eb6171bab6fdbeec75c06a`. Base da branch: `a898fb2` (ponta da `main` na abertura da
 perna), com `src` = `1177048d5f1c1f8068e356c30b6b8e4ca8d6f12c`, `tests` =
 `8a04330bcbf91c5ac58709fef9b7c7b8c9dad60e`. Seções 1 a 5 são **árvore de trabalho**; o clone limpo
-está na **seção 6**.
+está na **seção 6**, a `main` mergida na **seção 8** e a re-corrida do fecho na **seção 9**.
 
 Nenhum exit code foi gravado nestes logs. O contrato lido é a última linha de cada corrida (`N
 checagens M falhas T s` no runner, `== N checagens M falhas T s de teste ==` na suíte) e a contagem
-de `SCRIPT ERROR`, que é **0 nos 45 arquivos**. Do corpus: **38** logs terminam com `0 falhas`, **6**
-trazem a falha impressa (as vermelhas do §2) e um — `f_clone-import.log` — não tem contagem porque é
-o `--import`. A contagem se confere **antes** de qualquer lote (mandato 1): nenhuma corrida aqui
-perdeu checagens em silêncio.
+de `SCRIPT ERROR`, que é **0 nos 47 arquivos com banner de engine**. Os outros três não correm engine:
+os dois stderr de suíte (`merge-e7e0a1f-suite-err.log`, `fecho-suite-err.log`) e
+`merge-e7e0a1f-anchors.log`, saída do script Python das âncoras. Do corpus: **40** logs terminam com
+`0 falhas`, **6** trazem a falha impressa (as vermelhas do §2) e quatro — `f_clone-import.log` e os três
+acima — não têm contagem porque não rodam suíte. A contagem se confere **antes** de qualquer lote
+(mandato 1): nenhuma corrida aqui perdeu checagens em silêncio.
 
 ## 1. A escada de contagem, com o log de cada degrau
 
@@ -105,7 +107,7 @@ o raio de coesão, foi a **mordaca de 18 m sobre o lar de um irmão vivo**
 
 ## 3. O censo da sessão real, medido na suíte
 
-O `diagnostico final` é a mesma linha em todos os onze arquivos de suíte: `wolves_alive=4`,
+O `diagnostico final` é a mesma linha em todos os treze arquivos de suíte: `wolves_alive=4`,
 `pack_pairs=6`, `pending_respawns=1`, `dropped_ticks=0` — com a checagem da matilha lendo
 `lobos_vivos=5` (`pares=10 = 5·4/2`). Os cinco lares aceitos impressos no boot de `f_smoke.log` e de
 `f_clone-suite.log`, literais e idênticos entre os dois:
@@ -118,7 +120,7 @@ spawn mordaca (4-18 m de irmao): lar aceito a 55.1 m do jogador
 spawn mordaca (4-18 m de irmao): lar aceito a 51.6 m do jogador
 ```
 
-Distâncias: **42,5 a 55,1 m**, todas acima de `SAFE_SPAWN_DIST = 32 m`, e `spawn RECUSADO` **zero**
+Distâncias: **42,5 a 55,1 m**, todas acima de `SAFE_SPAWN_DIST = 32 m`, e a linha `spawn RECUSADO:` **zero**
 vezes em cada um dos dois arquivos. O jogo e a suíte partilham a semente (`SEED := 20261116` em
 [src/main.gd:16](../../../src/main.gd#L16) e [tests/smoke_test.gd:10](../../../tests/smoke_test.gd#L10)),
 então os lares do boot no jogo são estes cinco pontos. Nada disso aparece na tela por ordem do dono —
@@ -127,9 +129,9 @@ o observável é o F3, que imprime uma linha por lobo
 
 Existe um caminho de código que produz "nenhum lobo no vale": se o `_spawn_home_point` do boot
 recusar, a vaga vai para a fila ([src/main.gd:303](../../../src/main.gd#L303)) e só volta com
-`RESPAWN_DELAY`. Nas duas corridas de suíte desta perna isso **não** aconteceu (zero recusas), e o
-número de lares aceitos é 5 = `WOLF_COUNT`. Fica registrado como risco conhecido, não como defeito
-reproduzido.
+`RESPAWN_DELAY`. Em nenhuma das corrida deste corpus isso aconteceu — a linha `spawn RECUSADO:` aparece
+**zero** vezes nos 50 logs — e o número de lares aceitos é 5 = `WOLF_COUNT` em cada suíte dos degraus
+(d) em diante. Fica registrado como risco conhecido, não como defeito reproduzido.
 
 ## 4. µs: declarados não-gate, e **não comparáveis** entre degraus
 
@@ -172,7 +174,10 @@ Os números que a regra de boot cobra, lidos do `diagnostico final` de cada suí
 Geração estável (927,8–949,2 ms) e malharia em 4 225–4 622 ms, mesma família das medições históricas
 (4 640–4 886 ms antes do índice linear; 4 300 ms no clone da perna 10). Nenhum degrau desta perna
 mexe no mesher nem no gerador: o que se está conferindo aqui é que a convivência **não** encareceu o
-boot, e ela não encareceu. `dropped_ticks = 0` em todas.
+boot, e ela não encareceu. `dropped_ticks = 0` em todas. As duas leituras que vieram depois dos
+degraus — a `main` mergida (§8) e o fecho (§9) — saem da faixa no pior passo (15,768 e 16,127 ms) e no
+boot (949,9 / 1 017,2 ms de geração, 4 609 / 4 977 ms de malha), com o delta de código entre elas
+sendo `.md`; é a variação de corrida a corrida que o §9 descreve, não um degrau novo.
 
 ## 6. O clone limpo da ponta, com `--import` frio
 
@@ -196,17 +201,65 @@ o spawn não depende de estado local desta máquina.
 
 ## 7. O que estes logs não fecham
 
-- **Nenhum gate de fase** (mandato 4). Nada aqui encerra P0 ou P1.
-- A suíte da **`main` mergida** ainda não está neste diretório: ela roda depois do `--no-ff` e entra
-  como registro de fecho, com o log e a entrada nova de `artifacts.sha256`, como fez a perna 10.
-  Este corpus é a base, os seis degraus e o clone da ponta.
+- **Nenhum gate de fase** (mandato 4). Nada aqui encerra P0 ou P1. A `main` mergida está na **seção 8**.
 - A regra da casa de medição serial foi respeitada no sentido estrito onde ela importa (contagem e
-  exit code), mas **um** log desta collection é atípico de propósito: `b_smoke.log` termina na linha
-  do contrato, sem as duas linhas de ruído de saída que os outros dez têm. É truncamento de captura,
-  não um estado novo do mundo — e por isso não se afirma nada sobre o ruído daquele degrau.
-- O ruído de saída das suíte desta perna tem **três** famílias: `base`/`a` dão 12 ObjectDB, `c`/`f`
-  dão 8, `d`/`e`/`f_red` dão 10 — todas com 4 resources. Nenhuma corrida foi feita com `--verbose`,
-  então a contagem fica registrada sem atribuição, como no furo #15.
-- O caminho de recusa no boot (§3) não tem corrida própria: nenhuma das 45 execuções exerceu a
+  exit code), mas **três** dos treze arquivos de suíte terminam na linha do contrato sem as duas
+  linhas de ruído no stdout, e por motivos diferentes. `b_smoke.log` é atípico de propósito: é
+  truncamento de captura, não um estado novo do mundo, e por isso não se afirma nada sobre o ruído
+  daquele degrau. `merge-e7e0a1f-suite.log` e `fecho-suite.log` capturaram stdout e stderr em
+  arquivos separados, e o ruído está nos dois stderr.
+- O ruído de saída das suítes desta perna tem **três** famílias no stdout: `base`/`a` dão 12 ObjectDB
+  (2 arquivos), `d`/`e`/`e2`/`f_red` dão 10 (4), `c`/`f_smoke`/`f_green`/`f_clone-suite` dão 8 (4) —
+  todas com 4 resources. Os dois stderr separados dão 8 + 4 e são **byte a byte o mesmo arquivo**
+  (`327b177e…` nos dois), que é a assinatura de sempre do engine, não um ruído novo. Nenhuma corrida
+  foi feita com `--verbose`, então a contagem fica registrada sem atribuição, como no furo #15.
+- O caminho de recusa no boot (§3) não tem corrida própria: nenhuma execução deste corpus exerceu a
   fila de `RESPAWN_DELAY` vinda de uma recusa de lar. O que está provado é o predicado, não a
-  recuperação depois de uma recusa no primeiro tick.
+  recuperação depois de uma recusa no primeiro tick — furo #18 no status.
+
+## 8. A `main` mergida
+
+`git merge --no-ff feat/alcateia-convivio-14` deu `e7e0a1f`. Os dois hashes de código na árvore
+mergida são os da ponta da branch — `src` = `3eb42835a0e1f54086937d63258388f52e1db932`, `tests` =
+`8b8a5e471d737d6474eb6171bab6fdbeec75c06a`, idênticos byte a byte aos do `6e35b64` que o clone do §6
+executou. O que a merge acrescentou é `.md` e `.log`.
+
+| passo | resultado | log |
+| --- | --- | --- |
+| suíte em `e7e0a1f` (`.godot/` quente) | **246 checagens / 0 falhas / 39,8 s**, zero `SCRIPT ERROR` nas duas correntes, ruído **8** ObjectDB + **4** resources (stderr à parte, 249 bytes) | `merge-e7e0a1f-suite.log`, `merge-e7e0a1f-suite-err.log` |
+| instrumento de âncoras, corpus pinado em `e7e0a1f` (`--ref e7e0a1f`) | 1 723 ponteiros, 117 rótulos, 1 623 links relativos, **0** casos objetivos, exit 0 | `merge-e7e0a1f-anchors.log` §1 |
+| mesmo instrumento na árvore de trabalho do fecho (nota da `main` mergida e pin do README dentro) | 1 723 / 117 / 1 623, **0** casos, exit 0 | `merge-e7e0a1f-anchors.log` §2 |
+
+Que as duas linhas deem os mesmos três números é o que a merge tinha de devolver: `git rev-parse
+e7e0a1f^{tree}` e `b7a0120^{tree}` são o mesmo objeto `f50f0aa0`, porque além de `.gd` a branch trouxe
+só `.md` e `.log` — e o corpus varrido pelo instrumento é exatamente `.md` de `docs/`, `AGENTS.md` e
+`README.md`, com `docs/evidence/` fora por decisão do furo #14. A escada completa do corpus (`a898fb2`
+1 641/95/1 542 com 99 casos → `c4b48d1` 1 672/103/1 566 com 18 → `b7a0120` e `e7e0a1f` 1 723/117/1 623
+com 0) está na seção 3 do mesmo log.
+
+Os cinco lares do boot impressos neste log são os mesmos valores do clone e da branch (48,3 /
+50,4 / 42,5 / 55,1 / 51,6 m, zero recusas) e a checagem da sessão real devolve de novo
+`maior_matilha_lida=4`. O que se moveu foi `worst_sim_ms`: **15,768** contra 11,360 do clone e
+11,610 da branch, com `gen_ms` 949,919 e `mesh_ms` 4 609,266 — o pior passo de toda a perna, acima
+dos 10,338–12,971 dos degraus. A corrida do §9, na mesma árvore de código, deu **16,127** com
+`gen_ms` 1 017,212 e `mesh_ms` 4 977,391: entre as duas, o delta de árvore é `.md`, nenhum `.gd`. Então
+o que as duas medidas mostram é que a variação de corrida a corrida nesta máquina é maior que qualquer
+delta que a convivência possa ter introduzido no boot, e nenhuma das duas atribui custo a sistema
+nenhum. Fica registrado como medido, `dropped_ticks = 0` nelas todas, e nada aqui fecha gate.
+
+## 9. O fecho documentado, re-corrido
+
+Depois do §8 a perna ainda teve um lote de documentos (pin do README, a nota da `main` mergida, o log
+das âncoras e quatro correções de números nesta página e no status). Nada de `.gd`, e a prova disso é
+`git rev-parse HEAD:src HEAD:tests` no commit do fecho devolvendo os mesmos
+`3eb42835a0e1f54086937d63258388f52e1db932` e `8b8a5e471d737d6474eb6171bab6fdbeec75c06a` da ponta de
+código `6e35b64` — que é exatamente o hash que o clone limpo do §6 executou.
+
+| passo | resultado | log |
+| --- | --- | --- |
+| suíte na árvore do fecho | **246 checagens / 0 falhas / 38,9 s**, exit 0, zero `SCRIPT ERROR` nas duas correntes, ruído **8** ObjectDB + **4** resources (stderr à parte, 249 bytes) | `fecho-suite.log`, `fecho-suite-err.log` |
+| âncoras na árvore do fecho | 1 723 / 117 / 1 623, **0** casos objetivos, exit 0 | `merge-e7e0a1f-anchors.log` §2 |
+
+Os cinco lares deste log são os mesmos cinco decimais de sempre (48,3 / 50,4 / 42,5 / 55,1 / 51,6 m),
+`spawn RECUSADO:` zero vezes e `maior_matilha_lida=4`. É corrida de **verificação**, não um pin novo: o
+pin publicado continua sendo `e7e0a1f`, a `main` do merge, com o log do §8.
