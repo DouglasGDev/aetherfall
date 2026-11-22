@@ -16,10 +16,10 @@ jogador no meio**. Se o único `set_block` do cenário for o do `Player`, a mec�
 
 Recorte que a premissa **não** cobre, e o código já entrega: a lavra contínua do jogador existe —
 segurar `break_block` soma `_mining_accum` por frame até a dureza
-([player.gd:636-647](../../src/entities/player.gd#L636-L647), o reset de alvo em
-[`_progress_of`](../../src/entities/player.gd#L626-L630)), e o drop do registro entra direto no
-inventário ([`_mine_target`](../../src/entities/player.gd#L659-L672), com a recusa de espaço em
-`:662-666`). As três promessas já são checadas
+([player.gd:654-665](../../src/entities/player.gd#L654-L665), o reset de alvo em
+[`_progress_of`](../../src/entities/player.gd#L644-L648)), e o drop do registro entra direto no
+inventário ([`_mine_target`](../../src/entities/player.gd#L677-L690), com a recusa de espaço em
+`:680-684`). As três promessas já são checadas
 ([smoke_test.gd:903-911](../../tests/smoke_test.gd#L903-L911): "segurar break minerou", "tempo de
 mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é violar o mandato
 "não melhorar um sistema que já passou no gate dele"** — este dossiê não toca `player.gd`.
@@ -27,8 +27,8 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
 ## 2. Estado real do código (lido, não medido)
 
 - **Nenhum bicho escreve no mundo.** Os dois únicos `world.set_block` de gameplay do `src/` são do
-  jogador ([player.gd:667](../../src/entities/player.gd#L667),
-  [:693](../../src/entities/player.gd#L693)); os outros chamadores são a própria classe
+  jogador ([player.gd:685](../../src/entities/player.gd#L685),
+  [:711](../../src/entities/player.gd#L711)); os outros chamadores são a própria classe
   ([voxel_world.gd:247](../../src/world/voxel_world.gd#L247), em `_write_raw`) e a geração
   ([world_gen.gd:134](../../src/world/world_gen.gd#L134), [:136](../../src/world/world_gen.gd#L136),
   [:215](../../src/world/world_gen.gd#L215), [:233](../../src/world/world_gen.gd#L233),
@@ -40,7 +40,7 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   guarda a edição em `edits[p]`, marca chunks sujos em
   [`_touch_chunks_of`](../../src/world/voxel_world.gd#L266-L277) e emite
   `block_changed(pos, prev, now)` ([:6](../../src/world/voxel_world.gd#L6)). O lobo já segura
-  `world` e `aether` desde o [`setup`](../../src/entities/wolf.gd#L166-L192).
+  `world` e `aether` desde o [`setup`](../../src/entities/wolf.gd#L171-L197).
 - **O caminho do WORK hoje é do jogador** — o sinal `acted` do `Player` é o que imprime WORK 0,42
   (quebra) e 0,20 (coloca) em [main.gd:547-552](../../src/main.gd#L547-L552). Se o lobo cavar sem
   imprimir, o rastro de trabalho continua sendo assinatura exclusiva do jogador — e é exatamente
@@ -52,7 +52,7 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   [block_defs.gd:116-122](../../src/world/block_defs.gd#L116-L122)): `SNOW 0,25`, `SAND 0,30`,
   `DIRT 0,35`, `GRASS 0,38` — e `STONE 0,95`, `WOOD 0,55`, `COBBLESTONE 0,85` ficam **fora** do
   alcance com a mesma régua usada pelo jogador (`_mining_accum >= target_hardness`,
-  [player.gd:646](../../src/entities/player.gd#L646)). O teto de "o que o bicho cava" é uma lista de
+  [player.gd:664](../../src/entities/player.gd#L664)). O teto de "o que o bicho cava" é uma lista de
   blocos, não uma força arbitrada.
 - **O custo de cada voxel removido é a malharia, medida:** `set_block` → `_touch_chunks_of` → fila
   `_dirty`, consumida por [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L178-L186) com
@@ -68,11 +68,11 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   [`pending_meshes()`](../../src/world/voxel_world.gd#L189) e
   [`meshes_built()`](../../src/world/voxel_world.gd#L197).
 - **Onde a mecânica se encaixa, com nome:** a árvore tem `Selector[flee, hunt, sniff, patrol]`
-  ([wolf.gd:211-237](../../src/entities/wolf.gd#L211-L237)); o desemperto atual termina em desvio
-  geométrico ([`_physics_process`:813-817](../../src/entities/wolf.gd#L813-L817)) e nunca em
+  ([wolf.gd:216-242](../../src/entities/wolf.gd#L216-L242)); o desemperto atual termina em desvio
+  geométrico ([`_physics_process`:813-817](../../src/entities/wolf.gd#L818-L822)) e nunca em
   escavação; a inspeção de rastro é RUNNING por `INSPECT_SECONDS`
-  ([`_leaf_investigate`](../../src/entities/wolf.gd#L379-L407)) e o chão encontrado vem de
-  [`_scent_ground_y`](../../src/entities/wolf.gd#L791-L799) — a "boca da caverna farejada" é este
+  ([`_leaf_investigate`](../../src/entities/wolf.gd#L384-L412)) e o chão encontrado vem de
+  [`_scent_ground_y`](../../src/entities/wolf.gd#L796-L804) — a "boca da caverna farejada" é este
   ponto, e a camada é a do achado, não o topo da coluna (regra medida na rodada das duas camadas).
 
 ## 3. O que a peça exige
@@ -80,7 +80,7 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
 1. **Folha `dig` com estado, medida em segundos de simulação.** Accumulador por lobo
    (`_dig_accum`), mesmo modelo do do jogador (`_mining_accum`,
    [player.gd:137](../../src/entities/player.gd#L137)), somado em `sim_step`
-   ([wolf.gd:667-696](../../src/entities/wolf.gd#L667-L696)) e comparado a
+   ([wolf.gd:672-701](../../src/entities/wolf.gd#L672-L701)) e comparado a
    `BlockDefs.hardness(block)`. A escrita no mundo acontece **uma vez**, quando estoura — nunca por
    frame.
 2. **Duas razões para cavar, e só duas:**
@@ -104,7 +104,7 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
    aqui". O que precisa existir antes de qualquer curva de utilidade ler isso é a checagem A/B do
    §5.3, senão o `_test_work_cycle` passa a ter uma fonte que ele não declara.
 5. **Item nenhum**: não existe inventário de criatura nem entidade de item no chão (o drop do
-   jogador vai direto para `inv`, [player.gd:670](../../src/entities/player.gd#L670)). O bloco
+   jogador vai direto para `inv`, [player.gd:688](../../src/entities/player.gd#L688)). O bloco
    cavado **desaparece** — isso é honesto e precisa estar escrito, não fingido.
 
 ## 4. Custo — as quatro perguntas
@@ -116,7 +116,7 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   **fora** do passo de simulação, com budget próprio.
 - **Quantas entidades são alcançadas?** 5 lobos (12 com o censo do dossiê 11), e cada um alcança
   **1 voxel** por vez. A grande que assusta é o raio do `7×7` do rastro
-  ([:744-789](../../src/entities/wolf.gd#L744-L789)) — cavar **não** varre nada: lê `get_block` do
+  ([:749-794](../../src/entities/wolf.gd#L749-L794)) — cavar **não** varre nada: lê `get_block` do
   alvo e do vizinho de baixo.
 - **Aloco no caminho quente?** Não no acumulador (`float` + uma `Vector3i`). O que aloca é a
   consequência: `edits[p] = b` (Dictionary do mundo) e a fila `_dirty` (`Array` de chunk, já
@@ -144,7 +144,7 @@ godot --headless --path . tests/smoke_test.tscn
    braço verde. Imprime o bloco e a dureza recusada.
 3. **`work_de_bicho_nao_confundido`** — A/B: cenário com WORK só do lobo, e a leitura que decide
    `investigate` (`_find_scent` com `BLOOD + 0,35 × WORK`,
-   [wolf.gd:744-789](../../src/entities/wolf.gd#L744-L789)) é conferida contra o caso de WORK só do
+   [wolf.gd:749-794](../../src/entities/wolf.gd#L749-L794)) é conferida contra o caso de WORK só do
    jogador. Ou a curva distingue (por canal/origem já existente), ou o texto deixa de dizer que
    WORK é pegada do jogador — **esta checagem é a que decide o desenho**, e ela nasce antes da
    folha `dig` ficar verde.
@@ -155,7 +155,7 @@ godot --headless --path . tests/smoke_test.tscn
    estado que a rodada do "passo do lobo" produziu, [status — furo do contato com o chão]): um
    braço com a folha `dig` atravessa, o outro **não**. Os dois sentidos, como o contrato exige
    (ciclo 3).
-6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:25](../../tests/aether_reactions_test.gd#L25), na leitura
+6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:30](../../tests/aether_reactions_test.gd#L30), na leitura
    **109**) e a suíte (hoje **236**) sobem com o lote, re-medidos no clone limpo com `--import`
    frio.
 

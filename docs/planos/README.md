@@ -1,6 +1,6 @@
 # Dossiês por item da fila
 
-Dezessete arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
+Dezoito arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
 ("Falta", `:303-430`, e os checklists P0/P1, `:434-451`). Cada dossiê é **leitura de código, não
 corrida**: nenhuma engine foi rodada aqui, nenhum número publicado foi re-medido por estes arquivos
 e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
@@ -14,14 +14,18 @@ prompts do dono ("Física de Blocos + Mundo Reativo" e "Física de Blocos + Mund
 grave dos blocos que caem e **18** com a grama que cresce e o mato. O número **16 está reservado e não
 tem página**: é o pedido dele de espalhar a matilha em 2–3 tocas depois de ter percorrido o mapa inteiro
 vendo um lobo só, e quem escrever aquela página usa o 16 e a posição que ele escolheu (logo depois da 11).
-Nenhuma das três páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
+No mesmo dia o pedido urgente dele abre a **19**, e ela é de outro tipo: não é mecânica nova, é **defeito do
+jogo em execução** — lobos pulsando encostados num talude de um bloco e o jogador parado na frente de um
+degrau que ele não sobe sem apertar espaço. Por isso ela fura a fila e entra logo depois da 11, com a
+exceção e o motivo escritos no §7 da própria página e no contrato antes de qualquer linha. Nenhuma das
+páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
 
 | # | Dossiê | Linha da fila | Premissa nomeada | O que decide, em headless |
 |---|---|---|---|---|
 | 01 | [Estado inicial, comandos, RNG e ordem autoritativa](01-estado-inicial-e-ordem-autoritativa.md) | P0 `:436`, Falta 2 `:310-319` | o diário tem duas portas: o hash do tick N não é função só do tick N | `snapshot_resta_hash`, `ordem_independente_de_quadros` (nasce **vermelho**, com o número real de ticks divergentes), `rng_restaurada_no_load`, `formato_declarado` |
 | 02 | [Censo do lobo em 20 sementes × 1000 ticks](02-censo-multi-semente.md) | P1 `:446`, Falta 3 `:320-321` | cadência sintética, não relógio de parede | `repeticao_por_semente` 20/20 e `contraste_de_cadencia` (K = 1 vs K = 3 tem de **divergir**; se não divergir a checagem é vazia) |
 | 03 | [Canais MORTE / SOM / FOGO](03-canais-morte-som-fogo.md) | P1 `:444`, Falta 4 `:322-330` | um canal só existe se fonte e curva leitora caírem no mesmo lote | A/B com o canal zerado mudando `intent` ou `_reaction`; recusa de índice de canal fora de faixa; `Channel.COUNT` puxa `FORMAT_VERSION`. **FOGO fica bloqueado** sem bloco/entidade de fogo |
-| 04 | [Budget HOT medido](04-budget-hot-medido.md) | P1 `:445`, Falta 5 `:331-335` | "2,5 ms medido" embute duas metade não medidas: cinco mentes no mesmo tick e o segmento de decisão inteiro | checagem (a): se nenhum tick teve as cinco mentes vivas, vermelho em vez de zero; `EXPECTED_CHECKS` (`tests/aether_reactions_test.gd:17`, hoje 119) sobe com o lote |
+| 04 | [Budget HOT medido](04-budget-hot-medido.md) | P1 `:445`, Falta 5 `:331-335` | "2,5 ms medido" embute duas metade não medidas: cinco mentes no mesmo tick e o segmento de decisão inteiro | checagem (a): se nenhum tick teve as cinco mentes vivas, vermelho em vez de zero; `EXPECTED_CHECKS` (`tests/aether_reactions_test.gd:30`, 119 na leitura daquele dossiê) sobe com o lote |
 | 05 | [Difusão do Éter fora do tick](05-difusao-fora-do-tick.md) | P1 `:447`, Falta 6 `:336-338` | hoje a difusão é síncrona e o lobo vê o resultado por isso | primeiro a colheita (nenhum µs de `diffuse_and_decay` existe); o corte só com o hash por semente **inalterado** |
 | 06 | [Decompor `main.gd` pelo eixo do dono](06-decompor-main-gd.md) | Falta 7 `:339-341` | ônibus não é dono: um bloco vira dono quando já tem comprador fora de `main.gd` | K1 bancadas → K2 fila/cadáveres → K3 matilha; K4 (persistência) fica `[OPEN]` até aparecer o segundo consumidor |
 | 07 | [`af-bench`, bake-off de voxel e o doc do `SimClock`](07-af-bench-bake-off-voxel-e-doc-do-simclock.md) | P0 `:437`, `:438-439`, `:440` | três premissas, uma por peça; hash é função do passo, fps é função da máquina | ordem interna: doc → runner de `dt` fixo → 3 execuções de 12 000 ticks → bake-off com ≥ 2 braços tabelados |
@@ -35,6 +39,7 @@ Nenhuma das três páginas novas fecha escopo: elas registram a pauta, e o regis
 | 15 | [Oráculo embutido no boot: o jogo levanta o llama-server](15-oraculo-embutido-no-boot.md) | autorização nova do dono em 2026-11-20, fora da lista `Falta` do status | com `Rodar.bat` e **nenhum** PowerShell aberto, a linha `ia:` do F3 enche dentro do prazo da cena de prova | `host_devolve_health_200`, `boot_nao_bloqueia_janela`, `reuso_nao_cria_segundo_processo`, `porta_alheia_continua_viva`, `fechar_janela_mata_o_filho`, `suite_nao_levanta_modelo` — colhidas em cena própria, nunca na suíte |
 | 17 | [Física de blocos que caem (o evento que ninguém assina)](17-fisica-de-blocos-que-caem.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Reativo" item A; a especificação já estava no doc 10, o código não | um `SAND` sem apoio **some** do grid num tick e **reaparece** mais baixo noutro, `queued` volta a zero e **nenhuma varredura do mapa** aconteceu no meio | `queda_sem_varredura_de_mundo`, `queda_move_a_celula` (nasce **vermelha**: `block_changed` não tem um `.connect(` em lugar nenhum), `queda_cascade_em_passos`, `bloco_em_queda_nao_sobe` (o *auto step-up* do `VoxelBody` tem de ser zerado), `queda_pousa_antes_do_save`, `queda_nao_custou_tempo_de_ninguem`, `journal_hash_muda_so_com_movimento` |
 | 18 | [Mundo vivo: grama que cresce e o mato decorativo](18-mundo-vivo-grama-e-mato.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Vivo" itens B e C; **sem** especificação no doc 10 — esta página é a primeira vez que a regra é escrita | `DIRT` com ar acima e `GRASS` ao lado vira `GRASS` em tempo finito **sem varrer nada** — e sem vizinha não muda em 10 000 ticks | `grama_precisa_de_vizinha` (o par vermelho), `crescimento_nao_varre_nada`, `crescimento_sobrevive_ao_save`, `grama_nao_cresce_onde_nao_ha_grama`, `crescimento_nao_estoura_a_malha`, `mato_e_nao_solidez_nem_pedra`, `mato_nao_engole_o_clique` (o campo `substituivel` lido pelo `_try_place`), `crescimento_nao_consome_rng_da_sessao` |
+| 19 | [Pulo de bloco: o degrau de 1 m que ninguém sobe](19-auto-pulo-de-bloco.md) | **defeito** pedido pelo dono em 2026-11-21 como urgente, fora da lista `Falta` — não é mecânica nova; a fila serializada ganha a exceção de ordem no §7 | um corpo que anda contra um degrau de **exatamente um bloco** sobe o degrau (o jogador sem tecla nenhuma), e um corpo que anda contra parede mais alta que um bloco **não** gasta salto | `degrau_de_um_bloco_lobo_sobe` e `degrau_de_um_bloco_jogador_sobe_sem_tecla` (nascem **vermelhas**: ápice 0,563 m e `step_up` 0,62 contra uma célula de 1,00 m), `penhasico_nao_gasta_salto` (a asserção que o dossiê lia em `aether_reactions_test.gd:1035`, re-derivada hoje em `:1063`, lida do outro lado), `agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem` |
 
 ## Uma branch por dossiê
 
@@ -62,13 +67,16 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 16 | `feat/tocas-espalhadas-16` (nome provisório — **a página ainda não existe**) | `main`, **logo depois de 11**, escolha do dono nesta fila: é a resposta a ele ter percorrido o mapa inteiro e visto um lobo só. Antes de abrir branch, escreve-se o dossiê |
 | 17 | `feat/fisica-de-blocos-que-caem-17` | `main`, **depois de 12**: as duas pernas escrevem pelo mesmo `set_block` e pelo mesmo `block_changed`, e a fila de gravidade muda o custo medido do cavar — abrir a 17 antes obrigaria a 12 a re-rodar o gate dela com a fila anexada. Não encosta em `wolf.gd` |
 | 18 | `feat/mundo-vivo-grama-e-mato-18` | `main`, **depois de 17**: é o segundo comprador do `BlockUpdateQueue` que a 17 escreve (regra da casa — generalizar no segundo chamador, não no primeiro), e o `PLANT` gasta o id 17 da reserva que a 17 não toca |
+| 19 | `feat/auto-pulo-de-bloco-19` | `main`, **fura a fila e entra logo depois de 11** (exceção do §7 do dossiê, registrada antes do código): é o único item da lista que é defeito do jogo em execução, não mecânica nova. Encosta em `src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 também escreve — por isso a 11, hoje em voo, re-rome o gate depois do merge desta |
 
-A ordem 09 → 10 → 15 → 14 → 11 → 16 → 12 → 17 → 18 → 13 não é preferência: é a exceção de serialização registrada
+A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13 não é preferência: é a exceção de serialização registrada
 **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora", e reafirmada em
 [`docs/melhorias-status.md`](../melhorias-status.md#em-andamento). O encadeamento é de dados, não de
 cerimônia: cor depende de bioma, cercar depende de quem mais existe na matilha, a convivência reusa as
 folhas que a alcateia reorganizou e entrega à 11 o ponto de spawn, acasalamento depende de dois adultos
-próximos, as tocas dependem do censo que a 11 variabilizou, cavar é folha da árvore já montada, a gravidade
+próximos, o pulo de degrau entra depois da 11 porque é o único item da lista que é defeito do jogo que já
+roda — nada depende dele e ele não espera por nada —, as tocas dependem do censo que a 11 variabilizou,
+cavar é folha da árvore já montada, a gravidade
 de blocos é o segundo consumidor do `block_changed` que o cavar acabou de abrir, o crescimento é o segundo
 comprador da fila que a gravidade escreveu, e a árvore genealógica depende de nascimento por causa
 interna — e a 15 entra no meio porque é o caminho do `Rodar.bat`, não do código da matilha. Além disso,
@@ -87,14 +95,32 @@ com `arquivo:linha` → o que a peça exige → gate em headless com comando que
 pelas quatro perguntas do contrato → o que NÃO fazer → commits atômicos (um assunto, uma corrida) →
 citações que não conferem.
 
-## Verificação destas dezessete páginas
+## Verificação destas dezoito páginas
 
 ```sh
 python .tools/verify_plan_cites.py docs/planos/01-estado-inicial-e-ordem-autoritativa.md
 python .tools/verify_plan_ids.py   docs/planos/01-estado-inicial-e-ordem-autoritativa.md
 ```
 
-**Medida desta rodada (as dezessete páginas, `main` em `86e63c4` + estes dois arquivos novos):**
+**Medida desta rodada (as dezoito páginas, `main` em `8ac761d` + o dossiê 19 e esta página índice):**
+**1 067 citações conferidas nos dezoito dossiês, 0 números fora do arquivo** — as quinze antigas somam
+**935** (64 · 50 · 24 · 75 · 68 · 34 · 51 · 55 · 39 · 77 · 57 · 53 · 106 · 68 · 114), mais **54** da 17,
+**50** da 18 e **28** da 19. Com esta página índice no corpus, o diretório inteiro dá **1 081** e continuam
+**8** as referências a arquivos que não existem, todas peças já declaradas inexistentes
+(`src/core/sim/tick_clock.gd`, `docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd`) — a página
+19 não acrescenta nenhuma. No `verify_plan_ids.py` a 19 devolve **39** identificadores em backticks, dos
+quais **8** não existem em `src/` nem em `tests/`: **6** nomes de checagem proposta
+(`degrau_de_um_bloco_lobo_sobe`, `degrau_de_um_bloco_jogador_sobe_sem_tecla`, `penhasico_nao_gasta_salto`,
+`agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem`), **1**
+de predicado que o §3 do dossiê propõe e o §2 diz que ainda não está no código (`can_step_over`) e **1** de
+bloco que o doc 10 numera e o registro não tem (`SLAB`). Somando os três documentos que governam a casa
+nesta árvore — [`AGENTS.md`](../../AGENTS.md), [`README.md`](../../README.md) e
+[`docs/melhorias-status.md`](../melhorias-status.md) — são **113 · 0 · 416 = 529 números, 0 fora do
+arquivo**, elo a elo iguais aos da rodada 17/18 medida abaixo: esta página e o contrato ganharam prosa, não
+citações numeradas novas. Nada dos parágrafos abaixo é reescrito por cima desta medida: eles dizem o que foi
+medido na rodada em que foram escritos, e é essa a regra da casa.
+
+**Medida da rodada 17/18 (as dezessete páginas, `main` em `86e63c4` + aqueles dois arquivos novos):**
 **1 039 citações conferidas nos dezessete dossiês, 0 números fora do arquivo** — por página, na ordem da
 tabela, 64 · 50 · 24 · 75 · 68 · 34 · 51 · 55 · 39 · 77 · 57 · 53 · 106 · 68 · 114 (as quinze antigas,
 **935** somadas) mais **54** da página 17 e **50** da página 18. Com esta página índice no corpus, o
@@ -180,9 +206,10 @@ adicionam nada ao status nem ao contrato (linkam-nos por nome), mas adicionam **
 raiz: `13` aponta `:192` e `:197` e `14` aponta `:192`. Conferindo conteúdo contra a `main` em `eb6ec8d`,
 quatro ponteiros estavam errados e **foram corrigidos na própria página**: `12:63` dizia
 `docs/melhorias-status.md:78-78` (prosa da seção anterior; o par geração/malharia está em `:83`) e
-`README.md:533` (linha de lista do Éter; os ~4,3 s de malharia dos 64 chunks estão em `:548`), e `07:67`
+`README.md:533` (linha de lista do Éter; os ~4,3 s de malharia dos 64 chunks estão em `:548` naquela
+numeração — `:570` na de hoje), e `07:67`
 e `07:137` apontavam `README.md:505-512` e `:507` — que é a seção do oráculo local — para a queda de
-~16 s para ~7,5 s com a cópia linear, que está em `:546-553`. Cada número de README desta frase é da
+~16 s para ~7,5 s com a cópia linear, que está em `:546-553` (hoje `:568-575`). Cada número de README desta frase é da
 numeração de `eb6ec8d`, que tem **649** linhas, e entre ela e esta ponta o arquivo mudou duas vezes —
 `7cc79ce` (+14/−1, ou seja **649 → 662**) e `8cb10e7` (+11/−11, reescreve sem mover a contagem) — as
 duas notas de fechamento da perna 10. Mapeado por bloco igual contra os **662** desta ponta, o mesmo
@@ -224,9 +251,9 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
 - meia-vida "morta", "11,33% por passada", "4,8 s efetivos", `TrailReader`, `_sample_trail`,
   `_sighting_cache_cap`, `_sighting_cache_ttl`, `_scan_interval`, `DECAY_PER_SEC`, `SOURCE_RATE`,
   `SATURATION`, `imprint(channel, cell, amount)`, "três dicionários paralelos em
-  `tests/aether_reactions_test.gd:62-78`", pesos WORK/BLOOD/FEAR em `src/ai/utility_scorer.gd` e
+  `tests/aether_reactions_test.gd:67-83`", pesos WORK/BLOOD/FEAR em `src/ai/utility_scorer.gd` e
   `audio_director.gd:314` como posição de playback → **03 §9**;
-- `worst_sim_us` (o nome real é `_sim_worst_us`, `tests/aether_reactions_test.gd:37`) → **03 §5**;
+- `worst_sim_us` (o nome real é `_sim_worst_us`, `tests/aether_reactions_test.gd:42`) → **03 §5**;
 - deslocamento de +1 nas constantes de `src/main.gd` citadas por `AGENTS.md` → **07 §8** (as
   citações do contrato estão certas: `:12` difusão, `:13` malha, `:14` visão, `:16` cadáveres;
   `WOLF_COUNT` é `:9`);
@@ -259,10 +286,20 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
   primeira vez (por isso `[TARGET]`), e sem o campo `substituivel` lido pela colocação o mato é um
   obstáculo invisível que come o clique do jogador. "Dropa pouco" também não tem como ser dito:
   não existe item de semente nem quantidade fracionária no drop.
+- "os mobs/npcs tem que saber pular os blocos, pois ficam bugados": em `src/entities/` existe **uma**
+  espécie animal e **nenhum** NPC, e a causa não é o pathfinding — são três alturas que não fecham
+  (§2): `step_up` 0,62 m e ápice do impulso do lobo 0,563 m contra uma célula de **1,00 m**, e o
+  `blocked_horizontal` do jogador sem nenhum leitor em `src/`. "Auto pular o bloco" também não é
+  "aumentar o step-up": a formulação mais curta teletransporta o corpo e mata a animação de voo
+  → **19 §2, §3.4 e §9**.
 
 As imprecisões reais achadas em `AGENTS.md` nesta rodada foram corrigidas no próprio contrato, uma por
-uma, depois de lidas as duas pontas: `player.gd:659`/`:675` são os cabeçalhos de `_mine_target()` e
-`_try_place()`, e o `world.set_block` que escreve no mundo está em `:667`/`:693`; o `_on_acted` que
+uma, depois de lidas as duas pontas — e os números desta frase são **registro das rodadas que os
+escreveram, não ponteiros vivos**: hoje `src/entities/player.gd` tem `_mine_target()` em `:677`,
+`_try_place()` em `:693` e os dois `world.set_block` em `:685` e `:711`, e quem quiser o ponteiro da
+árvore atual lê o contrato. Naquele fecho: `player.gd:659`/`:675` eram os cabeçalhos de
+`_mine_target()` e `_try_place()`, e o `world.set_block` que escreve no mundo estava em
+`:667`/`:693`; o `_on_acted` que
 imprime WORK saiu de `main.gd:328-333` para `:337-342` quando o viés de imprint entrou; o teto do load
 que pareia por índice é `main.gd:479`, não `:470`; as três promessas da lavra estão em
 `tests/smoke_test.gd:884-892`, não `:802-812`; e a conta do "objeto deus" passa a estar pinada na

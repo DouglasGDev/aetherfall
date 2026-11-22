@@ -371,6 +371,7 @@ func update_local(delta: float) -> void:
 	_apply_vertical(wish, delta)
 	var pre_vy := body.velocity.y
 	body.move_and_collide(delta)
+	_request_step_jump(wish)
 	_check_fall_impact(pre_vy)
 	_update_breath(delta)
 	_apply_regen(delta)
@@ -522,6 +523,23 @@ func _apply_vertical(wish: Vector3, delta: float) -> void:
 		test.size = want_dims
 		if crouching or not world.aabb_hits_solid(test):
 			body.dims = want_dims
+
+
+## Auto-pulo do degrau (dossie 19): o corpo andou contra uma celula de exatamente
+## um bloco e parou na face dela -- `blocked_horizontal` com o pe apoiado. Nao e um
+## segundo impulsor: escreve o mesmo `_jump_buffer` que a tecla escreve em `_input`,
+## e `_apply_vertical` e o unico caminho que vira JUMP_SPEED, entao espacio e
+## auto-pulo no mesmo frame somam um salto, nunca dois. As recusas sao o "nao me
+## arremesse" que ja segura outros comportamentos daqui: painel, agua, planar,
+## rolamento e agachar (agachar e a recusa que o proprio corpo ja usa no passo de
+## velocidade e no teste de teto livre acima).
+func _request_step_jump(wish: Vector3) -> void:
+	if panel_open or body.in_water or gliding or crouching or _roll_time > 0.0:
+		return
+	if not body.on_ground or not body.blocked_horizontal or wish == Vector3.ZERO:
+		return
+	if body.can_step_over(wish):
+		_jump_buffer = JUMP_BUFFER
 
 
 func _apply_energy(delta: float, wish: Vector3) -> void:

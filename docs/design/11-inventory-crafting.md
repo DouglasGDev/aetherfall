@@ -20,7 +20,7 @@ Legenda de status é a do [`README.md`](README.md) da pasta.
 | Criar item novo | lista de receitas [recipes.gd:31-43](../../src/items/recipes.gd) | `1 madeira -> 4 tabuas, com o preco cobrado`, `a cadeia ate a bancada fecha` |
 | Estação de craft | bancada é um bloco, casado por distância [player.gd:216-225](../../src/entities/player.gd) | `sem bancada so mostra as receitas de mao` |
 | Mais blocos | 4 ids novos: bruta, tabua, vidro, bancada [block_defs.gd:123-137](../../src/world/block_defs.gd) | `pano de vidro sozinho tem 6 faces`, `vidro colado nao desenha a face de contato` |
-| Construir com o que tem | `consume_selected` no colocar [player.gd:668-690](../../src/entities/player.gd) | `colocar gastou um da pilha` |
+| Construir com o que tem | `consume_selected` no colocar [player.gd:693-715](../../src/entities/player.gd) | `colocar gastou um da pilha` |
 
 Os nomes de checagem acima vivem na suíte, e a lista `_steps`
 ([smoke_test.gd:63-99](../../tests/smoke_test.gd)) é a ordem dos passos que os medem.
@@ -112,7 +112,7 @@ O Veloren escrevia a sobra de volta no mundo como entidade de item
 seria pior que o problema que resolve. Então o portão é **antes**:
 
 - `Player._mine_target` pergunta `inv.space_for(drop, 1)` **antes** do `set_block(AIR)`
-  ([player.gd:652-665](../../src/entities/player.gd)). Sem espaço, o bloco continua onde
+  ([player.gd:670-683](../../src/entities/player.gd)). Sem espaço, o bloco continua onde
   está, o acumulador zera e aparece no toast `inventario cheio: pedra bruta nao tem onde
   entrar`. A lavra não consome o bloco para jogar o drop fora.
 - `Player.close_panel` recusa fechar com pilha na mão que não tem para onde voltar
@@ -183,7 +183,7 @@ em ambar, coluna de receitas à direita e rodapé de teclas. Sem mouse: o cursor
 o mesmo teclado que anda o personagem, `E` pega/solta, `Q` parte, `TAB` troca de receita,
 `ENTER` crafta, e as dez teclas **repinam** o celula sob o cursor
 ([hud.gd:560-606](../../src/ui/hud.gd)). Com o painel aberto o `Player` segura o
-movimento, o sprint, o planar e as mãos ([player.gd:411,481,489,627](../../src/entities/player.gd))
+movimento, o sprint, o planar e as mãos ([player.gd:412,481,489,627](../../src/entities/player.gd))
 — senão abrir o inventário seria andar de lado para sempre.
 
 Quem abre a tela é o `Player`, não o HUD: `panel_changed` é um sinal e o HUD escuta

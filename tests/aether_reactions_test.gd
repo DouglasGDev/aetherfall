@@ -12,7 +12,12 @@ const TESTS: Array[StringName] = [
 	&"_test_work_diffusion", &"_test_cache_expiry", &"_test_fear_no_feedback",
 	&"_test_last_hurt_ab", &"_test_sighting_expiry",
 	&"_test_dead_prey", &"_test_inspection_hit", &"_test_place_renewal", &"_test_cache_cap",
-	&"_test_locomotion_flat", &"_test_locomotion_wall", &"_test_scent_cave_layer",
+	&"_test_locomotion_flat", &"_test_locomotion_wall",
+	&"_test_degrau_de_um_bloco_lobo_sobe",
+	&"_test_degrau_de_um_bloco_jogador_sobe_sem_tecla", &"_test_agachado_nao_e_arremessado",
+	&"_test_predicado_degrau_recusa_teto_baixo",
+	&"_test_pulo_nao_custou_passo_de_ninguem",
+	&"_test_scent_cave_layer",
 	&"_test_biome", &"_test_fur_colour", &"_test_imprint_bias", &"_test_pack_provider",
 	&"_test_rondar_setor", &"_test_cercar_assentos", &"_test_ataque_escalonado",
 	&"_test_contagio_medo", &"_test_amortece_confianca",
@@ -22,7 +27,7 @@ const TESTS: Array[StringName] = [
 	&"_test_spawn_fora_da_vista_do_jogador",
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
 ]
-const EXPECTED_CHECKS: int = 183
+const EXPECTED_CHECKS: int = 198
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -177,6 +182,12 @@ func _check(ok: bool, label: String, values: String) -> void:
 
 func _test_fixture() -> bool:
 	BlockDefs.init_tables()
+	# O InputMap deste jogo nao esta no project.godot: e o boot que o registra, na
+	# linha `InputActions.install()` de main.gd:78. Este runner monta a sessao sem
+	# `_ready`, entao sem esta chamada nenhum `get_action_strength` existe -- eram 15
+	# erros por corrida no log verde e o auto-pulo do jogador nao teria como ser
+	# pedido pelo caminho real do teclado.
+	InputActions.install()
 	_stage = Node3D.new()
 	_stage.process_mode = Node.PROCESS_MODE_DISABLED
 	root.add_child(_stage)
@@ -234,6 +245,24 @@ func _advance(ticks: int, move_body: bool = true) -> void:
 		if move_body:
 			for frame: int in 3:
 				_wolf._physics_process(SimClock.STEP / 3.0)
+
+
+## Lancamento = o frame em que a velocidade vertical SOU. Comparar com um limiar fixo
+## nao presta e ja enganou esta suite: com o impulso de 5,2 o frame seguinte caia abaixo
+## de 5 e cada salto contava um, por acaso; com o de 7,6 (STEP_JUMP, o conserto do
+## degrau) sete frames seguidos passariam de 5 e um unico salto viraria sete lancamentos.
+## O `> 0,0` importa: o pouso zera o vy no eixo Y (voxel_body.gd:103) e isso e parar, nao
+## subir. Chamar `_launch_watch` antes do laco, depois de armar o corpo.
+var _vy_prev: float = 0.0
+
+func _launch_watch(body: VoxelBody) -> void:
+	_vy_prev = body.velocity.y
+
+
+func _launched(body: VoxelBody) -> bool:
+	var up := body.velocity.y > _vy_prev + 0.5 and body.velocity.y > 0.0
+	_vy_prev = body.velocity.y
+	return up
 
 
 func _horizontal(v: Vector3) -> Vector3:
@@ -918,9 +947,7 @@ func _test_locomotion_flat() -> bool:
 			# o ultimo pedaco e a 538 ja sorteia outro, entao a transicao por `<= 0` nao ve
 			if _wolf._unstick > sticking_before + 0.05:
 				rearms += 1
-			# 5,2 e o impulso do salto (wolf.gd:541); no frame seguinte a gravidade ja o
-			# levou abaixo de 5, entao cada frame acima disso e um lancamento novo
-			if _wolf.body.velocity.y > 5.0:
+			if _launched(_wolf.body):
 				lancamentos += 1
 			var feet := _wolf.body.feet_pos
 			if feet.x < 40.0 or feet.x > 84.0 or feet.z < 40.0 or feet.z > 84.0:
@@ -973,6 +1000,7 @@ func _test_locomotion_wall() -> bool:
 	_wall(BlockDefs.Block.STONE)
 	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
 	_advance(1, false)
+	_launch_watch(_wolf.body)
 	var frames: int = 0
 	var apoiados: int = 0
 	var bloqueados: int = 0
@@ -1005,7 +1033,7 @@ func _test_locomotion_wall() -> bool:
 				horizontais += 1
 			if _wolf._unstick > sticking_before + 0.05:
 				rearms += 1
-			if _wolf.body.velocity.y > 5.0:
+			if _launched(_wolf.body):
 				lancamentos += 1
 			# Encosto ou encaixe? O que a checagem abaixo exige e o volume do corpo
 			# inteiro fora de solido em todo frame. Quando ha sobreposicao, a sonda mede
@@ -1032,7 +1060,8 @@ func _test_locomotion_wall() -> bool:
 	_check(horizontais > 0, "na parede o integrador chama bloqueio horizontal",
 			"horizontais=%d bloqueados=%d frames=%d apoiados=%d pouso_bloqueado=%d" % [
 			horizontais, bloqueados, frames, apoiados, pouso_bloqueado])
-	_check(rearms > 0 and lancamentos > 0, "com parede de verdade o desvio re-arma e o corpo salta",
+	_check(rearms > 0 and lancamentos == 0,
+			"contra um muro de seis o desvio re-arma, mas nenhum salto e gasto: saltar ai e so perder altura",
 			"rearms=%d lancamentos=%d horizontais=%d frames=%d" % [
 			rearms, lancamentos, horizontais, frames])
 	_check(x_max < 63.0, "o corpo para do lado de ca da parede",
@@ -1042,6 +1071,336 @@ func _test_locomotion_wall() -> bool:
 			"encaixados=%d encaixe_max=%.3f mm frames=%d x_max=%.3f face_x=%.4f" % [
 			encaixados, encaixe_mm, frames, x_max, x_max + _wolf.body.dims.x * 0.5])
 	_wall(BlockDefs.Block.AIR)
+	return true
+
+
+func _test_degrau_de_um_bloco_lobo_sobe() -> bool:
+	# O braco que falta ao "ficam bugados" que o dono ve: o MESMO palco do cenario da
+	# parede -- plateu liso, rastro de WORK atras do solido, jogador longe para isso nao
+	# virar caca -- com um degrau de UM bloco em vez de seis. Nao entra um salto novo no
+	# lobo: o que ele ja dava era baixo demais, e isso e aritmetica do codigo, nao opiniao
+	# (5,2 m/s com gravidade 24 da apice de 0,563 m contra os 1,00 m da celula).
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_step_column([51])
+	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
+	_advance(1, false)
+	_launch_watch(_wolf.body)
+	var frames: int = 0
+	var ticks: int = 0
+	var invest_ticks: int = 0
+	var lancamentos: int = 0
+	var horizontais: int = 0
+	var x_max: float = _wolf.body.feet_pos.x
+	var y_max: float = _wolf.body.feet_pos.y
+	var encostou: bool = false
+	for i: int in 400:
+		ticks += 1
+		_advance(1, false)
+		if _wolf.intent == "investigate":
+			invest_ticks += 1
+		for f: int in 3:
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			frames += 1
+			x_max = maxf(x_max, _wolf.body.feet_pos.x)
+			y_max = maxf(y_max, _wolf.body.feet_pos.y)
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+			if _wolf.body.blocked_horizontal and _wolf.body.feet_pos.y < 51.5 \
+					and _wolf.body.feet_pos.x + Wolf.DIMS.x * 0.5 > 55.9:
+				encostou = true
+			if _launched(_wolf.body):
+				lancamentos += 1
+		if x_max > 58.0:
+			break
+	_check(_world.is_solid_xyz(56, 51, 54) and not _world.is_solid_xyz(56, 52, 54)
+			and invest_ticks >= 20 and encostou and horizontais > 0,
+			"premissa: degrau de um bloco no caminho, ar livre acima dele, rastro atras e o corpo encosta apoiado",
+			"degrau=%s ar_acima=%s investigate=%d/%d encostou=%s horizontais=%d x_max=%.3f y_max=%.3f alvo=%s" % [
+			_world.is_solid_xyz(56, 51, 54), _world.is_solid_xyz(56, 52, 54),
+			invest_ticks, ticks, encostou, horizontais, x_max, y_max, _wolf._move_target])
+	_check(y_max >= 51.001 + 0.95 and x_max > 57.0 and lancamentos > 0,
+			"o corpo sobe o degrau de um bloco e passa para o outro lado",
+			"y_max=%.3f ganho=%.3f m x_max=%.3f lancamentos=%d frames=%d tempo=%.1f s" % [
+			y_max, y_max - 51.001, x_max, lancamentos, frames,
+			float(frames) * SimClock.STEP / 3.0])
+	# A limpeza vem DEPOIS das checagens: apagada a coluna antes, a premissa acima
+	# perguntaria por um degrau que nao existe mais e acusaria o palco, nao o corpo.
+	_step_column([])
+	return true
+
+
+## Os dois bracos do auto-pulo do jogador (dossie 19 §3.3) no MESMO degrau de um
+## bloco do cenario do lobo. O `wish` nao e escrito na mao: vem de
+## `_wish_direction()` lendo a acao `move_forward`, que e o caminho que o teclado
+## percorre no jogo, e a tecla `jump` fica solta o tempo todo -- exatamente o
+## "quando estou andando, ter um auto pular o bloco" que o dono pediu. O segundo
+## braco passa `crouch` apertado: agachar e o "nao me arremesse" do jogador.
+func _walk_player_into_step(crouch_held: bool) -> Dictionary:
+	_step_column([51])
+	var p := _player
+	p.feet_to_spawn(Vector3(52.0, 51.001, 54.0))
+	# yaw = -PI/2 porque `forward = (-sin(yaw), 0, -cos(yaw))`: assim o
+	# `move_forward` aponta para leste, a mesma direcao do degrau em x=56.
+	p.yaw = -PI / 2.0
+	_launch_watch(p.body)
+	var frames := 0
+	var lancamentos := 0
+	var horizontais := 0
+	var na_face := 0
+	var predicado := false
+	var x_max := p.body.feet_pos.x
+	var y_max := p.body.feet_pos.y
+	Input.action_press("move_forward")
+	if crouch_held:
+		Input.action_press("crouch")
+	for i: int in 300:
+		p.update_local(1.0 / 60.0)
+		frames += 1
+		x_max = maxf(x_max, p.body.feet_pos.x)
+		y_max = maxf(y_max, p.body.feet_pos.y)
+		if _launched(p.body):
+			lancamentos += 1
+		if p.body.blocked_horizontal:
+			horizontais += 1
+			# A amostra e o frame da decisao: na face do degrau, com o corpo ainda no
+			# piso de baixo. Depois do lancamento nao ha mais o que perguntar -- e o pe
+			# ja subiu, entao "uma celula acima" cai duas celulas acima do parapeito e
+			# o predicado responde falso por construcao, nao por defeito.
+			if lancamentos == 0 and p.body.feet_pos.x + Player.DIMS_STAND.x * 0.5 > 55.9:
+				na_face += 1
+				predicado = predicado or p.body.can_step_over(Vector3(1.0, 0.0, 0.0))
+		if x_max > 58.0:
+			break
+	Input.action_release("move_forward")
+	Input.action_release("crouch")
+	return {
+		"frames": frames, "lancamentos": lancamentos, "horizontais": horizontais,
+		"na_face": na_face, "predicado": predicado, "x_max": x_max, "y_max": y_max,
+		"dims": str(p.body.dims), "agachado": p.crouching, "painel": p.panel_open,
+	}
+
+
+func _test_degrau_de_um_bloco_jogador_sobe_sem_tecla() -> bool:
+	var d := _walk_player_into_step(false)
+	_check(not Input.is_action_pressed("jump") and not bool(d["painel"])
+			and int(d["na_face"]) > 0 and bool(d["predicado"]),
+			"premissa: o jogador anda contra o degrau com a tecla de salto solta",
+			"jump=%s painel=%s horizontais=%d na_face=%d predicado=%s dims=%s x_max=%.3f" % [
+			Input.is_action_pressed("jump"), d["painel"], d["horizontais"],
+			d["na_face"], d["predicado"], d["dims"], d["x_max"]])
+	_check(float(d["y_max"]) >= 51.001 + 0.95 and float(d["x_max"]) > 57.0
+			and int(d["lancamentos"]) >= 1,
+			"o jogador sobe o degrau de um bloco sem apertar espaco",
+			"y_max=%.3f ganho=%.3f m x_max=%.3f lancamentos=%d frames=%d tempo=%.1f s" % [
+			d["y_max"], float(d["y_max"]) - 51.001, d["x_max"], d["lancamentos"],
+			d["frames"], float(d["frames"]) / 60.0])
+	_step_column([])
+	return true
+
+
+func _test_agachado_nao_e_arremessado() -> bool:
+	var d := _walk_player_into_step(true)
+	# O dente da recusa: o mesmo degrau, o MESMO predicado aprovando, e mesmo assim
+	# nenhum arremesso. Sem o `predicado=true` aqui em cima a checagem verde estaria
+	# afirmando apenas que o corpo agachado nao acha degrau nenhum.
+	_check(bool(d["agachado"]) and int(d["na_face"]) > 0 and bool(d["predicado"])
+			and float(d["y_max"]) < 51.001 + 0.05 and int(d["lancamentos"]) == 0
+			and float(d["x_max"]) < 56.0,
+			"agachado encosta no degrau que o predicado aprova e continua do lado de ca",
+			"agachado=%s dims=%s na_face=%d predicado=%s y_max=%.3f ganho=%.3f m lancamentos=%d x_max=%.3f frames=%d" % [
+			d["agachado"], d["dims"], d["na_face"], d["predicado"], d["y_max"],
+			float(d["y_max"]) - 51.001, d["lancamentos"], d["x_max"], d["frames"]])
+	_step_column([])
+	return true
+
+
+## A coluna de teste do degrau: so as linhas de y listadas ficam solidas em x=56, o resto
+## do canudo vira ar de proposito, porque o braco de teto baixo precisa de um solido
+## SUSPENSO (y=53) com uma celula livre embaixo dele (y=52).
+func _step_column(rows: Array) -> void:
+	for z: int in range(40, 85):
+		for y: int in range(51, 58):
+			_world.set_block(Vector3i(56, y, z),
+					BlockDefs.Block.STONE if y in rows else BlockDefs.Block.AIR)
+
+
+## O pe nao e escrito a mao: e onde o integrador para o corpo. Andar para leste com a
+## velocidade do lobo ate o bloqueio horizontal, e devolver o corpo parado -- o mesmo
+## caminho que o jogo percorre antes de perguntar qualquer coisa sobre salto.
+func _walked_into_step(dims: Vector3) -> VoxelBody:
+	var b := VoxelBody.new()
+	b.setup(_world, Vector3(52.0, 51.001, 54.0), dims)
+	b.velocity = Vector3(Wolf.SPEED_WALK, 0.0, 0.0)
+	for i: int in 200:
+		b.move_and_collide(SimClock.STEP / 3.0)
+		if b.blocked_horizontal:
+			break
+	return b
+
+
+func _test_predicado_degrau_recusa_teto_baixo() -> bool:
+	# O predicado sozinho, sem um salto disparado: "a um bloco acima, na direcao que eu
+	# quero ir, existe onde ficar de pe?". E a pergunta que separa o talude de um bloco,
+	# que se sobe, do muro onde saltar e desperdicio -- e a resposta so depende da caixa
+	# do corpo, por isso os bracos usam as constantes reais dos dois (Wolf.DIMS,
+	# wolf.gd:72; Player.DIMS_STAND, player.gd:25) em corpos andando de verdade contra a
+	# coluna. O braco de teto e o que da dente ao "nao e pular em tudo que encosta":
+	# o lobo de 0,95 cabe no vao de 1,00 e salta, o jogador de 1,80 nao cabe e recusa.
+	var east := Vector3(1.0, 0.0, 0.0)
+	var premise := ""
+	var face_gap: float = 0.0
+	# [rotulo, linhas solidas em x=56, esperado lobo, esperado jogador]
+	var arms: Array = [
+		["degrau de um bloco, ar acima", [51], true, true],
+		["muro de dois blocos", [51, 52], false, false],
+		["degrau com teto a uma celula do parapeito", [51, 53], true, false],
+		["penhasco de seis", [51, 52, 53, 54, 55, 56], false, false],
+	]
+	for arm: Array in arms:
+		var label: String = arm[0]
+		_step_column(arm[1])
+		var wb := _walked_into_step(Wolf.DIMS)
+		var pb := _walked_into_step(Player.DIMS_STAND)
+		var got_lobo: bool = wb.can_step_over(east)
+		var got_jogador: bool = pb.can_step_over(east)
+		if premise == "":
+			# A face do corpo encosta no degrau e o corpo para antes dela, nunca dentro:
+			# sem essa premissa o "parado colado no bloco" dos bracos abaixo seria um pe
+			# inventado, e o predicado estaria sendo perguntado longe de qualquer bloqueio.
+			face_gap = 56.0 - (wb.feet_pos.x + Wolf.DIMS.x * 0.5)
+			var embedded := _world.aabb_hits_solid(wb.aabb()) or _world.aabb_hits_solid(pb.aabb())
+			premise = "gap_face=%.4f m" % face_gap
+			_check(wb.blocked_horizontal and pb.blocked_horizontal and not embedded
+					and face_gap >= 0.0 and face_gap < 0.05,
+					"premissa: o integrador para os dois corpos diante da face de x=56, sem encaixe",
+					"%s bloqueio=%s/%s pe=%s/%s encaixado=%s" % [
+					premise, wb.blocked_horizontal, pb.blocked_horizontal, wb.feet_pos, pb.feet_pos, embedded])
+		_check(got_lobo == bool(arm[2]) and got_jogador == bool(arm[3]),
+				"%s: lobo %s, jogador %s" % [label, arm[2], arm[3]],
+				"obtido lobo=%s jogador=%s %s rows=%s alcance=%.3f/%.3f" % [
+				got_lobo, got_jogador, premise, arm[1],
+				maxf(wb.dims.x, wb.dims.z) * 0.5 + 0.6, maxf(pb.dims.x, pb.dims.z) * 0.5 + 0.6])
+	_step_column([])
+	var bare := VoxelBody.new()
+	bare.setup(_world, Vector3(52.0, 51.001, 54.0), Wolf.DIMS)
+	_check(not bare.can_step_over(Vector3.ZERO) and not bare.can_step_over(Vector3(0.0, 5.0, 0.0))
+			and not bare.can_step_over(Vector3(1.0, 0.0, 0.0)),
+			"sem parede no caminho e sem direcao plana o predicado nao e um convite ao salto",
+			"zero=%s vertical=%s plano_coluna_limpa=%s" % [
+			bare.can_step_over(Vector3.ZERO), bare.can_step_over(Vector3(0.0, 5.0, 0.0)),
+			bare.can_step_over(east)])
+	return true
+
+
+## Os 1 000 frames de sessao de um braco de custo (dossie 19, checagem 6). O caminho
+## e o frame real do jogo: `_physics_process` de `main.gd` e `player.update_local` +
+## `clock.advance` + `_sim_tick` entre o `begin_step`/`end_step` do proprio relógio,
+## entao `worst_sim_ms` e `dropped_ticks` que saem daqui sao os mesmos dois numeros
+## que o overlay F3 mostra -- colhidos pela API publica `diagnostics()`, nao por um
+## cronometro paralelo inventado aqui.
+## O braco da face e o pior caso honesto: degrau com teto a uma celula do parapeito
+## (o mesmo `[51, 53]` da checagem 5), onde o auto-pulo e perguntado em todo frame
+## de bloqueio e responde "nao" -- o corpo encosta para sempre e gasta o predicado
+## sem gastar um salto. O lobo fica do outro lado do palco, em (70, 74), para o delta
+## entre os bracos ser o do jogador, nao uma ronda que atravessa a coluna.
+func _cost_arm(rows: Array) -> Dictionary:
+	_pack_release()
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_step_column(rows)
+	_pack_session(1)
+	_pack_place(0, Vector3(70.0, 51.001, 74.0))
+	var p := _player
+	p.feet_to_spawn(Vector3(52.0, 51.001, 54.0))
+	# yaw = -PI/2: `forward = (-sin(yaw), 0, -cos(yaw))` aponta para leste, a mesma
+	# direcao da coluna em x=56. O `move_forward` apertado o tempo todo e o que faz o
+	# passo ler `wish != ZERO` -- sem mapa de acao instalado nada andaria, e o braco
+	# mediria um corpo parado chamando-se de workload.
+	p.yaw = -PI / 2.0
+	_launch_watch(p.body)
+	var frames := 0
+	var horizontais := 0
+	var na_face := 0
+	var lancamentos := 0
+	var viradas := 0
+	var total_us := 0
+	var pior_us := 0
+	var tick0: int = int(_session.diagnostics()["tick"])
+	var para_leste := true
+	Input.action_press("move_forward")
+	for i: int in 1000:
+		var t0: int = Time.get_ticks_usec()
+		_session._physics_process(SimClock.STEP)
+		var cost: int = Time.get_ticks_usec() - t0
+		total_us += cost
+		pior_us = maxi(pior_us, cost)
+		frames += 1
+		if p.body.blocked_horizontal:
+			horizontais += 1
+			if p.body.feet_pos.x + Player.DIMS_STAND.x * 0.5 > 55.9:
+				na_face += 1
+		if _launched(p.body):
+			lancamentos += 1
+		# O plateu da fixture vai de 40 a 85 em cada eixo: virar o corpo no fim do
+		# corredor e o unico jeito de caminhar 1 000 frames sem sair do chao plano. A
+		# virada e por banda, nao por frame: `velocity` tem inercia, entao testar so a
+		# coordenada prendia o corpo no limiar com o yaw trocando de sinal a cada frame
+		# (medido: 869 viradas em 1 000 frames, o braco "andando" parado em x=80).
+		if para_leste and p.body.feet_pos.x > 78.0:
+			p.yaw += PI
+			para_leste = false
+			viradas += 1
+		elif not para_leste and p.body.feet_pos.x < 46.0:
+			p.yaw += PI
+			para_leste = true
+			viradas += 1
+	Input.action_release("move_forward")
+	var d: Dictionary = _session.diagnostics()
+	return {
+		"frames": frames, "horizontais": horizontais, "na_face": na_face,
+		"lancamentos": lancamentos, "viradas": viradas,
+		"total_us": total_us, "pior_us": pior_us,
+		"media_us": float(total_us) / float(maxi(frames, 1)),
+		"passos": int(d["tick"]) - tick0,
+		"worst_sim_ms": float(d["worst_sim_ms"]),
+		"dropped": int(d["dropped_ticks"]),
+		"x_max": p.body.feet_pos.x, "vivo": p.alive,
+	}
+
+
+func _test_pulo_nao_custou_passo_de_ninguem() -> bool:
+	# O contrato de custo do dossie 19 §4: o pulo novo mora no frame de fisica, e o
+	# que ele nao pode fazer e estourar a regua. Comparar os bracos por tempo absoluto
+	# seria um gate de ruido da maquina -- dois processo na mesma arvore ja trocaram de
+	# lugar aqui -- entao o gate e a regua dentro de cada braco (25 ms, a mesma do
+	# dossie 17 para cascata) e a atribuicao e pela composicao impressa: quantos frames
+	# de bloqueio, quantos pedidos de predicado na face e quantos saltos existem em um
+	# e no outro. O `lancamentos == 0` da face e o dente: sem ele o braco verde poderia
+	# estar dizendo apenas que o corpo andou livre.
+	var flat := _cost_arm([])
+	var face := _cost_arm([51, 53])
+	_step_column([])
+	_check(bool(flat["vivo"]) and bool(face["vivo"])
+			and int(flat["frames"]) == 1000 and int(face["frames"]) == 1000
+			and int(flat["passos"]) == 1000 and int(face["passos"]) == 1000
+			and int(flat["horizontais"]) == 0 and int(face["na_face"]) > 0
+			and int(face["lancamentos"]) == 0,
+			"premissa: 1 000 frames de sessao por braco, nenhum bloqueio no plano e o predicado perguntado na face sem um salto",
+			"plano: vivo=%s frames=%d passos=%d horizontais=%d | face: vivo=%s frames=%d passos=%d horizontais=%d na_face=%d lancamentos=%d x_max=%.3f viradas=%d/%d" % [
+			flat["vivo"], flat["frames"], flat["passos"], flat["horizontais"],
+			face["vivo"], face["frames"], face["passos"], face["horizontais"],
+			face["na_face"], face["lancamentos"], face["x_max"],
+			flat["viradas"], face["viradas"]])
+	_check(float(flat["worst_sim_ms"]) <= 25.0 and float(face["worst_sim_ms"]) <= 25.0
+			and int(flat["dropped"]) == 0 and int(face["dropped"]) == 0,
+			"nenhum passo de simulacao acima da regua de 25 ms e nenhum tick perdido, nos dois bracos",
+			"plano worst_sim=%.2f ms dropped=%d | face worst_sim=%.2f ms dropped=%d" % [
+			flat["worst_sim_ms"], flat["dropped"], face["worst_sim_ms"], face["dropped"]])
+	_check(float(flat["pior_us"]) <= 25000 and float(face["pior_us"]) <= 25000,
+			"o frame integral onde o pulo mora fica abaixo da mesma regua nos dois bracos",
+			"plano total=%d us media=%.1f us pior=%d us | face total=%d us media=%.1f us pior=%d us" % [
+			flat["total_us"], flat["media_us"], flat["pior_us"],
+			face["total_us"], face["media_us"], face["pior_us"]])
+	_pack_release()
 	return true
 
 
@@ -2794,6 +3153,14 @@ func _test_feedback_do_jogador_continua_no_hud() -> bool:
 	_boot_session(5)
 	var s: Session = _session
 	var p: Player = _player
+	# O jogador e vivo por transicao real de morte, nao por campo escrito na mao: a
+	# suite roda uma vez e o cenario do spawn entrega o corpo no chao (os lobos agora
+	# sobem o degrau de um bloco e alcancam a plataforma), e `update_local` devolve
+	# cedo em corpo morto sem chamar `_update_target` -- a mira de (3) nao existiria.
+	# `s.respawn()` nao serve aqui: este runner monta a sessao a mao, sem o boot, e o
+	# `player.spawn_point` que ele usa so e escrito em `start()`/load (main.gd:114,
+	# :681), entao o respawn da sessao teletransportaria para o canto do mundo.
+	p.respawn_at(s.spawn_point())
 	p.inv.reset_default()
 	# (1) e (2) craft: a primeira receita de mao (1 madeira -> 4 tabuas) sem o
 	# ingrediente, depois com ele -- as duas branches do `_craft()` do painel.
@@ -2809,6 +3176,16 @@ func _test_feedback_do_jogador_continua_no_hud() -> bool:
 	p.pitch = -0.9
 	for _i: int in 2:
 		p.update_local(1.0 / 60.0)
+	# Premissa nomeada, com o numero que a decide: sem ela o silencio de (3) pode ser
+	# "a mira nao achou chao nenhum" (`_try_place` devolve em `not target_valid`,
+	# player.gd:676), que e outro defeito e merece outro letreiro.
+	var aim := _world.ray_voxel(p.eye_position(),
+			p.camera.global_transform.basis.z * -1.0, Player.REACH)
+	_check(p.alive and p.target_valid and aim.valid and aim.distance <= Player.REACH,
+			"premissa: vivo, sem entidade na mira e o raio achando o chao",
+			"vivo=%s hp=%.0f alvo='%s' valid=%s d=%.2f/%.1f voxel=%s" % [
+			p.alive, p.hp, p.look_target_name, p.target_valid,
+			aim.distance, Player.REACH, p.target_voxel])
 	p._try_place()
 	var slot_vazio: String = s.hud._toast.text
 	# (4) lavrar o que nao cabe: o inventario fecha antes do golpe, e `_mine_target`

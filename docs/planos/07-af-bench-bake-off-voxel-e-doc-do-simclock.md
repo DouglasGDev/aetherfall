@@ -1,6 +1,6 @@
 # 07 — `af-bench` de 10 min, bake-off de voxel e o doc do `SimClock`
 
-Alvo: as três linhas não marcadas do checklist P0 em `docs/melhorias-status.md:489-493`. São P0,
+Alvo: as três linhas não marcadas do checklist P0 em `docs/melhorias-status.md:606-612`. São P0,
 não P1. Nenhuma das três peças existe hoje em `src/` — este texto diz o que precisa nascer, em
 que ordem e com que comando. Gate de fase fecha o dono do repositório, não este plano.
 
@@ -64,7 +64,7 @@ consumido em `src/world/voxel_world.gd:178-186`) e geometria só de cubo unitár
 O precedente medido está no comentário de `:126-129` (dicionário de chunks ≈ 250 ms/chunk, boot
 congelado ≈ 16 s) e no README: `~0,9 s de geração + ~4,3 s de malharia` dos 64 chunks, 214.480
 triângulos, e a queda de ~16 s para ~7,5 s quando as consultas de vizinhança passaram a ler a
-cópia linear (`README.md:559-566`; os logs locais dão 4.640–4.886 ms de malha,
+cópia linear (`README.md:570-575`; os logs locais dão 4.640–4.886 ms de malha,
 `docs/melhorias-status.md:83`). Braços reais na mesa hoje:
 
 | Braço | O que mudaria | Número que decide |
@@ -119,22 +119,26 @@ de journal já medido é histórico: 205 registros / 160.000 µs / pico 1.646 µ
 
 Não: prometer FPS (`docs/design/08:62`), chamar o bench de replay (o journal é `[tick,hash]`
 apêndice-only, `src/persistence/tick_journal.gd:69-87`), contar checagem sem conferir a última
-linha (quatro checagens somem quando a premissa não existe, `docs/melhorias-status.md:560-564`),
+linha (quatro checagens somem quando a premissa não existe, `docs/melhorias-status.md:1581`),
 escrever estado na mão para o cenário passar, vendorizar addon para "ganhar" o bake-off, ou fechar
 gate de fase por este documento. Commits atômicos, um por linha da tabela do §6, suíte verde entre
 eles: (1) `docs/engine/simclock.md`; (2) runner de `dt` fixo + hash, sem número publicado;
 (3) `--scenario boot_walk_10min` com as 3 execuções e os 3 caminhos no log; (4) braço B/C do
-bake-off com sua corrida; (5) tabela publicada + atualização do status (`docs/melhorias-status.md:489-493`).
+bake-off com sua corrida; (5) tabela publicada + atualização do status (`docs/melhorias-status.md:606-612`).
 
 Citações que não conferem (verificadas abrindo os arquivos):
 
-- `docs/melhorias-status.md:491-492` fixa a "altura certa" do boot em geração **942 ms** e malha
+- `docs/melhorias-status.md:610-611` fixa a "altura certa" do boot em geração **942 ms** e malha
   **4.682 ms**. Nenhuma corrida publicada devolve esse par: a tabela do próprio status dá
-  936,0/944,5/952,3/961,9 ms com malha 4640,6/4847,6/4885,8/4724,2 ms (`docs/melhorias-status.md:1357`) e 929,7/967,7/
-  932,9 com 4684,0/4661,6/4675,9 (`docs/melhorias-status.md:1359`); o clone limpo re-medido dá 926,4 / 4.134,9 ms
-  (`docs/melhorias-status.md:958`). O par de `:492` é arredondamento de uma corrida que não está nomeada ali — e contra o
-  número de `docs/melhorias-status.md:958` ele está velho em 3,9% na geração e 13% na malha.
-- `README.md:561` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `docs/melhorias-status.md:1357` e
+  936,0/944,5/952,3/961,9 ms com malha 4640,6/4847,6/4885,8/4724,2 ms (`docs/melhorias-status.md:1593`) e 929,7/967,7/
+  932,9 com 4684,0/4661,6/4675,9 (`docs/melhorias-status.md:1595`); o clone limpo re-medido dá 926,4 / 4.134,9 ms
+  (`docs/melhorias-status.md:1175`). O par de `:611` é arredondamento de uma corrida que não está nomeada ali — e contra o
+  número de `docs/melhorias-status.md:1175` ele está velho em 3,9% na geração e 13% na malha.
+  Os quatro ponteiros deste item estavam **fora de posição já em `f843fa6`** (o par de corrida em `:1429`/`:1431`,
+  o clone em `:1030`, a altura em `:554` — 63 a 72 linhas antes do lugar certo) e a reancoragem é por
+  conteúdo lido, não por translação: quem reancora somando o deslocamento do diff leva a podridão adiante
+  com aparência de atualizado.
+- `README.md:570` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `docs/melhorias-status.md:1593` e
   4.134,9 ms no clone re-medido.
 - `docs/design/06:33` aponta `src/core/sim/tick_clock.gd` (caminho inexistente — o arquivo real é
   `src/core/sim_clock.gd`) e `:200` aponta `src/tools/` (diretório inexistente).
@@ -146,7 +150,7 @@ Citações que não conferem (verificadas abrindo os arquivos):
   malha, `:14` visão, `:16` cadáveres); a alegação de deslocamento em +1 foi deste briefing e o
   código a refuta. `WOLF_COUNT` está em `:9`, `SEED` em `:10`, `SLOT` em `:11`.
 - A contagem publicada é **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
-  (`docs/melhorias-status.md:1538` e a nota em `:1534-1546`). As ocorrências antigas de 232 —
+  (`docs/melhorias-status.md:1702` e a nota em `:1708-1711`). As ocorrências antigas de 232 —
   `docs/design/08-roadmap-risks-licensing.md:44-45` (que agora diz os dois números) e quatro linhas
   do status de antes (91, 249, 665, 702) — são da rodada do `a8967e0` e continuam corretas porque mediram aquele clone.
   Os logs que eu abri aqui são os locais de `.tools/` e dão 219 (um com 4 falhas) — contagem

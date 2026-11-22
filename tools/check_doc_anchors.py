@@ -31,6 +31,12 @@ nenhum — número dentro do arquivo, linha com texto, e a frase podendo afirmar
 outra coisa. Essa classe exige abrir o alvo e ler contra a frase, e é por isso
 que a saída é uma lista de casos, não um "docs ok".
 
+**Prefixo de revisão não é ponteiro vivo.** `` `a1405e4:src/entities/wolf.gd:495-496` ``
+registra o que uma revisão antiga lia; o mesmo número naquela página hoje pode ser branco,
+e conferi-lo contra a árvore de trabalho devolve caso que nunca foi afirmação sobre agora.
+Esses cites ficam de fora das réguas 1 a 5 por design — é a mesma diferença entre "hoje"
+e "naquela ponta" que o mandato 3, item 6, exige quando um número é publicado.
+
     python tools/check_doc_anchors.py            # corpus: AGENTS.md, README.md, docs/**
     python tools/check_doc_anchors.py docs/planos
     python tools/check_doc_anchors.py --ref HEAD # os mesmos documentos de uma revisao
@@ -152,6 +158,8 @@ def events_of(line):
         events.append((m.start(), m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))))
         spans.append((m.start(), m.end()))
     for m in BARE.finditer(line):
+        if re.search(r"(?:^|[\s`(>])[0-9a-f]{7,40}`?:$", line[:m.start()]):
+            continue
         path = m.group(1).split("../")[-1].lstrip("/")
         events.append((m.start(), path, int(m.group(2)), int(m.group(3) or m.group(2))))
         spans.append((m.start(), m.end()))
