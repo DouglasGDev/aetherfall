@@ -34,8 +34,9 @@ const TESTS: Array[StringName] = [
 	&"_test_cada_toca_e_um_lugar_valido", &"_test_toca_nao_deriva_para_unica",
 	&"_test_reposicao_volta_para_a_toca_perdida",
 	&"_test_nascimento_fica_na_toca_dos_pais",
+	&"_test_espalhamento_nao_estoura_o_passo",
 ]
-const EXPECTED_CHECKS: int = 238
+const EXPECTED_CHECKS: int = 240
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -4297,5 +4298,99 @@ func _test_nascimento_fica_na_toca_dos_pais() -> bool:
 			str(mae.identity), _no_chao(criaB.home, mae.home) if criaB != null else -1.0,
 			Session.PACK_LEASH, Session.DEN_MIN_DIST, propriaB,
 			"sem_outro_centro" if is_inf(alheiaB) else "%.1f" % alheiaB])
+	_pack_release()
+	return true
+
+
+## Checagem 7 do dossie 16 §5: o espalhamento nao pode custar passo.
+##
+## O par pedido pela pagina e `sim_step` integral com e sem a perna, mesma cena,
+## mesma semente. Ele nao pode ser montado dentro deste processo: nao existe a
+## porta "sem a perna" -- `Session._dens` e a colocacao que o enche sao o codigo
+## medido, e um braco que esvazia `_dens` a mao encena um estado que nenhuma
+## transicao do jogo produz (a regra do ciclo 3 da casa). O par existe entao como
+## duas corridas do MESMO rodape (`CENARIO ESTREITO` / `PASSOS DE MATILHA`, linhas
+## que a perna nao toca) na `main` anterior e nesta ponta, e os dois numeros vao
+## para o status com os dois logs.
+##
+## O que esta linha gates, e o que so sai impresso, sao coisas diferentes, e a
+## separacao e o ponto:
+## - criterio: a regua de 25 ms por passo (a mesma dos dossies 17 e 19) contra
+##   `clock.worst_step_ms` lido pela API publica, e o pico dos proprios 1 400 passos
+##   cronometrados aqui;
+## - impresso sem ser criterio: a media por passo e o custo da colocacao. Colocar
+##   toca roda no caminho raro -- spawn, fila, parto -- e e justamente onde um custo
+##   se disfarca de gratis, entao o numero tem de estar na mesa mesmo sem regua
+##   publicada; a janela medida e o passo de 20 Hz, e a janela nao cobra o boot.
+##
+## `clock.begin_step()`/`end_step()` dao a volta no `_sim_tick` exatamente como
+## `main.gd:259-261`: sem isso o `worst_sim_ms` do `diagnostics()` seria o chao do
+## relogio novo e a linha diria "nada acima de 25 ms" por nao ter medido nada. Os
+## corpos vao pelos tres sub-passos dos irmaos de tocas (`_test_toca_nao_deriva_para_unica`),
+## para a cena ser a mesma cena daquela checagem.
+func _test_espalhamento_nao_estoura_o_passo() -> bool:
+	_arm()
+	# A colocacao vai cronometrada numa janela propria, e por um motivo que e o
+	# contrario de cosmetico: `_boot_session(0)` poe o jogador e nao sorteia bicho
+	# nenhum, e o `_spawn_wolves(5)` que vem em seguida e a mesma chamada, com o mesmo
+	# cursor de RNG, que `_boot_session(5)` faria uma linha depois. O que muda e so
+	# onde o cronometro esta, e o que ele pega e o caminho raro.
+	var s0: Session = null
+	_boot_session(0)
+	s0 = _session
+	var t_colocacao := Time.get_ticks_usec()
+	s0._spawn_wolves(int(Session.WOLF_COUNT))
+	var colocacao_us := Time.get_ticks_usec() - t_colocacao
+	var d_boot: Dictionary = s0.diagnostics()
+	var comps_boot := _componentes_da_matilha(s0)
+	var sep_boot := _separacao_das_tocas(s0)
+	_pack_release()
+	# A janela de passo, na sessao real dos cinco bichos com as tocas fundadas.
+	# Segundo `_arm()` e obrigatorio, nao limpeza: o sorteio de lar consome o RNG
+	# global e `_arm` e a unica chamada que o devolve para `SEED` -- sem ele a
+	# segunda matilha nasceria de um cursor ja avancado pela primeira e os dois
+	# numeros impressos nao seriam a mesma cena.
+	_arm()
+	_boot_session(int(Session.WOLF_COUNT))
+	var s: Session = _session
+	var tick0 := int(s.diagnostics()["tick"])
+	var total_us := 0
+	var pico_us := 0
+	var passos := 0
+	var pior_comp := 99
+	var bichos_pior := 0
+	while passos < 1400:
+		passos += 1
+		var t0 := Time.get_ticks_usec()
+		s.clock.begin_step()
+		s._sim_tick()
+		s.clock.end_step()
+		var cost := Time.get_ticks_usec() - t0
+		total_us += cost
+		pico_us = maxi(pico_us, cost)
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+		var comps := _componentes_da_matilha(s)
+		if passos == 1 or comps.size() < pior_comp:
+			pior_comp = comps.size()
+			bichos_pior = 0
+			for c: Array in comps:
+				bichos_pior += c.size()
+	var d: Dictionary = s.diagnostics()
+	var media_us := float(total_us) / float(maxi(passos, 1))
+	_check(int(d["tick"]) - tick0 == 1400 and s._dens.size() >= 2
+			and int(d_boot["dens"]) == s._dens.size() and pior_comp >= 2,
+			"premissa: 1 400 passos da matilha espalhada, e a fundacao rodou pela porta do jogo",
+			"passos=%d tick0=%d->%d  dens=%d componentes_min=%d bichos_lidos=%d | boot: dens=%d componentes=%d separacao=%s m matilha=%d fila=%d" % [
+			passos, tick0, int(d["tick"]), s._dens.size(), pior_comp, bichos_pior,
+			int(d_boot["dens"]), comps_boot.size(),
+			"sem_par" if is_inf(sep_boot) else "%.1f" % sep_boot,
+			int(d_boot["wolves"]), int(d_boot["pending_respawns"])])
+	_check(float(d["worst_sim_ms"]) <= 25.0 and pico_us <= 25000,
+			"espalhamento_nao_estoura_o_passo",
+			"worst_sim_ms=%.2f ms  pico_do_passo=%d us  media=%.1f us/passo  total=%d us em %d passos  | colocacao (caminho raro, sem regua): %d us por %d lares com %d tocas fundadas" % [
+			float(d["worst_sim_ms"]), pico_us, media_us, total_us, passos,
+			colocacao_us, int(Session.WOLF_COUNT), s._dens.size()])
 	_pack_release()
 	return true

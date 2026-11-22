@@ -2519,6 +2519,23 @@ func _check_reap() -> void:
 	_check("nenhum tick perdido no teste inteiro", int(d["dropped_ticks"]) == 0,
 		"perdidos=%d  pior passo=%.2f ms  tick=%d" % [
 			d["dropped_ticks"], d["worst_sim_ms"], d["tick"]])
+	# Checagem 7 do dossie 16 §5, posta no unico caminho onde os dois numeros dela
+	# podem falhar: `dropped_ticks` so existe se `clock.advance()` estourar o teto de
+	# 5 passos por frame (sim_clock.gd:23-26), e quem chama `advance` e o
+	# `_physics_process` da sessao. Num laco de `_sim_tick()` chamado a mao -- como o
+	# braco de colheita do runner -- o contador fica 0 por construcao e a assercao nao
+	# decidia nada. Aqui a sessao medida e a real deste teste, com as tocas do boot,
+	# entao a testemunha do espalhamento vai DENTRO do criterio: sem >= 2 tocas e >= 2
+	# componentes, o numero nao seria do espalhamento, e a regua de 25 ms e a mesma
+	# dos dossies 17 e 19, nao um numero escolhido para passar.
+	_check("espalhamento_nao_estoura_o_passo",
+		int(d["dropped_ticks"]) == 0 and float(d["worst_sim_ms"]) <= 25.0
+			and int(d["dens"]) >= 2 and int(d["den_components"]) >= 2,
+		"perdidos=%d  pior passo=%.2f ms (regua 25)  dens=%d componentes=%d separacao=%s m  tick=%d" % [
+			d["dropped_ticks"], d["worst_sim_ms"], int(d["dens"]),
+			int(d["den_components"]),
+			"sem_par" if float(d["den_min_dist"]) < 0.0 else "%.1f" % float(d["den_min_dist"]),
+			d["tick"]])
 	_check("lobos seguem vivos e decidindo", int(d["wolves_alive"]) >= 3,
 		"vivos=%d  triangulos=%d" % [d["wolves_alive"], d["triangles"]])
 	print("       diagnostico final: ", JSON.stringify(d))

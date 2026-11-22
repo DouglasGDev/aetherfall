@@ -4278,3 +4278,54 @@ fechar o item 5 e o item 6 do ciclo de trabalho, não para abrir contagem. A con
 moveu com este parágrafo — **1 301** citações no diretório, **15** nesta página índice, governantes em
 **142 · 0 · 525 = 667** e âncoras com **0** casos objetivos —, porque aqui se citou SHA e nomes de
 arquivo sem número de linha.
+
+## Rodada Tocas 16 — o custo do espalhamento pareado, medido com e sem a perna (2026-11-22, `feat/tocas-da-alcateia-16`, base `99d1167`, ponta de código `90c152f`)
+
+A checagem 7 do dossiê ([`16-tocas-da-alcateia.md:285-288`](planos/16-tocas-da-alcateia.md#L285-L288)) pedia
+um par — o `sim_step` integral da mesma cena e da mesma semente **com** a perna e **sem** ela, mais
+`worst_sim_ms` e `dropped_ticks == 0` no smoke. O par não coube num processo só, e o motivo é de contrato,
+não de conveniência: esvaziar `_dens` à mão encenaria um estado que nenhuma transição do jogo produz, e o
+ciclo 3 de [`AGENTS.md`](../AGENTS.md) recusa exatamente isso. Então o lado "sem" é a base da branch
+(`99d1167`) exportada, reimportada sem cache e corrida duas vezes; o lado "com" é a ponta medida, também
+duas vezes. As quatro corridas, os logs arquivados e o vínculo de md5 estão em
+[custo-pareado.md](evidence/tocas-alcateia-16/custo-pareado.md).
+
+**Veredito medido: nenhum custo atribuível à perna.** Por passo, o `CENARIO ESTREITO` (8 579 passos) deu
+**222,69 µs** na base contra **221,12 µs** na ponta — Δ **−1,57 µs (−0,70 %)** — e a janela de matilha deu
+**2 294,40** contra **2 276,93 µs** — Δ **−17,47 µs (−0,76 %)**. Nos dois braços a diferença nominal é
+*negativa* e menor que o espalhamento de repetir o **mesmo** braço (0,44 % e 0,71 % no estreito; 1,79 % e
+0,42 % na matilha). Número menor que o ruído do instrumento não é melhoria: é "não medimos diferença". A
+comparação é por passo porque a janela de matilha fecha por condição de censo e saiu 1 339 × 1 341 passos —
+o total absoluto não seria comparável.
+
+O caminho raro agora tem número, e não tem régua porque régua para ele não existe: fundar os cinco lares com
+três tocas custou **7 314 µs** (run 1) e **7 108 µs** (run 2), contra um boot medido no mesmo log de suíte
+com **993,314 ms** de geração e **4 368,851 ms** de malharia
+([`head_suite.log:345`](evidence/tocas-alcateia-16/head_suite.log#L345)) — duas ordens de grandeza abaixo do
+que o boot já gasta numa passada.
+
+A checagem nova ([`aether_reactions_test.gd:4331-4396`](../tests/aether_reactions_test.gd#L4331-L4396),
+declarada em [`:37`](../tests/aether_reactions_test.gd#L37) e no censo de [`:39`](../tests/aether_reactions_test.gd#L39),
+que sobe de 238 para **240**) roda 1 400 passos reais com `clock.begin_step()`/`end_step()` e amarra a
+premissa do espalhamento (`dens=3`, componentes mínimos `3`, cinco bichos lidos) na primeira asserção, para
+o segundo número não poder vir de uma matilha que não foi espalhada. Pior passo **11,41 ms** (run 1) e
+**9,68 ms** (run 2) contra a régua de **25 ms** dos dossiês 17 e 19; média **1 988,53** e **1 968,88**
+µs/passo. O pico cronometrado dentro da checagem e o `worst_sim_ms` lido do `diagnostics()` coincidem no
+mesmo run (11 408 µs ↔ 11,41 ms; 9 681 µs ↔ 9,68 ms), que é a prova de que os dois instrumentos medem a
+mesma grandeza.
+
+`dropped_ticks == 0` foi para o smoke ([`smoke_test.gd:2531-2537`](../tests/smoke_test.gd#L2531-L2537)) e não
+para a janela do runner por um motivo lido no relógio, não por gosto: o contador só incrementa quando
+`clock.advance()` estoura o teto de 5 passos por frame ([`sim_clock.gd:23-26`](../src/core/sim_clock.gd#L23-L26)),
+e quem chama `advance` é o `_physics_process` da sessão — num laço que chama `_sim_tick()` direto a asserção
+seria decorativa. A testemunha do espalhamento (`dens >= 2`, `componentes >= 2`) entrou **dentro** do
+critério, porque sem ela o número não seria do espalhamento. Medido na sessão real: `perdidos=0`, pior passo
+**10,77 ms**, `dens=3`, `componentes=3`, separação mínima lida **55,9 m** com `tick=403`
+([`head_suite.log:343`](evidence/tocas-alcateia-16/head_suite.log#L343)).
+
+Contagens medidas nesta árvore, todas exit 0 e sem `SCRIPT ERROR`: runner **240 / 0 / 24,586 s** (run 1) e
+**240 / 0 / 24,446 s** (run 2), `simulation_rng_test` **27 / 0 / 2,762 s** e suíte **255 / 0 / 48,0 s**
+([`head_suite.log:357`](evidence/tocas-alcateia-16/head_suite.log#L357)). Os acumuladores da checagem são
+locais de propósito: os dois rodapés que sustentam o pareamento — `CENARIO ESTREITO` e `PASSOS DE MATILHA` —
+precisam continuar existindo idênticos nos dois braços, e engordá-los com a colheita nova destruiria o
+instrumento que faz o par ser par.
