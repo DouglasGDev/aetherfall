@@ -30,9 +30,10 @@ const TESTS: Array[StringName] = [
 	&"_test_acasalar_aumenta_censo", &"_test_cooldown_segunda_copula",
 	&"_test_censo_respeita_teto", &"_test_filhote_nao_morde",
 	&"_test_journal_hash_inalterado_sem_escolha",
-	&"_test_tocas_distintas_no_boot", &"_test_toca_nao_deriva_para_unica",
+	&"_test_tocas_distintas_no_boot", &"_test_nenhum_lobo_le_de_outra_toca",
+	&"_test_cada_toca_e_um_lugar_valido", &"_test_toca_nao_deriva_para_unica",
 ]
-const EXPECTED_CHECKS: int = 227
+const EXPECTED_CHECKS: int = 229
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -3769,11 +3770,14 @@ func _componentes_da_matilha(s: Session) -> Array:
 	return out
 
 
-## Menor distancia lar-a-lar entre componentes diferentes. E o `den_min_dist` do
-## §5 lido pela raiz: se os bichos foram declaradamente separados e os lares
-## continuam colados, a premissa nao foi consertada, foi renomeada. Devolve `INF`
-## com um componente so, e a linha impresso diz `sem_par` em vez de disfarçar o
-## vazio de numero grande.
+## Menor distancia lar-a-lar entre componentes diferentes, no chao. NAO e o
+## `den_min_dist` do §3.5, e dizer isso aqui e o ponto: os dois numeros nao podem
+## ser o mesmo criterio, porque a entrada de §3.2.3 poe um membro a ate
+## `PACK_LEASH` (18 m) do centro da propria toca. Com tocas a 48 m, dois lares de
+## tocas vizinhas podem ficar a 48-18 = 30 m, e a coesao le posicoes, nao centros.
+## A medida decide algo diferente da fundacao: decide se o que se espalhou por
+## lugar continua separado por leitura. Devolve `INF` com um componente so, e a
+## linha impressa diz `sem_par` em vez de disfarçar o vazio de numero grande.
 func _separacao_dos_componentes(s: Session, comps: Array) -> float:
 	var lares: Dictionary = {}
 	for w: Wolf in s.wolves:
@@ -3783,21 +3787,40 @@ func _separacao_dos_componentes(s: Session, comps: Array) -> float:
 		for j in range(i + 1, comps.size()):
 			for a: int in comps[i]:
 				for b: int in comps[j]:
-					menor = minf(menor, (lares[a] as Vector3).distance_to(lares[b]))
+					var p: Vector3 = lares[a]
+					var q: Vector3 = lares[b]
+					menor = minf(menor, Vector2(p.x, p.z).distance_to(Vector2(q.x, q.z)))
+	return menor
+
+
+## O `den_min_dist` de §3.5, no sentido em que a sessao o publica: minimo entre
+## CENTRO de toca, no chao -- o mesmo eixo do portao `_den_gate_ok`, que tambem
+## mede no chao. E este o numero que a fundacao decide; o de cima e uma
+## observacao impressa ao lado, nao criterio (§5.1.(iii) pedia "separacao" sem
+## dizer qual das duas, e a pagina diz agora).
+func _separacao_das_tocas(s: Session) -> float:
+	var menor := INF
+	for i in s._dens.size():
+		var a: Vector3 = s._dens[i]
+		for j in range(i + 1, s._dens.size()):
+			var b: Vector3 = s._dens[j]
+			menor = minf(menor, Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z)))
 	return menor
 
 
 ## Checagem 1 do dossie 16 §5: **nasce vermelha** e e a premissa inteira da pagina.
-## `_pack_leash()` ancora os quatro bichos seguintes no lar do PRIMEIRO vivo, entao
-## os cinco lares cabem no disco de 18 m da mordaca, o grafo de coesao fica com um
-## componente so, e o dono percorreu o vale inteiro vendo um lobo.
+## `_pack_leash()` -- hoje apagada -- ancora os quatro bichos seguintes no lar do
+## PRIMEIRO vivo, entao os cinco lares cabem no disco de 18 m da mordaca, o grafo de
+## coesao fica com um componente so, e o dono percorreu o vale inteiro vendo um lobo.
 ##
-## O alvo de 3 tocas e os 48 m de separacao estao escritos como numero aqui porque
-## `DEN_COUNT` e `DEN_MIN_DIST` so passam a existir no proximo commit da pauta
-## (§7b), e uma checagem que importa uma constante inexistente nao parseia -- um
-## erro de script no meio de um passo derruba as checagens dele em silencio, que e
-## o defeito que o mandato 1 cobra contado. No commit (b) os dois viram leitura da
-## constante da sessao, e a palavra continua a mesma.
+## Os dois numeros do criterio vem das constantes da sessao desde o commit (b), e a
+## pagina re-derivou o criterio contra elas: `componentes >= DEN_COUNT` e o espalhado
+## pedido; `maior <= censo - 2` e a anti-farsa de fundo (com 5 bichos, 3 tocas e um
+## componente de 4, a distribuicao e 4/1/1 e o vale continua tendo um dono); e
+## `den_min_dist >= DEN_MIN_DIST` e o portao da fundacao lido entre CENTROS, que e o
+## sentido publicado em §3.5 -- a distancia lar-a-lar sai impressa ao lado como
+## observacao porque ela nao pode ser criterio (§3.2.3 poe membros dentro de 18 m do
+## proprio centro).
 func _test_tocas_distintas_no_boot() -> bool:
 	_arm()
 	_boot_session(5)
@@ -3811,16 +3834,96 @@ func _test_tocas_distintas_no_boot() -> bool:
 	for w: Wolf in _pack_wolves():
 		if w.alive:
 			censo += 1
-	var sep := _separacao_dos_componentes(s, comps)
+	var centros := _separacao_das_tocas(s)
+	var lar := _separacao_dos_componentes(s, comps)
 	var lares := ""
 	for w: Wolf in _pack_wolves():
 		lares += "lobo%d(toca=%s,lar=(%.0f,%.0f)) " % [
-				w.identity, str(w.get("den")), w.home.x, w.home.z]
-	_check(comps.size() >= 3 and maior <= censo - 2 and sep >= 48.0,
+				w.identity, str(w.den), w.home.x, w.home.z]
+	_check(comps.size() >= Session.DEN_COUNT and maior <= censo - 2
+			and centros >= Session.DEN_MIN_DIST,
 			"tocas_distintas_no_boot",
-			"componentes=%d maior=%d censo=%d den_min_dist=%s | %s" % [
-			comps.size(), maior, censo,
-			"sem_par" if is_inf(sep) else "%.1f" % sep, lares.strip_edges()])
+			"componentes=%d maior=%d censo=%d tocas_fundadas=%d den_min_dist=%s lar_entre_componentes=%s | %s" % [
+			comps.size(), maior, censo, s._dens.size(),
+			"sem_par" if is_inf(centros) else "%.1f" % centros,
+			"sem_par" if is_inf(lar) else "%.1f" % lar, lares.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Checagem 2 do dossie 16 §5, a anti-farsa do outro lado: pertenca declarada sem
+## separacao lida e o mesmo defeito que a perna 10 cobrou ("cinco lares espalhados
+## que nunca foram territorio"), invertido. Se um lobo do grafo le alguem de outra
+## toca, o "espalhado" e nome novo para o circulo unico -- a coesao continua sendo a
+## unica dona da matilha, e ela nao sabe de toca nenhuma (dossie 16 §6: a toca entra
+## como LUGAR, nao como comportamento).
+##
+## Roda sobre o rebuild real (`pack_of`), nao sobre uma distancia recalculada no
+## teste: o que se quer e exatamente o que o lobo le.
+func _test_nenhum_lobo_le_de_outra_toca() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	s._rebuild_packs()
+	var den_de := {}
+	for w: Wolf in s.wolves:
+		if w.alive:
+			den_de[w.identity] = w.den
+	var travessias := 0
+	var linhas := ""
+	for id: int in den_de:
+		for e: Dictionary in s.pack_of(id):
+			var outro: int = int(e["identity"])
+			if den_de.has(outro) and int(den_de[outro]) != int(den_de[id]):
+				travessias += 1
+				linhas += "lobo%d(toca %d) le lobo%d(toca %d) " % [
+						id, den_de[id], outro, den_de[outro]]
+	var sem_toca := 0
+	for id: int in den_de:
+		if int(den_de[id]) < 0:
+			sem_toca += 1
+	_check(travessias == 0 and sem_toca == 0, "nenhum_lobo_le_de_outra_toca",
+			"arestas_entre_tocas=%d bichos_sem_toca=%d lidos=%d | %s" % [
+			travessias, sem_toca, den_de.size(),
+			linhas if linhas.is_empty() else linhas.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Checagem 3 do dossie 16 §5: uma toca e um LUGAR, entao o centro dela tem de ser
+## um ponto onde o jogo poria um bicho -- coluna seca, volume livre, longe do
+## jogador e fora da visada, os mesmos quatro portoes do spawn, lidos aqui pela
+## API publica da sessao. E nenhum dois centros partilham coluna: dois centros na
+## mesma coluna sao a mesma toca contada duas vezes, e a mordaca de cada uma
+## apontaria para o mesmo chao.
+##
+## Esta checagem nao existia antes do commit (b) porque nao havia o que medir --
+## `_dens` e a lista nova, e ela que carrega a promessa de que espalhar nao foi
+## escrito em cima de um lugar invalido.
+func _test_cada_toca_e_um_lugar_valido() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var colunas := {}
+	var ruins := ""
+	for i in s._dens.size():
+		var c: Vector3 = s._dens[i]
+		var col := Vector2i(int(c.x), int(c.z))
+		if colunas.has(col):
+			ruins += "toca%d divide a coluna %s com toca%d " % [i, str(col), colunas[col]]
+			continue
+		colunas[col] = i
+		if s.world.surface_height(int(c.x), int(c.z)) <= VoxelConfig.SEA_LEVEL:
+			ruins += "toca%d em coluna molhada " % i
+		if not s._volume_clear(c, Wolf.DIMS):
+			ruins += "toca%d sem volume livre " % i
+		if not s._spawn_point_ok(c):
+			ruins += "toca%d a menos de %g m ou na visada do jogador " % [
+					i, Session.SAFE_SPAWN_DIST]
+	_check(ruins.is_empty() and s._dens.size() >= 2, "cada_toca_e_um_lugar_valido",
+			"tocas=%d colunas_distintas=%d | %s" % [
+			s._dens.size(), colunas.size(),
+			"todos os centros validos" if ruins.is_empty() else ruins.strip_edges()])
 	_pack_release()
 	return true
 
@@ -3831,10 +3934,13 @@ func _test_tocas_distintas_no_boot() -> bool:
 ## matilha so isso era invisivel, com tres pode re-fundir as tocas. Exige que
 ## **todo** rebuild da janela leia >= 2 componentes.
 ##
-## Nasce vermelha pelo mesmo motivo da checagem 1 -- hoje ha um componente so no
-## passo zero -- e um vermelho dela depois do braco A pousado e o bilhete do braco
+## Nasce vermelha pelo mesmo motivo da checagem 1 -- sem tocas havia um componente
+## so no passo zero -- e um vermelho dela depois do braco A pousado e o bilhete do braco
 ## B, nao uma falha a esconder (§3.4). A janela de 1 400 passos e a mesma do
 ## cenario 6 da perna 14: cadaver de 1 s + fila de 45 s cabem inteiros nela.
+## O numero impresso e a distancia lar-a-lar no pior rebuild, nao `den_min_dist`: os
+## centros sao fixos por construcao (§3.2.5), entao o que pode mudar aqui e a
+## leitura -- e e a leitura que o braco B compra.
 func _test_toca_nao_deriva_para_unica() -> bool:
 	_arm()
 	_boot_session(5)
@@ -3859,7 +3965,7 @@ func _test_toca_nao_deriva_para_unica() -> bool:
 			for c: Array in comps:
 				bichos_pior += c.size()
 	_check(pior >= 2, "toca_nao_deriva_para_unica",
-			"componentes_minimos=%d bichos_lidos=%d den_min_dist=%s no passo %d de %d" % [
+			"componentes_minimos=%d bichos_lidos=%d lar_entre_componentes=%s no passo %d de %d" % [
 			pior, bichos_pior,
 			"sem_par" if is_inf(pior_sep) else "%.1f" % pior_sep, pior_passo, passos])
 	_pack_release()

@@ -134,6 +134,15 @@ var intent: String = "patrol"
 var hunger: float = 0.35
 var home := Vector3.ZERO
 var home_biome: int = WorldGen.Biome.TEMPERATE
+## Toca a que este bicho pertence (dossie 16 §3.1): o INDICE na lista de tocas da
+## sessao, nao um lugar -- o lugar e `home`, e a toca e o ponto em torno do qual
+## esse lugar foi sorteado. Escrito por quem poe o animal no mundo (sorteio, fila e
+## parto, todos em `main.gd`) e nunca pelo lobo: a pertença e estado do censo, e o
+## dono do censo e a sessao. -1 e "sem toca", o estado de um disco anterior a perna
+## ou de uma sessao em que nenhuma fundacao coube -- e impresso, nao disfarçado.
+## Nenhum comportamento aqui pergunta por este numero: quem decide a ronda e o que
+## o lobo le (`_pack`), e a toca muda só o que o sorteio escreve (§6).
+var den: int = -1
 var kills: int = 0
 ## Idade e corpo do animal (dossie 11 §3.2). Quem nasce do `setup()` -- o boot e a
 ## fila de reposicao -- ja entra adulto, com a idade no limiar do adulto: o lote
