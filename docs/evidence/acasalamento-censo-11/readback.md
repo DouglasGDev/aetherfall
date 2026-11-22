@@ -2,16 +2,22 @@
 
 O que esta pasta guarda é a corrida que sustenta o **fecho** da perna: os sete commits de código e
 de corpus já tinham as suas próprias medições, feitas na branch; aqui está o que acontece
-**depois** — a branch publicada, o merge `--no-ff` na `main`, e o número do pin medido num clone
-limpo da `main` mergeada.
+**depois** — a branch publicada, o merge `--no-ff` na `main`, o fecho documentado e o número do
+pin medido num clone limpo da `main` mergeada.
 
-Revisões medidas: `4b858c2` (`Merge feat/acasalamento-e-censo-11: acasalamento, censo variavel e a
-fila da alcateia (dossie 11)`), o merge `--no-ff` da branch `feat/acasalamento-e-censo-11` (ponta de
-código `0762b43`) sobre a base `e7a5fe7`; e a ponta de código da branch, `0762b43` (`Dossie 11 (g):
-o corpus re-derivado pela ponta da perna 11, com a prosa do status, do contrato e da pagina`). A
-ponta `010ab25` (merge da `main` dentro da branch) está dentro dessa história: a perna escreve os
-mesmos dois arquivos que a 19 escreveu, e o item 5 de "Branches" obriga a re-rodar o gate na árvore
-resultante.
+Revisões medidas: `5b519f8` (`Merge docs/fecho-acasalamento-censo-11: fecho documentado do
+acasalamento e censo (dossie 11)`), o merge `--no-ff` do fecho sobre `4b858c2`; `4b858c2`
+(`Merge feat/acasalamento-e-censo-11: acasalamento, censo variavel e a fila da alcateia (dossie 11)`),
+o merge `--no-ff` da branch `feat/acasalamento-e-censo-11` (ponta de código `0762b43`) sobre a base
+`e7a5fe7`; e a ponta de código da branch, `0762b43` (`Dossie 11 (g): o corpus re-derivado pela ponta
+da perna 11, com a prosa do status, do contrato e da pagina`). A ponta `010ab25` (merge da `main`
+dentro da branch) está dentro dessa história: a perna escreve os mesmos dois arquivos que a 19
+escreveu, e o item 5 de "Branches" obriga a re-rodar o gate na árvore resultante.
+
+O fecho trouxe `.md` e `.log` e nenhum `.gd`, então `5b519f8:src` e `5b519f8:tests` são os mesmos
+objetos de `4b858c2:src` e `4b858c2:tests` (`30873d664a9577bcd3e709046cc708923456c372` e
+`975eac5a471dc1e064441474ef6e13866076d34f`): a corrida do clone limpo e a corrida do pin são a
+mesma corrida.
 
 ## 1. O que está nesta pasta
 
@@ -26,6 +32,9 @@ resultante.
 | `clone_suite_run2.log` / `.err` | 22 546 / 0 | **segunda** corrida no mesmo clone, mesmo comando |
 | `clone_runner.log` / `.err` | 41 497 / 0 | runner de reações no clone limpo |
 | `clone_journal.log` / `.err` | 8 719 / 0 | teste do journal no clone limpo |
+| `fecho_main_suite.log` / `.err` | 22 548 / 249 | suíte na `main` do fecho (`5b519f8`) |
+| `fecho_main_runner.log` / `.err` | 41 498 / 0 | runner de reações na `main` do fecho |
+| `fecho_main_journal.log` / `.err` | 8 714 / 0 | teste do journal na `main` do fecho |
 | `leak_tip_verbose.log` | 52 667 | suíte com `--verbose` na ponta: **quais** objetos vazam |
 | `leak_main_verbose.log` | 46 316 | a mesma corrida na `main` **sem** esta perna: o braço de controle |
 | `branch_flake_probe.log` | 41 581 | corrida que reproduz o vermelho intermitente do runner |
@@ -39,7 +48,7 @@ resultante.
 Os logs são cópias literais do stdout/stderr das corridas; `artifacts.sha256` é conferível com
 `sha256sum -c artifacts.sha256` a partir desta pasta.
 
-## 2. As sete corridas do fecho
+## 2. As corridas do fecho
 
 Todas headless, máquina livre, medição serial (nenhum gate de timing roda com outra carga), e
 todas com **zero** `SCRIPT ERROR` nas duas correntes (stdout e stderr).
@@ -54,6 +63,9 @@ todas com **zero** `SCRIPT ERROR` nas duas correntes (stdout e stderr).
 | clone limpo, suíte (2ª) | `4b858c2` | idem, mesmo clone, mesmo comando | **252 checagens / 0 falhas / 42,9 s**, exit 0 |
 | clone limpo, runner | `4b858c2` | idem, em `C:/tmp/af11-clone` | **225 checagens / 0 falhas / 15,451 s**, exit 0 |
 | clone limpo, journal | `4b858c2` | idem, em `C:/tmp/af11-clone` | **128 checagens / 0 falhas / 5,811 s**, exit 0 |
+| `main` do fecho, suíte | `5b519f8` | idem, na árvore do merge do fecho | **252 checagens / 0 falhas / 43,0 s**, exit 0 |
+| `main` do fecho, runner | `5b519f8` | idem, na árvore do merge do fecho | **225 checagens / 0 falhas / 15,348 s**, exit 0 |
+| `main` do fecho, journal | `5b519f8` | idem, na árvore do merge do fecho | **128 checagens / 0 falhas / 5,769 s**, exit 0 |
 
 Linhas literais:
 
@@ -65,6 +77,9 @@ Linhas literais:
 == 252 checagens  0 falhas  42.9 s de teste ==      (clone_suite_run2.log)
 225 checagens 0 falhas 15.451 s                       (clone_runner.log)
 128 checagens 0 falhas 7/7 testes concluidos 5.811 s (clone_journal.log)
+== 252 checagens  0 falhas  43.0 s de teste ==      (fecho_main_suite.log)
+225 checagens 0 falhas 15.348 s                       (fecho_main_runner.log)
+128 checagens 0 falhas 7/7 testes concluidos 5.769 s (fecho_main_journal.log)
 ```
 
 O censo do runner é `EXPECTED_CHECKS = 225` ([`tests/aether_reactions_test.gd:34`](../../tests/aether_reactions_test.gd#L34))
@@ -149,7 +164,14 @@ A árvore de código do pin é a da ponta `0762b43` mais o merge; o que o merge 
 git rev-parse 4b858c2:src 4b858c2:tests
 30873d664a9577bcd3e709046cc708923456c372
 975eac5a471dc1e064441474ef6e13866076d34f
+git rev-parse 5b519f8:src 5b519f8:tests
+30873d664a9577bcd3e709046cc708923456c372
+975eac5a471dc1e064441474ef6e13866076d34f
 ```
+
+Os dois merges devolvem os **mesmos** dois objetos: o merge do fecho (`5b519f8`) só acrescentou
+`.md` e `.log` sobre o merge do código (`4b858c2`), então a corrida do clone limpo de `4b858c2` é
+também a corrida do pin `5b519f8`.
 
 Contra o pin anterior (`ab9ffa1`, perna 19), `src` era `45efe977f74de…` e `tests` era
 `37eb429c142d…`: **mudaram**, porque a perna 11 escreve em `src/entities/wolf.gd`, `src/main.gd`,

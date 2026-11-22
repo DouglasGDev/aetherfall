@@ -223,9 +223,10 @@ antes de virar número publicado — e as **nove** citações de censo do §2 re
 198) e a suíte passou a **252 / 0 falhas** — o rodapé do runner de reações é **225 checagens / 0
 falhas**. Isso foi medido na **árvore de trabalho** desta ponta. **O número publicado saiu no fecho**,
 medido no clone limpo da revisão mescada (`4b858c2`, `--import` frio, exit 0): suíte **252 / 0 /
-42,9 s** e runner **225 / 0 / 15,451 s**; a `main` mergeada re-rodada deu **252 / 0 / 43,1 s** e o
-runner da branch **225 / 0 / 15,343 s**. Publicar antes de medir no clone é publicar hipótese — por
-isso o fecho espera o clone. O pin publicado é `4b858c2` e os logs estão em
+42,9 s** e runner **225 / 0 / 15,451 s**; a `main` mergeada re-rodada deu **252 / 0 / 43,1 s**, a
+`main` do fecho **252 / 0 / 43,0 s** com runner **225 / 0 / 15,348 s** e journal **128 / 0 /
+5,769 s**, e o runner da branch **225 / 0 / 15,343 s**. Publicar antes de medir no clone é publicar
+hipótese — por isso o fecho espera o clone. O pin publicado é `5b519f8` e os logs estão em
 [`docs/evidence/acasalamento-censo-11/readback.md`](../evidence/acasalamento-censo-11/readback.md).
 
 ## 6. O que NÃO fazer
@@ -263,6 +264,11 @@ da revisão **mescada**, e a revisão mescada não existe enquanto (g) não pous
 `main` pelo merge `--no-ff` **`4b858c2`** — é esse o pin publicado, e o `README.md` re-pinado aponta
 para ele.
 
+A perna pousou na `main` pelo merge `--no-ff` **`4b858c2`**, e o fecho documentado dela pelo merge
+`--no-ff` **`5b519f8`** — é esse o pin publicado, e o `README.md` re-pinado aponta para ele. Os dois
+merges devolvem os mesmos objetos de `src` e `tests` (`30873d664a9577bcd3e709046cc708923456c372` e
+`975eac5a471dc1e064441474ef6e13866076d34f`), porque o fecho trouxe `.md` e `.log` e nenhum `.gd`.
+
 ## 8. O que este dossiê não fecha
 
 Nenhum gate de fase. Ecologia de verdade — presa, fome populacional, migração, espécies — é P2 e
@@ -274,11 +280,16 @@ dívida dos dois.
 
 O que o fecho mediu e o que ele atribuiu, com o número de origem em [`readback.md`](../evidence/acasalamento-censo-11/readback.md):
 
-- **O pin publicado é `4b858c2`** — o merge `--no-ff` da branch `feat/acasalamento-e-censo-11`
-  (ponta de código `0762b43`) sobre a base `e7a5fe7`. O clone limpo desse SHA, sem `.godot/` e com
-  `--import` frio (exit 0), deu suíte **252 / 0 / 42,9 s**, runner de reações **225 / 0 / 15,451 s**
-  e journal **128 / 0 / 5,811 s**. A `main` mergeada re-rodada deu **252 / 0 / 43,1 s**; a branch,
-  **252 / 0 / 43,0 s** e runner **225 / 0 / 15,343 s**.
+- **O pin publicado é `5b519f8`** — o merge `--no-ff` do fecho documentado da perna 11
+  (`docs/fecho-acasalamento-censo-11`) sobre `4b858c2`, o merge `--no-ff` da branch
+  `feat/acasalamento-e-censo-11` (ponta de código `0762b43`) sobre a base `e7a5fe7`. O fecho trouxe
+  `.md` e `.log` e nenhum `.gd`, então `5b519f8:src` e `5b519f8:tests` são os mesmos objetos de
+  `4b858c2:src` e `4b858c2:tests` — a corrida do clone limpo é também a corrida do pin. O clone
+  limpo desse SHA, sem `.godot/` e com `--import` frio (exit 0), deu suíte **252 / 0 / 42,9 s**,
+  runner de reações **225 / 0 / 15,451 s** e journal **128 / 0 / 5,811 s**. A `main` mergeada do
+  código re-rodada deu **252 / 0 / 43,1 s**; a `main` do fecho, **252 / 0 / 43,0 s** com runner
+  **225 / 0 / 15,348 s** e journal **128 / 0 / 5,769 s**; a branch, **252 / 0 / 43,0 s** e runner
+  **225 / 0 / 15,343 s**.
 - **O par de vazamento do quit não é desta perna.** Ele sai como `4 ObjectDB` com `2 resources` no
   stderr das três corridas e, com `--verbose`, o objeto é nomeado: `AudioStreamPlaybackOggVorbis` e
   `AudioStreamOggVorbis` de `res://assets/audio/amb/amb_birds.ogg`, vivos no instante em que o
