@@ -1,0 +1,279 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK geracao real | seed=20261116 chunks=64
+OK 2025 colunas secas, piso y=50, ar ate o teto | invalidas=0
+OK Player pronto com atlas real | ready=true atlas=():<ImageTexture#-9223371997361207761>
+OK sem input automatico ou malharia | process=false meshes=0
+OK WORK sem jogador perceptivel | dist=73.595 los=false
+OK imprint WORK .42 atrai | work=0.4200 tick=1 intent=investigate reaction=seguindo trabalho feet=(58.03524, 51.001, 62.0) speed=1.0033 target=(66.0, 50.6, 62.0)
+OK aproximacao fisica do rastro | dist 7.965 -> 6.035 tick=17 intent=investigate reaction=seguindo trabalho feet=(59.9645, 51.001, 62.0) speed=2.5993 target=(66.0, 50.6, 62.0)
+OK rastro nao fabrica avistamento | episodios=0
+OK premissa dos pesos simultaneos | blood=0.250 work*.35=0.147
+OK vence o rastro ponderado mais forte | esperado=(58.0, 50.6, 66.0) tick=1 intent=investigate reaction=seguindo sangue feet=(58.0, 51.001, 62.03524) speed=1.0033 target=(58.0, 50.6, 66.0)
+OK premissa dos pesos simultaneos | blood=0.080 work*.35=0.294
+OK vence o rastro ponderado mais forte | esperado=(66.0, 50.6, 62.0) tick=1 intent=investigate reaction=seguindo trabalho feet=(58.03524, 51.001, 62.0) speed=1.0033 target=(66.0, 50.6, 62.0)
+OK medo local com jogador invisivel | player_z=18.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-1.28479, 0.0, 0.0) tick=7 intent=flee reaction=evitando medo feet=(60.71521, 51.001, 62.0) speed=5.7728 target=(47.00079, 51.476, 62.0)
+OK medo local com jogador invisivel | player_z=106.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-1.28479, 0.0, 0.0) tick=7 intent=flee reaction=evitando medo feet=(60.71521, 51.001, 62.0) speed=5.7728 target=(47.00079, 51.476, 62.0)
+OK A/B jogador oculto nao muda vetor | A=(-1.0, 0.0, 0.0) B=(-1.0, 0.0, 0.0)
+OK A/B mesmo seed e clock conservam movimento | A=(-1.28479, 0.0, 0.0) B=(-1.28479, 0.0, 0.0)
+OK parede real oculta jogador proximo | dist=8.011 los=false
+OK sem avistamento nao caca | ticks_hunt=0 tick=13 intent=patrol reaction=patrulhando feet=(59.35386, 51.001, 62.50474) speed=2.5954 target=(67.23325, 50.2, 65.44232)
+OK parede nao produz memoria visual | episodios=0
+OK presa visivel ainda provoca caca | tick=10 intent=hunt reaction=perseguindo presa visivel feet=(60.19389, 51.001, 62.0) speed=5.3588 target=(66.0, 51.401, 62.0)
+OK caca move corpo ate presa visivel | dist 8.000 -> 5.806
+OK avistamento real seguido de bloqueio e deslocamento | visto=(66.0, 51.901, 62.0) oculto=(66.0, 51.001, 72.0) los=false
+OK persegue ultima observacao, nao posicao oculta | tick=11 intent=hunt reaction=buscando ultimo avistamento feet=(60.42443, 51.001, 62.0) speed=4.2942 target=(66.0, 51.901, 62.0)
+OK memoria guia movimento apos perda de LOS | dist 5.576 -> 4.918 tick=15 intent=hunt reaction=buscando ultimo avistamento feet=(61.08168, 51.001, 62.0) speed=2.8410 target=(66.0, 51.901, 62.0)
+OK WORK chega ao local em ate 8s | dist=1.095 tick=55 intent=investigate reaction=seguindo trabalho feet=(64.90458, 51.001, 62.0) speed=2.6000 target=(66.0, 50.6, 62.0)
+OK inspecao para corpo em vez de cair na patrulha | drift=0.0000 tick=67 intent=investigate reaction=farejando feet=(64.90458, 51.001, 62.0) speed=0.0000 target=(64.90458, 51.001, 62.0)
+OK inspecao WORK produz episodio sem atribuir ator | count=1 atom={ "tick": 94, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.0272222213723 }
+OK rastro estatico nao repete episodio em 3s | antes=1 depois=1
+OK inspecao registra cache limitado | cache={ (15, 12, 14): (0.0, 34.75), (16, 12, 14): (0.0, 34.75), (17, 12, 14): (0.0, 34.75), (15, 12, 15): (0.0, 34.75), (16, 12, 15): (0.147, 34.75), (17, 12, 15): (0.0, 34.75), (15, 12, 16): (0.0, 34.75), (16, 12, 16): (0.0, 34.75), (17, 12, 16): (0.0, 34.75) }
+OK novo imprint .42 reabre local checado | reabriu=true work=0.840 tick=267 intent=investigate reaction=rastro examinado feet=(65.048, 51.001, 62.5368) speed=0.0000 target=(65.048, 51.001, 62.5368)
+OK rastro renovado termina segunda inspecao | count=2
+OK load limpa cache transitorio | cache={  }
+OK load nao retoma timer de inspecao | left=0.0 tick=267 intent=investigate reaction=patrulhando feet=(65.048, 51.001, 62.5368) speed=0.0000 target=(58.0, 51.001, 62.0)
+OK BLOOD aproxima corpo ate fonte | dist=1.095 tick=55 intent=investigate reaction=seguindo sangue feet=(64.90458, 51.001, 62.0) speed=2.6000 target=(66.0, 50.6, 62.0)
+OK inspecao BLOOD produz episodio sem ator | atom={ "tick": 94, "kind": "scent_blood", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.07777777534944 }
+OK sangue nao vira avistamento ou trabalho | saw=0 work=0
+OK premissa: inspecao em andamento | tick=3 intent=investigate reaction=farejando feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK medo interrompe inspecao antes de 2s | tick=17 intent=flee reaction=evitando medo feet=(65.00077, 51.001, 62.0) speed=5.5671 target=(51.27415, 51.476, 62.0)
+OK interrupcao move corpo sem concluir episodio | dx=-0.999 count=0
+OK premissa: WORK forte sem presa perceptivel | energia=4.000000 tick=1 intent=investigate reaction=seguindo trabalho feet=(58.03524, 51.001, 62.0) speed=1.0033 target=(66.0, 50.6, 62.0)
+OK difusao .25s durante aproximacao e inspecao | ticks=240 passes=48 seguindo=11 farejando=24
+OK campo realmente decai e espalha | energia 4.000000 -> 2.021455 celulas=19
+OK WORK difuso conclui episodio sem ator em ate 12s | tick=95 count=3 atom={ "tick": 94, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.09077517633085 }
+OK episodio difuso exige chegada fisica ao local examinado | dist=1.0954 deslocamento=6.9046
+OK difusao WORK nao fabrica presa ou sangue | saw=0 blood=0
+OK premissa: primeira inspecao com corpo real em ate 3s | tick=40 atom={ "tick": 39, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.05444444274461 } tick=40 intent=investigate reaction=rastro examinado feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK premissa: cache da fonte dura 30s e WORK continua forte | entrada=(0.294, 32.0) tick=40 work*.35=0.294000
+OK cache impede reinspecao durante os primeiros 29s | idade=29.00 farejando=0 count=1 cached=true
+OK cache expira apos 30s na cadencia de percepcao | idade=30.050 tick=641
+OK mesmo WORK reabre inspecao sem novo imprint | idade=30.050 tick=641
+OK revisita termina segundo episodio no mesmo local | intervalo_ticks=640 count=2 atom={ "tick": 679, "kind": "scent_work", "pos": (66.0, 50.6, 62.0), "actor": 0, "mag": 0.05444444274461 }
+OK premissa mantida: corpo parado e campo estatico sem renovacao | drift=0.000000 work 0.840000 -> 0.840000 energia 0.840000 -> 0.840000
+OK premissa: somente dois imprints FEAR, nenhum golpe | amostras=(0.9, 3.5, 0.0) energia=4.400000 hp=42.00
+OK fuga fisica provocada so pelo campo | flee=12 los=0 dx=-2.8768 threat=0.0000
+OK fugir nao amplifica FEAR nas sondas fixas | antes=(0.9, 3.5, 0.0) depois=(0.9, 3.5, 0.0)
+OK fuga sem golpe nao cria energia em outras celulas | energia 4.400000 -> 4.400000 canais=[0.0, 0.0, 4.39999997615814]
+OK premissa A/B: um unico take_damage real | braco_z=18.0 hp=34.00 atom={ "tick": 0, "kind": "hurt", "pos": (60.0, 51.001, 62.0), "actor": 1, "mag": 0.19047619047619 }
+OK premissa A/B: jogador relocado oculto em rumo distinto do golpe | dist=44.002 threat=0.998 golpe=(-1.0, 0.0, 0.0) oculto=(0.0, 0.0, 1.0)
+OK fuga usa LAST hurt, nao jogador oculto | vetor=(-1.0, 0.0, 0.0) esperado=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=fugindo do ultimo golpe feet=(58.0, 51.001, 62.0) speed=5.0000 target=(44.0, 51.476, 62.0)
+OK apos knockback, fuga ainda aponta para longe do ultimo golpe | stagger=-0.0167 deslocamento=(-4.157574, 0.0, 0.0) vetor=(-1.0, 0.0, 0.0) esperado=(-1.0, 0.0, 0.0)
+OK premissa A/B: um unico take_damage real | braco_z=106.0 hp=34.00 atom={ "tick": 0, "kind": "hurt", "pos": (60.0, 51.001, 62.0), "actor": 1, "mag": 0.19047619047619 }
+OK premissa A/B: jogador relocado oculto em rumo distinto do golpe | dist=44.002 threat=0.998 golpe=(-1.0, 0.0, 0.0) oculto=(0.0, 0.0, -1.0)
+OK fuga usa LAST hurt, nao jogador oculto | vetor=(-1.0, 0.0, 0.0) esperado=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=fugindo do ultimo golpe feet=(58.0, 51.001, 62.0) speed=5.0000 target=(44.0, 51.476, 62.0)
+OK apos knockback, fuga ainda aponta para longe do ultimo golpe | stagger=-0.0167 deslocamento=(-4.157574, 0.0, 0.0) vetor=(-1.0, 0.0, 0.0) esperado=(-1.0, 0.0, 0.0)
+OK A/B relocacao oculta nao muda steering apos golpe | A=(-1.0, 0.0, 0.0) B=(-1.0, 0.0, 0.0)
+OK A/B mesmo golpe produz mesmo movimento | A=(-4.157574, 0.0, 0.0) B=(-4.157574, 0.0, 0.0)
+OK premissa: avistamento real antes de medir os 6s | atom={ "tick": 0, "kind": "saw_player", "pos": (66.0, 51.901, 62.0), "actor": 1, "mag": 0.4 } tick=1 intent=hunt reaction=perseguindo presa visivel feet=(58.0732, 51.001, 62.0) speed=2.0837 target=(66.0, 51.401, 62.0)
+OK parede oculta presa proxima, memoria ainda guia caca | dist_memoria=7.927 dist_player=12.768 tick=2 intent=hunt reaction=buscando ultimo avistamento feet=(58.0732, 51.001, 62.0) speed=2.0837 target=(66.0, 51.901, 62.0)
+OK memoria vale no ultimo tick inclusivo de 6s | idade_ticks=120 tick=121 intent=hunt reaction=buscando ultimo avistamento feet=(58.0732, 51.001, 62.0) speed=2.0837 target=(66.0, 51.901, 62.0)
+OK apos 6s nao ha caca oculta em nenhum tick | amostras=41 hunt=0 chase=0
+OK parede impede renovacao; episodio persiste mas nao autoriza caca | los_ticks=0 count=1 tick_visto=0 ultimo={ "tick": 0, "kind": "saw_player", "pos": (66.0, 51.901, 62.0), "actor": 1, "mag": 0.4 }
+OK premissa mantida: sem chegada, dano ou campo concorrente | drift=0.000000 dist_memoria=7.927 energia=0.000000 hp=42.00
+OK premissa: caca acaba de iniciar antes da morte | tick=1 intent=hunt reaction=perseguindo presa visivel feet=(58.0732, 51.001, 62.0) speed=2.0837 target=(66.0, 51.401, 62.0)
+OK morte real durante histerese de caca | hp=0.0 tick=2 intent=hunt reaction=patrulhando feet=(58.18213, 51.001, 62.01242) speed=2.2465 target=(67.23325, 50.2, 65.44232)
+OK histerese nao executa busca de presa morta | tick=2 intent=hunt reaction=patrulhando feet=(58.18213, 51.001, 62.01242) speed=2.2465 target=(67.23325, 50.2, 65.44232)
+OK premissa: ultimo passo antes de concluir inspecao | left=0.050000 tick=39 intent=investigate reaction=farejando feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK golpe real interrompe corpo antes da conclusao | stagger=0.450 tick=39 intent=investigate reaction=farejando feet=(66.0, 51.001, 62.0) speed=5.0000 target=(66.0, 51.001, 62.0)
+OK atordoamento cancela inspecao sem episodio | left=0.000000 count=0 tick=40 intent=investigate reaction=atordoado feet=(65.77026, 51.081, 62.0) speed=4.4007 target=(66.0, 51.001, 62.0)
+OK premissa: local examinado antes de nova construcao | count=1 tick=40 intent=investigate reaction=rastro examinado feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK imprint com amplitude real de place | work 0.420000 -> 0.620000 delta_ponderado=0.070000
+OK construcao .20 reabre local antes dos 30s | tick=46 intent=investigate reaction=farejando feet=(66.0, 51.001, 62.0) speed=0.0000 target=(66.0, 51.001, 62.0)
+OK construcao renovada termina segunda visita | count=2 tick=91 intent=patrol reaction=patrulhando feet=(67.1109, 51.001, 62.41417) speed=2.5878 target=(75.23325, 50.2, 65.44232)
+CHEGADA 1 tick=40 celula=(11, 12, 13) cache=9
+CHEGADA 2 tick=165 celula=(14, 12, 13) cache=18
+CHEGADA 3 tick=300 celula=(17, 12, 13) cache=27
+CHEGADA 4 tick=426 celula=(17, 12, 16) cache=32
+CHEGADA 5 tick=551 celula=(14, 12, 16) cache=32
+CHEGADA 6 tick=721 celula=(11, 12, 13) cache=32
+OK premissa: seis inspecoes reais e uma janela inteira de saidas colhida | episodios=6 chegadas=6 saidas=22 vistas=45 idade=36.250
+OK cache nunca passa do teto de 32 celulas | pico=32 teto=32 vistas=45
+OK saida mais jovem que o relogio so existe com o teto em jogo | por_relogio=0 por_evicao=22 tamanho_na_saida=32 saida_mais_jovem=19.500 mais_velha=28.000 ttl=30.0
+OK o cache fecha no menor dos dois limites, o teto ou a janela | intervalo=6.810 janela=30.000 blocos=5 pedido=45 teto=32 pico=32 saltocelula=12.0 metros_por_salto=12.3 progressao=1.762 m/s=1.700
+OK a evicao por FIFO roda exatamente quando a janela pede mais celulas que o teto | por_evicao=22 pedido=45 teto=32 intervalo=6.810
+OK premissa: plateu 45x45 sem nenhum solido acima do piso, corpo dentro dela, presa a vista | solidos=0 alturas=[50] fora=0 los=true hunt=100/100 ticks=100
+OK premissa: dos frames em que o corpo esteve apoiado, quase todos o integrador chamou bloqueio | apoiados=300 bloqueados=300 pouso_bloqueado=300 frames=300 lancamentos=0 rearms=0
+OK o corpo alcanga a presa no corredor livre | percorrido=23.5 ganho=23.5 razao=1.000 rearms=0 lancamentos=0 tempo=5.0 s andamento=4.707 m/s speed=2.6 SPEED_RUN=5.4
+OK contato com o chao nao e obstaculo: sem parede no caminho, nenhum desvio re-arma e nenhum corpo salta | horizontais=0 rearms=0 lancamentos=0 bloqueados=300 pouso_bloqueado=300 frames=300
+OK premissa: parede real no caminho e o corpo encosta nela atrae pelo rastro | parede=true los=false investigate=200/200 x_max=62.625 alvo=(66.0, 50.6, 54.0)
+OK na parede o integrador chama bloqueio horizontal | horizontais=340 bloqueados=600 frames=600 apoiados=600 pouso_bloqueado=600
+OK contra um muro de seis o desvio re-arma, mas nenhum salto e gasto: saltar ai e so perder altura | rearms=12 lancamentos=0 horizontais=340 frames=600
+OK o corpo para do lado de ca da parede | x_max=62.625 teto_bloqueio=63.0 percorrido=8.6
+OK encostar na parede nao e encaixar: nenhum frame com o volume dentro de solido | encaixados=0 encaixe_max=0.000 mm frames=600 x_max=62.625 face_x=62.9995
+OK premissa: degrau de um bloco no caminho, ar livre acima dele, rastro atras e o corpo encosta apoiado | degrau=true ar_acima=false investigate=43/43 encostou=true horizontais=12 x_max=58.103 y_max=52.141 alvo=(66.0, 50.6, 54.0)
+OK o corpo sobe o degrau de um bloco e passa para o outro lado | y_max=52.141 ganho=1.140 m x_max=58.103 lancamentos=1 frames=129 tempo=2.1 s
+OK premissa: o jogador anda contra o degrau com a tecla de salto solta | jump=false painel=false horizontais=4 na_face=1 predicado=true dims=(0.62, 1.8, 0.62) x_max=58.026
+OK o jogador sobe o degrau de um bloco sem apertar espaco | y_max=52.334 ganho=1.333 m x_max=58.026 lancamentos=1 frames=114 tempo=1.9 s
+OK agachado encosta no degrau que o predicado aprova e continua do lado de ca | agachado=true dims=(0.62, 1.15, 0.62) na_face=191 predicado=true y_max=51.001 ganho=-0.000 m lancamentos=0 x_max=55.683 frames=300
+OK premissa: o integrador para os dois corpos diante da face de x=56, sem encaixe | gap_face=0.0282 m bloqueio=true/true pe=(55.5968, 51.001, 54.0)/(55.68347, 51.001, 54.0) encaixado=false
+OK degrau de um bloco, ar acima: lobo true, jogador true | obtido lobo=true jogador=true gap_face=0.0282 m rows=[51] alcance=1.275/0.910
+OK muro de dois blocos: lobo false, jogador false | obtido lobo=false jogador=false gap_face=0.0282 m rows=[51, 52] alcance=1.275/0.910
+OK degrau com teto a uma celula do parapeito: lobo true, jogador false | obtido lobo=true jogador=false gap_face=0.0282 m rows=[51, 53] alcance=1.275/0.910
+OK penhasco de seis: lobo false, jogador false | obtido lobo=false jogador=false gap_face=0.0282 m rows=[51, 52, 53, 54, 55, 56] alcance=1.275/0.910
+OK sem parede no caminho e sem direcao plana o predicado nao e um convite ao salto | zero=false vertical=false plano_coluna_limpa=false
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+OK premissa: 1 000 frames de sessao por braco, nenhum bloqueio no plano e o predicado perguntado na face sem um salto | plano: vivo=true frames=1000 passos=1000 horizontais=0 | face: vivo=true frames=1000 passos=1000 horizontais=982 na_face=982 lancamentos=0 x_max=55.683 viradas=6/0
+OK nenhum passo de simulacao acima da regua de 25 ms e nenhum tick perdido, nos dois bracos | plano worst_sim=10.94 ms dropped=0 | face worst_sim=9.61 ms dropped=0
+OK o frame integral onde o pulo mora fica abaixo da mesma regua nos dois bracos | plano total=1537043 us media=1537.0 us pior=11078 us | face total=1505700 us media=1505.7 us pior=9686 us
+OK premissa: rastro uma camada abaixo, dentro do raio horizontal | lobo_cam=12 rastro_cam=11 dxz_cells=2 desloc=8.0 m amplitude=0.420
+OK premissa: a camada que o leitor varre esta vazia | camada_do_lobo=0.0000 camada_de_baixo=0.4200
+OK leitor acha o rastro uma camada abaixo | found=true celula=(17, 11, 15) esperado=(17, 11, 15) forca=0.4200 intent=investigate tick=1 intent=investigate reaction=seguindo sangue feet=(62.03524, 51.001, 62.0) speed=1.0033 target=(70.0, 44.6, 62.0)
+OK alvo projetado no piso da caverna, nao no teto da superficie | alvo=(70.0, 44.6, 62.0) surface_height=50
+OK premissa do controle: mesma coluna, camada do lobo, 5 m mais alto | lobo_cam=12 rastro_cam=12 vertical=5.0 m horizontal=0.000 m
+OK controle: rastro na camada do lobo acha o alvo na superficie de sempre | found=true celula=(17, 12, 15) alvo=(70.0, 50.6, 62.0) forca=0.4200
+OK bioma_deterministico | divergentes=0  colunas=256
+OK premissa: a grade 16x16 cobre mais de um bioma | biomas=3  frozen=81 arid=0 temperate=140 wetland=35
+OK premissa: a semente da colunas de dois biomas | biomas=3  frozen temperate wetland
+OK cor_do_pelo_vem_do_bioma | a[frozen c7ccd6] b[temperate 665c4f] c[frozen c7ccd6]
+OK premissa: os quatro pares da tabela dao quatro cores diferentes | cores=4/4  c7ccd6 9e7845 665c4f 3d4a42
+OK temperate conserva a cor historica do lobo | cor=665c4f
+OK premissa: vies_lido_confirma_tabela_medida | frozen/work=0.85 frozen/blood=1.00 frozen/fear=1.30 arid/work=1.30 arid/blood=0.90 arid/fear=0.85 temperate/work=1.00 temperate/blood=1.00 temperate/fear=1.00 wetland/work=0.85 wetland/blood=1.15 wetland/fear=0.90
+OK premissa: imprint cru no campo devolve o valor do evento | esperado=0.42/1.30/1.00  colhido: bioma=0(frozen) work sem=0.4200 com=0.3570 razao=0.8500  bioma=0(frozen) blood sem=1.3000 com=1.3000 razao=1.0000  bioma=0(frozen) fear sem=1.0000 com=1.3000 razao=1.3000  bioma=2(temperate) work sem=0.4200 com=0.4200 razao=1.0000  bioma=2(temperate) blood sem=1.3000 com=1.3000 razao=1.0000  bioma=2(temperate) fear sem=1.0000 com=1.0000 razao=1.0000  bioma=3(wetland) work sem=0.4200 com=0.3570 razao=0.8500  bioma=3(wetland) blood sem=1.3000 com=1.4950 razao=1.1500  bioma=3(wetland) fear sem=1.0000 com=0.9000 razao=0.9000  
+OK imprint_bioma_tem_mesma_ordem | biomas_colhidos=3  bioma=0(frozen) work sem=0.4200 com=0.3570 razao=0.8500  bioma=0(frozen) blood sem=1.3000 com=1.3000 razao=1.0000  bioma=0(frozen) fear sem=1.0000 com=1.3000 razao=1.3000  bioma=2(temperate) work sem=0.4200 com=0.4200 razao=1.0000  bioma=2(temperate) blood sem=1.3000 com=1.3000 razao=1.0000  bioma=2(temperate) fear sem=1.0000 com=1.0000 razao=1.0000  bioma=3(wetland) work sem=0.4200 com=0.3570 razao=0.8500  bioma=3(wetland) blood sem=1.3000 com=1.4950 razao=1.1500  bioma=3(wetland) fear sem=1.0000 com=0.9000 razao=0.9000
+OK media do vies por canal dentro da banda medida | linhas=4  work=1.0000 blood=1.0125 fear=1.0125
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 37.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 43.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 59.9 m do jogador
+OK provedor_montado_pela_sessao | lobo0 bind=[0] lobo1 bind=[1] lobo2 bind=[2] lobo3 bind=[3]
+OK lobo sem provedor nao le matilha | provedor=false leitura=0
+OK par_testado_uma_vez_por_passo | pares=6 esperado=4x3/2=6 buffers=4
+OK leitura_barata_com_as_cinco_chaves | chaves=identity,pos,intent,hp_ratio,trust  lobo0<-[1 2] lobo1<-[0 2] lobo2<-[0 1] lobo3<-[]
+OK leitura_barata_confere_valor_do_vizinho | lobo0<-[1:0.000 2:0.000] lobo1<-[0:-0.350 2:0.000] lobo2<-[0:-0.350 1:0.000] lobo3<-[]
+OK premissa: a leitura tem trust nao zero para conferir | lobo0<-[1:0.000 2:0.000] lobo1<-[0:-0.350 2:0.000] lobo2<-[0:-0.350 1:0.000] lobo3<-[]
+OK raio_de_coesao_recorta_o_lobo_isolado | tamanhos=[2, 2, 2, 0]  esperado=[2,2,2,0]  raio=24.0 m
+OK matilha_mutua | lobo0(2 viz) lobo1(2 viz) lobo2(2 viz) lobo3(0 viz)
+OK pack_of_devolve_o_buffer_da_sessao | buffer=3 leitura=3 restaurado=2
+OK premissa: o passo da checagem 5 tem matilha completa | lobo0(3 viz) lobo1(3 viz) lobo2(3 viz) lobo3(3 viz)
+OK alcateia_nao_consome_rng_da_sessao | cursor_population=0.70687503->0.70687503 global_preservado=true passos=22  lobo0(3 viz) lobo1(3 viz) lobo2(3 viz) lobo3(3 viz)
+OK um_lobo_so_ronda_identico_a_formula_anterior | intent=patrol reaction=patrulhando alvo=(67.23325, 50.2, 65.44232) replay=(67.23325, 50.2, 65.44232) leitura=0
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 37.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 43.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 59.9 m do jogador
+OK premissa: os quatro se leem por inteiro e patrulham | n=4  lobo0(3 viz,intent=patrol) lobo1(3 viz,intent=patrol) lobo2(3 viz,intent=patrol) lobo3(3 viz,intent=patrol)
+OK ronda_assentos_distintos_por_rank | assentos=[0.0, 1.5707963267949, 3.14159265358979, 4.71238898038469] n=4 fatia=1.5708 rad
+OK ronda_alvo_dentro_da_fatia_do_proprio_rank | lobo0 rank=0 rel=1.4695 raio=21.59 reaction=rondando setor da matilha alvo=(60.18343, 50.2, 83.47435) lobo1 rank=1 rel=0.0892 raio=9.85 reaction=rondando setor da matilha alvo=(57.12204, 50.2, 71.81487) lobo2 rank=2 rel=0.7188 raio=20.09 reaction=rondando setor da matilha alvo=(42.8774, 50.2, 48.76833) lobo3 rank=3 rel=0.7738 raio=21.36 reaction=rondando setor da matilha alvo=(72.92422, 50.2, 46.72496)
+OK ronda_centro_e_baricentro_e_nao_o_lar_do_lobo | baricentro=(58.0, 51.001, 62.0) lares_fora=3/4  lobo0 centro=(58.0, 0.0, 62.0) home=(58.0, 0.0, 62.0) lobo1 centro=(58.0, 0.0, 62.0) home=(54.0, 0.0, 62.0) lobo2 centro=(58.0, 0.0, 62.0) home=(58.0, 0.0, 66.0) lobo3 centro=(58.0, 0.0, 62.0) home=(62.0, 0.0, 58.0)
+spawn banda 1 (16-46 m de jogador): lar aceito a 37.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 38.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.6 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 40.3 m do jogador
+OK premissa: os quatro perseguem a presa visivel | participantes=4  lobo0 intent=hunt los=true viz_hunt=3 ang=0.0000 dist=1.5000 lobo1 intent=hunt los=true viz_hunt=3 ang=1.5708 dist=1.5000 lobo2 intent=hunt los=true viz_hunt=3 ang=3.1416 dist=1.5000 lobo3 intent=hunt los=true viz_hunt=3 ang=4.7124 dist=1.5000
+OK cercar_assentos_distintos_espacados_por_tau_over_n | angulos=[0.0, 1.5707963267949, 3.14159265358979, 4.71238898038469] n=4 espacamento=1.5708
+OK cercar_assento_a_alcance_de_mordida_sem_subir_na_presa | distancias=[1.5, 1.5, 1.5, 1.5] ring=1.500 bite_range=1.950
+spawn banda 1 (16-46 m de jogador): lar aceito a 37.1 m do jogador
+OK cercar_contraste_um_lobo_contra_quatro_diverge | dist_solo=0.0000 dist_matilha=1.5000 reaction_solo=perseguindo presa visivel n_lido=1
+spawn banda 1 (16-46 m de jogador): lar aceito a 37.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 38.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.6 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 40.3 m do jogador
+OK cercar_espacamento_segue_os_participantes | sem_visada=1 restantes=3 espacamento=2.0944  lobo0 intent=patrol los=false viz_hunt=3 ang=1.4236 lobo1 intent=hunt los=true viz_hunt=2 ang=0.0000 lobo2 intent=hunt los=true viz_hunt=2 ang=2.0944 lobo3 intent=hunt los=true viz_hunt=2 ang=4.1888
+spawn banda 1 (16-46 m de jogador): lar aceito a 37.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 38.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.6 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 40.3 m do jogador
+OK ataque_mordidas_nunca_no_mesmo_tick | mordidas=4 pior_tick=1 consecutivos=true candidatos=4 prontos=4 aquecimento_tick=2 fora_de_fase=0 eventos=4:0(n4,r0,hunt) 5:1(n4,r1,hunt) 6:2(n4,r2,hunt) 7:3(n4,r3,hunt) 
+spawn banda 1 (16-46 m de jogador): lar aceito a 37.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 38.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.6 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 40.3 m do jogador
+OK ataque_escalonamento_funcao_do_clock_tick | fases_A={ 0: 0, 1: 1, 2: 2, 3: 3 } fases_B={ 1: 1, 2: 2, 3: 3, 0: 0 } entrada_A=4 fase_A=0 biter_A=0 entrada_B=5 fase_B=1 biter_B=1 mordidas_B=4 pior_B=1 prontos_B=4 candid_B=4 n_cheio_B=true fora_B=0 eventos_B=5:1(n4,r1,hunt) 6:2(n4,r2,hunt) 7:3(n4,r3,hunt) 8:0(n4,r0,hunt) 
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 37.8 m do jogador
+OK premissa: observador patrulha com um vizinho lido e medo zerado | vizinhos=1 panic=0 fear=0.000000 intent=patrol dist_vitima=20.000 (raio 24.0) dist_jogador=73.595 los=false  lobo0(1 viz) lobo1(1 viz)
+OK contagio_medo_soma_panic_no_fear_level | fear_antes=0.000000 fear_depois=0.550000 delta=0.550000 replay=0.550000 panic=1  campo_antes=(medo 0.000000 sangue 0.000000) campo_depois=(medo 0.000000 sangue 0.000000) vitima_intent=flee
+OK contagio_medo_muda_intent_do_observador | intent_antes=patrol intent_depois=flee fear_antes=0.000000 fear_depois=0.550000 cautela=0.7423 top=flee 0.37 | terror no ar=0.76 | cautela=0.74 | ferido=0.00 panic=1 medo_no_observador=0.000000
+spawn banda 1 (16-46 m de jogador): lar aceito a 37.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 38.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.6 m do jogador
+OK premissa: os tres caam com o vizinho sem confianca e a porta aberta | caadores=3 leitura=[2,2,2]  lobo0 trust_pub=0.000 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.575289 intent=hunt | lobo1 trust_pub=0.000 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.623567 intent=hunt | lobo2 trust_pub=0.000 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.566407 intent=hunt |
+OK amortece_confianca_fecha_a_porta_de_hunt_dos_colegas | coragem_replay=0.460000  lobo0 trust_pub=0.600 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.577529 intent=hunt | lobo1 trust_pub=0.000 pack_trust=0.600 courage=0.460000 hunt=VETADA score=0.000000 intent=patrol | lobo2 trust_pub=0.000 pack_trust=0.600 courage=0.460000 hunt=VETADA score=0.000000 intent=patrol |
+OK amortece_confianca_muda_intent_dos_colegas_sem_tocar_no_amansado | antes=(lobo1 hunt, lobo2 hunt) depois=(lobo1 patrol, lobo2 patrol, amansado hunt)  lobo0 trust_pub=0.600 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.577529 intent=hunt | lobo1 trust_pub=0.000 pack_trust=0.600 courage=0.460000 hunt=VETADA score=0.000000 intent=patrol | lobo2 trust_pub=0.000 pack_trust=0.600 courage=0.460000 hunt=VETADA score=0.000000 intent=patrol |
+OK amortece_confianca_soleira_de_035_decide_a_porta | caadores_depois=3 soleira=0.35 confiado_agora=0.30  lobo0 trust_pub=0.300 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.579769 intent=hunt | lobo1 trust_pub=0.000 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.628047 intent=hunt | lobo2 trust_pub=0.000 pack_trust=0.000 courage=1.000000 hunt=aberta score=0.570887 intent=hunt |
+OK premissa A: o nariz escolhe uma coluna de agua com saida seca no anel | rastro=(66.0, 50.6, 62.0) seco=false saida_do_rastro=4.0 m intent=investigate forca=0.147
+OK ticks_com_alvo_molhado_final == 0 (200 passos) | molhados=0/200 alvo_final=(79.81607, 50.2, 71.24075) a 0.0 m de terra seca pes=(78.6601, 51.001, 70.88316)
+OK o corpo nao termina dentro da agua quando havia saida | in_water=false ticks_corpo_na_agua=34/200 pes=(78.6601, 51.001, 70.88316)
+OK premissa B: lago sem nenhuma saida no anel de 8 m | alvo=(66.0, 50.6, 62.0) saida=-1.0 m terra_real=13.5 m in_water=true intent=investigate
+OK o nado so acontece onde nao ha saida (o filtro nao mente) | alvos_molhados_sem_saida=122 com_saida=0/200 terra_real=13.5 m
+OK sem saida o corpo avanca nadando | deslocamento=1.21 m (> 1,2 m) passos=200 in_water=true pes=(59.49294, 51.23371, 63.11755)
+OK premissa: lago fundo da seed, corpo na agua por necessidade | coluna=(100,52) profundidade=12 leito=14 saida_anel=-1.0 m terra_real=12.0 m
+OK no lago da seed o corpo nada e avanca (> 1,2 m) | deslocamento=9.71 m alvos_molhados=69/200 in_water=true pes=(106.4667, 26.21382, 44.83151)
+OK no lago da seed tambem so nada onde nao ha saida | molhados_sem_saida=69 molhados_com_saida=0/200
+OK premissa B: a cauda na agua troca o alvo por um ponto em terra todo passo | passos_hunt=200 alvos_secos=200 presa_seca=false saida=1.6 m
+OK rumo de travessia re-escolhe na cadencia do nariz (4/s), nao todo passo | reescolhas=33 em 10.0 s de cauda = 0.17 por passo de 20 Hz (3.3/s, teto declarado 5/s)
+OK premissa: cauda com presa visivel dentro da agua | los=true intent=hunt presa=(66.0, 51.001, 62.0) presa_seca=false dist=6.03 m saida=4.0 m
+OK o estado ensopado existe de verdade (SHORE_AFTER cruzado em passo de 20 Hz) | tick=41 _swim_time=2.000 s (piso 2.0 s) ticks_ensopados=121 in_water=true
+OK resgate_de_margem_sobrevive_a_arvore: alvo do passo do resgate e seco | intent=hunt alvo=(59.07739, 50.2, 58.89573) seco=true a 7.6 m da presa molhada (0.0 m de terra)
+OK nenhum passo ensopado termina com alvo molhado | molhados=0/121 ensopados in_water_final=true _swim_time=8.000 s
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 37.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 43.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 59.9 m do jogador
+OK premissa: os quatro leem a mesma celula de rastro | celula=(16, 12, 15) leituras=[(16, 12, 15) (16, 12, 15) (16, 12, 15) (16, 12, 15)] intent=[investigate investigate investigate investigate]
+OK pico de lobos mirando a mesma celula por tick | pior=1 lobos na celula (16, 12, 15) (teto 1) ultimo_tick=93 passos_investigue=376 alvos_fora_da_celula=282
+OK pico de lobos com o mesmo ponto de chegada | pior_cluster=1 alvos a <= 1,0 m entre si (teto 1)
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 37.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 43.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 59.9 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.0 m do jogador
+OK lares do spawn real em colunas diferentes, censo fechado pela fila | distintas=5 de 5 borna + 0 na fila = teto 5 | lobo0=(67,106) lobo1=(78,96) lobo2=(73,94) lobo3=(54,95) lobo4=(66,101) 
+spawn banda 1 (16-46 m de jogador): lar aceito a 34.3 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 38.6 m do jogador
+spawn banda 2 (46-70 m de jogador): lar aceito a 34.0 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 35.6 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 37.2 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 38.9 m do jogador
+spawn banda 2 (46-70 m de jogador): lar aceito a 47.2 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 33.0 m do jogador
+OK mecanismo: coluna ocupada nao volta como lar | violacoes=0 em 8 pedidos, recusados=0, ocupadas=6, colunas_devolvidas=7
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 37.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 43.8 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 59.9 m do jogador
+OK premissa: a janela tem trocas suficientes para contar | passos_por_lobo=400 trocas_total=19 lobo0 media=0.25/s pior_segundo=1 | lobo1 media=0.25/s pior_segundo=2 | lobo2 media=0.20/s pior_segundo=2 | lobo3 media=0.25/s pior_segundo=2 |
+OK trocas de alvo por lobo por segundo de logica (media) | media=0.237/s por lobo (teto 2/s), trocas=19 em 20 s com 4 lobos
+OK nenhum lobo troca o alvo acima do teto no pior segundo | pior_segundo=2 trocas no lobo1 (teto 8/s) lobo0 media=0.25/s pior_segundo=1 | lobo1 media=0.25/s pior_segundo=2 | lobo2 media=0.20/s pior_segundo=2 | lobo3 media=0.25/s pior_segundo=2 |
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 53.3 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 42.9 m do jogador
+OK censo do boot fecha a conta: o que nao nasce volta para a fila | matilha=5 fila=0 teto=5
+OK lares do boot fora da distancia segura e da visada do jogador | seguro=32 m dentro=0 visiveis=0 de 5 | lobo0=44.4m los=false lobo1=47.1m los=false lobo2=53.3m los=false lobo3=47.1m los=false lobo4=42.9m los=false 
+spawn mordaca (4-18 m de irmao): lar aceito a 41.0 m do jogador
+OK a fila de 45 s devolve um lobo pela transicao real | passos=1041 ids=[1 2 3 4 5] fila=0
+OK lobo reposto nasce fora da distancia segura e da visada | dist=41.0 m seguro=32 los=false home=(23.78413, 53.0, 68.40327)
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 53.3 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 42.9 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 35.7 m do jogador
+OK os dois caminhos de criatura rodaram dentro da janela | abatidos=5 repostos=1 passos=1161 fila=3
+OK nenhum aviso de criatura chega ao toast do hud | de_criatura=0 [] | visto: 
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 53.3 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 47.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 42.9 m do jogador
+OK premissa: vivo, sem entidade na mira e o raio achando o chao | vivo=true hp=100 alvo='' valid=true d=2.15/5.5 voxel=(64, 50, 63)
+OK o craft sem material continua avisando | 'sem material ou sem espaco  1 madeira -> 4 tabua  (mao)'
+OK o craft com material continua avisando | 'craftado  1 madeira -> 4 tabua  (mao)'
+OK construir em slot vazio continua avisando | 'slot vazio: primeiro minerar ou craftar'
+OK lavra sem espaco continua avisando e nao tira o bloco | 'inventario cheio: pedra bruta nao tem onde entrar' voxel=3->3 espaco=0
+OK runner retornou | run=true
+OK censo de testes completos | 43/43
+OK nenhum estouro de subtree no budget | trips_solo=0 trips_matilha=0
+OK censo de checagens | 198/198
+CENARIO ESTREITO, NAO GATE P1: passos=3779 sim_step total=1162776 us pico=4473 us; BT last_us soma=24839 pico=227 trips=0
+PASSOS DE MATILHA (sessao real, difusao incluida), NAO GATE P1: passos=673 sim_tick total=1244054 us pico=9938 us; BT last_us soma=19158 pico=135 trips=0
+198 checagens 0 falhas 12.870 s

@@ -232,3 +232,23 @@ Branch `feat/auto-pulo-de-bloco-19`, um assunto por commit, suíte verde entre e
   cru. E o "vão de 0,95 m" da checagem 5: não existe meio bloco no mundo, o vão é de **uma célula**,
   e aí a resposta é por corpo — o lobo cabe e salta, o jogador de 1,80 não cabe e recusa. Medido com
   sonda descartável (cinco braços, as mesmas caixas de `wolf.gd:72` e `player.gd:25`), não presumido.
+
+## 10. Estado depois do fecho
+
+A perna pousou. Os sete commits são `a534e23` (esta página e a exceção), `c313544` (o predicado no
+integrador), `c0659fd` (o lobo), `2a20843` (o jogador), `f843fa6` (a checagem 6 e o custo colhido no
+frame real), `1e1f792` (o instrumento de âncoras, classe (c)) e `acb7970` (a re-derivação das
+citações) — merge `--no-ff` `a518487` na `main`, publicado e medido num clone limpo: **246
+checagens / 0 falhas / 39,6 s** na suíte e **198 / 0 / 12,870 s** no runner de reações, exit 0 nos
+dois, zero `SCRIPT ERROR`. Os logs, o `artifacts.sha256` e a conferência do clone estão em
+[`docs/evidence/auto-pulo-19/readback.md`](../evidence/auto-pulo-19/readback.md).
+
+O que a página previa e a medição confirma: o degrau de um bloco sobe, o muro de dois não, o penhasco
+de seis não gasta salto, o agachado não é arremessado e o degrau com teto baixo é recusado pelo
+jogador. O que ela **não** previa, e o fecho mediu: o par de vazamento do quit não sai na primeira
+corrida do clone e sai na segunda, no mesmo clone e com o mesmo comando — o que o par acompanha é o
+diretório de dados `user://`, não a árvore.
+
+Fica em aberto para a perna 11, que escreve os mesmos dois arquivos: re-rometer o gate a partir de
+`a518487`, porque a árvore resultante é outra revisão (item 5 de "Branches" em
+[`AGENTS.md`](../../AGENTS.md)).
