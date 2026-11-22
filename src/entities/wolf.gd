@@ -1108,7 +1108,7 @@ func state_dict() -> Dictionary:
 		# (tick_journal.gd:16-44) e nao le `state_dict()`. `FORMAT_VERSION`
 		# continua 1 -- a igualdade de hash e a checagem 7 do gate
 		# (`_test_journal_hash_inalterado_sem_escolha`), nao um numero desta linha.
-		"phase": phase, "age_ticks": age_ticks, "mate_cd": mate_cd, "mind": mind.to_dict(),
+		"phase": phase, "age_ticks": age_ticks, "mate_cd": mate_cd, "den": den, "mind": mind.to_dict(),
 	}
 
 
@@ -1136,6 +1136,12 @@ func load_state(d: Dictionary) -> void:
 	# Default 0,0 = pronto: um save anterior ao lote gravou um animal que nunca
 	# namorou, e "sem chave" nao pode significar "casado ha 300 s".
 	mate_cd = float(d.get("mate_cd", 0.0))
+	# Dossie 16 §5.9, mesma regua aditiva: o disco anterior a perna nao tem toca, e
+	# o animal que ele gravou tambem nao tinha nenhuma. `-1` e "sem toca" e nao um
+	# indice adivinhado -- fundar um lar para um bicho que o disco nao mostrou seria
+	# inventar lugar, e um indice fora do range faria o proximo `pack_of` ler a toca
+	# de outro.
+	den = int(d.get("den", -1))
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
 	_checked_scents.clear()

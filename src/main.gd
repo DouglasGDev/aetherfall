@@ -993,6 +993,12 @@ func save_game() -> void:
 	var minds: Array = []
 	for w in wolves:
 		minds.append(w.state_dict())
+	# As tocas vao como triplet de numeros, nao como Vector3: o disco e JSON
+	# (`JSON.stringify`), e um objeto sem leitor no JSON e lido como null. `home` e
+	# `feet` dos bichos ja seguem esse formato.
+	var dens: Array = []
+	for dc: Vector3 in _dens:
+		dens.append([dc.x, dc.y, dc.z])
 	var data := {
 		"schema": SaveManager.SCHEMA,
 		"gen_version": WorldGen.GEN_VERSION,
@@ -1009,6 +1015,7 @@ func save_game() -> void:
 			"deaths": player.deaths,
 		},
 		"wolves": minds,
+		"dens": dens,
 	}
 	var res := SaveManager.write_slot(SLOT, data)
 	if res["ok"]:
@@ -1065,6 +1072,16 @@ func load_game() -> void:
 	_rebuild_benches()
 	audio.clear_transient()
 	aether.from_dict(d.get("aether", {}))
+	# Dossie 16 §5.9: a toca e lugar, e lugar e estado da sessao. Sem esta chave no
+	# disco o load fundaria tocas NOVAS sobre as colunas que ja tem dono, e o lobo
+	# carregado acordaria sem toca num mapa com tres lugares gravados. O default
+	# aditivo e o contrario do inventado: disco anterior a perna nao tinha toca,
+	# entao `_dens` fica vazio e cada bicho vem `den = -1` (`load_state`), sem que
+	# nenhum lobo nasca de fora do censo gravado. Vem antes do pareamento porque a
+	# pertenca lida do disco so faz sentido contra os centros restaurados.
+	_dens.clear()
+	for a: Array in d.get("dens", []):
+		_dens.append(Vector3(float(a[0]), float(a[1]), float(a[2])))
 	# Dossie 11 §3.6: o censo do disco e a autoridade, e o pareamento e por
 	# identidade. Eram `mini(saved.size(), wolves.size())` -- dois erros no mesmo
 	# numero, os dois impressos em `censo do disco`: sobrava bicho no disco que
