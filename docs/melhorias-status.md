@@ -996,6 +996,10 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     e exigir ali `recusados == 8`, com os seis motivos somando as 8 buscas. Registro antes do código,
     e o dono do arquivo é a perna 16 (tocas e censo) ou a 11
     (censo variável), não esta: nada do dossiê 19 encosta em `src/main.gd`.
+    **A oferta tem dono desde 2026-11-22:** a perna 16, sem a alternativa — o item 8 de §5 de
+    [`docs/planos/16-tocas-da-alcateia.md`](planos/16-tocas-da-alcateia.md) assume este furo pelo
+    nome (`esgotamento_de_lares_forcado`), e a 11 não o leva porque o censo variável dela já fechou
+    e re-romar gate de perna publicada custa uma re-medição do número que está aqui em cima.
 
 19. **Três classes de citação ficavam fora de qualquer régua, e é nelas que a podridão morava.** O
     instrumento versionado ([tools/check_doc_anchors.py](../tools/check_doc_anchors.py)) cobre
@@ -1100,6 +1104,26 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     desenhar outro instrumento, e o dono do furo decide se isso entra. O que fica escrito é que a
     linha é uma **premissa de velocidade da máquina**, e os logs dos dois braços ficam em
     `docs/evidence/acasalamento-censo-11/`.
+
+21. **Uma cláusula do gate de alcateia da suíte é verdade aritmética, e do modo como está escrita
+    não gateia nada.** A checagem "alcateia existe na sessao real" ([smoke_test.gd:273-276](../tests/smoke_test.gd#L273-L276))
+    exige `pack_pairs == n(n-1)/2` **e** `biggest >= 2`. O contador é incrementado em
+    [main.gd:639](../src/main.gd#L639) **antes** do teste de raio em
+    [main.gd:640](../src/main.gd#L640) — ele conta **pares examinados**, não arestas de coesão —,
+    então a **primeira** cláusula é verdadeira por construção para qualquer censo vivo, com matilha
+    formada ou não: é `n·(n-1)/2` contra `n·(n-1)/2`. Quem decide a coesão é **só** `biggest >= 2`,
+    lida do buffer reconstruído ([main.gd:642-643](../src/main.gd#L642-L643)). O fato não é novo — o
+    furo #16 acima já o nomeou com número ("`pares=10` não são pares coesos, são as comparações", e
+    o número ali é teto de trabalho, nunca de matilha formada) — e o que ele **não** fez foi tirar a
+    cláusula da asserção: o conserto de 14 foi o teto de `biggest`, e a conjunção ficou com um lado
+    sempre verdadeiro. O defeito é de **gate**, não de conta, e tem duas consequências práticas: a
+    linha pode ficar vermelha por motivo nenhum (se `esperado` for re-derivado errado, ela reprova
+    uma coesão que está boa) e ela **não** pode pegar o estado que a perna 16 quer mudar — com três
+    tocas, `pack_pairs` continua exatamente `n(n-1)/2` enquanto a matilha se divide. **Dono:** a
+    perna 16, que escreveu [`docs/planos/16-tocas-da-alcateia.md`](planos/16-tocas-da-alcateia.md)
+    antes de abrir branch e assume no §5.1 e §8 daquela página a cláusula de **componentes conexos**
+    do grafo lido — que é a grandeza que a contagem de pares nunca foi. Esta passada de pauta
+    **não escreve** na suíte nem em `src/main.gd`: registro antes do código (mandato 4).
 
 ## Contrato dos rastros e reações
 
@@ -4000,3 +4024,72 @@ O multi-semente (02) e o budget agregado (04) continuam abertos, e um censo vari
 dívida dos dois: o `SubtreeGuard` mede 400 µs **por lobo**, e o teto de censo é 12. O custo de
 alocação do caminho quente continua sem medição própria. A perna seguinte da fila é a **16** (as
 tocas do dono), que precisa do censo variável desta perna para decidir quantas alimentam.
+
+## Rodada Docs 16 — a pauta das tocas, escrita antes de a branch abrir (2026-11-22, `docs/tocas-da-alcateia-16`)
+
+### O que estava em aberto
+
+O dono pediu em 2026-11-21, por escrito, que a matilha fosse espalhada em **2–3 tocas**, depois de ter
+percorrido o mapa inteiro e visto **um lobo só**. O número **16 ficou reservado** àquela decisão, mas
+a página não existia — a reserva vivia numa frase da extensão, sem premissa, sem custo e sem gate. A
+fila serializada já a punha no lugar (**09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13**), a
+perna 11 tinha pousado com o pin publicado, e 12, 17, 18 e 13 estão atrás dela.
+
+### O que entrou (um arquivo novo, três documentos de pauta atualizados, nenhuma linha de código)
+
+- [`docs/planos/16-tocas-da-alcateia.md`](planos/16-tocas-da-alcateia.md): a premissa falsificável —
+  **a matilha nasce, reproduz e é reposta dentro de um único círculo de 18 m de raio, e a caixa útil é
+  116 × 116 m** — decidida por **componentes conexos do grafo de coesão** lidos por `pack_of()`, não
+  por contagem de pares; o estado real lido na árvore de hoje (`PACK_LEASH = 18.0`
+  ([`main.gd:469`](../src/main.gd#L469)) como primeira tentativa de cada lar
+  ([`:541`](../src/main.gd#L541)), `_pack_leash()` devolvendo o lar do **primeiro** irmão vivo
+  ([`:501-505`](../src/main.gd#L501-L505)), o clamp `6 … W-6` sobre o mundo de 128
+  ([`:559-560`](../src/main.gd#L559-L560))); a regra de colocação (§3.2), que é **lugar**, não
+  comportamento — a pertença só muda o que o sorteio e o parto escrevem, e um `if den == 2` em
+  `wolf.gd` é sinal de lote errado; o fork **A/B decidido por medição** (§3.4), registrado antes do
+  código porque o braço B custa re-derivar uma checagem já gateada da perna 10
+  ([`tests/aether_reactions_test.gd:2042-2045`](../tests/aether_reactions_test.gd#L2042-L2045)) e entra
+  **só** se o braço A ficar vermelho; dez checagens nomeadas no §5, das quais `tocas_distintas_no_boot`
+  nasce **vermelha** e `esgotamento_de_lares_forcado` paga o furo #18 desta mesma seção;
+- o índice [`docs/planos/README.md`](planos/README.md) passou de dezoito para **dezenove** páginas, com
+  a linha 16 nas duas tabelas, a reserva levantada no texto e o nome da branch de código (`feat/…-16`)
+  registrado com a nota de que **a página existe e a branch não**;
+- [`AGENTS.md`](../AGENTS.md) ganhou o **registro de 2026-11-22**: é levantamento de reserva, **não**
+  autorização nova; a fila não se move; e a declaração de versão continua a mesma — nada deste lote
+  encosta em `Channel.COUNT`, `FORMAT_VERSION` nem `GEN_VERSION`, e nenhuma linha de código foi escrita;
+- este status ganhou o **furo #21** (a cláusula `pack_pairs == n(n-1)/2` do gate de alcateia
+  ([`smoke_test.gd:273-276`](../tests/smoke_test.gd#L273-L276)) é verdadeira por construção, porque o
+  contador incrementa **antes** do teste de raio em [`main.gd:639-640`](../src/main.gd#L639-L640)) e o
+  dono fixado do **furo #18** (a perna 16, pelo item 8 do §5 do dossiê, não mais "16 ou 11").
+
+### A contagem conferida nesta ponta
+
+`python .tools/verify_plan_cites.py docs/planos/<cada>.md` sobre as **dezenove** páginas: **1 200
+citações com número de linha conferidas, 0 números fora do arquivo**, elo a elo
+**71 · 50 · 25 · 75 · 70 · 34 · 51 · 55 · 39 · 77 · 80 · 53 · 110 · 68 · 115 · 94 · 54 · 50 · 29** na
+ordem da tabela — a página 16 traz **94** delas. Com a página índice no corpus, o diretório dá
+**1 215**. As ausências de arquivo são **9**, todas peças já declaradas como inexistentes (`tick_clock.gd`
+em 01 e 06, `simclock.md` em 03, 07 e índice, `wolf_multiseed_census_test.gd` em 02 e índice, e as duas
+peças do dossiê 15 no índice) — nenhuma virou fato. Pelo `verify_plan_ids.py`, a página 16 devolve **88**
+identificadores em backticks, dos quais **22** não existem em `src/` nem em `tests/`: **10** nomes de
+checagem proposta, **8** peças/constantes/flags que o dossiê propõe (`DEN_COUNT`, `DEN_MIN_DIST`,
+`den_components`, `den_min_dist`, `home_of`, `pack_id` e afins), `PLANT` (o bloco que o doc 10 numera e
+a perna 18 é quem gasta), **2** nomes de arquivo real que a gateira lê como identificador
+(`fp_viewmodel`, `player_avatar`) e **1** SHA (`e0450a3`, a ponta em que a página foi escrita). Os três
+governantes, medidos nesta árvore **antes** desta seção: **123 · 0 · 470 = 593** números, 0 fora do
+arquivo; o salto do status em relação à medida anterior (**466**) é o furo #21 e o dono do furo #18.
+Com esta seção em cima o mesmo comando devolve **123 · 0 · 478 = 601**: os **8** números que ela traz
+são as oito âncoras do parágrafo do dossiê — cinco do `main.gd`, duas do runner (rótulo e URL da mesma
+linha) e uma do `smoke_test.gd`.
+
+### O que nada disso fecha
+
+Nenhum gate de fase (mandato 4) e nenhuma linha de código: a branch `feat/tocas-da-alcateia-16` não
+abriu, `toca`/`den`/`home_of`/`pack_id` não existem em `src/` nem em `tests/` (grep conferido no §2.3 da
+página), e nenhuma das dez checagens nomeadas roda. O último contrato publicado — **252 checagens / 0
+falhas** na suíte — é o da perna 11 na árvore do pin `5b519f8`. Nesta ponta a suíte foi re-corrida só
+para o item 5 do ciclo de trabalho e deu **252 / 0 / 42,4 s**, exit 0, zero `SCRIPT ERROR` nas duas
+correntes, com `git diff HEAD --stat -- src tests` **vazio**: o que mudou aqui é prosa, e número
+publicado é número medido na revisão que o publica. O que a rodada entrega é a pauta com premissa, custo
+e gate escritos contra o código de hoje — e o dono do furo #18 e do #21 nominado **antes** de qualquer
+delas virar linha em `src/main.gd` ou na suíte.

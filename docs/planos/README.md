@@ -1,6 +1,6 @@
 # Dossiês por item da fila
 
-Dezoito arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
+Dezenove arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
 ("Falta", `:303-430`, e os checklists P0/P1, `:434-451`). Cada dossiê é **leitura de código, não
 corrida**: nenhuma engine foi rodada aqui, nenhum número publicado foi re-medido por estes arquivos
 e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
@@ -11,9 +11,11 @@ bioma/cor, alcateia, oráculo embutido no boot, convivência da matilha, acasala
 cavando e a árvore genealógica com o Éter lendo parentesco — e a ordem serializada deles está escrita na
 mesma seção do contrato, não deduzida depois. Os dois que faltavam chegaram em 2026-11-21, por dois
 prompts do dono ("Física de Blocos + Mundo Reativo" e "Física de Blocos + Mundo Vivo"): **17** fica com a
-grave dos blocos que caem e **18** com a grama que cresce e o mato. O número **16 está reservado e não
-tem página**: é o pedido dele de espalhar a matilha em 2–3 tocas depois de ter percorrido o mapa inteiro
-vendo um lobo só, e quem escrever aquela página usa o 16 e a posição que ele escolheu (logo depois da 11).
+grave dos blocos que caem e **18** com a grama que cresce e o mato. O número **16 estava reservado**
+e agora **tem página** ([16-tocas-da-alcateia.md](16-tocas-da-alcateia.md)): é o pedido dele de espalhar
+a matilha em 2–3 tocas depois de ter percorrido o mapa inteiro vendo um lobo só, e ela ficou na posição
+que ele escolheu (logo depois da 11). A regra que o índice se dava — "antes de abrir branch, escreve-se
+o dossiê" — está cumprida: a página existe, a branch **não**.
 No mesmo dia o pedido urgente dele abre a **19**, e ela é de outro tipo: não é mecânica nova, é **defeito do
 jogo em execução** — lobos pulsando encostados num talude de um bloco e o jogador parado na frente de um
 degrau que ele não sobe sem apertar espaço. Por isso ela fura a fila e entra logo depois da 11, com a
@@ -37,6 +39,7 @@ páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do c
 | 13 | [Árvore genealógica de todo ser vivo, e o Éter lendo parentesco](13-arvore-genealogica-e-ether.md) | Falta 13 `:411-430` | ascendência só existe se nascer de dois adultos, sobreviver ao save e **mudar algo observável**; herdar é genoma-base, nunca a memória nem o trauma do pai | `genealogia_muda_algo_observavel` e `load_preserva_ascendencia` (nascem **vermelhas**), `pelo_de_fundador_vem_do_bioma`, `heranca_nao_repete_deriva`, `eter_devolve_quem_sangrou`, `journal_hash_inalterado_sem_nascimento`, `genealogia_nao_consome_rng_da_sessao`, `ascendencia_e_int_nao_referencia` |
 | 14 | [Convivência da alcateia: terra seca, matilha legível e spawn fora dos olhos](14-convivio-da-alcateia.md) | Falta 12 `:381-410` | seco é regra de validade do **alvo** (água é último recurso); "organizado" é teto numérico, não adjetivo; criatura nunca vira texto; spawn nunca a menos de `SAFE_SPAWN_DIST` nem com LOS livre | `lobo_escolhe_trilha_seca`, `resgate_de_margem_sobrevive_a_arvore` e `spawn_fora_da_vista_do_jogador` (nascem **vermelhas**), `nadar_so_sem_saida_seca`, `dois_lobos_nao_farejam_a_mesma_celula`, `alvo_estavel_por_segundo`, `nenhum_aviso_de_matilha_no_hud` + `feedback_do_jogador_continua_no_hud` (par obrigatório), `convivio_nao_estoura_orcamento` |
 | 15 | [Oráculo embutido no boot: o jogo levanta o llama-server](15-oraculo-embutido-no-boot.md) | autorização nova do dono em 2026-11-20, fora da lista `Falta` do status | com `Rodar.bat` e **nenhum** PowerShell aberto, a linha `ia:` do F3 enche dentro do prazo da cena de prova | `host_devolve_health_200`, `boot_nao_bloqueia_janela`, `reuso_nao_cria_segundo_processo`, `porta_alheia_continua_viva`, `fechar_janela_mata_o_filho`, `suite_nao_levanta_modelo` — colhidas em cena própria, nunca na suíte |
+| 16 | [Tocas da alcateia: o mapa que a matilha nunca ocupou](16-tocas-da-alcateia.md) | número **reservado** pelo pedido do dono em 2026-11-21, fora da lista `Falta`; a página foi escrita **antes** de abrir branch, como o §"Uma branch por dossiê" exigia | a matilha nasce, reproduz e é reposta dentro de **um único círculo de 18 m**, e a caixa útil do mapa é 116 × 116 m — por isso ele percorreu o vale inteiro e viu um lobo só | `tocas_distintas_no_boot` (nasce **vermelha**: `_pack_leash()` ancora tudo no primeiro vivo) e `nenhum_lobo_le_de_outra_toca` (o par anti-farsa), `cada_toca_e_um_lugar_valido`, `reposicao_volta_para_a_toca_perdida`, `nascimento_fica_na_toca_dos_pais`, `toca_nao_deriva_para_unica` (o braço A/B do §3.4 decidido por número, não por gosto), `esgotamento_de_lares_forcado` (paga o furo #18), `toca_sobrevive_ao_save`, `assinatura_de_populacao_estavel` |
 | 17 | [Física de blocos que caem (o evento que ninguém assina)](17-fisica-de-blocos-que-caem.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Reativo" item A; a especificação já estava no doc 10, o código não | um `SAND` sem apoio **some** do grid num tick e **reaparece** mais baixo noutro, `queued` volta a zero e **nenhuma varredura do mapa** aconteceu no meio | `queda_sem_varredura_de_mundo`, `queda_move_a_celula` (nasce **vermelha**: `block_changed` não tem um `.connect(` em lugar nenhum), `queda_cascade_em_passos`, `bloco_em_queda_nao_sobe` (o *auto step-up* do `VoxelBody` tem de ser zerado), `queda_pousa_antes_do_save`, `queda_nao_custou_tempo_de_ninguem`, `journal_hash_muda_so_com_movimento` |
 | 18 | [Mundo vivo: grama que cresce e o mato decorativo](18-mundo-vivo-grama-e-mato.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Vivo" itens B e C; **sem** especificação no doc 10 — esta página é a primeira vez que a regra é escrita | `DIRT` com ar acima e `GRASS` ao lado vira `GRASS` em tempo finito **sem varrer nada** — e sem vizinha não muda em 10 000 ticks | `grama_precisa_de_vizinha` (o par vermelho), `crescimento_nao_varre_nada`, `crescimento_sobrevive_ao_save`, `grama_nao_cresce_onde_nao_ha_grama`, `crescimento_nao_estoura_a_malha`, `mato_e_nao_solidez_nem_pedra`, `mato_nao_engole_o_clique` (o campo `substituivel` lido pelo `_try_place`), `crescimento_nao_consome_rng_da_sessao` |
 | 19 | [Pulo de bloco: o degrau de 1 m que ninguém sobe](19-auto-pulo-de-bloco.md) | **defeito** pedido pelo dono em 2026-11-21 como urgente, fora da lista `Falta` — não é mecânica nova; a fila serializada ganha a exceção de ordem no §7 | um corpo que anda contra um degrau de **exatamente um bloco** sobe o degrau (o jogador sem tecla nenhuma), e um corpo que anda contra parede mais alta que um bloco **não** gasta salto | `degrau_de_um_bloco_lobo_sobe` e `degrau_de_um_bloco_jogador_sobe_sem_tecla` (nascem **vermelhas**: ápice 0,563 m e `step_up` 0,62 contra uma célula de 1,00 m), `penhasico_nao_gasta_salto` (a asserção que o dossiê lia em `aether_reactions_test.gd:1035`, re-derivada hoje em `:1104`, lida do outro lado), `agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem` |
@@ -64,7 +67,7 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 13 | `feat/arvore-genealogica-13` | `main`, **por último**, depois de 18: sem a 11 não há nascimento por causa interna (o que escrever na árvore) e sem a 10 não há leitura de vizinho (como parentesco vira comportamento) — e se o Éter ganhar canal novo, re-mediar as pernas anteriores é mais barato do que deixar `Channel.COUNT` no meio da fila |
 | 14 | `feat/alcateia-convivio-14` | `main`, depois de 10 e **antes** de 11: mexe nas mesmas folhas de movimento que a alcateia reorganizou, e o predicado "longe dos olhos do jogador" tem de existir antes de alguém precisar dele para pôr um filhote no mundo |
 | 15 | `docs/oracle-embutido-15` (estes dois commits) → `feat/oraculo-embutido-no-boot-15` (código) | `main`, **entre 10 e 14**: a 15 não encosta em nenhuma linha do código da matilha nem das outras pernas — em `src/main.gd` só pendura um nó novo no boot — enquanto a 14 depende da ronda por setor que a perna 10 já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`) |
-| 16 | `feat/tocas-espalhadas-16` (nome provisório — **a página ainda não existe**) | `main`, **logo depois de 11**, escolha do dono nesta fila: é a resposta a ele ter percorrido o mapa inteiro e visto um lobo só. Antes de abrir branch, escreve-se o dossiê |
+| 16 | `feat/tocas-da-alcateia-16` | `main`, **logo depois de 11**, escolha do dono nesta fila: é a resposta a ele ter percorrido o mapa inteiro e visto um lobo só. **Dossiê escrito antes da branch** — a página existe em `e0450a3+` e nenhuma linha de código dela foi escrita; a branch abre da `main` no ponto atual |
 | 17 | `feat/fisica-de-blocos-que-caem-17` | `main`, **depois de 12**: as duas pernas escrevem pelo mesmo `set_block` e pelo mesmo `block_changed`, e a fila de gravidade muda o custo medido do cavar — abrir a 17 antes obrigaria a 12 a re-rodar o gate dela com a fila anexada. Não encosta em `wolf.gd` |
 | 18 | `feat/mundo-vivo-grama-e-mato-18` | `main`, **depois de 17**: é o segundo comprador do `BlockUpdateQueue` que a 17 escreve (regra da casa — generalizar no segundo chamador, não no primeiro), e o `PLANT` gasta o id 17 da reserva que a 17 não toca |
 | 19 | `feat/auto-pulo-de-bloco-19` | `main`, **fura a fila e entra logo depois de 11** (exceção do §7 do dossiê, registrada antes do código): é o único item da lista que é defeito do jogo em execução, não mecânica nova. Encosta em `src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 também escreve — por isso a 11 re-rome o gate depois do merge desta, **e já o re-romeu** (merge `010ab25` dentro da branch, gate re-rodado na árvore resultante). **Pousada**: ponta de código `f843fa6`, `main` publicada `ab9ffa1` (clone limpo medido) — a 11 re-rome o gate a partir de `ab9ffa1` |
@@ -95,7 +98,7 @@ com `arquivo:linha` → o que a peça exige → gate em headless com comando que
 pelas quatro perguntas do contrato → o que NÃO fazer → commits atômicos (um assunto, uma corrida) →
 citações que não conferem.
 
-## Verificação destas dezoito páginas
+## Verificação destas dezenove páginas
 
 ```sh
 python .tools/verify_plan_cites.py docs/planos/01-estado-inicial-e-ordem-autoritativa.md
@@ -163,6 +166,44 @@ registro de leitura, que é o que a regra desta casa proíbe. O item 10 da fila 
 declara "concluído nesta ponta (dossiê 11)", com o código lido ao lado; a numeração da fila é
 mantida de propósito — o status diz isso na linha do item 1
 ([`docs/melhorias-status.md:496`](../melhorias-status.md#L496)).
+
+**Medida desta rodada (o dossiê 16 escrito antes da branch; `main` em `e0450a3` mais a página nova,
+esta página índice e as quatro prosas de pauta):** **1 200 citações conferidas nos dezenove dossiês, 0 números
+fora do arquivo.** As dezoito páginas medidas na rodada anterior estão **elo a elo idênticas** —
+71 · 50 · 25 · 75 · 70 · 34 · 51 · 55 · 39 · 77 · 80 · 53 · 110 · 68 · 115 · 54 · 50 · 29 = **1 106** —
+e a diferença inteira do corpus é o elo novo: **94** citações da página 16. Com esta página índice no
+corpus o diretório dá **1 215** (1 106 + 94 + os mesmos **15** desta página índice), e as **9** referências a
+arquivos que não existem continuam sendo **3** arquivos, todos peças já declaradas inexistentes
+(`src/core/sim/tick_clock.gd`, `docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd`) — a 16
+não acrescenta nenhuma. No `verify_plan_ids.py` a 16 devolve **88** identificadores em backticks, dos
+quais **22** não existem em `src/` nem em `tests/`: **10** nomes de checagem proposta
+(`tocas_distintas_no_boot`, `nenhum_lobo_le_de_outra_toca`, `esgotamento_de_lares_forcado`, …), **8**
+peças/constantes/chaves que o §3 e o §3.5 do dossiê propõem (`DEN_COUNT`, `DEN_MIN_DIST`, `DEN_RANGE`,
+`den_components`, `den_min_dist`, `home_of`, `pack_id` e o prefixo `DEN_`), `PLANT` (o bloco que o doc 10
+numera e a perna 18 é quem gasta), **2** nomes de arquivo real que a gateira lê como identificador
+(`fp_viewmodel`, `player_avatar`) e **1** SHA (`e0450a3`, a ponta em que a página foi escrita). Somando os
+três documentos que governam a casa nesta árvore — [`AGENTS.md`](../../AGENTS.md),
+[`README.md`](../../README.md) e [`docs/melhorias-status.md`](../melhorias-status.md) — são
+**123 · 0 · 478 = 601 números, 0 fora do arquivo**: o contrato foi de 114 para **123** — os nove
+ponteiros do registro de 2026-11-22 são sete URLs do `main.gd` (`:469`, `:501-505`, `:541`, `:545`,
+`:559-560`, `:639`, `:640`) mais os dois rótulos numerados `main.gd:469` e `main.gd:545` — e o status foi
+de 466 para **478** (**4** do furo #21 e **8** da rodada nova; o dono fixado do furo #18 não acrescenta
+número nenhum), e o `README.md` da raiz segue em **0** porque cita por seção, não por linha. O
+instrumento de âncoras
+([`tools/check_doc_anchors.py`](../../tools/check_doc_anchors.py)) confere **2 083** ponteiros, **144**
+rótulos e **2 068** links relativos em **36** arquivos e devolve **casos objetivos: 0** — mas esta rodada
+teve de re-derivar **um** ponteiro para chegar lá: a linha de geometria do dossiê 03 media os 196.608
+bytes na linha **1 529** deste status, e as duas inserções desta passada (o dono fixado do furo #18 e o
+furo #21, **+24** linhas) deslocaram aquele conteúdo para a linha **1 553**; é para lá que a página
+aponta hoje, e o instrumento foi o que disse. Nada dos parágrafos abaixo é reescrito por cima desta
+medida: eles dizem o que foi medido na rodada em que foram escritos, e é essa a regra da casa.
+
+**O que esta rodada não fecha, dito pelo índice:** nenhuma linha de `src/` nem de `tests/` foi escrita,
+a branch `feat/tocas-da-alcateia-16` **não** abriu, e nenhuma das dez checagens do §5 existe. O contrato
+publicado da suíte continua **252 / 0** na árvore do pin `5b519f8`; re-corrida nesta ponta deu
+**252 / 0 / 42,4 s**, exit 0 e zero `SCRIPT ERROR`, com `git diff HEAD --stat -- src tests` **vazio** —
+o que muda aqui é prosa, então o número serve para fechar o ciclo de trabalho (item 5 de "Ciclo de
+trabalho"), não para publicar contagem nova.
 
 **Medida da rodada 17/18 (as dezessete páginas, `main` em `86e63c4` + aqueles dois arquivos novos):**
 **1 039 citações conferidas nos dezessete dossiês, 0 números fora do arquivo** — por página, na ordem da

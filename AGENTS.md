@@ -393,9 +393,10 @@ Aetherfall — Física de Blocos + Mundo Reativo" e "Prompt Master — Física d
 itens A (queda de blocos), B (grama que cresce) e C (mato decorativo). Eles entram no "dentro" como
 [`docs/planos/17-fisica-de-blocos-que-caem.md`](docs/planos/17-fisica-de-blocos-que-caem.md) e
 [`docs/planos/18-mundo-vivo-grama-e-mato.md`](docs/planos/18-mundo-vivo-grama-e-mato.md), e o número
-**16 fica reservado** ao pedido dele de espalhar a matilha em 2–3 tocas — a página ainda não existe,
-e quem a escrever usa o 16 e a posição que ele escolheu (logo depois da 11). Nada aqui é código: a
-pauta registrada **antes** de qualquer linha escrita (mandato 4).
+**16 fica reservado** ao pedido dele de espalhar a matilha em 2–3 tocas — sem página naquele dia, e
+quem a escrevesse usaria o 16 e a posição que ele escolheu (logo depois da 11). Nada aqui é código: a
+pauta registrada **antes** de qualquer linha escrita (mandato 4). **A reserva foi levantada em
+2026-11-22** — ver o registro abaixo.
 
 Três recortes que a autorização **não** cobre, lidos no código antes de dizer isso: o **rebase das
 camadas verticais** (o prompt fala em `Y_MIN = -64`, `Y_BUILD_LIMIT = 320`, `SEA_LEVEL = 64`; o
@@ -435,6 +436,30 @@ porque a árvore resultante é outra revisão (item 5 de "Branches"), e as linha
 a 11 cita passam a valer as depois do merge dela. **A consequência já foi cumprida:** a 19 pousou (merge
 `--no-ff` `ab9ffa1`) e a 11 trouxe a `main` para dentro de si pelo merge `010ab25`, re-rodando o gate na
 árvore resultante; a 11 pousou na `main` pelo merge `--no-ff` `4b858c2` e o fecho pelo `5b519f8`, o pin publicado.
+
+**Registro de 2026-11-22 — a vaga 16 tem página. Nenhuma autorização nova: é o levantamento da reserva
+que o dono fez em 2026-11-21.** Entra no "dentro" como
+[`docs/planos/16-tocas-da-alcateia.md`](docs/planos/16-tocas-da-alcateia.md), branch
+`feat/tocas-da-alcateia-16` (o índice trazia `feat/tocas-espalhadas-16` como nome provisório; a página
+fixa o nome), e na fila serializada fica exatamente onde ele escolheu: **depois da 19 e antes da 12** — a
+ordem **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13** não muda. A premissa nomeada na página,
+lida do código e não de corrida: os cinco lares do boot cabem num círculo de **18 m**, porque
+`PACK_LEASH = 18.0` ([src/main.gd:469](src/main.gd#L469)) é a primeira tentativa
+([:541](src/main.gd#L541)) e `_pack_leash()` devolve o lar do **primeiro** lobo vivo
+([:501-505](src/main.gd#L501-L505)), enquanto a caixa útil é 116 × 116 m — o clamp de `6 … W-6` em
+[:559-560](src/main.gd#L559-L560) sobre um mundo de 128 × 128. É por isso que ele percorreu o vale
+inteiro e viu um lobo só. A página decide o gate por **componentes conexos do grafo de coesão** lido em
+`pack_of()`, não por adjetivo, e abre o par de braços (§3.4) antes do código: **A** (só colocação) é a
+escolhida primeiro e só se aceita com a checagem de derivação verde; **B** (dar âncora ao centro de
+ronda) custa re-derivar uma checagem gateada pela perna 10 e por isso só entra com o vermelho do A na
+mesa. Duas consequências de documentação, registradas **antes** de qualquer linha: o **furo #18** (as
+recusas de spawn nunca tiveram testemunha numérica — `motivos` só é interpolado na string impressa,
+[src/main.gd:545](src/main.gd#L545)) passa a ter dono fixo, a perna 16, e deixa de estar oferecido à 16
+**ou** à 11; e esta leitura abre o **furo #21** — `pack_pairs` incrementa em
+[:639](src/main.gd#L639) **antes** do teste de raio em [:640](src/main.gd#L640), então a asserção
+`pack_pairs == n(n-1)/2` da suíte é verdade aritmética e só `biggest >= 2` decide coesão. Nada desta
+página encosta em `Channel.COUNT`, `FORMAT_VERSION` nem `GEN_VERSION`, e nenhuma linha de código dela
+foi escrita: a branch abre da `main` no ponto atual, com o gate nascendo vermelho.
 
 ## Ciclo de trabalho
 
