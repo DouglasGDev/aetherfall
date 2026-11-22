@@ -26,8 +26,12 @@ const TESTS: Array[StringName] = [
 	&"_test_dois_lobos_nao_farejam_a_mesma_celula", &"_test_alvo_estavel_por_segundo",
 	&"_test_spawn_fora_da_vista_do_jogador",
 	&"_test_nenhum_aviso_de_matilha_no_hud", &"_test_feedback_do_jogador_continua_no_hud",
+	&"_test_filhote_cresce_por_tick",
+	&"_test_acasalar_aumenta_censo", &"_test_cooldown_segunda_copula",
+	&"_test_censo_respeita_teto", &"_test_filhote_nao_morde",
+	&"_test_journal_hash_inalterado_sem_escolha",
 ]
-const EXPECTED_CHECKS: int = 198
+const EXPECTED_CHECKS: int = 225
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -67,7 +71,7 @@ var _pack_bt_us: int = 0
 var _pack_bt_worst_us: int = 0
 var _pack_bt_trips: int = 0
 # Mordidas colhidas pelo sinal real `bit_player` da sessao, como
-# [tick, identidade, n lido, rank lido, intent]: a contagem por tick e o numero que
+# [tick, identidade, n lido, rank lido, intent, fase]: a contagem por tick e o numero que
 # o escalonamento exige, e o sinal e a unica forma de ver a mordida sem ler um campo
 # escrito a mao.
 var _bite_events: Array = []
@@ -108,6 +112,13 @@ const ESCALONAR_SPOTS: Array = [
 	Vector3(58.0, 51.001, 63.5), Vector3(58.0, 51.001, 60.5),
 ]
 
+# Geometria da checagem 4 (dossie 11 §5): o filhote no MESMO anel de mordida dos
+# quatro adultos, na diagonal -- 1,5 m horizontal do jogador (1,52 m na conta 3D
+# do `_sense`, com o corpo 0,45 do filhote baixando o centro) e 1,15 m dos dois
+# vizinhos de anel. Os quatro cardeais ja estao tomados, entao a unica diferenca
+# entre ele e eles e a fase do corpo.
+const FILHOTE_SPOT := Vector3(59.0607, 51.001, 63.0607)
+
 # Geometria do contagio de medo: 20 m separam o observador (lobo 1) do vizinho que
 # foge (lobo 0) -- dentro do raio de coesao de 24 m, mas a cinco celulas de Eter
 # (AETHER_CELL = 4) um do outro, o que a difusao nao cruza na janela medida (3
@@ -138,11 +149,39 @@ const FAREJAR_SPOTS: Array = [
 	Vector3(60.0, 51.001, 66.0), Vector3(72.0, 51.001, 66.0),
 ]
 
+# Geometria do acasalamento (dossie 11 §5, checagens 1 e 2): DOIS pares a 3 m um
+# do outro -- dentro dos 8 m de `MATE_RADIUS` -- separados 12 m entre si, entao
+# fora do raio. O segundo par nao e enfeite: sem ele "nenhum nascimento a mais"
+# nao distingue cooldown que segura do caminho quente quebrado, e e o par de
+# controle que a checagem 2 exige (ciclo 3 do AGENTS.md: a atribuicao fecha nos
+# dois sentidos). Os 3 m deixam folga: `center()` soma meia altura do corpo nos
+# dois lados e os pes estao no mesmo y, entao a distancia 3D dos pais e a
+# distancia no chao.
+const MATE_SPOTS: Array = [
+	Vector3(46.0, 51.001, 46.0), Vector3(49.0, 51.001, 46.0),
+	Vector3(46.0, 51.001, 58.0), Vector3(49.0, 51.001, 58.0),
+]
+
+# Geometria do teto (checagem 6): os mesmos dois pares mais sete adultos a no
+# minimo 12 m de qualquer vizinho. TODOS os 11 sitios sao escritos pelo teste:
+# deixados no sorteio, dois lares a menos de 8 m fariam o censo entrar no teto por
+# velocidade de natacao em vez de pela recusa que se quer medir.
+const CAP_SPOTS: Array = [
+	Vector3(46.0, 51.001, 46.0), Vector3(49.0, 51.001, 46.0),
+	Vector3(46.0, 51.001, 58.0), Vector3(49.0, 51.001, 58.0),
+	Vector3(70.0, 51.001, 46.0), Vector3(82.0, 51.001, 46.0),
+	Vector3(82.0, 51.001, 58.0), Vector3(82.0, 51.001, 70.0),
+	Vector3(70.0, 51.001, 70.0), Vector3(58.0, 51.001, 82.0),
+	Vector3(40.0, 51.001, 82.0),
+]
+
 
 ## Sessao de spawn puro: os cinco lobos vem do `_spawn_wolves` real e ficam onde o
 ## sorteados colocou, sem `_pack_place`. E o unico jeito de conferir os lares
 ## (dossie 14 §3.3.(iii)) pela transicao verdadeira e nao por posicao escrita a mao.
-func _spawn_session(n: int) -> void:
+## `mating` funciona como no `_pack_session`: preso por padrao para o censo do
+## spawn nao ser mexido por um parto no meio da janela.
+func _spawn_session(n: int, mating: bool = false) -> void:
 	_pack_release()
 	var s = Session.new()
 	s.world = _world
@@ -152,6 +191,8 @@ func _spawn_session(n: int) -> void:
 	s._entities = Node3D.new()
 	_stage.add_child(s._entities)
 	s._spawn_wolves(n)
+	if not mating:
+		s._mate_cd = INF
 	_session = s
 
 
@@ -1706,7 +1747,17 @@ func _test_imprint_bias() -> bool:
 ## boot de HUD, oraculo e audio -- o mesmo truque de `simulation_rng_test.gd`. Os
 ## lobos vem do `_spawn_wolves` verdadeiro e sao reposicionados depois, porque a
 ## geometria de um gate tem de ser lida no log, nao sorteada.
-func _pack_session(n: int) -> void:
+##
+## `mating` (dossie 11 §3.4) deixa a roda de acasalamento viva; parada por
+## padrao, porque quatro adultos a 3 ou 4 m um do outro, saciados e inteiros,
+## criariam um filhote no tick 1 e o censo dos gates de ronda, cerco, escalonamento
+## e farejo deixaria de ser o numero escrito na geometria -- os indices `ws[0..3]`
+## passariam a apontar para outra matilha. Prender o relogio da roda e o mesmo
+## tipo de isolacao que `move_body=false` ja faz com os corpos: nenhum campo de
+## animal e escrito, nenhuma transicao e pulada, e as tres checagens de acasalamento
+## rodam com a roda andando. A sessao real do smoke nao prende nada -- ali os
+## nascimentos acontecem sozinhos e a suíte os conta.
+func _pack_session(n: int, mating: bool = false) -> void:
 	_pack_release()
 	var s = Session.new()
 	s.world = _world
@@ -1716,6 +1767,8 @@ func _pack_session(n: int) -> void:
 	s._entities = Node3D.new()
 	_stage.add_child(s._entities)
 	s._spawn_wolves(n)
+	if not mating:
+		s._mate_cd = INF
 	_session = s
 	for i: int in mini(n, PACK_SPOTS.size()):
 		_pack_place(i, PACK_SPOTS[i])
@@ -1840,7 +1893,7 @@ func _test_pack_provider() -> bool:
 			var other: Wolf = _wolf_of(ws, int(e["identity"]))
 			if other == null or not (e["pos"] as Vector3).is_equal_approx(other.center()) \
 					or String(e["intent"]) != other.intent \
-					or not is_equal_approx(float(e["hp_ratio"]), other.hp / Wolf.MAX_HP) \
+					or not is_equal_approx(float(e["hp_ratio"]), other.hp / other.max_hp()) \
 					or not is_equal_approx(float(e["trust"]), other.trust_toward_player):
 				values_ok = false
 			if absf(float(e["trust"])) > 0.001:
@@ -2923,11 +2976,14 @@ func _corrida_mordidas(fase_entrada: int, passos: int) -> Dictionary:
 	}
 
 
-## O sinal da sessao entregue ao runner: `[tick, identidade]` de cada mordida.
-## Os argumentos do `bind` vao DEPOIS dos do sinal, e a assinatura espelha isto.
+## O sinal da sessao entregue ao runner: `[tick, identidade, n lido, rank lido,
+## intent, fase]` de cada mordida. Os argumentos do `bind` vao DEPOIS dos do sinal,
+## e a assinatura espelha isto. A fase entra com a checagem 4 do dossie 11: separar
+## a mordida que nao deveria existir de nenhuma outra exige saber de que corpo ela
+## saiu, e nao so de que identidade.
 func _on_bit_observed(wolf: Wolf, _amount: float, ident: int) -> void:
 	_bite_events.append([_clock.tick, ident, wolf._hunt_pack_size(),
-			wolf._hunt_pack_rank(), wolf.intent])
+			wolf._hunt_pack_rank(), wolf.intent, wolf.phase_name()])
 
 
 ## Angulo horizontal do alvo escrito pelo lobo em torno da presa, no eixo do mundo.
@@ -2986,7 +3042,13 @@ func _finish() -> void:
 ## medido a partir dos pes dele. O hud real entra porque o caminho da reposicao
 ## fala com ele: sem hud, o `die()` da transicao derruba o passo com SCRIPT ERROR
 ## e as checagens do passo vao embora em silencio.
-func _boot_session(n: int) -> void:
+##
+## `mating` presa por padrao pelo mesmo motivo do `_pack_session`, e aqui com um
+## peso a mais: o cenario 6 da perna 14 marca `id_novo = _next_identity` antes de
+## matar e espera que o PROXIMO incremento venha da fila de 45 s. Um parto no
+## meio da janela daria o incremento primeiro e o lobo procurado seria a cria,
+## nao o reposto -- a checagem passaria por outro caminho e o gate mentiria.
+func _boot_session(n: int, mating: bool = false) -> void:
 	_pack_release()
 	var s = Session.new()
 	s.world = _world
@@ -3007,6 +3069,8 @@ func _boot_session(n: int) -> void:
 		_player.notice.connect(s._on_notice)
 	_player.feet_to_spawn(s.spawn_point())
 	s._spawn_wolves(n)
+	if not mating:
+		s._mate_cd = INF
 	_session = s
 
 
@@ -3210,4 +3274,454 @@ func _test_feedback_do_jogador_continua_no_hud() -> bool:
 			"'%s' voxel=%d->%d espaco=%d" % [
 			cheio, antes, _world.get_block(p.target_voxel), p.inv.space_for(drop, 1)])
 	_pack_release()
+	return true
+
+
+## Checagem 3 do dossie 11 §5: o filhote cresce com o TICK de simulacao, e o corpo
+## que muda e o colisor, nao so o desenho (dossie 11 §3.2 -- `DIMS` para de ser o
+## corpo de todo mundo).
+##
+## A premissa nomeada e a que decide o numero: os unios limiares sao
+## `CUB_STEPS` e `JUVENILE_STEPS` PASSOS de 20 Hz, entao a fase tem de virar no
+## passo exato em que `age_ticks` cruza -- e um passo antes ainda nao. Um
+## relogio de parede (`Time.get_ticks_*`, `delta` de frame) nao teria como
+## reproduzir essa fronteira, e e ela que o journal podera conferir depois.
+##
+## O filhote entra em cena pela porta publica `set_phase()`, a mesma que a sessao
+## chama no nascimento (cenario 1, dossie 11 §3.4), e o `age_ticks = 0` e o que
+## aquela porta poe: nenhum campo interno escrito a mao. O ferimento vem de
+## `take_damage`, a unica transicao que fere um lobo no jogo.
+func _test_filhote_cresce_por_tick() -> bool:
+	_arm()
+	_wolf.set_phase(Wolf.Phase.CUB)
+	_wolf.age_ticks = 0
+	var escala_filhote: float = Wolf.PHASE_SCALE[Wolf.Phase.CUB]
+	var escala_jovem: float = Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]
+	_check(is_equal_approx(_wolf.dims.x, Wolf.DIMS.x * escala_filhote)
+			and is_equal_approx(_wolf.body.dims.y, Wolf.DIMS.y * escala_filhote)
+			and is_equal_approx(_wolf._visual.scale.x, escala_filhote)
+			and is_equal_approx(_wolf.max_hp(), Wolf.MAX_HP * escala_filhote)
+			and is_equal_approx(_wolf.bite_damage(), Wolf.BITE_DAMAGE * escala_filhote),
+			"premissa: filhote nasce com corpo, teto e boca da fase",
+			"escala=%.2f dims=%s colisor=%s max_hp=%.2f mordida=%.2f (adulto: dims=%s hp=%.1f)" % [
+			escala_filhote, _wolf.dims, _wolf.body.dims, _wolf.max_hp(), _wolf.bite_damage(),
+			Wolf.DIMS, Wolf.MAX_HP])
+	# Ferido de verdade, para a proporcao de vida ser um numero que nao pode
+	# coincidir por constricao: 0,5 atravessa os dois crescimentos.
+	_wolf.take_damage(_wolf.max_hp() * 0.5, Wolf.ACTOR_PLAYER, _wolf.center())
+	var proporcao: float = _wolf.hp / _wolf.max_hp()
+	_advance(Wolf.CUB_STEPS - 1, true)
+	_check(_wolf.phase == Wolf.Phase.CUB and _wolf.age_ticks == Wolf.CUB_STEPS - 1,
+			"um passo antes do limiar ainda e filhote",
+			"age_ticks=%d limiar=%d fase=%s" % [_wolf.age_ticks, Wolf.CUB_STEPS, _wolf.phase_name()])
+	_check(is_equal_approx(_wolf.body.aabb().size.y, _wolf.dims.y)
+			and _wolf.body.aabb().size.y < Wolf.DIMS.y and _wolf.body.on_ground,
+			"o colisor encolhe de verdade e o corpo continua apoiado",
+			"altura_colisor=%.3f altura_adulto=%.3f no_chao=%s andou=%s" % [
+			_wolf.body.aabb().size.y, Wolf.DIMS.y, str(_wolf.body.on_ground),
+			str(_wolf.body.feet_pos.distance_to(SPAWN) > 0.05)])
+	_advance(1)
+	_check(_wolf.phase == Wolf.Phase.JUVENILE and _wolf.age_ticks == Wolf.CUB_STEPS
+			and is_equal_approx(_wolf.dims.y, Wolf.DIMS.y * escala_jovem),
+			"no passo exato do limiar vira jovem",
+			"age_ticks=%d limiar=%d fase=%s dims=%s passos_andados=%d" % [
+			_wolf.age_ticks, Wolf.CUB_STEPS, _wolf.phase_name(), _wolf.dims, _wolf.age_ticks])
+	_advance(Wolf.JUVENILE_STEPS - Wolf.CUB_STEPS - 1)
+	_check(_wolf.phase == Wolf.Phase.JUVENILE,
+			"o jovem nao vira adulto antes do segundo limiar",
+			"age_ticks=%d faltam=%d para=%d" % [
+			_wolf.age_ticks, Wolf.JUVENILE_STEPS - _wolf.age_ticks, Wolf.JUVENILE_STEPS])
+	_advance(1)
+	_check(_wolf.phase == Wolf.Phase.ADULT and is_equal_approx(_wolf.dims.y, Wolf.DIMS.y)
+			and is_equal_approx(_wolf._visual.scale.x, 1.0),
+			"no passo do segundo limiar volta ao corpo historico medido nas rodadas 09 e 14",
+			"age_ticks=%d fase=%s dims=%s escala=%.2f" % [
+			_wolf.age_ticks, _wolf.phase_name(), _wolf.dims, _wolf._visual.scale.x])
+	_check(is_equal_approx(_wolf.hp / _wolf.max_hp(), proporcao)
+			and is_equal_approx(_wolf.max_hp(), Wolf.MAX_HP),
+			"a proporcao de vida atravessa os dois crescimentos sem perder sangue",
+			"proporcao %.4f -> %.4f  hp %.2f/%.2f" % [
+			proporcao, _wolf.hp / _wolf.max_hp(), _wolf.hp, _wolf.max_hp()])
+	return true
+
+
+## Checagem 1 do dossie 11 §5: dois adultos ao alcance, cooldown zerado, e o censo
+## cresce UM. O numero nao vem de um `+=` escrito pelo teste -- vem de
+## `wolves.size()` lido antes e depois de um passo da sessao inteira, pela porta
+## real (`_sim_tick` -> `_scan_breeding` -> `_born_from` -> `_make_wolf`).
+##
+## A premissa nomeada e a geometria, e ela sai impressa primeiro: se o par A
+## estivesse fora dos 8 m, ou se o par B tambem estivesse dentro, "cresceu um"
+## teria outra origem e nao a que o gate afirma.
+##
+## Nasce VERMELHA no codigo anterior ao lote: nao existia roda nenhuma --
+## `WOLF_COUNT` era teto e chao ao mesmo tempo, e o unico caminho que punha bicho
+## no mundo era o sorteio do boot.
+func _test_acasalar_aumenta_censo() -> bool:
+	_arm()
+	_pack_session(4, true)  # a roda anda: este cenario e sobre populacao
+	var s: Session = _session
+	for i: int in 4:
+		_pack_place(i, MATE_SPOTS[i])
+	var ws: Array = _pack_wolves()
+	var par_a: float = ws[0].center().distance_to(ws[1].center())
+	var par_b: float = ws[2].center().distance_to(ws[3].center())
+	var cruz: float = ws[1].center().distance_to(ws[2].center())
+	_check(par_a <= float(Session.MATE_RADIUS) and par_b <= float(Session.MATE_RADIUS)
+			and cruz > float(Session.MATE_RADIUS),
+			"premissa: os dois pares se alcançam e nenhum dos dois alcança o vizinho",
+			"par_A=%.2f m par_B=%.2f m cruz=%.2f m raio=%.1f m" % [
+			par_a, par_b, cruz, Session.MATE_RADIUS])
+	var d0: Dictionary = s.diagnostics()
+	var ids_antes := {}
+	for w: Wolf in ws:
+		ids_antes[w.identity] = true
+	# Um unico passo: `_mate_cd` comeca em 0,0, entao a primeira varredura e no
+	# tick 1, e ela para no primeiro par encontrado -- o A (indices 0 e 1).
+	_advance_pack(1)
+	var d1: Dictionary = s.diagnostics()
+	var novo: Wolf = null
+	var ids := ""
+	for w: Wolf in s.wolves:
+		ids += "%d(%s) " % [w.identity, w.phase_name()]
+		if not ids_antes.has(w.identity):
+			novo = w
+	_check(int(d1["wolves"]) == int(d0["wolves"]) + 1
+			and int(d1["births"]) == int(d0["births"]) + 1,
+			"acasalar aumenta o censo em um e o counter acompanha",
+			"censo %d -> %d  nascimentos=%d recusas=%d teto=%d  ids=[%s]" % [
+			d0["wolves"], d1["wolves"], d1["births"], d1["census_refusals"],
+			d1["census_cap"], ids.strip_edges()])
+	var fase := "nenhum"
+	var idade := -1
+	var escala := -1.0
+	var boca := -1.0
+	if novo != null:
+		fase = novo.phase_name()
+		idade = novo.age_ticks
+		escala = Wolf.PHASE_SCALE[novo.phase]
+		boca = novo.bite_damage()
+	_check(novo != null and novo.phase == Wolf.Phase.CUB and novo.age_ticks == 0,
+			"o que nasce e filhote, com idade zero e corpo da fase",
+			"phase=%s age_ticks=%d escala=%.2f mordida=%.2f (adulto: %.2f)" % [
+			fase, idade, escala, boca, Wolf.BITE_DAMAGE])
+	# O predicado da perna 14 vale para o parto tambem: `_born_from` chama o MESMO
+	# `_spawn_home_point`, e um recem-nato na frente do jogador seria a promessa
+	# cumprida no boot e traída no primeiro filhote.
+	var dist_lar := -1.0
+	var visado := true
+	if novo != null:
+		dist_lar = novo.home.distance_to(_player.position3())
+		visado = s.world.line_of_sight(_player.eye_position(),
+				novo.home + Vector3(0.0, Wolf.DIMS.y * 0.5, 0.0))
+	_check(novo != null and dist_lar >= float(Session.SAFE_SPAWN_DIST) and not visado,
+			"o recem-nato passa pelo predicado do spawn: longe e fora da visada",
+			"dist=%.1f m seguro=%.0f los=%s home=%s" % [
+			dist_lar, Session.SAFE_SPAWN_DIST, str(visado),
+			str(novo.home) if novo != null else "nenhum"])
+	_pack_release()
+	return true
+
+
+## Checagem 2 do dossie 11 §5: o mesmo par nao cria duas vezes com o cooldown
+## aberto. O que prova isso e a ARITMETICA do `mate_cd`, nao a ausencia de um
+## filhote -- sem cooldown a varredura do tick 21 reencontraria o par A (ainda a
+## 3 m, varrido primeiro) e resetaria o `mate_cd` dele para 300,0; com cooldown
+## vale 300,0 menos os desgastes andados. O valor lido decide qual dos dois
+## mundos aconteceu.
+##
+## O par B e o controle do outro lado da moeda: ele nunca cruzou, entao cria na
+## mesma varredura. Sem ele, "nenhum parto extra" poderia ser roda quebrada.
+##
+## Vencer os 300 s por tempo real custaria 6 000 passos de matilha (~10 s de
+## suíte) e nao acrescentaria nada: quem desgasta o cooldown e o mesmo `dt` de
+## 1/20 s do passo de simulacao, entao o tempo que falta sai da divisao e vai
+## impresso.
+func _test_cooldown_segunda_copula() -> bool:
+	_arm()
+	_pack_session(4, true)  # a roda anda: este cenario e sobre populacao
+	var s: Session = _session
+	for i: int in 4:
+		_pack_place(i, MATE_SPOTS[i])
+	var ws: Array = _pack_wolves()
+	_advance_pack(1)
+	_check(int(s.diagnostics()["births"]) == 1
+			and is_equal_approx(ws[0].mate_cd, Session.MATE_COOLDOWN)
+			and is_equal_approx(ws[1].mate_cd, Session.MATE_COOLDOWN),
+			"premissa: a primeira varredura cria um e trava os dois pelos 300 s",
+			"nascimentos=%d mate_cd_A=%.3f mate_cd_B=%.3f cooldown=%.1f s" % [
+			s._births, ws[0].mate_cd, ws[1].mate_cd, Session.MATE_COOLDOWN])
+	# 20 passos ate a varredura do tick 21 (`MATE_PERIOD` = 1,0 s = 20 passos).
+	_advance_pack(20)
+	var esperado: float = Session.MATE_COOLDOWN - 20.0 * SimClock.STEP
+	var crias := 0
+	for w: Wolf in s.wolves:
+		if w.phase == Wolf.Phase.CUB:
+			crias += 1
+	_check(int(s.diagnostics()["births"]) == 2 and crias == 2 and s.wolves.size() == 6,
+			"na segunda varredura cria o par que nunca cruzou, nao o par travado",
+			"nascimentos=%d crias=%d censo=%d" % [s._births, crias, s.wolves.size()])
+	_check(absf(ws[0].mate_cd - esperado) < 1e-6,
+			"o cooldown do par A desgastou só pelo tempo de simulacao andado",
+			"mate_cd=%.4f esperado=%.4f  um segundo parto do par A o poria em %.1f  faltam %.2f s = %d passos" % [
+			ws[0].mate_cd, esperado, Session.MATE_COOLDOWN, ws[0].mate_cd,
+			int(ceil(ws[0].mate_cd / SimClock.STEP))])
+	# Cinco varreduras depois, com os quatro adultos ainda a 3 m dos parceiros.
+	_advance_pack(100)
+	_check(int(s.diagnostics()["births"]) == 2 and s.wolves.size() == 6,
+			"varreduras seguidas com os pares ao alcance nao passam de um parto por par",
+			"nascimentos=%d censo=%d mate_cd_A=%.2f mate_cd_par_B=%.2f" % [
+			s._births, s.wolves.size(), ws[0].mate_cd, ws[2].mate_cd])
+	_pack_release()
+	return true
+
+
+## Checagem 6 do dossie 11 §5: acasalamentos ate o teto. O censo para em
+## `CENSUS_CAP` e a recusa e CONTADA -- `census_refusals` sobe junto com a linha
+## `nascimento RECUSADO` que sai no stdout desta corrida, entao "parou no teto"
+## nunca e um bicho que desapareceu em silencio (mandato 1).
+##
+## O fechamento que da dente ao numero e `censo == boot + nascimentos`: uma
+## tentativa que morresse sem incrementar nada e sem imprimir nada nao fecharia a
+## soma. Os 11 adultos vem do `_spawn_wolves` real e a premissa de que pousaram e
+## checada ANTES de qualquer posicao escrita, senao o teste mediria um censo que
+## nunca existiu.
+func _test_censo_respeita_teto() -> bool:
+	_arm()
+	_pack_session(11, true)  # a roda anda: este cenario e sobre populacao
+	var s: Session = _session
+	var fila: int = s._respawn_queue.size()
+	_check(s.wolves.size() == 11 and fila == 0,
+			"premissa: a porta do sorteio pousou 11 adultos sem sobrar vaga na fila",
+			"censo=%d fila=%d recusas_de_censo=%d" % [
+			s.wolves.size(), fila, int(s.diagnostics()["census_refusals"])])
+	for i: int in mini(11, s.wolves.size()):
+		_pack_place(i, CAP_SPOTS[i])
+	var d0: Dictionary = s.diagnostics()
+	# Tick 1: o par A cria e o censo encosta em 12. Tick 21: o par A esta travado,
+	# o par B tenta e esbarra no teto -- a recusa e do censo, nao do ponto.
+	_advance_pack(21)
+	var d1: Dictionary = s.diagnostics()
+	_check(int(d1["wolves"]) == int(Session.CENSUS_CAP)
+			and int(d1["births"]) == int(d0["births"]) + 1,
+			"o censo sobe ate o teto de 12 e para ali",
+			"censo %d -> %d  teto=%d  nascimentos=%d" % [
+			d0["wolves"], d1["wolves"], d1["census_cap"], d1["births"]])
+	_check(int(d1["census_refusals"]) == int(d0["census_refusals"]) + 1,
+			"a cria acima do teto e recusada contada, nao silenciosa",
+			"recusas %d -> %d" % [d0["census_refusals"], d1["census_refusals"]])
+	_advance_pack(400)
+	var d2: Dictionary = s.diagnostics()
+	var adultos := 0
+	for w: Wolf in s.wolves:
+		if w.phase == Wolf.Phase.ADULT:
+			adultos += 1
+	_check(int(d2["wolves"]) == int(Session.CENSUS_CAP)
+			and int(d2["wolves"]) == int(d0["wolves"]) + int(d2["births"]) - int(d0["births"])
+			and adultos == 11,
+			"20 s de varreduras no teto: nenhum bicho a mais e a conta boot+crias fecha",
+			"censo=%d nascimentos=%d recusas=%d adultos=%d fechamento=%d" % [
+			d2["wolves"], d2["births"], d2["census_refusals"], adultos,
+			int(d0["wolves"]) + int(d2["births"]) - int(d0["births"])])
+	_pack_release()
+	return true
+
+
+## Checagem 4 do dossie 11 §5: o filhote nunca emite `bit_player`. A geometria e a
+## do ataque escalonado, ja provada nesta suíte: quatro adultos a 1,5 m do jogador,
+## todos em `hunt`, cada assento mordendo no seu `tick % 4`. O filhote entra no
+## mesmo anel pela unica porta que poe um lobo no mundo -- `_make_wolf` com a fase e
+## a idade que `_born_from` passa (§3.4) -- entao a diferenca entre ele e os quatro
+## e so a fase do corpo: mesmo alcance, mesma visada, mesma leitura da matilha.
+##
+## O portao esta no scorer e nao na arvore, e a checagem 4 e o que paga essa
+## escolha: travar só o `Selector` deixaria o filhote publicando `hunt`, os irmãos
+## contando um assento a mais e o F3 mentindo. Aqui os quatro numeros se fecham:
+## 1. premissa -- o filhote esta ao alcance, visado, vivo e lido pelos quatro;
+##    sem isto "zero mordidas" e ausencia de bicho na cena, nao portao.
+## 2. controle -- na MESMA janela os quatro adultos mordem; sem isto o zero poderia
+##    ser o caminho da mordida quebrado (ciclo 3: a atribuicao fecha nos dois
+##    sentidos).
+## 3. nenhum `bit_player` do filhote em 120 passos -- cinco janelas de
+##    `BITE_COOLDOWN` de 1,15 s -- e nenhum passo dele com `intent == hunt`.
+## 4. o assento nao o conta: cada adulto le quatro vizinhos (tres adultos + o
+##    filhote) e no tick em que os quatro caçam o cerco continua com quatro assentos
+##    -- contando o filhote seriam 5, e nenhum `n` de mordida chega lá. No fim da
+##    janela a conta e relida contra os cacadores daquele momento, porque o sangue
+##    que as próprias mordidas imprimem puxa parte da matilha para `investigate`:
+##    isso e o mundo reagindo, nao folga escondendo o numero.
+func _test_filhote_nao_morde() -> bool:
+	_arm()
+	_pack_session(4)  # roda de acasalamento congelada: aqui o censo nao e a variavel
+	for i: int in 4:
+		_pack_place(i, CERCAR_SPOTS[i])
+	_player.respawn_at(CERCAR_PLAYER)
+	var aquecimento := -1
+	for i: int in 40:
+		_advance_pack(1)
+		if _caadores(4) == 4:
+			aquecimento = _clock.tick
+			break
+	var s: Session = _session
+	for i: int in 4:
+		_pack_place(i, ESCALONAR_SPOTS[i])
+	var filhote: Wolf = s._make_wolf(FILHOTE_SPOT, s._next_identity, Wolf.Phase.CUB, 0)
+	s._next_identity += 1
+	s.wolves.append(filhote)
+	var adultos: Array = []
+	for w: Wolf in _pack_wolves():
+		if w != filhote:
+			adultos.append(w)
+			w.bit_player.connect(_on_bit_observed.bind(w.identity))
+	filhote.bit_player.connect(_on_bit_observed.bind(filhote.identity))
+	_bite_events.clear()
+	# Um passo antes de medir: sem ele a leitura da matilha ainda seria a do tick
+	# anterior ao recem-chegado, e a premissa 1 seria conferida numa lista velha.
+	_advance_pack(1)
+	var lidos := 0
+	for w: Wolf in adultos:
+		for e: Dictionary in w._pack:
+			if int(e["identity"]) == filhote.identity:
+				lidos += 1
+	_check(filhote.alive and filhote.phase == Wolf.Phase.CUB
+			and filhote._dist_player <= Wolf.BITE_RANGE and filhote._los_player
+			and lidos == 4,
+			"premissa: o filhote esta no anel da mordida, visado e lido pelos quatro",
+			"dist=%.2f m alcance=%.2f los=%s fase=%s lidos=%d/4 censo=%d" % [
+			filhote._dist_player, Wolf.BITE_RANGE, str(filhote._los_player),
+			filhote.phase_name(), lidos, s.wolves.size()])
+	var n_max := 0
+	var n_com_quatro := -1
+	var cacadores_max := 0
+	var intents := {}
+	for i: int in 120:
+		_advance_pack(1)
+		intents[filhote.intent] = int(intents.get(filhote.intent, 0)) + 1
+		var caando := 0
+		var n_do_tick := 0
+		for w: Wolf in adultos:
+			if w.intent == "hunt":
+				caando += 1
+				n_do_tick = w._hunt_pack_size()
+				n_max = maxi(n_max, n_do_tick)
+		# O numero que importa: no tick em que os quatro cacam, com o filhote na
+		# leitura de todos, o cerco tem de continuar tendo quatro assentos. Se o
+		# filhote entrasse na conta, aqui seria 5.
+		if caando == 4 and n_com_quatro < 0:
+			n_com_quatro = n_do_tick
+		cacadores_max = maxi(cacadores_max, caando)
+	var mordidas_adultas := 0
+	var mordidas_filhote := 0
+	var mordedores := {}
+	var por_n := {}
+	for ev: Array in _bite_events:
+		if String(ev[5]) == "filhote":
+			mordidas_filhote += 1
+		else:
+			mordidas_adultas += 1
+			mordedores[int(ev[1])] = true
+		por_n[int(ev[2])] = int(por_n.get(int(ev[2]), 0)) + 1
+	var n_str := ""
+	for k: int in por_n:
+		n_str += "n%d=%d " % [k, por_n[k]]
+	var intents_str := ""
+	for k: String in intents:
+		intents_str += "%s:%d " % [k, intents[k]]
+	_check(mordidas_adultas >= 4 and mordedores.size() == 4 and cacadores_max == 4,
+			"controle: na mesma janela os quatro adultos mordem e estao no cerco",
+			"mordidas_adultas=%d mordedores=%d cacadores_max=%d passos=120 cooldown=%.2f s aquecimento_tick=%d" % [
+			mordidas_adultas, mordedores.size(), cacadores_max, Wolf.BITE_COOLDOWN,
+			aquecimento])
+	_check(mordidas_filhote == 0 and not intents.has("hunt"),
+			"o filhote nunca emite bit_player e nunca intenta caar",
+			"mordidas_filhote=%d intents_do_filhote=[%s] alcance=%.2f m" % [
+			mordidas_filhote, intents_str.strip_edges(), filhote._dist_player])
+	var primeiro: Wolf = adultos[0]
+	var vizinhos := primeiro._pack.size()
+	var no_cerca := primeiro._hunt_pack_size()
+	var cacadores_agora := 0
+	for w: Wolf in adultos:
+		if w != primeiro and w.intent == "hunt":
+			cacadores_agora += 1
+	_check(vizinhos == 4 and n_com_quatro == 4 and n_max == 4 and not por_n.has(5)
+			and no_cerca == 1 + cacadores_agora,
+			"o assento angular le o filhote na matilha mas nunca o conta no cerco",
+			"vizinhos_lidos=%d com_quatro_cacando_n=%d n_max=%d n_agora=%d cacadores_agora=%d esperados=%d mordidas_por_n=[%s] (contando o filhote seriam 5)" % [
+			vizinhos, n_com_quatro, n_max, no_cerca, cacadores_agora,
+			1 + cacadores_agora, n_str.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Checagem 7 do dossie 11 §5: o LOTE novo (fase, idade, cooldown) nao entra na
+## projecao minima do journal -- o hash do tick nao muda e `FORMAT_VERSION`
+## continua 1.
+##
+## A comparacao e nos DOIS sentidos (ciclo 3 do AGENTS.md: a atribuicao fecha
+## nos dois sentidos). O hash tem de ficar IGUAL quando o lote entra e tem de
+## MUDAR quando muda o que esta na projecao. Um instrumento que nao responde a
+## nada provaria tanto que o lote nao mexe nele quanto que o instrumento esta
+## cego -- e as duas coisas se parecem na tela.
+##
+## O que entra na projecao esta escrito em `tick_journal.gd:16-44`:
+## `FORMAT_VERSION`, semente, `GEN_VERSION`, tick, dimensoes do mundo e do Eter,
+## `Channel.COUNT`, as edicoes ordenadas e, por lobo vivo, `identity`,
+## `mind.identity`, `mind.kind`, `intent` e as crencas ordenadas por chave.
+## Fase, idade e cooldown NAO estao la: o lote muda o estado do animal no disco
+## (`Wolf.state_dict`) e nao o hash -- por isso a decisao de formato e "nao
+## muda", e nao um numero reescrito para caber.
+func _test_journal_hash_inalterado_sem_escolha() -> bool:
+	_arm()
+	var roster: Array = [_wolf]
+	var tick: int = _clock.tick
+	var hash_antes: String = TickJournal.state_hash(tick, _world, _field, roster)
+	# O lote: o animal vira filhote, com idade zero e cooldown cheio -- as tres
+	# chaves novas do disco (dossie 11 §3.5), pelo caminho real do corpo (a fase
+	# re-escala o colisor e a vida).
+	_wolf.age_ticks = 0
+	_wolf.set_phase(Wolf.Phase.CUB)
+	_wolf.mate_cd = 300.0
+	var hash_depois: String = TickJournal.state_hash(tick, _world, _field, roster)
+	_check(hash_antes == hash_depois,
+			"o lote (fase, idade, cooldown) nao move o hash do tick",
+			"antes=%s depois=%s tick=%d FORMAT_VERSION=%d" % [
+			hash_antes.substr(0, 16), hash_depois.substr(0, 16), tick,
+			TickJournal.FORMAT_VERSION])
+	# O outro lado: o hash tem de responder ao que ESTA na projecao. A crenca e
+	# o campo mais barato -- uma linha de crenca e um float -- e a mesma chave
+	# com a confianca mexida muda o conteudo sem mudar o conjunto de chaves.
+	_wolf.mind.reinforce("probe_journal", 0.50, "perception")
+	var hash_crenca: String = TickJournal.state_hash(tick, _world, _field, roster)
+	_wolf.mind.reinforce("probe_journal", 0.60, "perception")
+	var hash_crenca2: String = TickJournal.state_hash(tick, _world, _field, roster)
+	_check(hash_crenca != hash_crenca2,
+			"o hash responde ao que esta na projecao (mesma chave, confianca diferente)",
+			"crenca_050=%s crenca_060=%s" % [
+			hash_crenca.substr(0, 16), hash_crenca2.substr(0, 16)])
+	# O lote esta mesmo no disco -- e chave de registro, nao campo virtual: sem
+	# estas chaves o load perderia a fase e o bicho voltaria adulto.
+	var d: Dictionary = _wolf.state_dict()
+	_check(d.has("phase") and d.has("age_ticks") and d.has("mate_cd")
+			and int(d["phase"]) == int(Wolf.Phase.CUB) and int(d["age_ticks"]) == 0
+			and is_equal_approx(float(d["mate_cd"]), 300.0)
+			and TickJournal.FORMAT_VERSION == 1,
+			"o disco carrega o lote e o FORMAT_VERSION do journal continua 1",
+			"phase=%s age_ticks=%s mate_cd=%s FORMAT_VERSION=%d" % [
+			str(d.get("phase", -1)), str(d.get("age_ticks", -1)),
+			str(d.get("mate_cd", -1.0)), TickJournal.FORMAT_VERSION])
+	# E o caminho do disco reidrata o lote: a fase volta do disco e o corpo
+	# inteiro muda com ela.
+	var d2: Dictionary = d.duplicate(true)
+	d2["phase"] = int(Wolf.Phase.JUVENILE)
+	d2["age_ticks"] = Wolf.CUB_STEPS
+	d2["mate_cd"] = 12.5
+	_wolf.load_state(d2)
+	_check(_wolf.phase == Wolf.Phase.JUVENILE and _wolf.age_ticks == Wolf.CUB_STEPS
+			and is_equal_approx(_wolf.mate_cd, 12.5) and not _wolf.is_adult()
+			and is_equal_approx(_wolf.dims.y,
+					Wolf.DIMS.y * Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]),
+			"o load do disco reidrata fase, idade e cooldown, e o corpo da fase vem junto",
+			"fase=%s idade=%d mate_cd=%.2f dims=%s escala=%.2f" % [
+			_wolf.phase_name(), _wolf.age_ticks, _wolf.mate_cd, str(_wolf.dims),
+			Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]])
 	return true

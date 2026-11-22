@@ -69,6 +69,30 @@ const PACK_PANIC_FEAR: float = 0.55
 ## porta so tem o que amortecer quando o amansamento existir (dossies 14 e 11).
 const PACK_TRUST_GATE: float = 0.35
 const PACK_TRUST_DAMP: float = 0.9
+## Fases de vida (dossie 11 §3.1). A idade entra por limiar de tick e nao por
+## segundo de parede: `sim_step` e chamado uma vez por passo de 20 Hz, entao
+## `age_ticks` e exatamente o numero de passos que o animal viveu -- e o mesmo
+## relogio que o journal grava, o que faz da fase uma funcao reproduzivel do tick
+## e nao da maquina. Usar `Time.get_ticks_*` aqui daria outro bicho conforme o
+## ritmo do processador (dossie 11 §6).
+enum Phase { CUB, JUVENILE, ADULT }
+## 1 200 passos = 60 s de filhote, 4 800 = 240 s de jovem. Numeros de ecologia,
+## nao de budget: escolhidos para o ciclo de vida caber numa sessao de jogo sem
+## fazer o censo virar um relojoeiro -- e para os dois limiares serem alcanaveis
+## num cenario headless por `sim_step` direto (~0,6 s de rodada).
+const CUB_STEPS: int = 1200
+const JUVENILE_STEPS: int = 4800
+## Escala de corpo por fase, na ordem exata do enum (mesma armadilha de `FUR_COLORS`
+## e `WorldGen.Biome`: trocar a ordem de um lado repinta os lobos sem erro nenhum).
+## 0,45 do adulto no filhote e o corpo que ainda nao alcana `BITE_RANGE` de uma
+## presa em pe; 1,0 no adulto e o corpo historico medido nas rodadas 09 e 14.
+const PHASE_SCALE: Array[float] = [0.45, 0.72, 1.0]
+const PHASE_NAMES: Array[String] = ["filhote", "jovem", "adulto"]
+## Corpo do adulto: referencia do envelope de spawn (dossie 14 §3.4) e o `dims` da
+## fase ADULT. Continua constante de proposito -- `main._spawn_point_ok` e
+## `_volume_clear` cobrem que a COLUNA cabe no corpo que o animal vai ter quando
+## crescer, senao um filhote nascido num oco apertado encaixaria no muro ao virar
+## adulto. Quem define o corpo de cada animal e `dims`, abaixo.
 const DIMS := Vector3(0.75, 0.95, 1.35)
 # O impulso contra um degrau: com a gravidade de 24 do integrador
 # (voxel_body.gd:17) o apice e v^2/2g = 7,6^2/48 = 1,203 m, que limpa os 1,00 m da
@@ -111,6 +135,19 @@ var hunger: float = 0.35
 var home := Vector3.ZERO
 var home_biome: int = WorldGen.Biome.TEMPERATE
 var kills: int = 0
+## Idade e corpo do animal (dossie 11 §3.2). Quem nasce do `setup()` -- o boot e a
+## fila de reposicao -- ja entra adulto, com a idade no limiar do adulto: o lote
+## novo acrescenta a porta do filhote na sessao, nao muda o que a matilha
+## historica e. Assim nenhum numero medido nas rodadas 09 e 14 se move.
+var phase: Phase = Phase.ADULT
+var age_ticks: int = JUVENILE_STEPS
+var dims: Vector3 = DIMS
+## Cooldown de acasalamento, em segundos de simulacao (dossie 11 §3.4). O numero
+## mora no animal porque a recusa tem de ser por lobo -- um par que gerou nao pode
+## gerar de novo no passo seguinte, e a sessao que decide o valor, nao o corpo.
+## Quem zera a mao no cenario monta a premissa; quem vence o tempo anda pelo mesmo
+## `dt` do passo de 20 Hz que envelhece a idade.
+var mate_cd: float = 0.0
 
 var _player: Player = null
 var _sim_clock: SimClock = null
@@ -202,7 +239,7 @@ func setup(p_world: VoxelWorld, p_aether: AetherField, p_player: Player,
 	# Uma pergunta por lobo, sem cadencia: o bioma de onde o lobo nasceu ja esta
 	# nos ruidos que geraram aquela coluna, e nao em dado novo do mundo.
 	home_biome = world.gen.biome_at(int(home.x), int(home.z))
-	body.setup(world, p_spawn, DIMS)
+	body.setup(world, p_spawn, dims)
 	_rng.seed = ("wolf:%d:%d" % [world.gen.world_seed, identity]).hash()
 	_heading = _rng.randf() * TAU
 	mind = Mind.new("wolf", p_identity, 1000 + p_identity)
@@ -215,6 +252,81 @@ func setup(p_world: VoxelWorld, p_aether: AetherField, p_player: Player,
 
 func body_aabb() -> AABB:
 	return body.aabb()
+
+
+## Teto de vida do animal, na fase dele. `MAX_HP` continua sendo o numero do
+## adulto -- e o que o `state_dict` do jogador e a barra de vida comparam -- mas
+## quem pergunta "quanta vida este bicho tem proporcionalmente" tem de perguntar
+## o teto dele, senao o filhote de 18,9 hp aparece ferido para sempre.
+func max_hp() -> float:
+	return MAX_HP * PHASE_SCALE[phase]
+
+
+## Dano de mordida na fase dele: boca de filhote nao arranca o mesmo que boca de
+## adulto. Na pratica o filhote nunca morde (a porta de coragem fecha a cacada --
+## dossie 11 §3.3, medido em `filhote_nao_morde`), mas o numero tem de vir da
+## fase e nao de uma constante única para que um jovem que morde nao fira como um
+## lobo de 46 kg.
+func bite_damage() -> float:
+	return BITE_DAMAGE * PHASE_SCALE[phase]
+
+
+func phase_name() -> String:
+	return PHASE_NAMES[phase]
+
+
+func is_adult() -> bool:
+	return phase == Phase.ADULT
+
+
+## A fase que a idade devolve. A conta e so comparacao com o contador do proprio
+## animal: nenhum relogio de parede entra aqui (dossie 11 §6).
+static func phase_of_age(age: int) -> Phase:
+	if age >= JUVENILE_STEPS:
+		return Phase.ADULT
+	if age >= CUB_STEPS:
+		return Phase.JUVENILE
+	return Phase.CUB
+
+
+## A fase vinda do disco, conferida antes de virar corpo: um numero fora do enum
+## indexaria `PHASE_SCALE` fora da tabela e o load morreria no meio de uma matilha
+## ja recarregada. A recusa e impressa (mandato 1 -- nada de clamp silencioso) e o
+## animal entra adulto, que e o unico corpo que este save sempre teve.
+static func phase_of_save(v: int) -> Phase:
+	if v < 0 or v >= PHASE_SCALE.size():
+		print("load: fase %d fora do enum das fases, entrando adulto" % v)
+		return Phase.ADULT
+	return Phase.values()[v]
+
+
+## Cruzar um limiar e um evento e nao uma conta por passo: a comparacao com a fase
+## atual nao dispara nada entre limiares, e o corpo so e reescrito no tick em que
+## muda. O `age_ticks` de um adulto do boot comeca em `JUVENILE_STEPS` de
+## proposito: sem historia de filhote nesta sessao ele nao pode regredir para CUB
+## no primeiro passo, e a fase nunca contradiz a idade impressa no F3.
+func _grow() -> void:
+	var want: Phase = phase_of_age(age_ticks)
+	if want <= phase:
+		return
+	set_phase(want)
+
+
+## Re-escreve o corpo inteiro na escala nova: o colisor do voxel (`VoxelBody.dims`
+## e um var, e `aabb()`/`center()` derivam dele, entao o chassis muda de verdade e
+## nao so o desenho) e a escala do visual, que e o Node3D pai das caixas fixas de
+## `_build_visual`. Nao mexe em `age_ticks`: a idade e a causa da fase e nao o
+## contrario -- quem cria um filhote poe o contador em zero por fora, e o load poe
+## o contador do disco e depois a fase do disco. A proporcao de vida atravessa o
+## crescimento: perder hp ao ficar mais alto seria um dano que ninguem causou.
+func set_phase(p_phase: Phase) -> void:
+	var ratio := clampf(hp / max_hp(), 0.0, 1.0)
+	phase = p_phase
+	dims = DIMS * PHASE_SCALE[p_phase]
+	body.dims = dims
+	if _visual:
+		_visual.scale = Vector3.ONE * PHASE_SCALE[p_phase]
+	hp = ratio * max_hp()
 
 
 func target_name() -> String:
@@ -339,6 +451,9 @@ func _leaf_chase(_ctx: Dictionary) -> bool:
 ## Quantos lobos estao no cerco neste tick: eu mais os vizinhos que a leitura da
 ## sessao devolve em `hunt`. O espacamento angular sai daqui, entao o assento e
 ## funcao de quem caa de fato, nao do censo da matilha nem de um N fixo.
+## O filhote nunca entra nesta conta -- e nao por um filtro de fase aqui: o portao
+## do scorer (dossie 11 §3.3) impede que ele alguma vez publique `hunt`, entao o
+## mesmo portao fecha a mordida, o assento e a linha do debug.
 func _hunt_pack_size() -> int:
 	var n := 1
 	for e: Dictionary in _pack:
@@ -583,7 +698,7 @@ func _leaf_bite(_ctx: Dictionary) -> bool:
 		# lobo continua circundando a presa ate ser a sua vez.
 		return false
 	_bite_cd = BITE_COOLDOWN
-	bit_player.emit(self, BITE_DAMAGE)
+	bit_player.emit(self, bite_damage())
 	var pp := _player.position3()
 	_imprint(pp, AetherField.Channel.BLOOD, 0.18)
 	mind.remember(_sim_clock.tick, "hit_land", pp, ACTOR_PLAYER, 0.3)
@@ -637,6 +752,16 @@ func _build_scorer() -> void:
 			0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
 	hunt.add("coragem contra este ator", func(_c: Dictionary) -> float: return _courage,
 			0.5, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
+	# Dossie 11 §3.3: o filhote fica FORA do ramo de caca -- nao morde, nao persegue,
+	# nao ocupa assento no cerco. O portao mora aqui e nao na arvore porque `intent`
+	# tem tres leitores: a arvore, o assento angular (`_hunt_pack_size`/`_rank`
+	# contam vizinhos POR INTENT, dossie 10 §3.5) e o F3/journal. Travar so o
+	# `Selector` deixaria o filhote no papel de cacador aos olhos dos irmaos -- o
+	# cerco ficaria com um assento a mais, vazio -- e com o numero mentindo no debug.
+	# O jovem (0,72 do corpo) ja caa: o portao e da fase filhote, nao da idade.
+	hunt.add("filhote nao caa", func(_c: Dictionary) -> float:
+			return 0.0 if phase == Phase.CUB else 1.0,
+			0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 0.0, true)
 
 	var sniff := _scorer.add_option("investigate")
 	sniff.add("rastro no ar", func(_c: Dictionary) -> float: return _scent_strength,
@@ -676,10 +801,17 @@ func sim_step(elapsed: float, dt: float) -> void:
 	_wander_cd = maxf(_wander_cd - dt, 0.0)
 	_saw_cd = maxf(_saw_cd - dt, 0.0)
 	_cross_cd = maxf(_cross_cd - dt, 0.0)
+	mate_cd = maxf(mate_cd - dt, 0.0)
 	_scent_clock += dt
 	_scent_cd = maxf(_scent_cd - dt, 0.0)
 	_threat = maxf(_threat - dt * 0.05, 0.0)
 	hunger = clampf(hunger + dt * 0.006, 0.0, 1.0)
+	# Dossie 11 §3.1 e §4: a idade anda no relogio da sessao, aqui e nao no
+	# `elapsed` de parede que chega como parametro -- o mesmo tick que o journal
+	# grava e o mesmo que decide a fase, senao o bicho envelheceria conforme o
+	# ritmo do frame. Uma comparacao por passo, e o corpo so muda no limiar.
+	age_ticks += 1
+	_grow()
 	mind.decay(dt / 60.0)
 	if body.in_water:
 		_swim_time += dt
@@ -704,7 +836,7 @@ func sim_step(elapsed: float, dt: float) -> void:
 
 func _sense() -> void:
 	var me := center()
-	_hp_ratio = hp / MAX_HP
+	_hp_ratio = hp / max_hp()
 	var pp := _player.position3() + Vector3(0.0, 0.9, 0.0)
 	_dist_player = me.distance_to(pp)
 	# LOS e a unica leitura cara da percepcao: so roda quando pode importar.
@@ -817,7 +949,7 @@ func _physics_process(delta: float) -> void:
 	body.apply_gravity(delta, SWIM_BUOYANCY if body.in_water else 1.0)
 	if body.in_water:
 		# boia: a cabeca empurra pra cima quando mergulha e o afundar e limitado
-		var head := Coords.to_block(body.feet_pos + Vector3(0.0, DIMS.y - 0.15, 0.0))
+		var head := Coords.to_block(body.feet_pos + Vector3(0.0, dims.y - 0.15, 0.0))
 		if world.is_water_xyz(head.x, head.y, head.z):
 			body.velocity.y = lerpf(body.velocity.y, SWIM_RISE, clampf(delta * 12.0, 0.0, 1.0))
 		body.velocity.y = maxf(body.velocity.y, SWIM_SINK_MAX)
@@ -865,8 +997,8 @@ func _animate(delta: float) -> void:
 		# mesmo parado na agua (o gait de terra depende da velocidade horizontal)
 		_swim_phase += delta * 6.5
 		for i in _legs.size():
-			var phase: float = _swim_phase + (PI if (i == 1 or i == 2) else 0.0)
-			(_legs[i] as Node3D).rotation.x = sin(phase) * 0.38
+			var swing: float = _swim_phase + (PI if (i == 1 or i == 2) else 0.0)
+			(_legs[i] as Node3D).rotation.x = sin(swing) * 0.38
 		_visual.position.y = sin(_swim_phase * 0.5) * 0.05
 		return
 	_visual.position.y = 0.0
@@ -874,8 +1006,8 @@ func _animate(delta: float) -> void:
 	if sp > 0.2:
 		_gait += delta * (2.6 + sp * 1.5)
 		for i in _legs.size():
-			var phase: float = _gait + (PI if (i == 1 or i == 2) else 0.0)
-			(_legs[i] as Node3D).rotation.x = sin(phase) * minf(0.7, 0.18 + sp * 0.08)
+			var swing: float = _gait + (PI if (i == 1 or i == 2) else 0.0)
+			(_legs[i] as Node3D).rotation.x = sin(swing) * minf(0.7, 0.18 + sp * 0.08)
 	elif _visual:
 		for leg in _legs:
 			leg.rotation.x = lerpf(leg.rotation.x, 0.0, clampf(delta * 8.0, 0.0, 1.0))
@@ -897,7 +1029,7 @@ func take_damage(amount: float, from_actor: int, hit_from: Vector3) -> void:
 		body.velocity.y = maxf(body.velocity.y, KNOCKBACK_LIFT)
 	_imprint(me, AetherField.Channel.BLOOD, amount * 0.05)
 	_imprint(me, AetherField.Channel.FEAR, amount * 0.035)
-	mind.remember(_sim_clock.tick, "hurt", hit_from, from_actor, amount / MAX_HP)
+	mind.remember(_sim_clock.tick, "hurt", hit_from, from_actor, amount / max_hp())
 	mind.adjust_trust(from_actor, -0.35)
 	mind.reinforce("danger_from_actor_%d" % from_actor, 0.3, "perception")
 	if hp > 0.0:
@@ -937,10 +1069,16 @@ func finished() -> bool:
 	return not alive and _corpse_timer <= 0.0
 
 
+## F3 do lobo. A fase e a idade entram no primeiro grupo porque sao as unicas
+## colunas que dizem de que bicho se esta falando -- um filhote de 18,9 hp com o
+## `hp` do adulto ao lado pareceria um adulto gravemente ferido, e o dossie 11 §6
+## nao deixa rotular o censo de "lobos vivos" sem isso.
 func debug_line() -> String:
-	var fmt := "lobo%d %-12s hp %3.0f  %s\n     medo %.2f  sangue %.2f  trabalho %.2f  "\
+	var fmt := "lobo%d %-9s %-12s hp %3.0f/%3.0f  %s\n     idade %d passos (escala %.2f) | "\
+			+ "medo %.2f  sangue %.2f  trabalho %.2f  "\
 			+ "mem %d  crencas %d  %s\n     %s | %s %.2f em %s | checadas %d"
-	return fmt % [identity, intent, hp, _top_line, _fear_level, _blood_here, _work_here,
+	return fmt % [identity, phase_name(), intent, hp, max_hp(), _top_line, age_ticks,
+			PHASE_SCALE[phase], _fear_level, _blood_here, _work_here,
 			mind.episodic.size(), mind.beliefs.size(), tree_stats(), _reaction,
 			AetherField.CHANNEL_NAMES[_scent_channel], _scent_strength, _scent_cell, _checked_scents.size()]
 
@@ -953,7 +1091,15 @@ func state_dict() -> Dictionary:
 	return {
 		"identity": identity, "home": [home.x, home.y, home.z],
 		"feet": [body.feet_pos.x, body.feet_pos.y, body.feet_pos.z],
-		"hp": hp, "alive": alive, "hunger": hunger, "kills": kills, "mind": mind.to_dict(),
+		"hp": hp, "alive": alive, "hunger": hunger, "kills": kills,
+		# Dossie 11 §3.5: fase, idade e cooldown sao estado do animal, entao vao
+		# para o disco com ele. Nada disso toca a projeção do journal:
+		# `TickJournal.state_hash` monta os lobos a partir de `identity`,
+		# `mind.identity`, `mind.kind`, `intent` e `mind.beliefs`
+		# (tick_journal.gd:16-44) e nao le `state_dict()`. `FORMAT_VERSION`
+		# continua 1 -- a igualdade de hash e a checagem 7 do gate
+		# (`_test_journal_hash_inalterado_sem_escolha`), nao um numero desta linha.
+		"phase": phase, "age_ticks": age_ticks, "mate_cd": mate_cd, "mind": mind.to_dict(),
 	}
 
 
@@ -966,10 +1112,21 @@ func load_state(d: Dictionary) -> void:
 		_fur.albedo_color = FUR_COLORS[home_biome]
 	body.feet_pos = Vector3(float(d["feet"][0]), float(d["feet"][1]), float(d["feet"][2]))
 	body.velocity = Vector3.ZERO
-	hp = float(d.get("hp", MAX_HP))
+	# Dossie 11 §3.5: chaves aditivas com default explícito. Um save anterior ao
+	# lote nao tem fase nem idade, e o animal que ele gravou existiu adulto; a
+	# recusa por `gen_version` nao cobre isso de proposito, porque o terreno nao
+	# mudou -- mudou a entidade. A ordem e idade, fase, hp: `set_phase` re-escala
+	# a vida pela proporcao, entao o `hp` do disco tem de ser lido contra o teto
+	# ja novo, e nao contra o corpo sorteado desta sessao.
+	age_ticks = int(d.get("age_ticks", JUVENILE_STEPS))
+	set_phase(phase_of_save(int(d.get("phase", Phase.ADULT))))
+	hp = float(d.get("hp", max_hp()))
 	alive = bool(d.get("alive", true))
 	hunger = float(d.get("hunger", 0.35))
 	kills = int(d.get("kills", 0))
+	# Default 0,0 = pronto: um save anterior ao lote gravou um animal que nunca
+	# namorou, e "sem chave" nao pode significar "casado ha 300 s".
+	mate_cd = float(d.get("mate_cd", 0.0))
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
 	_checked_scents.clear()

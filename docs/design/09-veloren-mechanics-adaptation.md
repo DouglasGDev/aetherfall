@@ -68,7 +68,7 @@ um golpe só, e é honesto sobre isso:
 | Recuo de câmera no golpe | `_punch` `+0,10` limitado a `0,5` [player.gd:657](../../src/entities/player.gd), aplicado só em 1ª pessoa [player.gd:735-736](../../src/entities/player.gd) |
 | Arco visível do golpe | view model de 1ª pessoa: ombro `+0,30` no arma e `-0,15` no corte, cotovelo `+0,30`/`-0,45`, punho `+0,05 m`→`-0,10 m` ao longo do eixo da lente [fp_viewmodel.gd:130-153](../../src/entities/fp_viewmodel.gd); o mesmo impulso gira também o rig de 3ª pessoa [player.gd:211-215](../../src/entities/player.gd) |
 | Alvo vivo vs. bloco | o raio testa entidades antes do voxel: mira em criatura não lavra [player.gd:616-631](../../src/entities/player.gd) |
-| Efeito no lobo | `5,0` de empurrada horizontal + `2,4` vertical e `0,45 s` sem steering [wolf.gd:86-88](../../src/entities/wolf.gd#L86-L88), [:891-897](../../src/entities/wolf.gd#L891-L897); a inspeção é suspensa e seu timer zerado durante o atordoamento [:385-390](../../src/entities/wolf.gd#L385-L390) |
+| Efeito no lobo | `5,0` de empurrada horizontal + `2,4` vertical e `0,45 s` sem steering [wolf.gd:110-112](../../src/entities/wolf.gd#L110-L112), [:1023-1029](../../src/entities/wolf.gd#L1023-L1029); a inspeção é suspensa e seu timer zerado durante o atordoamento [:500-505](../../src/entities/wolf.gd#L500-L505) |
 
 Bloqueio, parry, combos, *poise* e dano por arma: **não adaptados** (§9).
 
@@ -101,7 +101,7 @@ bloco, sem ferramenta e sem XP:
   [documento 11](11-inventory-crafting.md).
 
 Cada bloco lavrado injeta **0,42 no canal de trabalho** do Éter e cada colocação `0,20`
-[main.gd:538-543](../../src/main.gd#L538-L543) — nada disso existe no Veloren; é a nossa trilha
+[main.gd:689-694](../../src/main.gd#L689-L694) — nada disso existe no Veloren; é a nossa trilha
 auditável (§8).
 
 ## 5. Respiração e afogamento
@@ -130,21 +130,21 @@ superfície de comportamento por uma rota diferente — utilidade escolhe a inte
 árvore executa, a memória veta:
 
 - intenções `patrol / hunt / investigate / flee` escolhidas pelo `UtilityScorer`
-  [wolf.gd:368-446](../../src/entities/wolf.gd#L368-L446);
+  [wolf.gd:483-561](../../src/entities/wolf.gd#L483-L561);
 - árvore: `fugir → caçar[morder | perseguir presa visível | último avistamento] → investigar →
   patrulhar`, sob um `SubtreeGuard` de 400 µs (só a árvore, não a percepção/utilidade)
-  [wolf.gd:216-244](../../src/entities/wolf.gd#L216-L244);
+  [wolf.gd:253-281](../../src/entities/wolf.gd#L253-L281);
 - memória episódica de `24` átomos, crenças decaem `0,14/min`, descarte abaixo de `0,02`
   [mind.gd:7-9](../../src/ai/mind.gd#L7-L9), [:108-119](../../src/ai/mind.gd#L108-L119).
   O veto à caça exige crença `danger_from_actor_1` utilizável (`>= 0,35`) e HP abaixo
   de `0,62` do máximo [mind.gd:104-105](../../src/ai/mind.gd#L104-L105),
-  [wolf.gd:615-618](../../src/entities/wolf.gd#L615-L618);
+  [wolf.gd:730-733](../../src/entities/wolf.gd#L730-L733);
 - HP `42`, mordida `8,5` a `1,95 m` com recarga `1,15 s`, raio de patrulha `22 m`
   [wolf.gd:19-26](../../src/entities/wolf.gd#L19-L26);
 - água: patrulha sorteia terra seca; se acabar nela, boia/rema e, após `2 s`, consulta
-  a margem [wolf.gd:80-84](../../src/entities/wolf.gd#L80-L84),
-  [:312-351](../../src/entities/wolf.gd#L312-L351), [:644-652](../../src/entities/wolf.gd#L644-L652),
-  [:532-542](../../src/entities/wolf.gd#L532-L542).
+  a margem [wolf.gd:104-108](../../src/entities/wolf.gd#L104-L108),
+  [:424-463](../../src/entities/wolf.gd#L424-L463), [:769-777](../../src/entities/wolf.gd#L769-L777),
+  [:647-657](../../src/entities/wolf.gd#L647-L657).
 
 **Rastro: aproxima → para → registra → suprime → renova.** O leitor varre `7 × 7`
 células na camada Y atual do Éter (raio `3`), a cada `0,25 s`, com novo scan no tick
@@ -153,42 +153,42 @@ seguinte à inspeção concluída. Seleciona o maior `BLOOD + 0,35 × WORK`, exi
 não devolve nada acima de `0,06`, o mesmo quadrado se repete uma célula acima e, ainda sem
 resultado, uma célula abaixo — só BLOOD e WORK nas camadas vizinhas, sem FEAR
 ([wolf.gd:27-35](../../src/entities/wolf.gd#L27-L35),
-[:749-794](../../src/entities/wolf.gd#L749-L794)). O custo das camadas extras é medido na
+[:881-926](../../src/entities/wolf.gd#L881-L926)). O custo das camadas extras é medido na
 matriz de ablação da [página de evidência](../evidence/rastro-duas-camadas/readback.log).
 
 A folha aproxima até `1,2 m` horizontais do alvo e então para o corpo para farejar por
 `2 s` de `dt`. Aproximação e inspeção retornam `RUNNING`, sem cair em patrulha no mesmo
 tick; só ao concluir retorna `SUCCESS` e grava `scent_blood` ou `scent_work`, com
 **ator 0**, sem atribuir o rastro ao jogador
-([wolf.gd:264-297](../../src/entities/wolf.gd#L264-L297)). A visita guarda a força
+([wolf.gd:376-409](../../src/entities/wolf.gd#L376-L409)). A visita guarda a força
 ponderada da vizinhança `3 × 3`, na mesma camada, num cache por lobo de até `32` células
 por `30 s`; a borda difusa também é suprimida. Antes da expiração, um aumento de pelo
 menos `0,06` **na soma ponderada** reabre a célula; a expiração é recolhida no scan e
 permite revisita mesmo sem imprint novo
-([wolf.gd:388-402](../../src/entities/wolf.gd#L388-L402),
-[:442-456](../../src/entities/wolf.gd#L442-L456)). Não é identificação de uma causa nova.
+([wolf.gd:503-517](../../src/entities/wolf.gd#L503-L517),
+[:557-571](../../src/entities/wolf.gd#L557-L571)). Não é identificação de uma causa nova.
 Trocar de alvo, perder o rastro ou sair de `investigate` zera a inspeção; durante
 `stagger`, a folha suspende a inspeção e zera seu timer, sem concluir episódio
-([wolf.gd:269-283](../../src/entities/wolf.gd#L269-L283),
-[:385-387](../../src/entities/wolf.gd#L385-L387), [:755-756](../../src/entities/wolf.gd#L755-L756)).
+([wolf.gd:381-395](../../src/entities/wolf.gd#L381-L395),
+[:500-502](../../src/entities/wolf.gd#L500-L502), [:887-888](../../src/entities/wolf.gd#L887-L888)).
 O load limpa cache e estado transitório de inspeção
-([wolf.gd:960-993](../../src/entities/wolf.gd#L960-L993)).
+([wolf.gd:1106-1139](../../src/entities/wolf.gd#L1106-L1139)).
 
 **Perigo percebido, não coordenada oculta como rumo.** A fuga usa o jogador visível;
 sem visão, usa a posição do último `hurt` enquanto há ameaça recente; sem isso, usa o
 vetor de afastamento do FEAR vizinho (ou o rumo oposto ao atual se o vetor for quase nulo).
 Só a ameaça de golpe autoriza reimprimir medo durante a fuga, evitando realimentação
-por medo alheio ([wolf.gd:274-293](../../src/entities/wolf.gd#L274-L293),
-[:738-748](../../src/entities/wolf.gd#L738-L748), [:860-875](../../src/entities/wolf.gd#L860-L875)).
+por medo alheio ([wolf.gd:386-405](../../src/entities/wolf.gd#L386-L405),
+[:870-880](../../src/entities/wolf.gd#L870-L880), [:992-1007](../../src/entities/wolf.gd#L992-L1007)).
 A caça exige jogador vivo e visão real ou episódio `saw_player` de até `6 s`, ainda
 não consumido pela chegada ao último local visto. A condição da própria busca também
 exige jogador vivo, mesmo se a histerese mantiver `intent = hunt`; a distância sem visão
 é a do episódio, não a da posição oculta
-([wolf.gd:255-265](../../src/entities/wolf.gd#L255-L265),
-[:291-310](../../src/entities/wolf.gd#L291-L310), [:384-398](../../src/entities/wolf.gd#L384-L398)).
+([wolf.gd:367-377](../../src/entities/wolf.gd#L367-L377),
+[:403-422](../../src/entities/wolf.gd#L403-L422), [:499-513](../../src/entities/wolf.gd#L499-L513)).
 A LOS é consultada a cada tick quando o jogador está vivo e a menos de `30 m`; o registro
 de avistamento tem intervalo de `2 s`
-([wolf.gd:705-717](../../src/entities/wolf.gd#L705-L717)).
+([wolf.gd:837-849](../../src/entities/wolf.gd#L837-L849)).
 
 **Limites.** O refinamento de produção está somente em `Wolf`: `AetherField` permanece
 com **3 canais**, mesmas meias-vidas e difusão
@@ -197,10 +197,10 @@ com **3 canais**, mesmas meias-vidas e difusão
 já achou rastro acima de `0,06` ali — ele nunca procura três andares acima, nem faz uma
 pirâmide. O destino é a **primeira célula sólida descendo do topo da camada encontrada**,
 não pathfinding nem prova de alcançabilidade
-([wolf.gd:761-762](../../src/entities/wolf.gd#L761-L762),
-[:769-777](../../src/entities/wolf.gd#L769-L777)); o alvo horizontal continua achatado em
+([wolf.gd:893-894](../../src/entities/wolf.gd#L893-L894),
+[:901-909](../../src/entities/wolf.gd#L901-L909)); o alvo horizontal continua achatado em
 `offset.y = 0.0` na folha
-([:392-393](../../src/entities/wolf.gd#L392-L393)), então o cheiro é lembrado no andar
+([:507-508](../../src/entities/wolf.gd#L507-L508)), então o cheiro é lembrado no andar
 certo e perseguido no andar do lobo.
 Inspeção não atribui autoria/causalidade, e cache transitório e episódios não fazem
 parte da projeção mínima do journal: não há replay deste ciclo. O contrato e as
@@ -209,10 +209,10 @@ não são validação automática deste refinamento.
 
 A decisão roda no tick de 20 Hz (`sim_step`), mas corpo e timers de cadáver,
 atordoamento e desvio mudam por frame em `_physics_process`
-([wolf.gd:672-701](../../src/entities/wolf.gd#L672-L701),
-[:809-857](../../src/entities/wolf.gd#L809-L857)); não é simulação inteira a 20 Hz.
+([wolf.gd:797-826](../../src/entities/wolf.gd#L797-L826),
+[:941-989](../../src/entities/wolf.gd#L941-L989)); não é simulação inteira a 20 Hz.
 O F3 inclui reação, canal/força/célula escolhidos, tamanho do cache e custo do BT
-([wolf.gd:940-949](../../src/entities/wolf.gd#L940-L949)).
+([wolf.gd:1076-1085](../../src/entities/wolf.gd#L1076-L1085)).
 
 ## 9. Não adaptado — lista explícita
 
@@ -233,7 +233,7 @@ Nada aqui está em código — menos as linhas que o
 | Arcos, lanças arremessadas, cetros e magia de projétil | `[TARGET]` P6; magia existe como **Tecelagem** editando o Éter (§02), não como cast bar |
 | 6 espécies, personagens, opção *hardcore* | fora de escopo — solo humano + mentes locais (premissa 3 do README) |
 | Multiplayer | `[TARGET]` P5 |
-| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:725-732](../../src/main.gd#L725-L732). `[TARGET]` P7 |
+| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:942-949](../../src/main.gd#L942-L949). `[TARGET]` P7 |
 | Agricultura/plantação | **não existe no código**: só `_plant_tree` no gerador. `[TARGET]` P7 |
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de
@@ -265,7 +265,7 @@ Os passos que cobrem este documento, por nome na suíte: `minerar e colocar`,
 `respiracao e afogamento`, `regeneracao fora de combate`, `lobo nada e busca margem`,
 `corpo encaixado se solta` (resgate do integrador) e `relogio real`, onde mora o
 gate `steering e colisao movem o lobo`, `memoria muda comportamento`
-[smoke_test.gd:63-99](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
+[smoke_test.gd:67-103](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
 publicados no [`README.md`](../../README.md) da raiz, derivados da corrida — não deste
 documento.
 
@@ -276,13 +276,13 @@ e diante de parede
 ([aether_reactions_test.gd:7-15](../../tests/aether_reactions_test.gd#L7-L15)). Ele usa
 uma semente e **um lobo por cenário**, com decisão a 20 Hz e corpo a 60 Hz controlados;
 o campo é estático por padrão, com difusão explícita no cenário dedicado
-([:208-237](../../tests/aether_reactions_test.gd#L208-L237),
-[:464-509](../../tests/aether_reactions_test.gd#L464-L509)).
+([:249-278](../../tests/aether_reactions_test.gd#L249-L278),
+[:505-550](../../tests/aether_reactions_test.gd#L505-L550)).
 
 A colheita cronometra `sim_step` integral e lê `_guard.last_us`/`trips`, imprimindo
 soma/pico de ambos e estouros do guard
-([:221-237](../../tests/aether_reactions_test.gd#L221-L237),
-[:1072-1073](../../tests/aether_reactions_test.gd#L1072-L1073)). O guard mede só BT, não
+([:262-278](../../tests/aether_reactions_test.gd#L262-L278),
+[:1113-1114](../../tests/aether_reactions_test.gd#L1113-L1114)). O guard mede só BT, não
 percepção/utilidade; `sim_step` não inclui a física executada depois pelo runner.
 Isso não é medição do HOT agregado de cinco lobos, teste multi-semente ou replay, nem
 fecha P1. O candidato local passou nas 89 checagens específicas e nas regressões de

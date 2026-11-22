@@ -23,7 +23,7 @@ Legenda de status é a do [`README.md`](README.md) da pasta.
 | Construir com o que tem | `consume_selected` no colocar [player.gd:693-715](../../src/entities/player.gd) | `colocar gastou um da pilha` |
 
 Os nomes de checagem acima vivem na suíte, e a lista `_steps`
-([smoke_test.gd:63-99](../../tests/smoke_test.gd)) é a ordem dos passos que os medem.
+([smoke_test.gd:67-103](../../tests/smoke_test.gd)) é a ordem dos passos que os medem.
 Contagem de checagens e tempo de corrida não vivem aqui: são publicados no
 [`README.md`](../../README.md) da raiz, derivados da corrida.
 
@@ -138,9 +138,9 @@ Quatro receitas ([recipes.gd:31-43](../../src/items/recipes.gd)):
 | 1 vidro | 2 areia | bancada | areia em vidro **no lugar** de forja/caldeirão: simplificação explícita, até existir estação de calor (o documento 10 trata de lava) `[TARGET]` |
 
 A estação é um bloco no mundo, casado por distância, no modelo do sprite do Veloren:
-`Main._benches` mantém a lista ([main.gd:546-555](../../src/main.gd#L546-L555)) — entra no
+`Main._benches` mantém a lista ([main.gd:698-707](../../src/main.gd#L698-L707)) — entra no
 `block_placed`, sai no `block_broken`, e é **reconstruída do diário de edições** no load
-([main.gd:694-697](../../src/main.gd#L694-L697)), então não há estado de bancada para corromper.
+([main.gd:904-907](../../src/main.gd#L904-L907)), então não há estado de bancada para corromper.
 `Player.bench_near()` pergunta ao `bench_provider` (um `Callable` injetado, não uma
 referência de cena) e compara com `Recipes.BENCH_RANGE = 5,0`
 ([player.gd:216-225](../../src/entities/player.gd)). A varredura é de ~5 entradas, não do
@@ -187,19 +187,19 @@ movimento, o sprint, o planar e as mãos ([player.gd:412,481,489,627](../../src/
 — senão abrir o inventário seria andar de lado para sempre.
 
 Quem abre a tela é o `Player`, não o HUD: `panel_changed` é um sinal e o HUD escuta
-([player.gd:20](../../src/entities/player.gd), [main.gd:127](../../src/main.gd#L127)). O
+([player.gd:20](../../src/entities/player.gd), [main.gd:149](../../src/main.gd#L149)). O
 refresh do conteúdo roda na cadência `REFRESH = 0,1 s` do `_process` do HUD, igual aos
 slots.
 
 ## 11.9 Persistência: campo aditivo, sem bump de schema
 
-`save_game` escreve `"inv": player.inv.to_dict()` ([main.gd:630](../../src/main.gd#L630)); o
+`save_game` escreve `"inv": player.inv.to_dict()` ([main.gd:781](../../src/main.gd#L781)); o
 formato é `{slots: [[i,b,n]…], pins: […], sel: n, hand: [id,n]}` — só os slots com
 quantidade, então um inventário vazio custa ~2 bytes de JSON e não 36 triples.
 
 `SaveManager.SCHEMA` continua **1**. O campo é aditivo e o loader não tem whitelist de
 chaves: `load_game` usa `inv` quando existe e, quando não existe, aplica o kit
-([main.gd:675-678](../../src/main.gd#L675-L678)) — um save de antes da hotbar infinita não
+([main.gd:837-840](../../src/main.gd#L837-L840)) — um save de antes da hotbar infinita não
 acordaria um jogador sem blocos. O `SCHEMA = 2` está reservado ao rebase de Y do
 documento 10, que é a única mudança que invalida saves de verdade. O `from_dict` faz
 `clampi` em índice, id e quantidade, então um save corrompido não indexa fora do
@@ -208,7 +208,7 @@ registro.
 Esse save não é o novo `TickJournal`: a projeção mínima do hash **não inclui jogador nem
 inventário** ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)).
 O load válido fecha o journal antes da restauração
-([main.gd:654-656](../../src/main.gd#L654-L656)); o JSONL não é replay do inventário.
+([main.gd:805-807](../../src/main.gd#L805-L807)); o JSONL não é replay do inventário.
 
 ## 11.10 Decidido × aberto
 
