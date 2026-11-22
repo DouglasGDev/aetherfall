@@ -30,8 +30,9 @@ const TESTS: Array[StringName] = [
 	&"_test_acasalar_aumenta_censo", &"_test_cooldown_segunda_copula",
 	&"_test_censo_respeita_teto", &"_test_filhote_nao_morde",
 	&"_test_journal_hash_inalterado_sem_escolha",
+	&"_test_tocas_distintas_no_boot", &"_test_toca_nao_deriva_para_unica",
 ]
-const EXPECTED_CHECKS: int = 225
+const EXPECTED_CHECKS: int = 227
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -3724,4 +3725,142 @@ func _test_journal_hash_inalterado_sem_escolha() -> bool:
 			"fase=%s idade=%d mate_cd=%.2f dims=%s escala=%.2f" % [
 			_wolf.phase_name(), _wolf.age_ticks, _wolf.mate_cd, str(_wolf.dims),
 			Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]])
+	return true
+
+
+## ------------------------------------------------------------------ tocas (dossie 16)
+
+## Componentes conexos do grafo que a matilha le (dossie 16 §1). Os nos sao os
+## vivos da sessao e a aresta e uma entrada de `pack_of()`: nada aqui recalcula
+## distancia, porque o que se quer medir e o que a alcateia **e** para o lobo, nao
+## o que o sorteio tinha em mente -- separacao declarada que o lobo nao le e o
+## mesmo defeito que o dossie 10 §3.2 recusou do outro lado. Devolve uma lista de
+## componentes, cada um a lista de identidades.
+##
+## Alocar aqui e deliberado: a conta roda no gate, nunca no passo (dossie 16 §4
+## prende o rebuild de componentes fora do caminho quente).
+func _componentes_da_matilha(s: Session) -> Array:
+	var nos: Array = []
+	var arestas: Dictionary = {}
+	for w: Wolf in s.wolves:
+		if not w.alive:
+			continue
+		nos.append(w.identity)
+		var viz: Array = []
+		for e: Dictionary in s.pack_of(w.identity):
+			viz.append(int(e["identity"]))
+		arestas[w.identity] = viz
+	var vistos: Dictionary = {}
+	var out: Array = []
+	for id: int in nos:
+		if vistos.has(id):
+			continue
+		var pilha: Array = [id]
+		var comp: Array = []
+		vistos[id] = true
+		while pilha.size() > 0:
+			var c: int = int(pilha.pop_back())
+			comp.append(c)
+			for v: int in arestas[c]:
+				if arestas.has(v) and not vistos.has(v):
+					vistos[v] = true
+					pilha.append(v)
+		out.append(comp)
+	return out
+
+
+## Menor distancia lar-a-lar entre componentes diferentes. E o `den_min_dist` do
+## §5 lido pela raiz: se os bichos foram declaradamente separados e os lares
+## continuam colados, a premissa nao foi consertada, foi renomeada. Devolve `INF`
+## com um componente so, e a linha impresso diz `sem_par` em vez de disfarçar o
+## vazio de numero grande.
+func _separacao_dos_componentes(s: Session, comps: Array) -> float:
+	var lares: Dictionary = {}
+	for w: Wolf in s.wolves:
+		lares[w.identity] = w.home
+	var menor := INF
+	for i in comps.size():
+		for j in range(i + 1, comps.size()):
+			for a: int in comps[i]:
+				for b: int in comps[j]:
+					menor = minf(menor, (lares[a] as Vector3).distance_to(lares[b]))
+	return menor
+
+
+## Checagem 1 do dossie 16 §5: **nasce vermelha** e e a premissa inteira da pagina.
+## `_pack_leash()` ancora os quatro bichos seguintes no lar do PRIMEIRO vivo, entao
+## os cinco lares cabem no disco de 18 m da mordaca, o grafo de coesao fica com um
+## componente so, e o dono percorreu o vale inteiro vendo um lobo.
+##
+## O alvo de 3 tocas e os 48 m de separacao estao escritos como numero aqui porque
+## `DEN_COUNT` e `DEN_MIN_DIST` so passam a existir no proximo commit da pauta
+## (§7b), e uma checagem que importa uma constante inexistente nao parseia -- um
+## erro de script no meio de um passo derruba as checagens dele em silencio, que e
+## o defeito que o mandato 1 cobra contado. No commit (b) os dois viram leitura da
+## constante da sessao, e a palavra continua a mesma.
+func _test_tocas_distintas_no_boot() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	s._rebuild_packs()
+	var comps := _componentes_da_matilha(s)
+	var maior := 0
+	var censo := 0
+	for c: Array in comps:
+		maior = maxi(maior, c.size())
+	for w: Wolf in _pack_wolves():
+		if w.alive:
+			censo += 1
+	var sep := _separacao_dos_componentes(s, comps)
+	var lares := ""
+	for w: Wolf in _pack_wolves():
+		lares += "lobo%d(toca=%s,lar=(%.0f,%.0f)) " % [
+				w.identity, str(w.get("den")), w.home.x, w.home.z]
+	_check(comps.size() >= 3 and maior <= censo - 2 and sep >= 48.0,
+			"tocas_distintas_no_boot",
+			"componentes=%d maior=%d censo=%d den_min_dist=%s | %s" % [
+			comps.size(), maior, censo,
+			"sem_par" if is_inf(sep) else "%.1f" % sep, lares.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Checagem 6 do dossie 16 §5, e o numero que decide o §3.4 entre os dois bracos.
+## O centro de ronda e o baricentro dos vizinhos lidos, renovado a cada 4-9 s, e
+## com fatias de 5-22 m ele faz passeio aleatorio sem ancora nenhuma: com uma
+## matilha so isso era invisivel, com tres pode re-fundir as tocas. Exige que
+## **todo** rebuild da janela leia >= 2 componentes.
+##
+## Nasce vermelha pelo mesmo motivo da checagem 1 -- hoje ha um componente so no
+## passo zero -- e um vermelho dela depois do braco A pousado e o bilhete do braco
+## B, nao uma falha a esconder (§3.4). A janela de 1 400 passos e a mesma do
+## cenario 6 da perna 14: cadaver de 1 s + fila de 45 s cabem inteiros nela.
+func _test_toca_nao_deriva_para_unica() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var pior := 0
+	var pior_passo := -1
+	var pior_sep := INF
+	var bichos_pior := 0
+	var passos := 0
+	while passos < 1400:
+		passos += 1
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+		var comps := _componentes_da_matilha(s)
+		if passos == 1 or comps.size() < pior:
+			pior = comps.size()
+			pior_passo = passos
+			pior_sep = _separacao_dos_componentes(s, comps)
+			bichos_pior = 0
+			for c: Array in comps:
+				bichos_pior += c.size()
+	_check(pior >= 2, "toca_nao_deriva_para_unica",
+			"componentes_minimos=%d bichos_lidos=%d den_min_dist=%s no passo %d de %d" % [
+			pior, bichos_pior,
+			"sem_par" if is_inf(pior_sep) else "%.1f" % pior_sep, pior_passo, passos])
+	_pack_release()
 	return true
