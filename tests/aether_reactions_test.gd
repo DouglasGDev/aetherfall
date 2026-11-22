@@ -32,8 +32,10 @@ const TESTS: Array[StringName] = [
 	&"_test_journal_hash_inalterado_sem_escolha",
 	&"_test_tocas_distintas_no_boot", &"_test_nenhum_lobo_le_de_outra_toca",
 	&"_test_cada_toca_e_um_lugar_valido", &"_test_toca_nao_deriva_para_unica",
+	&"_test_reposicao_volta_para_a_toca_perdida",
+	&"_test_nascimento_fica_na_toca_dos_pais",
 ]
-const EXPECTED_CHECKS: int = 229
+const EXPECTED_CHECKS: int = 235
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -3804,8 +3806,38 @@ func _separacao_das_tocas(s: Session) -> float:
 		var a: Vector3 = s._dens[i]
 		for j in range(i + 1, s._dens.size()):
 			var b: Vector3 = s._dens[j]
-			menor = minf(menor, Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z)))
+			menor = minf(menor, _no_chao(a, b))
 	return menor
+
+
+## Distancia no chao (XZ), o eixo que a perna 16 usa para tudo: o portao
+## `_den_gate_ok`, a mordaca `PACK_LEASH` e os dois numeros que as checagens 4 e 5
+## exigem. Medir 3D aqui seria imprimir um numero que nenhuma regra pede -- os
+## centros tem alturas diferentes por relevo, e a promessa e de separacao no solo.
+func _no_chao(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))
+
+
+## O par que `_scan_breeding` acharia AGORA (main.gd:422-434), espelhado na mesma
+## ordem (`i` entao `j` crescentes), no mesmo predicado (`_breedable`) e na mesma
+## metrica (`center()` contra `MATE_RADIUS`), sem escrever nada em lugar nenhum.
+## Devolve os INDICES de `wolves`, e sao eles que saem impressos na premissa da
+## checagem 5: sem esta testemunha, "a cria ficou na toca dos pais" poderia passar
+## com um par que o teste nunca nomeou -- inclusive um par que ja se alcançava no
+## sorteio do boot, que e outro caminho para o mesmo `den`.
+func _primeiro_par(s: Session) -> Array:
+	for i in s.wolves.size():
+		var a: Wolf = s.wolves[i]
+		if not s._breedable(a):
+			continue
+		for j in range(i + 1, s.wolves.size()):
+			var b: Wolf = s.wolves[j]
+			if not s._breedable(b):
+				continue
+			var d2: float = a.center().distance_squared_to(b.center())
+			if d2 <= Session.MATE_RADIUS * Session.MATE_RADIUS:
+				return [i, j]
+	return []
 
 
 ## Checagem 1 do dossie 16 §5: **nasce vermelha** e e a premissa inteira da pagina.
@@ -3968,5 +4000,218 @@ func _test_toca_nao_deriva_para_unica() -> bool:
 			"componentes_minimos=%d bichos_lidos=%d lar_entre_componentes=%s no passo %d de %d" % [
 			pior, bichos_pior,
 			"sem_par" if is_inf(pior_sep) else "%.1f" % pior_sep, pior_passo, passos])
+	_pack_release()
+	return true
+
+
+## Checagem 4 do dossie 16 §5: a pertenca tem de sobreviver ao caminho inteiro da
+## reposicao -- `die()` -> cadaver -> `_reap_corpses` -> fila de 45 s -> `_spawn_wolves`
+## -> `_place_request(for_den)`. O `for_den` existe justamente para ela nao ser
+## sorteada de novo, e a premissa que esta linha exige e que a vaga carregue a toca
+## de quem morreu, nao "uma" toca.
+##
+## A segunda metade do criterio (>= `DEN_MIN_DIST` dos OUTROS centros) e a que fecha
+## a regressao de hoje: um lar a 12 m do centro da toca errada passaria na primeira
+## metade e seria o circulo unico com nome novo.
+##
+## `a_mais_vazia_diria` sai impresso e NAO e criterio, e dizer isso e o ponto da
+## linha: no boot medido (2/2/1) a toca mais vazia depois da morte e a propria toca
+## da vitima, entao esta checagem nao distingue "a vaga carrega" de "pede a mais
+## vazia" -- quem distingue e o braco entre tocas da checagem 5. Deixar o numero
+## impresso e o registro de que a checagem 4 decide o caminho da fila, nao a regra
+## de desempate de §3.2.4.
+func _test_reposicao_volta_para_a_toca_perdida() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var vitima: Wolf = null
+	var membros := 0
+	var quem := ""
+	for w: Wolf in _pack_wolves():
+		if w.alive and int(w.den) == 2:
+			vitima = w
+			membros += 1
+		if w.alive:
+			quem += "lobo%d(toca=%d) " % [w.identity, w.den]
+	_check(vitima != null and membros == 1,
+			"premissa: a toca 2 tem exatamente um membro vivo para perder",
+			"membros=%d tocas=%d | %s" % [membros, s._dens.size(), quem.strip_edges()])
+	if vitima == null:
+		# Sem vitima nao ha o que seguir: um `null` adiante derrubaria o passo com
+		# SCRIPT ERROR e as checagens do passo iriam embora em silencio (mandato 1).
+		_pack_release()
+		return true
+	var id_novo: int = int(s._next_identity)
+	var den_perdido: int = int(vitima.den)
+	vitima.die()
+	var mais_vazia := -99
+	var passos := 0
+	while passos < 1400 and int(s._next_identity) == id_novo:
+		passos += 1
+		if mais_vazia < 0 and s._respawn_queue.size() > 0:
+			# O cadaver ja saiu de `wolves` quando a vaga nasceu (`_reap_corpses`
+			# faz as duas coisas na mesma chamada), entao este e o censo que o
+			# pedido vê -- o contrafactual honesto, nao um chute depois do spawn.
+			mais_vazia = int(s._emptiest_den())
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+	var novo: Wolf = null
+	for w: Wolf in _pack_wolves():
+		if w.identity == id_novo:
+			novo = w
+	var propria := -1.0
+	var alheia := INF
+	if novo != null and int(novo.den) >= 0:
+		propria = _no_chao(novo.home, s._dens[int(novo.den)])
+		for i in s._dens.size():
+			if i != int(novo.den):
+				alheia = minf(alheia, _no_chao(novo.home, s._dens[i]))
+	_check(novo != null and int(novo.den) == den_perdido
+			and propria >= 0.0 and propria <= float(Session.PACK_LEASH)
+			and alheia >= float(Session.DEN_MIN_DIST),
+			"reposicao_volta_para_a_toca_perdida",
+			"passos=%d den=%d esperado=%d do_centro_proprio=%.1f m (mordaca %.0f) do_centro_alheio=%s (portao %.0f) fila=%d a_mais_vazia_diria=%d" % [
+			passos, int(novo.den) if novo != null else -99, den_perdido, propria,
+			Session.PACK_LEASH, "sem_outro_centro" if is_inf(alheia) else "%.1f" % alheia,
+			Session.DEN_MIN_DIST, s._respawn_queue.size(), mais_vazia])
+	_pack_release()
+	return true
+
+
+## Checagem 5 do dossie 16 §5, os dois bracos do parto.
+##
+## Braco A -- casal da MESMA toca: a cria fica nela e dentro da mordaca daquele
+## centro. E o braco que o codigo de antes ja faria por acaso (a ancora era o lar
+## do primeiro vivo), entao sozinho ele nao prova nada; ele existe para o B nao ser
+## um numero solto.
+##
+## Braco B -- casal de tocas DIFERENTES, e aqui esta a decisão: a ancora antiga do
+## parto era o **ponto medio** dos dois lares, e o meio-termo de dois lugares a 48 m
+## um do outro e um terceiro lugar que ninguem fundou. Com o medio no codigo, a cria
+## nasce a ~31 m de qualquer centro: fora da mordaca de uma e dentro do portao da
+## outra -- ou seja, o espalhamento da perna se desfaz pelo caminho do nascimento,
+## sem que nenhuma das outras checagem veja. Trocar a ancora para o centro do adulto
+## de identidade MENOR (o mesmo desempate que a ronda usa) e o que esta linha exige,
+## e a premissa impressa (`_primeiro_par`) e a testemunha de que o par escolhido e o
+## par que a roda realmente achou.
+func _test_nascimento_fica_na_toca_dos_pais() -> bool:
+	# --- braco A: mesma toca ---
+	_arm()
+	_boot_session(5, true)
+	var sA: Session = _session
+	var wsA: Array = _pack_wolves()
+	var aA := -1
+	var bA := -1
+	for i in wsA.size():
+		if aA >= 0:
+			break
+		for j in range(i + 1, wsA.size()):
+			var x: Wolf = wsA[i]
+			var y: Wolf = wsA[j]
+			if x.alive and y.alive and int(x.den) >= 0 and int(x.den) == int(y.den):
+				aA = i
+				bA = j
+				break
+	if aA >= 0:
+		_pack_place(aA, MATE_SPOTS[0])
+		_pack_place(bA, MATE_SPOTS[1])
+	var parA := _primeiro_par(sA)
+	_check(aA >= 0 and parA.size() == 2 and int(parA[0]) == aA and int(parA[1]) == bA,
+			"premissa (braco A): o par que a roda acha e o par da mesma toca",
+			"posicionados=[%d,%d] achados=%s toca=%d raio=%.0f m" % [
+			aA, bA, str(parA), int(wsA[aA].den) if aA >= 0 else -99, Session.MATE_RADIUS])
+	if aA < 0 or parA.size() != 2:
+		_pack_release()
+		return true
+	var antesA := {}
+	for w: Wolf in sA.wolves:
+		antesA[w.identity] = true
+	_advance_pack(1)
+	var criaA: Wolf = null
+	for w: Wolf in sA.wolves:
+		if not antesA.has(w.identity):
+			criaA = w
+	var denA := int((wsA[aA] as Wolf).den)
+	var foraA := -1.0
+	var dentroA := INF
+	if criaA != null and int(criaA.den) >= 0:
+		foraA = _no_chao(criaA.home, sA._dens[int(criaA.den)])
+		for i in sA._dens.size():
+			if i != int(criaA.den):
+				dentroA = minf(dentroA, _no_chao(criaA.home, sA._dens[i]))
+	_check(criaA != null and int(criaA.den) == denA
+			and foraA >= 0.0 and foraA <= float(Session.PACK_LEASH),
+			"nascimento_fica_na_toca_do_casal",
+			"cria=%s den=%d esperado=%d do_centro=%.1f m (mordaca %.0f) do_centro_alheio=%s" % [
+			str(criaA.identity) if criaA != null else "nenhuma",
+			int(criaA.den) if criaA != null else -99, denA, foraA, Session.PACK_LEASH,
+			"sem_outro_centro" if is_inf(dentroA) else "%.1f" % dentroA])
+
+	# --- braco B: tocas diferentes ---
+	_arm()
+	_boot_session(5, true)
+	var sB: Session = _session
+	var wsB: Array = _pack_wolves()
+	var aB := -1
+	var bB := -1
+	for i in wsB.size():
+		if aB >= 0:
+			break
+		for j in range(i + 1, wsB.size()):
+			var x: Wolf = wsB[i]
+			var y: Wolf = wsB[j]
+			if x.alive and y.alive and int(x.den) >= 0 and int(y.den) >= 0 \
+					and int(x.den) != int(y.den):
+				aB = i
+				bB = j
+				break
+	if aB >= 0:
+		_pack_place(aB, MATE_SPOTS[0])
+		_pack_place(bB, MATE_SPOTS[1])
+	var parB := _primeiro_par(sB)
+	var sepB := _separacao_das_tocas(sB)
+	_check(aB >= 0 and parB.size() == 2 and int(parB[0]) == aB and int(parB[1]) == bB,
+			"premissa (braco B): o par que a roda acha e o par de duas tocas",
+			"posicionados=[%d,%d] achados=%s tocas=%d+%d separacao=%s m" % [
+			aB, bB, str(parB), int(wsB[aB].den) if aB >= 0 else -99,
+			int(wsB[bB].den) if bB >= 0 else -99,
+			"sem_par" if is_inf(sepB) else "%.1f" % sepB])
+	if aB < 0 or parB.size() != 2:
+		_pack_release()
+		return true
+	var antesB := {}
+	for w: Wolf in sB.wolves:
+		antesB[w.identity] = true
+	_advance_pack(1)
+	var criaB: Wolf = null
+	for w: Wolf in sB.wolves:
+		if not antesB.has(w.identity):
+			criaB = w
+	# O adulto que decide a toca e o de identidade menor -- o mesmo desempate que a
+	# ronda da perna 14 ja usa para ordenar assentos, nao uma preferencia nova.
+	var pai: Wolf = wsB[aB] if (wsB[aB] as Wolf).identity < (wsB[bB] as Wolf).identity \
+			else wsB[bB]
+	var mae: Wolf = wsB[bB] if pai == wsB[aB] else wsB[aB]
+	var denB := int(pai.den)
+	var propriaB := -1.0
+	var alheiaB := INF
+	if criaB != null and int(criaB.den) >= 0:
+		propriaB = _no_chao(criaB.home, sB._dens[int(criaB.den)])
+		for i in sB._dens.size():
+			if i != int(criaB.den):
+				alheiaB = minf(alheiaB, _no_chao(criaB.home, sB._dens[i]))
+	_check(criaB != null and int(criaB.den) == denB
+			and propriaB >= 0.0 and propriaB <= float(Session.PACK_LEASH)
+			and alheiaB >= float(Session.DEN_MIN_DIST),
+			"casal_de_tocas_diferentes_nao_cria_lar_fora_de_toca",
+			"cria=%s den=%d esperado=%d do_adulto_menor(%s)=%.1f m do_adulto_maior(%s)=%.1f m | mordaca %.0f portao %.0f do_centro_proprio=%.1f do_centro_alheio=%s" % [
+			str(criaB.identity) if criaB != null else "nenhuma",
+			int(criaB.den) if criaB != null else -99, denB,
+			str(pai.identity), _no_chao(criaB.home, pai.home) if criaB != null else -1.0,
+			str(mae.identity), _no_chao(criaB.home, mae.home) if criaB != null else -1.0,
+			Session.PACK_LEASH, Session.DEN_MIN_DIST, propriaB,
+			"sem_outro_centro" if is_inf(alheiaB) else "%.1f" % alheiaB])
 	_pack_release()
 	return true

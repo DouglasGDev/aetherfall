@@ -62,6 +62,11 @@ var _terrain: Node3D = null
 var _entities: Node3D = null
 var _next_identity: int = 0
 var _population_rng := RandomNumberGenerator.new()
+## Vagas de reposicao. Cada elemento e `[atraso_em_segundos, den]` (dossie 16 §3.3):
+## a vaga carrega a TOCA de quem morreu, senao a reposicao escolheria por conta
+## propria e "a toca que perdeu" nao existiria. O `.size()` lido por
+## `pending_respawns` e pelo `simulation_rng_test` mantem o mesmo significado --
+## e numero de vaga, nao de float.
 var _respawn_queue: Array = []
 ## Quantos bichos o ultimo load criou e retirou, e quantas vezes o teto de censo
 ## disse nao (nascimento e load). Os tres numero vao para `diagnostics()` porque a
@@ -271,15 +276,19 @@ func _sim_tick() -> void:
 		_corpse_cd = CORPSE_CHECK_PERIOD
 		_reap_corpses()
 	for i in range(_respawn_queue.size() - 1, -1, -1):
-		_respawn_queue[i] -= dt
-		if _respawn_queue[i] <= 0.0:
+		var vaga: Array = _respawn_queue[i]
+		vaga[0] = float(vaga[0]) - dt
+		if float(vaga[0]) <= 0.0:
 			_respawn_queue.remove_at(i)
 			# Dossie 14 §1.3: nenhum aviso de criatura na tela -- o jogador acha a
 			# matilha pelos rastros, não por um letreiro. A frase que morava aqui
 			# mentia alem de tudo: `_spawn_wolves(1)` pode recusar o ponto e a vaga
 			# volta para a fila, e "uma nova matilha entrou no vale" seria dita com
 			# o vale vazio.
-			_spawn_wolves(1)
+			# A toca de quem morreu vai junto (dossie 16 §3.3), e se o ponto for
+			# recusado ela volta na vaga: perder a pertenca no retry seria a
+			# reposicao escolher outro lugar por azar de sorteio.
+			_spawn_wolves(1, int(vaga[1]))
 	# Dossie 11 §3.4: a roda de acasalamento roda AQUI, e nao dentro do
 	# `sim_step` do lobo, porque quem poe um bicho no mundo e dono de `wolves` e de
 	# `_next_identity`. Rodar no lobo seria o spawn ter dois donos e o filhote
@@ -323,7 +332,7 @@ func respawn() -> void:
 
 # ------------------------------------------------------------------ povoamento
 
-func _spawn_wolves(n: int) -> void:
+func _spawn_wolves(n: int, for_den: int = -1) -> void:
 	if _next_identity == 0:
 		_population_rng.seed = ("population:%d" % world.gen.world_seed).hash()
 	for i in n:
@@ -334,12 +343,13 @@ func _spawn_wolves(n: int) -> void:
 		# pinça nao muda com o lote. A escolha de toca (`_place_request`) e lida do
 		# mesmo conjunto vivo e de `_dens`, que so cresce, entao o lote e o um-a-um
 		# veem a mesma matilha e as mesmas tocas fundadas (dossie 16 §3.2.4).
-		var pedido := _place_request()
+		var pedido := _place_request(for_den)
 		if not bool(pedido["ok"]):
 			# Dossie 14 §3.5: o motivo ja saiu impresso na funcao de busca. O lobo nao
 			# nasce agora e a vaga volta para o fim da fila com o mesmo atraso -- o
 			# contrario do fallback antigo, que punha o bicho no centro em silencio.
-			_respawn_queue.append(RESPAWN_DELAY)
+			# Com `for_den` escrito em cima, a vaga volta PARA A MESMA TOCA.
+			_respawn_queue.append([RESPAWN_DELAY, for_den])
 			continue
 		var home: Vector3 = pedido["feet"]
 		var w := _make_wolf(home, _next_identity, Wolf.Phase.ADULT,
@@ -432,7 +442,7 @@ func _scan_breeding() -> void:
 ## que o censo esta no teto, e "recusa impressa, nunca silenciosa" (mandato 1)
 ## viraria spam -- o numero continuaria lido em `diagnostics()`, mas o log do
 ## jogador seria uma linha repetida. O ponto de nascimento passa pelo MESMO
-## predicado do spawn da perna 14 (`_spawn_point_ok` via `_spawn_home_point`): um
+## predicado do spawn da perna 14 (`_spawn_point_ok` via `_place_request`): um
 ## recem-nato na frente do jogador seria o pedido "nunca spawnar na frente"
 ## cumprido no boot e traído no primeiro parto.
 func _born_from(a: Wolf, b: Wolf) -> void:
@@ -443,19 +453,32 @@ func _born_from(a: Wolf, b: Wolf) -> void:
 				wolves.size(), CENSUS_CAP, a.identity, b.identity])
 		_census_refusals += 1
 		return
-	var pedido := _spawn_home_point(_home_columns(), (a.home + b.home) * 0.5)
+	# A cria herda a toca do adulto de identidade MENOR (dossie 16 §3.3) -- o mesmo
+	# desempate por identidade que a ronda ja usa para ordenar assentos. O ponto
+	# medio dos dois lares sai do codigo porque ele e justamente a peça que faria um
+	# casal de tocas diferentes produzir um lar fora de qualquer toca: com centros a
+	# `DEN_MIN_DIST` ou mais, o meio-termo de dois lugares e um terceiro lugar que
+	# ninguem fundou.
+	var herdando: Wolf = a if a.identity < b.identity else b
+	var pedido := _place_request(herdando.den)
 	if not bool(pedido["ok"]):
 		# O motivo ja saiu impresso dentro da busca, com a contagem por portao.
 		# Sem lar aceito nao ha filhote: a alternativa historica era cair no centro
 		# em silencio, e o centro e onde o jogador acorda.
 		return
-	var w := _make_wolf(pedido["feet"], _next_identity, Wolf.Phase.CUB, 0)
+	var w := _make_wolf(pedido["feet"], _next_identity, Wolf.Phase.CUB, 0,
+			int(pedido["den"]))
 	_next_identity += 1
 	wolves.append(w)
 	_births += 1
-	print("nascimento: filhote %d dos adultos %d+%d a %.1f m do centro do par" % [
-			w.identity, a.identity, b.identity,
-			w.home.distance_to((a.home + b.home) * 0.5)])
+	var d: int = int(pedido["den"])
+	var ancora := player.position3()
+	var rotulo := "do jogador (toca -1: nenhuma fundada onde pousar)"
+	if d >= 0:
+		ancora = _dens[d]
+		rotulo = "do centro da toca %d" % d
+	print("nascimento: filhote %d dos adultos %d+%d na toca %d, %.1f m %s" % [
+			w.identity, a.identity, b.identity, d, w.home.distance_to(ancora), rotulo])
 
 
 ## Colunas de lar já ocupadas. Dicionário pequeno (até o censo), construído uma vez
@@ -567,41 +590,67 @@ func _den_gate_ok(feet: Vector3, gate: Array) -> bool:
 	return true
 
 
-## O pedido de lar de um lobo do sorteio (dossie 16 §3.3), com a pertenca decidida
-## aqui e nunca pelo lobo: enquanto houver toca a fundar, o bicho FUNDA uma longe
-## das outras; com `DEN_COUNT` fundadas -- ou com a fundacao recusada havendo ao
-## menos uma toca -- ele ENTRA na mais vazia, pela mordaca de sempre com a ancora
-## trocada para o centro da toca (§3.2.3).
+## O pedido de lar de um bicho novo (dossie 16 §3.3), com a pertenca decidida aqui
+## e nunca pelo lobo. `for_den >= 0` e a vaga que chegou com uma toca escrita em
+## cima -- reposicao de fila e parto -- e ela ENTRA nela. `for_den == -1` e o
+## sorteio: FUNDA enquanto couber (`DEN_COUNT`) e, com todas fundadas ou com a
+## fundacao recusada havendo ao menos uma, entra na mais vazia.
 ##
-## A fundacao nao tem fallback no centro nem em toca alheia quando ainda nao ha
-## nenhuma: sem lugar, o bicho volta para a fila, que e exatamente o que a recusa
-## da perna 14 ja fazia e pelo mesmo motivo (mandato 1).
-func _place_request() -> Dictionary:
+## Nenhum caminho cai no centro nem em toca alheia por acidente: sem lugar aceito a
+## vaga volta para a fila com a mesma toca, que e o que a perna 14 ja fazia com o
+## mesmo atraso e pelo mesmo motivo (mandato 1).
+func _place_request(for_den: int = -1) -> Dictionary:
 	var taken := _home_columns()
-	if _dens.size() < DEN_COUNT:
-		var fundacao := _spawn_home_point(taken, null, _dens)
-		if bool(fundacao["ok"]):
-			var idx: int = _dens.size()
-			var centro: Vector3 = fundacao["feet"]
-			_dens.append(centro)
-			var sep := INF
-			for i in idx:
-				var outro: Vector3 = _dens[i]
-				# No chao, como o portao: a linha impressa tem de ser o mesmo numero
-				# que a regra exige, nao uma distancia 3D que ningem pediu.
-				sep = minf(sep, Vector2(outro.x, outro.z).distance_to(
-						Vector2(centro.x, centro.z)))
-			print("toca %d fundada: centro a %.1f m do jogador, separacao minima %s" % [
-					idx, player.position3().distance_to(centro),
-					"nova (e a primeira)" if is_inf(sep) else "%.1f m" % sep])
-			return {"ok": true, "feet": centro, "den": idx, "motivo": ""}
-		if _dens.is_empty():
-			return fundacao
-	var d := _emptiest_den()
-	var entrada := _spawn_home_point(taken, _dens[d])
-	if bool(entrada["ok"]):
-		return {"ok": true, "feet": entrada["feet"], "den": d, "motivo": ""}
-	return entrada
+	if for_den < 0:
+		if _dens.size() < DEN_COUNT:
+			var fundacao := _spawn_home_point(taken, null, _dens)
+			if bool(fundacao["ok"]):
+				var idx: int = _dens.size()
+				var centro: Vector3 = fundacao["feet"]
+				_dens.append(centro)
+				var sep := INF
+				for i in idx:
+					var outro: Vector3 = _dens[i]
+					# No chao, como o portao: a linha impressa tem de ser o mesmo
+					# numero que a regra exige, nao uma distancia 3D que ninguem pediu.
+					sep = minf(sep, Vector2(outro.x, outro.z).distance_to(
+							Vector2(centro.x, centro.z)))
+				print("toca %d fundada: centro a %.1f m do jogador, separacao minima %s" % [
+						idx, player.position3().distance_to(centro),
+						"nova (e a primeira)" if is_inf(sep) else "%.1f m" % sep])
+				return {"ok": true, "feet": centro, "den": idx, "motivo": ""}
+			if _dens.is_empty():
+				# Primeira toca do boot recusada: nao ha lugar nenhum, e o bicho
+				# volta para a fila. Este e o unico caso em que a recusa da fundacao
+				# e a palavra final -- com toca fundada, seguir para a entrada nao e
+				# fallback de lugar, e usar o lugar que ja existe.
+				return fundacao
+		for_den = _emptiest_den()
+	if for_den >= _dens.size():
+		return _sem_toca(taken)
+	return _entrada(taken, for_den)
+
+
+## A mordaca em torno do centro da toca `den` (dossie 16 §3.2.3): o anel 4-18 m e
+## os seis portoes contra o JOGADOR continuam os mesmos da perna 14 -- o que muda e
+## so a ancora, de "lar do primeiro vivo" para "centro da toca". Trocar a ancora e
+## o corte com o circulo unico; mexer nos portoes seria comprar seguranca com a
+## toca, e o §6 nao deixa.
+func _entrada(taken: Dictionary, den: int) -> Dictionary:
+	var pedido := _spawn_home_point(taken, _dens[den])
+	if bool(pedido["ok"]):
+		return {"ok": true, "feet": pedido["feet"], "den": den, "motivo": ""}
+	return pedido
+
+
+## Sem toca onde entrar: o bicho nasce pelas bandas do jogador e fica com `den` -1,
+## que e impresso e nao disfarçado (§3.1). Este caminho NAO funda, e a distincao e
+## a regra: fundar e decisao do sorteio ate `DEN_COUNT`, e fila nem parto podem
+## alargar o teto pela porta dos fundos.
+func _sem_toca(taken: Dictionary) -> Dictionary:
+	var pedido := _spawn_home_point(taken)
+	pedido["den"] = -1
+	return pedido
 
 
 ## Predicado unico dos dois compradores (dossie 14 §3.4; a 11 poe o filhote por
@@ -790,7 +839,9 @@ func _reap_corpses() -> void:
 			_pack_buffers.erase(w.identity)
 			_pack_cursor.erase(w.identity)
 			w.queue_free()
-			_respawn_queue.append(RESPAWN_DELAY)
+			# A vaga nasce com a toca do morto (dossie 16 §3.3): e aqui, e nao no
+			# momento do spawn, que "a toca que perdeu" passa a existir.
+			_respawn_queue.append([RESPAWN_DELAY, w.den])
 
 
 # ------------------------------------------------------------------ ecos do mundo
