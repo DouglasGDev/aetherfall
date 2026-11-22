@@ -35,7 +35,7 @@ const TESTS: Array[StringName] = [
 	&"_test_reposicao_volta_para_a_toca_perdida",
 	&"_test_nascimento_fica_na_toca_dos_pais",
 ]
-const EXPECTED_CHECKS: int = 236
+const EXPECTED_CHECKS: int = 238
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -2664,6 +2664,20 @@ func _test_resgate_de_margem_sobrevive_a_arvore() -> bool:
 	return true
 
 
+## Fixture da checagem 8 (dossie 16 §5): marca TODAS as colunas da caixa em que o
+## proprio sorteio de `_spawn_home_point` e clampado -- `6 … tamanho-6` nos dois
+## eixos, lido da mesma expressao do clamp e nao de um numero escrito a mão, para
+## que a porta `coluna` alcance todo ponto que o jogo pode sortear. Escreve num
+## Dictionary de teste, nunca no mundo: nenhum voxel muda.
+func _mark_useful_box(taken: Dictionary) -> int:
+	var marcadas := 0
+	for x: int in range(6, VoxelConfig.world_size_x() - 5):
+		for z: int in range(6, VoxelConfig.world_size_z() - 5):
+			taken[Vector2i(x, z)] = true
+			marcadas += 1
+	return marcadas
+
+
 ## Cenario 4 (dossie 14 §5, premissa 2 no espaco): quantos lobos miram a MESMA
 ## celula de Eter por tick e quantos param no mesmo ponto. Vermelho por ausencia:
 ## `_find_scent` devolve o centro da celula, entao os quatro que leem o mesmo
@@ -2754,6 +2768,55 @@ func _test_dois_lobos_nao_farejam_a_mesma_celula() -> bool:
 	_check(violacoes == 0, "mecanismo: coluna ocupada nao volta como lar",
 			"violacoes=%d em 8 pedidos, recusados=%d, ocupadas=%d, colunas_devolvidas=%d" % [
 			violacoes, recusados, colunas.size(), dadas.size()])
+	# Checagem 8 do dossie 16 §5, o furo #18 pago com numero. A linha de cima nao
+	# alcanca a recusa: com seis colunas marcadas e tres bandas que vao de 16 m ate
+	# a borda util, o mundo entrega lar quase sempre, e o numero que a propria casa
+	# media era `recusados=0` -- a assercao `violacoes == 0` passa identicamente sem
+	# nenhuma recusa. Aqui o fixture marca TODAS as colunas da caixa em que o
+	# sorteio e clampado (ainda fixture: nenhum voxel do mundo e tocado), entao o
+	# esgotamento deixa de ser sorte dos oito pedidos e vira geometrico. O criterio
+	# e a conta do `motivos`, que nunca teve um leitor em `tests/`: cada busca tem
+	# de somar `banda x SPAWN_ATTEMPTS` leituras, e -- porque a primeira porta do
+	# laco e a coluna -- todas elas tem de cair em `coluna`. Se a ordem dos portoes
+	# mudar ou um `continue` passar a engolir uma tentativa sem contar, a soma fecha
+	# curta e esta linha fica vermelha.
+	var marcadas := _mark_useful_box(colunas)
+	var forcados := 0
+	var buscas := 0
+	var vazias := 0
+	var soma_motivos := 0
+	var so_a_coluna := true
+	var primeiro: Dictionary = {}
+	for _k: int in 8:
+		var r: Dictionary = _session._spawn_home_point(colunas)
+		if bool(r["ok"]):
+			continue
+		forcados += 1
+		buscas += int(r["banda"])
+		var m: Dictionary = r["motivos"]
+		if forcados == 1:
+			primeiro = m
+		vazias += int(m["vazia"])
+		var total := 0
+		for chave: String in m:
+			total += int(m[chave])
+		soma_motivos += total
+		if int(m["coluna"]) != total:
+			so_a_coluna = false
+	# Premissa da conta de cima: nenhuma das tres buscas do jogador esta vazia por
+	# geometria (`rmax <= rmin` acontece com o jogador encostado na borda), senao
+	# `buscas x SPAWN_ATTEMPTS` e o numero errado para cobrar.
+	_check(vazias == 0, "premissa: as tres bandas buscam de verdade (nenhuma vazia)",
+			"vazia=%d em %d recusas, buscas=%d, banda=%d por busca, jogador em (%.0f,%.0f), borda=%.1f m" % [
+			vazias, forcados, buscas, buscas / maxi(forcados, 1),
+			_player.position3().x, _player.position3().z,
+			_session._band_edge(_player.position3())])
+	_check(forcados == 8 and soma_motivos == buscas * Session.SPAWN_ATTEMPTS
+			and so_a_coluna,
+			"esgotamento_de_lares_forcado",
+			"recusados=%d de 8 | soma(motivos)=%d == buscas(%d) x SPAWN_ATTEMPTS(%d)=%d | so_a_coluna=%s | colunas_marcadas=%d | primeiro=%s" % [
+			forcados, soma_motivos, buscas, Session.SPAWN_ATTEMPTS,
+			buscas * Session.SPAWN_ATTEMPTS, so_a_coluna, marcadas, str(primeiro)])
 	_pack_release()
 	return true
 

@@ -791,7 +791,13 @@ func _spawn_home_point(taken: Dictionary, near: Variant = null,
 			return {"ok": true, "feet": feet, "banda": t + 1, "motivo": ""}
 	var recusa := "nenhum ponto em %d buscas (%s)" % [tries.size(), str(motivos)]
 	print("spawn RECUSADO: " + recusa)
-	return {"ok": false, "feet": Vector3.ZERO, "banda": tries.size(), "motivo": recusa}
+	# `motivos` sai como numero, nao só dentro da string: o furo #18 do status mediu
+	# que o dicionario nao tinha UM leitor em `tests/`, entao a separacao por motivo
+	# -- que e a promessa da recusa impressa e contada -- nunca foi conferida por
+	# ninguem. A string continua (e ela que aparece no log); a chave nova e o que o
+	# gate le.
+	return {"ok": false, "feet": Vector3.ZERO, "banda": tries.size(),
+			"motivo": recusa, "motivos": motivos}
 
 
 ## Pe em cima do voxel mais alto da coluna nao basta: o corpo do lobo faz 1,35 m
