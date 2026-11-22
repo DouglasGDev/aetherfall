@@ -90,7 +90,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 ## Feito nesta sessão
 
 - **Auto-pulo do degrau de um bloco: o lobo sobe, e quem anda com o jogador também sobe
-  (dossiê 19, branch `feat/auto-pulo-de-bloco-19`, merge `a518487` na `main`).** O pedido do dono é
+  (dossiê 19, branch `feat/auto-pulo-de-bloco-19`, merge `ab9ffa1` na `main`).** O pedido do dono é
   um defeito em execução, não uma mecânica nova: "os mobs/npcs tem que saber pular os blocos, pois
   ficam bugados e aqui tbm fazer quando estou andando, ter um auto pular o bloco". Lido no código,
   são três causas e nenhuma é pathfinding. **(a) A pergunta mora no integrador:**
@@ -448,7 +448,7 @@ sessão enquanto as pernas restantes são mecânicas que ainda não existem. A f
 duas escrevem em `src/entities/wolf.gd` e no runner, a consequência está assumida no §7 do dossiê:
 **quando a 19 pousar na `main`, a 11 re-rome o gate** — traz a `main` para dentro de si e roda a
 suíte de novo, porque a árvore resultante é outra revisão (item 5 de "Branches"). Estado agora: a
-19 pousou na `main` (merge `--no-ff` `a518487`, clone limpo medido), e a 11 continua com as pernas
+19 pousou na `main` (merge `--no-ff` `ab9ffa1`, clone limpo medido), e a 11 continua com as pernas
 (f) e (g) faltando, ponta `3e8f9ba` — é ela que re-rome o gate.
 
 ## Falta
@@ -3661,7 +3661,7 @@ para na frente do degrau. O registro veio antes da linha (mandato 4): o
 as sete checagens de headless e os cinco commits atômicos, e a exceção de ordem está na seção
 "Em andamento" acima.
 
-### O que entrou (sete commits, um assunto cada)
+### O que entrou (oito commits, um assunto cada)
 
 | Commit | Assunto | O que ele mediu |
 | --- | --- | --- |
@@ -3672,6 +3672,7 @@ as sete checagens de headless e os cinco commits atômicos, e a exceção de ord
 | `f843fa6` | custo colhido no frame real | braços plano × face; runner **198** / 0 / 11,656 s, suíte 246 / 0 / 37,2 s |
 | `1e1f792` | instrumento: ponteiro com SHA não é ponteiro vivo | classe (c) corrigida e coberta; corpus inalterado |
 | `acb7970` | re-derivação das citações | 49 casos adjudicados um a um; corpus **0** casos, exit 0 |
+| `a1143b0` | fecho documentado | clone limpo medido; logs e `artifacts.sha256` arquivados |
 
 Duas receitas escritas no dossiê caíram antes do código, pela régua da grade: a **margem de 0,05**
 (o pé apoiado nunca fica abaixo da face do solo, e 0,05 custaria ao lobo de 0,95 a própria célula em
@@ -3689,21 +3690,26 @@ e é o que a seção de fecho publica; nada aqui se chama de pin.
 
 ### O fecho: merge, clone limpo e pin
 
-O merge `--no-ff` na `main` é `a518487` (ponta de documento `acb7970` sobre a ponta de código
-`f843fa6`). Medido de novo na árvore mergeada e num clone limpo de `a518487`, reimportado com
-`--import` frio:
+O merge `--no-ff` da branch `feat/auto-pulo-de-bloco-19` é `a518487` (ponta de documento
+`acb7970` sobre a ponta de código `f843fa6`), e o merge `--no-ff` do fecho
+`docs/fecho-auto-pulo-19` é `ab9ffa1` — a `main` publicada. Medido de novo na árvore mergeada e
+num clone limpo de `a518487`, reimportado com `--import` frio:
 
 | Corrida | Revisão | Suíte | Runner de reações |
 | --- | --- | --- | --- |
 | branch, ponta de documento | `acb7970` | **246 / 0 / 39,7 s** | **198 / 0 / 12,897 s** |
-| `main` mergeada | `a518487` | **246 / 0 / 39,5 s** | — |
+| `main` mergeada do código | `a518487` | **246 / 0 / 39,5 s** | — |
 | clone limpo | `a518487` | **246 / 0 / 39,6 s** | **198 / 0 / 12,870 s** |
+| `main` mergeada do fecho | `ab9ffa1` | **246 / 0 / 39,5 s** | — |
 
-Exit 0 nas três suítes e nos dois runners, zero `SCRIPT ERROR` em stdout e stderr. Os logs e o
+Exit 0 nas quatro suítes e nos dois runners, zero `SCRIPT ERROR` em stdout e stderr. Os logs e o
 `artifacts.sha256` estão em [docs/evidence/auto-pulo-19](evidence/auto-pulo-19/readback.md), e o
-README fixa `a518487` como pin. A árvore de código do pin muda em `src` e `tests` pela primeira vez
-desde o pin da perna 14 (`3eb42835a0e1f…` → `45efe977f74de…` em `src`, `8b8a5e471d737…` →
-`37eb429c142d…` em `tests`), porque a perna toca três `.gd` de corpo e o runner.
+README fixa `ab9ffa1` como pin: `ab9ffa1:src` e `ab9ffa1:tests` são os mesmos objetos de
+`a518487:src` e `a518487:tests` (`45efe977f74de…` e `37eb429c142d…`), porque o fecho trouxe `.md` e
+`.log` e nenhum `.gd` — a corrida do clone é a corrida do pin. A árvore de código do pin muda em
+`src` e `tests` pela primeira vez desde o pin da perna 14 (`3eb42835a0e1f…` → `45efe977f74de…` em
+`src`, `8b8a5e471d737…` → `37eb429c142d…` em `tests`), porque a perna toca três `.gd` de corpo e o
+runner.
 
 Um achado de fecho, medido e não atribuído: o par `ObjectDB instances were leaked` / `resources
 still in use` **não** sai na primeira corrida do clone (stderr de 0 bytes) e sai na segunda, no
