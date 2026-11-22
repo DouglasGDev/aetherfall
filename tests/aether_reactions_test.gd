@@ -35,7 +35,7 @@ const TESTS: Array[StringName] = [
 	&"_test_reposicao_volta_para_a_toca_perdida",
 	&"_test_nascimento_fica_na_toca_dos_pais",
 ]
-const EXPECTED_CHECKS: int = 235
+const EXPECTED_CHECKS: int = 236
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -3879,6 +3879,27 @@ func _test_tocas_distintas_no_boot() -> bool:
 			comps.size(), maior, censo, s._dens.size(),
 			"sem_par" if is_inf(centros) else "%.1f" % centros,
 			"sem_par" if is_inf(lar) else "%.1f" % lar, lares.strip_edges()])
+	# O furo #21 pago com numero, e a linha impressa e a cobranca: `pack_pairs` vale
+	# `n(n-1)/2` sempre -- com um componente ou com tres -- entao ele nao decide
+	# coesao nenhuma e continua saindo aqui como o que ele e (pares TESTADOS). O que
+	# decide e `den_components`, e esta checagem exige que o numero publicado pelo
+	# diagnostico seja o MESMO que o grafo lido pelo runner: se um dos dois calcula
+	# componente por outro caminho, o gate perde a testemunha.
+	var d: Dictionary = s.diagnostics()
+	var publicado := float(d["den_min_dist"])
+	var mesma_sep := false
+	if is_inf(centros):
+		mesma_sep = publicado < 0.0
+	else:
+		mesma_sep = absf(publicado - centros) < 1e-6
+	var testados: int = censo * (censo - 1) / 2
+	_check(int(d["den_components"]) == comps.size() and int(d["dens"]) == s._dens.size()
+			and mesma_sep,
+			"diagnostico_publica_a_mesma_leitura_das_tocas",
+			"diagnostics dens=%d componentes=%d den_min_dist=%.3f | runner componentes=%d centros=%s | furo21 pack_pairs=%d pares_testados=%d (aritmetica sempre verdadeira, nao decide)" % [
+			int(d["dens"]), int(d["den_components"]), publicado, comps.size(),
+			"sem_par" if is_inf(centros) else "%.1f" % centros,
+			int(d["pack_pairs"]), testados])
 	_pack_release()
 	return true
 

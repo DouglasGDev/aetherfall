@@ -270,10 +270,20 @@ func _check_live() -> void:
 	_check("provedor de matilha montado pela sessao real", pack_ok, pack_lines.strip_edges())
 	var n_alive: int = int(d["wolves_alive"])
 	var esperado: int = n_alive * (n_alive - 1) / 2
+	var grupos := int(d["den_components"])
+	var sep_tocas := float(d["den_min_dist"])
+	# Furo #21 (dossie 16 §8), pago com numero: `pack_pairs == n(n-1)/2` e a
+	# identidade aritmetica do laco duplo e valia antes com um circulo unico e com
+	# tres tocas -- nao decidia coesao nenhuma, e por isso continua aqui rotulada
+	# como o que e (pares TESTADOS). O que decide passou a ser `grupos`, os
+	# componentes do grafo lido pela propria sessao. `biggest >= 2` fica porque ele
+	# prova outra coisa: que o provedor chegou bindado ate o lobo (furo #16).
 	_check("alcateia existe na sessao real",
-			int(d["pack_pairs"]) == esperado and biggest >= 2,
-			"pares=%d  esperado=%d  maior_matilha_lida=%d lobos_vivos=%d  vizinhos=[%s]" % [
-			int(d["pack_pairs"]), esperado, biggest, n_alive, pack_lines.strip_edges()])
+			int(d["pack_pairs"]) == esperado and biggest >= 2 and grupos >= 2,
+			"pares_testados=%d  esperado=%d  maior_matilha_lida=%d  grupos=%d  separacao_tocas=%s  lobos_vivos=%d  vizinhos=[%s]" % [
+			int(d["pack_pairs"]), esperado, biggest, grupos,
+			"sem_par" if sep_tocas < 0.0 else "%.1f m" % sep_tocas,
+			n_alive, pack_lines.strip_edges()])
 
 
 ## O gate do movimento, medido em ticks proprios e com a situacao montada. O engine

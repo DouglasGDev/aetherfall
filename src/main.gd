@@ -590,6 +590,55 @@ func _den_gate_ok(feet: Vector3, gate: Array) -> bool:
 	return true
 
 
+## Separacao minima entre CENTROS de toca, no chao: o mesmo eixo do portao que a
+## fundou, para que o numero publicado e o numero cobrado sejam a mesma conta.
+## Devolve `-1,0` quando nao ha par (uma toca ou nenhuma) porque um `INF` dentro
+## do `diagnostics()` viraria JSON sem um leitor que o soubesse interpretar.
+func den_min_dist() -> float:
+	var menor := INF
+	for i in _dens.size():
+		var a: Vector3 = _dens[i]
+		for j in range(i + 1, _dens.size()):
+			var b: Vector3 = _dens[j]
+			menor = minf(menor, Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z)))
+	return -1.0 if is_inf(menor) else menor
+
+
+## Quantos grupos separados a matilha forma, lidos do grafo que o ultimo rebuild
+## escreveu (`pack_of` e leitura pura, nao mexe em buffer nenhum).
+##
+## Este e o numero que paga o furo #21: `pack_pairs` conta pares TESTADOS, entao a
+## igualdade `n(n-1)/2` e verdade aritmetica seja qual for o espalhamento dos lares
+## -- ela nunca decidiu coesao, e o `biggest >= 2` da suite e que estava segurando o
+## gate sozinho. Componentes e o que o pedido do dono pede ("regras para a matilha
+## nao parecer desorganizada"): grupos separados, cada um no seu lugar.
+##
+## Roda em `diagnostics()`, nunca por tick (dossie 16 §4). Os dois leitores do
+## diagnostico sao o F3 (0,25 s) e o gate headless; nenhum dos dois e o caminho
+## quente, e a conta e `O(lobos + arestas ja escritas)` com `<= CENSUS_CAP` nos.
+func den_components() -> int:
+	var vivos: Dictionary = {}
+	for w: Wolf in wolves:
+		if w.alive:
+			vivos[w.identity] = true
+	var vistos: Dictionary = {}
+	var grupos := 0
+	for id: int in vivos:
+		if vistos.has(id):
+			continue
+		grupos += 1
+		var pilha: Array = [id]
+		vistos[id] = true
+		while pilha.size() > 0:
+			var atual: int = int(pilha.pop_back())
+			for e: Dictionary in pack_of(atual):
+				var v: int = int(e["identity"])
+				if vivos.has(v) and not vistos.has(v):
+					vistos[v] = true
+					pilha.append(v)
+	return grupos
+
+
 ## O pedido de lar de um bicho novo (dossie 16 §3.3), com a pertenca decidida aqui
 ## e nunca pelo lobo. `for_den >= 0` e a vaga que chegou com uma toca escrita em
 ## cima -- reposicao de fila e parto -- e ela ENTRA nela. `for_den == -1` e o
@@ -1091,6 +1140,12 @@ func diagnostics() -> Dictionary:
 		"edits": world.edits.size(), "aether_energy": aether.total_energy(),
 		"wolves": wolves.size(), "wolves_alive": targets_under_crosshair().size(),
 		"pack_pairs": _pack_pairs,
+		# Dossie 16 §7d: a toca sai como lugar (quantos centros, a separacao entre
+		# eles) e como leitura (quantos grupos o grafo de coesao realmente forma).
+		# `den_components` e o numero que substitui a igualdade aritmetica de
+		# `pack_pairs` como palavra sobre coesao -- ver o furo #21 no status.
+		"dens": _dens.size(), "den_min_dist": den_min_dist(),
+		"den_components": den_components(),
 		"pending_respawns": _respawn_queue.size(), "triangles": world.triangle_count(),
 		# Dossie 11 §3.6: o censo que o disco trouxe, quantos nasceram dele e quantos
 		# sairam, e quantas vezes o teto disse nao. Sem esses tres numeros a recusa
