@@ -426,15 +426,15 @@ lobos subindo degrau **não** reproduz os hashes das rodadas publicadas — pelo
 para a 17 e a 18, e não porque a projeção mudou.
 
 A exceção de ordem, registrada **antes** do código (mandato 4) porque a perna encosta em
-`src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 — hoje em voo, ponta
-`f33c1d4` — também escreve: a fila passa a **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13**. A 19
+`src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 — ponta de código
+`0762b43` — também escreve: a fila passa a **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13**. A 19
 entra logo depois de 11 porque um defeito em execução custa a cada sessão do dono, enquanto as pernas
 restantes são mecânicas novas que ainda não existem. Consequência assumida e escrita no §7 do dossiê: quando
 a 19 pousar na `main`, a 11 **re-rome o gate** — traz a `main` para dentro de si e roda a suíte de novo,
 porque a árvore resultante é outra revisão (item 5 de "Branches"), e as linhas de `wolf.gd` e do runner que
 a 11 cita passam a valer as depois do merge dela. **A consequência já foi cumprida:** a 19 pousou (merge
 `--no-ff` `ab9ffa1`) e a 11 trouxe a `main` para dentro de si pelo merge `010ab25`, re-rodando o gate na
-árvore resultante.
+árvore resultante; a 11 pousou depois na `main` pelo merge `--no-ff` `4b858c2`.
 
 ## Ciclo de trabalho
 
