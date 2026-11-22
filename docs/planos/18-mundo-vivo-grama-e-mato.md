@@ -86,14 +86,14 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **O que uma célula que muda custa.** Cada conversão é um `set_block` → `edits[p] = b`
   ([voxel_world.gd:260](../../src/world/voxel_world.gd#L260)) + chunk sujo
   ([`:266-277`](../../src/world/voxel_world.gd#L266-L277)) remalhado a **2 chunks por frame**
-  ([main.gd:19](../../src/main.gd#L19), [`:262-263`](../../src/main.gd#L262-L263)) ≈ 67 ms de
+  ([main.gd:28](../../src/main.gd#L28), [`:292`](../../src/main.gd#L292)) ≈ 67 ms de
   boot por chunk nas medidas do contrato ([README.md:148-149](../../README.md#L148-L149)).
   O `edits` **não tem teto** ([`:42`](../../src/world/voxel_world.gd#L42) é um `Dictionary`
-  puro, serializado inteiro em [main.gd:625-637](../../src/main.gd#L625-L637)); hoje cresce
+  puro, serializado inteiro em [main.gd:776](../../src/main.gd#L776)); hoje cresce
   1 chave por ação do jogador, e um ecossistema que cresce sozinho o faria crescer por tempo de
   sessão, não por trabalho do jogador. Isso é o débito real desta linha, declarado antes.
 - **RNG: há um riacho por dono e a suíte bate nele.** A sessão tem
-  `_population_rng` ([main.gd:64](../../src/main.gd#L64), semeado por
+  `_population_rng` ([main.gd:86](../../src/main.gd#L86), semeado por
   `("population:%d" % world_seed).hash()` em [`:320`](../../src/main.gd#L320) na perna 11) e
   cada lobo tem o `_rng` próprio. Uma propagação que sortear célula **comendo o riacho da
   população** muda a ordem de spawns e derruba a suíte de RNG isolada
@@ -153,7 +153,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
    **um campo, um comprador**, e o comprador é a colocação do jogador. Não é refatoração
    opcional: sem isso o mato é um obstáculo invisível que come o clique do jogador.
 6. **Observabilidade antes de orgulho**: `diagnostics()`
-   ([main.gd:717-732](../../src/main.gd#L717-L732)) ganha `growth_queued`, `growth_converted`
+   ([main.gd:927-949](../../src/main.gd#L927-L949)) ganha `growth_queued`, `growth_converted`
    e `edits.size()` já está lá (`:721`) — o par `edits` × tempo de sessão é o que mede se a
    linha é ecologia ou vazamento de disco.
 
@@ -162,7 +162,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **Roda por frame, por tick ou às vezes?** A fila de crescimento: **dentro do tick de 20 Hz**,
   mas com reavaliação a cada `GROW_PERIOD` segundos de simulação; a conversão: no máximo
   1 por tick. A malha resultante: `_process`, fora do budget do passo
-  ([main.gd:262-263](../../src/main.gd#L262-L263)).
+  ([main.gd:292](../../src/main.gd#L292)).
 - **Quantas entidades são alcançadas?** Nenhum bicho. Células: 1 evento de bloco candidata
   **5** (ela + 4 vizinhas), e cada reavaliação custa 6 `get_block` (1 própria + 1 acima + 1
   abaixo + 4 vizinhas, menos as sobrepostas). Com `GROW_MAX_PER_TICK = 1`, o teto por segundo
@@ -215,8 +215,8 @@ godot --headless --path . tests/smoke_test.tscn
 8. **`crescimento_nao_consome_rng_da_sessao`** — o riacho novo não toca `_population_rng`: a
    mesma semente, com e sem mecânica ligada, devolve a mesma sequência de spawns já conferida
    por `tests/simulation_rng_test.gd`. Sem ela, a perna passa a mentir sobre sorteio.
-9. `EXPECTED_CHECKS` ([aether_reactions_test.gd:30](../../tests/aether_reactions_test.gd#L30),
-   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:184](../../tests/smoke_test.gd#L184))
+9. `EXPECTED_CHECKS` ([aether_reactions_test.gd:34](../../tests/aether_reactions_test.gd#L34),
+   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:189](../../tests/smoke_test.gd#L189))
    sobem com o lote, re-medidos no clone limpo com `--import` frio.
 
 ## 6. O que NÃO fazer
@@ -236,7 +236,7 @@ godot --headless --path . tests/smoke_test.tscn
   Um `PLANT` meio-cubo meio-desenho é o "look wrong" que o contrato proíbe por dentro
   (mandato "sem gambiarra"): ou é face Alpha num cubo registrado, ou o item visual fica
   `[OPEN]` e dito.
-- **Não subir `MESH_BUDGET`** ([main.gd:19](../../src/main.gd#L19)) para acomodar conversões.
+- **Não subir `MESH_BUDGET`** ([main.gd:28](../../src/main.gd#L28)) para acomodar conversões.
 - **Não escrever chave nova no save sem declarar o custo em `edits.size()`** — a grama que
   cresce sozinha é exatamente o caso em que o arquivo cresce sem o jogador fazer nada, e isso
   precisa aparecer em log antes de aparecer no disco do jogador.

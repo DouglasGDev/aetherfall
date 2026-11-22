@@ -22,7 +22,7 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 - **braço vermelho de origem**: com o código de hoje, o mesmo cenário não sobe. Isso é aritmética
   do código, não opinião — ver §2;
 - **braço de indiferença**: com a parede de 6 blocos do cenário que já existe
-  ([`aether_reactions_test.gd:1063`](../../tests/aether_reactions_test.gd#L1063)), o corpo **não**
+  ([`aether_reactions_test.gd:1104`](../../tests/aether_reactions_test.gd#L1104)), o corpo **não**
   é lançado para cima, e ainda assim re-arma o desvio. Sem esse lado, a checagem verde estaria
   afirmando apenas que atiramos o corpo para o alto sempre que ele encosta em alguma coisa.
 
@@ -50,10 +50,10 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
   `:844`). A gravidade é a default do integrador, 24,0
   ([voxel_body.gd:17](../../src/entities/voxel_body.gd#L17)), e os dois corpos a usam com fator 1
   fora d'água ([player.gd:516](../../src/entities/player.gd#L516),
-  [wolf.gd:812](../../src/entities/wolf.gd#L812)). O ápice de um lançamento vertical é
+  [wolf.gd:949](../../src/entities/wolf.gd#L949)). O ápice de um lançamento vertical é
   `v² / (2g)`: **5,2² / 48 = 0,563 m** — 44 % de um bloco. O corpo sobe, torna a descer, e com
   `blocked_horizontal` persistindo re-arma a cada 0,35–0,8 s
-  ([`:841`](../../src/entities/wolf.gd#L841)): o "ficam bugados" que o dono vê é este loop, e ele é
+  ([`:978`](../../src/entities/wolf.gd#L978)): o "ficam bugados" que o dono vê é este loop, e ele é
   visível de fora como um lobo pulsando encostado num talude de um bloco.
 - **O jogador só sobe se apertar espaço.** O impulso manual existe e é suficiente —
   `JUMP_SPEED 8,2` ([player.gd:38](../../src/entities/player.gd#L38)), ápice **8,2²/48 = 1,401 m**,
@@ -73,16 +73,16 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
   do lobo é o segundo comprador da regra, não abstração no primeiro.
 - **Os dois cenários que a suíte já tem apontam para direções opostas.** No corredor liso o contrato
   é **nenhum** lançamento: `horizontais == 0 and rearms == 0 and lancamentos == 0`
-  ([aether_reactions_test.gd:972](../../tests/aether_reactions_test.gd#L972)) — e ele continuaria
+  ([aether_reactions_test.gd:1013](../../tests/aether_reactions_test.gd#L1013)) — e ele continuaria
   verde com o conserto, porque sem bloqueio horizontal nenhum dos dois caminhos é pego. Na parede de
   6 blocos o contrato era **tem lançamento**: `rearms > 0 and lancamentos > 0`, na linha `:1035` da
   leitura desta página. Essa asserção **muda de lado** com este dossiê — hoje é `rearms > 0 and
-  lancamentos == 0` ([`:1063`](../../tests/aether_reactions_test.gd#L1063)) —: contra um muro de seis
+  lancamentos == 0` ([`:1104`](../../tests/aether_reactions_test.gd#L1104)) —: contra um muro de seis
   blocos, saltar é desperdício, e é ela que o braço de indiferença do §1 vira de cabeça para baixo.
   Registrar isso antes do código é o ponto: o verde antigo não era errado, era a melhor afirmação
   possível antes de existir o predicado que distingue os dois casos.
 - **O resto do corpo do lobo importa para o pouso.** `DIMS = (0,75, 0,95, 1,35)`
-  ([wolf.gd:72](../../src/entities/wolf.gd#L72)): 0,95 m de altura, e a caixa do `can_stand_at` na
+  ([wolf.gd:96](../../src/entities/wolf.gd#L96)): 0,95 m de altura, e a caixa do `can_stand_at` na
   cota +1,0 tem de caber inteira sobre o bloco — cabe, com 1,0 m de ar livre exigido acima do
   parapeito. O do jogador é 1,80 ([player.gd:25](../../src/entities/player.gd#L25)), e por isso o
   mesmo predicado recusa degrau com teto baixo, o que é a resposta certa e não um defeito.
@@ -98,7 +98,7 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
    caso, e só quando já houve bloqueio.
 2. **O salto do lobo limpa o degrau, e só limpa degrau.** Trocar o literal `5,2` por constante
    nomeada com o ápice escrito ao lado, e exigir o predicado antes de gastar o impulso. Os sorteios
-   de `_rng` de `src/entities/wolf.gd:846-847` **continuam na mesma ordem e na mesma quantidade**: a regra nova decide
+   de `_rng` de `src/entities/wolf.gd:978-979` **continuam na mesma ordem e na mesma quantidade**: a regra nova decide
    apenas se a velocidade vertical é escrita. mover o sorteio para dentro de um `if` mudaria o
    riacho e o cenário `simulation_rng_test` deixaria de medir a mesma coisa que mede hoje.
 3. **Auto-pulo do jogador, com as recusas escritas.** Depois de `move_and_collide`, quando
@@ -156,7 +156,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
    nasce vermelha.
 3. **`penhasico_nao_gasta_salto`** — o braço de indiferença: a parede de 6 blocos do cenário que já
    existe, agora com `lancamentos == 0` e `rearms > 0`. É a asserção que esta página lia em `:1035`
-   — re-derivada hoje em [`aether_reactions_test.gd:1063`](../../tests/aether_reactions_test.gd#L1063),
+   — re-derivada hoje em [`aether_reactions_test.gd:1104`](../../tests/aether_reactions_test.gd#L1104),
    lida do outro lado — e é por isso que ela é re-derivada neste lote em vez de apagada.
 4. **`agachado_nao_e_arremessado`** — o mesmo degrau com `crouching` true: corpo continua do lado de
    cá, `Δy == 0`. A checagem que dá dente à recusa do §3.3.
@@ -170,7 +170,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
 6. **`pulo_nao_custou_passo_de_ninguem`** — 1 000 ticks andando em plano sem bloqueio e 1 000 ticks
    com um degrau no caminho, `worst_sim_ms` e `dropped_ticks` lado a lado; atribuição por
    composição, como o contrato exige.
-7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:30`](../../tests/aether_reactions_test.gd#L30),
+7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:34`](../../tests/aether_reactions_test.gd#L34),
    **183** nesta leitura, na `main` mergida da perna 14) sobe com o lote e é re-medido no clone
    limpo com `--import` frio, com o SHA pinado.
 
@@ -181,7 +181,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
   melhor e com intenção, e o auto-pulo tem de ser indiferente ao input manual, nunca somar os dois
   impulsos no mesmo frame.
 - **Não** mexer no riacho de `_rng` do lobo nem no `_population_rng` da sessão
-  ([`main.gd:55`](../../src/main.gd#L55)): o conserto é regra geométrica, não sorteio novo, e um
+  ([`main.gd:64`](../../src/main.gd#L64)): o conserto é regra geométrica, não sorteio novo, e um
   riacho novo derrubaria `tests/simulation_rng_test.gd` sem consertar nada.
 - **Não** tocar em `FORMAT_VERSION`, `Channel.COUNT` nem na projeção do `TickJournal`: nenhum bloco
   se move por esta perna, e o `state_hash` continua função do que já era.
@@ -231,7 +231,7 @@ Branch `feat/auto-pulo-de-bloco-19`, um assunto por commit, suíte verde entre e
   `floori` de `aabb_hits_solid` já trata a face encostada como livre — o predicado ficou em `+1,0`
   cru. E o "vão de 0,95 m" da checagem 5: não existe meio bloco no mundo, o vão é de **uma célula**,
   e aí a resposta é por corpo — o lobo cabe e salta, o jogador de 1,80 não cabe e recusa. Medido com
-  sonda descartável (cinco braços, as mesmas caixas de `wolf.gd:72` e `player.gd:25`), não presumido.
+  sonda descartável (cinco braços, as mesmas caixas de `wolf.gd:96` e `player.gd:25`), não presumido.
 
 ## 10. Estado depois do fecho
 
