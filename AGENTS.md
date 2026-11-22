@@ -434,7 +434,7 @@ a 19 pousar na `main`, a 11 **re-rome o gate** — traz a `main` para dentro de 
 porque a árvore resultante é outra revisão (item 5 de "Branches"), e as linhas de `wolf.gd` e do runner que
 a 11 cita passam a valer as depois do merge dela. **A consequência já foi cumprida:** a 19 pousou (merge
 `--no-ff` `ab9ffa1`) e a 11 trouxe a `main` para dentro de si pelo merge `010ab25`, re-rodando o gate na
-árvore resultante; a 11 pousou depois na `main` pelo merge `--no-ff` `4b858c2`.
+árvore resultante; a 11 pousou na `main` pelo merge `--no-ff` `4b858c2` e o fecho pelo `5b519f8`, o pin publicado.
 
 ## Ciclo de trabalho
 

@@ -91,7 +91,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 
 - **Acasalamento, filhote que cresce e censo variável: o bicho nasce de dois adultos, envelhece,
   e o disco deixa de ser uma lista truncada (dossiê 11, branch `feat/acasalamento-e-censo-11`,
-  merge `4b858c2` na `main`).** O que estava em aberto quando a página foi escrita: a população
+  merge `4b858c2` e fecho `5b519f8` na `main`).** O que estava em aberto quando a página foi escrita: a população
   era a constante `WOLF_COUNT := 5` ([main.gd:9](../src/main.gd#L9)), não existia fase, idade
   nem corpo menor (`DIMS` era constante, [wolf.gd:96](../src/entities/wolf.gd#L96)) e o load
   pareava **por índice** com teto — `for i in mini(saved.size(), wolves.size())`, `main.gd:692`
@@ -120,7 +120,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   Medido no clone limpo da revisão mescada (`4b858c2`, `--import` frio): runner estreito
   **225 / 0 / 15,451 s** e suíte **252 / 0 / 42,9 s**, exit 0. O vermelho intermitente do runner
   é a checagem "nenhum estouro de subtree no budget" e ele **não** é desta perna — a atribuição
-  fecha nos dois braços e está no furo #20. O pin publicado é `4b858c2`; o par de vazamento do
+  fecha nos dois braços e está no furo #20. O pin publicado é `5b519f8`; o par de vazamento do
   quit que aparece no stderr é o do som, já debitado abaixo, e ele sai também sem esta perna.
 - **Auto-pulo do degrau de um bloco: o lobo sobe, e quem anda com o jogador também sobe
   (dossiê 19, branch `feat/auto-pulo-de-bloco-19`, merge `ab9ffa1` na `main`).** O pedido do dono é
@@ -483,9 +483,9 @@ duas escrevem em `src/entities/wolf.gd` e no runner, a consequência está assum
 suíte de novo, porque a árvore resultante é outra revisão (item 5 de "Branches"). Estado agora: a
 19 pousou na `main` (merge `--no-ff` `ab9ffa1`, clone limpo medido), e a 11 **já re-romeu o gate**
 e **pousou**: trouxe a `main` para dentro de si pelo merge `010ab25` (ponta `f33c1d4`) e mediu a
-árvore resultante, mergeada na `main` em `4b858c2`. O pin publicado sai no fecho e não aqui,
-porque o número medido é o da revisão **mescada** — o clone limpo dela, com `--import` frio, está
-em [`docs/evidence/acasalamento-censo-11/readback.md`](evidence/acasalamento-censo-11/readback.md).
+árvore resultante, mergeada na `main` em `4b858c2`; o fecho dela virou a `main` `5b519f8`, que é o
+pin publicado, porque o número medido é o da revisão **mescada** — o clone limpo dela, com
+`--import` frio, está em [`docs/evidence/acasalamento-censo-11/readback.md`](evidence/acasalamento-censo-11/readback.md).
 
 ## Falta
 
@@ -3928,8 +3928,13 @@ teria dois donos e o filhote nasceria dentro da iteração sobre a lista que ele
 
 ### A corrida que sustenta os números
 
-O pin publicado é **`4b858c2`**, o merge `--no-ff` da branch sobre a base `e7a5fe7`. Medido no
-clone limpo desse SHA — sem `.godot/`, com `--import` frio **exit 0**:
+O pin publicado é **`5b519f8`**, o merge `--no-ff` do fecho da perna 11
+(`docs/fecho-acasalamento-censo-11`) sobre `4b858c2`, o merge `--no-ff` da branch sobre a base
+`e7a5fe7`. O fecho trouxe `.md` e `.log` e nenhum `.gd`, então `5b519f8:src` e `5b519f8:tests`
+são os mesmos objetos de `4b858c2:src` e `4b858c2:tests`
+(`30873d664a9577bcd3e709046cc708923456c372` e `975eac5a471dc1e064441474ef6e13866076d34f`) — a
+corrida do clone limpo e a corrida do pin são a mesma corrida. Medido no clone limpo de
+`4b858c2` — sem `.godot/`, com `--import` frio **exit 0**:
 
 | Corrida | Resultado |
 | --- | --- |
@@ -3937,7 +3942,10 @@ clone limpo desse SHA — sem `.godot/`, com `--import` frio **exit 0**:
 | clone limpo, suíte (2ª, mesmo clone, mesmo comando) | **252 / 0 / 42,9 s**, exit 0 |
 | clone limpo, runner de reações | **225 / 0 / 15,451 s**, exit 0 |
 | clone limpo, teste do journal | **128 / 0 / 5,811 s**, exit 0 |
-| `main` mergeada, suíte | **252 / 0 / 43,1 s**, exit 0 |
+| `main` mergeada do código (`4b858c2`), suíte | **252 / 0 / 43,1 s**, exit 0 |
+| `main` do fecho (`5b519f8`), suíte | **252 / 0 / 43,0 s**, exit 0 |
+| `main` do fecho (`5b519f8`), runner de reações | **225 / 0 / 15,348 s**, exit 0 |
+| `main` do fecho (`5b519f8`), teste do journal | **128 / 0 / 5,769 s**, exit 0 |
 | branch, suíte | **252 / 0 / 43,0 s**, exit 0 |
 | branch, runner de reações | **225 / 0 / 15,343 s**, exit 0 |
 

@@ -211,28 +211,28 @@ A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois ha
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 
-**O pin de hoje é `4b858c2`**, a `main` do merge `--no-ff` da perna 11 (acasalamento, filhote e
-censo variável), que é o merge da branch `feat/acasalamento-e-censo-11` (ponta de código `0762b43`)
+**O pin de hoje é `5b519f8`**, a `main` do merge `--no-ff` do fecho da perna 11 (acasalamento,
+filhote e censo variável), que é o merge do fecho `docs/fecho-acasalamento-censo-11` sobre
+`4b858c2`, o merge `--no-ff` da branch `feat/acasalamento-e-censo-11` (ponta de código `0762b43`)
 sobre a base `e7a5fe7`. A árvore de código do pin **mudou** em `src` e `tests` de novo: `git
-rev-parse 4b858c2:src 4b858c2:tests` devolve `30873d664a9577bcd3e709046cc708923456c372` e
-`975eac5a471dc1e064441474ef6e13866076d34f` — o pin anterior (`ab9ffa1`, perna 19) tinha
-`45efe977f74de…` e `37eb429c142d…`, e a perna 11 escreve em `src/entities/wolf.gd`, `src/main.gd`,
-`src/ai/mind_oracle.gd` e nos dois runners. O número do pin é a corrida arquivada dessa árvore:
-**252 checagens, 0 falhas, 42,9 s**, exit 0, zero `SCRIPT ERROR` nas duas correntes, `dropped_ticks`
-**0**, `births` **2**, `census_cap` **12**, `wolves` **7** e `worst_sim_ms` **13,684** dos 50 ms do
-passo — medidos no clone limpo de `4b858c2`, sem `.godot/` e com `--import` frio exit 0; a `main`
-mergeada (`4b858c2`) re-rodada deu **252 / 0 / 43,1 s**, e o runner de reações deu **225 / 0 /
-15,451 s** no clone e **225 / 0 / 15,343 s** na branch. Esse `worst_sim_ms` é uma corrida, não uma
-faixa. Logs, `artifacts.sha256` e a conferência do clone estão em
-[docs/evidence/acasalamento-censo-11/readback.md](docs/evidence/acasalamento-censo-11/readback.md).
+rev-parse 5b519f8:src 5b519f8:tests` devolve `30873d664a9577bcd3e709046cc708923456c372` e
+`975eac5a471dc1e064441474ef6e13866076d34f` — e `4b858c2:src` e `4b858c2:tests` devolvem os mesmos
+dois objetos, porque o fecho trouxe `.md` e `.log` e nenhum `.gd`. A perna 11 escreve em
+`src/entities/wolf.gd`, `src/main.gd`, `src/ai/mind_oracle.gd` e nos dois runners. O número do pin
+é a corrida arquivada dessa árvore: **252 checagens, 0 falhas, 42,9 s**, exit 0, zero `SCRIPT
+ERROR` nas duas correntes, `dropped_ticks` **0**, `births` **2**, `census_cap` **12**, `wolves` **7**
+e `worst_sim_ms` **13,684** dos 50 ms do passo — medidos no clone limpo de `4b858c2`, sem
+`.godot/` e com `--import` frio exit 0; a `main` do fecho re-rodada deu **252 / 0 / 43,0 s**, e o
+runner de reações deu **225 / 0 / 15,451 s** no clone, **225 / 0 / 15,348 s** na `main` do fecho
+e **225 / 0 / 15,343 s** na branch. Esse `worst_sim_ms` é uma corrida, não uma faixa. Logs,
+`artifacts.sha256` e a conferência do clone estão em [readback.md](docs/evidence/acasalamento-censo-11/readback.md).
 O par de vazamento do quit sai na **primeira** corrida do clone (stderr de 249 bytes) e **não** sai
 na segunda, no mesmo clone e com o mesmo comando; com `--verbose` o objeto é nomeado — é a
 ambiência `res://assets/audio/amb/amb_birds.ogg` viva no instante em que o processo morre —, e o
 braço de controle na `main` **sem** esta perna dá o mesmo par, maior (**16 ObjectDB com 6
-resources**): ele **precede** a perna 11 e não é dela. O pin anterior, `ab9ffa1` (perna 19), deu
-**246 / 0 / 39,6 s** no clone limpo; o registro completo está em
-[docs/evidence/auto-pulo-19/readback.md](docs/evidence/auto-pulo-19/readback.md).
-
+resources**): ele **precede** a perna 11 e não é dela. O pin anterior, `ab9ffa1` (perna 19), tinha
+`45efe977f74de…` e `37eb429c142d…` e deu **246 / 0 / 39,6 s** no clone limpo; o registro completo
+está em [readback.md](docs/evidence/auto-pulo-19/readback.md).
 Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
