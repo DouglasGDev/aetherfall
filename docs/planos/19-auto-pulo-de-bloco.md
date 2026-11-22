@@ -235,10 +235,10 @@ Branch `feat/auto-pulo-de-bloco-19`, um assunto por commit, suíte verde entre e
 
 ## 10. Estado depois do fecho
 
-A perna pousou. Os sete commits são `a534e23` (esta página e a exceção), `c313544` (o predicado no
+A perna pousou. Os oito commits são `a534e23` (esta página e a exceção), `c313544` (o predicado no
 integrador), `c0659fd` (o lobo), `2a20843` (o jogador), `f843fa6` (a checagem 6 e o custo colhido no
 frame real), `1e1f792` (o instrumento de âncoras, classe (c)) e `acb7970` (a re-derivação das
-citações) — merge `--no-ff` `a518487` na `main`, publicado e medido num clone limpo: **246
+citações) e `a1143b0` (o fecho) — merge `--no-ff` `a518487` na `main` e `ab9ffa1` no fecho, publicado e medido num clone limpo: **246
 checagens / 0 falhas / 39,6 s** na suíte e **198 / 0 / 12,870 s** no runner de reações, exit 0 nos
 dois, zero `SCRIPT ERROR`. Os logs, o `artifacts.sha256` e a conferência do clone estão em
 [`docs/evidence/auto-pulo-19/readback.md`](../evidence/auto-pulo-19/readback.md).
@@ -250,5 +250,5 @@ corrida do clone e sai na segunda, no mesmo clone e com o mesmo comando — o qu
 diretório de dados `user://`, não a árvore.
 
 Fica em aberto para a perna 11, que escreve os mesmos dois arquivos: re-rometer o gate a partir de
-`a518487`, porque a árvore resultante é outra revisão (item 5 de "Branches" em
+`ab9ffa1`, porque a árvore resultante é outra revisão (item 5 de "Branches" em
 [`AGENTS.md`](../../AGENTS.md)).

@@ -211,21 +211,21 @@ A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois ha
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 
-**O pin de hoje é `a518487`**, a `main` do merge `--no-ff` do fecho da perna 19 (auto-pulo de
-bloco) sobre `8ac761d`; ponta de código `f843fa6`, ponta de documento `acb7970`. A árvore de
-código do pin **mudou** em `src` e `tests` pela primeira vez desde o pin da perna 14:
-`git rev-parse a518487:src a518487:tests` devolve `45efe977f74de550423ce59e5eb16bb2492a185f` e
-`37eb429c142d6e3af7922e38145a984feb130f8b`, contra `3eb42835a0e1f…` e `8b8a5e471d737…` de
-`d4dee0f` — a perna toca `src/entities/voxel_body.gd`, `src/entities/player.gd`,
-`src/entities/wolf.gd` e `tests/aether_reactions_test.gd`. O número do pin é a corrida arquivada
-dessa árvore: **246 checagens, 0 falhas, 39,6 s**, exit 0, zero `SCRIPT ERROR` nas duas correntes,
-`dropped_ticks` **0**, `gen_ms` **1 021,495**, `mesh_ms` **4 914,465** e `worst_sim_ms` **13,541**
-dos 50 ms do passo. O clone limpo de `a518487`, sem `.godot/` e com `--import` frio exit 0, é a
-corrida do número; a `main` mergeada deu **246 / 0 / 39,5 s** e a branch **246 / 0 / 39,7 s**, e
-o runner de reações deu **198 / 0 / 12,870 s** no clone e **198 / 0 / 12,897 s** na branch. Esse
-`worst_sim_ms` é uma corrida, não uma faixa. Logs, `artifacts.sha256` e a conferência do clone
-estão em [docs/evidence/auto-pulo-19/readback.md](docs/evidence/auto-pulo-19/readback.md). O par
-de vazamento do quit **não** sai na primeira corrida do clone (stderr de 0 bytes) e sai na
+**O pin de hoje é `ab9ffa1`**, a `main` do merge `--no-ff` do fecho da perna 19 (auto-pulo de
+bloco), que é o merge do fecho `docs/fecho-auto-pulo-19` sobre `a518487`, o merge da ponta de
+código `f843fa6`. A árvore de código do pin **mudou** em `src` e `tests` pela primeira vez desde
+o pin da perna 14: `git rev-parse ab9ffa1:src ab9ffa1:tests` devolve
+`45efe977f74de550423ce59e5eb16bb2492a185f` e `37eb429c142d6e3af7922e38145a984feb130f8b`, e
+`a518487:src` e `a518487:tests` devolvem os mesmos dois objetos — o fecho trouxe `.md` e `.log`,
+nenhum `.gd`. O número do pin é a corrida arquivada dessa árvore: **246 checagens, 0 falhas,
+39,6 s**, exit 0, zero `SCRIPT ERROR` nas duas correntes, `dropped_ticks` **0**, `gen_ms`
+**1 021,495**, `mesh_ms` **4 914,465** e `worst_sim_ms` **13,541** dos 50 ms do passo — medidos
+no clone limpo de `a518487`, sem `.godot/` e com `--import` frio exit 0; a `main` mergeada
+(`ab9ffa1`) re-rodada deu **246 / 0 / 39,5 s**, e o runner de reações deu **198 / 0 / 12,870 s**
+no clone e **198 / 0 / 12,897 s** na branch. Esse `worst_sim_ms` é uma corrida, não uma faixa.
+Logs, `artifacts.sha256` e a conferência do clone estão em
+[docs/evidence/auto-pulo-19/readback.md](docs/evidence/auto-pulo-19/readback.md). O par de
+vazamento do quit **não** sai na primeira corrida do clone (stderr de 0 bytes) e sai na
 segunda, no mesmo clone e com o mesmo comando — o que o par acompanha é o diretório de dados
 `user://`, não a árvore; na árvore de trabalho ele sai como **16 ObjectDB com 6 resources**, e
 atribuí-lo continua aberto. O pin anterior, `d4dee0f` (perna 14), deu **246 / 0 / 38,9 s** e o

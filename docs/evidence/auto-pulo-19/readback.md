@@ -2,12 +2,15 @@
 
 O que esta pasta guarda é a corrida que sustenta o **fecho** da perna: a pontinha de código
 `f843fa6` já tinha a sua própria medição, feita na branch; aqui está o que acontece **depois** —
-a branch publicada, o merge `--no-ff` na `main`, e o número do pin medido num clone limpo da
+a branch publicada, os dois merges `--no-ff` na `main`, e o número do pin medido num clone limpo da
 `main` mergeada.
 
-Revisão medida: `a518487` (`Merge feat/auto-pulo-de-bloco-19: auto-pulo de bloco (dossie 19)`),
+Revisões medidas: `a518487` (`Merge feat/auto-pulo-de-bloco-19: auto-pulo de bloco (dossie 19)`),
 merge `--no-ff` de `feat/auto-pulo-de-bloco-19` (ponta de código `f843fa6`, ponta de documento
-`acb7970`) sobre a base `8ac761d`.
+`acb7970`) sobre a base `8ac761d`; e `ab9ffa1` (`Merge docs/fecho-auto-pulo-19: fecho documentado
+do auto-pulo de bloco (dossie 19)`), o merge do fecho `docs/fecho-auto-pulo-19` — a `main`
+publicada, que é o **pin**. O fecho trouxe `.md` e `.log` e nenhum `.gd`, então `ab9ffa1:src` e
+`ab9ffa1:tests` são os mesmos objetos de `a518487:src` e `a518487:tests`.
 
 ## 1. O que está nesta pasta
 
@@ -15,17 +18,18 @@ merge `--no-ff` de `feat/auto-pulo-de-bloco-19` (ponta de código `f843fa6`, pon
 | --- | --- | --- |
 | `branch_suite.log` / `.err` | 21 221 / 250 | suíte na ponta de documento da branch (`acb7970`) |
 | `branch_runner.log` | 35 765 | runner de reações na mesma ponta |
-| `merged_main_suite.log` / `.err` | 21 222 / 250 | suíte na `main` mergeada (`a518487`) |
+| `merged_main_suite.log` / `.err` | 21 222 / 250 | suíte na `main` mergeada do código (`a518487`) |
 | `clone_import.log` | 21 338 | `--import` frio do clone limpo, exit 0 |
 | `clone_suite.log` | 21 223 | suíte no clone limpo, **primeira** corrida (diretório de dados virgem) |
 | `clone_suite_run2.log` / `.err` | 21 223 / 250 | **segunda** corrida no mesmo clone, mesmo comando |
 | `clone_runner.log` | 35 766 | runner de reações no clone limpo |
+| `fecho_main_suite.log` / `.err` | 21 223 / 250 | suíte na `main` mergeada do fecho (`ab9ffa1`) |
 | `artifacts.sha256` | — | SHA-256 de cada arquivo acima |
 
 Os logs são cópias literais do stdout/stderr das corridas; `artifacts.sha256` é conferível com
 `sha256sum -c artifacts.sha256` a partir desta pasta.
 
-## 2. As quatro corridas
+## 2. As cinco corridas
 
 Todas headless, máquina livre, medição serial (nenhum gate de timing roda com outra carga), e
 todas com **zero** `SCRIPT ERROR` nas duas correntes (stdout e stderr).
@@ -37,6 +41,7 @@ todas com **zero** `SCRIPT ERROR` nas duas correntes (stdout e stderr).
 | `main` mergeada, suíte | `a518487` | idem, na árvore do merge | **246 checagens / 0 falhas / 39,5 s**, exit 0 |
 | clone limpo, suíte | `a518487` | idem, em `C:/tmp/af19-clone` | **246 checagens / 0 falhas / 39,6 s**, exit 0 |
 | clone limpo, runner | `a518487` | idem, em `C:/tmp/af19-clone` | **198 checagens / 0 falhas / 12,870 s**, exit 0 |
+| `main` do fecho, suíte | `ab9ffa1` | idem, na árvore do fecho | **246 checagens / 0 falhas / 39,5 s**, exit 0 |
 
 Linhas literais:
 
@@ -47,6 +52,7 @@ Linhas literais:
 == 246 checagens  0 falhas  39.6 s de teste ==      (clone_suite.log)
 == 246 checagens  0 falhas  39.5 s de teste ==      (clone_suite_run2.log)
 198 checagens 0 falhas 12.870 s                       (clone_runner.log)
+== 246 checagens  0 falhas  39.5 s de teste ==      (fecho_main_suite.log)
 ```
 
 O censo do runner é `EXPECTED_CHECKS = 198` e a suíte é 246 — os dois números que o
@@ -65,9 +71,9 @@ O `--import` frio sai com **exit 0** e termina em `[ DONE ] loading_editor_layou
 ## 3. O par de vazamento do quit tem causa medida
 
 O par `ObjectDB instances were leaked` / `resources still in use` aparece na árvore de trabalho
-(`branch_suite.err`, `merged_main_suite.err`, 250 bytes cada) e **não** aparece na primeira
-corrida do clone limpo — `clone_suite.log` tem zero `ERROR` e stderr de 0 bytes. A segunda
-corrida no **mesmo** clone, mesmo comando, mesma árvore, volta a imprimir o par
+(`branch_suite.err`, `merged_main_suite.err`, `fecho_main_suite.err`, 250 bytes cada) e **não**
+aparece na primeira corrida do clone limpo — `clone_suite.log` tem zero `ERROR` e stderr de 0
+bytes. A segunda corrida no **mesmo** clone, mesmo comando, mesma árvore, volta a imprimir o par
 (`clone_suite_run2.err`, 250 bytes):
 
 ```
@@ -83,14 +89,19 @@ continua **aberta**: o que está medido aqui é o que o par acompanha, não o qu
 
 ## 4. O que o fecho não mudou
 
-A árvore de código do pin é a da ponta `f843fa6` mais os dois commits de documento; o que o
-merge acrescenta é `.md` e `.log`. Conferência por hash de árvore:
+A árvore de código do pin é a da ponta `f843fa6` mais os commits de documento; o que os merges
+acrescentam é `.md` e `.log`. Conferência por hash de árvore:
 
 ```
-git rev-parse a518487:src a518487:tests
+git rev-parse ab9ffa1:src ab9ffa1:tests a518487:src a518487:tests
+45efe977f74de550423ce59e5eb16bb2492a185f
+37eb429c142d6e3af7922e38145a984feb130f8b
 45efe977f74de550423ce59e5eb16bb2492a185f
 37eb429c142d6e3af7922e38145a984feb130f8b
 ```
+
+O pin é `ab9ffa1` e a corrida arquivada é do clone de `a518487`: os quatro objetos acima são os
+mesmos, porque o fecho não tocou `.gd` — o código do pin é o código que rodou na suíte.
 
 Contra o pin anterior (`d4dee0f`, perna 14), `src` era `3eb42835a0e1f…` e `tests` era
 `8b8a5e471d737…`: **mudaram**, porque a perna 19 toca `src/entities/voxel_body.gd`,
@@ -104,5 +115,5 @@ O diagnóstico final confere dígito a dígito entre a `main` mergeada e o clone
 (média e pico são corrida, não faixa).
 
 Nada nesta pasta fecha gate de fase (mandato 4). A perna 11, que também escreve
-`src/entities/wolf.gd` e o runner, re-rome o gate depois deste merge — a árvore resultante é
+`src/entities/wolf.gd` e o runner, re-rome o gate a partir de `ab9ffa1` — a árvore resultante é
 outra revisão.
