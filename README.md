@@ -211,26 +211,26 @@ A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois ha
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 
-**O pin de hoje é `d4dee0f`**, a `main` do merge `--no-ff` do fecho documentado da perna 14
-(convivência da alcateia) sobre `e7e0a1f`, que é o merge da ponta de código `6e35b64`. A árvore de
-código das três pontas é uma só: `git rev-parse d4dee0f:src e7e0a1f:src 6e35b64:src` devolve
-`3eb42835a0e1f54086937d63258388f52e1db932`, idem `tests`
-(`8b8a5e471d737d6474eb6171bab6fdbeec75c06a`); no repositório inteiro, `git rev-parse
-d4dee0f^{tree} 857c8e6^{tree}` são o mesmo objeto `45890848…` — o que o fecho trouxe é `.md` e `.log`,
-nenhum `.gd`. O número do pin é a corrida arquivada dessa árvore: **246 checagens, 0 falhas, 38,9 s**,
-exit 0, zero `SCRIPT ERROR` nas duas correntes (`fecho-suite.log`, stderr de 249 bytes à parte),
-`dropped_ticks` **0**, `gen_ms` **1 017,212**, `mesh_ms` **4 977,391** e `worst_sim_ms` **16,127** dos
-50 ms do passo. Esse último é uma corrida, não uma faixa: o `e7e0a1f`, na mesma árvore de código, deu
-**39,8 s** com **15,768** ms e os degraus da escada ficaram em 10,338–12,971 ms — a variação desta
-máquina de corrida a corrida é maior que qualquer delta que a convivência pudesse introduzir. O clone
-limpo de `6e35b64`, sem `.godot/` e com `--import` frio exit 0, confere por execução o que o hash de
-árvore só sugere: **246 / 0 / 37,0 s**. A escada da perna vai de 36,9 a 37,6 s na árvore de trabalho.
-A prova de publicação continua sendo `git ls-remote --heads origin`, não o código de saída do push.
-Logs e conferência dos degraus, do clone, do merge, do fecho e deste registro estão em
-[docs/evidence/alcateia-convivio-14/readback.md](docs/evidence/alcateia-convivio-14/readback.md), com
-51 arquivos e `artifacts.sha256` (51 entradas) conferido. O par de vazamento do quit é, nesta
-perna, **8 a 12 ObjectDB com 4 resources** — o `resources` caiu de 6 para 4 em relação à perna 10 (pin anterior,
-`252f1e7`: 239 / 0 / 38,4 s), e atribuí-lo continua aberto.
+**O pin de hoje é `a518487`**, a `main` do merge `--no-ff` do fecho da perna 19 (auto-pulo de
+bloco) sobre `8ac761d`; ponta de código `f843fa6`, ponta de documento `acb7970`. A árvore de
+código do pin **mudou** em `src` e `tests` pela primeira vez desde o pin da perna 14:
+`git rev-parse a518487:src a518487:tests` devolve `45efe977f74de550423ce59e5eb16bb2492a185f` e
+`37eb429c142d6e3af7922e38145a984feb130f8b`, contra `3eb42835a0e1f…` e `8b8a5e471d737…` de
+`d4dee0f` — a perna toca `src/entities/voxel_body.gd`, `src/entities/player.gd`,
+`src/entities/wolf.gd` e `tests/aether_reactions_test.gd`. O número do pin é a corrida arquivada
+dessa árvore: **246 checagens, 0 falhas, 39,6 s**, exit 0, zero `SCRIPT ERROR` nas duas correntes,
+`dropped_ticks` **0**, `gen_ms` **1 021,495**, `mesh_ms` **4 914,465** e `worst_sim_ms` **13,541**
+dos 50 ms do passo. O clone limpo de `a518487`, sem `.godot/` e com `--import` frio exit 0, é a
+corrida do número; a `main` mergeada deu **246 / 0 / 39,5 s** e a branch **246 / 0 / 39,7 s**, e
+o runner de reações deu **198 / 0 / 12,870 s** no clone e **198 / 0 / 12,897 s** na branch. Esse
+`worst_sim_ms` é uma corrida, não uma faixa. Logs, `artifacts.sha256` e a conferência do clone
+estão em [docs/evidence/auto-pulo-19/readback.md](docs/evidence/auto-pulo-19/readback.md). O par
+de vazamento do quit **não** sai na primeira corrida do clone (stderr de 0 bytes) e sai na
+segunda, no mesmo clone e com o mesmo comando — o que o par acompanha é o diretório de dados
+`user://`, não a árvore; na árvore de trabalho ele sai como **16 ObjectDB com 6 resources**, e
+atribuí-lo continua aberto. O pin anterior, `d4dee0f` (perna 14), deu **246 / 0 / 38,9 s** e o
+clone limpo **246 / 0 / 37,0 s**; o registro completo está em
+[docs/evidence/alcateia-convivio-14/readback.md](docs/evidence/alcateia-convivio-14/readback.md).
 
 Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`

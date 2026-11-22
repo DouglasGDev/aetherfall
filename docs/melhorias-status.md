@@ -90,10 +90,10 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 ## Feito nesta sessão
 
 - **Auto-pulo do degrau de um bloco: o lobo sobe, e quem anda com o jogador também sobe
-  (dossiê 19, branch `feat/auto-pulo-de-bloco-19`, cinco commits `a534e23`→`f843fa6`).** O pedido do
-  dono é um defeito em execução, não uma mecânica nova: "os mobs/npcs tem que saber pular os blocos,
-  pois ficam bugados e aqui tbm fazer quando estou andando, ter um auto pular o bloco". Lido no
-  código, são três causas e nenhuma é pathfinding. **(a) A pergunta mora no integrador:**
+  (dossiê 19, branch `feat/auto-pulo-de-bloco-19`, merge `a518487` na `main`).** O pedido do dono é
+  um defeito em execução, não uma mecânica nova: "os mobs/npcs tem que saber pular os blocos, pois
+  ficam bugados e aqui tbm fazer quando estou andando, ter um auto pular o bloco". Lido no código,
+  são três causas e nenhuma é pathfinding. **(a) A pergunta mora no integrador:**
   `can_step_over(dir)` ([voxel_body.gd:166-173](../src/entities/voxel_body.gd#L166-L173)) responde
   "a um bloco acima, na direção que eu quero ir, existe onde ficar de pé?" em cima do
   `can_stand_at` que a IA do lobo já chama — um predicado para os dois corpos porque os dois usam o
@@ -447,9 +447,9 @@ sessão enquanto as pernas restantes são mecânicas que ainda não existem. A f
 [19](planos/19-auto-pulo-de-bloco.md), branch `feat/auto-pulo-de-bloco-19`, base `8ac761d`). Como as
 duas escrevem em `src/entities/wolf.gd` e no runner, a consequência está assumida no §7 do dossiê:
 **quando a 19 pousar na `main`, a 11 re-rome o gate** — traz a `main` para dentro de si e roda a
-suíte de novo, porque a árvore resultante é outra revisão (item 5 de "Branches"). Estado agora: os
-cinco commits da 19 estão escritos e medidos na branch (`a534e23`→`f843fa6`), e a 11 continua com as
-pernas (f) e (g) faltando, ponta `3e8f9ba`.
+suíte de novo, porque a árvore resultante é outra revisão (item 5 de "Branches"). Estado agora: a
+19 pousou na `main` (merge `--no-ff` `a518487`, clone limpo medido), e a 11 continua com as pernas
+(f) e (g) faltando, ponta `3e8f9ba` — é ela que re-rome o gate.
 
 ## Falta
 
@@ -978,7 +978,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     **registro** histórico de quebrado — foi o caso de `status:1910` que abriu esta linha. O conserto
     é da régua, não do número: ponteiro com SHA prefixado não é ponteiro vivo, e a guarda agora o
     declara no docstring e o ignora. Somando as três: nesta ponta o corpus dá **35 arquivos /
-    1 903 ponteiros / 131 rótulos / 1 862 links relativos / 0 casos objetivos, exit 0**; na base
+    1 903 ponteiros / 131 rótulos / 1 866 links relativos / 0 casos objetivos, exit 0**; na base
     `8ac761d`, lida contra a mesma árvore de código, eram **34 / 1 835 / 131 / 1 791 / 53 casos,
     exit 1** — 25 BRANCO e 28 ROTULO-FORA-DO-CORPO espalhados por 12 documentos (19 dentro deste
     arquivo, 11 no dossiê 10, 7 no 13). Os 68 ponteiros a mais se decompõem assim, cada parte conferida
@@ -3644,7 +3644,7 @@ nenhuma das peças nomeadas (`BlockUpdateQueue`, `FallingBlock`, `PLANT`, `subst
 rodada entrega é a pauta com premissa, custo e gate escritos contra o código de hoje — e a proibição de
 varredura global, que é o ponto dos dois prompts que o código ainda não tem como garantir.
 
-## Rodada Auto-pulo 19 — o degrau de um bloco, medido nos dois corpos e no frame real (2026-11-21, `feat/auto-pulo-de-bloco-19`, base `8ac761d`, ponta de código `f843fa6`)
+## Rodada Auto-pulo 19 — o degrau de um bloco, medido nos dois corpos e no frame real (2026-11-21, `feat/auto-pulo-de-bloco-19`, base `8ac761d`, ponta de código `f843fa6`, merge `a518487`)
 
 ### O que estava em aberto
 
@@ -3661,7 +3661,7 @@ para na frente do degrau. O registro veio antes da linha (mandato 4): o
 as sete checagens de headless e os cinco commits atômicos, e a exceção de ordem está na seção
 "Em andamento" acima.
 
-### O que entrou (cinco commits, um assunto cada)
+### O que entrou (sete commits, um assunto cada)
 
 | Commit | Assunto | O que ele mediu |
 | --- | --- | --- |
@@ -3670,6 +3670,8 @@ as sete checagens de headless e os cinco commits atômicos, e a exceção de ord
 | `c0659fd` | lobo: `STEP_JUMP` + gate | vermelho 20 s / verde 2,1 s; runner **192** / 0 / 9,374 s |
 | `2a20843` | jogador: auto-pulo no buffer da tecla | vermelho 300 frames / verde 114; runner **195** / 0 / 8,858 s |
 | `f843fa6` | custo colhido no frame real | braços plano × face; runner **198** / 0 / 11,656 s, suíte 246 / 0 / 37,2 s |
+| `1e1f792` | instrumento: ponteiro com SHA não é ponteiro vivo | classe (c) corrigida e coberta; corpus inalterado |
+| `acb7970` | re-derivação das citações | 49 casos adjudicados um a um; corpus **0** casos, exit 0 |
 
 Duas receitas escritas no dossiê caíram antes do código, pela régua da grade: a **margem de 0,05**
 (o pé apoiado nunca fica abaixo da face do solo, e 0,05 custaria ao lobo de 0,95 a própria célula em
@@ -3684,6 +3686,29 @@ Na ponta de código `f843fa6`: runner de reações **198 checagens / 0 falhas / 
 **246 checagens / 0 falhas / 37,2 s**, exit 0 nos dois, zero `SCRIPT ERROR` nas duas correntes. O
 número do pin — clone limpo reimportado com `--import` e o SHA no README — só existe depois do merge,
 e é o que a seção de fecho publica; nada aqui se chama de pin.
+
+### O fecho: merge, clone limpo e pin
+
+O merge `--no-ff` na `main` é `a518487` (ponta de documento `acb7970` sobre a ponta de código
+`f843fa6`). Medido de novo na árvore mergeada e num clone limpo de `a518487`, reimportado com
+`--import` frio:
+
+| Corrida | Revisão | Suíte | Runner de reações |
+| --- | --- | --- | --- |
+| branch, ponta de documento | `acb7970` | **246 / 0 / 39,7 s** | **198 / 0 / 12,897 s** |
+| `main` mergeada | `a518487` | **246 / 0 / 39,5 s** | — |
+| clone limpo | `a518487` | **246 / 0 / 39,6 s** | **198 / 0 / 12,870 s** |
+
+Exit 0 nas três suítes e nos dois runners, zero `SCRIPT ERROR` em stdout e stderr. Os logs e o
+`artifacts.sha256` estão em [docs/evidence/auto-pulo-19](evidence/auto-pulo-19/readback.md), e o
+README fixa `a518487` como pin. A árvore de código do pin muda em `src` e `tests` pela primeira vez
+desde o pin da perna 14 (`3eb42835a0e1f…` → `45efe977f74de…` em `src`, `8b8a5e471d737…` →
+`37eb429c142d…` em `tests`), porque a perna toca três `.gd` de corpo e o runner.
+
+Um achado de fecho, medido e não atribuído: o par `ObjectDB instances were leaked` / `resources
+still in use` **não** sai na primeira corrida do clone (stderr de 0 bytes) e sai na segunda, no
+mesmo clone e com o mesmo comando — o que o par acompanha é o diretório de dados `user://`, não a
+árvore.
 
 ### Os braços vermelhos e verdes
 
@@ -3740,7 +3765,7 @@ A régua versionada deu o par antes/depois com os mesmos documentos lidos contra
 código: na base `8ac761d` eram **34 arquivos / 1 835 ponteiros / 131 rótulos / 1 791 links /
 53 casos objetivos, exit 1** (25 BRANCO + 28 ROTULO-FORA-DO-CORPO, em 12 documentos: 19 dentro deste
 arquivo, 11 no dossiê 10, 7 no 13, 3+3 nos 11 e 12, 2 cada nos 04/09/18, 1 cada nos 02/03/08/14);
-nesta ponta, **35 arquivos / 1 903 ponteiros / 131 rótulos / 1 862 links / 0 casos, exit 0**. Os
+nesta ponta, **35 arquivos / 1 903 ponteiros / 131 rótulos / 1 866 links / 0 casos, exit 0**. Os
 53 casos da base estavam em 12 documentos: **19 dentro deste arquivo**, 11 no dossiê 10, 7 no 13,
 3 no 11 e 3 no 12, 2 no 04, 2 no 09 e 2 no 18, 1 no 02, 1 no 03, 1 no 08 e 1 no 14. O arquivo a mais
 é a página 19, que a régua confere com **29** ponteiros próprios; **16** dos 68 ponteiros a mais são
