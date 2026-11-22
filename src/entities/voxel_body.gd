@@ -151,3 +151,23 @@ func can_stand_at(p: Vector3) -> bool:
 	var below := box
 	below.position.y -= 0.12
 	return world.aabb_hits_solid(below)
+
+
+## Degrau ou penhasco? A pergunta e "a um bloco acima, na direcao dir, existe onde ficar
+## de pe", e ela e o que separa o talude de um bloco -- que se sobe -- do muro de seis,
+## onde saltar e desperdicio: o corpo volta ao chao no mesmo lugar.
+## O +1,0 nao leva margem porque a celula do grid e de exatamente uma unidade
+## (aabb_hits_solid percorre por floori, voxel_world.gd:301-312) e o pe apoiado nunca
+## fica abaixo da face do solo -- o integrador so aplica o subpasso que nao colide
+## (":84-88"). Uma margem de 0,05 custaria ao lobo, que mede 0,95, a propria celula de
+## 1,00 em que ele cabe. Se um dia existir SLAB de meia altura (id 18 reservado no
+## registro de blocos), esse 1,0 vira pergunta do BlockDefs, nao constante daqui.
+## Tambem nao e teleporte: e so a resposta. Quem sobe e o salto, e o salto e animavel.
+func can_step_over(dir: Vector3) -> bool:
+	var flat := Vector3(dir.x, 0.0, dir.z)
+	if flat.length_squared() < 1e-8:
+		return false
+	# O alcance cai fora do corpo porque o bloco comeca na face da caixa, nao no pe.
+	var reach := maxf(dims.x, dims.z) * 0.5 + 0.6
+	var step := flat.normalized() * reach
+	return can_stand_at(feet_pos + Vector3(step.x, 1.0, step.z))

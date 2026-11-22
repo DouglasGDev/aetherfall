@@ -23,13 +23,13 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Triângulos no mundo | 214 480 | `.tools/suite_final.log:227` |
 | Pior passo de sim | 8,82 ms, nenhum tick perdido | `.tools/suite_final.log:225` |
 | Blocos | 9 ids; tabelas de `solido`/`opaco`/`nome` apenas | [block_defs.gd:5-38](../../src/world/block_defs.gd) |
-| Dureza | `Player._hardness()` não existe mais: quem responde é o registro (`BlockDefs.hardness`) | [player.gd:611](../../src/entities/player.gd) |
+| Dureza | `Player._hardness()` não existe mais: quem responde é o registro (`BlockDefs.hardness`) | [player.gd:629](../../src/entities/player.gd) |
 | Gravidade de **bloco** | não existe. Gravidade de **corpo** sim: 24,0 m/s², terminal 42,0 | [voxel_body.gd:6-15](../../src/entities/voxel_body.gd) |
 | Queda do jogador | dano por velocidade de impacto; seguro 14 m/s, 3,5 por m/s, teto 55 | [player.gd:75-77](../../src/entities/player.gd), `:567-573` |
-| Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:547-559](../../src/entities/player.gd) |
+| Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:565-577](../../src/entities/player.gd) |
 | Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:261` |
 | Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:300-310](../../src/world/voxel_world.gd) |
-| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:547-549](../../src/main.gd#L547-L549); coleta em [player.gd:652-665](../../src/entities/player.gd#L652-L665) |
+| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:547-549](../../src/main.gd#L547-L549); coleta em [player.gd:670-683](../../src/entities/player.gd#L670-L683) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
 pelo [documento 11](11-inventory-crafting.md):** a dureza saiu de `Player._hardness()`
@@ -119,7 +119,7 @@ static func in_world_bounds(p: Vector3i) -> bool:
 `in_world_bounds` é hoje `p.y >= 0 and p.y < CHUNK_SIZE_Y`
 ([voxel_config.gd:26-31](../../src/world/voxel_config.gd)) e é chamada por
 `VoxelWorld.set_block` (voxel_world.gd:252) e por `Player._try_place`
-(player.gd:671) — ou seja, **o limite de construção Y = 320 sai de graça dessas duas
+(player.gd:689) — ou seja, **o limite de construção Y = 320 sai de graça dessas duas
 chamadas**, sem tocar em HUD nem em input.
 
 ## 10.3 Estrutura de dados de bloco
@@ -149,7 +149,7 @@ propriedade única não separava perguntas distintas:
 
 | Campo | Pergunta | Consumido por |
 |---|---|---|
-| `dureza` | quantos segundos de lavra? | `Player._apply_actions` (player.gd:637-640) |
+| `dureza` | quantos segundos de lavra? | `Player._apply_actions` (player.gd:655-658) |
 | `solido` | corpo colide? | `aabb_hits_solid`, `is_supported`, raycast DDA |
 | `opaco` | esconde a face do vizinho? | face-culling e AO (voxel_world.gd:475, 517) |
 | `destrutivel` | pode virar AR por lavra/explosão? | caminho de quebra (novo gate) |
@@ -201,7 +201,7 @@ Regras que a tabela carrega:
   `[OPEN]` (§10.9).
 - **`destrutivel == false`** (BEDROCK, WATER, LAVA) trava a lavra **antes** do
   `set_block(AIR)`, que hoje é chamado sem consultar destrutibilidade nenhuma
-  ([player.gd:660](../../src/entities/player.gd)).
+  ([player.gd:678](../../src/entities/player.gd)).
 - **IDs 9..18 são append-only.** AIR = 0 e os oito existentes não mudam de valor, então
   um save velho continua legível *quanto ao vocabulário de blocos*.
 - **Atlas.** `VoxelAtlas.GRID = 8` dá 64 tiles e só 10 estão tomados
@@ -445,7 +445,7 @@ atual só assina uma projeção mínima, **sem corpos nem comandos**
 ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)); não cobre a
 entidade de queda proposta nem fecha esse gate. Hoje, jogador e locomoção/timers do lobo
 ainda mudam por frame de física ([main.gd:221](../../src/main.gd#L221),
-[wolf.gd:777-822](../../src/entities/wolf.gd#L777-L822)).
+[wolf.gd:782-827](../../src/entities/wolf.gd#L782-L827)).
 
 ### Matemática
 
@@ -460,7 +460,7 @@ dmg_peso(h) = clampf((h - 4,08) * 3,0, 0, 55)
               # ~4,2 por bloco na faixa de 20 m/s. O bloco pesa menos que um corpo:
               # 3,0, e o teto e o mesmo FALL_DAMAGE_MAX = 55 (player.gd:77).
 granular    : dano 0 no impacto; quem fica sob o bloco entra em sufocamento
-sufoco      : mesmo caminho de _update_breath (player.gd:547-559) =>
+sufoco      : mesmo caminho de _update_breath (player.gd:572-584) =>
               7 de dano a cada 1,0 s enquanto a celula dos olhos for enterrante
 tempo de queda do teto ao fundo (383 blocos): ~11 s < MAX_FALL_TICKS (20 s)
 ```
@@ -495,7 +495,7 @@ var body: VoxelBody = VoxelBody.new()
 enum Landing { NONE, FIX, SHATTER }
 
 ## Quem aplica dano em entidade do mundo e o dono da cena, no mesmo padrao de
-## Player.attacked -> Main._on_attacked (main.gd:361-363): as assinaturas de
+## Player.attacked -> Main._on_attacked (main.gd:580-582): as assinaturas de
 ## take_damage diferentes entre Player (amount, from) e Wolf (amount, actor, from)
 ## nao permitem chamar de dentro daqui sem um `is Player` que nao existe hoje.
 signal impact(targets: Array, at: Vector3, amount: float, suffocate: bool)
@@ -603,7 +603,7 @@ func _overlapping(cell: Vector3i) -> Array:
 ```
 
 `e.has_method("body_aabb")` não é decoração: `body_aabb()` já é o contrato de
-entidade visada do projeto (player.gd:598, [wolf.gd:195-196](../../src/entities/wolf.gd#L195-L196)),
+entidade visada do projeto (player.gd:616, [wolf.gd:200-201](../../src/entities/wolf.gd#L200-L201)),
 e `entity_provider` é o `Callable` que `Main` injeta hoje no jogador
 ([main.gd:115](../../src/main.gd#L115) → `targets_under_crosshair`,
 [main.gd:449-454](../../src/main.gd#L449-L454)).
@@ -653,9 +653,9 @@ bloco cair para sempre em cima de um suporte recém-colocado.)
 |---|---|---|
 | Entidade física de bloco | inexistente | `src/entities/falling_block.gd` + spawner e step em `Main` |
 | Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:547-549](../../src/main.gd#L547-L549)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
-| Sufocamento em jogador | o medidor `air` existe, mas `_update_breath` só olha água (player.gd:548-549) | uma linha: `no_air := world.is_water_xyz(olho) or BlockDefs.blocks_air(world.get_block(olho))` — `blocks_air` é derivado dos campos de §10.3, não um décimo flag |
+| Sufocamento em jogador | o medidor `air` existe, mas `_update_breath` só olha água (player.gd:572-574) | uma linha: `no_air := world.is_water_xyz(olho) or BlockDefs.blocks_air(world.get_block(olho))` — `blocks_air` é derivado dos campos de §10.3, não um décimo flag |
 | Sufocamento em NPC | o lobo **não tem medidor de ar** | ou um `Breath` comum aos dois, ou dano por tick direto no NPC enterrado |
-| Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:361-363); nenhum `is Player` dentro da física |
+| Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:580-582); nenhum `is Player` dentro da física |
 | Blocos com geometria própria | a malharia só conhece cubos (`FACE_CORNERS`, voxel_world.gd:14-21) | SLAB grátis via `top_drop`; LAVA pede surface emissivo; TORCH/PLANT pedem shape table |
 
 ## 10.5 Block Update Event — o que nunca varre o mundo
@@ -928,7 +928,7 @@ silencioso que se quer evitar. Lista completa dos sítios que mudam:
 | voxel_world.gd:225-238 `get_block_xyz` | `y<0 → STONE`, `y≥64 → AIR` | `y<Y_MIN → BEDROCK`, `y≥Y_BUILD_LIMIT → AIR` |
 | voxel_world.gd:248 `_write_raw` | `(p.y*_sz+p.z)*_sx+p.x` | `- Y_MIN` no índice |
 | voxel_world.gd:401-407 `surface_height` | desce de 63 | começa do `y_hi` do chunk, não de 383 |
-| voxel_world.gd:433 `build_chunk_mesh` | 98 304 voxels/chunk | span `y_lo..y_hi` (abaixo) |
+| voxel_world.gd:434 `build_chunk_mesh` | 98 304 voxels/chunk | span `y_lo..y_hi` (abaixo) |
 | world_gen.gd:83 `surface_height` | `27.0 + …` | `65.0 + …` (**+38**, ver migração de save) |
 | world_gen.gd:95 `_spawn_flatten` | base `30.0` | `68.0` (+38) |
 | world_gen.gd:103-106 `surface_block` | `SEA_LEVEL+1`, `h>=52`, `h<57` | o primeiro segue a constante; 52 → 90, 57 → 95 |

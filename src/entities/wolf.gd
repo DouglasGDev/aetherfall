@@ -94,6 +94,11 @@ const PHASE_NAMES: Array[String] = ["filhote", "jovem", "adulto"]
 ## crescer, senao um filhote nascido num oco apertado encaixaria no muro ao virar
 ## adulto. Quem define o corpo de cada animal e `dims`, abaixo.
 const DIMS := Vector3(0.75, 0.95, 1.35)
+# O impulso contra um degrau: com a gravidade de 24 do integrador
+# (voxel_body.gd:17) o apice e v^2/2g = 7,6^2/48 = 1,203 m, que limpa os 1,00 m da
+# celula com folga de pouso. O 5,2 que estava aqui dava 0,563 m -- 44 % de um bloco --
+# e era exatamente o lobo pulsando encostado num talude que o dono ve.
+const STEP_JUMP: float = 7.6
 # agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
 # agua (fuga, perseguicao), boia e rema como o jogador nada e procura a margem.
 const SWIM_SPEED_FACTOR: float = 0.55
@@ -972,8 +977,11 @@ func _physics_process(delta: float) -> void:
 	if body.blocked_horizontal and _unstick <= 0.0:
 		_unstick = _rng.randf_range(0.35, 0.8)
 		_detour = (1.0 if _rng.randf() < 0.5 else -1.0) * _rng.randf_range(0.7, 1.3)
-		if body.on_ground:
-			body.velocity.y = 5.2
+		# Os dois sorteios acima continuam incondicionais: a regra nova decide apenas se a
+		# velocidade vertical e escrita, e mover um randf() para dentro de um if trocaria o
+		# riacho que tests/simulation_rng_test.gd mede.
+		if body.on_ground and body.can_step_over(want):
+			body.velocity.y = STEP_JUMP
 	if body.feet_pos.y < -6.0:
 		body.feet_pos = home
 		body.velocity = Vector3.ZERO
