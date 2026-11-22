@@ -220,11 +220,13 @@ na leitura desta página) e as contagens de suíte (**237 / 0 falhas** na mesma 
 antes de virar número publicado — e as **nove** citações de censo do §2 re-derivadas no mesmo commit.
 
 **O que o lote mediu nesta ponta:** `EXPECTED_CHECKS` é **225** (a `main` que a perna abriu trazia
-198) e a suíte passou a **252 / 0 falhas / 49,5 s** — o rodapé do runner de reações é
-**225 checagens / 0 falhas / 18,218 s**. Tudo isso medido na **árvore de trabalho** desta ponta, com
-o [`README.md`](../../README.md) da `main` ainda apontando o pin anterior. O número publicado (clone
-limpo da revisão mescada, com `--import` frio) entra no fecho: publicar antes de medir no clone é
-publicar hipótese.
+198) e a suíte passou a **252 / 0 falhas** — o rodapé do runner de reações é **225 checagens / 0
+falhas**. Isso foi medido na **árvore de trabalho** desta ponta. **O número publicado saiu no fecho**,
+medido no clone limpo da revisão mescada (`4b858c2`, `--import` frio, exit 0): suíte **252 / 0 /
+42,9 s** e runner **225 / 0 / 15,451 s**; a `main` mergeada re-rodada deu **252 / 0 / 43,1 s** e o
+runner da branch **225 / 0 / 15,343 s**. Publicar antes de medir no clone é publicar hipótese — por
+isso o fecho espera o clone. O pin publicado é `4b858c2` e os logs estão em
+[`docs/evidence/acasalamento-censo-11/readback.md`](../evidence/acasalamento-censo-11/readback.md).
 
 ## 6. O que NÃO fazer
 
@@ -248,17 +250,18 @@ publicar hipótese.
 registrada, com 7; (g) re-derivação das nove citações de censo + status + `README.md` re-pinado.
 Branch `feat/acasalamento-e-censo-11`, merge `--no-ff`.
 
-**O que já pousou na branch:** (a) `0850548`, (b) `52ed86a`, (c) `8ceee57`, (d) `c1ea3f9`,
-(e) `3e8f9ba`, (f) `fe2fb6d` — e a `main` do auto-pulo entrando por `010ab25`, o merge de `e7a5fe7`
-dentro da branch, porque a perna escreve os mesmos dois arquivos (`src/entities/wolf.gd` e
-`tests/aether_reactions_test.gd`) que a 19 escreveu e o item 5 de "Branches" em
-[`AGENTS.md`](../../AGENTS.md) obriga a re-rodar o gate na árvore resultante. Entre (e) e (f) entrou
-`f33c1d4`, que tira do `state_dict` a promessa de uma medição futura: o comentário dizia "ainda por
-medir" e a checagem 7 do gate já existia. **O (g) é esta commit** — a re-derivação das nove
-citações de censo, a prosa do status, do contrato e desta página; o SHA dele sai no fecho, junto
-com os dos outros.
-O `README.md` re-pinado sai no fecho e não no (g): o pin publicado é o número medido no clone limpo
-da revisão **mescada**, e a revisão mescada não existe enquanto (g) não pousar.
+**O que já pousou:** (a) `0850548`, (b) `52ed86a`, (c) `8ceee57`, (d) `c1ea3f9`,
+(e) `3e8f9ba`, (f) `fe2fb6d`, (g) `0762b43` — e a `main` do auto-pulo entrando por `010ab25`, o
+merge de `e7a5fe7` dentro da branch, porque a perna escreve os mesmos dois arquivos
+(`src/entities/wolf.gd` e `tests/aether_reactions_test.gd`) que a 19 escreveu e o item 5 de
+"Branches" em [`AGENTS.md`](../../AGENTS.md) obriga a re-rodar o gate na árvore resultante. Entre
+(e) e (f) entrou `f33c1d4`, que tira do `state_dict` a promessa de uma medição futura: o comentário
+dizia "ainda por medir" e a checagem 7 do gate já existia. O (g) é a re-derivação das nove citações
+de censo, a prosa do status, do contrato e desta página.
+O `README.md` re-pinado saiu no fecho e não no (g): o pin publicado é o número medido no clone limpo
+da revisão **mescada**, e a revisão mescada não existe enquanto (g) não pousar. A perna pousou na
+`main` pelo merge `--no-ff` **`4b858c2`** — é esse o pin publicado, e o `README.md` re-pinado aponta
+para ele.
 
 ## 8. O que este dossiê não fecha
 
@@ -266,3 +269,33 @@ Nenhum gate de fase. Ecologia de verdade — presa, fome populacional, migraçã
 continua `[TARGET]`; aqui entra um predador que se reproduz e envelhece, com censo no disco. O
 multi-semente (02) e o budget agregado (04) continuam abertos e um censo variável **aumenta** a
 dívida dos dois.
+
+## 9. Estado depois do fecho
+
+O que o fecho mediu e o que ele atribuiu, com o número de origem em [`readback.md`](../evidence/acasalamento-censo-11/readback.md):
+
+- **O pin publicado é `4b858c2`** — o merge `--no-ff` da branch `feat/acasalamento-e-censo-11`
+  (ponta de código `0762b43`) sobre a base `e7a5fe7`. O clone limpo desse SHA, sem `.godot/` e com
+  `--import` frio (exit 0), deu suíte **252 / 0 / 42,9 s**, runner de reações **225 / 0 / 15,451 s**
+  e journal **128 / 0 / 5,811 s**. A `main` mergeada re-rodada deu **252 / 0 / 43,1 s**; a branch,
+  **252 / 0 / 43,0 s** e runner **225 / 0 / 15,343 s**.
+- **O par de vazamento do quit não é desta perna.** Ele sai como `4 ObjectDB` com `2 resources` no
+  stderr das três corridas e, com `--verbose`, o objeto é nomeado: `AudioStreamPlaybackOggVorbis` e
+  `AudioStreamOggVorbis` de `res://assets/audio/amb/amb_birds.ogg`, vivos no instante em que o
+  processo morre. O braço de controle na `main` **sem** esta perna (`e7a5fe7`) dá o **mesmo** par,
+  maior (**16 ObjectDB** com **6 resources**) — logo ele **precede** a perna 11 e não é dela. Ele
+  também varia entre corridas da **mesma** árvore (a primeira do clone sai, a segunda não), o que
+  corrige a hipótese do `readback` da perna 19, que atribuía o par ao diretório `user://`.
+- **O vermelho intermitente do runner também não é desta perna** (furo #20): a checagem de estouro
+  do `SubtreeGuard` mede relógio de parede. Nos quinze braços de controle na `main` sem a perna 11
+  saiu **1 vermelho**; sob carga de máquina (`carga_da_maquina.log`) foram **2 vermelhos em 3
+  corridas**; em máquina livre e serial, nenhum. O tubo contra arquivo não muda nada
+  (`ab_pipes.log`). A atribuição fecha nos dois sentidos: o vermelho aparece **sem** esta perna, e
+  a perna sozinha não o produz.
+- **O que continua aberto:** o `SubtreeGuard` mede relógio de parede, e a decisão de consertar a
+  premissa é do dono; o custo de alocação do caminho quente continua sem medição própria; e o
+  orçamento agregado das cinco árvores (P1) não é medido por esta perna — ela mede um runner estreito,
+  um lobo por cenário.
+
+O próximo elo da fila depois desta perna é a **16** (a dispersão da matilha em 2–3 tocas), que
+depende do censo variável entregue aqui.

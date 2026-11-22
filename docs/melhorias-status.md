@@ -91,7 +91,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 
 - **Acasalamento, filhote que cresce e censo variável: o bicho nasce de dois adultos, envelhece,
   e o disco deixa de ser uma lista truncada (dossiê 11, branch `feat/acasalamento-e-censo-11`,
-  ponta de código `f33c1d4`).** O que estava em aberto quando a página foi escrita: a população
+  merge `4b858c2` na `main`).** O que estava em aberto quando a página foi escrita: a população
   era a constante `WOLF_COUNT := 5` ([main.gd:9](../src/main.gd#L9)), não existia fase, idade
   nem corpo menor (`DIMS` era constante, [wolf.gd:96](../src/entities/wolf.gd#L96)) e o load
   pareava **por índice** com teto — `for i in mini(saved.size(), wolves.size())`, `main.gd:692`
@@ -117,11 +117,11 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   ([aether_reactions_test.gd:3673-3727](../tests/aether_reactions_test.gd#L3673-L3727)).
   `EXPECTED_CHECKS` **221 → 225**
   ([aether_reactions_test.gd:34](../tests/aether_reactions_test.gd#L34)), suíte **252 / 0 falhas**.
-  Medido nesta ponta: runner estreito **225 / 0 / 18,218 s** e suíte **252 / 0 / 49,5 s**. O
-  vermelho intermitente do runner é a checagem "nenhum estouro de subtree no budget" e ele **não**
-  é desta perna — a atribuição fecha nos dois braços e está no furo #20. O pin publicado sai no
-  fecho, porque o número a publicar é o do clone limpo da revisão **mescada** — a árvore que
-  ainda não existe.
+  Medido no clone limpo da revisão mescada (`4b858c2`, `--import` frio): runner estreito
+  **225 / 0 / 15,451 s** e suíte **252 / 0 / 42,9 s**, exit 0. O vermelho intermitente do runner
+  é a checagem "nenhum estouro de subtree no budget" e ele **não** é desta perna — a atribuição
+  fecha nos dois braços e está no furo #20. O pin publicado é `4b858c2`; o par de vazamento do
+  quit que aparece no stderr é o do som, já debitado abaixo, e ele sai também sem esta perna.
 - **Auto-pulo do degrau de um bloco: o lobo sobe, e quem anda com o jogador também sobe
   (dossiê 19, branch `feat/auto-pulo-de-bloco-19`, merge `ab9ffa1` na `main`).** O pedido do dono é
   um defeito em execução, não uma mecânica nova: "os mobs/npcs tem que saber pular os blocos, pois
@@ -481,11 +481,11 @@ sessão enquanto as pernas restantes são mecânicas que ainda não existem. A f
 duas escrevem em `src/entities/wolf.gd` e no runner, a consequência está assumida no §7 do dossiê:
 **quando a 19 pousar na `main`, a 11 re-rome o gate** — traz a `main` para dentro de si e roda a
 suíte de novo, porque a árvore resultante é outra revisão (item 5 de "Branches"). Estado agora: a
-19 pousou na `main` (merge `--no-ff` `ab9ffa1`, clone limpo medido), e a 11 **já re-romeu o gate**:
-trouxe a `main` para dentro de si pelo merge `010ab25` e mediu a árvore resultante. A perna está na
-ponta `f33c1d4`, com a perna (f) do runner (`fe2fb6d`) pousada; falta a (g), que é a re-derivação
-do corpus e a prosa. O pin publicado sai no fecho e não aqui, porque o número medido é o da revisão
-**mescada** — a árvore que ainda não existe.
+19 pousou na `main` (merge `--no-ff` `ab9ffa1`, clone limpo medido), e a 11 **já re-romeu o gate**
+e **pousou**: trouxe a `main` para dentro de si pelo merge `010ab25` (ponta `f33c1d4`) e mediu a
+árvore resultante, mergeada na `main` em `4b858c2`. O pin publicado sai no fecho e não aqui,
+porque o número medido é o da revisão **mescada** — o clone limpo dela, com `--import` frio, está
+em [`docs/evidence/acasalamento-censo-11/readback.md`](evidence/acasalamento-censo-11/readback.md).
 
 ## Falta
 
@@ -3886,3 +3886,109 @@ ele sobe a célula que o integrador já disse que existe onde ficar de pé. O cu
 caminho quente continua sem medição própria, e o débito de `main.gd` como objeto de Deus também:
 esta perna escreveu em `voxel_body.gd`, `player.gd`, `wolf.gd` e no runner, e **nenhuma linha** em
 `src/main.gd`.
+
+## Rodada Acasalamento 11 — o filhote que nasce, cresce e vai para o disco (2026-11-21, `feat/acasalamento-e-censo-11`, base `e7a5fe7`, ponta de código `0762b43`, merge `4b858c2`)
+
+### O que estava em aberto
+
+O item 10 da fila, e o motivo do dono na conversa: "tem algo que não tem no Minecraft: eles
+acasalam e aparece um filhote e depois cresce". A leitura do dossiê
+([`planos/11`](planos/11-acasalamento-filhote-e-censo.md)) achou quatro ausências e uma delas era
+silenciosa: a população era uma constante (`WOLF_COUNT := 5`), não existia idade, filhote nem corpo
+menor, e o load pareava **por índice** com teto — `for i in mini(saved.size(), wolves.size())` —, de
+modo que um censo que crescesse **descartaria filhote em silêncio**. Um save com 7 lobos carregava
+5, e os 2 que sumiam eram os novos. Era esse o vermelho que a premissa pedia: uma checagem que
+**nasce vermelha** no código da leitura.
+
+### O que entrou (sete commits de código, um assunto cada, e a `main` do auto-pulo entrando)
+
+| Commit | Assunto |
+| --- | --- |
+| `0850548` | (a) fase do lobo, corpo por fase e crescimento por tick de simulação |
+| `52ed86a` | (b) fase e idade vão para o disco, e o censo gravado **nasce vermelho** |
+| `8ceee57` | (c) o load pareia por identidade e o censo do disco é a autoridade |
+| `c1ea3f9` | (d) a roda de acasalamento cria, o cooldown trava e o teto recusa contado |
+| `3e8f9ba` | (e) o filhote fica fora da caçada e o cerco não ganha assento vazio |
+| `f33c1d4` | o comentário do `state_dict` deixa de dizer "ainda por medir" |
+| `fe2fb6d` | (f) o lote novo **não move** o hash do tick, e a decisão do `FORMAT_VERSION` fica escrita |
+| `010ab25` | merge da `main` (`e7a5fe7`) dentro da branch — a perna escreve os mesmos dois arquivos que a 19 |
+| `0762b43` | (g) o corpus re-derivado pela ponta da perna, com a prosa do status, do contrato e da página |
+
+O que o código faz hoje, lido: fase, idade e cooldown são chaves do registro do animal
+([`wolf.gd:1102`](../src/entities/wolf.gd#L1102)) e `Phase { CUB, JUVENILE, ADULT }` é estado real
+([`wolf.gd:78`](../src/entities/wolf.gd#L78)); o censo tem teto próprio e a recusa é **impressa**,
+não truncada em silêncio (`CENSUS_CAP := 12`,
+[`main.gd:18`](../src/main.gd#L18), a recusa em
+[`main.gd:427-430`](../src/main.gd#L427-L430)); e o load pareia **por identidade** — o bicho do disco
+que a sessão não tem entra no mundo, o bicho da sessão que o disco não tem é aposentado, e a fila de
+reposição é limpa para o censo gravado mandar
+([`main.gd:859-895`](../src/main.gd#L859-L895)). O dono do nascimento é a **sessão**
+(`_born_from`, [`main.gd:424`](../src/main.gd#L424)), nunca o próprio lobo: rodando no lobo o spawn
+teria dois donos e o filhote nasceria dentro da iteração sobre a lista que ele está mudando.
+
+### A corrida que sustenta os números
+
+O pin publicado é **`4b858c2`**, o merge `--no-ff` da branch sobre a base `e7a5fe7`. Medido no
+clone limpo desse SHA — sem `.godot/`, com `--import` frio **exit 0**:
+
+| Corrida | Resultado |
+| --- | --- |
+| clone limpo, suíte (1ª) | **252 checagens / 0 falhas / 42,9 s**, exit 0 |
+| clone limpo, suíte (2ª, mesmo clone, mesmo comando) | **252 / 0 / 42,9 s**, exit 0 |
+| clone limpo, runner de reações | **225 / 0 / 15,451 s**, exit 0 |
+| clone limpo, teste do journal | **128 / 0 / 5,811 s**, exit 0 |
+| `main` mergeada, suíte | **252 / 0 / 43,1 s**, exit 0 |
+| branch, suíte | **252 / 0 / 43,0 s**, exit 0 |
+| branch, runner de reações | **225 / 0 / 15,343 s**, exit 0 |
+
+O censo do runner é `EXPECTED_CHECKS = 225`
+([`aether_reactions_test.gd:34`](../tests/aether_reactions_test.gd#L34)) e o da suíte é **252**. O
+diagnóstico final confere dígito a dígito entre a `main` mergeada e o clone: `births` **2**,
+`census_cap` **12**, `census_refusals` **0**, `wolves` **7**, `wolves_alive` **7**, `chunks` **64**,
+`meshes` **147**, `triangles` **214 480**, `edits` **13**, `pack_pairs` **21**, `pending_respawns` **1**,
+`load_created` **0**, `load_retired` **0**, `dropped_ticks` **0**. Só os tempos de boot e de passo se
+movem, como sempre: `gen_ms` 993,754 → 980,145, `mesh_ms` 4 414,338 → 4 428,196 e `worst_sim_ms`
+11,629 → 13,684 — média e pico são corrida, não faixa. Logs, `artifacts.sha256` e a receita do clone
+estão em [`evidence/acasalamento-censo-11/readback.md`](evidence/acasalamento-censo-11/readback.md).
+
+O journal **não se moveu**: fase, idade e cooldown são chave de registro do animal no disco, não
+campo da projeção mínima do `TickJournal`
+([`tick_journal.gd:16-44`](../src/persistence/tick_journal.gd#L16-L44)), então `FORMAT_VERSION`
+continua **1** ([`tick_journal.gd:4`](../src/persistence/tick_journal.gd#L4)) e os hashes publicados
+das rodadas anteriores valem. A checagem 7 fecha nos dois sentidos — o hash **igual** depois do lote
+e **diferente** quando muda o que está na projeção.
+
+### O par de vazamento do quit: ele precede esta perna
+
+O stderr das três corridas de suíte (ponta, `main` mergeada e **primeira** corrida do clone) traz
+`4 ObjectDB` com `2 resources`; a **segunda** corrida do mesmo clone, mesmo comando, mesma árvore,
+**não** traz (stderr de **0** bytes). Com `--verbose` o objeto é nomeado: `AudioStreamPlaybackOggVorbis`
+e `AudioStreamOggVorbis` de `res://assets/audio/amb/amb_birds.ogg`, vivos no instante em que o
+processo morre. O braço de controle — a mesma corrida na `main` **sem** esta perna (`e7a5fe7`) — dá
+o **mesmo** par, **maior**: **16 ObjectDB** com **6 resources**, com o mesmo arquivo de som. Logo ele
+**precede** a perna 11 e não é dela; e o que ele acompanha é a ambiência de pássaros ainda tocando na
+saída, que é o débito já medido e escrito na seção "Débitos" deste arquivo, com a sonda de seis
+braços que mostrou que `stop()` no mesmo tick não resolve e que `stop()` seguido de mais 20 frames
+limpa. Isso corrige a hipótese da leitura de retorno da perna 19, que atribuía o par ao diretório
+`user://`: o par não acompanha o diretório, acompanha a ambiência tocando.
+
+### O vermelho intermitente do runner também não é desta perna
+
+A checagem "nenhum estouro de subtree no budget" é a que falha intermitentemente, e a atribuição
+fecha nos dois sentidos: o braço de controle — quinze corridas do runner na `main` **sem** esta perna
+— deu o mesmo vermelho **uma** vez, com a mesma assinatura (`trips` no cenário estreito ou no de
+matilha); as três corridas com a máquina carregada deram vermelho em **duas**, e a carga está
+registrada segundo a segundo; com a máquina livre e as corridas em série, **nenhuma** falha; e o
+desvio de I/O não muda nada — seis pares de arquivo × pipe deram o mesmo `trips` com o mesmo formato.
+A leitura é a que o furo #20 já registra: o `SubtreeGuard` cronometra **parede de relógio**, e
+GDScript não tem relógio de CPU, então `trips == 0` é um portão de velocidade de máquina, não um
+portão de código. Nenhuma linha de código mudou por causa disso.
+
+### O que nada disso fecha
+
+Nenhum gate de fase (mandato 4). Ecologia de verdade — presa, fome populacional, migração, espécies
+— é P2 e continua `[TARGET]`; aqui entra um predador que se reproduz e envelhece, com censo no disco.
+O multi-semente (02) e o budget agregado (04) continuam abertos, e um censo variável **aumenta** a
+dívida dos dois: o `SubtreeGuard` mede 400 µs **por lobo**, e o teto de censo é 12. O custo de
+alocação do caminho quente continua sem medição própria. A perna seguinte da fila é a **16** (as
+tocas do dono), que precisa do censo variável desta perna para decidir quantas alimentam.
