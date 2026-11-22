@@ -4267,3 +4267,14 @@ publicados continuam os da perna 11: **252 checagens / 0 falhas** na suíte no p
 runner de reações ([tests/aether_reactions_test.gd:34](../tests/aether_reactions_test.gd#L34)) e **27** no
 de RNG ([tests/simulation_rng_test.gd:9](../tests/simulation_rng_test.gd#L9)). Esta passada é docs:
 `git diff HEAD --stat -- src tests` **vazio**.
+
+**Registro da `main` mergida (2026-11-22).** O merge `--no-ff` desta branch na `main` (ponta `d1fc226`)
+foi re-corrido na árvore resultante e devolveu suíte **252 / 0 / 42,4 s**, exit 0, zero `SCRIPT ERROR`
+nas duas correntes, e o `git diff` de `src/` e `tests/` contra o pin `5b519f8` continua **vazio**: os
+mesmos dois objetos de sempre. Os dois runners, medidos na ponta da branch sobre a mesma árvore de
+código, deram **225 / 0 / 14,993 s** e **27 / 0 / 2,709 s**, exit 0 cada. Por isso nenhum número novo é
+publicado aqui: o contrato da suíte é o do pin da perna 11, e as corridas desta passada existem para
+fechar o item 5 e o item 6 do ciclo de trabalho, não para abrir contagem. A contagem do corpus não se
+moveu com este parágrafo — **1 301** citações no diretório, **15** nesta página índice, governantes em
+**142 · 0 · 525 = 667** e âncoras com **0** casos objetivos —, porque aqui se citou SHA e nomes de
+arquivo sem número de linha.
