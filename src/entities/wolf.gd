@@ -1097,8 +1097,8 @@ func state_dict() -> Dictionary:
 		# `TickJournal.state_hash` monta os lobos a partir de `identity`,
 		# `mind.identity`, `mind.kind`, `intent` e `mind.beliefs`
 		# (tick_journal.gd:16-44) e nao le `state_dict()`. `FORMAT_VERSION`
-		# continua 1 -- a igualdade de hash e a checagem 7 do gate, ainda por
-		# medir, e nao um numero desta linha.
+		# continua 1 -- a igualdade de hash e a checagem 7 do gate
+		# (`_test_journal_hash_inalterado_sem_escolha`), nao um numero desta linha.
 		"phase": phase, "age_ticks": age_ticks, "mate_cd": mate_cd, "mind": mind.to_dict(),
 	}
 
