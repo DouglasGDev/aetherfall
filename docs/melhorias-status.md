@@ -487,6 +487,23 @@ e **pousou**: trouxe a `main` para dentro de si pelo merge `010ab25` (ponta `f33
 pin publicado, porque o número medido é o da revisão **mescada** — o clone limpo dela, com
 `--import` frio, está em [`docs/evidence/acasalamento-censo-11/readback.md`](evidence/acasalamento-censo-11/readback.md).
 
+**Pauta re-escrita em 2026-11-22, sem exceção de ordem:** a perna 12 (bicho cavando voxel) tinha uma
+página escrita em 2026-11-20 sobre uma árvore cinco pernas menor, e ela foi re-escrita contra a de hoje
+([`docs/planos/12-bicho-cavando-voxel.md`](planos/12-bicho-cavando-voxel.md)). A fila **não** muda —
+continua **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13**, com a 12 depois da 16 porque as duas
+escrevem `src/main.gd` e é a 16 quem decide onde os lares ficam — e o que muda é o **conteúdo** da
+pauta, lido no código de hoje: o elo (a) de cavar passa a ser o **terceiro** ramo do `if` de bloqueio
+que a 19 escreveu ([wolf.gd:977-984](../src/entities/wolf.gd#L977-L984)) em vez de folha nova, a lista de
+material substitui a dureza como critério (dureza é tempo, não permissão), o gate deixa de observar
+`block_changed` — que não tem consumidor nenhum — e passa a observar `get_block` + `world.edits`, o
+fork A/B é decidido por `intent` entrar no hash do journal, quem cava se decide pelo alcance do corpo
+(`PHASE_SCALE` 0,45 do filhote) e o palco de teste tem de escrever com `record = false`, porque parede
+de `_wall` é construção registrada. Disso nascem os furos **#22** (fechado por construção pela cláusula
+`not world.edits.has(pos)`) e **#23** (dono perna 05). Nenhuma linha de código foi escrita, nenhuma
+constante de versão foi tocada e `feat/bicho-cavando-12` não abriu; os três números publicados deste
+lote são os da perna 11 (**252 / 0** na suíte no pin `5b519f8`, **225** no runner de reações, **27** no
+de RNG) e valem o que valiam antes desta página.
+
 ## Falta
 
 Por dependência, não por preferência (cada item aberto tem um dossiê de leitura em [`docs/planos/`](planos/README.md): premissa nomeada, estado do código com `arquivo:linha`, gate headless e custo pelas quatro perguntas — nenhum dossiê rodou a engine e nenhum fecha gate):
@@ -588,7 +605,23 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     minerou", "tempo de mineracao == dureza", "lavra entrou no inventario como drop"). O buraco real
     é do outro lado: os únicos dois `world.set_block` de gameplay no `src/` são os do jogador
     (`:685`, `:711`) e o `_on_acted` que imprime WORK é sinal do jogador
-    ([main.gd:698-703](../src/main.gd#L698-L703)). Nenhum animal escreve no mundo.
+    ([main.gd:698-703](../src/main.gd#L698-L703)). Nenhum animal escreve no mundo — e a perna 19, que
+    pousou depois, ensinou o lobo a **subir** o obstáculo, não a removê-lo.
+    **Pauta re-escrita em 2026-11-22** contra a árvore em que as pernas 09, 10, 14, 15, 11 e 19 já
+    pousaram e a 16 já tem página: o número desta linha é o da fila de 2026-11-20 e fica (furo #14),
+    mas o conteúdo mudou de estado. Três coisas que a página antiga afirmava e a leitura de hoje
+    devolve diferente: `hardness` é **duração**, não permissão, então `STONE 0,95` cai em 0,95 s de mão
+    nua e o que limita a pata é **lista de material** ([`:663-664`](../src/entities/player.gd#L663-L664),
+    [`:685`](../src/entities/player.gd#L685)); `block_changed` **não tem consumidor**
+    ([voxel_world.gd:6](../src/world/voxel_world.gd#L6), [`:262`](../src/world/voxel_world.gd#L262)),
+    então o gate observa `get_block` + `world.edits` e quem assina o sinal continua sendo a 17; e o
+    desemperto ganhou o segundo ramo da 19
+    ([wolf.gd:977-984](../src/entities/wolf.gd#L977-L984)), então cavar é o **terceiro** ramo do mesmo
+    `if`, não uma folha nova na `Selector`. A re-escrita abre os furos **#22** (bancada removida por
+    bicho deixaria `_benches` apontando para o ar) e **#23** (permeabilidade amostra um voxel por célula
+    de Éter, e "menos barreira" não é observável) e fecha o #22 por construção com
+    `not world.edits.has(pos)`. Nenhuma linha de código da perna foi escrita e a branch
+    `feat/bicho-cavando-12` não abriu.
 12. **Convivência da alcateia: ronda em terra, nenhum aviso de criatura na tela, spawn fora dos
     olhos do jogador — concluído nesta ponta (dossiê 14; **executava entre o item 9 e o item 10**
     pela ordem serializada registrada em [`AGENTS.md`](../AGENTS.md), e a numeração fica no fim para
@@ -1124,6 +1157,49 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     antes de abrir branch e assume no §5.1 e §8 daquela página a cláusula de **componentes conexos**
     do grafo lido — que é a grandeza que a contagem de pares nunca foi. Esta passada de pauta
     **não escreve** na suíte nem em `src/main.gd`: registro antes do código (mandato 4).
+
+22. **A lista de bancadas é derivada do mundo por um único comprador, e um segundo comprador que
+    remova bloco deixaria a lista apontando para o ar.** `_benches` é alimentada só pelos sinais do
+    `Player`: `player.block_broken.connect(_on_block_broken)` e
+    `player.block_placed.connect(_on_block_placed)` ([main.gd:139-140](../src/main.gd#L139-L140)), com
+    os corpos em [`:706-715`](../src/main.gd#L706-L715); a leitura é `bench_positions()`
+    ([`:719-720`](../src/main.gd#L719-L720)) e nada no caminho de `world.set_block` toca a lista —
+    [`_write_raw`](../src/world/voxel_world.gd#L242-L249) e [`set_block`](../src/world/voxel_world.gd#L252-L263)
+    escrevem voxel, `edits` e a fila de malha, não `_benches`. A única reconstrução é
+    `_rebuild_benches()` ([`:913-917`](../src/main.gd#L913-L917)), chamada no load
+    ([`:850`](../src/main.gd#L850)). Então **qualquer** agente que remova uma `BENCH` no mundo vivo
+    deixa a lista e o `get_block` em desacordo até o próximo save/load, e o que consome
+    `bench_positions()` (a HUD e o craft) vê uma bancada onde há ar. Hoje ninguém remove bancada por
+    causa interna — os dois únicos `set_block` de gameplay são do jogador
+    ([player.gd:685](../src/entities/player.gd#L685), [`:711`](../src/entities/player.gd#L711)) —, por
+    isso o furo nasce **com** a pauta da 12 e não com código em execução. **Dono:** a perna 12, que o
+    fecha **por construção** no §3.2 de [`docs/planos/12-bicho-cavando-voxel.md`](planos/12-bicho-cavando-voxel.md):
+    o alvo do cavar exige `not world.edits.has(pos)`, e uma bancada colocada pelo jogador **é** edição
+    registrada ([`edits[p]`](../src/world/voxel_world.gd#L42)), então ela não é terra solta para a pata
+    de ninguém. O número que impede a cláusula de virar higiene estética é a checagem `cavar_nao_toca_construcao_alheia`
+    (§5.7 da mesma página), que imprime `_benches.size()` e o bloco antes/depois com uma `BENCH` no
+    caminho do lobo. Esta passada **não escreve** em `src/main.gd` nem na suíte.
+
+23. **A permeabilidade do Éter é decidida por **um** voxel no canto da célula vizinha, e nenhuma
+    leitura de "menos barreira" sobrevive a essa granularidade.** Na difusão, o peso do vizinho é
+    `0.15 if world.is_solid(mid) else 1.0`, com `mid` = **origem** da célula vizinha
+    ([`Vector3i((x + nx) * cell, …)`](../src/world/aether_field.gd#L174-L176)) e `cell =
+    VoxelConfig.AETHER_CELL = 4` ([voxel_config.gd:16](../src/world/voxel_config.gd#L16),
+    [aether_field.gd:24](../src/world/aether_field.gd#L24)). Consequência medida pela leitura: abrir ou
+    fechar **um** buraco numa parede muda o fluxo **só** se esse buraco cair exatamente no voxel de
+    canto da célula; uma célula de Éter é 4 × 4 × 4 voxels e os outros 63 não são consultados. É por
+    isso que a frase do dossiê 12 de 2026-11-20 — "WORK + BLOOD difundem com menos barreira" como
+    consequência observável de um bicho abrir a entrada de um rastro — **não é falsificável**, e a
+    página re-escrita em 2026-11-22 re-baseou o item (b) em outra grandeza: o `y` que
+    [`_scent_ground_y`](../src/entities/wolf.gd#L928-L936) devolve para a célula do achado, que é código
+    que existe e lê cada voxel da coluna. **Nada aqui pede mudança de formato nem de canal:**
+    `Channel.COUNT` ([aether_field.gd:9](../src/world/aether_field.gd#L9)) e
+    `FORMAT_VERSION` ([tick_journal.gd:4](../src/persistence/tick_journal.gd#L4)) ficam intactos, então
+    o furo é de **instrumento de leitura do mundo**, não de versão. **Dono:** a perna 05 (difusão fora
+    do tick), porque qualquer amostragem por múltiplos voxels da célula — centro, média, ou "qualquer
+    sólido na fatia" — é mudança de comportamento de difusão e tem de ser medida contra o hash por
+    semente da própria 05, não emprestada de uma perna de IA. Esta passada registra e não escreve em
+    `src/world/aether_field.gd`.
 
 ## Contrato dos rastros e reações
 
@@ -4100,3 +4176,94 @@ nas duas correntes, e o `git diff` de `src/` e `tests/` contra o pin `5b519f8` c
 mesmos dois objetos de sempre. Por isso nenhum número novo é publicado aqui — o contrato da suíte é o
 do pin da perna 11, e as duas corridas desta passada (branch **42,4 s**, `main` mergida **42,5 s**)
 existem para fechar o item 5 e o item 6 do ciclo de trabalho, não para abrir contagem.
+
+## Rodada Docs 12 — a pauta do bicho cavando re-escrita contra a árvore de hoje (2026-11-22, `docs/pauta-do-cavar-12`)
+
+### O que estava em aberto
+
+[`docs/planos/12-bicho-cavando-voxel.md`](planos/12-bicho-cavando-voxel.md) foi escrita em 2026-11-20,
+antes de pousarem 09, 10, 15, 14, 11 e 19, e antes de a 16 ter página. Desde então a árvore ganhou o
+degrau pulado da 19, o censo variável e a fase por `clock.tick` da 11, o `_resolve_dry_target()` e o
+predicado de spawn da 14, o viés de bioma no imprint da 09 e a folha de rondas da 10 — e uma pauta que
+descreve onde uma peça se encaixa vale o que valia no dia em que foi lida. Nada aqui é código: a branch
+`feat/bicho-cavando-12` continua sem abrir, e a fila serializada **não** se moveu
+(**09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13**).
+
+### O que entrou (uma página re-escrita, três documentos de pauta atualizados, nenhuma linha de código)
+
+- a dossiê 12 inteira, agora com um §0 novo de **16 linhas** "o que a página de 2026-11-20 dizia × o que
+  a árvore de hoje devolve" e os gates do §2 re-lidos por conteúdo, não por faixa de linha. As quatro
+  correções que mudam o desenho, e não a prosa:
+  1. **dureza é duração, não permissão** — `_mining_accum += delta` comparado a `target_hardness` sem
+     teto de bloco ([src/entities/player.gd:663-664](../src/entities/player.gd#L663-L664)) e `AIR`
+     escrito em qualquer alvo ([`:685`](../src/entities/player.gd#L685)); `STONE 0,95` cai em 0,95 s, e
+     a afirmação antiga de que pedra, madeira e `COBBLESTONE` "ficam fora do alcance com a régua do
+     jogador" está **falsa**. O que decide é lista de material, e a checagem 2 ganhou um braço `GLASS`
+     (0,10 — mais mole que a neve) justamente para a lista não virar teorema de dureza;
+  2. **`block_changed` não tem consumidor** — só a declaração
+     ([src/world/voxel_world.gd:6](../src/world/voxel_world.gd#L6)) e o emit
+     ([`:262`](../src/world/voxel_world.gd#L262)); o gate observa `get_block` + `world.edits`, que é o
+     que o save grava e o journal hashia, e a 17 continua sendo a primeira a assinar o sinal — com a
+     checagem `queda_move_a_celula` nascendo vermelha por isso mesmo;
+  3. **cavar é o terceiro ramo do `if` de bloqueio**, não folha nova: o segundo ramo é da 19
+     ([src/entities/wolf.gd:977-984](../src/entities/wolf.gd#L977-L984)), e o fork A/B (§3.4) é decidido
+     por `intent` entrar no hash do journal — o braço B re-derivaria uma checagem já gateada da 11;
+  4. **quem cava é decidido pelo alcance do corpo**: `PHASE_SCALE` 0,45 no filhote
+     ([src/entities/wolf.gd:89](../src/entities/wolf.gd#L89)) e o `reach` derivado de `dims`
+     ([src/entities/voxel_body.gd:171](../src/entities/voxel_body.gd#L171)); nenhuma linha
+     `if fase == ADULTO`.
+  E o item (b) da página antiga foi re-baseado: "WORK + BLOOD difundem com menos barreira" não é
+  falsificável, então o observável passou a ser o `y` que
+  [`_scent_ground_y`](../src/entities/wolf.gd#L928-L936) devolve para a célula do achado.
+- duas armadilhas de palco nomeadas no §2 e no §4, as duas lidas do runner de hoje: `_wall`
+  ([tests/aether_reactions_test.gd:331-334](../tests/aether_reactions_test.gd#L331-L334)) e `_cave_carve`
+  ([`:1451-1458`](../tests/aether_reactions_test.gd#L1451-L1458)) escrevem com `record` default — parede
+  de teste **é** construção registrada, e a cláusula de proveniência recusaria o alvo — e `_advance`
+  ([`:272-288`](../tests/aether_reactions_test.gd#L272-L288)) **não** chama `world.process`, então a
+  colheita de malha tem de esvaziar a fila no fim do cenário, no molde de `w.process(64)`
+  ([tests/smoke_test.gd:735](../tests/smoke_test.gd#L735));
+- o índice [`docs/planos/README.md`](planos/README.md): a linha 12 das duas tabelas (as **nove** checagens
+  nomeadas no §5, com a base da branch passando a **depois da 16** e o motivo re-derivado), e a prosa do
+  encadeamento, que dizia "a gravidade de blocos é o segundo consumidor do `block_changed` que o cavar
+  acabou de abrir" — com o cavar **não** abrindo sinal nenhum, a gravidade continua sendo a **primeira**;
+- [`AGENTS.md`](../AGENTS.md) ganhou o registro de 2026-11-22 (2), declarado como re-escrita de pauta:
+  nenhuma autorização nova, nenhuma exceção de ordem, nenhuma constante de versão tocada;
+- este status: os furos **#22** e **#23**, o parágrafo do item 11 do "Falta" com o que a leitura de hoje
+  devolve diferente, e a nota de "Em andamento" de que a fila não se moveu.
+
+### A contagem conferida nesta ponta
+
+`python .tools/verify_plan_cites.py` sobre as **dezenove** páginas: **1 301 citações com número de linha
+conferidas, 0 números fora do arquivo** — elo a elo **71 · 50 · 25 · 75 · 70 · 34 · 51 · 55 · 39 · 77 ·
+80 · 139 · 110 · 68 · 115 · 94 · 54 · 50 · 29**, com a página 12 subindo de **53** para **139** e as
+outras dezoito **idênticas** à medida da rodada 16. Com a página índice no diretório, o total é **1 301**
+(1 286 nas dossiês + **15** do índice, que ganhou prosa e nenhuma citação numerada nova). As ausências de
+arquivo continuam **9**, os mesmos **3** arquivos já declarados inexistentes (`tick_clock.gd`,
+`simclock.md`, `wolf_multiseed_census_test.gd`) — a re-escrita não transformou nenhuma peça em fato. Pelo
+`verify_plan_ids.py` a página 12 devolve **84** identificadores em backticks, dos quais **11** não existem
+em `src/` nem em `tests/`: **9** nomes de checagem proposta e **2** campos que o §3.1 propõe
+(`_dig_accum`, `_dig_pos`) — nenhum identificador de código existente citado em vão. No
+`tools/check_doc_anchors.py` o corpus dá **2 260 ponteiros conferidos, 151 rótulos, 2 217 links
+relativos** em **36** arquivos e **0** casos objetivos; o único que a re-escrita abriu foi um rótulo
+`_drop` apontando para
+a linha de preenchimento da tabela em vez da declaração, e foi corrigido na mesma passada, com o
+`drop_of` real ([src/world/block_defs.gd:166](../src/world/block_defs.gd#L166)) entrando no lugar. Os três
+governantes, medidos nesta árvore **antes** desta seção: **142 · 0 · 500 = 642** números, 0 fora do
+arquivo — o salto contra a última medida publicada (rodada 16: **123 · 0 · 478 = 601**) é **+19** no
+contrato, pelo parágrafo de registro, e **+22** aqui, pelos dois furos novos, a nota do item 11 do
+"Falta" e a nota de "Em andamento". Com esta seção em cima o mesmo comando devolve **142 · 0 ·
+525 = 667**: os **25** números que ela traz são os **15** links âncora (4 no runner de reações, 3 em
+`wolf.gd`, 2 em `voxel_world.gd`, 2 em `player.gd` e um cada em `smoke_test.gd`,
+`simulation_rng_test.gd`, `block_defs.gd` e `voxel_body.gd`) mais os **10** `arquivo:linha` que esses
+links repetem no rótulo. A soma foi conferida recortando: o status sem a seção mede **500**, com ela
+**525** — 25 é a diferença, não uma conta feita de cabeça.
+
+### O que nada disso fecha
+
+Nenhum gate de fase (mandato 4) e nenhuma linha de código: `feat/bicho-cavando-12` não abriu — abre da
+`main` depois de a 16 pousar, porque as duas escrevem `src/main.gd` —, `_dig_accum`, `_dig_pos` e as nove
+checagens nomeadas não existem em `src/` nem em `tests/`, e nenhum bicho escreve no mundo. Os números
+publicados continuam os da perna 11: **252 checagens / 0 falhas** na suíte no pin `5b519f8`, **225** no
+runner de reações ([tests/aether_reactions_test.gd:34](../tests/aether_reactions_test.gd#L34)) e **27** no
+de RNG ([tests/simulation_rng_test.gd:9](../tests/simulation_rng_test.gd#L9)). Esta passada é docs:
+`git diff HEAD --stat -- src tests` **vazio**.

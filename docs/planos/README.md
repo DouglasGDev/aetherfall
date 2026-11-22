@@ -35,7 +35,7 @@ páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do c
 | 09 | [Bioma, cor do pelo e fundo de Éter por bioma](09-bioma-cor-de-pelo-e-ether.md) | Falta 8 `:342-356` | bioma só existe se decidir algo observável: cor do pelo e viés de imprint; derivar **não** pode alterar terreno nem hash | `bioma_deterministico`, `bioma_nao_altera_terreno` (a que fecha o lote), `cor_do_pelo_vem_do_bioma`, `imprint_bioma_tem_mesma_ordem` |
 | 10 | [Rotinas de alcateia](10-alcateia-rutinas.md) | Falta 9 `:357-363` | a intenção de um lobo muda quando outro está por perto — 1 lobo vs 4 lobos no mesmo cenário tem de **divergir** | `contraste_de_alcateia`, `cercar_calcula_assentos`, `ataque_escalonado`, `medo_contagia` / `amigo_amortece`, `alcateia_nao_consome_rng_da_sessao` |
 | 11 | [Acasalamento, filhote que cresce e censo variável](11-acasalamento-filhote-e-censo.md) | Falta 10 `:364-371` | um save gravado com 7 lobos carrega 7 lobos — e crescer é função do `clock.tick`, não de parede | `acasalar_aumenta_censo`, `cooldown_segunda_copula`, `filhote_cresce_por_tick`, `filhote_nao_morde`, `load_leva_todo_o_censo` (nasceu **vermelha**, verde depois do load que pareia por identidade), `censo_respeita_teto`, `journal_hash_inalterado_sem_escolha` — **pousada**: `main` `5b519f8`, runner **225 / 0**, suíte **252 / 0** |
-| 12 | [Bicho cavando voxel](12-bicho-cavando-voxel.md) | Falta 11 `:372-380` | um voxel some por ação do lobo **sem input do jogador**, e a malharia disso é medida antes de ser celebrada | `lobo_cava_sem_input_do_jogador`, `cavar_respeita_a_lista`, `work_de_bicho_nao_confundido`, `malharia_do_cavar_medida`, `abrir_passagem_depois_de_bloqueio` |
+| 12 | [Bicho cavando voxel](12-bicho-cavando-voxel.md) | Falta 11 `:372-380` | um voxel **gerado** some por ação do lobo **sem input do jogador**, fica em `world.edits`, e a malharia disso é medida antes de ser celebrada — com a cláusula de proveniência que impede o bicho de desfazer obra alheia | `lobo_cava_sem_input_do_jogador`, `cavar_respeita_a_lista` (com braço `GLASS`: lista é material, não dureza), `work_de_bicho_nao_confundido`, `malharia_do_cavar_medida`, `abrir_passagem_depois_de_bloqueio` (é ele que decide os 8 passos do §3.2.a), `entrada_de_rastro_exposta_no_chao_lido`, `cavar_nao_toca_construcao_alheia` (paga o furo #22), `cavar_sobrevive_ao_save`, `cavar_nao_consome_rng_da_sessao` — **pauta re-escrita em 2026-11-22** sobre a árvore da 19; nenhuma linha de código dela foi escrita |
 | 13 | [Árvore genealógica de todo ser vivo, e o Éter lendo parentesco](13-arvore-genealogica-e-ether.md) | Falta 13 `:411-430` | ascendência só existe se nascer de dois adultos, sobreviver ao save e **mudar algo observável**; herdar é genoma-base, nunca a memória nem o trauma do pai | `genealogia_muda_algo_observavel` e `load_preserva_ascendencia` (nascem **vermelhas**), `pelo_de_fundador_vem_do_bioma`, `heranca_nao_repete_deriva`, `eter_devolve_quem_sangrou`, `journal_hash_inalterado_sem_nascimento`, `genealogia_nao_consome_rng_da_sessao`, `ascendencia_e_int_nao_referencia` |
 | 14 | [Convivência da alcateia: terra seca, matilha legível e spawn fora dos olhos](14-convivio-da-alcateia.md) | Falta 12 `:381-410` | seco é regra de validade do **alvo** (água é último recurso); "organizado" é teto numérico, não adjetivo; criatura nunca vira texto; spawn nunca a menos de `SAFE_SPAWN_DIST` nem com LOS livre | `lobo_escolhe_trilha_seca`, `resgate_de_margem_sobrevive_a_arvore` e `spawn_fora_da_vista_do_jogador` (nascem **vermelhas**), `nadar_so_sem_saida_seca`, `dois_lobos_nao_farejam_a_mesma_celula`, `alvo_estavel_por_segundo`, `nenhum_aviso_de_matilha_no_hud` + `feedback_do_jogador_continua_no_hud` (par obrigatório), `convivio_nao_estoura_orcamento` |
 | 15 | [Oráculo embutido no boot: o jogo levanta o llama-server](15-oraculo-embutido-no-boot.md) | autorização nova do dono em 2026-11-20, fora da lista `Falta` do status | com `Rodar.bat` e **nenhum** PowerShell aberto, a linha `ia:` do F3 enche dentro do prazo da cena de prova | `host_devolve_health_200`, `boot_nao_bloqueia_janela`, `reuso_nao_cria_segundo_processo`, `porta_alheia_continua_viva`, `fechar_janela_mata_o_filho`, `suite_nao_levanta_modelo` — colhidas em cena própria, nunca na suíte |
@@ -63,7 +63,7 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 09 | `feat/bioma-e-cor-de-pelo-09` | `main` — **abre depois de 08 fechar**; nenhuma das outras cinco abre enquanto esta estiver aberta (`src/entities/wolf.gd` e `src/main.gd` são de escritor único) |
 | 10 | `feat/alcateia-rutinas-10` | `main`, depois de 09 (a cor e o viés por bioma mudam o que a matilha lê) |
 | 11 | `feat/acasalamento-e-censo-11` | `main`, depois de **14**: acasalar exige saber quem é adulto e quem está perto, e o filhote nasce pelo predicado de spawn seguro que a 14 entrega. **Pousada**: ponta de código `0762b43`, `main` publicada `5b519f8` (clone limpo medido, merge do código `4b858c2`), com o gate re-rodado depois do merge `010ab25` |
-| 12 | `feat/bicho-cavando-12` | `main`, depois de 11 (a folha `dig` entra na árvore já reorganizada, e o teto de censo decide quantos lobos cavam) |
+| 12 | `feat/bicho-cavando-12` | `main`, **depois de 16** (re-derivado em 2026-11-22): a 16 é quem decide onde os lares ficam e, como esta, escreve `src/main.gd` — que é de escritor único. Antes dela entraram também a 19, e isso muda o desenho: cavar passa a ser o **terceiro** ramo do `if` de bloqueio (desvia → sobe → cava), e quem cava se decide pelo alcance do corpo (`dims` do filhote é 0,45 do adulto), não por fase nem por uma folha nova na `Selector`. **Pauta re-escrita sobre a árvore da 19; nenhuma linha de código dela foi escrita** |
 | 13 | `feat/arvore-genealogica-13` | `main`, **por último**, depois de 18: sem a 11 não há nascimento por causa interna (o que escrever na árvore) e sem a 10 não há leitura de vizinho (como parentesco vira comportamento) — e se o Éter ganhar canal novo, re-mediar as pernas anteriores é mais barato do que deixar `Channel.COUNT` no meio da fila |
 | 14 | `feat/alcateia-convivio-14` | `main`, depois de 10 e **antes** de 11: mexe nas mesmas folhas de movimento que a alcateia reorganizou, e o predicado "longe dos olhos do jogador" tem de existir antes de alguém precisar dele para pôr um filhote no mundo |
 | 15 | `docs/oracle-embutido-15` (estes dois commits) → `feat/oraculo-embutido-no-boot-15` (código) | `main`, **entre 10 e 14**: a 15 não encosta em nenhuma linha do código da matilha nem das outras pernas — em `src/main.gd` só pendura um nó novo no boot — enquanto a 14 depende da ronda por setor que a perna 10 já escreveu e pousou (código `0c38489`, `main` publicada `b779cee`) |
@@ -79,8 +79,10 @@ cerimônia: cor depende de bioma, cercar depende de quem mais existe na matilha,
 folhas que a alcateia reorganizou e entrega à 11 o ponto de spawn, acasalamento depende de dois adultos
 próximos, o pulo de degrau entra depois da 11 porque é o único item da lista que é defeito do jogo que já
 roda — nada depende dele e ele não espera por nada —, as tocas dependem do censo que a 11 variabilizou,
-cavar é folha da árvore já montada, a gravidade
-de blocos é o segundo consumidor do `block_changed` que o cavar acabou de abrir, o crescimento é o segundo
+cavar entra depois da 16 porque as duas escrevem `src/main.gd` e é a 16 quem decide onde os lares ficam —
+e a pauta da 12, re-escrita em 2026-11-22 contra a árvore da 19, diz que cavar **não** abre folha nova na
+`Selector` nem assina `block_changed`: é o terceiro ramo do mesmo `if` de bloqueio, então a gravidade de
+blocos continua sendo a **primeira** consumidora do sinal, não a segunda, o crescimento é o segundo
 comprador da fila que a gravidade escreveu, e a árvore genealógica depende de nascimento por causa
 interna — e a 15 entra no meio porque é o caminho do `Rodar.bat`, não do código da matilha. Além disso,
 deixar uma mudança de `Channel.COUNT` no meio da fila custaria re-mediar as
@@ -205,6 +207,41 @@ publicado da suíte continua **252 / 0** na árvore do pin `5b519f8`; re-corrida
 `SCRIPT ERROR` nas duas, com `git diff HEAD --stat -- src tests` **vazio** contra o pin — o que muda aqui
 é prosa, então as duas corridas servem para fechar o ciclo de trabalho (item 5 de "Ciclo de trabalho"),
 não para publicar contagem nova.
+
+**Medida desta rodada (a pauta 12 re-escrita contra a árvore de hoje; `main` em `e0450a3` mais a
+página reescrita, esta página índice, a âncora do dossiê 17 e as prosas de pauta):** **1 286 citações
+conferidas nos dezenove dossiês, 0 números fora do arquivo.** As dezoito páginas que não são a 12 estão
+**elo a elo idênticas** à medida da rodada 16 — 71 · 50 · 25 · 75 · 70 · 34 · 51 · 55 · 39 · 77 · 80 · 110 ·
+68 · 115 · 94 · 54 · 50 · 29 = **1 147** — e o elo que mudou é o da própria 12: de **53** para **139**,
+**+86**, que é exatamente o salto do corpus (**1 200 → 1 286**). Com esta página índice no corpus o
+diretório dá **1 301** (1 147 + 139 + os mesmos **15** daqui), e as **9** referências a arquivos que não
+existem continuam sendo **3** arquivos, todos peças já declaradas inexistentes
+(`src/core/sim/tick_clock.gd`, `docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd`) — a
+re-escrita não transformou nenhuma peça inexistente em fato. No `verify_plan_ids.py` a 12 devolve **84**
+identificadores em backticks, dos quais **11** não existem em `src/` nem em `tests/`: **9** nomes de
+checagem proposta do §5 e **2** campos que o §3.1 propõe (`_dig_accum`, `_dig_pos`) — nenhum
+identificador de código existente foi citado em vão, e o único que a re-escrita citou torto foi o
+rótulo `_drop`, que apontava para a linha de preenchimento da tabela em vez da declaração; hoje a página
+cita o acessor real. Somando os três documentos que governam a casa nesta árvore —
+[`AGENTS.md`](../../AGENTS.md), [`README.md`](../../README.md) e
+[`docs/melhorias-status.md`](../melhorias-status.md) — são **142 · 0 · 525 = 667** números, **0** fora do
+arquivo: o contrato foi de **123** para **142** (**+19**, o parágrafo de registro desta pauta) e o status
+de **478** para **525** — **+22** pelas duas peças de furo (#22 e #23), pela nota do item 11 do "Falta" e
+pela nota de "Em andamento", e **+25** pela seção "Rodada Docs 12", medida recortando o arquivo: sem a
+seção ele dá **500**, com ela **525**. O `README.md` da raiz segue em **0** porque cita por seção, não por
+linha. O instrumento de âncoras
+([`tools/check_doc_anchors.py`](../../tools/check_doc_anchors.py)) confere nesta ponta **2 260** ponteiros,
+**151** rótulos e **2 217** links relativos em **36** arquivos e devolve **casos objetivos: 0** — e o
+único caso que a re-escrita abriu foi fechado na mesma passada: a âncora do dossiê 17 para o §9 da
+página 12 media `:186-189` de um arquivo de **189** linhas; a página reescrita tem **390** e o mesmo §9
+está hoje em `:384-390`, que é para onde a âncora aponta. Nenhum número deste parágrafo foi escrito
+antes de o instrumento devolvê-lo nesta árvore.
+
+**O que esta rodada não re-ancorou, e por quê (a segunda vez que isto se escreve):** a coluna "Linha da
+fila" da primeira tabela continua com a numeração do dia em que cada dossiê foi escrito, e a célula da
+12 continua dizendo `Falta 11 :372-380`. Re-ancorar essa coluna é a perna de docs que re-deriva o corpus
+inteiro, registrada no furo #14, e não cabe numa pauta: transladá-la aqui mexeria em números que outras
+páginas usam como registro de leitura.
 
 **Medida da rodada 17/18 (as dezessete páginas, `main` em `86e63c4` + aqueles dois arquivos novos):**
 **1 039 citações conferidas nos dezessete dossiês, 0 números fora do arquivo** — por página, na ordem da

@@ -293,7 +293,7 @@ no `diagnostics()` e as checagens 1 e 6; (d) `FallingBlock` + spawner + `FIX`, c
 Nenhum gate de fase (mandato 4). Não é camadas verticais nem rebase de save, não é fluido, não
 é luz, não é o `Landing.SHATTER` nem o dano de impacto — ambos ficam `[TARGET]` neste
 arquivo enquanto não houver bloco com a flag correspondente. O dossiê 12
-([`:186-189`](12-bicho-cavando-voxel.md#L186-L189)) já disse que cavar **não** preenche a
+([`:384-390`](12-bicho-cavando-voxel.md#L384-L390)) já disse que cavar **não** preenche a
 reserva dos ids: este aqui também não preenche — ele só gasta a flag de `SAND`, que é o bloco
 que já existe.
 

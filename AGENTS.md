@@ -461,6 +461,42 @@ recusas de spawn nunca tiveram testemunha numérica — `motivos` só é interpo
 página encosta em `Channel.COUNT`, `FORMAT_VERSION` nem `GEN_VERSION`, e nenhuma linha de código dela
 foi escrita: a branch abre da `main` no ponto atual, com o gate nascendo vermelho.
 
+**Registro de 2026-11-22 (2) — a pauta da 12 re-escrita contra a árvore de hoje. Nenhuma autorização
+nova e nenhuma exceção de ordem: a fila continua 09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13.**
+[`docs/planos/12-bicho-cavando-voxel.md`](docs/planos/12-bicho-cavando-voxel.md) tinha sido escrita em
+2026-11-20 sobre uma árvore cinco pernas menor, e a regra da casa é que citação velha é hipótese: a
+página foi re-linha a re-linha contra o código em que as pernas 09, 10, 14, 15, 11 e 19 já pousaram.
+Quatro afirmações dela a leitura de hoje devolve diferente, e nenhuma é cosmética. (1) **Dureza é tempo,
+não permissão**: o jogador soma `_mining_accum += delta` contra `target_hardness` sem teto de bloco
+([src/entities/player.gd:663-664](src/entities/player.gd#L663-L664)) e escreve `AIR` em qualquer alvo
+([:685](src/entities/player.gd#L685)), então `STONE 0,95` **cai** — o que limita a pata é lista de
+material, não a régua. (2) **`block_changed` não tem um único consumidor** no repositório: existem só a
+declaração ([src/world/voxel_world.gd:6](src/world/voxel_world.gd#L6)) e o emit
+([:262](src/world/voxel_world.gd#L262)), então o gate desta perna observa estado de mundo lido
+(`get_block` + [`world.edits`](src/world/voxel_world.gd#L42)) e quem assina o sinal continua sendo a 17 —
+que é exatamente o motivo pelo qual a checagem `queda_move_a_celula` daquela página nasce vermelha.
+(3) **O desemperto já tem dois ramos**, e o segundo é da 19 ([src/entities/wolf.gd:977-984](src/entities/wolf.gd#L977-L984)),
+então cavar entra como **terceiro** ramo do mesmo `if` (fork A), e a alternativa de folha nova na
+`Selector` (fork B) só se abre com o A vermelho porque `intent` é hashiado pelo journal. (4) **Quem cava
+é decidido pelo alcance do corpo**, não por fase: `PHASE_SCALE` dá 0,45 ao filhote
+([src/entities/wolf.gd:89](src/entities/wolf.gd#L89)) e o `reach` do degrau vem de `dims`
+([src/entities/voxel_body.gd:171](src/entities/voxel_body.gd#L171)). Disso saem dois furos novos, ambos
+com dono escrito antes de qualquer linha: **#22**, a lista de bancadas é alimentada só pelos sinais do
+`Player`, então um bicho que removesse uma `BENCH` deixaria `bench_positions()` apontando para o ar até o
+próximo load — fechado **por construção** pela cláusula `not world.edits.has(pos)` do §3.2, com a
+checagem `cavar_nao_toca_construcao_alheia` pagando o número; e **#23**, a permeabilidade do Éter decide
+o peso do vizinho por **um** voxel no canto da célula de 4×4×4
+([src/world/aether_field.gd:174-176](src/world/aether_field.gd#L174-L176),
+[src/world/voxel_config.gd:16](src/world/voxel_config.gd#L16)), então a frase antiga "difundem com menos
+barreira" não é falsificável e o item (b) foi re-baseado no `y` que `_scent_ground_y` devolve
+([src/entities/wolf.gd:928-936](src/entities/wolf.gd#L928-L936)) — dono perna 05. Uma consequência nova de
+palco de teste, e é a que deixaria uma checagem verde pelo motivo errado: `_wall` e `_cave_carve` do
+runner chamam `set_block` com `record` default, ou seja, parede de teste **é construção registrada**; o
+scaffolding do cavar tem de escrever com `record = false`. Nada deste registro encosta em
+`Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` nem na projeção do journal, nenhum número publicado foi
+re-medido por ele, e nenhuma linha de código da perna 12 foi escrita: `feat/bicho-cavando-12` não abre
+antes de a 16 pousar, porque as duas escrevem `src/main.gd`.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do
