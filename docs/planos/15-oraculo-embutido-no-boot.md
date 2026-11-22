@@ -379,7 +379,7 @@ Cada checagem nomeia a premissa que exige e imprime o número que a decide — r
     `401` tem de ser impresso como `llm: 401`, não como recuo anônimo em
     [`mind_oracle.gd:162-174`](../../src/ai/mind_oracle.gd#L162-L174)); **com** o header ⇒ `200`.
 
-`EXPECTED_CHECKS` (150 na leitura deste dossiê em [`aether_reactions_test.gd:25`](../../tests/aether_reactions_test.gd#L25)),
+`EXPECTED_CHECKS` (150 na leitura deste dossiê em [`aether_reactions_test.gd:30`](../../tests/aether_reactions_test.gd#L30)),
 os censores irmãos (audio 73, simulation_rng 27, journal 128) e o rodapé da suíte **não mudam por
 este lote se as checagens 1-10 viverem na cena de prova** — que é o plano. Se alguma delas entrar
 na suíte, o número vira invariante no mesmo commit, anunciado antes de escrever.
@@ -471,10 +471,12 @@ link diz "leia agora" e esses números já não descrevem o arquivo de agora. O 
 crescimento do próprio status — a perna 10 escreveu 285 linhas aqui dentro e esta nota, mais 206.
 A primeira leitura pelo conteúdo, feita naquela ponta, devolveu `:329` e `:2410`; a perna 14
 voltou a crescer o arquivo e os dois apodreceram de novo — o primeiro caiu em prosa de clone
-limpo, o segundo em linha branca, e a linha branca é o único caso que a gateira de
-`tools/check_doc_anchors.py` vê. Re-leram-se pela frase e são hoje
-[`:386`](../../docs/melhorias-status.md#L386) e [`:2479`](../../docs/melhorias-status.md#L2479);
-cada um diz a ordem da época **e** a ordem vigente, em vez de ser reescrito: o mandato 4
+limpo (`:386`), o segundo em linha branca (`:2479`), e a linha branca é o único caso que a gateira
+de `tools/check_doc_anchors.py` vê. Re-leram-se pela frase uma terceira vez e são hoje
+[`:430`](../../docs/melhorias-status.md#L430) e
+[`:2630-2631`](../../docs/melhorias-status.md#L2630-L2631); a ordem vigente deste mês está um
+pouco abaixo, em [`:445-446`](../../docs/melhorias-status.md#L445-L446). Cada um dos dois
+conserva a ordem da época que registrou, em vez de ser reescrito: o mandato 4
 registrava a exceção antes do código, e o
 passe de status era o mesmo commit que a fecha. Editar o meio do status empurra cada linha
 abaixo dele — é o mecanismo que a página índice explica — e por isso o número novo foi achado
@@ -513,9 +515,9 @@ delas muda mandato: é deriva de linha e nome de API.
   [`:2101-2128`](../../tests/smoke_test.gd#L2101-L2128) com a porta 1 armada em
   [`:2108`](../../tests/smoke_test.gd#L2108), e os dois passos em
   [`:108-109`](../../tests/smoke_test.gd#L108-L109). Dos dois ponteiros para o status, o `:70`
-  continua na linha (a tabela de prompts) e já cita `smoke_test.gd:2081-2086`; o `:522-523` era o
+  continua na linha (a tabela de prompts) e já cita `smoke_test.gd:2103-2108`; o `:522-523` era o
   item de débito do gate do oráculo, que hoje está em
-  [`:575-577`](../../docs/melhorias-status.md#L575-L577) e com o alvo da degradação já corrigido.
+  [`:694-696`](../../docs/melhorias-status.md#L694-L696) e com o alvo da degradação já corrigido.
 - `llama-server.exe` **não é** o programa inteiro: 9.728 B de stub com a lógica em DLLs ao lado
   (§0.2). Qualquer texto futuro que proponha "copiar o `.exe`" está errado.
 - O `--timeout` do servidor não é ociosidade, e `--watch-file` não existe no b12499 (§0.1) — as

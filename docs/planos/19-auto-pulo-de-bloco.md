@@ -22,7 +22,7 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 - **braço vermelho de origem**: com o código de hoje, o mesmo cenário não sobe. Isso é aritmética
   do código, não opinião — ver §2;
 - **braço de indiferença**: com a parede de 6 blocos do cenário que já existe
-  ([`aether_reactions_test.gd:1035`](../../tests/aether_reactions_test.gd#L1035)), o corpo **não**
+  ([`aether_reactions_test.gd:1063`](../../tests/aether_reactions_test.gd#L1063)), o corpo **não**
   é lançado para cima, e ainda assim re-arma o desvio. Sem esse lado, a checagem verde estaria
   afirmando apenas que atiramos o corpo para o alto sempre que ele encosta em alguma coisa.
 
@@ -73,13 +73,14 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
   do lobo é o segundo comprador da regra, não abstração no primeiro.
 - **Os dois cenários que a suíte já tem apontam para direções opostas.** No corredor liso o contrato
   é **nenhum** lançamento: `horizontais == 0 and rearms == 0 and lancamentos == 0`
-  ([aether_reactions_test.gd:945](../../tests/aether_reactions_test.gd#L945)) — e ele continuaria
+  ([aether_reactions_test.gd:972](../../tests/aether_reactions_test.gd#L972)) — e ele continuaria
   verde com o conserto, porque sem bloqueio horizontal nenhum dos dois caminhos é pego. Na parede de
-  6 blocos o contrato é **tem lançamento**: `rearms > 0 and lancamentos > 0`
-  ([`:1035`](../../tests/aether_reactions_test.gd#L1035)). Essa asserção **muda de lado** com este
-  dossiê: contra um muro de seis blocos, saltar é desperdício, e é ela que o braço de indiferença
-  do §1 vira de cabeça para baixo. Registrar isso antes do código é o ponto: o verde antigo não era
-  errado, era a melhor afirmação possível antes de existir o predicado que distingue os dois casos.
+  6 blocos o contrato era **tem lançamento**: `rearms > 0 and lancamentos > 0`, na linha `:1035` da
+  leitura desta página. Essa asserção **muda de lado** com este dossiê — hoje é `rearms > 0 and
+  lancamentos == 0` ([`:1063`](../../tests/aether_reactions_test.gd#L1063)) —: contra um muro de seis
+  blocos, saltar é desperdício, e é ela que o braço de indiferença do §1 vira de cabeça para baixo.
+  Registrar isso antes do código é o ponto: o verde antigo não era errado, era a melhor afirmação
+  possível antes de existir o predicado que distingue os dois casos.
 - **O resto do corpo do lobo importa para o pouso.** `DIMS = (0,75, 0,95, 1,35)`
   ([wolf.gd:72](../../src/entities/wolf.gd#L72)): 0,95 m de altura, e a caixa do `can_stand_at` na
   cota +1,0 tem de caber inteira sobre o bloco — cabe, com 1,0 m de ar livre exigido acima do
@@ -97,7 +98,7 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
    caso, e só quando já houve bloqueio.
 2. **O salto do lobo limpa o degrau, e só limpa degrau.** Trocar o literal `5,2` por constante
    nomeada com o ápice escrito ao lado, e exigir o predicado antes de gastar o impulso. Os sorteios
-   de `_rng` de `:841-842` **continuam na mesma ordem e na mesma quantidade**: a regra nova decide
+   de `_rng` de `src/entities/wolf.gd:846-847` **continuam na mesma ordem e na mesma quantidade**: a regra nova decide
    apenas se a velocidade vertical é escrita. mover o sorteio para dentro de um `if` mudaria o
    riacho e o cenário `simulation_rng_test` deixaria de medir a mesma coisa que mede hoje.
 3. **Auto-pulo do jogador, com as recusas escritas.** Depois de `move_and_collide`, quando
@@ -154,9 +155,9 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
    pelo caminho real do passo, **nenhum** `is_action_pressed("jump")`: exige o mesmo `Δy`. Também
    nasce vermelha.
 3. **`penhasico_nao_gasta_salto`** — o braço de indiferença: a parede de 6 blocos do cenário que já
-   existe, agora com `lancamentos == 0` e `rearms > 0`. É a asserção de
-   [`aether_reactions_test.gd:1035`](../../tests/aether_reactions_test.gd#L1035) lida do outro lado,
-   e é por isso que ela é re-derivada neste lote em vez de apagada.
+   existe, agora com `lancamentos == 0` e `rearms > 0`. É a asserção que esta página lia em `:1035`
+   — re-derivada hoje em [`aether_reactions_test.gd:1063`](../../tests/aether_reactions_test.gd#L1063),
+   lida do outro lado — e é por isso que ela é re-derivada neste lote em vez de apagada.
 4. **`agachado_nao_e_arremessado`** — o mesmo degrau com `crouching` true: corpo continua do lado de
    cá, `Δy == 0`. A checagem que dá dente à recusa do §3.3.
 5. **`predicado_degrau_recusa_teto_baixo`** — o predicado sozinho, em cinco braços montados com a
@@ -169,7 +170,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
 6. **`pulo_nao_custou_passo_de_ninguem`** — 1 000 ticks andando em plano sem bloqueio e 1 000 ticks
    com um degrau no caminho, `worst_sim_ms` e `dropped_ticks` lado a lado; atribuição por
    composição, como o contrato exige.
-7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:25`](../../tests/aether_reactions_test.gd#L25),
+7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:30`](../../tests/aether_reactions_test.gd#L30),
    **183** nesta leitura, na `main` mergida da perna 14) sobe com o lote e é re-medido no clone
    limpo com `--import` frio, com o SHA pinado.
 

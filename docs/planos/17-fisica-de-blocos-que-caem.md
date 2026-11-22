@@ -61,8 +61,8 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   o chunk e os vizinhos de borda em
   [`_touch_chunks_of`](../../src/world/voxel_world.gd#L266-L277) e só então emite. Os dois
   únicos chamadores de gameplay hoje são do jogador:
-  [`:667`](../../src/entities/player.gd#L667) (quebra → `AIR`) e
-  [`:693`](../../src/entities/player.gd#L693) (colocação).
+  [`:685`](../../src/entities/player.gd#L685) (quebra → `AIR`) e
+  [`:711`](../../src/entities/player.gd#L711) (colocação).
 - **Nenhuma das peças nomeadas existe.** Grep em `src/` e `tests/`: `BlockUpdateQueue` — zero,
   `FallingBlock` — zero, `FallingBlockSpawner` — zero, `DropSpawner`/`DropItem` — zero,
   `is_supported` — zero, `place_falling_block` — zero. As quatro primeiras são §10.4/§10.5 do
@@ -250,7 +250,7 @@ godot --headless --path . tests/smoke_test.tscn
    edição, um com a cascata: o primeiro **reproduz** o hash da rodada sem a feature (nenhum
    bloco se move sozinho), o segundo diverge e a divergência é atribuída às duas chaves de
    `edits` novas. Sem o primeiro lado, a checagem aceita queda em qualquer lugar.
-8. `EXPECTED_CHECKS` ([aether_reactions_test.gd:25](../../tests/aether_reactions_test.gd#L25),
+8. `EXPECTED_CHECKS` ([aether_reactions_test.gd:30](../../tests/aether_reactions_test.gd#L30),
    **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:184](../../tests/smoke_test.gd#L184))
    sobem com o lote e são re-medidos no clone limpo com `--import` frio, com o SHA pinado.
 
@@ -267,7 +267,7 @@ godot --headless --path . tests/smoke_test.tscn
   design novo, com custo medido, não como otimização de emergência.
 - **Não dar destino inventado ao `_shatter`**: não existe entidade de item no chão
   ([doc 10 `:655`](../design/10-world-layers-and-block-physics.md#L655) já tabela isso, e o
-  drop do jogador vai direto para `inv`, [player.gd:661-670](../../src/entities/player.gd#L661-L670)).
+  drop do jogador vai direto para `inv`, [player.gd:679-688](../../src/entities/player.gd#L679-L688)).
   Enquanto não houver `quebra_queda` com comprador, o caminho não é escrito.
 - **Não reabrir a reserva de ids 9..18** com um bloco novo de conveniência, nem usar tile fora
   do que o doc promete ([block_defs.gd:5-8](../../src/world/block_defs.gd#L5-L8),

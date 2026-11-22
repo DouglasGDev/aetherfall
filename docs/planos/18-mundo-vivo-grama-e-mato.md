@@ -39,9 +39,9 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 ## 2. Estado real do código (lido, não medido)
 
 - **Nada cresce hoje.** A única escrita de bloco de gameplay é do jogador
-  ([player.gd:667](../../src/entities/player.gd#L667) quebra,
-  [`:693`](../../src/entities/player.gd#L693) coloca). O mundo é estático depois da geração:
-  `world_gen.gd` escreve as colunas uma vez (em [`generate_chunk`](../../src/world/world_gen.gd#L173)
+  ([player.gd:685](../../src/entities/player.gd#L685) quebra,
+  [`:711`](../../src/entities/player.gd#L711) coloca). O mundo é estático depois da geração:
+  `world_gen.gd` escreve as colunas uma vez (em [`generate_chunk`](../../src/world/world_gen.gd#L174)
   e companhia) e o [`apply_edits`](../../src/world/voxel_world.gd#L164) só reaplica o que o
   jogador já tinha feito.
 - **Grama é só um bloco com drop de terra.** `GRASS` = id 1, tile 0/1, dureza 0,38, e o drop é
@@ -145,9 +145,9 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
    então o primeiro `PLANT` é uma **face Alpha desenhada como mato num cubo fino** — e o que
    não for isso é dito no §6, não feito.
 5. **Colocação e lavra não mudam de porta**: o `PLANT` entra no inventário pelo drop, sai pela
-   lavra do mesmo `_mine_target` ([player.gd:659-672](../../src/entities/player.gd#L659-L672))
+   lavra do mesmo `_mine_target` ([player.gd:677-690](../../src/entities/player.gd#L677-L690))
    e é colocado pelo `_try_place`, **que hoje recusa qualquer célula que não seja `AIR` ou
-   `WATER`** ([`:684-685`](../../src/entities/player.gd#L684-L685)). Isso significa que mato no
+   `WATER`** ([`:702-703`](../../src/entities/player.gd#L702-L703)). Isso significa que mato no
    chão bloqueia colocar bloco ali. A peça nova é o campo `substituivel` do doc
    ([`:159`](../design/10-world-layers-and-block-physics.md#L159)) lido por `_try_place` —
    **um campo, um comprador**, e o comprador é a colocação do jogador. Não é refatoração
@@ -215,7 +215,7 @@ godot --headless --path . tests/smoke_test.tscn
 8. **`crescimento_nao_consome_rng_da_sessao`** — o riacho novo não toca `_population_rng`: a
    mesma semente, com e sem mecânica ligada, devolve a mesma sequência de spawns já conferida
    por `tests/simulation_rng_test.gd`. Sem ela, a perna passa a mentir sobre sorteio.
-9. `EXPECTED_CHECKS` ([aether_reactions_test.gd:25](../../tests/aether_reactions_test.gd#L25),
+9. `EXPECTED_CHECKS` ([aether_reactions_test.gd:30](../../tests/aether_reactions_test.gd#L30),
    **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:184](../../tests/smoke_test.gd#L184))
    sobem com o lote, re-medidos no clone limpo com `--import` frio.
 
