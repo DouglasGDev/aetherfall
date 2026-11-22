@@ -201,9 +201,10 @@ medida: eles dizem o que foi medido na rodada em que foram escritos, e é essa a
 **O que esta rodada não fecha, dito pelo índice:** nenhuma linha de `src/` nem de `tests/` foi escrita,
 a branch `feat/tocas-da-alcateia-16` **não** abriu, e nenhuma das dez checagens do §5 existe. O contrato
 publicado da suíte continua **252 / 0** na árvore do pin `5b519f8`; re-corrida nesta ponta deu
-**252 / 0 / 42,4 s**, exit 0 e zero `SCRIPT ERROR`, com `git diff HEAD --stat -- src tests` **vazio** —
-o que muda aqui é prosa, então o número serve para fechar o ciclo de trabalho (item 5 de "Ciclo de
-trabalho"), não para publicar contagem nova.
+**252 / 0 / 42,4 s** na branch e **252 / 0 / 42,5 s** na `main` mergida `582aaef`, exit 0 e zero
+`SCRIPT ERROR` nas duas, com `git diff HEAD --stat -- src tests` **vazio** contra o pin — o que muda aqui
+é prosa, então as duas corridas servem para fechar o ciclo de trabalho (item 5 de "Ciclo de trabalho"),
+não para publicar contagem nova.
 
 **Medida da rodada 17/18 (as dezessete páginas, `main` em `86e63c4` + aqueles dois arquivos novos):**
 **1 039 citações conferidas nos dezessete dossiês, 0 números fora do arquivo** — por página, na ordem da

@@ -4093,3 +4093,10 @@ correntes, com `git diff HEAD --stat -- src tests` **vazio**: o que mudou aqui �
 publicado é número medido na revisão que o publica. O que a rodada entrega é a pauta com premissa, custo
 e gate escritos contra o código de hoje — e o dono do furo #18 e do #21 nominado **antes** de qualquer
 delas virar linha em `src/main.gd` ou na suíte.
+
+**Registro da `main` mergida (2026-11-22).** O merge `--no-ff` desta branch na `main` (ponta `582aaef`)
+foi re-corrido na árvore resultante e devolveu suíte **252 / 0 / 42,5 s**, exit 0, zero `SCRIPT ERROR`
+nas duas correntes, e o `git diff` de `src/` e `tests/` contra o pin `5b519f8` continua **vazio**: os
+mesmos dois objetos de sempre. Por isso nenhum número novo é publicado aqui — o contrato da suíte é o
+do pin da perna 11, e as duas corridas desta passada (branch **42,4 s**, `main` mergida **42,5 s**)
+existem para fechar o item 5 e o item 6 do ciclo de trabalho, não para abrir contagem.
