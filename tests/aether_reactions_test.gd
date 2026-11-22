@@ -29,8 +29,9 @@ const TESTS: Array[StringName] = [
 	&"_test_filhote_cresce_por_tick",
 	&"_test_acasalar_aumenta_censo", &"_test_cooldown_segunda_copula",
 	&"_test_censo_respeita_teto", &"_test_filhote_nao_morde",
+	&"_test_journal_hash_inalterado_sem_escolha",
 ]
-const EXPECTED_CHECKS: int = 221
+const EXPECTED_CHECKS: int = 225
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -3649,4 +3650,78 @@ func _test_filhote_nao_morde() -> bool:
 			vizinhos, n_com_quatro, n_max, no_cerca, cacadores_agora,
 			1 + cacadores_agora, n_str.strip_edges()])
 	_pack_release()
+	return true
+
+
+## Checagem 7 do dossie 11 §5: o LOTE novo (fase, idade, cooldown) nao entra na
+## projecao minima do journal -- o hash do tick nao muda e `FORMAT_VERSION`
+## continua 1.
+##
+## A comparacao e nos DOIS sentidos (ciclo 3 do AGENTS.md: a atribuicao fecha
+## nos dois sentidos). O hash tem de ficar IGUAL quando o lote entra e tem de
+## MUDAR quando muda o que esta na projecao. Um instrumento que nao responde a
+## nada provaria tanto que o lote nao mexe nele quanto que o instrumento esta
+## cego -- e as duas coisas se parecem na tela.
+##
+## O que entra na projecao esta escrito em `tick_journal.gd:16-44`:
+## `FORMAT_VERSION`, semente, `GEN_VERSION`, tick, dimensoes do mundo e do Eter,
+## `Channel.COUNT`, as edicoes ordenadas e, por lobo vivo, `identity`,
+## `mind.identity`, `mind.kind`, `intent` e as crencas ordenadas por chave.
+## Fase, idade e cooldown NAO estao la: o lote muda o estado do animal no disco
+## (`Wolf.state_dict`) e nao o hash -- por isso a decisao de formato e "nao
+## muda", e nao um numero reescrito para caber.
+func _test_journal_hash_inalterado_sem_escolha() -> bool:
+	_arm()
+	var roster: Array = [_wolf]
+	var tick: int = _clock.tick
+	var hash_antes: String = TickJournal.state_hash(tick, _world, _field, roster)
+	# O lote: o animal vira filhote, com idade zero e cooldown cheio -- as tres
+	# chaves novas do disco (dossie 11 §3.5), pelo caminho real do corpo (a fase
+	# re-escala o colisor e a vida).
+	_wolf.age_ticks = 0
+	_wolf.set_phase(Wolf.Phase.CUB)
+	_wolf.mate_cd = 300.0
+	var hash_depois: String = TickJournal.state_hash(tick, _world, _field, roster)
+	_check(hash_antes == hash_depois,
+			"o lote (fase, idade, cooldown) nao move o hash do tick",
+			"antes=%s depois=%s tick=%d FORMAT_VERSION=%d" % [
+			hash_antes.substr(0, 16), hash_depois.substr(0, 16), tick,
+			TickJournal.FORMAT_VERSION])
+	# O outro lado: o hash tem de responder ao que ESTA na projecao. A crenca e
+	# o campo mais barato -- uma linha de crenca e um float -- e a mesma chave
+	# com a confianca mexida muda o conteudo sem mudar o conjunto de chaves.
+	_wolf.mind.reinforce("probe_journal", 0.50, "perception")
+	var hash_crenca: String = TickJournal.state_hash(tick, _world, _field, roster)
+	_wolf.mind.reinforce("probe_journal", 0.60, "perception")
+	var hash_crenca2: String = TickJournal.state_hash(tick, _world, _field, roster)
+	_check(hash_crenca != hash_crenca2,
+			"o hash responde ao que esta na projecao (mesma chave, confianca diferente)",
+			"crenca_050=%s crenca_060=%s" % [
+			hash_crenca.substr(0, 16), hash_crenca2.substr(0, 16)])
+	# O lote esta mesmo no disco -- e chave de registro, nao campo virtual: sem
+	# estas chaves o load perderia a fase e o bicho voltaria adulto.
+	var d: Dictionary = _wolf.state_dict()
+	_check(d.has("phase") and d.has("age_ticks") and d.has("mate_cd")
+			and int(d["phase"]) == int(Wolf.Phase.CUB) and int(d["age_ticks"]) == 0
+			and is_equal_approx(float(d["mate_cd"]), 300.0)
+			and TickJournal.FORMAT_VERSION == 1,
+			"o disco carrega o lote e o FORMAT_VERSION do journal continua 1",
+			"phase=%s age_ticks=%s mate_cd=%s FORMAT_VERSION=%d" % [
+			str(d.get("phase", -1)), str(d.get("age_ticks", -1)),
+			str(d.get("mate_cd", -1.0)), TickJournal.FORMAT_VERSION])
+	# E o caminho do disco reidrata o lote: a fase volta do disco e o corpo
+	# inteiro muda com ela.
+	var d2: Dictionary = d.duplicate(true)
+	d2["phase"] = int(Wolf.Phase.JUVENILE)
+	d2["age_ticks"] = Wolf.CUB_STEPS
+	d2["mate_cd"] = 12.5
+	_wolf.load_state(d2)
+	_check(_wolf.phase == Wolf.Phase.JUVENILE and _wolf.age_ticks == Wolf.CUB_STEPS
+			and is_equal_approx(_wolf.mate_cd, 12.5) and not _wolf.is_adult()
+			and is_equal_approx(_wolf.dims.y,
+					Wolf.DIMS.y * Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]),
+			"o load do disco reidrata fase, idade e cooldown, e o corpo da fase vem junto",
+			"fase=%s idade=%d mate_cd=%.2f dims=%s escala=%.2f" % [
+			_wolf.phase_name(), _wolf.age_ticks, _wolf.mate_cd, str(_wolf.dims),
+			Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]])
 	return true
