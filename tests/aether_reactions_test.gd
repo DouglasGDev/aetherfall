@@ -35,8 +35,13 @@ const TESTS: Array[StringName] = [
 	&"_test_reposicao_volta_para_a_toca_perdida",
 	&"_test_nascimento_fica_na_toca_dos_pais",
 	&"_test_espalhamento_nao_estoura_o_passo",
+	&"_test_colheita_de_malha_sem_cavar",
 ]
-const EXPECTED_CHECKS: int = 240
+# 247 = os 240 da ponta da perna 16 mais as sete da colheita de malha do dossie 12
+# §8(a). O censo se re-deriva a cada checagem nova porque a linha
+# `_checks + 1 == EXPECTED_CHECKS` de `_finish` e o que converte passo abortado por
+# `SCRIPT ERROR` em vermelho: um numero chutado aqui desarma o instrumento inteiro.
+const EXPECTED_CHECKS: int = 247
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -4393,4 +4398,112 @@ func _test_espalhamento_nao_estoura_o_passo() -> bool:
 			float(d["worst_sim_ms"]), pico_us, media_us, total_us, passos,
 			colocacao_us, int(Session.WOLF_COUNT), s._dens.size()])
 	_pack_release()
+	return true
+
+
+## Frames de malharia pelo orcamento do produto ate a fila esvaziar (ou o teto).
+## Devolve as tres testemunhas que a checagem 4 do dossie 12 exige: quantos frames a
+## fila levou, qual foi a maior fila vista no comeco de um frame e o pior
+## `last_mesh_ms()` de um lote. `MESH_BUDGET` e lido de `src/main.gd:28`, nao copiado
+## para ca: o numero que importa e o preco do orcamento que o jogador sente, e um 2
+## escrito a mao envelheceria no dia em que o budget mudar.
+func _mesh_frames(frames_limit: int = 64) -> Dictionary:
+	var frames := 0
+	var max_pending := _world.pending_meshes()
+	var worst_ms := 0.0
+	while _world.pending_meshes() > 0 and frames < frames_limit:
+		_world.process(int(Session.MESH_BUDGET))
+		frames += 1
+		max_pending = maxi(max_pending, _world.pending_meshes())
+		worst_ms = maxf(worst_ms, _world.last_mesh_ms())
+	return {
+		"frames": frames, "max_pending": max_pending, "worst_ms": worst_ms,
+		"left": _world.pending_meshes(),
+	}
+
+
+## Dossie 12 §8(a): o instrumento de malharia entra ANTES de o cavar existir, para o
+## numero do estado atual chegar a mesa com a folha ainda inerte. A armadilha que ele
+## desarma e do harness, nao do jogo: `_advance` nunca chama `world.process` porque o
+## campo congelado e o que isola a reacao -- sem dreno a colheita mediria a fila
+## crescendo para sempre, e o `count` de `edit_mesh_cost()` seria zero para sempre
+## tambem, porque `_mark` so carimba um chunk que ja tem mesh
+## (`voxel_world.gd:301`). Os dois numeros que a checagem `malharia_do_cavar_medida`
+## vai publicar so existem depois deste, e e por isso que ele roda por ultimo: malhar
+## o mundo no meio da corrida mudaria o que as checagens de passo colhem.
+##
+## O lote e um voxel removido por lobo do censo do boot, pela mesma escrita que o
+## cavar usara (`set_block(pos, AIR)` com `record` default) e no mesmo teto de
+## concorrencia que a matilha tem hoje -- `WOLF_COUNT` lido do produto, nao chutado.
+func _test_colheita_de_malha_sem_cavar() -> bool:
+	var meshes_0 := _world.meshes_built()
+	var fila_0 := _world.pending_meshes()
+	# O boot pelo caminho do produto: `main.gd:135` malha o mundo inteiro antes de o
+	# primeiro tick rodar, entao o palco do cavar comeca igual ao do jogador.
+	var t0 := Time.get_ticks_usec()
+	_world.generate_meshes_all()
+	var boot_ms := float(Time.get_ticks_usec() - t0) / 1000.0
+	var meshes_1 := _world.meshes_built()
+	# A fila que o palco deixou: este runner monta a plateia com `set_block` ANTES de
+	# malhar, e `generate_meshes_all()` percorre os chunks sujos sem esvaziar `_dirty`
+	# -- no produto isso nao acontece, porque la o `generate` deixa a fila vazia e a
+	# primeira edicao so vem depois do boot. Drenar antes do lote nao e cerimonia: sem
+	# esse passo o `count` do instrumento seria 5 contra 17 remeshes e o `worst_us`
+	# mediria a espera atras de 16 chunks que ninguem pediu.
+	var palco := _mesh_frames()
+	var meshes_2 := _world.meshes_built()
+	var alvos := int(Session.WOLF_COUNT)
+	var feitos := 0
+	var chunks_do_lote := {}
+	var y_lido := -1
+	for key in _world.chunks:
+		if feitos >= alvos:
+			break
+		var c: VoxelChunk = _world.chunks[key]
+		var x: int = c.coord.x * VoxelChunk.SIZE_X + VoxelChunk.SIZE_X / 2
+		var z: int = c.coord.y * VoxelChunk.SIZE_Z + VoxelChunk.SIZE_Z / 2
+		var y: int = _world.surface_height(x, z)
+		# So o plateau da fixture: la o chao e o y=50 que o palco garante, entao a
+		# recusa de um ponto nunca vira "o lote ficou curto por acaso do relevo".
+		if y != 50:
+			continue
+		if _world.set_block(Vector3i(x, y, z), BlockDefs.Block.AIR):
+			feitos += 1
+			chunks_do_lote[key] = true
+			y_lido = y
+	var colheita := _mesh_frames()
+	var meshes_3 := _world.meshes_built()
+	var cost: Dictionary = _world.edit_mesh_cost()
+	_check(meshes_1 == _world.chunks.size(), "boot malha o mundo inteiro pelo caminho do produto",
+			"meshes=%d/%d  fila_no_boot=%d  boot_ms=%.1f  meshes_ant=%d" % [
+			meshes_1, _world.chunks.size(), fila_0, boot_ms, meshes_0])
+	_check(int(palco["left"]) == 0, "a fila que o palco deixou drena antes do lote",
+			"fila_ini=%d remeshes=%d frames=%d fila_max=%d" % [
+			fila_0, meshes_2 - meshes_1, int(palco["frames"]), int(palco["max_pending"])])
+	_check(feitos == alvos and chunks_do_lote.size() == alvos,
+			"o lote removeu um voxel por lobo do censo do boot, em chunks distintos",
+			"aceitas=%d alvos=%d chunks=%d y=%d" % [feitos, alvos, chunks_do_lote.size(), y_lido])
+	_check(int(colheita["left"]) == 0 and int(cost["pending"]) == 0,
+			"fila de malharia drena e nenhum carimbo fica aberto",
+			"fila=%d carimbos_abertos=%d frames=%d" % [
+			int(colheita["left"]), int(cost["pending"]), int(colheita["frames"])])
+	# A conta do instrumento tem de bater com o trabalho que a fila fez: todo chunk
+	# remalhado depois do carimbo fecha um carimbo, e nenhum carimbo fecha sem remesh.
+	_check(int(cost["count"]) == meshes_3 - meshes_2,
+			"custo de edicao == chunks remalhados no lote",
+			"count=%d remeshes=%d (meshes %d -> %d)" % [
+			int(cost["count"]), meshes_3 - meshes_2, meshes_2, meshes_3])
+	_check(int(cost["worst_us"]) > 0 and float(cost["mean_us"]) > 0.0,
+			"instrumento de edicao vivo (worst e mean acima de zero)",
+			"worst_us=%d mean_us=%.1f" % [int(cost["worst_us"]), float(cost["mean_us"])])
+	_check(int(colheita["max_pending"]) <= 8,
+			"nenhum frame com fila acima de 8 chunks",
+			"fila_max=%d budget=%d frames=%d worst_lote_ms=%.1f" % [
+			int(colheita["max_pending"]), int(Session.MESH_BUDGET),
+			int(colheita["frames"]), float(colheita["worst_ms"])])
+	print("COLHEITA DE MALHA SEM CAVAR (dossie 12 §4, estado atual), NAO GATE P1: boot chunks=%d ms=%.1f | fila do palco remeshes=%d frames=%d | lote edicoes=%d frames=%d fila_max=%d worst_lote_ms=%.1f | edit_cost count=%d worst_us=%d mean_us=%.1f pending=%d" % [
+		meshes_1, boot_ms, meshes_2 - meshes_1, int(palco["frames"]),
+		feitos, int(colheita["frames"]), int(colheita["max_pending"]),
+		float(colheita["worst_ms"]), int(cost["count"]), int(cost["worst_us"]),
+		float(cost["mean_us"]), int(cost["pending"])])
 	return true
