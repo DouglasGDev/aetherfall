@@ -270,6 +270,8 @@ func _run() -> void:
 	print("NAO fecha: determinismo da PROJECAO nesta maquina; corpo, RNG, jogador, "
 			+ "episodios e relacoes estao fora do hash, e o canal de relogio da guarda "
 			+ "segue aberto (veja OBSERVACAO estouros_guarda acima)")
+	print(("OBSERVACAO gen_ms=%.1f mesh_ms=%.1f worst_sim_ms=%.2f") % [
+			diag["gen_ms"], diag["mesh_ms"], diag["worst_sim_ms"]])
 	# Parenteses obrigatorios: sem eles o `%` so pega o ultimo fragmento concatenado e o
 	# print viram "%d" literais com ERROR de formatacao no log — exatamente o erro
 	# silencioso que o mandato 1 diz para nao deixar passar.
