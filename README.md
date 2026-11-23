@@ -592,24 +592,42 @@ lago e praia de areia no nível do mar — 12,5% das colunas caem abaixo de
 `SEA_LEVEL 26` na seed padrão, monte nevado, árvores, blocos de pedra,
 cavernas e túneis por ruído), malha com face-culling e oclusão ambiental por
 vértice, texturas geradas em runtime (atlas 8×8), jogador em 1ª/3ª pessoa com
-corpo animado (andar, agachar, pular, minerar, socar, planar, rolar, morrer),
-quebrar e colocar blocos com quantidade (o drop do bloco entra no inventário e
-colocar gasta um da pilha), inventário de 36 slots com pilha por bloco e hotbar
-de 10 pinos, painel de inventário e receitas com estação de craft (bancada),
+corpo animado (andar, agachar, pular, minerar, socar, planar, rolar, morrer) e
+degrau de um bloco que ele sobe sozinho quando está travado na horizontal — o
+auto-pulo escreve o mesmo buffer do `Espaço`, então os dois no mesmo quadro
+somam um salto, nunca dois; quebrar e colocar blocos com quantidade (o drop do
+bloco entra no inventário e colocar gasta um da pilha), inventário de 36 slots
+com pilha por bloco e hotbar de 10 pinos, painel de inventário e receitas com
+estação de craft (bancada),
 combate corpo a corpo com vigor, rolamento e
 planar, respiração e dano de queda, vida/dano/morte/renascer,
-HUD, matilha de 5 lobos no boot com censo variável (teto `CENSUS_CAP` 12) e cada
+HUD, matilha de 5 lobos no boot com censo variável (teto `CENSUS_CAP` 12, e a
+recusa de nascer é impressa e contada em `census_refusals`) e cada
 lobo com Behavior Tree + Utilidade + memória
-episódica e confiança no jogador; a matilha nasce espalhada em 3 tocas
-(`DEN_COUNT`) cujo centro tem de ficar a pelo menos 48 m (`DEN_MIN_DIST`) do
-centro de toda toca já fundada, o lar do filhote é herdado do casal e a reposição
-volta para a toca perdida, bioma como código (uma função decide a partir do relevo, e o mesmo
+episódica e confiança no jogador; as rotinas de alcateia existem — patrulhar,
+seguir rastro no Éter, voltar ao último avistamento, rondar o setor da matilha e
+fechar cerco em assentos distintos (`ENCIRCLE_RING`) antes de morder, com o lobo
+subindo degrau de uma célula sozinho (`STEP_JUMP`, ápice 1,20 m contra a célula
+de 1,00 m) e a água como último recurso de travessia, não como atalho; a
+matilha nasce espalhada em 3 tocas (`DEN_COUNT`) cujo centro tem de ficar a pelo
+menos 48 m (`DEN_MIN_DIST`) do centro de toda toca já fundada, e o grafo de
+coesão que decide quem é de onde sai publicado no `diagnostics()` como
+`den_components`; dois adultos do mesmo raio (`MATE_RADIUS` 8 m, um par por
+varredura, depois 300 s de espera) geram um filhote que herda a toca do casal e
+cresce por três fases (`PHASE_NAMES`: filhote → jovem → adulto, com corpo, vida
+e dano escalados por `PHASE_SCALE`), e a reposição volta para a toca perdida;
+nenhum lobo nasce à vista do jogador — o ponto só vale a pelo menos
+`SAFE_SPAWN_DIST` (32 m) **e** com a linha do olho ao peito bloqueada por sólido
+(`_spawn_point_ok`, buscado em bandas de 16 a 70 m em torno da posição atual do
+jogador), e não há letreiro de criatura na tela: a presença é para ser achada;
+bioma como código (uma função decide a partir do relevo, e o mesmo
 bioma dá a cor do pelo de quem ali nasceu e o viés por canal do imprint do Éter — o viés é
 aplicado pelo chamador do evento, o campo continua sem conhecer voxel nenhum), campo de Éter
 com 3 canais (work, blood, fear) que difunde
 e decai, relógio de simulação desacoplado, save/load atômico, som ambiente e de ação com
 51 arquivos CC0 roteados por barramento (o ganho sai do nível medido de cada arquivo), o
-oráculo de IA local opcional (llama-server + Qwen3.5-4B em localhost, narração no debug) e
+oráculo de IA local que o próprio boot levanta quando os pacotes existem
+(llama-server + Qwen3.5-4B em localhost, narração no debug) e
 a suíte headless acima.
 
 Ainda **alvo de design** (descrito em `docs/design/`, sem código aqui): NPCs de
