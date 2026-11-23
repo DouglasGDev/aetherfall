@@ -63,7 +63,7 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 04 | `perf/budget-hot-medido-04` | `main` |
 | 05 | `perf/difusao-fora-do-tick-05` | `main` (depois de 04: colheita antes do corte) |
 | 06 | `refator/donos-fora-do-main-06` | `main`, K1 → K2 → K3 |
-| 07 | `bench/af-bench-bakeoff-07` | `main`, doc → runner → bake-off |
+| 07 | três branches, na ordem: `docs/engine-simclock-07a` → `bench/af-bench-boot-walk-07b` → `bench/bake-off-voxel-07c` (o nome único `bench/af-bench-bakeoff-07` era provisório) | `main`, serial: doc → runner → bake-off. **Pousada**: `c1e77ad` (07a), `166af71` (07b), `cea4379` (07c) |
 | 08 | `feat/minds-inspector-f3-08` | `main` |
 | 09 | `feat/bioma-e-cor-de-pelo-09` | `main` — **abre depois de 08 fechar**; nenhuma das outras cinco abre enquanto esta estiver aberta (`src/entities/wolf.gd` e `src/main.gd` são de escritor único) |
 | 10 | `feat/alcateia-rutinas-10` | `main`, depois de 09 (a cor e o viés por bioma mudam o que a matilha lê) |

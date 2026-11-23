@@ -27,8 +27,8 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Gravidade de **bloco** | não existe. Gravidade de **corpo** sim: 24,0 m/s², terminal 42,0 | [voxel_body.gd:6-15](../../src/entities/voxel_body.gd) |
 | Queda do jogador | dano por velocidade de impacto; seguro 14 m/s, 3,5 por m/s, teto 55 | [player.gd:75-77](../../src/entities/player.gd), `:567-573` |
 | Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:565-577](../../src/entities/player.gd) |
-| Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:261` |
-| Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:300-310](../../src/world/voxel_world.gd) |
+| Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:276` |
+| Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:350-360](../../src/world/voxel_world.gd) |
 | Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:913-915](../../src/main.gd#L913-L915); coleta em [player.gd:670-683](../../src/entities/player.gd#L670-L683) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
@@ -118,7 +118,7 @@ static func in_world_bounds(p: Vector3i) -> bool:
 
 `in_world_bounds` é hoje `p.y >= 0 and p.y < CHUNK_SIZE_Y`
 ([voxel_config.gd:26-31](../../src/world/voxel_config.gd)) e é chamada por
-`VoxelWorld.set_block` (voxel_world.gd:252) e por `Player._try_place`
+`VoxelWorld.set_block` (voxel_world.gd:266) e por `Player._try_place`
 (player.gd:689) — ou seja, **o limite de construção Y = 320 sai de graça dessas duas
 chamadas**, sem tocar em HUD nem em input.
 
@@ -133,7 +133,7 @@ A tabela é em script, não um `.json` carregado em runtime:
    append-only. Um JSON lido em runtime não tem como ser mais estável que o enum que
    indexa as tabelas.
 2. `VoxelWorld` consulta propriedade de bloco **dentro do laço de malharia**
-   (voxel_world.gd:455-488) e dentro de `aabb_hits_solid` (:300-310).
+   (voxel_world.gd:504-537) e dentro de `aabb_hits_solid` (:350-360).
    `PackedByteArray` é acesso O(1) sem hash; um Dictionary de JSON seria um hash por
    voxel por iteração de bake.
 3. Tipagem estática: `hardness(b) -> float` não compila se a tabela encolher; um campo
@@ -151,7 +151,7 @@ propriedade única não separava perguntas distintas:
 |---|---|---|
 | `dureza` | quantos segundos de lavra? | `Player._apply_actions` (player.gd:655-658) |
 | `solido` | corpo colide? | `aabb_hits_solid`, `is_supported`, raycast DDA |
-| `opaco` | esconde a face do vizinho? | face-culling e AO (voxel_world.gd:475, 517) |
+| `opaco` | esconde a face do vizinho? | face-culling e AO (voxel_world.gd:524, 568) |
 | `destrutivel` | pode virar AR por lavra/explosão? | caminho de quebra (novo gate) |
 | `sofre_gravidade` | olha para Y−1 quando o vizinho muda? | `BlockUpdateQueue._try` |
 | `classe_queda` | GRANULAR (sufocamento) ou HEAVY (impacto)? | `FallingBlock._fix` |
@@ -196,7 +196,7 @@ Regras que a tabela carrega:
   Um único campo "não sólido" daria a resposta errada para a lava.
 - **`quebra_queda` ≠ `not solido`.** SLAB é sólido para movimento (você pisa nela) e é
   alvo de quebra para queda — no modelo de colisão binário de hoje
-  (voxel_world.gd:300-310) não existe "colisão de meia altura", então a laje precisa
+  (voxel_world.gd:350-360) não existe "colisão de meia altura", então a laje precisa
   dos dois flags separados ou a regra do pedido vira mentira. A colisão parcial fica
   `[OPEN]` (§10.9).
 - **`destrutivel == false`** (BEDROCK, WATER, LAVA) trava a lavra **antes** do
@@ -209,11 +209,11 @@ Regras que a tabela carrega:
   10..18 cabem sem mexer no layout. Três blocos novos não são um cubo comum:
   - **SLAB** não pede geometria nova: `_emit_face` já aceita `top_drop`, usado hoje
     para a superfície da água (`WATER_TOP_DROP = 0.12`,
-    [voxel_world.gd:34](../../src/world/voxel_world.gd), aplicado em `:569-570`). Uma
+    [voxel_world.gd:34](../../src/world/voxel_world.gd), aplicado em `:619-620`). Uma
     laje baixa é `top_drop = 0,5` na mesma função.
-  - **LAVA** pede emissão. O material opaco único (`_mat_opaque`, :77-82) não emite; a
-    malharia já separa um segundo surface para água (`_mat_water`, :499-502) e um
-    terceiro para o vidro (`_mat_glass`, :503-506). `[TARGET]`: um quarto surface com
+  - **LAVA** pede emissão. O material opaco único (`_mat_opaque`, :86-91) não emite; a
+    malharia já separa um segundo surface para água (`_mat_water`, :549-551) e um
+    terceiro para o vidro (`_mat_glass`, :553-555). `[TARGET]`: um quarto surface com
     `emission_enabled = true` e o mesmo atlas. Sem isso a lava é um cubo cinza.
   - **TORCH/PLANT** como poste/cruzeta pedem uma tabela de shapes que não existe. A
     regra de física funciona sem isso; o visual fica `[OPEN]`.
@@ -681,7 +681,7 @@ var _overflow: int = 0
 
 func attach(world: VoxelWorld) -> void:
 	_world = world
-	world.block_changed.connect(_on_block_changed)   # voxel_world.gd:6, :261
+	world.block_changed.connect(_on_block_changed)   # voxel_world.gd:6, :276
 
 
 ## A regra do pedido e literal: quando um bloco muda, olha-se o vizinho que perdeu
@@ -749,7 +749,7 @@ func stats() -> Dictionary:
 	return {"queued": _pending.size(), "overflow": _overflow}
 ```
 
-`Main.diagnostics()` ([main.gd:1152-1163](../../src/main.gd#L1152-L1163)) ganha `"block_updates":
+`Main.diagnostics()` ([main.gd:1159-1185](../../src/main.gd#L1159-L1185)) ganha `"block_updates":
 updates.stats()` junto de `"dropped_ticks"` — os dois são a mesma categoria de medida
 (quantos ticks de simulação o orçamento não absorveu), e sem o número a discussão sobre
 `MAX_PER_TICK` e `MAX_QUEUED` seria opinião.
@@ -761,13 +761,13 @@ que uma conversão só integre no tick seguinte.
 Explosões, quando existirem, não adicionam mecanismo: cada célula destruída passa pelo
 mesmo `set_block`, e portanto pelos mesmos dois testes de vizinho. O ponto único de
 mutação do grid é `VoxelWorld.set_block`
-([voxel_world.gd:251-262](../../src/world/voxel_world.gd)) — que retorna cedo se
-`prev == b` (:255) e é o único lugar que escreve em `_flat`/`VoxelChunk` além da
-geração e de `apply_edits` (:163-173). É isso que torna a regra "só nos vizinhos"
+([voxel_world.gd:266-277](../../src/world/voxel_world.gd)) — que retorna cedo se
+`prev == b` (:270) e é o único lugar que escreve em `_flat`/`VoxelChunk` além da
+geração e de `apply_edits` (:178-188). É isso que torna a regra "só nos vizinhos"
 verificável, e não apenas intencional.
 
 Custo por evento, no pior caso: 2 × `get_block` (índice direto em `_flat`,
-voxel_world.gd:233) + 2 × `has_gravity` (byte array). Com `MAX_PER_TICK = 256` o teto
+voxel_world.gd:247) + 2 × `has_gravity` (byte array). Com `MAX_PER_TICK = 256` o teto
 é **5 120 resoluções/s**, e uma cascata de pilha inteira de areia consome 1 entrada de
 fila por bloco em queda.
 
@@ -792,7 +792,7 @@ func place_falling_block(cell: Vector3i, b: int) -> bool:
 ```
 
 `is_supported` herda uma conveniência importante: `get_block_xyz` devolve sólido para
-`y < Y_MIN` (hoje devolve STONE para `y < 0`, voxel_world.gd:226-227) — com a mudança
+`y < Y_MIN` (hoje devolve STONE para `y < 0`, voxel_world.gd:240-241) — com a mudança
 de §10.7 esse caso vira BEDROCK, então nenhuma entidade de queda cai para fora do
 mundo: a barreira de −64 é o piso físico **e** o limite do algoritmo, sem cláusula
 especial.
@@ -923,12 +923,12 @@ silencioso que se quer evitar. Lista completa dos sítios que mudam:
 |---|---|---|
 | [voxel_chunk.gd:21](../../src/world/voxel_chunk.gd) | `(y*SZ+z)*SX+x` | `- Y_MIN` no índice |
 | [coords.gd:37-45](../../src/world/coords.gd) `chunk_origin`/`local_of` | `Vector3i(x, 0, z)` | Y global; o offset sai de `local_of` e entra só em `local_index` |
-| [voxel_world.gd:130](../../src/world/voxel_world.gd) `_flat.resize` | `64*_sz*_sx` (1 MiB) | `384*_sz*_sx` (**6 MiB**) |
-| voxel_world.gd:136-141 `_rebuild_flat` | `for y in CHUNK_SIZE_Y` | laço pelo **span** populado (abaixo) |
-| voxel_world.gd:225-238 `get_block_xyz` | `y<0 → STONE`, `y≥64 → AIR` | `y<Y_MIN → BEDROCK`, `y≥Y_BUILD_LIMIT → AIR` |
-| voxel_world.gd:248 `_write_raw` | `(p.y*_sz+p.z)*_sx+p.x` | `- Y_MIN` no índice |
-| voxel_world.gd:401-407 `surface_height` | desce de 63 | começa do `y_hi` do chunk, não de 383 |
-| voxel_world.gd:434 `build_chunk_mesh` | 98 304 voxels/chunk | span `y_lo..y_hi` (abaixo) |
+| [voxel_world.gd:140](../../src/world/voxel_world.gd) `_flat.resize` | `64*_sz*_sx` (1 MiB) | `384*_sz*_sx` (**6 MiB**) |
+| voxel_world.gd:145-150 `_rebuild_flat` | `for y in CHUNK_SIZE_Y` | laço pelo **span** populado (abaixo) |
+| voxel_world.gd:239-252 `get_block_xyz` | `y<0 → STONE`, `y≥64 → AIR` | `y<Y_MIN → BEDROCK`, `y≥Y_BUILD_LIMIT → AIR` |
+| voxel_world.gd:262-263 `_write_raw` | `(p.y*_sz+p.z)*_sx+p.x` | `- Y_MIN` no índice |
+| voxel_world.gd:451-457 `surface_height` | desce de 63 | começa do `y_hi` do chunk, não de 383 |
+| voxel_world.gd:483 `build_chunk_mesh` | 98 304 voxels/chunk | span `y_lo..y_hi` (abaixo) |
 | world_gen.gd:83 `surface_height` | `27.0 + …` | `65.0 + …` (**+38**, ver migração de save) |
 | world_gen.gd:95 `_spawn_flatten` | base `30.0` | `68.0` (+38) |
 | world_gen.gd:103-106 `surface_block` | `SEA_LEVEL+1`, `h>=52`, `h<57` | o primeiro segue a constante; 52 → 90, 57 → 95 |
