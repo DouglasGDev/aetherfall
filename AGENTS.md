@@ -530,8 +530,8 @@ ponteiro, não quebrou), `verify_plan_ids.py` com as **8** ausências da página
 peças que o próprio dossiê declara inexistentes, e `python tools/check_doc_anchors.py` **36 arquivos ·
 2 370 ponteiros · 179 rótulos · 2 348 links** com o único caso tolerado (o ponteiro `../.tools/...`,
 gitignored). A fila serializada passa a **12 → 17 → 18 → 20 → 13**: a 16 sai da frente, o elo seguinte é
-`feat/bicho-cavando-12` — que **abriu depois, da `main` de `dcbcbe8`**, e fecha nesta ponta — e depois
-dele 17, 18, 20 e 13. O motivo que esta frase dava para o vermelho estava errado, e a própria página 12 o
+`feat/bicho-cavando-12` — que **abriu depois, da `main` de `dcbcbe8`**, e pousou em `fa94cb5` no registro
+abaixo — e depois dele 17, 18, 20 e 13. O motivo que esta frase dava para o vermelho estava errado, e a própria página 12 o
 tinha corrigido dois registros antes: o gate do cavar observa `get_block` +
 [`world.edits`](src/world/voxel_world.gd#L42), não o sinal, então a branch nasce vermelha porque nenhuma
 linha do cavar existia ainda, não porque `block_changed` continua sem consumidor nenhum — esse continua
@@ -561,9 +561,9 @@ documento puro (`git diff --name-only bb13752..HEAD -- src tests` devolve vazio)
 vale para a árvore resultante **por identidade de árvore**, não por medição nova, e não se pede re-corrida.
 
 A posição na fila serializada é exceção de ordem registrada **antes** de qualquer linha (mandato 4): a
-fila ficou **09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 → 17 → 18 → 20 → 13**, e a 16 já cumpriu a sua
-posição (`9b2c65a` código, `bb13752` registro), então a fila **viva de hoje** é
-**12 → 17 → 18 → 20 → 13**. A 20 vem **depois** da 18
+fila ficou **09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 ✅ → 17 → 18 → 20 → 13**, e a 16 já cumpriu a sua
+posição (`9b2c65a` código, `bb13752` registro) e a 12 o mesmo (ponta de código `d80ac20`, pouso `fa94cb5`),
+então a **fila viva de hoje** é **17 → 18 → 20 → 13**. A 20 vem **depois** da 18
 porque as duas escrevem [`src/world/block_defs.gd`](src/world/block_defs.gd): a 17 gasta o id 18 (`SLAB`),
 a 18 gasta o 17 (`PLANT`), os ids 9–18 continuam reservados por documento
 ([src/world/block_defs.gd:10-24](src/world/block_defs.gd#L10-L24) com `COUNT = 23` em [`:37`](src/world/block_defs.gd#L37))
@@ -615,6 +615,37 @@ scripts estão (`src` 30/30, `tests` 7 de 9), então todo clone limpo mostra dua
 usa `path=` — então é sujeira de instrumento, não defeito de execução. Dono: arrumação do dono do repo;
 esta branch **não** os comita. Nenhuma linha de código da perna 20 foi escrita:
 `feat/mobs-autonomos-e-ecossistema-20` não abre antes de a 18 pousar.
+
+**Registro de 2026-11-23 (2) — o código da perna 12 pousa na `main`, e a fila perde o elo da frente.** Nada
+aqui é exceção de ordem nem gate de fase: a autorização usada é a nomeada das pernas anteriores — `merge
+--no-ff` na `main` e `push`, com gate de fase continuando do dono (mandato 4). A perna era a da vez, foi
+aberta da `main` no ponto atual (`dcbcbe8`) e pousou nele: `git merge --no-ff feat/bicho-cavando-12` →
+**`fa94cb5`**, pais `dcbcbe8` e `d62c066`, **46 arquivos, +6 013/−793**, com o código em
+`src/entities/wolf.gd` (+277/−8), `src/entities/voxel_body.gd` (+12/−4) e
+`tests/aether_reactions_test.gd` (+1 119/−1). O número pineado é o do **clone limpo** de `fa94cb5` com
+`--import` frio: suíte **255 checagens / 0 falhas / 61,7 s** e runner de reações **283 / 0 / 34,218 s**
+(com `283/283`, `65/65` e `trips_solo=0 trips_matilha=0`); a árvore mergida re-rodada dá **255 / 0** duas
+vezes, runner **283 / 0**, RNG **27 / 0** e journal **128 / 0**. As árvores do pin são `f77c1961…` (`src`)
+e `4855f0e8…` (`tests`) — **diferentes** das do pouso da 16 (`64f137bc…` / `88a1541c…`), porque a 12 escreve
+código, e o merge não acrescenta nada sobre a ponta medida: `git diff --name-only d62c066 fa94cb5` devolve
+vazio. O que a perna entrega, lido no que corre: um voxel **gerado** some por ação do lobo sem input do
+jogador, fica em `world.edits`, e a malharia disso está medida no runner antes de qualquer festa; as
+**nove** checagens do cavar estão no runner (censo 240 → **283**); o **furo #22** (bancada apontando para o
+ar) fica pago pela cláusula de proveniência `not world.edits.has(pos)`, com a checagem
+`cavar_nao_toca_construcao_alheia` pagando o número. Duas coisas esta passada abre e não fecha. (1) O
+**vermelho intermitente** do espalhamento voltou a não ter dono: a atribuição de carga que a rodada da
+ponta escreveu dependia de um amostrador gitignored que filtrava `QuantumEngine` — o app de áudio da JBL —
+em vez do processo Godot, e nenhuma porcentagem impressa sustenta a frase; isso é o **furo #31**, e a regra
+de casa que ele violou é "filtrar por `ExecutablePath` dentro do projeto, não por nome de processo". O
+critério da régua (25 ms) não se moveu e nada foi silenciado. (2) `block_changed` continua **sem consumidor
+nenhum** em `src/` — a árvore do pouso tem exatamente a declaração e o emit — e quem assina o sinal é a 17.
+A fila serializada passa a **17 → 18 → 20 → 13**: o elo seguinte é `feat/fisica-de-blocos-que-caem-17`, e o
+gate dele nasce vermelho em `queda_move_a_celula` pelo motivo já registrado — nenhuma linha de queda existe
+ainda. **A fila P0/P1 continua aberta**: budget HOT sem medição, alocação do caminho quente sem colheita e
+censo multi-semente sem corrida seguem sendo exatamente os elos que a 12 não toca. `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram tocados por esta perna. A seção
+`O pouso da 12` de [docs/melhorias-status.md](docs/melhorias-status.md) traz as dez corridas, o par de
+testemunhas do vermelho e as três réguas com as linhas literais.
 
 ## Ciclo de trabalho
 

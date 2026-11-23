@@ -1,0 +1,19 @@
+== pre-gate --check-only na arvore mergida fa94cb5 (2026-11-23) ==
+== godot --headless --path . --check-only --script res://<arquivo> ==
+-- src/entities/wolf.gd exit=0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+-- src/entities/voxel_body.gd exit=0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+-- tests/aether_reactions_test.gd exit=0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+-- tests/smoke_test.gd exit=0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+== git diff --name-only d62c066 fa94cb5 => 0 arquivos ==
+== git rev-parse fa94cb5:src fa94cb5:tests ==
+f77c1961bb8065ea5a78b24677a36c5840891c75
+4855f0e85c883573bc374125b4b016ad1e775711
+== git rev-parse d80ac20:src d80ac20:tests ==
+f77c1961bb8065ea5a78b24677a36c5840891c75
+4855f0e85c883573bc374125b4b016ad1e775711
+== git diff --shortstat dcbcbe8 fa94cb5 ==
+ 46 files changed, 6013 insertions(+), 793 deletions(-)
