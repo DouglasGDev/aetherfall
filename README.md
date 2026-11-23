@@ -670,7 +670,8 @@ igual para humano e para agente.
 | `src/main.gd` | composição da cena: mundo, jogador, lobos, tocas da matilha, Éter, HUD, save, nó de áudio |
 | `src/world/` | `voxel_world` (chunks + raycast DDA), `world_gen` (relevo, cubas, cavernas, árvores), `voxel_atlas` (texturas desenhadas em runtime), `aether_field` |
 | `src/entities/` | `player` (mira, minerar, colocar, golpe), `voxel_body` (colisão AABB-contra-voxel), `player_avatar` (corpo em 3ª pessoa), `fp_viewmodel` (braço e bloco na mão em 1ª pessoa), `wolf` |
-| `src/ai/` | `bt_tree`/`bt_status` (Behavior Tree), `response_curve` + `utility_scorer` (utilidade), `mind` (personalidade, memória episódica, confiança) |
+| `src/ai/` | `bt_tree`/`bt_status` (Behavior Tree), `response_curve` + `utility_scorer` (utilidade), `mind` (personalidade, memória episódica, confiança), `MindOracle` (frase do oráculo local) e `LlmServerHost` (o hospedeiro que sobe o servidor no boot e só derruba o filho próprio) |
+| `src/items/` | `inventory` (36 slots, pilha por bloco, hotbar de 10 pinos sobre os mesmos slots) e `recipes` (lista com estação por distância) |
 | `src/core/sim_clock.gd` | relógio de simulação a 20 Hz, desacoplado do frame |
 | `src/audio/audio_director.gd` | som: 12 vozes 3D, ganho por arquivo medido, cadência de passo/lavra, camas com crossfade — só lê os sinais do mundo |
 | `src/persistence/` | `save_manager` (escrita atômica: `.tmp` + rename, schema versionado) |
@@ -682,6 +683,8 @@ igual para humano e para agente.
 | `tests/simulation_rng_test.gd` | gerador próprio da sessão e de cada lobo; sorteios globais alheios não mudam mais a matilha |
 | `tests/audio_test.gd` | censo dos 51 arquivos, ganhos derivados, cadência de passo/lavra e o contrato de que som não move o mundo |
 | `tests/audio_live_probe.tscn` | sonda em janela: mede o pico dos barramentos com o driver real de áudio (headless é `Dummy`) |
+| `tests/live_oracle_probe.tscn` | sonda do oráculo vivo: sessão real + servidor, narrativa chegando ao HUD |
+| `tests/llm_server_boot_probe.tscn` | sonda do hospedeiro no boot: subir, reusar o que já é nosso, reconhecer o que não é, derrubar o filho próprio |
 
 ### Regras que o código já segue
 
