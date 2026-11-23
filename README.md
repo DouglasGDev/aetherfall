@@ -211,7 +211,7 @@ A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois ha
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 
-**O pin de hoje é `9b2c65a`**, a `main` do merge `--no-ff` da perna 16 (tocas da alcateia; base
+**O pin desta base é `9b2c65a`**, a `main` do merge `--no-ff` da perna 16 (tocas da alcateia; base
 `99d1167`, branch `feat/tocas-da-alcateia-16` com código `90c152f`, medição pareada `ab4d4c3` e docs
 `edab9c8`). A árvore de código do pin **mudou** em `src` e `tests`: `git rev-parse 9b2c65a:src
 9b2c65a:tests` devolve `64f137bcb1f8e95bd9a64fe7843e4e7b72f7326e` e
@@ -257,28 +257,28 @@ braço, o golpe com pedra afunda mais que sem carga, o ciclo de lavra do rig mex
 ombro, pedra lavra mais funda e mais lenta que folha, a mão vazia devolve o braço
 ao repouso e a fração da face do cubo que sai do braço no quadro da órbita.
 
-**A perna 16 (tocas da alcateia) pousou** no merge `9b2c65a`, e o parágrafo acima é o número dela
-medido no clone limpo: a matilha nasce espalhada em tocas separadas pelo portão `DEN_MIN_DIST`, o censo
-passa a dizer em quantos grupos o grafo de coesão realmente forma, a fila de reposição e o parto
-carregam a toca, e o disco ganha a chave `den` de forma aditiva — disco sem a chave devolve `dens=0`
-e não inventa lar nenhum. O que a ponta de branch mediu continua arquivado ao lado: suíte
-**255 / 0 / 48,0 s** ([head_suite.log:357](docs/evidence/tocas-alcateia-16/head_suite.log#L357)) com
-`tick=403`, `worst_sim_ms` **10,766**, `dens` **3**, `den_components` **3**, `den_min_dist` **55,9 m**
-contra a régua de 48 m, `pack_pairs` **21**, `wolves` **7**, `births` **2**, `edits=13` e `triangles=214480`,
-e o par de vazamento do quit (`4 ObjectDB` na linha 358 com `2 resources still in use` na 360), que não
-sai na re-corrida da doc (**255 / 0 / 47,7 s**, [docs_rerun_suite.log:357](docs/evidence/tocas-alcateia-16/docs_rerun_suite.log#L357)):
-o par **precede** a 16 — o braço de controle da perna 11 deu **16 ObjectDB com 6 resources** — e a
-atribuição continua aberta. As três checagens a mais sobre as 252 do pin anterior, e nenhuma a menos,
-são `espalhamento_nao_estoura_o_passo`, `tocas e pertenca sobrevivem ao save` e
-`default derivado: disco sem a chave nao toca nem inventa`; o trio sai do `diff` de nomes
-entre o `merged_main_suite.log` da perna 11
-([:350](docs/evidence/acasalamento-censo-11/merged_main_suite.log#L350)) e o log do clone do pouso, não a
-contagem de cabeça. O custo pareado contra a base `99d1167` — mesma suíte, mesma semente, quatro
-corridas, máquina livre — sai **−0,70 %** no cenário estreito e **−0,76 %** nos passos de matilha, ambos
-dentro do espalhamento de repetir o próprio braço: nenhuma diferença mensurável, com a conta e o vínculo
-de revisão em [custo-pareado.md](docs/evidence/tocas-alcateia-16/custo-pareado.md). Os dois furos que a
-perna paga, #18 e #21, estão com a linha literal da checagem que paga cada um na seção de pouso de
-`docs/melhorias-status.md`; alocação de `_dens` e atribuição do quit seguem em aberto.
+**A perna 12 (bicho cavando voxel) pousa com este fecho.** A 16 continua o número do parágrafo acima —
+as três checagens que ela abriu sobre as 252 do pin anterior são `espalhamento_nao_estoura_o_passo`,
+`tocas e pertenca sobrevivem ao save` e `default derivado: disco sem a chave nao toca nem inventa`, e o
+custo pareado contra `99d1167` deu **−0,70 %** no cenário estreito e **−0,76 %** nos passos de matilha
+([custo-pareado.md](docs/evidence/tocas-alcateia-16/custo-pareado.md)). A 12 é o **terceiro**
+`set_block` de gameplay do repositório — antes dela só os dois do jogador, em
+[src/entities/player.gd:685](src/entities/player.gd#L685) e [:711](src/entities/player.gd#L711) — e
+escreve `AIR` num voxel de `DIG_MATERIALS` (neve, areia, terra, grama) só depois do
+`not world.edits.has(p)`, que é o furo #22 fechado por construção: a pata não desfaz construção
+registrada (`DIG_WORK` 0,42 no canal de trabalho que já existe; nenhum canal novo, nenhuma
+`FORMAT_VERSION`). **Dureza é tempo, não permissão** — `STONE 0,95` **cai** para o jogador, então o que
+limita a pata é a lista de material, não a régua. No clone limpo de `d80ac20`, `--import` frio: suíte
+**255 / 0 / 48,0 s** ([clone_suite.log:357](docs/evidence/bicho-cavando-12/clone_suite.log#L357)) com
+`edits` **16** e `triangles` **214 496** contra **13** / **214 480** do pouso da 16 — o buraco do bicho
+aparece no diagnóstico da sessão de produto — `worst_sim_ms` **12,693** dos 50 ms do passo,
+`dropped_ticks` **0**; na árvore da ponta o `worst_sim_ms` é **10,739**. O runner de reações dá
+**283 / 0 / 33,194 s** com `283/283` e `65/65`, e **32,776 s** / **32,782 s** na ponta em duas corridas
+serializadas; RNG **27 / 0 / 2,668 s**, journal **128 / 0 / 5,645 s**. O censo da perna vai de 240 a
+**283** (+43) e a suíte para em **255** porque as checagens do runner não entram nela.
+`git diff --name-only d80ac20 -- src tests` devolve vazio: o clone mede a ponta por identidade de árvore.
+stdout, três réguas e `artifacts.sha256` em
+[readback.md](docs/evidence/bicho-cavando-12/readback.md); alocação no caminho quente e o quit seguem abertos.
 
 O que a suíte cobre:
 
@@ -346,8 +346,8 @@ O que a suíte cobre:
   a buscas × `SPAWN_ATTEMPTS` — e o passo de 20 Hz do espalhamento dentro da
   régua de 25 ms (pior passo 10,77 ms dos 50 de orçamento, `dropped_ticks` 0);
 - persistência: salvar → mutar o mundo → carregar devolve relevo, diário de
-  edições, posição, vida, tick e a memória dos lobos, agora com a toca de cada
-  um e o `den` do disco conferidos identidade a identidade.
+  edições (a cova do bicho é a única chave nova no disco: 4 178 → 4 179), posição,
+  vida, tick e a memória dos lobos, com a toca de cada um e o `den` conferidos.
 
 ## Bloco na mão
 
@@ -614,8 +614,8 @@ menos 48 m (`DEN_MIN_DIST`) do centro de toda toca já fundada, e o grafo de
 coesão que decide quem é de onde sai publicado no `diagnostics()` como
 `den_components`; dois adultos do mesmo raio (`MATE_RADIUS` 8 m, um par por
 varredura, depois 300 s de espera) geram um filhote que herda a toca do casal e
-cresce por três fases (`PHASE_NAMES`: filhote → jovem → adulto, com corpo, vida
-e dano escalados por `PHASE_SCALE`), e a reposição volta para a toca perdida;
+cresce por três fases (`PHASE_NAMES`: filhote → jovem → adulto, corpo, vida e dano por
+`PHASE_SCALE`), a reposição volta para a toca perdida, e a pata remove um voxel escavável;
 nenhum lobo nasce à vista do jogador — o ponto só vale a pelo menos
 `SAFE_SPAWN_DIST` (32 m) **e** com a linha do olho ao peito bloqueada por sólido
 (`_spawn_point_ok`, buscado em bandas de 16 a 70 m em torno da posição atual do
@@ -712,7 +712,7 @@ igual para humano e para agente.
 ```sh
 # porta de compilação por arquivo alterado (roda em segundos)
 godot --headless --path . --check-only --script res://src/world/world_gen.gd
-# suíte completa: ~48 s na ponta desta perna (42,9 s no pin publicado), sai com código 1 em qualquer falha
+# suíte completa: 48,0 s no clone limpo desta ponta (48,6 s no pin publicado 9b2c65a), sai com código 1 em qualquer falha
 godot --headless --path . tests/smoke_test.tscn
 ```
 

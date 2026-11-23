@@ -27,10 +27,10 @@ que reabre o braço. Nada aqui foi escrito para agradar o prompt: três afirmaç
 devolve diferente (§9), e duas já foram pagas por pernas que pousaram.
 
 **O que o prompt acerta, e é mais grave do que ele diz.** "Drops são fracos / inexistentes":
-não são fracos — **não existem**. O `die()` do lobo ([wolf.gd:1051](../../src/entities/wolf.gd#L1051))
-escreve BLOOD e FEAR no Éter ([`:1058-1059`](../../src/entities/wolf.gd#L1058-L1059)), arma o timer
-de cadáver ([`:1060`](../../src/entities/wolf.gd#L1060), `const CORPSE_SECONDS: float = 6.0` em
-[`:40`](../../src/entities/wolf.gd#L40)) e só **então** emite `died` ([`:1061`](../../src/entities/wolf.gd#L1061)).
+não são fracos — **não existem**. O `die()` do lobo ([wolf.gd:1312](../../src/entities/wolf.gd#L1312))
+escreve BLOOD e FEAR no Éter ([`:1319-1320`](../../src/entities/wolf.gd#L1319-L1320)), arma o timer
+de cadáver ([`:1321`](../../src/entities/wolf.gd#L1321), `const CORPSE_SECONDS: float = 6.0` em
+[`:40`](../../src/entities/wolf.gd#L40)) e só **então** emite `died` ([`:1322`](../../src/entities/wolf.gd#L1322)).
 O sinal tem **dois** consumidores em `src/`, e nenhum deles é um item: `_on_wolf_died`
 ([main.gd:388](../../src/main.gd#L388) conecta, corpo em [`:969`](../../src/main.gd#L969)) faz
 **uma** coisa — `stats["wolves_felled"] += 1` — e o diretor de áudio toca `wolf_died`
@@ -39,7 +39,7 @@ O sinal tem **dois** consumidores em `src/`, e nenhum deles é um item: `_on_wol
 
 **O que o prompt pede e a árvore já entregou.** "Lobos presos diante de bloco" era a pauta da
 **19**, que pousou: hoje o lobo salta contra obstáculo com `body.velocity.y = STEP_JUMP`
-([wolf.gd:993](../../src/entities/wolf.gd#L993)), com `STEP_JUMP = 7.6` ([`:101`](../../src/entities/wolf.gd#L101))
+([wolf.gd:1247](../../src/entities/wolf.gd#L1247)), com `STEP_JUMP = 7.6` ([`:101`](../../src/entities/wolf.gd#L101))
 e o ápice de 1,203 m **escrito no comentário de [`:97-100`](../../src/entities/wolf.gd#L97-L100)**;
 e "variedade de vida pelo bioma" tem a metade de baixo pronta desde a **09** — `enum Biome`
 ([world_gen.gd:32](../../src/world/world_gen.gd#L32)) e `surface_block`
@@ -92,55 +92,55 @@ nunca consultado devolve a **mesma** sequência de `intent`, e isso já é cobra
 
 - **O pulo já existe e já é condicionado — mas por uma sonda binária, não por aritmética.** A
   árvore de decisão do lobo corre em `_physics_process`
-  ([wolf.gd:950](../../src/entities/wolf.gd#L950)) e o ramo é `if body.blocked_horizontal and
-  _unstick <= 0.0:` ([`:986`](../../src/entities/wolf.gd#L986)) → `if body.on_ground and
-  body.can_step_over(want):` ([`:992`](../../src/entities/wolf.gd#L992)) → impulso
-  ([`:993`](../../src/entities/wolf.gd#L993)). `can_step_over()`
-  ([voxel_body.gd:166-173](../../src/entities/voxel_body.gd#L166-L173)) pergunta
+  ([wolf.gd:1203](../../src/entities/wolf.gd#L1203)) e o ramo é `if body.blocked_horizontal and
+  _unstick <= 0.0:` ([`:1239`](../../src/entities/wolf.gd#L1239)) → `if body.on_ground and
+  body.can_step_over(want):` ([`:1245`](../../src/entities/wolf.gd#L1245)) → impulso
+  ([`:1247`](../../src/entities/wolf.gd#L1247)). `can_step_over()`
+  ([voxel_body.gd:176-181](../../src/entities/voxel_body.gd#L176-L181)) pergunta
   `can_stand_at(feet + (x, 1.0, z))` — altura **fixa de uma célula**, sem ápice, sem gravidade,
   sem `step_up`. O `STEP_JUMP` é 7,6 com gravidade 24
   ([voxel_body.gd:17](../../src/entities/voxel_body.gd#L17)), o que dá 1,203 m; `step_up` do
   integrador é 0,62 ([`:19`](../../src/entities/voxel_body.gd#L19)). Ou seja: hoje o lobo **acerta
   o degrau de um bloco e recusa parede de duas** — o que falta é a conta que generalize para
   qualquer corpo, mais a contagem de tentativas, mais a memória, mais a troca de estratégia.
-- **Contador de tentativas: não existe.** `_unstick` ([wolf.gd:214](../../src/entities/wolf.gd#L214),
-  decrementado por frame em [`:974-976`](../../src/entities/wolf.gd#L974-L976)) é um atraso
-  anti-ritmo sorteado em [`:987`](../../src/entities/wolf.gd#L987), não uma memória de falha: não
+- **Contador de tentativas: não existe.** `_unstick` ([wolf.gd:255](../../src/entities/wolf.gd#L255),
+  decrementado por frame em [`:1227-1229`](../../src/entities/wolf.gd#L1227-L1229)) é um atraso
+  anti-ritmo sorteado em [`:1240`](../../src/entities/wolf.gd#L1240), não uma memória de falha: não
   soma, não expira, não é lido por ninguém além do próprio ramo.
 - **Crenças existem, e nenhuma delas é de alcance.** `Mind` tem `episodic`
   ([mind.gd:18](../../src/ai/mind.gd#L18)), `beliefs` ([`:19`](../../src/ai/mind.gd#L19)) e
   `relations` ([`:20`](../../src/ai/mind.gd#L20)); o lobo grava `scent_blood`/`scent_work`
-  ([wolf.gd:567](../../src/entities/wolf.gd#L567)), `hit_land` ([`:713`](../../src/entities/wolf.gd#L713)),
-  `saw_player` ([`:882`](../../src/entities/wolf.gd#L882)), `hurt`
-  ([`:1041`](../../src/entities/wolf.gd#L1041)), `win` ([`:1068`](../../src/entities/wolf.gd#L1068))
-  e `fed` ([`:1073`](../../src/entities/wolf.gd#L1073)). Nenhum desses `kind` fala de altura nem de
+  ([wolf.gd:636](../../src/entities/wolf.gd#L636)), `hit_land` ([`:782`](../../src/entities/wolf.gd#L782)),
+  `saw_player` ([`:952`](../../src/entities/wolf.gd#L952)), `hurt`
+  ([`:1302`](../../src/entities/wolf.gd#L1302)), `win` ([`:1329`](../../src/entities/wolf.gd#L1329))
+  e `fed` ([`:1334`](../../src/entities/wolf.gd#L1334)). Nenhum desses `kind` fala de altura nem de
   lugar impossível, e a chave `alvo_inalcancavel` do §3.3 não existe em `src/`.
 - **Não há tabela de espécie nenhuma.** `SPECIES`, `archetype`, `species` dão **zero** ocorrências
   em `src/`. O que existe é a string `mind.kind = "wolf"` ([mind.gd:11](../../src/ai/mind.gd#L11)),
   semeada em `Mind.new("wolf", p_identity, 1000 + p_identity)`
-  ([wolf.gd:254](../../src/entities/wolf.gd#L254)), e o comentário do motor de BT que **promete**
+  ([wolf.gd:313](../../src/entities/wolf.gd#L313)), e o comentário do motor de BT que **promete**
   a regra sem a implementar: "arvore instanciada por arquetype"
   ([bt_tree.gd:2](../../src/ai/behavior/bt_tree.gd#L2)). A promessa documentada está em
   [`docs/design/04-local-ai-architecture.md:44`](../design/04-local-ai-architecture.md#L44)
   ("Nós são instanciados por espécie/archetype, não por entidade") — esta página é a **primeira
   compradora** dela, e é por isso que a tabela entra aqui e não antes.
 - **Personalidade já pondera, mas só dentro de quatro opções.** `_scorer.add_option` existe para
-  `flee` ([wolf.gd:737](../../src/entities/wolf.gd#L737)), `hunt` ([`:749`](../../src/entities/wolf.gd#L749)),
-  `investigate` ([`:775`](../../src/entities/wolf.gd#L775)) e `patrol`
-  ([`:787`](../../src/entities/wolf.gd#L787)); a árvore tem seis Actions e seis Conditions
-  construídas uma vez em `_build_tree()` ([`:363-391`](../../src/entities/wolf.gd#L363-L391)) e
-  o orçamento é o `SubtreeGuard` de **400 µs** ([`:389-390`](../../src/entities/wolf.gd#L389-L390),
+  `flee` ([wolf.gd:806](../../src/entities/wolf.gd#L806)), `hunt` ([`:818`](../../src/entities/wolf.gd#L818)),
+  `investigate` ([`:844`](../../src/entities/wolf.gd#L844)) e `patrol`
+  ([`:856`](../../src/entities/wolf.gd#L856)); a árvore tem seis Actions e seis Conditions
+  construídas uma vez em `_build_tree()` ([`:422-450`](../../src/entities/wolf.gd#L422-L450)) e
+  o orçamento é o `SubtreeGuard` de **400 µs** ([`:448-449`](../../src/entities/wolf.gd#L448-L449),
   classe em [bt_tree.gd:117](../../src/ai/behavior/bt_tree.gd#L117), default 250 µs em
   [`:120`](../../src/ai/behavior/bt_tree.gd#L120)). Cercar **não** é folha: sai de `_seat_point()`
-  ([wolf.gd:489](../../src/entities/wolf.gd#L489)) dentro da perseguição
-  ([`:444`](../../src/entities/wolf.gd#L444)) — o que importa para o §3.4, porque a "mudança de
+  ([wolf.gd:548](../../src/entities/wolf.gd#L548)) dentro da perseguição
+  ([`:503`](../../src/entities/wolf.gd#L503)) — o que importa para o §3.4, porque a "mudança de
   estratégia" pedida pelo prompt já tem onde morar.
 - **Os insumos da aritmética de alcance já estão no código, lidos para outra coisa.** O topo da
   coluna é consultado por `world.gen.surface_height(...)` em
-  [wolf.gd:357](../../src/entities/wolf.gd#L357), [`:615`](../../src/entities/wolf.gd#L615) e
-  [`:664`](../../src/entities/wolf.gd#L664), com o aviso escrito em
-  [`:934`](../../src/entities/wolf.gd#L934) de quando ele **não** serve; a visada custa e por isso
-  é condicionada a 30 m ([`:852`](../../src/entities/wolf.gd#L852)). Não existe **pathfinding**
+  [wolf.gd:416](../../src/entities/wolf.gd#L416), [`:684`](../../src/entities/wolf.gd#L684) e
+  [`:733`](../../src/entities/wolf.gd#L733), com o aviso escrito em
+  [`:1022`](../../src/entities/wolf.gd#L1022) de quando ele **não** serve; a visada custa e por isso
+  é condicionada a 30 m ([`:922`](../../src/entities/wolf.gd#L922)). Não existe **pathfinding**
   nenhum: grep de `NavigationAgent` / A\* em `src/` devolve zero, e o comentário de
   [coords.gd:4](../../src/world/coords.gd#L4) diz que a rede e o pathfinding *vão* depender do
   sistema de coordenadas, não que dependem hoje. "Contornar", portanto, é steering + reeleição de
@@ -159,8 +159,8 @@ nunca consultado devolve a **mesma** sequência de `intent`, e isso já é cobra
   `diagnostics()["den_components"]` ([`:1171`](../../src/main.gd#L1171)), o pedido de spawn carrying
   a toca (`_place_request(for_den)` [`:651`](../../src/main.gd#L651), `_entrada()`
   [`:688`](../../src/main.gd#L688)) e a pertença por entidade — `var den: int = -1`
-  ([wolf.gd:145](../../src/entities/wolf.gd#L145)), gravado e lido no disco
-  ([`:1111`](../../src/entities/wolf.gd#L1111), [`:1144`](../../src/entities/wolf.gd#L1144)). Consequência
+  ([wolf.gd:186](../../src/entities/wolf.gd#L186)), gravado e lido no disco
+  ([`:1372`](../../src/entities/wolf.gd#L1372), [`:1405`](../../src/entities/wolf.gd#L1405)). Consequência
   para esta perna: **espécie nova não pode herdar o censo da matilha por cima das tocas** — o teto de
   aves nasce ao lado de `_dens`, não dentro dele, e a `BIRD_CAP` do §3.6 é checada contra
   `den_components()` e não contra um número de lobos. Consequência para a leitura antiga: a mordaca
@@ -206,11 +206,11 @@ nunca consultado devolve a **mesma** sequência de `intent`, e isso já é cobra
 Exigência: uma função que responda, com número, "a coluna que eu quero alcançar está dentro do
 que este corpo sobe?". Entradas que já existem: topo da coluna (`surface_height`), pés do corpo,
 `STEP_JUMP`, gravidade do integrador e o `reach` derivado de `dims`
-([voxel_body.gd:171](../../src/entities/voxel_body.gd#L171)). Saída: `alturas` (quantas células),
+([voxel_body.gd:163](../../src/entities/voxel_body.gd#L163)). Saída: `alturas` (quantas células),
 `apice` (m), e um booleano com folga de pouso explícita.
 
 - **Braço A (escolhido primeiro): predicado nomeado dentro de `Wolf`** — `_reach_estimate()` —,
-  consumido pelo ramo que já existe em [`:986-993`](../../src/entities/wolf.gd#L986-L993) no lugar
+  consumido pelo ramo que já existe em [`:1239-1254`](../../src/entities/wolf.gd#L1239-L1254) no lugar
   da sonda fixa de `1.0`. Um comprador, zero arquivos novos.
 - **Braço B: módulo reutilizável novo (`src/ai/reach.gd`) na primeira passada.** Rejeitado por
   regra da casa — *generalize no segundo chamador, não no primeiro*
@@ -232,7 +232,7 @@ a 19 já verdeou isso — e sim **três casos** que hoje são decisão por sorte
 2. **degrau com altura entre as duas** (talude com bloco solto a 1,5 m): hoje o `can_step_over`
    de `+1.0` devolve falso e o lobo **empurra a parede** sem nunca saber que não alcança;
 3. **corpo menor** (filhote, ave em pouso): o `reach` muda com `dims`
-   ([voxel_body.gd:171](../../src/entities/voxel_body.gd#L171)) mas a sonda não — e é isso que
+   ([voxel_body.gd:163](../../src/entities/voxel_body.gd#L163)) mas a sonda não — e é isso que
    torna a conta dependente de espécie, não de lobo.
 
 ### 3.3 Tentativas, desistência legível e memória
@@ -253,17 +253,17 @@ a 19 já verdeou isso — e sim **três casos** que hoje são decisão por sorte
 ### 3.4 Troca de estratégia sem folha nova
 
 O prompt lista "cercar, esperar, uivar para a alcateia". O que a árvore já faz: cercar
-(`_seat_point` [wolf.gd:489](../../src/entities/wolf.gd#L489)), vir ao último avistamento
-(`_leaf_stalk` [`:495`](../../src/entities/wolf.gd#L495)), seguir rastro
-([`:508`](../../src/entities/wolf.gd#L508)) e patrulhar
-([`:583`](../../src/entities/wolf.gd#L583)). Uivo existe como **som** (EVENTS `"howl"`
+(`_seat_point` [wolf.gd:548](../../src/entities/wolf.gd#L548)), vir ao último avistamento
+(`_leaf_stalk` [`:554`](../../src/entities/wolf.gd#L554)), seguir rastro
+([`:567`](../../src/entities/wolf.gd#L567)) e patrulhar
+([`:652`](../../src/entities/wolf.gd#L652)). Uivo existe como **som** (EVENTS `"howl"`
 [audio_director.gd:59](../../src/audio/audio_director.gd#L59)) e como asset `wolf_howl.ogg`, mas
 **não** existe como sinal de chamada entre lobos. Decisão escrita antes do código:
 
 - **A (escolhido): reeleição de alvo pela utilidade**, sem `Selector` nova. A crença de
   inalcançabilidade entra como fator nas quatro opções existentes
-  ([`:737`](../../src/entities/wolf.gd#L737), [`:749`](../../src/entities/wolf.gd#L749),
-  [`:775`](../../src/entities/wolf.gd#L775), [`:787`](../../src/entities/wolf.gd#L787)) e o lobo
+  ([`:806`](../../src/entities/wolf.gd#L806), [`:818`](../../src/entities/wolf.gd#L818),
+  [`:844`](../../src/entities/wolf.gd#L844), [`:856`](../../src/entities/wolf.gd#L856)) e o lobo
   passa de `hunt` para `stalk`/`patrol` **por número**, visível em `intent` — que é exatamente o
   campo que o journal hashiza, então a mudança é observável sem HUD.
 - **B (não escolhido agora): o uivo como convocação** — custo: sinal novo entre lobos, e
@@ -279,17 +279,17 @@ lida:
 | Campo | De onde sai hoje |
 |---|---|
 | `dims`, `speed`, `step_jump`, `apice` | `DIMS` [wolf.gd:96](../../src/entities/wolf.gd#L96), `STEP_JUMP` [`:101`](../../src/entities/wolf.gd#L101), gravidade [voxel_body.gd:17](../../src/entities/voxel_body.gd#L17) |
-| `reach`, altura da sonda | `reach` [voxel_body.gd:171](../../src/entities/voxel_body.gd#L171) |
+| `reach`, altura da sonda | `reach` [voxel_body.gd:163](../../src/entities/voxel_body.gd#L163) |
 | `tries`, `cautela` | `personality` [mind.gd:13-17](../../src/ai/mind.gd#L13-L17) |
 | `habitat` | `biome_of` [world_gen.gd:129](../../src/world/world_gen.gd#L129), `surface_block` [`:165`](../../src/world/world_gen.gd#L165) |
 | `drops` | nada — é o §3.8 |
-| flags `voa`/`nada`/`pousa`/`foge_de_humano` | nado do lobo existe ([wolf.gd:963-964](../../src/entities/wolf.gd#L963-L964), `SWIM_RISE` [`:106`](../../src/entities/wolf.gd#L106)); voo não existe em lugar nenhum |
+| flags `voa`/`nada`/`pousa`/`foge_de_humano` | nado do lobo existe ([wolf.gd:1216-1217](../../src/entities/wolf.gd#L1216-L1217), `SWIM_RISE` [`:147`](../../src/entities/wolf.gd#L147)); voo não existe em lugar nenhum |
 
 A regra de instanciação é a do doc 04 [`:44`](../design/04-local-ai-architecture.md#L44): a
 **árvore é por arquétipo**, o estado é por entidade. Medir isso é o gate
 `arvore_por_arquetype` do §5 — contar nós criados por spawn contra nós criados por tick, porque
 o `Dictionary` do blackboard já é alocado por lobo por tick
-([wolf.gd:842](../../src/entities/wolf.gd#L842)) e é justamente o débito que o contrato registra.
+([wolf.gd:911](../../src/entities/wolf.gd#L911)) e é justamente o débito que o contrato registra.
 
 ### 3.6 Aves: bando com teto, mente só quando acorda
 
@@ -298,7 +298,7 @@ o `Dictionary` do blackboard já é alocado por lobo por tick
   4,8 ms ([main.gd:10-17](../../src/main.gd#L10-L17)). Um bando de 24 aves rodando BT + utilidade
   **dobraria a soma com o censo de lobos parado**. A decisão é explícita: ave fora do horizonte
   corre **steering apenas**, sem `_tree.tick`, sem `_scorer`; dentro do horizonte (o mesmo 30 m já
-  usado na visada, [wolf.gd:852](../../src/entities/wolf.gd#L852)) acorda e passa a ter mente. Isso
+  usado na visada, [wolf.gd:922](../../src/entities/wolf.gd#L922)) acorda e passa a ter mente. Isso
   é o HotSet do doc 04 [`:108-125`](../design/04-local-ai-architecture.md#L108-L125) **em versão
   mínima e com número**, não o HotSet prometido — o agregado continua `[TARGET]` e pertence ao
   dossiê 04.
@@ -372,7 +372,7 @@ vira mentira.
 ### 3.10 Éter e journal: o que não se mexe, e o que muda sozinho
 
 - **Nenhum canal novo.** A morte já imprinta BLOOD+FEAR
-  ([wolf.gd:1058-1059](../../src/entities/wolf.gd#L1058-L1059)); canal de morte é o dossiê 03 e
+  ([wolf.gd:1319-1320](../../src/entities/wolf.gd#L1319-L1320)); canal de morte é o dossiê 03 e
   `Channel.COUNT` ([aether_field.gd:9](../../src/world/aether_field.gd#L9)) entra no hash
   ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)). Esta perna **não**
   encosta em `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` nem na projeção do journal.
@@ -388,7 +388,7 @@ vira mentira.
 ## 4. Custo — as quatro perguntas
 
 - **Roda por frame, por tick ou às vezes?** A decisão de alcance: no **ramo de frame** que já
-  existe ([wolf.gd:986-993](../../src/entities/wolf.gd#L986-L993)), então é uma leitura de coluna
+  existe ([wolf.gd:1239-1254](../../src/entities/wolf.gd#L1239-L1254)), então é uma leitura de coluna
   por tentativa, não por tick. A mente das aves: no **tick de 20 Hz** (50 ms divididos
   — [sim_clock.gd:5-7](../../src/core/sim_clock.gd#L5-L7)) **só dentro do horizonte**; fora dele,
   steering de frame. A crença de inalcançabilidade: escrita uma vez por alvo perdido, lida pela
@@ -403,11 +403,11 @@ vira mentira.
   ([block_defs.gd:123-137](../../src/world/block_defs.gd#L123-L137)). A árvore por arquétipo:
   construída no spawn, nunca por tick — e isso é checagem (`arvore_por_arquetype`), não intenção,
   porque o `Dictionary` do blackboard já aloca por mente por tick
-  ([wolf.gd:842](../../src/entities/wolf.gd#L842)) e é débito declarado no contrato. O ledger de
+  ([wolf.gd:911](../../src/entities/wolf.gd#L911)) e é débito declarado no contrato. O ledger de
   drop: um `Dictionary` por morte, fora do caminho quente.
 - **Como sei que ficou melhor — e o log existe?** Não existe log dessa régua ainda, então o
   primeiro passo da perna é **colheita**: contar por espécie decisões/tick, µs de árvore por
-  arquétipo (o `tree_stats()` [wolf.gd:1095](../../src/entities/wolf.gd#L1095) já imprime µs e
+  arquétipo (o `tree_stats()` [wolf.gd:1356](../../src/entities/wolf.gd#L1356) já imprime µs e
   estouros, hoje só para o lobo), tentativas de alcance e drops por corrida, em headless. Só
   depois disso o corte de quem voa é discutível. Pedir "otimizar o voo" sem esse número é o que o
   terceiro mandato recusa.
@@ -422,7 +422,7 @@ godot --headless --path . tests/smoke_test.tscn
 
 1. **`alcance_calcula_altura`** — nasce **vermelho**: plinto de 2 células com o jogador em cima;
    exige `saltos_gastos == 0` **e** a linha impressa com `apice=1,203 m` contra `altura=2,00 m`.
-   A sonda atual de `+1.0` ([voxel_body.gd:166-173](../../src/entities/voxel_body.gd#L166-L173))
+   A sonda atual de `+1.0` ([voxel_body.gd:176-181](../../src/entities/voxel_body.gd#L176-L181))
    recusa por geometria e **não** por conta, então a checagem pede o número, não o booleano.
 2. **`degrau_de_um_bloco_continua_subindo`** — o par anti-farsa: a mesma cena da 19 com uma
    célula, verde e indisponível a regredir. Se 1 verdear e 2 vermelho, a aritmética está errada.
@@ -443,12 +443,12 @@ godot --headless --path . tests/smoke_test.tscn
    decorativa.
 8. **`arvore_por_arquetype`** — conta nós de BT criados no spawn contra criados no tick; o teto
    do segundo é **zero**. Referencia o `Dictionary` por tick já registrado
-   ([wolf.gd:842](../../src/entities/wolf.gd#L842)) como o que não se pode repetir.
+   ([wolf.gd:911](../../src/entities/wolf.gd#L911)) como o que não se pode repetir.
 9. **`passaro_nao_anda_no_chao`** e **`passaro_pousa_em_copa`** — `y` médio acima do topo da
    coluna (`surface_height` [world_gen.gd:94](../../src/world/world_gen.gd#L94) como régua de
    chão) e o poleiro é célula de `LEAVES` id 7.
 10. **`passaro_foge_na_aproximacao`** — distância em que a fuga dispara, impressa ao lado dos
-    30 m da visada ([wolf.gd:852](../../src/entities/wolf.gd#L852)); o número é da tabela, não do
+    30 m da visada ([wolf.gd:922](../../src/entities/wolf.gd#L922)); o número é da tabela, não do
     `if`.
 11. **`bando_tem_teto_e_o_passo_caibo`** — `worst_sim_ms` e `dropped_ticks` com `BIRD_CAP` aves
     vs as mesmas aves desligadas, na mesma semente; critério escrito antes da corrida:
@@ -473,10 +473,10 @@ godot --headless --path . tests/smoke_test.tscn
 17. **`journal_hash_inalterado_sem_especies_vivas`** — com aves fora do cenário e nenhuma crença
     de alcance, os hashes do lote anterior se reproduzem; com aves vivas, a checagem **declara** a
     divergência em vez de escondê-la (§3.10).
-18. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39),
+18. `EXPECTED_CHECKS` ([aether_reactions_test.gd:60](../../tests/aether_reactions_test.gd#L60),
     **240** nesta leitura — a 16 subiu o censo de 225 para 240 e moveu a constante da linha 34 para a
     39) e o censo do runner
-    ([`:3096`](../../tests/aether_reactions_test.gd#L3096)) sobem com o lote, e o `EXPECTED_CHECKS`
+    ([`:3124`](../../tests/aether_reactions_test.gd#L3124)) sobem com o lote, e o `EXPECTED_CHECKS`
     do áudio ([audio_test.gd:25](../../tests/audio_test.gd#L25), **73**) só se a metade sonora for
     aprovada com asset novo.
 
@@ -502,7 +502,7 @@ godot --headless --path . tests/smoke_test.tscn
   `levels.json`** (mandato 8; `docs/audio-provenance.md` é o registro). E nenhum asset do Veloren,
   que tem 645 arquivos de áudio sob GPL-3.0.
 - **Não subir `MESH_BUDGET` ([main.gd:28](../../src/main.gd#L28)), o teto do `SubtreeGuard`
-  ([wolf.gd:389-390](../../src/entities/wolf.gd#L389-L390)) nem o `CENSUS_CAP`
+  ([wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449)) nem o `CENSUS_CAP`
   ([`:18`](../../src/main.gd#L18)) para acomodar as aves.** Se o número não cabe, o que desce é
   `BIRD_CAP`.
 - **Não transladar os ids reservados 9–18** do doc 10
@@ -548,9 +548,9 @@ vazio. O **252 / 0 / 42,4 s** do `5b519f8` que esta página citava é o contrato
 ## 9. Invenções do prompt, registradas aqui
 
 - **"Não calcula se consegue alcançar com pulo"** — pela metade. O pulo existe, é condicionado a
-  `on_ground and can_step_over(want)` ([wolf.gd:992-993](../../src/entities/wolf.gd#L992-L993)) e
+  `on_ground and can_step_over(want)` ([wolf.gd:1246-1247](../../src/entities/wolf.gd#L1246-L1247)) e
   a 19 verdeou o degrau de um bloco. O que **não** existe é a aritmética (a sonda é `+1.0` fixo,
-  [voxel_body.gd:173](../../src/entities/voxel_body.gd#L173)), o contador de tentativas, a
+  [voxel_body.gd:181](../../src/entities/voxel_body.gd#L181)), o contador de tentativas, a
   desistência e a memória — e é isso que a página cobra, não o pulo.
 - **"Drops são fracos"** — são **zero**: dos dois consumidores de `died`, um só incrementa contador
   ([main.gd:969](../../src/main.gd#L969)) e o outro só toca um som
@@ -562,14 +562,14 @@ vazio. O **252 / 0 / 42,4 s** do `5b519f8` que esta página citava é o contrato
   cabeçalho HTTP e comentário de anatomia/câmera (5) — e nenhuma delas é item. Vira ids 23+ ou
   `[OPEN]` de forma, com o braço B do §3.7 registrado como o que seria preciso pagar.
 - **"Registrar no Éter / `EchoLedger` a morte (já é o espírito do projeto)"** — o registro já é
-  código: BLOOD 1,1 + FEAR 0,55 ([wolf.gd:1058-1059](../../src/entities/wolf.gd#L1058-L1059)).
+  código: BLOOD 1,1 + FEAR 0,55 ([wolf.gd:1319-1320](../../src/entities/wolf.gd#L1319-L1320)).
   `EchoLedger` não existe em `src/` e é `[TARGET]`
   ([`docs/design/02:132`](../design/02-innovations.md#L132)); canal de morte é o dossiê 03, e esta
   perna não o toca.
 - **"Respeitar o HotSet/LOD já previsto no doc 04"** — previsto, sim; em código, não. O contrato
   registra "não existe LOD por distância" e os orçamentos que são código hoje são o passo de
   50 ms ([sim_clock.gd:5-7](../../src/core/sim_clock.gd#L5-L7)), o `SubtreeGuard` de 400 µs
-  ([wolf.gd:389-390](../../src/entities/wolf.gd#L389-L390)) e o teto de 12 mentes cujo produto já
+  ([wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449)) e o teto de 12 mentes cujo produto já
   está escrito no comentário de [main.gd:10-17](../../src/main.gd#L10-L17).
 - **"Já existe som de pássaros, então a imersão está quebrada"** — o som existe
   ([audio_director.gd:101](../../src/audio/audio_director.gd#L101),

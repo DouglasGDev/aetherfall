@@ -43,7 +43,7 @@ Dela sai a conta do bench que o dossiê pede: 600 s ÷ 0,05 s = 12 000 ticks, de
 — não é medição desta página.
 
 Fora da classe, `HZ` tem um único leitor em `src/`: a memória de avistamento do lobo converte
-segundos em passos com `SimClock.HZ` [src/entities/wolf.gd:405](../../src/entities/wolf.gd#L405) sobre
+segundos em passos com `SimClock.HZ` [src/entities/wolf.gd:464](../../src/entities/wolf.gd#L464) sobre
 `SIGHT_MEMORY_SECONDS = 6.0` [wolf.gd:35](../../src/entities/wolf.gd#L35), ou 120 ticks, derivado das
 duas linhas. [`step_duration()`](../../src/core/sim_clock.gd#L42-L43) tem um chamador em `src/`: o corpo
 do tick pega `dt` dele [src/main.gd:265](../../src/main.gd#L265) e nunca lê relógio de parede. É essa a
@@ -119,8 +119,8 @@ onde a suíte o confere [tests/smoke_test.gd:227-228](../../tests/smoke_test.gd#
 exercitada direto no arquivo [tests/smoke_test.gd:874-877](../../tests/smoke_test.gd#L874-L877), que abre
 e fecha um passo e exige que o pico tenha sido preenchido. E o runner de reações já colhe os mesmos
 dois números pelo caminho real do frame, com `dt` fixo
-[tests/aether_reactions_test.gd:1341-1346](../../tests/aether_reactions_test.gd#L1341-L1346) e
-[:1378](../../tests/aether_reactions_test.gd#L1378) — precedente vivo do driver que o bench quer.
+[tests/aether_reactions_test.gd:1369-1374](../../tests/aether_reactions_test.gd#L1369-L1374) e
+[:1406](../../tests/aether_reactions_test.gd#L1406) — precedente vivo do driver que o bench quer.
 
 ## 4. (d) As cadências montadas em cima do tick
 
@@ -132,9 +132,9 @@ usa.
 | Subsistema | Cadência hoje | Constante | Onde decai e dispara |
 | --- | --- | --- | --- |
 | Difusão + decaimento do Éter | 4 passadas por segundo | `AETHER_PERIOD = 0.25` [main.gd:27](../../src/main.gd#L27) | contador [main.gd:84](../../src/main.gd#L84), porta e reset [main.gd:267-270](../../src/main.gd#L267-L270) |
-| Decisão de cada lobo vivo | todo tick, com budget de 400 µs | [wolf.gd:389-390](../../src/entities/wolf.gd#L389-L390) | laço [main.gd:272-273](../../src/main.gd#L272-L273), corpo [wolf.gd:806](../../src/entities/wolf.gd#L806) |
+| Decisão de cada lobo vivo | todo tick, com budget de 400 µs | [wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449) | laço [main.gd:272-273](../../src/main.gd#L272-L273), corpo [wolf.gd:875](../../src/entities/wolf.gd#L875) |
 | Grafos de coesão da matilha | todo tick | — | chamada [main.gd:271](../../src/main.gd#L271), corpo [main.gd:838](../../src/main.gd#L838) |
-| Leitor de rastros do lobo | 4 varreduras por segundo | `SCENT_PERIOD = 0.25` [wolf.gd:30](../../src/entities/wolf.gd#L30) | decai [wolf.gd:815](../../src/entities/wolf.gd#L815), porta [:857](../../src/entities/wolf.gd#L857), rearma [:891](../../src/entities/wolf.gd#L891) |
+| Leitor de rastros do lobo | 4 varreduras por segundo | `SCENT_PERIOD = 0.25` [wolf.gd:30](../../src/entities/wolf.gd#L30) | decai [wolf.gd:884](../../src/entities/wolf.gd#L884), porta [:927](../../src/entities/wolf.gd#L927), rearma [:961](../../src/entities/wolf.gd#L961) |
 | Recolha de cadáveres | 1 por segundo | `CORPSE_CHECK_PERIOD = 1.0` [main.gd:31](../../src/main.gd#L31) | contador [main.gd:86](../../src/main.gd#L86), porta [main.gd:274-277](../../src/main.gd#L274-L277) |
 | Fila de respawn | contagem regressiva por tick | `RESPAWN_DELAY = 45.0` [main.gd:30](../../src/main.gd#L30) | entradas, cada uma o par `[segundos, toca]` desde a 16, [main.gd:352](../../src/main.gd#L352) e [:899](../../src/main.gd#L899), decaimento sobre `vaga[0]` [main.gd:278-282](../../src/main.gd#L278-L282) |
 | Roda de acasalamento | 1 varredura por segundo | `MATE_PERIOD = 1.0` [main.gd:532](../../src/main.gd#L532) | contador [main.gd:83](../../src/main.gd#L83), porta [main.gd:296-299](../../src/main.gd#L296-L299) |
@@ -163,11 +163,11 @@ campo declara a convenção no comentário do método
 o que a suíte imprime é `wolves` do `diagnostics()` [main.gd:1164](../../src/main.gd#L1164). O custo do
 tick escala com o censo do momento, não com o número do boot. Com doze mentes a conta bruta de árvores
 é 12 × 400 µs = 4,8 ms dos 50 ms, derivado de [main.gd:18](../../src/main.gd#L18) e
-[wolf.gd:389-390](../../src/entities/wolf.gd#L389-L390) — e a soma real não está medida em log nenhum. O
+[wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449) — e a soma real não está medida em log nenhum. O
 budget é por lobo e cobre só a árvore de comportamento: o `SubtreeGuard` cronometra o filho e conta o
 estouro [src/ai/behavior/bt_tree.gd:130-137](../../src/ai/behavior/bt_tree.gd#L130-L137), com default de
 classe de 250 µs [:120](../../src/ai/behavior/bt_tree.gd#L120) que o lobo sobe para 400; percepção e
-utilidade ficam fora dele, como o `tree_stats()` declara [wolf.gd:1095-1096](../../src/entities/wolf.gd#L1095-L1096).
+utilidade ficam fora dele, como o `tree_stats()` declara [wolf.gd:1356-1357](../../src/entities/wolf.gd#L1356-L1357).
 
 ## 5. (e) O que o relógio **não** é: autoridade única
 
@@ -192,11 +192,11 @@ O que anda por **frame de física**, e não por tick:
   morte escrevem BLOOD e FEAR pelos handlers [main.gd:951-958](../../src/main.gd#L951-L958). As ligações
   são de sinal [main.gd:152-163](../../src/main.gd#L152-L163), não de tick.
 - **Locomoção e timers do lobo.** `Wolf._physics_process`
-  [src/entities/wolf.gd:950-998](../../src/entities/wolf.gd#L950-L998) é callback do engine: aplica
-  gravidade e empuxo, faz o steering, chama `move_and_collide` [wolf.gd:985](../../src/entities/wolf.gd#L985)
-  e decide o auto-pulo no ramo de bloqueio [wolf.gd:986-993](../../src/entities/wolf.gd#L986-L993). Os
-  timers de cadáver [wolf.gd:952](../../src/entities/wolf.gd#L952), atordoamento
-  [:969](../../src/entities/wolf.gd#L969) e desemperto [:976](../../src/entities/wolf.gd#L976) decaem em
+  [src/entities/wolf.gd:1203-1259](../../src/entities/wolf.gd#L1203-L1259) é callback do engine: aplica
+  gravidade e empuxo, faz o steering, chama `move_and_collide` [wolf.gd:1238](../../src/entities/wolf.gd#L1238)
+  e decide o auto-pulo no ramo de bloqueio [wolf.gd:1239-1254](../../src/entities/wolf.gd#L1239-L1254). Os
+  timers de cadáver [wolf.gd:1205](../../src/entities/wolf.gd#L1205), atordoamento
+  [:1222](../../src/entities/wolf.gd#L1222) e desemperto [:1229](../../src/entities/wolf.gd#L1229) decaem em
   segundos de frame — o corpo do lobo não obedece aos 20 Hz, só a cabeça dele.
 
 Uma nuance de versão, porque a página é sobre este arquivo: a cadência de 60 Hz do frame de física não
@@ -210,8 +210,8 @@ Consequência direta para quem vai medir: um runner que chame só `advance()` e 
 mundo e deixa os corpos parados, porque a locomoção inteira mora no `_physics_process` do lobo e no
 `update_local` do jogador. O runner que já existe resolve isso alimentando o frame do próprio relógio,
 com `_session._physics_process(SimClock.STEP)`
-[tests/aether_reactions_test.gd:1378](../../tests/aether_reactions_test.gd#L1378) e os passos de corpo em
-`SimClock.STEP / 3.0` [:293](../../tests/aether_reactions_test.gd#L293).
+[tests/aether_reactions_test.gd:1406](../../tests/aether_reactions_test.gd#L1406) e os passos de corpo em
+`SimClock.STEP / 3.0` [:321](../../tests/aether_reactions_test.gd#L321).
 
 ## 6. O que é alvo, não código `[TARGET]`
 

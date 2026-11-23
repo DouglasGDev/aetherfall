@@ -379,7 +379,7 @@ Cada checagem nomeia a premissa que exige e imprime o número que a decide — r
     `401` tem de ser impresso como `llm: 401`, não como recuo anônimo em
     [`mind_oracle.gd:162-174`](../../src/ai/mind_oracle.gd#L162-L174)); **com** o header ⇒ `200`.
 
-`EXPECTED_CHECKS` (150 na leitura deste dossiê em [`aether_reactions_test.gd:39`](../../tests/aether_reactions_test.gd#L39)),
+`EXPECTED_CHECKS` (150 na leitura deste dossiê em [`aether_reactions_test.gd:60`](../../tests/aether_reactions_test.gd#L60)),
 os censores irmãos (audio 73, simulation_rng 27, journal 128) e o rodapé da suíte **não mudam por
 este lote se as checagens 1-10 viverem na cena de prova** — que é o plano. Se alguma delas entrar
 na suíte, o número vira invariante no mesmo commit, anunciado antes de escrever.
@@ -474,7 +474,7 @@ voltou a crescer o arquivo e os dois apodreceram de novo — o primeiro caiu em 
 limpo (`:386`), o segundo em linha branca (`:2479`), e a linha branca é o único caso que a gateira
 de `tools/check_doc_anchors.py` vê. Re-leram-se pela frase uma terceira vez e são hoje
 [`:502`](../../docs/melhorias-status.md#L502) e
-[`:3059`](../../docs/melhorias-status.md#L3059); a ordem vigente deste mês está cinquenta e três linhas
+[`:3059`](../../docs/melhorias-status.md#L3068); a ordem vigente deste mês está cinquenta e três linhas
 abaixo da primeira, em [`:565-566`](../../docs/melhorias-status.md#L565-L566). Cada um dos dois
 conserva a ordem da época que registrou, em vez de ser reescrito: o mandato 4
 registrava a exceção antes do código, e o

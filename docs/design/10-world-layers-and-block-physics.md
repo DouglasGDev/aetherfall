@@ -445,7 +445,7 @@ atual só assina uma projeção mínima, **sem corpos nem comandos**
 ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)); não cobre a
 entidade de queda proposta nem fecha esse gate. Hoje, jogador e locomoção/timers do lobo
 ainda mudam por frame de física ([main.gd:256](../../src/main.gd#L256),
-[wolf.gd:923-968](../../src/entities/wolf.gd#L923-L968)).
+[wolf.gd:1203-1259](../../src/entities/wolf.gd#L1203-L1259)).
 
 ### Matemática
 
@@ -603,7 +603,7 @@ func _overlapping(cell: Vector3i) -> Array:
 ```
 
 `e.has_method("body_aabb")` não é decoração: `body_aabb()` já é o contrato de
-entidade visada do projeto (player.gd:616, [wolf.gd:246-247](../../src/entities/wolf.gd#L246-L247)),
+entidade visada do projeto (player.gd:616, [wolf.gd:305-306](../../src/entities/wolf.gd#L305-L306)),
 e `entity_provider` é o `Callable` que `Main` injeta hoje no jogador
 ([main.gd:150](../../src/main.gd#L150) → `targets_under_crosshair`,
 [main.gd:813-818](../../src/main.gd#L813-L818)).
