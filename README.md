@@ -527,18 +527,21 @@ contador.
 
 ```
 src/
-  ai/            behavior tree, curvas de resposta, utilidade, mente do NPC, oráculo
+  ai/            behavior tree, curvas de resposta, utilidade, mente da criatura,
+                 oráculo local e o hospedeiro que sobe o llama-server no boot
   audio/         diretor de som: consumidor dos eventos do mundo, ganho por arquivo medido
   core/          relógio de simulação (20 Hz)
   entities/      jogador, corpo voxel (colisão AABB-contra-voxel), lobo
   input/         registro de ações (sai para rebinder com persistência no P2)
+  items/         inventário (36 slots, pilha por bloco, hotbar de 10 pinos) e receitas
   persistence/   save atômico, diário de edições e TickJournal (hash/JSONL sob demanda)
   rendering/     visão do Éter
   ui/            HUD, debug, mensagens
   world/         mundo voxel, chunks, gerador, blocos, atlas, campo de Éter,
                  conversões canônicas (Coords)
   main.gd        composição do slice
-tests/           smoke do slice + contratos headless de hash/journal, rastros, RNG e som
+tests/           smoke do slice + contratos headless de hash/journal, rastros, RNG e som;
+                 sonda de oráculo vivo e sonda do boot do hospedeiro (duas cenas próprias)
 assets/audio/    os 51 arquivos CC0 e o levels.json com o nível medido de cada um
 tools/           fetch de packs de IA local + servidor do oráculo (PowerShell)
 docs/design/     design completo (pitch, IA, progressão, arquitetura, roadmap)
