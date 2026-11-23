@@ -99,7 +99,7 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   `_dirty`, consumida por [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L178-L186) com
   `MESH_BUDGET := 2` chunks por frame ([main.gd:28](../../src/main.gd#L28), chamada em
   [main.gd:309-310](../../src/main.gd#L309-L310)). As duas leituras que o contrato publica: **64 chunks
-  em ~4,3 s no boot** ([README.md:571-573](../../README.md#L571-L573); 4.640–4.886 ms nas cinco
+  em ~4,3 s no boot** ([README.md:642-643](../../README.md#L642-L643); 4.640–4.886 ms nas cinco
   corridas históricas, [docs/melhorias-status.md:83](../../docs/melhorias-status.md#L83)) ≈ 67
   ms/chunk, e o tempo do último lote no F3 ([`ultimo %.2f ms`](../../src/ui/hud.gd#L253-L255), lido de
   [`last_mesh_ms()`](../../src/world/voxel_world.gd#L193)). Os dois números convivem porque o boot

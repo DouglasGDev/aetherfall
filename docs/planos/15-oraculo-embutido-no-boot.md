@@ -74,11 +74,11 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
 1. **Embutido é uma frase observável, e ela é falsificável:** com `Rodar.bat` e **nenhum**
    PowerShell aberto, a linha `ia:` do F3 aparece cheia dentro do prazo da cena de prova. Se a
    frase depende de um passo manual que o dono deu antes, o item não está feito — está
-   documentado. Hoje o passo manual é instrução oficial ([`README.md:501-505`](../../README.md#L501-L505)).
+   documentado. Hoje o passo manual é instrução oficial ([`README.md:572-577`](../../README.md#L572-L577)).
 2. **O boot não espera o modelo.** Nada em `_ready` nem em `_physics_process` bloqueia sobre um
    processo filho: `_ready` já bloqueia a janela com geração e malharia
    ([`main.gd:132`](../../src/main.gd#L132), [`:135`](../../src/main.gd#L135); ~0,9 s + ~4,3 s
-   publicados em [`README.md:561`](../../README.md#L561)) e é exatamente por isso que o modelo
+   publicados em [`README.md:642`](../../README.md#L642)) e é exatamente por isso que o modelo
    **não** entra por essa porta. Vermelho por construção: um `await` síncrono no boot é a
    assinatura do congelamento que a casa já contou no boot do mesher.
 3. **Reusar é diferente de matar.** Um servidor na porta que responde 200 ao `/v1/models` **com a
@@ -320,7 +320,7 @@ surpresa depois: o host mata o que ele subiu, e "não matar o que não é meu" t
   afirmar agora, derivado de número publicado e não medido para este fim: subir o servidor no topo
   do `_ready` ([`main.gd:112`](../../src/main.gd#L112), antes da geração em `:132` e da malharia em
   `:66`) compra ~5,2 s de sobreposição com os ~0,9 + ~4,3 s de boot de mundo
-  ([`README.md:561`](../../README.md#L561)) — **derivado**, e a checagem 2 imprime o número real.
+  ([`README.md:642`](../../README.md#L642)) — **derivado**, e a checagem 2 imprime o número real.
 - **Licenças e rede, para fechar o tripé:** nada novo. O runtime e o modelo já são MIT/Apache-2.0
   ([THIRD_PARTY_LICENSES.md:13-14](../../THIRD_PARTY_LICENSES.md#L13-L14)), o `.gguf` continua
   fora do repositório ([`.gitignore:13`](../../.gitignore#L13)) e o tráfego continua
@@ -394,7 +394,7 @@ implementar mede, com máquina livre — medição de tempo é serial
    `OS.create_process` voltar com o pid e o primeiro `200`, com a contagem de `503` no meio (a
    checagem 1 do §7 imprime os dois). O número análogo já publicado é o `boot 9,5 s` da tabela
    `[MEASURED]` de [`docs/design/04:225-226`](../../docs/design/04-local-ai-architecture.md#L225-L226)
-   (mesmo valor em [`README.md:507`](../../README.md#L507)), mas **não é esta grandeza**: ele veio
+   (mesmo valor em [`README.md:579`](../../README.md#L579)), mas **não é esta grandeza**: ele veio
    da corrida do probe com o servidor ligado na mão, e não é o que o prazo da decisão 4.4 consome.
    É a única coisa que autoriza escrever o prazo de boot como número, e o valor de hoje do prazo é
    `[OPEN]`.
@@ -411,7 +411,7 @@ implementar mede, com máquina livre — medição de tempo é serial
 ## 9. O que NÃO fazer
 
 - Nenhum `await` síncrono no `_ready`, nenhum laço que trave a janela esperando o modelo. O
-  congelamento de boot já foi contado uma vez nesta casa ([`README.md:561-562`](../../README.md#L561-L562)).
+  congelamento de boot já foi contado uma vez nesta casa ([`README.md:642-643`](../../README.md#L642-L643)).
 - Não matar processo que não foi criado por este host, sob pretexto nenhum — inclusive "era o
   nosso de ontem". Reuso sim, `kill` só em pid próprio.
 - Não baixar modelo nem descompactar runtime dentro do jogo: `fetch_models.ps1` continua sendo o
@@ -443,7 +443,7 @@ checagens 1 e 3; (b) ciclo de vida — `_exit_tree`, fecho da janela, `is_proces
 retentativa única, com 5 e 6; (c) o lado do oráculo: header de autenticação e o gate de
 prontidão que substitui o recuo cego no boot, com 10 e 9 — **este** é o commit que pode quebrar a
 narrativa que já existe, e por isso ele tem as duas checagens; (d) `Rodar.bat` /
-`run_mind_server.ps1` / texto do [`README.md:501-514`](../../README.md#L501-L514) dizendo que o
+`run_mind_server.ps1` / texto do [`README.md:552-568`](../../README.md#L552-L568) dizendo que o
 servidor agora sobe sozinho e que o passo manual virou opção; (e) as checagens 2, 4, 7 e 8 com os
 fixtures fora de `src/`; (f) medição 1 e 2 do §8, publicadas com log na mesa, e só então o prazo
 de boot vira constante numérica; (g) re-derivação das citações que o lote tornou velhas e o
