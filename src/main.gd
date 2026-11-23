@@ -1170,6 +1170,10 @@ func diagnostics() -> Dictionary:
 		"dens": _dens.size(), "den_min_dist": den_min_dist(),
 		"den_components": den_components(),
 		"pending_respawns": _respawn_queue.size(), "triangles": world.triangle_count(),
+		# Dossie 07 §4: o preco de uma edicao local ate o mesh pronto dela. Sem essa
+		# coluna a tabela do bake-off teria so o custo do lote de boot e decidiria o
+		# mesher sem o lado do jogador na mesa.
+		"edit_mesh": world.edit_mesh_cost(),
 		# Dossie 11 §3.6: o censo que o disco trouxe, quantos nasceram dele e quantos
 		# sairam, e quantas vezes o teto disse nao. Sem esses tres numeros a recusa
 		# seria uma linha impressa uma vez e nada lido -- o mandato 1 nao aceita
