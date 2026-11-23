@@ -498,8 +498,38 @@ palco de teste, e é a que deixaria uma checagem verde pelo motivo errado: `_wal
 runner chamam `set_block` com `record` default, ou seja, parede de teste **é construção registrada**; o
 scaffolding do cavar tem de escrever com `record = false`. Nada deste registro encosta em
 `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` nem na projeção do journal, nenhum número publicado foi
-re-medido por ele, e nenhuma linha de código da perna 12 foi escrita: `feat/bicho-cavando-12` não abre
-antes de a 16 pousar, porque as duas escrevem `src/main.gd`.
+re-medido por ele, e nenhuma linha de código da perna 12 foi escrita: `feat/bicho-cavando-12` não abria
+antes de a 16 pousar — pousou em `9b2c65a`, registro abaixo.
+
+**Registro de 2026-11-23 — o código da perna 16 pousa na `main`, e a fila perde o elo da frente.** Nada
+aqui é exceção de ordem nem gate de fase: a autorização usada é a nomeada desta rodada — `merge --no-ff`
+na `main` e `push` do pouso, com gate de fase continuando do dono (mandato 4). A perna era a da vez, foi
+aberta da `main` no ponto atual (`99d1167`) e pousou nele: `git merge --no-ff feat/tocas-da-alcateia-16`
+→ **`9b2c65a30b74a6398fbf4f9c45560be38974fb12`**, pais `99d1167` e `edab9c8`, **41 arquivos, +5 026/−1 033**,
+com o código em `src/main.gd` (+267/−29), `src/entities/wolf.gd` (+16/−1), `tests/aether_reactions_test.gd`
+(+670/−1) e `tests/smoke_test.gd` (+109/−5). O número pineado é o do **clone limpo** de `9b2c65a` com
+`--import` frio: **255 checagens / 0 falhas / 48,6 s**, exit 0, zero `[FAIL]` e zero `SCRIPT ERROR`, e o
+runner de reações **240 / 0 / 24,138 s** com `OK censo de checagens | 240/240`; a árvore mergida re-rodada
+deu **255 / 0 / 47,7 s** e **240 / 0 / 24,201 s**, e os três runners `--script` de `tests/` existem e
+ficaram verdes — RNG **27 / 0 / 2,651 s** (`27/27`) e journal **128 / 0 / 5,610 s** (`7/7 testes
+concluidos`). As árvores do pin são `64f137bcb1f8…` (`src`) e `88a1541c2f9f…` (`tests`), **diferentes** das
+do `5b519f8` (`30873d66…` / `975eac5a…`): a perna escreve código, então o pin é o merge medido, não um
+documento em cima dele. Os dois furos que a perna devia estão pagos com a checagem que paga cada um e a
+linha literal arquivada — **#18** por `esgotamento_de_lares_forcado` (`soma(motivos)=576 == buscas(24) x
+SPAWN_ATTEMPTS(24)`, `colunas_marcadas=13689`) e **#21** por `den_components()` lido em
+`diagnostico_publica_a_mesma_leitura_das_tocas` e `nenhum_lobo_le_de_outra_toca`. As três réguas rodaram na
+árvore mergida: `verify_plan_cites.py` **1 352** conferidas, **13** arquivos citados inexistentes, **0**
+números fora do arquivo (a base `99d1167` dava **1 296** com as mesmas **13** — o merge acrescentou
+ponteiro, não quebrou), `verify_plan_ids.py` com as **8** ausências da página 16 conferidas uma a uma como
+peças que o próprio dossiê declara inexistentes, e `python tools/check_doc_anchors.py` **36 arquivos ·
+2 370 ponteiros · 179 rótulos · 2 348 links** com o único caso tolerado (o ponteiro `../.tools/...`,
+gitignored). A fila serializada passa a **12 → 17 → 18 → 20 → 13**: a 16 sai da frente, o elo seguinte é
+`feat/bicho-cavando-12` — que nasce vermelho porque `block_changed` continua sem consumidor nenhum — e
+depois dele 17, 18, 20 e 13. **A fila P0/P1 continua aberta**: budget HOT sem medição, censo multi-semente
+sem corrida e bake-off de AF sem número são exatamente os elos que a 16 não toca, e nada desta rodada
+fecha gate. Ficam escritos como débito, não como feito, a atribuição do par de vazamento do quit e a
+alocação de `_dens`/`den_components` sem colheita; `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a
+projeção do journal não foram tocados por nenhuma das duas pernas.
 
 ## Ciclo de trabalho
 
