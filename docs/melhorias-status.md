@@ -5356,3 +5356,100 @@ pasta não substituem os logs de rodadas antigas que continuam citados por `.too
 como o resto do débito de instrumento. O **#28 continua aberto**, com a mesma cara: `casos objetivos: 0`
 nesta árvore verde não diz que não há ponteiro velho, diz que a régua não procura esse caso.
 
+## A `main` mergida da evidência — o pouso re-medido e a régua que não entra na pasta que ela versiona (2026-11-23, `docs/registro-evidencia-merge-07c`, base `5178c5a`)
+
+**O pouso.** `git merge --no-ff docs/evidencia-clone-limpo-07c` →
+**`5178c5ad9a7efe8283b67bb9cbf04da3774b73ed`**, pais `b1e1dd4` (o registro da `main` mergida do `f7fef97`) e
+`214df5c` (a ponta da evidência), **15 arquivos, +2 738/−12**, todos `docs/`: os **14** de
+[`docs/evidence/registro-07c/`](evidence/registro-07c/readback.md) mais as 69 linhas desta página. Nenhuma
+linha de código — `git diff --name-only b1e1dd4..5178c5a -- src tests` devolve vazio e
+`git rev-parse 5178c5a:src` / `5178c5a:tests` respondem `100af75ded6d50b6a26120be352cf72770f97e80` /
+`77fcb0510525a82d39bb799ff1376ff0fb6eb17b`, **as mesmas duas árvores** do pin `cea4379` medido no clone limpo
+e as mesmas do `f7fef97`. O contrato **255 / 0** chega a `5178c5a` por identidade de árvore, não por herança
+de prosa, e nada nesta perna pede re-corrida de gate.
+
+**A suíte re-rodada no pouso — agora versionada.** Comando da casa, máquina livre conferida antes do
+`spawn banda 1` e com nenhum processo do engine vivo:
+`godot --headless --path . tests/smoke_test.tscn` na `main` em `5178c5a` devolve
+**`== 255 checagens  0 falhas  47.6 s de teste ==`**, exit 0, **zero** `[FAIL]`, **zero** `SCRIPT ERROR`. O
+stdout inteiro está em
+[`docs/evidence/registro-07c/merged_main_5178c5a_suite.log`](evidence/registro-07c/merged_main_5178c5a_suite.log),
+copiado de `.tools/_evid07c_main_suite.log` (os mesmos 24 024 bytes dos dois lados; o rodapé é a linha 357).
+É a primeira vez que um rodapé de `main` mergida sai de `.tools/`: o `merged_main_suite.log` do parágrafo
+anterior veio de uma corrida gravada **só com stdout**, e por isso o par do quit aparece aqui —
+[`:358`](evidence/registro-07c/merged_main_5178c5a_suite.log)
+`WARNING: 4 ObjectDB instances were leaked at exit`, [`:360`](evidence/registro-07c/merged_main_5178c5a_suite.log)
+`ERROR: 2 resources still in use at exit` — e não aparece lá. O par não se mexeu entre as três ocorrências
+versionadas (clone limpo `suite.log:358-360`, ponta da evidência `evidence_branch_suite.log:358-360`, pouso
+`:358-360`): mesmo `4`, mesmo `2`. Isso não atribui nada — a atribuição continua débito aberto — mas deixa de
+ser uma afirmação sobre a máquina desta casa: `sha256sum -c artifacts.sha256` dentro da pasta confere os
+quatro arquivos antes de qualquer um dos dois números.
+
+**As réguas, na base e na ponta, com as duas corridas arquivadas.** Na `main` de `5178c5a`, **antes** desta
+seção: `python tools/check_doc_anchors.py` → `38 arquivos · 2 850 ponteiros · 197 rótulos · 2 860 links ·
+casos objetivos: 0` e `python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md docs/engine/*.md
+docs/melhorias-status.md AGENTS.md README.md` → **2 663** conferidas, **34** ausentes, **`numeros de linha
+fora do arquivo: 0`** — as duas, exatamente os números de `214df5c`, e isso é conferível sem memória:
+`git rev-parse 5178c5a^{tree}` e `git rev-parse 214df5c^{tree}` respondem o mesmo
+`efa873e67553817a01687780a1898f4f8a136580`, porque o merge não reescreve documento nenhum. Na ponta desta branch, com esta seção e os quatro arquivos novos dentro
+do corpus: `python tools/check_doc_anchors.py` → **`38 arquivos · 2 854 ponteiros · 197 rótulos · 2 871
+links · casos objetivos: 0`**, exit 0, e a régua de citações → **2 669** conferidas, **34** ausentes,
+**`numeros de linha fora do arquivo: 0`**, exit 0. Os dois stdout estão versionados em
+[`ruler_doc_anchors_tip.log`](evidence/registro-07c/ruler_doc_anchors_tip.log) e
+[`ruler_plan_cites_tip.log`](evidence/registro-07c/ruler_plan_cites_tip.log). Cada delta tem a lista que o
+produz, obtida rodando as próprias expressões da régua sobre o texto desta seção:
+**+4 ponteiros** = os dois `LINK` (`../src/world/voxel_world.gd#L6`, `../src/world/voxel_world.gd#L276`) e as
+duas ocorrências de `tests/af_bakeoff.gd:152` no `BARE`; **+11 links** = os onze `\[…\]\(…\)` que a seção
+abre (três para os logs novos da ponta, três para o `merged_main_5178c5a_suite.log` — o caminho e as duas
+faixas `:358`/`:360` —, dois para a `readback.md`, um para a régua, um para cada faixa de `voxel_world.gd`);
+**+0 rótulos** porque nenhum dos onze rótulos é símbolo de código —
+são `:6`, `:276`, `:358`, `:360`, `:89` e caminhos; **+6 citações** = as duas âncoras do `voxel_world.gd`
+contadas cada uma em **dois** lugares — a lista aqui e o item (8) do fecho — mais as duas de
+`af_bakeoff.gd:152` (a lista e o parágrafo do #29). A régua de citações aceita a forma `#L` também em código
+inline, onde a de âncoras só conta o `:NNN` solto ou o link `\](…#L…)`: a frase que explica o delta é ela
+mesma dois dos seis números que explica. Duas coisas ficam claras com a lista na mão: o `tools/check_doc_anchors.py:89` que
+esta seção escreve **não é conferido por nenhuma das duas** — o conjunto de prefixos aceito é
+`src|tests|docs|assets|.tools` com sufixo `.gd|md|log|…`, e `.py` está fora — e o `casos objetivos: 0` desta
+ponta foi **um** na primeira corrida das réguas: o link para `ruler_plan_cites_tip.log` apontava para um
+arquivo que o `>` do próprio redirecionamento ainda não tinha escrito. A régua pegou, a segunda corrida
+deixou de pegar, e o caso só sumiu porque o arquivo passou a existir — verde por sequenciamento, não por
+construção. A suíte re-rodada nesta ponta, depois de arquivar os quatro arquivos, fecha com
+**`== 255 checagens  0 falhas  47.5 s de teste ==`** e exit 0
+([`registro_tip_suite.log`](evidence/registro-07c/registro_tip_suite.log)), com o par do quit outra vez em
+`:358`/`:360` — quarta testemunha, mesmos `4` e `2`.
+
+**Furo #29 — nenhuma das duas réguas entra em `docs/evidence/`.** A pasta versionada por esta rodada é
+justamente a que o instrumento ignora: [`tools/check_doc_anchors.py:89`](../tools/check_doc_anchors.py#L89)
+faz `dirnames[:] = [d for d in dirnames if d != "evidence"]` antes de caminhar `docs/`, e o corpus da régua
+de citações é a lista passada na linha de comando — `docs/planos`, `docs/design`, `docs/engine`, o status,
+`AGENTS.md`, `README.md` — onde `docs/evidence` nunca aparece. Consequência medida nesta árvore: os
+[`docs/evidence/registro-07c/`](evidence/registro-07c/readback.md) arquivados carregam **dois** ponteiros de
+código que **nenhum** instrumento conferiu — `tests/af_bakeoff.gd:152` e `bt_tree.gd:130-137`. Ambos foram
+abertos e lidos nesta passada e conferem (`diag["edit_mesh"]` na primeira, o `tick()` com
+`Time.get_ticks_usec()` e o `return BtStatus.FAILURE` na faixa), mas isso é leitura humana, exatamente o
+de que o #28 trata, agora com a dimensão de **corpus** além da dimensão de **classe**: o `38 arquivos`
+de cima é o corpus *sem* a evidência. Dono: `tools/check_doc_anchors.py`, o mesmo arquivo do #28, e o corte
+é dele decidir — incluir `docs/evidence/**/readback.md` no walk custa poucos segundos de régua e faria os
+dois ponteiros acima passarem a ser conferidos a cada corrida. Enquanto isso, todo número publicado dentro de
+uma `readback.md` vale o que vale uma citação lida à mão.
+
+**Publicação.** `git ls-remote --heads origin` confere, nesta ordem: `refs/heads/main` =
+`5178c5ad9a7efe8283b67bb9cbf04da3774b73ed` (o pouso da evidência, já no ar antes desta seção ser escrita) e
+`refs/heads/docs/evidencia-clone-limpo-07c` = `214df5c4a8e26c6b81f5d2e5a83aa7fb46c85884`. Nenhuma branch foi
+apagada, local ou remota. O `merge --no-ff`
+desta ponta é o último commit da 07c na primeira fila do log: depois dele,
+`git log --first-parent main` responde o que a rodada fez sem abrir diff nenhum, que é o motivo do item 4 de
+**Branches**, e o SHA dele fica lá — esta seção descreve a revisão em que foi medida, não a que ela produz.
+
+**O que nada disso fecha.** (0) Gate de fase fecha o dono do repositório (mandato 4); nenhum dos números
+desta seção encerra P0 ou P1. (1) A 07c não troca malhador nenhum: braço **A** continua o default, **C**
+vive só como patch, **B** e **D** seguem `[OPEN]`/`[CLAIMED]`. (2) `edit_mesh` continua sendo o remesh
+referenciado por edição, não o caminho de edição inteiro. (3) As alturas da linha P0 (942 ms / 4.682 ms)
+continuam sem corrida publicada. (4) Nenhum FPS em nenhuma linha. (5) Os `.uid` de `tests/` continuam fora do
+git (#25, decisão do dono) e são os dois `??` que todo clone limpo mostra. (6) O **#28** fica aberto, com o
+par do #29 ao lado: as réguas desta seção passam verdes numa árvore onde a evidência não é corpus. (7) A
+atribuição do par de vazamento do quit continua aberta, agora com quatro testemunhas versionadas. (8) A fila
+viva continua **12 → 17 → 18 → 20 → 13**, com `feat/bicho-cavando-12` na frente e nascendo vermelha porque
+`block_changed` ([`:6`](../src/world/voxel_world.gd#L6), emit em
+[`:276`](../src/world/voxel_world.gd#L276)) não tem consumidor nenhum em `src/`.
+
