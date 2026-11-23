@@ -589,8 +589,8 @@ Ecossistema Vivo". A autorização é para a **pauta**, não para o código:
 [`docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md`](planos/20-mente-autonoma-de-mobs-e-ecossistema.md)
 existe, e existem no contrato a branch `feat/mobs-autonomos-e-ecossistema-20` e o agente responsável
 `mente-eco-20`; **nenhuma linha de `src/` foi escrita por esta leitura**. A fila serializada passou a
-**09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 → 17 → 18 → 20 → 13**, e a 16 já cumpriu a sua posição — a
-fila **viva de hoje** é **12 → 17 → 18 → 20 → 13**: depois da 18 porque as duas escrevem
+**09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 ✅ → 17 → 18 → 20 → 13**, e a 16 já cumpriu a sua posição — a
+fila **viva de hoje** é **17 → 18 → 20 → 13**: depois da 18 porque as duas escrevem
 [`src/world/block_defs.gd`](../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 o id 17, e drop de
 criatura **não pode** encostar na reserva 9–18 — entra a partir de 23; antes da 13 porque árvore
 genealógica sobre **uma única** espécie escreveria o que já existe, e a 13 continua última pelo motivo
@@ -5640,7 +5640,12 @@ depois da linha 1 218 de `wolf.gd` ou da 4 396 do runner deixou, por construçã
 frase diz. A re-dervação foi feita **por conteúdo**, não por aritmética de diff: cada número velho foi
 aberto no arquivo citado e conferido contra a frase que o usa, porque somar o deslocamento do diff produz
 número dentro do arquivo e errado — é o formato do furo #28. Contas desta passada:
-`git diff --shortstat` do lote de docs **42 arquivos, +4 585/−773** — aí estão os 17 stdout da pasta de
+`git diff --shortstat d80ac20 d62c066 -- docs README.md AGENTS.md` do lote de docs dá **42 arquivos,
++4 585/−773** — aí estão os 17 stdout da pasta de evidência; `git diff --shortstat d80ac20 d62c066 --
+'*.md'` sobre o mesmo par dá **26 arquivos, +1 210/−773**, e as **773** deleções são as mesmas dos dois
+lados porque os 16 arquivos que faltam na prosa são novos. O 43º arquivo do lote é
+`tools/check_doc_anchors.py` (**+7/−2**), o aperto da isenção que o furo #30 pede, e o código de (a) a (g)
+fecha em `git diff --shortstat dcbcbe8 d80ac20` = **4 arquivos, +1 424/−21** — nenhum deles `src/main.gd`.
 
 - `python tools/check_doc_anchors.py` → **38 arquivos · 2 924 ponteiros · 209 rótulos · 2 939 links ·
   casos objetivos: 0**, exit 0, medido **com esta seção dentro do corpus**. A mesma régua sobre o mesmo
@@ -5697,6 +5702,294 @@ versionadas. (5) Os `.uid` de `tests/` seguem fora do git (#25) e são os dois `
 mostra. (6) O **#28** e o **#29** ficam abertos; o **#30** fecha com a linha apertada, e a cobertura que
 ele devolve (+23) está medida acima. (7) `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do
 `TickJournal` não foram tocados por nenhuma das sete linhas; uma corrida com lobos cavando **não** reproduz
-os hashes publicados — porque o mundo mudou, não a projeção (dossiê 12 §6). (8) A fila viva passa de
-**12 → 17 → 18 → 20 → 13** para **17 → 18 → 20 → 13** quando a 12 pousar: o elo seguinte é
-`feat/fisica-de-blocos-que-caem-17`, que é justamente quem assina `block_changed`.
+os hashes publicados — porque o mundo mudou, não a projeção (dossiê 12 §6). (8) A fila viva passou de
+**12 → 17 → 18 → 20 → 13** para **17 → 18 → 20 → 13** com o pouso `fa94cb5`, registrado na seção seguinte:
+o elo seguinte é `feat/fisica-de-blocos-que-caem-17`, que é justamente quem assina `block_changed`.
+
+## O pouso da 12 — o merge, o pin medido no clone limpo, as dez corridas serializadas e a atribuição de carga retirada (2026-11-23, base `dcbcbe8`, ponta `d62c066`, merge `fa94cb5`)
+
+**O que o dono autorizou e o que continua fechado.** A autorização é a nomeada das pernas anteriores, e
+nada além dela: subir o que terminar com `push`, e cada agente faz o próprio `merge --no-ff` na `main` e o
+push. Cobre o pouso do código da 12 e este registro. **Mandato 4**: gate de fase fecha só o dono do
+repositório — nenhum gate foi fechado aqui, e a fila serializada não sofreu exceção de ordem. A 12 era a
+perna da vez, foi aberta da `main` no ponto atual (`dcbcbe8`) e pousou sobre esse ponto.
+
+**Pré-gate, conferido antes de encostar em `main`.** Quatro arquivos, um `--check-only` por arquivo, porque
+a sonda só valida o arquivo que recebe — `src/entities/wolf.gd`, `src/entities/voxel_body.gd`,
+`tests/aether_reactions_test.gd` e `tests/smoke_test.gd` deram os quatro `exit=0` com a engine
+`4.7.2.stable.official.ed1daf0bf` impressa em cada um
+([pouso_pregate_check_only.log:3](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L3),
+[:5](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L5),
+[:7](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L7),
+[:9](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L9)). As duas contas que dizem que o merge não
+traz nada além da ponta medida: `git diff --name-only d62c066 fa94cb5` devolve **0 arquivos**
+([:11](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L11)) e as árvores de `fa94cb5` são
+byte a byte as de `d80ac20` — `f77c1961bb8065ea5a78b24677a36c5840891c75` em `src`,
+`4855f0e85c883573bc374125b4b016ad1e775711` em `tests`
+([:13-14](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L13-L14),
+[:16-17](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L16-L17)). O lote inteiro, contra a base:
+**46 arquivos, +6 013/−793**
+([:19](evidence/bicho-cavando-12/pouso_pregate_check_only.log#L19)).
+
+**O merge.** `git merge --no-ff feat/bicho-cavando-12` → **`fa94cb5ddf60bc360aa662715d3d98d17f5d6d1c`**,
+pais `dcbcbe823e6202750803cbfb3e84420553fc8185` e `d62c066e36ef45893d76861b22a7f9b78c188a61`
+(`git log --format=%P -1`), sem conflito. A conta dos 46 arquivos, por área: **3 de código**
+(`src/entities/voxel_body.gd` +12/−4, `src/entities/wolf.gd` +277/−8,
+`tests/aether_reactions_test.gd` +1 119/−1 = **+1 408/−13**, conferido por
+`git diff --numstat dcbcbe8 fa94cb5 -- src tests`), **18 de `docs/planos/`**, **17 de stdout** em
+`docs/evidence/bicho-cavando-12/`, **4** de `docs/design/` + `docs/engine/`, `docs/melhorias-status.md`,
+`AGENTS.md`, `README.md` e `tools/check_doc_anchors.py` — o instrumento do furo #30, que viaja com a perna
+porque foi ela que o apertou. Nenhum `src/main.gd` no lote, e a base continua com as árvores
+`100af75ded6d50b6a26120be352cf72770f97e80` / `77fcb0510525a82d39bb799ff1376ff0fb6eb17b`, **diferentes** das
+do pouso: a perna escreve código, então o pin é o merge medido, não um documento em cima dele.
+
+**As dez corridas, seriais, uma por número, nenhuma em paralelo com outro lote de timing.** Todas exit 0,
+com **0** `[FAIL]` e **0** `SCRIPT ERROR` contados por `grep` nos dez stdout:
+
+- suíte na árvore mergida — **`== 255 checagens  0 falhas  51.2 s de teste ==`**
+  ([pouso_merged_main_suite.log:357](evidence/bicho-cavando-12/pouso_merged_main_suite.log#L357)) e, na
+  segunda corrida da mesma árvore, **`51.2 → 48.3 s`** com o mesmo censo
+  ([pouso_merged_main_suite_b.log:357](evidence/bicho-cavando-12/pouso_merged_main_suite_b.log#L357));
+- runner de reações na árvore mergida — **`283 checagens 0 falhas 45.392 s`** com
+  **`OK censo de checagens | 283/283`** e **`OK censo de testes completos | 65/65`**
+  ([pouso_merged_main_runner_reactions.log:541](evidence/bicho-cavando-12/pouso_merged_main_runner_reactions.log#L541),
+  [:538](evidence/bicho-cavando-12/pouso_merged_main_runner_reactions.log#L538),
+  [:536](evidence/bicho-cavando-12/pouso_merged_main_runner_reactions.log#L536));
+- **clone limpo** de `fa94cb5` (`.qoder/clones/clean-pouso12`, `git rev-parse HEAD` no clone =
+  `fa94cb5ddf60bc360aa662715d3d98d17f5d6d1c`, `git rev-parse HEAD:src HEAD:tests` = as duas árvores
+  acima), sem `.godot/`, com `--import` frio exit 0 e rodapé `[ DONE ] loading_editor_layout`
+  ([pouso_clone_import.log:302](evidence/bicho-cavando-12/pouso_clone_import.log#L302)) — suíte
+  **`== 255 checagens  0 falhas  61.7 s de teste ==`**
+  ([pouso_clone_suite.log:357](evidence/bicho-cavando-12/pouso_clone_suite.log#L357)) e
+  **`60.4 s`** ([pouso_clone_suite_b.log:357](evidence/bicho-cavando-12/pouso_clone_suite_b.log#L357));
+- runner de reações no clone — **`283 checagens 0 falhas 34.218 s`** com **`283/283`**, **`65/65`** e
+  `trips_solo=0 trips_matilha=0`
+  ([pouso_clone_runner_reactions.log:541](evidence/bicho-cavando-12/pouso_clone_runner_reactions.log#L541),
+  [:538](evidence/bicho-cavando-12/pouso_clone_runner_reactions.log#L538),
+  [:537](evidence/bicho-cavando-12/pouso_clone_runner_reactions.log#L537));
+- runner de RNG — **`27 checagens 0 falhas 2.818 s`** no clone
+  ([pouso_clone_runner_rng.log:78](evidence/bicho-cavando-12/pouso_clone_runner_rng.log#L78)) e
+  **`2.921 s`** na mergida ([pouso_merged_main_runner_rng.log:78](evidence/bicho-cavando-12/pouso_merged_main_runner_rng.log#L78)),
+  as duas com `OK censo de checagens | 27/27` ([:77](evidence/bicho-cavando-12/pouso_clone_runner_rng.log#L77));
+- runner do journal — **`128 checagens 0 falhas 7/7 testes concluidos 6.840 s`** no clone
+  ([pouso_clone_runner_journal.log:143](evidence/bicho-cavando-12/pouso_clone_runner_journal.log#L143)) e
+  **`7.598 s`** na mergida ([pouso_merged_main_runner_journal.log:143](evidence/bicho-cavando-12/pouso_merged_main_runner_journal.log#L143)),
+  os dois com `OK contagem completa de checagens 128/128` ([:142](evidence/bicho-cavando-12/pouso_clone_runner_journal.log#L142)).
+
+**O pin.** O número que vale para a `main` é o do **clone limpo**: **255 / 0 / 61,7 s** de suíte, com o
+runner de reações em **283 / 0 / 34,218 s**. A suíte fica em 255 porque o lote escreve no runner, não em
+`tests/smoke_test.gd`; o censo que cresce é o do runner, 240 → 283 (+43), exatamente a conta publicada na
+rodada acima. As duas colheitas do runner, impressas literalmente nas duas árvores — clone
+([pouso_clone_runner_reactions.log:539](evidence/bicho-cavando-12/pouso_clone_runner_reactions.log#L539),
+[:540](evidence/bicho-cavando-12/pouso_clone_runner_reactions.log#L540)) e mergida
+([pouso_merged_main_runner_reactions.log:539](evidence/bicho-cavando-12/pouso_merged_main_runner_reactions.log#L539),
+[:540](evidence/bicho-cavando-12/pouso_merged_main_runner_reactions.log#L540)):
+
+- `CENARIO ESTREITO, NAO GATE P1: passos=10568 sim_step total=2213150 us pico=3442 us; BT last_us
+  soma=56812 pico=193 trips=0` (clone) contra `total=3074495 us pico=5860 us; ... soma=73627 pico=308`
+  (mergida);
+- `PASSOS DE MATILHA (sessao real, difusao incluida), NAO GATE P1: passos=1341 sim_tick total=3088657 us
+  pico=12816 us; BT last_us soma=54195 pico=84 trips=0` (clone) contra `total=4400919 us pico=19620 us;
+  ... soma=77398 pico=210` (mergida).
+
+Os **passos** são idênticos nas duas árvores (10 568 e 1 341) — o palco é determinístico — e os
+**microssegundos** não: a mergida gasta +38,7 % no estreito e +42,5 % na matilha sobre o clone, com o
+`pico` quase dobrando nos dois. O pé do `pouso_clone_suite.log` traz o diagnóstico da mesma corrida
+([:345](evidence/bicho-cavando-12/pouso_clone_suite.log#L345)): `"worst_sim_ms":16.119`, `dropped_ticks":0`,
+`"edits":16`, `"den_components":2` e o bloco `"edit_mesh":{"count":17,"mean_us":163549.5,"worst_us":303602}`.
+Nenhum desses números fecha P1 e nenhum é budget agregado dos cinco lobos.
+
+**As três réguas do corpus, rodadas contra a árvore mergida.** `python tools/check_doc_anchors.py` →
+**`arquivos: 38  ponteiros conferidos: 2924  rotulos conferidos: 209  links relativos conferidos: 2939`**
+com **`casos objetivos: 0`**
+([pouso_ruler_doc_anchors.log:1](evidence/bicho-cavando-12/pouso_ruler_doc_anchors.log#L1),
+[:2](evidence/bicho-cavando-12/pouso_ruler_doc_anchors.log#L2)). O zero não é novidade desta passada e não
+é crédito dela: é o mesmo caso que a rodada da 07c já explicou — o `../.tools/_chk_labels.py` deste
+arquivo só resolve na árvore primária, porque `.tools/` existe aqui e é gitignored, e num worktree de
+`cea4379` a mesma régua deu **1** caso objetivo com o resto das contagens idêntico. O que o **#29** continua
+dizendo continua valendo: nenhuma das duas réguas entra em `docs/evidence/`, então os **38 arquivos** são o
+corpus *sem* a evidência que esta seção aponta.
+`python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md docs/engine/*.md
+docs/melhorias-status.md AGENTS.md README.md` → **2 720 citações com número de linha conferidas**, **34**
+arquivos citados que não existem, **`numeros de linha fora do arquivo: 0`**
+([pouso_ruler_plan_cites.log:1](evidence/bicho-cavando-12/pouso_ruler_plan_cites.log#L1),
+[:2](evidence/bicho-cavando-12/pouso_ruler_plan_cites.log#L2),
+[:37](evidence/bicho-cavando-12/pouso_ruler_plan_cites.log#L37)); das 34 ausências, **três** são nomes de
+rascunho que a rodada da 16 criou em `.tools/` para conferir o `HEAD` da época
+(`.tools/_head_agents.md`, `.tools/_head_readme.md`, `.tools/_head_status.md`, linhas
+[:22-24](evidence/bicho-cavando-12/pouso_ruler_plan_cites.log#L22-L24) do mesmo stdout) — sujeira de
+instrumento gitignored que nenhum passo seguinte limpou, não promessa de peça; as **31** restantes são a
+família `[TARGET]` declarada como peça que não existe: `src/core/sim/tick_clock.gd`, `src/ai/reach.gd`,
+`tests/wolf_multiseed_census_test.gd` e as páginas de estrutura do doc 07
+([:3](evidence/bicho-cavando-12/pouso_ruler_plan_cites.log#L3) em diante). Nenhuma é ponteiro podre de um
+código que existiu e sumiu.
+`python .tools/verify_plan_ids.py docs/planos/12-bicho-cavando-voxel.md` → **105** identificadores em
+backticks, **5** ausentes em `src/` e `tests/`: `ca88f75`, `d80ac20`, `dcbcbe8`, `e312f58`, `ea78b1a`
+([pouso_ruler_plan_ids.log:1](evidence/bicho-cavando-12/pouso_ruler_plan_ids.log#L1),
+[:2](evidence/bicho-cavando-12/pouso_ruler_plan_ids.log#L2)) — conferidos um a um: os cinco são **SHA de
+commit** desta perna e da sua base, citados justamente como revisão, e nenhum identificador de código
+existente foi escrito em vão.
+
+**O vermelho intermitente do espalhamento, as duas testemunhas, e a atribuição de carga retirada.** A
+checagem é `espalhamento_nao_estoura_o_passo`, régua 25 ms, e ela já deu os dois lados na **mesma árvore de
+código** (`f77c1961…`/`4855f0e8…`), no **mesmo tick** e com a **mesma testemunha de palco**
+(`dens=3 componentes=2 separacao=55.9 m`):
+
+- vermelho — `[FAIL] espalhamento_nao_estoura_o_passo  perdidos=0  pior passo=96.48 ms (regua 25) ...
+  tick=403` com `== 255 checagens  1 falhas  59.9 s de teste ==`
+  ([fecho_ponta_espalhamento_vermelho.log:343](evidence/bicho-cavando-12/fecho_ponta_espalhamento_vermelho.log#L343),
+  [:357](evidence/bicho-cavando-12/fecho_ponta_espalhamento_vermelho.log#L357));
+- verde — o mesmo `[PASS]` em `15.81 ms` com `255 / 0 / 59.0 s` na corrida seguinte da mesma ponta
+  ([fecho_ponta_espalhamento_verde.log:343](evidence/bicho-cavando-12/fecho_ponta_espalhamento_verde.log#L343),
+  [:357](evidence/bicho-cavando-12/fecho_ponta_espalhamento_verde.log#L357));
+- e as quatro corridas deste pouso, todas verdes, em `16.12` / `15.69` ms no clone e `11.44` / `12.90` ms
+  na mergida ([pouso_clone_suite.log:343](evidence/bicho-cavando-12/pouso_clone_suite.log#L343),
+  [pouso_clone_suite_b.log:343](evidence/bicho-cavando-12/pouso_clone_suite_b.log#L343),
+  [pouso_merged_main_suite.log:343](evidence/bicho-cavando-12/pouso_merged_main_suite.log#L343),
+  [pouso_merged_main_suite_b.log:343](evidence/bicho-cavando-12/pouso_merged_main_suite_b.log#L343)).
+
+A rodada da ponta tinha uma explicação escrita para o vermelho: **carga na máquina, medida segundo a
+segundo**. Ela sai **retirada** aqui, e o motivo é o instrumento, não a dúvida. Quem gerou os três stdout
+de carga é [`.tools/_p12_load_sampler.ps1`](../.tools/_p12_load_sampler.ps1) (gitignored), e a linha que
+escolhe o processo é `$qe = Get-Process -Name QuantumEngine -ErrorAction SilentlyContinue` — conferido
+agora nesta máquina: `QuantumEngine` resolve para
+`C:\Program Files\JBL\QuantumENGINE\QuantumEngine.exe`, o app de áudio da JBL. O amostrador **nunca
+filtrou o processo Godot**, nem por nome nem por `ExecutablePath`, e o analisador de janela
+[`.tools/_carga_por_janela.py`](../.tools/_carga_por_janela.py) divide o CPU acumulado **desse** processo
+pela duração da janela e imprime `% de um nucleo`. A coluna de carga do sistema, essa, não chegou: nos
+três stdout arquivados ela tem três formas diferentes — `fecho_ponta_carga.log` são **90** linhas com
+`load=%` vazio (o `PercentProcessorTime` do CIM devolveu nada em 90 de 90) e sem `qe_cpu=`
+([:1](evidence/bicho-cavando-12/fecho_ponta_carga.log#L1)); `pouso_carga_merged_main_a.log` são **95**
+linhas com só `qe_delta`, nenhuma coluna `load=`
+([:1](evidence/bicho-cavando-12/pouso_carga_merged_main_a.log#L1)); `pouso_carga_merged_main_b.log` são
+**63** linhas completas, com `load=` entre 5 % e 22 % e `qe_cpu=37160,44s`
+([:1](evidence/bicho-cavando-12/pouso_carga_merged_main_b.log#L1)). Logo nenhum número impresso sustenta a
+frase "a carga está registrada segundo a segundo" — e o vermelho volta a estar **sem atribuição**, escrito
+assim, com as duas testemunhas versionadas e a régua em 25 ms intocada. Nada foi silenciado: o `1 falhas`
+do log vermelho continua no log, o `[FAIL]` continua na linha 343 e o critério não foi abaixado.
+
+Isso vale para a mesa do §4 pelo mesmo motivo. A linha `COLHEITA DE MALHA SEM CAVAR` repetiu **a
+estrutura** dígito a dígito nas cinco corridas do mesmo instrumento (fila do palco `remeshes=26 frames=13`,
+lote `edicoes=5 frames=3 fila_max=5`) e **não repetiu o tempo**: `worst_lote_ms` dá 166,2 / 165,8 / 164,0
+ms nas três da ponta
+([clone_runner_reactions.log:527](evidence/bicho-cavando-12/clone_runner_reactions.log#L527),
+[head_runner_run1.log:527](evidence/bicho-cavando-12/head_runner_run1.log#L527),
+[head_runner_run2.log:527](evidence/bicho-cavando-12/head_runner_run2.log#L527)) e 261,7 / 247,7 ms nas
+duas deste pouso ([pouso_clone_runner_reactions.log:527](evidence/bicho-cavando-12/pouso_clone_runner_reactions.log#L527),
+[pouso_merged_main_runner_reactions.log:527](evidence/bicho-cavando-12/pouso_merged_main_runner_reactions.log#L527)),
+com `worst_us` de 363 793 → 555 136 µs. É a mesma direção do pico do espalhamento e do `sim_step` da
+mergida: **o que é determinístico neste lote é a contagem, não o microssegundo** — e a frase da rodada
+anterior ("o lote e o `edit_cost` repetem dígito a dígito") só é verdadeira para as três corridas da ponta,
+não para o lote todo. Ela fica como está, com esta correção ao lado; re-escrevê-la sem corrida nova seria
+trocar número por preferência.
+
+**Furo #31 — o amostrador de carga filtrou o processo errado, e a régua de janela herdou o número dele.**
+Aberto por esta passada, com dono escrito antes de qualquer conserto. O defeito não mora em código
+versionado: mora no instrumento gitignored [`.tools/_p12_load_sampler.ps1`](../.tools/_p12_load_sampler.ps1),
+linha 6 (o filtro por nome de processo), e no seu leitor
+[`.tools/_carga_por_janela.py`](../.tools/_carga_por_janela.py), que imprime a fração daquele processo como
+se fosse a máquina. A casa já
+tem a regra que o proíbe, registrada na atribuição de pico: **filtrar por `ExecutablePath` dentro do
+projeto, não por nome de processo**, e não confundir headless de outro projeto com contaminação. O que
+fecha o #31 é um número, não uma frase: um amostrador que nomeie o PID do `godot_headless` da corrida,
+imprima o CPU dele por janela e rode **pareado** com uma janela vermelha e uma verde da mesma árvore — se
+o CPU do próprio Godot não separar as duas, a atribuição é outra e procura-se em outro lugar. Enquanto
+isso, a leitura honesta do `96.48 ms` é a do furo #20, que a perna 19 já escreveu para o `trips`: o passo é
+cronometrado em **parede de relógio**, então um pico de 96 ms com `perdidos=0` e `tick=403` idêntico é um
+portão de velocidade de máquina, e portão de velocidade de máquina não se atribui a um processo que não é
+o medido. E o inverso também fica escrito: o que esta passada **não** pode afirmar é que a máquina estava
+livre nas dez janelas acima, porque a guarda que provaria isso é justamente o instrumento que o #31
+retira. As corridas foram uma por vez e sem outro lote de timing em paralelo — isso é como elas foram
+rodadas; "e nada mais consumia a máquina" é o que falta.
+
+**O que nada disso fecha.** (0) Gate de fase fecha o dono (mandato 4); nenhum número desta seção encerra
+P0 ou P1. (1) `block_changed` continua **sem consumidor nenhum** em `src/`: a árvore do pouso tem exatamente
+duas ocorrências, a declaração ([src/world/voxel_world.gd:6](../src/world/voxel_world.gd#L6)) e o emit
+([:276](../src/world/voxel_world.gd#L276)), e quem assina o sinal é a 17 — o elo seguinte da fila. (2) O
+par antes/depois do `remesh` gerado pela pata continua débito: a mesa do §4 é o estado **sem** cavar, e
+acabou de ganhar um segundo motivo para ser re-medida (a coluna de tempo acima). (3) O vermelho do
+espalhamento voltou a estar **sem dono**, e o #31 é o que impede que ele volte a ter um dono de mentira.
+(4) O par de vazamento do quit segue aberto: as **quatro** corridas de suíte deste pouso imprimem
+`WARNING: 4 ObjectDB instances were leaked at exit` na linha 358 com `ERROR: 2 resources still in use at
+exit` na 360 — os mesmos `4` e `2` das pernas anteriores, agora também no clone e na mergida, duas vezes
+cada ([:358](evidence/bicho-cavando-12/pouso_clone_suite.log#L358),
+[:360](evidence/bicho-cavando-12/pouso_clone_suite.log#L360)) — e as duas testemunhas do vermelho/verde da
+ponta não imprimem nenhum dos dois. (5) Alocação no caminho quente continua sem medição própria. (6) Os
+`.uid` de `tests/` seguem fora do git (#25): o `git status` desta árvore mostra exatamente os dois `??`,
+`tests/audio_test.gd.uid` e `tests/audio_live_probe.gd.uid`, e nada nesta perna os comita. (7) **#28** e
+**#29** continuam abertos, **#30** fechou com a isenção apertada, e **#31** nasce aqui. (8)
+`Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram tocados: o lote
+não encosta em `src/world/aether_field.gd`, `src/persistence/tick_journal.gd` nem `src/world/world_gen.gd`
+(`git diff --name-only dcbcbe8 fa94cb5` sobre os três devolve vazio), e o journal do clone está desligado
+no diagnóstico (`"journal":{"active":false,...,"records":0}`). (9) A fila viva é **17 → 18 → 20 → 13**.
+
+**A suíte e as três réguas re-rodadas na árvore deste registro**, que só acrescenta `.md` e `.log`:
+`git diff --name-only fa94cb5 -- src tests` devolve **0 arquivos** nesta árvore antes do commit, então as
+árvores de código continuam `f77c1961bb8065ea5a78b24677a36c5840891c75` e
+`4855f0e85c883573bc374125b4b016ad1e775711` e o número do pin vale para cá por **identidade de árvore**, não
+por memória. As duas corridas, uma por vez, exit 0: **`== 255 checagens  0 falhas  62.0 s de teste ==`**
+([registro_rerun_suite_a.log:357](evidence/bicho-cavando-12/registro_rerun_suite_a.log#L357)) e **`== 255
+checagens  0 falhas  62.2 s de teste ==`**
+([registro_rerun_suite_b.log:357](evidence/bicho-cavando-12/registro_rerun_suite_b.log#L357)), com **0**
+`[FAIL]` e **0** `SCRIPT ERROR` contados por `grep -c` nos dois stdout, e as duas imprimindo o par de
+vazamento no rodapé — `WARNING: 4 ObjectDB instances were leaked at exit`
+([:358](evidence/bicho-cavando-12/registro_rerun_suite_a.log#L358)) com `ERROR: 2 resources still in use at
+exit` ([:360](evidence/bicho-cavando-12/registro_rerun_suite_a.log#L360)) — o que deixa o item (4) acima
+ainda aberto em vez de contá-lo resolvido. A testemunha de palco se repete nas **oito** corridas desta
+checagem (`dens=3 componentes=2 separacao=55.9 m`, sempre no `tick=403`), e o pior passo sai **17.01 ms**
+([registro_rerun_suite_a.log:343](evidence/bicho-cavando-12/registro_rerun_suite_a.log#L343)) e **15.61 ms**
+([registro_rerun_suite_b.log:343](evidence/bicho-cavando-12/registro_rerun_suite_b.log#L343)), somando-se
+aos cinco verdes de 11,44 a 16,12 ms e ao único vermelho de 96,48 ms da rodada da ponta. Uma amostra só de
+`PercentProcessorTime` de `_Total`, lida antes da segunda corrida, devolveu **8 %** — e é a mesma chamada
+CIM que no stdout de carga da ponta não devolveu nada em **90** de **90** linhas
+([fecho_ponta_carga.log:1](evidence/bicho-cavando-12/fecho_ponta_carga.log#L1)), o que diz que a coluna
+vazia do amostrador era falha de amostragem, não ausência de carga. O que essa amostra **não** diz é nada
+sobre as janelas das dez corridas acima: uma leitura solta não é a guarda pareada que o furo #31 pede, e
+continua sendo ela a única atribuição que falta ao `96.48`.
+
+As três réguas, na árvore deste registro, cada uma rodada duas vezes — a segunda depois de escrever os
+números da primeira, para que "escrever número" não mova contagem: `python tools/check_doc_anchors.py` dá
+**38 arquivos · 2 927 ponteiros · 209 rótulos · 3 023 links** com `casos objetivos: 0`
+([registro_ruler_doc_anchors.log:1](evidence/bicho-cavando-12/registro_ruler_doc_anchors.log#L1),
+[:2](evidence/bicho-cavando-12/registro_ruler_doc_anchors.log#L2)) e, na segunda rodada, os mesmos
+**38 · 2 927 · 209 · 3 023** com o mesmo `casos objetivos: 0`
+([registro_ruler_doc_anchors_b.log:1](evidence/bicho-cavando-12/registro_ruler_doc_anchors_b.log#L1),
+[:2](evidence/bicho-cavando-12/registro_ruler_doc_anchors_b.log#L2)); o acréscimo sobre a árvore do pouso
+(**2 924 · 209 · 2 939** em [pouso_ruler_doc_anchors.log:1](evidence/bicho-cavando-12/pouso_ruler_doc_anchors.log#L1))
+é este registro, que aponta para os stdout novos, e não linha velha que se moveu.
+`python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md docs/engine/*.md
+docs/melhorias-status.md AGENTS.md README.md` → **2 723 citações com número de linha conferidas**, **34**
+arquivos citados que não existem, `numeros de linha fora do arquivo: 0`
+([registro_ruler_plan_cites.log:1](evidence/bicho-cavando-12/registro_ruler_plan_cites.log#L1),
+[:2](evidence/bicho-cavando-12/registro_ruler_plan_cites.log#L2),
+[:37](evidence/bicho-cavando-12/registro_ruler_plan_cites.log#L37)) e idem na segunda
+([registro_ruler_plan_cites_b.log:1](evidence/bicho-cavando-12/registro_ruler_plan_cites_b.log#L1),
+[:37](evidence/bicho-cavando-12/registro_ruler_plan_cites_b.log#L37)). Que nenhum ponteiro velho se moveu
+com este registro é conferido, não supuesto: a maior linha deste arquivo que o corpus aponta é **4495**,
+contada por `grep -rhoE "melhorias-status\.md(:[0-9]+(-[0-9]+)?|#L[0-9]+(-[0-9]+)?)" docs AGENTS.md
+README.md | grep -oE "[0-9]+" | sort -n | tail -1` (as formas `:` e `#L` juntas, intervalos incluídos), e a
+maior linha do `AGENTS.md` que alguém aponta é **477** pelo mesmo padrão com o nome trocado; as três edições
+do `AGENTS.md` caem em `:533`, `:564-566` e `:619` em diante, e as deste arquivo em `:592` (neutra: duas
+linhas por duas), `:5643` e `:5705` em diante — todas **depois** do maior número citado em cada um, então
+quem aponta para antes de 477/4495 continua apontando para a mesma linha. É o furo **#28**
+pelo lado inverso: a régua não veria um ponteiro velho cujo alvo continua dentro do arquivo, por isso a
+conta é feita à mão e arquivada aqui. `python .tools/verify_plan_ids.py
+docs/planos/12-bicho-cavando-voxel.md` → **105** identificadores em backticks com os mesmos **5** SHA
+ausentes — `ca88f75`, `d80ac20`, `dcbcbe8`, `e312f58`, `ea78b1a`
+([registro_ruler_plan_ids.log:1](evidence/bicho-cavando-12/registro_ruler_plan_ids.log#L1),
+[:2](evidence/bicho-cavando-12/registro_ruler_plan_ids.log#L2), idem em
+[registro_ruler_plan_ids_b.log:1](evidence/bicho-cavando-12/registro_ruler_plan_ids_b.log#L1)).
+
+**Publicação provada, não afirmada.** Conferido nesta passada, **antes** de qualquer push:
+`git ls-remote --heads origin` trazia `main` em `dcbcbe823e6202750803cbfb3e84420553fc8185` e **nenhuma**
+linha para `feat/bicho-cavando-12` — nem o merge do código (`fa94cb5`) nem a branch da perna tinham subido,
+enquanto a 16, a 11 e a 19 têm as branches remotas delas. É débito desta rodada de pouso, não do gate, e a
+casa exige o `ls-remote` como única prova exatamente porque este repositório já teve um `origin` apontando
+para ele mesmo. Sobe agora, nesta ordem: a `feat/bicho-cavando-12` na ponta `d62c066`, esta branch de
+registro, o merge do registro na `main` por cima de `fa94cb5`, e o `git ls-remote --heads origin` depois
+disso conferindo as três refs. **Nenhuma branch foi deletada** — nem a local, nem a remota, nem a `main`. O
+merge do registro move a ponta da `main` e não move o pin: `git diff --name-only fa94cb5 -- src tests`
+devolve vazio nesta árvore, então `f77c1961…` e `4855f0e8…` continuam sendo as árvores de código medidas de
+que cada número acima sai — pin é identidade de árvore, não SHA de documento. Os artefatos da pasta têm
+`artifacts.sha256` regenerado com **44** entradas e conferido por `sha256sum -c`, que devolve 44 linhas `OK`
+e nenhuma falha, exit 0.
