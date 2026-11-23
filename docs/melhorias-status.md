@@ -89,6 +89,29 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 
 ## Feito nesta sessão
 
+- **af-bench re-medido na árvore do pin: a mesma semente devolve o mesmo hash nas 3 execuções, agora
+  contra o mundo das pernas 16 e 19 (dossiê 07b, branch `bench/af-bench-boot-walk-07b`, merge
+  `35959e0`).** A peça já existia, medida na base `99d1167` (hash `a6addd…`); o AGENTS.md manda
+  re-medir quando a `main` andou, e as pernas 16 (tocas) e 19 (auto-pulo) mexeram em `src/` depois
+  daquilo. Trazida a `main` para dentro do bench (`git merge main --no-ff`, merge `35959e0`) com o `src/`
+  ficando **byte-idêntico ao pin `9b2c65a`** (`git rev-parse HEAD:src` = `64f137bcb1f8…`), as três
+  corridas serial de 12 000 ticks deram exit 0, `records == 12000`, `dropped_ticks == 0` e o **mesmo
+  hash final `fd9b41e0dc3ae2eb5f4c76cd6467ffc8d6204134354e5f765fbc1f6f6d604a32`** nas três — com os três
+  `.jsonl` byte-idênticos (`3e6aaf49b88fc37c…`, 888 894 bytes cada). O hash mudou de `a6addd…` para
+  `fd9b41e0…` **porque o mundo mudou** (tocas/spawn na projeção de Éter+lobos), não o instrumento: o
+  valor antigo fica como registro da base `99d1167`, não reescrito. Nesta rodada o runner ganhou uma
+  linha de `OBSERVACAO` com `gen_ms`/`mesh_ms`/`worst_sim_ms` (o `diagnostics()` de
+  [`src/main.gd:1161`](../src/main.gd#L1161)/[:1180](../src/main.gd#L1180) já os tinha, o log não os
+  mostrava); é `print`, não gate, e a rodada dupla confirmou que ele **não move o hash**. Tempo: parede
+  46,4 s médios, dentro do runner 45,8 s (~262 ticks/s), `gen_ms≈940`/`mesh_ms≈4317`/`worst_sim_ms 13–15`
+  por corrida. **O que isso NÃO fecha:** (a) gate de fase fecha o dono do repositório, não esta peça
+  (mandato 4); (b) o braço do **bake-off** (dossiê 07 §4) continua faltando — um braço só é medido aqui,
+  não dois com `triangles`; (c) o **relógio da guarda** (`estouros_guarda`) segue defeito aberto — agora
+  16 estouros nos **mesmos** 8 pares tick/lobo nas três corridas, o que deixa a triplicata "a mesma
+  sorte", não prova limpa do determinismo da projeção. Suíte re-rodada na ponta: **255 / 0 / 47,4 s**,
+  exit 0. Evidência e as âncoras re-derivadas por conteúdo:
+  [readback.md](evidence/af-bench-boot-walk/readback.md), artefatos conferidos por
+  [artifacts.sha256](evidence/af-bench-boot-walk/artifacts.sha256) (`sha256sum -c` — os quatro OK).
 - **Tocas da alcateia: a matilha nasce espalhada em grupos e o censo diz em quantas tocas cada
   grupo mora (dossiê 16, branch `feat/tocas-da-alcateia-16`, base `99d1167`, ponta de código
   `90c152f`, docs `edab9c8` — **pousada** na `main` pelo merge `--no-ff` `9b2c65a` de 2026-11-23, o pin novo).** O pedido do dono, de
@@ -783,7 +806,11 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
 **P0 — fundação determinística** (gate atual: nenhum fechado)
 - [x] `state_hash()` mínimo + JSONL `[tick,hash]` sob demanda (item 1, validado nesta máquina).
 - [ ] Estado inicial completo, comandos/RNG e ordem autoritativa para replay (item 2).
-- [ ] `af-bench --scenario boot_walk_10min` com hash estável em 3 execuções.
+- [x] `af-bench --scenario boot_walk_10min` com hash estável em 3 execuções — re-medido na árvore do
+      pin `9b2c65a` (merge `35959e0`): hash final `fd9b41e0…` nas três, exit 0, `records == 12000`,
+      `dropped_ticks == 0` ([readback](evidence/af-bench-boot-walk/readback.md)). **Não fecha gate de
+      fase** (mandato 4, fecha o dono do repo) e o relógio da guarda (`estouros_guarda=16`, nos mesmos
+      8 pares tick/lobo) segue canal aberto — a triplicata é "a mesma sorte", não prova limpa.
 - [ ] bake-off de voxel decidido com números (as alturas já estão certas: geração 942 ms e
       malha 4682 ms no boot medido; falta a comparação entre abordagens, não o número).
 - [ ] `docs/engine/simclock.md` derivado de [sim_clock.gd](../src/core/sim_clock.gd).
@@ -1548,6 +1575,32 @@ são todas atuais e conferem no clone: rastros 15/15, som 16/16, mão 25/25, RNG
 registra). Isso só é verdade porque [`.gitattributes`](../.gitattributes) congela `docs/evidence`
 com `-text`: sem essa linha o `* text=auto eol=lf` do mesmo arquivo reescreveria os 51 arquivos
 de texto da pasta que carregam CR e nenhum SHA publicado bateria (furo #11).
+
+### af-bench `boot_walk_10min` — re-medido na árvore do pin `9b2c65a` (2026-11-23, `bench/af-bench-boot-walk-07b`)
+
+Medição serial, máquina livre, engine `4.7.2.stable.official.ed1daf0bf`. Três corridas de 12 000 ticks
+com `dt` fixo, cada uma em `.jsonl` novo (o `TickJournal.start()` recusa caminho existente). Critério do
+dossiê 07 §6: `records == 12000`, `dropped_ticks == 0`, hash da última linha idêntico nas três, exit 0.
+
+| Corrida | exit | `records` | `dropped_ticks` | hash última linha | SHA-256 do `.jsonl` | `gen_ms` | `mesh_ms` | `worst_sim_ms` | runner (s) | parede (s) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `run-1` | 0 | 12 000 | 0 | `fd9b41e0…6d604a32` | `3e6aaf49…8684661f` | 942,5 | 4 314,3 | 13,09 | 45,978 | 46,619 |
+| `run-2` | 0 | 12 000 | 0 | `fd9b41e0…6d604a32` | `3e6aaf49…8684661f` | 945,9 | 4 318,9 | 14,60 | 45,719 | 46,324 |
+| `run-3` | 0 | 12 000 | 0 | `fd9b41e0…6d604a32` | `3e6aaf49…8684661f` | 939,5 | 4 319,2 | 14,70 | 45,724 | 46,331 |
+
+Os três `.jsonl` são byte-idênticos (as 12 000 linhas, não só a última): `3e6aaf49b88fc37c34a619ed6d957604b07b674d90a10ea0b6137c238684661f`,
+888 894 bytes cada. O hash cheio é `fd9b41e0dc3ae2eb5f4c76cd6467ffc8d6204134354e5f765fbc1f6f6d604a32`. O
+`gen_ms`/`mesh_ms`/`worst_sim_ms` vêm da linha nova de `OBSERVACAO` que o runner passou a imprimir do
+`diagnostics()` — a rodada dupla (com e sem a linha) deu o mesmo hash, prova de que `print` não entra no
+estado. O `estouros_guarda` foi 16 nas três, nos mesmos oito pares tick/lobo (só o `last_us` oscila), o
+que mantém o argumento honesto: "a mesma sorte", não prova limpa — o canal do relógio da guarda
+([`src/ai/behavior/bt_tree.gd:130-137`](../src/ai/behavior/bt_tree.gd#L130-L137)) segue aberto.
+
+O hash desta árvore (`fd9b41e0…`) **não** é o da base `99d1167` (`a6addd…`) nem deve ser confundido com
+ele: entre as duas pontas entraram as pernas 16 e 19, que mudaram spawn/tocas na projeção. A roda mede
+`src/` idêntico ao pin `9b2c65a` (`64f137bcb1f8…`), e a suíte re-rodada dá **255 / 0 / 47,4 s**, exit 0.
+Nada aqui fecha gate de fase nem o bake-off (§4) — só o instrumento e a medição nesta revisão. Prosa e
+âncoras por extenso: [readback.md](evidence/af-bench-boot-walk/readback.md).
 
 ### Porte do corpo em terceira pessoa — publicado em a8967e0
 
@@ -5005,3 +5058,25 @@ fica: nenhuma branch é deletada nesta casa sem motivo aberto. O pouso é o `git
 cujo SHA aparece na primeira fila de `git log --first-parent main`, com a régua de âncoras re-corrida na
 árvore mergida antes do push e a prova de publicação em `git ls-remote --heads origin` — não no código
 de saída do push, que já mentiu aqui.
+
+## Régua da rodada af-bench 07b — saída literal (2026-11-23, worktree `bench/af-bench-boot-walk-07b`)
+
+Publicada no fim do arquivo de propósito: status.md é longo e cheio de ponteiros por número de linha, e
+inserir texto no meio desloca tudo abaixo deles. As três réguas foram corridas DENTRO deste worktree
+(árvore do pin 9b2c65a), que é a árvore que a rodada mede.
+
+- check_doc_anchors.py: `casos objetivos: 1`. O único caso é um ponteiro relativo que só resolve na árvore
+  primária; na árvore primária esta mesma régua devolve 0 casos, então este é o único caso tolerado dentro
+  de um worktree. Na primeira passada havia um caso a mais — um ponteiro de doc para doc, do dossiê 01,
+  que a nota desta rodada empurrou para uma linha em branco; foi re-derivado por conteúdo antes do publish,
+  e agora só o caso tolerado resta.
+- verify_plan_cites.py (com AETHER_ROOT apontando para este worktree e o comando rodado de dentro dele,
+  contra a readback, este status e o dossiê 07): `numeros de linha fora do arquivo: 0`, exit 0. Os
+  arquivos que ela lista como ausentes são o diretório gitignored dos artefatos locais (jornais e logs que
+  não são versionados) e os caminhos-armadilha que os próprios dossiês nomeiam como inexistentes.
+- verify_plan_ids.py (sobre a readback, este status e os dossiês 01 e 07): exit 0. Os identificadores de
+  código que a nota desta rodada cita resolvem em src/; os tokens que ela lista como ausentes são SHAs de
+  commit e nomes de ferramenta, a mesma classe que já percorre todo o status.
+
+Nada aqui fecha gate de fase. A rodada só repõe o instrumento e a medição na árvore nova; a prova do
+empurrão de hash (da base antiga para a de hoje) está na seção própria da readback e na nota acima.
