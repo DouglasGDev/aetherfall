@@ -1,0 +1,37 @@
+citacoes com numero de linha conferidas: 2669
+arquivos citados que nao existem: 34
+   FALTA docs/design/06-godot-architecture.md -> src/core/sim/entity_store.gd
+   FALTA docs/design/06-godot-architecture.md -> src/core/sim/tick_clock.gd
+   FALTA docs/design/07-project-structure.md -> src/ai/llm/oracle_service.gd
+   FALTA docs/design/07-project-structure.md -> src/ai/runtime/mind_server.gd
+   FALTA docs/design/07-project-structure.md -> src/audio/audio_service.gd
+   FALTA docs/design/07-project-structure.md -> src/core/boot/game_boot.gd
+   FALTA docs/design/07-project-structure.md -> src/core/events/event_bus.gd
+   FALTA docs/design/07-project-structure.md -> src/core/registry/content_registry.gd
+   FALTA docs/design/07-project-structure.md -> src/core/settings/settings_service.gd
+   FALTA docs/design/07-project-structure.md -> src/core/sim/sim_clock.gd
+   FALTA docs/design/07-project-structure.md -> src/net/session/session_service.gd
+   FALTA docs/design/07-project-structure.md -> src/persistence/ledger_db.gd
+   FALTA docs/design/07-project-structure.md -> src/util/debug/dev_menu.gd
+   FALTA docs/design/07-project-structure.md -> src/world/aether/aether_field.gd
+   FALTA docs/design/07-project-structure.md -> src/world/chunks/chunk_store.gd
+   FALTA docs/design/07-project-structure.md -> src/world/slow_sim/loom.gd
+   FALTA docs/design/10-world-layers-and-block-physics.md -> src/entities/falling_block.gd
+   FALTA docs/engine/simclock.md -> src/core/sim/entity_store.gd
+   FALTA docs/engine/simclock.md -> src/core/sim/tick_clock.gd
+   FALTA docs/melhorias-status.md -> .tools/_head_agents.md
+   FALTA docs/melhorias-status.md -> .tools/_head_readme.md
+   FALTA docs/melhorias-status.md -> .tools/_head_status.md
+   FALTA docs/melhorias-status.md -> src/ai/reach.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/entity_store.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/tick_clock.gd
+   FALTA docs/melhorias-status.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/01-estado-inicial-e-ordem-autoritativa.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/02-censo-multi-semente.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/06-decompor-main-gd.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md -> src/ai/reach.gd
+   FALTA docs/planos/README.md -> src/ai/reach.gd
+   FALTA docs/planos/README.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/README.md -> tests/wolf_multiseed_census_test.gd
+numeros de linha fora do arquivo: 0

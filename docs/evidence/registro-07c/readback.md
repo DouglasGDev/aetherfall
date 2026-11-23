@@ -10,6 +10,13 @@ trabalho do [AGENTS.md](../../../AGENTS.md), item 6, diz que número publicado �
 e um log que só existe nesta máquina não é conferível por ninguém que clone o repositório. Nenhum arquivo de
 `src/` nem de `tests/` foi tocado aqui — `git diff --name-only b1e1dd4..HEAD -- src tests` devolve vazio.
 
+Esta branch pousou na `main` pelo merge `--no-ff` **`5178c5ad9a7efe8283b67bb9cbf04da3774b73ed`**, e a pasta
+cresceu **quatro** arquivos para que o pouso fique conferível do mesmo jeito: a suíte re-rodada na `main`
+mergida, a suíte re-rodada na ponta do registro dela, e as duas réguas re-corridas nesta árvore. Re-rodar
+aqui tem motivo próprio — o [`docs/melhorias-status.md`](../../melhorias-status.md) da `main` mergida carrega
+**esta pasta** dentro do corpus das réguas, então os números publicados naquela seção não são os de
+`214df5c`.
+
 ## 1. O que está nesta pasta
 
 | Arquivo | O que é |
@@ -24,15 +31,28 @@ e um log que só existe nesta máquina não é conferível por ninguém que clon
 | `registro_branch_suite.log` | a suíte re-rodada na ponta da branch do registro — `255 / 0 / 47.9 s` |
 | `merged_main_suite.log` | a suíte re-rodada na `main` mergida (`f7fef97`) — `255 / 0 / 47.4 s` |
 | `evidence_branch_suite.log` | a suíte re-rodada nesta ponta, depois de arquivar tudo — `255 / 0 / 47.6 s` |
+| `merged_main_5178c5a_suite.log` | a suíte re-rodada na `main` mergida (`5178c5a`) — `255 / 0 / 47.6 s`, exit 0 |
+| `registro_tip_suite.log` | a suíte re-rodada na ponta do registro do pouso, com esta pasta já no corpus — `255 / 0 / 47.5 s`, exit 0 |
 | `ruler_doc_anchors.log` | saída de `python tools/check_doc_anchors.py` na árvore desta branch |
 | `ruler_plan_cites.log` | saída de `python .tools/verify_plan_cites.py …` na árvore desta branch |
+| `ruler_doc_anchors_tip.log` | a mesma régua, re-corrida na ponta do registro do pouso |
+| `ruler_plan_cites_tip.log` | a mesma régua, re-corrida na ponta do registro do pouso |
 | `artifacts.sha256` | SHA-256 de cada arquivo acima (menos ele próprio); confere com `sha256sum -c artifacts.sha256` |
 
-Os dez stdout são **stdout+stderr literais** de cada corrida, sem recorte: a linha citada no status está na
+Os doze stdout de corrida e as quatro saídas de régua são **stdout+stderr literais** de cada execução, sem recorte: a linha citada no status está na
 linha que o status diz, e o rodapé é o rodapé real do processo. Os dois caminhos absolutos que aparecem
 dentro de `bench_clean.log` e `runner_journal.log` (`C:/Aetherfall/.qoder/clones/clean-07c/.tools/af-check/…`
 e a pasta de `user://` do teste do journal) são o que o processo imprimiu na hora — não são instruções nem
 promessa de que o diretório exista para quem clona.
+
+**Qual ponta é cada linha.** A ponta do registro não é um instante só: `registro_tip_suite.log` é a corrida
+feita na árvore de `8d64f49` — os quatro logs novos já dentro do git, a seção do status ainda só na mão — e
+os dois `ruler_*_tip.log` são a corrida na árvore **depois** de a seção estar escrita, que é a deste commit.
+As duas instâncias medem o mesmo contrato porque medem o mesmo código: `git rev-parse HEAD:src` e
+`HEAD:tests` respondem `100af75ded6d50b6a26120be352cf72770f97e80` / `77fcb0510525a82d39bb799ff1376ff0fb6eb17b`,
+os dois valores do pin `cea4379`, e `git diff --name-only cea4379..HEAD -- src tests` devolve vazio. Quem
+re-rodar a suíte em qualquer commit desta branch depois do `5178c5a` tem de ver `255 / 0`; o tempo de parede
+não é contrato e varia de corrida para corrida.
 
 ## 2. A revisão pineada e as árvores
 
@@ -41,7 +61,8 @@ promessa de que o diretório exista para quem clona.
 | pin medido | **`cea437959fd0867f65a2d2e2b40663df8dcd753e`** — merge `--no-ff` de `bench/bake-off-voxel-07c`, pais `166af71` e `4355935`, **33 arquivos, +1 747/−106** |
 | árvores do pin | `git rev-parse cea4379:src` = `100af75ded6d50b6a26120be352cf72770f97e80` · `:tests` = `77fcb0510525a82d39bb799ff1376ff0fb6eb17b` |
 | base desta branch | `b1e1dd4e5de2d04e7d2df03ade9b63f620c16040` — `:src`/`:tests` **idênticos** aos do pin (documento puro), então o contrato 255 / 0 se transmite por identidade de árvore |
-| engine | `Godot Engine v4.7.2.stable.official.ed1daf0bf` — a primeira linha de **todos** os dez stdout |
+| `main` mergida | **`5178c5ad9a7efe8283b67bb9cbf04da3774b73ed`** — merge `--no-ff` desta branch, pais `b1e1dd4` e `214df5c`, **15 arquivos, +2 738/−12**, todos `docs/`; `git rev-parse 5178c5a:src` / `:tests` devolvem `100af75d…` / `77fcb051…`, **as mesmas duas árvores do pin** |
+| engine | `Godot Engine v4.7.2.stable.official.ed1daf0bf` — a primeira linha de **todos** os doze stdout |
 | semente | a da casa, `SEED := 20261116` |
 
 ## 3. O comando, serial, máquina livre
@@ -63,10 +84,17 @@ K="C:/Aetherfall/.qoder/clones/clean-07c"
 Antes da primeira corrida e entre cada uma delas, a guarda de contaminação: nenhum processo do engine vivo
 além do próprio run (`Get-CimInstance Win32_Process -Filter "Name like '%Godot%'"`). As cinco linhas do
 rodapé da mesa estão transcritas na seção 1; a de `af_bench` e a do bake-off também aparecem no
-[registro](../../melhorias-status.md) com os números da linha de gate. As suítes dos três parágrafos
-finais são o mesmo `--headless --path <árvore> tests/smoke_test.tscn` rodado em cada árvore dele (clone,
-ponta do registro, `main` mergida) e, para esta ponta, `<árvore>` é `C:/Aetherfall` com a branch
-`docs/evidencia-clone-limpo-07c` checkoutada.
+[registro](../../melhorias-status.md) com os números da linha de gate. As suítes dos parágrafos finais são o
+mesmo `--headless --path <árvore> tests/smoke_test.tscn` rodado em cada árvore dele — clone limpo, ponta do
+registro, `main` mergida (`5178c5a`) e ponta do registro do pouso — e nas duas últimas `<árvore>` é
+`C:/Aetherfall` com a branch checkoutada (`docs/evidencia-clone-limpo-07c`, depois
+`docs/registro-evidencia-merge-07c`). As réguas, na mesma ordem das árvores do registro e do pouso:
+
+```sh
+python tools/check_doc_anchors.py                                   # ruler_doc_anchors.log / ruler_doc_anchors_tip.log
+python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md \
+  docs/engine/*.md docs/melhorias-status.md AGENTS.md README.md     # ruler_plan_cites.log / ruler_plan_cites_tip.log
+```
 
 ## 4. As linhas que a mesa do registro cita, conferidas no arquivo
 
@@ -85,16 +113,28 @@ ponta do registro, `main` mergida) e, para esta ponta, `<árvore>` é `C:/Aether
   logo abaixo (`bt_tree.gd:130-137` devolve `FAILURE` pelo relógio de parede e a folha suprimida pode
   escrever Éter ou crença, que entram na projeção). Este log não conserta isso; deixa o número versionado.
 
-Contagem feita sobre os dez stdout: **zero** linhas `[FAIL]`, **zero** `SCRIPT ERROR`, e a coluna
-`"llm":{}` vazia nas **quatro** suítes — nenhuma credencial entra aqui. O par do quit aparece nos dois
+Contagem feita sobre os doze stdout: **zero** linhas `[FAIL]`, **zero** `SCRIPT ERROR`, e a coluna
+`"llm":{}` vazia nas **quatro** suítes — nenhuma credencial entra aqui. O par do quit aparece nos **quatro**
 stdout que foram capturados com `2>&1`: `suite.log:358` `WARNING: 4 ObjectDB instances were leaked at exit`
 e `:360` `ERROR: 2 resources still in use at exit`, e os mesmos `:358`/`:360` em
-`evidence_branch_suite.log`. De `registro_branch_suite.log` e `merged_main_suite.log` — copiados de
-`.tools/`, onde a corrida foi gravada só com stdout — **não** sai nenhuma linha `WARNING` nem `ERROR`, então
-a ausência do par neles é do redirecionamento, não medida. É o par cuja atribuição continua **aberta** no
-status — arquivar o log não fecha o débito, só o deixa visível para quem clona.
+`evidence_branch_suite.log`, `merged_main_5178c5a_suite.log` e `registro_tip_suite.log`. De
+`registro_branch_suite.log` e `merged_main_suite.log` — copiados de `.tools/`, onde a corrida foi gravada só
+com stdout — **não** sai nenhuma linha `WARNING` nem `ERROR`, então a ausência do par neles é do
+redirecionamento, não medida. É o par cuja atribuição continua **aberta** no
+[status](../../melhorias-status.md) — arquivar o log não fecha o débito: as **quatro** ocorrências têm o
+mesmo `4` e o mesmo `2`, o que só reforça que é determinístico e não carga da máquina.
 
-## 5. O que nada disso fecha
+## 5. As réguas da ponta, e o caso que a primeira corrida pegou
+
+Os dois arquivos `ruler_*_tip.log` são a corrida **final**, na árvore que já tem os quatro logs novos e a
+seção do status que os cita: `38 arquivos · 2 854 ponteiros · 197 rótulos · 2 871 links · casos objetivos: 0`
+e `2 669 citações conferidas · 34 arquivos ausentes · numeros de linha fora do arquivo: 0`, exit 0 dos dois.
+A corrida **anterior** das mesmas réguas, feita quando o `>` do redirecionamento ainda não tinha escrito
+`ruler_plan_cites_tip.log`, devolveu **`casos objetivos: 1`** com exit 1 — `LINK QUEBRADO` na linha 5398 do
+status. É o instrumento funcionando: um link para um arquivo que ainda não existe é um defeito do documento
+naquele instante, e o verde seguinte veio do redirecionamento ter escrito o arquivo antes, não de construção.
+
+## 6. O que nada disso fecha
 
 (0) Nada: esta branch arquiva medições que já estavam publicadas. (1) **Gate de fase fecha o dono do
 repositório** (mandato 4) — nenhum dos números acima encerra P0 ou P1. (2) O **furo #28** continua aberto:
