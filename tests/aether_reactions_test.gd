@@ -37,15 +37,17 @@ const TESTS: Array[StringName] = [
 	&"_test_espalhamento_nao_estoura_o_passo",
 	&"_test_lobo_cava_sem_input_do_jogador",
 	&"_test_cavar_respeita_a_lista", &"_test_cavar_nao_toca_construcao_alheia",
+	&"_test_abrir_passagem_depois_de_bloqueio",
 	&"_test_colheita_de_malha_sem_cavar",
 ]
-# 261 = os 247 do commit anterior (240 da ponta da perna 16 + 7 da colheita de
-# malha, dossie 12 §8(a)) mais as catorze do cavar: tres da checagem 1, sete da 2
-# (uma premissa + seis materiais) e quatro da 7.
+# 267 = os 247 do commit anterior (240 da ponta da perna 16 + 7 da colheita de
+# malha, dossie 12 §8(a)) mais as vinte do cavar: tres da checagem 1, sete da 2,
+# quatro da 7 e seis da 5 (os tres bracos do muro de dois blocos, a obra dentro de
+# um comprometimento, o degrau de um bloco e o controle de pedra).
 # O censo se re-deriva a cada checagem nova porque a linha
 # `_checks + 1 == EXPECTED_CHECKS` de `_finish` e o que converte passo abortado por
 # `SCRIPT ERROR` em vermelho: um numero chutado aqui desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 261
+const EXPECTED_CHECKS: int = 267
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -4408,7 +4410,11 @@ func _test_espalhamento_nao_estoura_o_passo() -> bool:
 ## ------------------------------------------------------------------ cavar (dossie 12)
 
 
-## Palco de escavacao: a coluna de x=`x` com as `rows` solidas do `block` pedido.
+## Palco de escavacao: a coluna de x=`x` com as `rows` solidas do `block` pedido,
+## na faixa de z inteira que o runner usa (40..84). A coluna e larga de proposito:
+## o entupimento da checagem 5 tem de ser um MURO, nao um pilar de cinco celulas
+## que da para contornar -- se desse para contornar, "atravessou" nao diria nada
+## sobre a pata.
 ## As duas metades do `registrada = false` nao sao cerimonia, sao a premissa do
 ## §1 ("um voxel que o jogador nao tocou"): a escrita sai com `record = false` E a
 ## chave antiga e APAGADA de `world.edits`. A plateia da fixture foi montada com
@@ -4459,6 +4465,84 @@ func _dug_cells(x: int) -> Array:
 		var p := Vector3i(x, 51, z)
 		if _world.get_block(p) == BlockDefs.Block.AIR and _world.edits.has(p):
 			out.append(p)
+	return out
+
+
+## A janela do corredor (checagem 5 do dossie 12 §5): os dois numeros que o §3.2 (a)
+## pede antes de `DIG_STEPS_BEFORE` valer alguma coisa -- em quantos passos um
+## entupimento de neve trava um lobo SEM cavar e em quantos o mesmo lobo atravessa
+## COM. Os bracos sem pata nao pedem toggle nem codigo de teste: neve REGISTRADA
+## (`_dig_ok` recusa por proveniencia) e pedra FORA da lista prendem pelo mesmo
+## motivo observavel -- o corpo encosta e nao passa. E por isso que a travessia do
+## braco cavavel nao pode ser lida como "so esperou o tempo do desvio": o desvio
+## natural nao tira ninguem de um muro de dois blocos, e o que o numero compara e o
+## tempo que a pata custa contra o tempo que o muro custa.
+## `degraus` conta os quadros em que o bloqueio tinha subida possivel (o ramo da
+## perna 19) e `maior_run` o mais longo comprometimento consecutivo de uma unica
+## celula: se o `_detour` do desemperto zerasse a obra a cada vaivem, e aqui que
+## isso aparece -- o acumulo nunca chegaria ao fim e o braco novo morreria inerte.
+func _dig_corridor(block: int, rows: Array, registrada: bool,
+		ticks_limit: int = 200) -> Dictionary:
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_dig_stage(56, rows, block, registrada)
+	var abertas_0 := _opened_cells(56).size()
+	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
+	_advance(1, false)
+	var ticks := 0
+	var horizontais := 0
+	var degraus := 0
+	var encostou := false
+	var boca_tick := -1
+	var cruze_tick := -1
+	var encostada_tick := -1
+	var x_max := _wolf.body.feet_pos.x
+	var passos_visto := 0
+	var comprometido := _wolf._dig_pos != Wolf.DIG_NONE
+	var run := 0
+	var maior_run := 0
+	var runs := 0
+	for i: int in ticks_limit:
+		ticks += 1
+		_advance(1, false)
+		for f: int in 3:
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			x_max = maxf(x_max, _wolf.body.feet_pos.x)
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+				if _wolf.body.feet_pos.y < 51.5 and \
+						_wolf.body.feet_pos.x + Wolf.DIMS.x * 0.5 > 55.9:
+					if encostada_tick < 0:
+						encostada_tick = ticks
+					encostou = true
+				var want := _wolf._move_target - _wolf.body.feet_pos
+				want.y = 0.0
+				if _wolf.body.can_step_over(want):
+					degraus += 1
+			if cruze_tick < 0 and _wolf.body.feet_pos.x > 57.4:
+				cruze_tick = ticks
+		passos_visto = maxi(passos_visto, _wolf._dig_steps)
+		var agora := _wolf._dig_pos != Wolf.DIG_NONE
+		if agora:
+			if not comprometido:
+				runs += 1
+				run = 0
+			run += 1
+			maior_run = maxi(maior_run, run)
+		comprometido = agora
+		if boca_tick < 0 and _opened_cells(56).size() > abertas_0:
+			boca_tick = ticks
+		if cruze_tick > 0:
+			break
+	var out := {
+		"ticks": ticks, "horizontais": horizontais, "degraus": degraus,
+		"encostou": encostou, "encostada_tick": encostada_tick,
+		"boca_tick": boca_tick, "cruze_tick": cruze_tick, "x_max": x_max,
+		"bocas": _opened_cells(56).size() - abertas_0,
+		"passos_visto": passos_visto, "maior_run": maior_run, "runs": runs,
+		"feet": _wolf.body.feet_pos, "alvo": _wolf._move_target,
+		"dig_pos": _wolf._dig_pos,
+	}
+	_dig_stage(56, [], BlockDefs.Block.AIR)
 	return out
 
 
@@ -4661,6 +4745,69 @@ func _test_cavar_nao_toca_construcao_alheia() -> bool:
 			"bancada=%s chave=%s valor=%d bocas=%d bocas_tem_bancada=%s dig_pos_final=%s" % [
 			BlockDefs.display_name(int(leito["bloco"])), leito["registrada"],
 			int(leito["valor"]), int(c["bocas_n"]), c["novas"].has(bancada), c["dig_pos"]])
+	return true
+
+
+## Checagem 5 do dossie 12 §5, a que decide o `DIG_STEPS_BEFORE` por numero em vez
+## de deixa-lo como o `[TARGET]` provisorio com que a pauta chegou. Tres bracos sobre
+## o MESMO muro de dois blocos de neve -- gerado (cavavel), registrado (recusa por
+## proveniencia) e pedra (recusa por material) -- mais um sobre um muro de um bloco,
+## e a comparacao que o §3.2 (a) exige e entre os tres primeiros: os 200 passos que o
+## entupimento prende um lobo sem pata contra os passos que o mesmo lobo leva a
+## atravessar com ela. Se a diferenca nao existir, cavar vira ruido e o ramo morre --
+## e por isso que os bracos "sem pata" usam recusas que ja existem no codigo, sem
+## nenhum toggle de teste: o que muda entre A, B e C e so a resposta de `_dig_ok`.
+## O braco de um bloco e a escada do §3.2 na ordem escrita -- desvia, SOBE, cava. Ali
+## o pulo serve, entao a pata nao deve armar nada, e `runs == 0` e o numero que diz que
+## a precedencia e do degrau e nao uma coincidencia de janela.
+func _test_abrir_passagem_depois_de_bloqueio() -> bool:
+	var a := _dig_corridor(BlockDefs.Block.SNOW, [51, 52], false)
+	var b := _dig_corridor(BlockDefs.Block.SNOW, [51, 52], true)
+	var c := _dig_corridor(BlockDefs.Block.STONE, [51, 52], false)
+	var d := _dig_corridor(BlockDefs.Block.SNOW, [51], false)
+	_check(bool(a["encostou"]) and bool(b["encostou"]) and int(a["degraus"]) == 0
+			and int(b["degraus"]) == 0 and int(a["horizontais"]) > 0,
+			"premissa: nos dois bracos o corpo encosta no mesmo muro de dois blocos e o pulo nao serve em nenhum quadro",
+			"encostada_a_no_tick=%d encostada_b_no_tick=%d horizontais=%d/%d degraus=%d/%d alvo=%s" % [
+			int(a["encostada_tick"]), int(b["encostada_tick"]),
+			int(a["horizontais"]), int(b["horizontais"]), int(a["degraus"]),
+			int(b["degraus"]), a["alvo"]])
+	_check(int(b["ticks"]) >= 200 and int(b["bocas"]) == 0 and float(b["x_max"]) < 56.0
+			and int(b["runs"]) == 0,
+			"SEM a pata o corredor de neve prende os 200 passos: o desvio natural nao da saida",
+			"trava_sem_cavar=%d passos  bocas=%d face_max=%.3f runs=%d feet=%s" % [
+			int(b["ticks"]), int(b["bocas"]), float(b["x_max"]), int(b["runs"]),
+			b["feet"]])
+	_check(int(a["cruze_tick"]) > 0 and int(a["bocas"]) >= 2,
+			"COM a pata o mesmo lobo atravessa: travessia em %d passos contra os %d que o mesmo muro prende" % [
+			int(a["cruze_tick"]), int(b["ticks"])],
+			"cruza_no_tick=%d boca_no_tick=%d bocas=%d face_max=%.3f feet=%s" % [
+			int(a["cruze_tick"]), int(a["boca_tick"]), int(a["bocas"]),
+			float(a["x_max"]), a["feet"]])
+	var obra := Wolf.DIG_STEPS_BEFORE \
+			+ ceili(BlockDefs.hardness(BlockDefs.Block.SNOW) / SimClock.STEP)
+	# `_dig_steps` zera no proprio passo que escreve o AIR, entao o pico observavel do
+	# contador e `obra - 1`, e o `maior_run` conta comprometimentos, que podem emendar a
+	# celula seguinte nos frames do mesmo passo. A assercao pede o pico do contador: o
+	# que tem de poder falhar aqui e o vaivem do desvio trocar de celula e zerar a obra
+	# antes de a dureza fechar -- ai nenhum dos dois chegaria a 12.
+	_check(int(a["maior_run"]) >= obra - 1 and int(a["runs"]) >= 1,
+			"o acumulador completa dentro de UM comprometimento: o desvio nao zera a obra",
+			"DIG_STEPS_BEFORE=%d  obra_pedida=%d passos  maior_run=%d  runs=%d  passos_visto=%d  do empurrao a boca: %d passos" % [
+			Wolf.DIG_STEPS_BEFORE, obra, int(a["maior_run"]), int(a["runs"]),
+			int(a["passos_visto"]), int(a["boca_tick"]) - int(a["encostada_tick"])])
+	_check(int(d["degraus"]) > 0 and int(d["bocas"]) == 0 and int(d["runs"]) == 0
+			and int(d["cruze_tick"]) > 0,
+			"degrau de um bloco: o pulo serve e a pata nao entra -- a escada e desvia, sobe, cava",
+			"degraus=%d bocas=%d runs=%d cruza_no_tick=%d face_max=%.3f feet=%s" % [
+			int(d["degraus"]), int(d["bocas"]), int(d["runs"]), int(d["cruze_tick"]),
+			float(d["x_max"]), d["feet"]])
+	_check(int(c["bocas"]) == 0 and int(c["degraus"]) == 0
+			and int(c["ticks"]) >= 200 and int(c["runs"]) == 0,
+			"controle: pedra fora da lista prende pelo MESMO numero que a neve registrada, entao a travessia do braco A e da pata e nao do tempo",
+			"pedra=%d passos  neve_registrada=%d passos  travessia=%d  bocas=%d runs=%d face_max=%.3f" % [
+			int(c["ticks"]), int(b["ticks"]), int(a["cruze_tick"]),
+			int(c["bocas"]), int(c["runs"]), float(c["x_max"])])
 	return true
 
 

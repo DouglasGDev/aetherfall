@@ -115,10 +115,17 @@ const DIG_MATERIALS: Array[int] = [
 ]
 ## Passos de 20 Hz parado empurrando antes de a pata comecar a valer: um
 ## esbarron breve num talude nao e obra, e sem esta janela todo corpo que encosta
-## remove um bloco. `[TARGET]` de 8 passos (0,4 s) pelo dossie 12 §3.2 (a); o
-## numero que fica e o que `abrir_passagem_depois_de_bloqueio` decidir nos dois
-## bracos, porque 8 passos e menos que um re-arme do desvio (0,35-0,8 s) e a
-## calibracao e da checagem, nao desta linha.
+## remove um bloco. O numero saiu de `[TARGET]` a medida de
+## `abrir_passagem_depois_de_bloqueio`, nos dois sentidos que o §3.2 (a) pede. Que o
+## desvio natural nao cobre o entupimento: o mesmo muro de dois blocos de neve prende
+## o lobo os 200 passos inteiros da janela quando a pata esta vetada (por
+## proveniencia na neve registrada, por material na pedra) e nunca gasta um salto --
+## cavar aqui nao e ruido sobre uma saida que ja existia. E que a janela nao atrasa a
+## obra: do primeiro quadro encostado (passo 15) a primeira boca vao 13 passos, com o
+## acumulo da neve dentro de um unico comprometimento (`maior_run=13`, tres
+## comprometimentos ate cruzar aos 76 passos). O que reabre esta linha e a propria
+## checagem: se um dia o vaivem do `_detour` trocar de celula antes de a dureza
+## fechar, `maior_run` cai abaixo da obra e o ramo morre inerte.
 const DIG_STEPS_BEFORE: int = 8
 ## "Sem alvo", no molde do `_mining_voxel` do jogador (player.gd:136): nao existe
 ## voxel (-999,-999,-999) dentro dos limites do mundo, entao o sentinela nunca
