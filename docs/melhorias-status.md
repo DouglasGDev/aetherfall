@@ -4840,3 +4840,38 @@ por `sha256sum -c`, todos **OK**; nele, `pouso_ruler_plan_cites.log` e `registro
 carregam o **mesmo hash**, e o mesmo par se repete entre os dois logs de identificadores — a igualdade de
 bytes é a prova material de que este registro não encosta em `docs/planos/` nem em `src/` nem em `tests/`.
 
+**Registro da `main` mergida (2026-11-23, pauta 20).** O merge `--no-ff` da `docs/pauta-mente-eco-20` na
+`main` dá `575215de0daac8589d5020ef151c1fca6fdae9dd`, pais `bb13752` e `2a4b296`, com **14 arquivos,
++885/−52** e nenhuma linha de `src/` nem de `tests/` — é documento puro, a pauta de uma perna que ainda
+não abriu. A identidade de árvore está medida, não afirmada: o diff de `src/` e `tests/` entre `bb13752` e
+esta `main` devolve **vazio**, e os dois objetos de árvore são `64f137bcb1f8e95bd9a64fe7843e4e7b72f7326e`
+e `88a1541c2f9f6fc3dd0e1d237b3e5656d9eea3c9` — os mesmos dois do pin `9b2c65a`, byte a byte. Por isso o
+contrato publicado da pauta continua **255 checagens / 0 falhas** na suíte e **240 / 0** no runner de
+reações: é o número do pin, e a suíte roda exatamente o código do pin.
+
+**Esta passada não re-correu a engine, e o motivo é um fato da máquina.** O binário do pin é
+`D:\Godot\Godot_v4.7.2-stable_win64.exe`, o caminho que o launcher deste repositório usa, e a unidade
+`D:` não está montada nesta sessão — há só `C:`, `E:` e `F:`. A regra da casa é não caçar executável pela
+máquina, então a corrida não roda; o que sustenta o número na ausência dela é a identidade de árvore do
+parágrafo acima, escrita no índice e no contrato antes deste registro. Voltando o pin, a re-corrida serial
+na `main` fecha o item 5 do ciclo de trabalho sem abrir contagem nova.
+
+**As réguas, corridas na árvore mergida — e elas diferem da ponta da branch por um motivo nomeado.** O
+instrumento de citações dá aqui **1 341** nas dezenove páginas que não são a 20 e **191** na 20, **1 532**
+nos vinte dossiês, **1 554** com esta página índice no corpus, **0** números fora do arquivo e **11**
+arquivos citados que não existem; na ponta da branch, numa árvore limpa, a mesma régua devolveu **1 336**,
+**1 527** e **1 548** com **16** ausências. A diferença é o `.tools/`: os cinco caminhos que somem na árvore
+limpa (`clean_suite.log`, `af-clean-suite.log`, `af-clean-suite2.log`, `shot_gallery.tscn` e o log da
+re-corrida desta pauta) estão nesta árvore, então viram citação conferida em vez de ausência — gitignore,
+não ponteiro podre. Os identificadores da 20 não se movem: **137** citados, **45** ausentes, nos dois lados.
+O instrumento de âncoras dá **37 arquivos · 2 662 ponteiros · 179 rótulos · 2 666 links** com **0** casos
+objetivos nesta árvore, contra **1** na ponta — o único caso é o link para o verificador de rótulos, que só
+quebra onde o `.tools/` não está. O recorte dos três documentos que governam fecha em **173 · 3 · 620 =
+796 números, 0 fora do arquivo**, igual à ponta. Nada deste parágrafo cita arquivo com número de linha, e é
+por isso que o **620** acima continua sendo o número medido depois de escrevê-lo.
+
+**Publicação provada, não afirmada.** `git ls-remote --heads origin` depois do push: `main` com este
+registro por cima de `575215d`, `docs/pauta-mente-eco-20` em `2a4b29676dde596fdba5bc1001c0d7936d7a2b37` e
+`docs/registro-merged-main-20` nesta ponta. **Nenhuma branch foi deletada** — nem a local, nem a remota,
+nem a `main`.
+

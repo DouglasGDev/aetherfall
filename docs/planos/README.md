@@ -507,3 +507,9 @@ que pareia por índice é `main.gd:479`, não `:470`; as três promessas da lavr
 revisão medida — **510 linhas em `src/main.gd` na `main` em `eb6ec8d`** — porque a perna 10 em curso vai
 mover esse número, e um número sem pino é exatamente o que estes furos cobram. Nada disso muda
 mandato: é deriva de linha.
+
+**Depois do pouso desta pauta.** Os números do bloco "Medida desta rodada" acima são os da árvore limpa da
+branch. O registro da `main` mergida, no fim de `docs/melhorias-status.md`, publica
+a mesma régua corrida na árvore do merge — **1 341 · 191 · 1 532 · 1 554** com **11** ausências e âncoras com
+**0** casos objetivos — e nomeia o motivo da diferença: os artefatos de `.tools/` existem numa árvore e não
+na outra. Nenhum dossiê mudou com isso.
