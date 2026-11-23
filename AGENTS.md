@@ -540,13 +540,20 @@ branch `feat/mobs-autonomos-e-ecossistema-20`, dono o agente `mente-eco-20`. É,
 largo já registrado — sete entregas (avaliação de alcance, memória de falha, tabela de espécie, três
 grupos de criaturas, drops, troféu colocável e os testes) sobre seis arquivos que a fila já escreve — e
 é por isso que a página entrega o **corte**, não a lista: cada §3 nomeia a decisão, o braço rejeitado e
-o número que reabre o braço. Números de `arquivo:linha` da `main` em `99d1167`, cujo `src/` e `tests/`
-são byte a byte os do pin `5b519f8` (`git diff --stat 5b519f8 HEAD -- src tests` devolve vazio nesta
-leitura): o contrato publicado continua **252 / 0 / 42,4 s** e esta pauta não pede re-corrida porque não
-muda o que a suíte roda.
+o número que reabre o braço. Os números de `arquivo:linha` foram **re-derivados contra a `main` de
+`bb13752`**, o pouso da 16: a pauta foi escrita contra `99d1167`, cujo `src/` e `tests/` eram byte a byte
+os do pin `5b519f8`, e isso **deixou de ser verdade** quando a 16 escreveu código — as árvores de
+`9b2c65a` são `git rev-parse 9b2c65a:src` = `64f137bcb1f8e95bd9a64fe7843e4e7b72f7326e` e `:tests` =
+`88a1541c2f9f6fc3dd0e1d237b3e5656d9eea3c9`, diferentes das do `5b519f8` (`30873d66…` / `975eac5a…`).
+O contrato de referência desta pauta é portanto o do pin `9b2c65a`: **255 checagens / 0 falhas** na suíte
+e **240 / 0** no runner de reações — não o **252 / 0 / 42,4 s** que a página carregava. Esta branch é
+documento puro (`git diff --name-only bb13752..HEAD -- src tests` devolve vazio), então o número do pin
+vale para a árvore resultante **por identidade de árvore**, não por medição nova, e não se pede re-corrida.
 
 A posição na fila serializada é exceção de ordem registrada **antes** de qualquer linha (mandato 4): a
-fila passa a **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 20 → 13**. A 20 vem **depois** da 18
+fila ficou **09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 → 17 → 18 → 20 → 13**, e a 16 já cumpriu a sua
+posição (`9b2c65a` código, `bb13752` registro), então a fila **viva de hoje** é
+**12 → 17 → 18 → 20 → 13**. A 20 vem **depois** da 18
 porque as duas escrevem [`src/world/block_defs.gd`](src/world/block_defs.gd): a 17 gasta o id 18 (`SLAB`),
 a 18 gasta o 17 (`PLANT`), os ids 9–18 continuam reservados por documento
 ([src/world/block_defs.gd:10-24](src/world/block_defs.gd#L10-L24) com `COUNT = 23` em [`:37`](src/world/block_defs.gd#L37))
@@ -563,26 +570,34 @@ e o **estado** mudou, não a projeção.
 
 Quatro afirmações do prompt a leitura devolve diferente, e duas metades dele a árvore já pagou. (1)
 "Drops são fracos" não: **não existem**. O `die()` do lobo escreve BLOOD e FEAR
-([src/entities/wolf.gd:1049-1050](src/entities/wolf.gd#L1049-L1050)), arma o timer de cadáver
-([:1051](src/entities/wolf.gd#L1051)) e só então emite `died` ([:1052](src/entities/wolf.gd#L1052)).
+([src/entities/wolf.gd:1058-1059](src/entities/wolf.gd#L1058-L1059)), arma o timer de cadáver
+([:1060](src/entities/wolf.gd#L1060)) e só então emite `died` ([:1061](src/entities/wolf.gd#L1061)).
 (2) O sinal **não** é órfão — tem **dois** consumidores em `src/`, e nenhum deles é um item:
-`_on_wolf_died` ([src/main.gd:364](src/main.gd#L364) conecta, corpo em [`:754`](src/main.gd#L754)) só
+`_on_wolf_died` ([src/main.gd:388](src/main.gd#L388) conecta, corpo em [`:969`](src/main.gd#L969)) só
 soma `stats["wolves_felled"]`, e o diretor de áudio toca `wolf_died`
 ([src/audio/audio_director.gd:161](src/audio/audio_director.gd#L161), corpo em [`:412`](src/audio/audio_director.gd#L412));
 a conclusão do prompt fica de pé, o motivo dela não. (3) "Lobos presos diante de bloco" era a pauta da
-**19**, que pousou: hoje o impulso sai em [src/entities/wolf.gd:984](src/entities/wolf.gd#L984). (4) O
+**19**, que pousou: hoje o impulso sai em [src/entities/wolf.gd:993](src/entities/wolf.gd#L993). (4) O
 leito `amb_birds` tocando sem nenhuma ave no mundo **não** é defeito do tipo da 19 — é cama de ambiência
-de campo aberto, correta como ambiência; o que ela prova é que o mundo já promete céu vivo.
+de campo aberto, correta como ambiência; o que ela prova é que o mundo já promete céu vivo. O que a
+re-derivação acrescentou e a pauta não citava quando foi escrita: **a 16 deu toca à matilha** — `var _dens`
+([src/main.gd:109](src/main.gd#L109)), `den_components()` ([:619](src/main.gd#L619)) publicado no
+`diagnostics()` ([:1171](src/main.gd#L1171)), `Wolf.den`
+([src/entities/wolf.gd:145](src/entities/wolf.gd#L145)) com a chave `den` já no disco
+([`:1111`](src/entities/wolf.gd#L1111), lida em [`:1144`](src/entities/wolf.gd#L1144)) — território que
+mexe no §3.9 da página e em nenhuma das quatro afirmações acima.
 
 Disso saem dois furos novos, ambos com dono escrito antes de qualquer linha. **#24**: o
 [docs/design/04-local-ai-architecture.md:44](docs/design/04-local-ai-architecture.md#L44) declara
 `[DECIDED]` que "nós são instanciados por espécie/archetype, não por entidade", com uma BT `.tres`
 compartilhada por 1000 lobos e o estado no `Blackboard` — e na árvore não há **nenhum** `.tres` em `src/`
 (o único do repositório é `default_bus_layout.tres` na raiz, layout de barramento de áudio), não existe
-classe `Blackboard` (grep em `src/` devolve zero; o estado chega como `Dictionary` literal inline no tick,
-[src/entities/wolf.gd:833](src/entities/wolf.gd#L833)) e cada `Wolf` constrói a própria árvore: `setup()`
-([:231](src/entities/wolf.gd#L231)) chama `_build_tree()` ([:250](src/entities/wolf.gd#L250)), corpo em
-([:354](src/entities/wolf.gd#L354)) — e o comentário de [src/ai/behavior/bt_tree.gd:2](src/ai/behavior/bt_tree.gd#L2)
+classe `Blackboard` — a palavra só aparece num comentário de `src/`,
+[src/ai/behavior/bt_tree.gd:3](src/ai/behavior/bt_tree.gd#L3), que é justamente a promessa, não o
+mecanismo; o estado chega como `Dictionary` literal inline no tick,
+[src/entities/wolf.gd:842](src/entities/wolf.gd#L842) — e cada `Wolf` constrói a própria árvore: `setup()`
+([:240](src/entities/wolf.gd#L240)) chama `_build_tree()` ([:259](src/entities/wolf.gd#L259)), corpo em
+([:363](src/entities/wolf.gd#L363)) — e o comentário de [src/ai/behavior/bt_tree.gd:2](src/ai/behavior/bt_tree.gd#L2)
 repete a promessa. Dono: perna 20 §3.5, com a checagem `arvore_por_arquetype` pagando o número. **#25**:
 `tests/audio_test.gd.uid` e `tests/audio_live_probe.gd.uid` estão fora do git enquanto todos os outros
 scripts estão (`src` 30/30, `tests` 7 de 9), então todo clone limpo mostra duas linhas `??` depois do

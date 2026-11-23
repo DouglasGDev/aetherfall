@@ -562,7 +562,8 @@ Ecossistema Vivo". A autorização é para a **pauta**, não para o código:
 [`docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md`](planos/20-mente-autonoma-de-mobs-e-ecossistema.md)
 existe, e existem no contrato a branch `feat/mobs-autonomos-e-ecossistema-20` e o agente responsável
 `mente-eco-20`; **nenhuma linha de `src/` foi escrita por esta leitura**. A fila serializada passou a
-**09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 20 → 13**: depois da 18 porque as duas escrevem
+**09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 → 17 → 18 → 20 → 13**, e a 16 já cumpriu a sua posição — a
+fila **viva de hoje** é **12 → 17 → 18 → 20 → 13**: depois da 18 porque as duas escrevem
 [`src/world/block_defs.gd`](../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 o id 17, e drop de
 criatura **não pode** encostar na reserva 9–18 — entra a partir de 23; antes da 13 porque árvore
 genealógica sobre **uma única** espécie escreveria o que já existe, e a 13 continua última pelo motivo
@@ -759,9 +760,9 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     criaturas, drops, troféu colocável e os testes disso — e o que a página entrega é o **corte**: cada
     §3 nomeia a decisão, o braço rejeitado e o número que reabre o braço. O estado lido, pelo que faz o
     gate nascer vermelho: **nenhum item nasce de nenhuma morte** — o `die()` do lobo escreve BLOOD e FEAR
-    ([wolf.gd:1049-1050](../src/entities/wolf.gd#L1049-L1050)), arma o timer de cadáver
-    ([:1051](../src/entities/wolf.gd#L1051)) e só então emite `died` ([:1052](../src/entities/wolf.gd#L1052)),
-    cujos **dois** consumidores somam um contador de abate ([main.gd:754](../src/main.gd#L754)) e tocam um
+    ([wolf.gd:1058-1059](../src/entities/wolf.gd#L1058-L1059)), arma o timer de cadáver
+    ([:1060](../src/entities/wolf.gd#L1060)) e só então emite `died` ([:1061](../src/entities/wolf.gd#L1061)),
+    cujos **dois** consumidores somam um contador de abate ([main.gd:969](../src/main.gd#L969)) e tocam um
     som ([audio_director.gd:412](../src/audio/audio_director.gd#L412)); a sonda de alcance do pulo é
     **fixa de uma célula** — `can_step_over` testa `feet + (x, 1.0, z)` em
     [voxel_body.gd:166-173](../src/entities/voxel_body.gd#L166-L173) — enquanto o ápice do impulso é
@@ -1388,14 +1389,16 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     compartilhada por 1000 lobos" e que o estado vivo mora no `Blackboard` por entidade. Nada dos três
     nomes existe: não há **nenhum** `.tres` em `src/` — o único `.tres` rastreado no repositório é
     [`default_bus_layout.tres`](../default_bus_layout.tres), layout de barramento de áudio — não há classe
-    `Blackboard` (grep em `src/` devolve zero; o contexto chega como `Dictionary` literal inline no tick,
-    [src/entities/wolf.gd:833](../src/entities/wolf.gd#L833)) e cada lobo constrói a própria árvore:
-    `setup()` ([:231](../src/entities/wolf.gd#L231)) chama `_build_tree()` ([:250](../src/entities/wolf.gd#L250)),
-    corpo em ([:354](../src/entities/wolf.gd#L354)). O comentário de topo do runtime repete a promessa
+    `Blackboard` (a classe não existe — o único `blackboard` de `src/` é o comentário que promete o
+    mecanismo, [src/ai/behavior/bt_tree.gd:3](../src/ai/behavior/bt_tree.gd#L3); o contexto chega como
+    `Dictionary` literal inline no tick,
+    [src/entities/wolf.gd:842](../src/entities/wolf.gd#L842)) e cada lobo constrói a própria árvore:
+    `setup()` ([:240](../src/entities/wolf.gd#L240)) chama `_build_tree()` ([:259](../src/entities/wolf.gd#L259)),
+    corpo em ([:363](../src/entities/wolf.gd#L363)). O comentário de topo do runtime repete a promessa
     ([src/ai/behavior/bt_tree.gd:2](../src/ai/behavior/bt_tree.gd#L2)), e é ela — não a linha do doc — que
     a pauta 20 §3.5 declara como **primeira compradora**: `SpeciesDef` existe para que a árvore deixe de
     ser por entidade. **Por que isto não é cosmético:** o custo da casa hoje é censo × orçamento, e a
-    conta escrita no comentário de [src/main.gd:11-16](../src/main.gd#L11-L16) é 12 mentes × 400 µs =
+    conta escrita no comentário de [src/main.gd:10-17](../src/main.gd#L10-L17) é 12 mentes × 400 µs =
     4,8 ms dos 50 ms do passo **com doze árvores vivas**; compartilhada de verdade, a árvore deixaria de
     crescer com o censo e o `HotSet` do mesmo doc (linha 108 em diante) deixaria de ser a peça cara que é.
     **Dono:** a perna 20, §3.5, e o número que impede a cláusula de virar prose é a checagem

@@ -76,9 +76,10 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 17 | `feat/fisica-de-blocos-que-caem-17` | `main`, **depois de 12**: as duas pernas escrevem pelo mesmo `set_block` e pelo mesmo `block_changed`, e a fila de gravidade muda o custo medido do cavar — abrir a 17 antes obrigaria a 12 a re-rodar o gate dela com a fila anexada. Não encosta em `wolf.gd` |
 | 18 | `feat/mundo-vivo-grama-e-mato-18` | `main`, **depois de 17**: é o segundo comprador do `BlockUpdateQueue` que a 17 escreve (regra da casa — generalizar no segundo chamador, não no primeiro), e o `PLANT` gasta o id 17 da reserva que a 17 não toca |
 | 19 | `feat/auto-pulo-de-bloco-19` | `main`, **fura a fila e entra logo depois de 11** (exceção do §7 do dossiê, registrada antes do código): é o único item da lista que é defeito do jogo em execução, não mecânica nova. Encosta em `src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 também escreve — por isso a 11 re-rome o gate depois do merge desta, **e já o re-romeu** (merge `010ab25` dentro da branch, gate re-rodado na árvore resultante). **Pousada**: ponta de código `f843fa6`, `main` publicada `ab9ffa1` (clone limpo medido) — a 11 re-rome o gate a partir de `ab9ffa1` |
-| 20 | `feat/mobs-autonomos-e-ecossistema-20` | `main`, **depois de 18 e antes de 13** (exceção de ordem registrada em 2026-11-22 antes de qualquer linha): as duas escrevem [`src/world/block_defs.gd`](../../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 gasta o 17, e drop de criatura não pode encostar na reserva 9–18 — entra a partir de 23, na tabela que as duas acabaram de renumberar. Antes da 13 porque genealogia sobre **uma única** espécie escreveria o que já existe; a 13 continua última porque nenhuma mudança de `Channel.COUNT` cai no meio da fila. Escreve em `src/entities/wolf.gd`, `src/main.gd`, `src/items/inventory.gd`, `src/ui/hud.gd` e, se a metade sonora entrar, `src/audio/audio_director.gd`. **Dossiê escrito antes da branch** — a página existe e nenhuma linha de código dela foi escrita |
+| 20 | `feat/mobs-autonomos-e-ecossistema-20` | `main`, **depois de 18 e antes de 13** (exceção de ordem registrada em 2026-11-22 antes de qualquer linha): as duas escrevem [`src/world/block_defs.gd`](../../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 gasta o 17, e drop de criatura não pode encostar na reserva 9–18 — entra a partir de 23, na tabela que as duas acabaram de renumberar. Antes da 13 porque genealogia sobre **uma única** espécie escreveria o que já existe; a 13 continua última porque nenhuma mudança de `Channel.COUNT` cai no meio da fila. Escreve em `src/entities/wolf.gd`, `src/main.gd`, `src/items/inventory.gd`, `src/ui/hud.gd` e, se a metade sonora entrar, `src/audio/audio_director.gd`. **Dossiê escrito antes da branch** — a página existe e nenhuma linha de código dela foi escrita. **Re-derivada contra a `main` do pouso da 16** (`bb13752`): as árvores de `9b2c65a` não são as do pin `5b519f8`, o contrato de referência passa a **255 / 0** com **240 / 0** de reações, e a toca da matilha (`_dens`, `den_components`, `Wolf.den`) entra na página como fato que a 16 criou |
 
-A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 20 → 13 não é preferência: é a exceção de
+A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 → 17 → 18 → 20 → 13 — a 16 cumprida em `9b2c65a` e
+`bb13752`, a fila viva de hoje portanto **12 → 17 → 18 → 20 → 13** — não é preferência: é a exceção de
 serialização registrada **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora",
 e reafirmada em
 [`docs/melhorias-status.md`](../melhorias-status.md#em-andamento). O encadeamento é de dados, não de
@@ -254,49 +255,66 @@ fila" da primeira tabela continua com a numeração do dia em que cada dossiê f
 inteiro, registrada no furo #14, e não cabe numa pauta: transladá-la aqui mexeria em números que outras
 páginas usam como registro de leitura.
 
-**Medida desta rodada (a pauta 20 escrita antes da branch; `main` em `99d1167` mais a página nova, esta
-página índice, o registro de contrato e as três prosas de status):** **1 468 citações conferidas nos vinte
-dossiês, 0 números fora do arquivo.** As dezenove páginas que não são a 20 estão **elo a elo idênticas** à
-medida da rodada da 12 — 71 · 50 · 25 · 75 · 70 · 34 · 51 · 55 · 39 · 77 · 80 · 139 · 110 · 68 · 115 · 94 ·
-54 · 50 · 29 = **1 286** — e o elo novo é o da própria 20: **182**, que é exatamente o salto do corpus
-(**1 286 → 1 468**). Com esta página índice no corpus, o diretório inteiro dá **1 485** (1 286 + 182 + os
-**17** daqui), e as referências a arquivos que não existem passam de **9** para **11**, agora em **4**
-arquivos: os três de peças já declaradas inexistentes (`src/core/sim/tick_clock.gd`,
-`docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd`) mais `src/ai/reach.gd`, que a página 20
-escreve como o Braço B **rejeitado** e esta página nomeia ao medir aquela página — **2** referências novas,
-uma em cada arquivo, e nenhuma peça declarada inexistente virou fato nesta rodada. No
-`verify_plan_ids.py` a 20 devolve **134** identificadores
-em backticks, dos quais **44** não existem em `src/` nem em `tests/`: **18** nomes de checagem proposta do
+**Medida desta rodada, re-tomada contra a árvore mergida (a pauta 20 escrita antes da branch, com a
+`main` do pouso da 16 — `bb13752` — já dentro desta ponta pelo merge `16ece25`):** **1 527 citações
+conferidas nos vinte dossiês, 0 números fora do arquivo.** As dezenove páginas que não são a 20 dão hoje
+**1 336** e a 20 dá **191**. A lista elo a elo do registro anterior — 71 · 50 · 25 · 75 · 70 · 34 ·
+51 · 55 · 39 · 77 · 80 · 139 · 110 · 68 · 115 · 94 · 54 · 50 · 29 = **1 286**, mais os **182** da própria
+20, **1 468** no total — foi medida com a `main` em `99d1167` e deixou de valer **com o merge, não com
+esta pauta**: `git diff --stat 99d1167 bb13752 -- docs/planos` devolve **20 arquivos, +659/−570**, porque
+a perna 16 re-derivou ponteiros dentro de todas as páginas do diretório. Com esta página índice no corpus,
+o diretório inteiro dá **1 548** (os 21 desta página, somados aos 1 527), e as referências a arquivos que não
+existem são **11** sem o índice e **16** com ele, em **9** caminhos: cinco são artefatos gitignored de
+`.tools/` (`clean_suite.log`, `af-clean-suite.log`, `af-clean-suite2.log`, `shot_gallery.tscn` e o
+`pauta20-suite.log` desta rodada — a régua corre numa árvore limpa, onde `.tools/` não existe) e os outros
+quatro são peças que os dossiês **declaram** inexistentes (`src/core/sim/tick_clock.gd`,
+`docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd` e `src/ai/reach.gd`, que a página 20
+escreve como o Braço B **rejeitado**). Nenhuma delas virou fato nesta rodada. No
+`verify_plan_ids.py` a 20 devolve **137** identificadores
+em backticks, dos quais **45** não existem em `src/` nem em `tests/`: os **18** nomes de checagem proposta do
 §5 (`alcance_calcula_altura`, `arvore_por_arquetype`, `lobo_morto_dropa_carne`, `especie_decide_numero`,
-`desistencia_vira_crenca`, `passaro_pousa_em_copa`, …), **14** peças/constantes/campos/blocos que o §3
+`desistencia_vira_crenca`, `passaro_pousa_em_copa`, …), as **14** peças/constantes/campos/blocos que o §3
 propõe e o §2 diz por escrito que ainda não estão no código (`SpeciesDef`, `DropItem`, `EchoLedger`,
 `SPECIES`, `BIRD_CAP`, `MEAT`, `FEATHER`, `FEATHER_COLOR`, `HEAD_WOLF`, `HEAD_CHICKEN`, `HEAD_DUCK`,
 `_reach_tries`, `NavigationAgent` — classe do motor que nenhuma linha deste repositório usa — e `PLANT`, o
-bloco que o doc 10 numera e a perna 18 gasta) e **12** palavras de domínio lidas com grep zero em `src/`
+bloco que o doc 10 numera e a perna 18 gasta), as **12** palavras de domínio lidas com grep zero em `src/`
 (`species`, `archetype`, `animals`, `habitat`, `drops`, `carne`, `feather`, `trophy`, `raio_fuga`,
-`foge_de_humano`, `tentativas_ate_desistir`, `teto_por_arquetype`). Nenhuma classe dessas é invenção de
+`foge_de_humano`, `tentativas_ate_desistir`, `teto_por_arquetype`) e **um** que esta ponta acrescentou ao
+re-derivar contra o pouso: `bb13752`, o SHA escrito em backticks — o instrumento não distingue hash de
+identificador, e é ele a diferença entre os **134** da escrita e os **137** de agora. Nenhuma classe dessas é invenção de
 fato: é o que a página declara comprar. Somando os três documentos que governam a casa nesta
 árvore — [`AGENTS.md`](../../AGENTS.md), [`README.md`](../../README.md) e
-[`docs/melhorias-status.md`](../melhorias-status.md) — são **174 · 0 · 550 = 724 números, 0 fora do
-arquivo**: o contrato foi de **142** para **174** (**+32**, o registro de 2026-11-22 (3), que é a pauta
-desta rodada) e o status de **525** para **550** (**+25**, o item 14 do "Falta", a nota de "Em andamento" e
-os furos **#24** e **#25**), e o `README.md` da raiz segue em **0** porque cita por seção, não por linha. O
-instrumento de âncoras
-([`tools/check_doc_anchors.py`](../../tools/check_doc_anchors.py)) confere nesta ponta **2 519** ponteiros,
-**151** rótulos e **2 474** links relativos em **37** arquivos e devolve **casos objetivos: 0** — mas esta
-rodada teve de re-derivar **um** ponteiro para chegar lá: o registro de docs do status
-(`docs/melhorias-status.md:2280`) media a frase da ordem serializada na linha **80** desta página, e a
-linha nova da tabela de branches — a da 20 — deslocou-a para a **81**, que é para onde o ponteiro aponta
-hoje. Nenhum número deste parágrafo foi escrito antes de o instrumento devolvê-lo nesta árvore.
+[`docs/melhorias-status.md`](../melhorias-status.md) — a régua dá **173 · 3 · 620 = 796 números, 0 fora do
+arquivo**; no mesmo recorte aplicado à base `bb13752`, **131 · 3 · 590 = 724**. O contrato subiu **+42**
+(o registro de 2026-11-22 (3), que é a pauta desta rodada) e o status **+30** (o item 14 do "Falta", a nota
+de "Em andamento" e os furos **#24** e **#25**); o `README.md` da raiz está em **3**, não em **0** como o
+registro anterior escrevia, e as três são `#L` dentro de logs de evidência —
+`docs/evidence/tocas-alcateia-16/head_suite.log#L357` (**255 / 0 / 48,0 s**),
+`docs/evidence/tocas-alcateia-16/docs_rerun_suite.log#L357` (**255 / 0 / 47,7 s**) e
+`docs/evidence/acasalamento-censo-11/merged_main_suite.log#L350` (**252 / 0 / 43,1 s**) — entradas do pouso
+da 16 e da perna 11, nenhuma desta pauta. O instrumento de âncoras
+([`tools/check_doc_anchors.py`](../../tools/check_doc_anchors.py)) confere nesta ponta **2 662** ponteiros,
+**179** rótulos e **2 666** links relativos em **37** arquivos e devolve **um** caso objetivo: o ponteiro
+`../.tools/_chk_labels.py` em `docs/melhorias-status.md:3222`, o mesmo que o registro do pouso aponta na
+linha **3138** — os **84** de diferença são as linhas que este lote acrescentou acima dela no mesmo
+arquivo, e o registro ficou com o número da corrida que sustenta. Duas coisas do instrumento valem escritas
+aqui: ele deriva a raiz do **próprio arquivo**, não do diretório atual, então medir uma árvore exige rodar a
+cópia daquela árvore; e o registro do passe de docs do status (`docs/melhorias-status.md:2422`) nomeia
+`docs/planos/README.md:15, :81` — a linha 15 continua na linha, e o **:81** é re-derivação desta ponta:
+lido pelo conteúdo, o registro da base (`bb13752:docs/melhorias-status.md:2338`) escrevia **80** numa árvore
+onde a frase já estava em **75**, e a linha nova da tabela de branches (a da 20) com o parágrafo acima
+empurraram-na para **81**, onde o ponteiro corrigido aponta agora. Nenhum número deste parágrafo foi escrito
+antes de o instrumento devolvê-lo nesta árvore.
 
 **O que esta rodada não fecha, dito pelo índice:** nenhuma linha de `src/` nem de `tests/` foi escrita, a
 branch `feat/mobs-autonomos-e-ecossistema-20` **não** abriu, e nenhuma das dezoito checagens do §5 da
-página 20 existe. O contrato publicado da suíte continua **252 / 0** na árvore do pin `5b519f8`; re-corrida
-serial nesta branch deu **252 / 0 / 42,3 s** (`.tools/pauta20-suite.log:350` — o arquivo é local, `.tools/`
-está no `.gitignore`, e nenhum número publicado depende dele), exit 0 e zero `SCRIPT ERROR`,
-com `git diff --stat 5b519f8 HEAD -- src tests` **vazio** — a `main` desta ponta (`99d1167`) tem `src/` e
-`tests/` byte a byte iguais aos do pin, porque o que ela trouxe foram `.md` e `.log`. O que muda aqui é
-prosa, então a corrida fecha o ciclo de trabalho (item 5 de "Ciclo de trabalho"), não publica contagem nova.
+página 20 existe. O contrato publicado da suíte é hoje **255 / 0** e **240 / 0** no runner de reações, na árvore do pin
+`9b2c65a`: a 16 pousou depois que este parágrafo foi escrito, e `git diff --name-only 5b519f8 HEAD -- src
+tests` devolve **4 arquivos** — os que ela escreveu. O número vale **por identidade de árvore**, não por
+re-corrida: `git diff --name-only bb13752 HEAD -- src tests` está **vazio**, então `src/` e `tests/` desta
+ponta são byte a byte os do pin. A re-corrida serial desta branch, feita antes do pouso, deu
+**252 / 0 / 42,3 s** (`.tools/pauta20-suite.log:350` — arquivo local, `.tools/` está no `.gitignore`) e
+fica como registro daquele dia, não como contagem vigente.
 
 **O que esta rodada não re-ancorou, e por quê (a terceira vez que isto se escreve):** a coluna "Linha da
 fila" da primeira tabela continua com a numeração do dia em que cada dossiê foi escrito — a célula da 20 é
