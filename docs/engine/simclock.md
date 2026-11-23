@@ -277,3 +277,13 @@ Nenhum gate de fase se fecha aqui. O P0 de
 [docs/design/08-roadmap-risks-licensing.md:61-63](../design/08-roadmap-risks-licensing.md#L61-L63)
 pede o `af-bench` com hash estável em três execuções, o bake-off decidido com números e esta página:
 dos três, só a página existe, e gate de fase fecha o dono do repositório.
+
+**Medida nesta ponta, depois de trazer a `main` para dentro.** Esta branch funde `bb13752` e o pouso da
+pauta 20 antes do seu próprio merge, e o diff de `src/` e `tests/` entre a ponta e a `main` continua
+**vazio** — a página é o único arquivo novo, então a árvore que ela publica é a árvore do merge.
+`verify_plan_cites.py` nesta página devolve **158** citações conferidas, **0** números fora do arquivo e
+**2** arquivos citados que não existem: `src/core/sim/entity_store.gd` e `src/core/sim/tick_clock.gd`, as
+duas peças que o dossiê 07 declara inexistentes e que este doc não escreve. `check_doc_anchors.py` no
+corpus inteiro: **38** arquivos, **2 820** ponteiros, **190** rótulos, **2 809** links relativos e **um**
+caso objetivo — o link gitignored de sempre. A engine não foi re-corrida aqui: `sim_clock.gd` não mudou
+desde a re-derivação sobre o `src/` do pouso da 16, e é isso que mantém os ponteiros da tabela de §4 de pé.
