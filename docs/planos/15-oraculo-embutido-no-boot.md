@@ -158,7 +158,7 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
 - **Onde o estado novo mora hoje.** `main.gd` é o objeto deus conhecido: 662 linhas donas de
   mundo, relógio, matilha, HUD, oráculo, visualização, journal, áudio e o hospedeiro do
   modelo ([`:9-79`](../../src/main.gd#L9-L79)), com `_exit_tree` já existente fechando só o
-  journal ([`:1241-1242`](../../src/main.gd#L1241-L1242)). É o único ponto do boot que hoje tem ciclo de vida
+  journal ([`:1245-1246`](../../src/main.gd#L1245-L1246)). É o único ponto do boot que hoje tem ciclo de vida
   de recurso externo — e é o encaixe da decisão 1.
 
 ## 3. O que "embutido" exige — e o que a palavra não é aqui
@@ -230,7 +230,7 @@ host lê o valor do oracle em vez de repetir `8741`, que aparece em dois lugares
 ([`mind_oracle.gd:11`](../../src/ai/mind_oracle.gd#L11) e [`ps1:19`](../../tools/run_mind_server.ps1#L19)).
 
 **4.3 — Ciclo de vida nos três pontos de saída, com os nomes certos da API.** No fecho da janela
-e em [`main.gd:_exit_tree`](../../src/main.gd#L1241-L1242) (onde o journal já é fechado — o único
+e em [`main.gd:_exit_tree`](../../src/main.gd#L1245-L1246) (onde o journal já é fechado — o único
 precedente de liberação de recurso externo que existe na casa), `OS.kill(pid)` no filho **que o
 host criou**; `pid = -1` em caso de reuso significa "nada a matar". Morte antecipada se detecta
 com `OS.is_process_running(pid)` em cadência própria, **uma** retentativa por sessão — a segunda
@@ -302,7 +302,7 @@ surpresa depois: o host mata o que ele subiu, e "não matar o que não é meu" t
 - **Frame, tick ou às vezes?** O host roda **por frame** (`_process`), não por tick: é um nó I/O
   com um `HTTPRequest` em voo, no mesmo padrão do oráculo
   ([`mind_oracle.gd:71-91`](../../src/ai/mind_oracle.gd#L71-L91)), e nada do que ele faz é
-  determinístico nem entra em `state_hash()` ([`main.gd:1227-1228`](../../src/main.gd#L1227-L1228)). Enquanto carrega: uma sonda por cadência
+  determinístico nem entra em `state_hash()` ([`main.gd:1231-1232`](../../src/main.gd#L1231-L1232)). Enquanto carrega: uma sonda por cadência
   curta (~0,2 s, **proposto**, não medido). Depois de pronto: só a verificação de vida por
   cadência de 1 s, seguindo o precedente de [`main.gd:31`](../../src/main.gd#L31). O custo pesado
   (carga do modelo, inferência) é **de outro processo**, fora dos 50 ms do passo
@@ -425,7 +425,7 @@ implementar mede, com máquina livre — medição de tempo é serial
 - Não deixar o host subir em headless "para testar": a suíte é a corriqueira; o modelo é de 2,7 GB
   e o §7 tem cena própria para isso.
 - Não botar nada disto em `_sim_tick`, em `_physics_process` do lobo, nem no hash do journal
-  ([`main.gd:255-298`](../../src/main.gd#L255-L298), [`:1227-1228`](../../src/main.gd#L1227-L1228)):
+  ([`main.gd:255-298`](../../src/main.gd#L255-L298), [`:1231-1232`](../../src/main.gd#L1231-L1232)):
   processo de oráculo não é estado de mundo.
 - Não propor GDExtension, `native/af_mind`, GBNF, embeddings ou `oracle_cache` "porque já estamos
   mexendo no oráculo": é P4 e está fora do escopo autorizado
@@ -507,10 +507,10 @@ delas muda mandato: é deriva de linha e nome de API.
   estava em pé naquela árvore, e transladá-la apagaria a medição — inclusive o `+9` do parágrafo
   acima, que é a diferença *daquela* base. Na ponta desta branch, lidos por conteúdo (a fatia de
   linha confere linha a linha, sem offset adivinhado), os alvos são `diagnostics()`
-  [`:1159-1180`](../../src/main.gd#L1159-L1180), a linha do journal dentro dela
-  [`:1183`](../../src/main.gd#L1183), `state_hash()`
-  [`:1227-1228`](../../src/main.gd#L1227-L1228), a CLI [`:1231-1238`](../../src/main.gd#L1231-L1238) e
-  `_exit_tree` [`:1241-1242`](../../src/main.gd#L1241-L1242); na suíte o passo de planar é
+  [`:1159-1184`](../../src/main.gd#L1159-L1184), a linha do journal dentro dela
+  [`:1187`](../../src/main.gd#L1187), `state_hash()`
+  [`:1231-1232`](../../src/main.gd#L1231-L1232), a CLI [`:1235-1242`](../../src/main.gd#L1235-L1242) e
+  `_exit_tree` [`:1245-1246`](../../src/main.gd#L1245-L1246); na suíte o passo de planar é
   [`:2043-2049`](../../tests/smoke_test.gd#L2043-L2049) (+34), o bloco do oráculo
   [`:2121-2148`](../../tests/smoke_test.gd#L2121-L2148) com a porta 1 armada em
   [`:2128`](../../tests/smoke_test.gd#L2128), e os dois passos em

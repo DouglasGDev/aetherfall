@@ -63,7 +63,7 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    ([aether_field.gd:232-234](src/world/aether_field.gd#L232-L234)), sem o corte do save.
    **Não inclui** jogador, corpos, RNG, episódios, relações, timers ou comandos; não torna a
    simulação determinística. `main.state_hash()` expõe a consulta
-   ([main.gd:1227-1228](src/main.gd#L1227-L1228)); o acesso ao estado autoritativo permanece aberto.
+   ([main.gd:1231-1232](src/main.gd#L1231-L1232)); o acesso ao estado autoritativo permanece aberto.
    O contrato foi exercitado em headless antes do refinamento dos rastros; resultados
    históricos locais e fontes medidas estão nas [notas do status](docs/melhorias-status.md#notas-de-medição).
    O candidato final com o lobo refinado também foi importado sem cache e validado;
@@ -133,7 +133,7 @@ incluindo o journal ativo. Regra de bolso: o que você coloca em `_sim_tick` div
 com 5 lobos; o que coloca em `_physics_process` divide o frame com a renderização.
 
 **Journal sob demanda, não gravação automática.** A CLI lê, após `--`,
-`--tick-journal=path` ([main.gd:1231-1238](src/main.gd#L1231-L1238)). `start()` recusa caminho
+`--tick-journal=path` ([main.gd:1235-1242](src/main.gd#L1235-L1242)). `start()` recusa caminho
 existente: cada corrida exige arquivo novo explícito, sem reabrir histórico nem criar
 arquivos automaticamente entre sessões ([tick_journal.gd:47-62](src/persistence/tick_journal.gd#L47-L62)).
 `record()` acrescenta JSONL `[tick,hash]` com `flush` por linha; recusa tick negativo e,
@@ -143,7 +143,7 @@ após o primeiro registro, duplicata, regressão ou salto (exige `last_tick + 1`
 ([main.gd:300-306](src/main.gd#L300-L306)); sem o modo, o tick só consulta `active()`.
 O load válido encerra o arquivo antes de restaurar o mundo
 ([main.gd:1036-1038](src/main.gd#L1036-L1038)); sair da cena também o fecha
-([main.gd:1241-1242](src/main.gd#L1241-L1242)). O arquivo cresce apenas enquanto a gravação
+([main.gd:1245-1246](src/main.gd#L1245-L1246)). O arquivo cresce apenas enquanto a gravação
 explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 
 **Orçamentos que já são código**, não intenção (regra 7):
@@ -182,7 +182,7 @@ Essas alocações ainda não têm medição própria: os monitores do engine lid
 `TIME_PROCESS` e `TIME_PHYSICS_PROCESS`, só no overlay F3
 ([hud.gd:248-251](src/ui/hud.gd#L248-L251)). Em headless, a suíte colhe o pior passo
 (`worst_sim_ms`, vindo de `clock.worst_step_ms`) e `dropped_ticks` pelo `diagnostics()`
-([main.gd:1159-1180](src/main.gd#L1159-L1180)). A colheita estreita de reações já separa
+([main.gd:1159-1185](src/main.gd#L1159-L1185)). A colheita estreita de reações já separa
 `sim_step` integral de BT, mas não mede alocações nem o HOT agregado dos cinco lobos.
 Então o primeiro passo de qualquer otimização é a colheita, não o corte.
 
@@ -223,7 +223,7 @@ serialização, SHA256 e escrita com `flush`. Não é custo total de alocação 
 O journal expõe `records`, `last_us`, `worst_us` e `total_us` (hash + escrita + flush
 concluídos) em `diagnostics()["journal"]`
 ([tick_journal.gd:74-98](src/persistence/tick_journal.gd#L74-L98),
-[main.gd:1183](src/main.gd#L1183)). No candidato histórico local recém-importado, anterior
+[main.gd:1187](src/main.gd#L1187)). No candidato histórico local recém-importado, anterior
 ao refinamento dos rastros, 205 registros custaram 160 000 µs ao todo, com pico de
 1 646 µs; o load encerrou a gravação. Os dois smokes, sem/com journal, terminaram sem
 ticks perdidos, mas não são replay pareado, prova de otimização ou medição do lobo
@@ -476,7 +476,7 @@ não permissão**: o jogador soma `_mining_accum += delta` contra `target_hardne
 ([:685](src/entities/player.gd#L685)), então `STONE 0,95` **cai** — o que limita a pata é lista de
 material, não a régua. (2) **`block_changed` não tem um único consumidor** no repositório: existem só a
 declaração ([src/world/voxel_world.gd:6](src/world/voxel_world.gd#L6)) e o emit
-([:262](src/world/voxel_world.gd#L262)), então o gate desta perna observa estado de mundo lido
+([:276](src/world/voxel_world.gd#L276)), então o gate desta perna observa estado de mundo lido
 (`get_block` + [`world.edits`](src/world/voxel_world.gd#L42)) e quem assina o sinal continua sendo a 17 —
 que é exatamente o motivo pelo qual a checagem `queda_move_a_celula` daquela página nasce vermelha.
 (3) **O desemperto já tem dois ramos**, e o segundo é da 19 ([src/entities/wolf.gd:986-993](src/entities/wolf.gd#L986-L993)),

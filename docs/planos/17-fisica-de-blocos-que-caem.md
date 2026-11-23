@@ -44,22 +44,22 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
 
 - **O sinal existe e ninguém o escuta.** [`signal block_changed(pos, prev, now)`](../../src/world/voxel_world.gd#L6)
   é declarado em `voxel_world.gd:6` e emitido no fim de
-  [`set_block`](../../src/world/voxel_world.gd#L252-L263) (emissão em
-  [`:262`](../../src/world/voxel_world.gd#L262)). Um grep de `block_changed` em `src/` e
+  [`set_block`](../../src/world/voxel_world.gd#L266-L277) (emissão em
+  [`:276`](../../src/world/voxel_world.gd#L276)). Um grep de `block_changed` em `src/` e
   `tests/` devolve **duas** ocorrências, as duas nessa file — a declaração e a emissão — e
   nenhum `.connect(` em lugar nenhum: o sinal nunca teve leitor desde que entrou. A porta do
   design ("a única porta de entrada para 'este voxel tem
   gravidade?' é o sinal", doc 10 [`:663-665`](../design/10-world-layers-and-block-physics.md#L663-L665))
   está construído do lado de escrever e vazia do lado de ler.
 - **`set_block` já é o ponto único de mutação, com as quatro consequências certas**
-  ([`:252-263`](../../src/world/voxel_world.gd#L252-L263)): recusa fora de
+  ([`:266-277`](../../src/world/voxel_world.gd#L266-L277)): recusa fora de
   `VoxelConfig.in_world_bounds` ( [`:26`](../../src/world/voxel_config.gd#L26), que exige
   `0 ≤ y < 64`), retorna `false` se `prev == b` (`:256-257` — escrever o que já está lá **não**
   emite evento), grava chunk **e** índice linear em
-  [`_write_raw`](../../src/world/voxel_world.gd#L242-L249), guarda a edição em
-  [`edits[p]`](../../src/world/voxel_world.gd#L260) quando `record` (o default é `true`), suja
+  [`_write_raw`](../../src/world/voxel_world.gd#L256-L263), guarda a edição em
+  [`edits[p]`](../../src/world/voxel_world.gd#L274) quando `record` (o default é `true`), suja
   o chunk e os vizinhos de borda em
-  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L266-L277) e só então emite. Os dois
+  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L280-L291) e só então emite. Os dois
   únicos chamadores de gameplay hoje são do jogador:
   [`:685`](../../src/entities/player.gd#L685) (quebra → `AIR`) e
   [`:711`](../../src/entities/player.gd#L711) (colocação).
@@ -110,14 +110,14 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   em queda que herdar `step_up` **sobe** em vez de parar no apoio; o `setup` da entidade novo
   tem de zerar `step_up` e o lote tem de ter a checagem que prova isso (§5.4).
 - **O fundo do mundo segura a cascata sem `BEDROCK`.**
-  [`get_block_xyz`](../../src/world/voxel_world.gd#L226-L239) devolve `STONE` para `y < 0` e
+  [`get_block_xyz`](../../src/world/voxel_world.gd#L240-L253) devolve `STONE` para `y < 0` e
   para `x`/`z` fora do mapa, e `AIR` acima de `CHUNK_SIZE_Y` (`:226-232`). Logo
   `is_supported(x, 0, z)` é **verdadeiro por construção** e nenhuma cascata atravessa o soalho
   — o que também significa que um bloco expulso pelo topo só para com o teto de ticks da
   entidade (`MAX_FALL_TICKS`, doc [`:486`](../design/10-world-layers-and-block-physics.md#L486)).
 - **O custo real de cada voxel movido é a malharia, e ela tem orçamento próprio.**
   `set_block` → `_touch_chunks_of` → fila `_dirty` consumida por
-  [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L178-L186) chamada no
+  [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L192-L200) chamada no
   `_process`, **fora** do passo de simulação, com
   [`MESH_BUDGET := 2`](../../src/main.gd#L28) chunks por frame
   (chamada em [main.gd:309](../../src/main.gd#L309)). As duas leituras que o contrato
@@ -182,7 +182,7 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
    ([main.gd:255](../../src/main.gd#L255),
    [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e é o que o hash lê.
 6. **`queued` e `overflow` visíveis**, no `diagnostics()` ao lado de `dropped_ticks`
-   ([main.gd:1159-1187](../../src/main.gd#L1159-L1187)) e no F3, como o doc exige em
+   ([main.gd:1159-1191](../../src/main.gd#L1159-L1191)) e no F3, como o doc exige em
    [`:746-749`](../design/10-world-layers-and-block-physics.md#L746-L749): estourar o teto
    adia grãos, não os perde, e sem o número a discussão sobre `MAX_PER_TICK` é opinião.
 7. **O estado de queda não vai para o save — e isso é decisão escrita, não esquecimento.**
@@ -208,7 +208,7 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   que os 100 dicionários/s do blackboard que o contrato já lista como não medidos. No passo
   sem eventos, `flush` alocaria um `Array` vazio: o lote devolve cedo (`if _pending.is_empty()`),
   e isso é uma linha, não uma abstração. O `_flat` já existe para leitura barata
-  ([`:233-234`](../../src/world/voxel_world.gd#L233-L234)).
+  ([`:247-248`](../../src/world/voxel_world.gd#L247-L248)).
 - **Como sei que ficou melhor / quanto custa?** Não é otimização, é mecânica: o número que
   tem de existir antes de qualquer celebração é `worst_sim_ms` com a cascata andando
   (`clock.worst_step_ms`, [sim_clock.gd:37-39](../../src/core/sim_clock.gd#L37-L39), já lido

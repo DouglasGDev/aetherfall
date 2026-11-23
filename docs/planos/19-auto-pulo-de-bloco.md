@@ -30,7 +30,7 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 
 **O grid tem célula de 1 unidade de mundo**, e nada no mundo tem altura intermediária: o teste de
 colisão percorre as células cobertas pela caixa com `floori` em cada eixo
-([voxel_world.gd:301-312](../../src/world/voxel_world.gd#L301-L312)), e a conversão contínua→bloco é
+([voxel_world.gd:350-361](../../src/world/voxel_world.gd#L350-L361)), e a conversão contínua→bloco é
 o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então "subir um bloco" é
 **subir 1,00 m**, e essa é a régua contra a qual os três números abaixo falham.
 
@@ -115,7 +115,7 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
    linha, não de propriedade — e a propriedade perde.
 5. **Altura de célula é 1 unidade, e isso é premissa, não constante nomeada.** O predicado usa
    `+1,0` porque o grid é de 1 — `aabb_hits_solid` percorre células por `floori`
-   ([`voxel_world.gd:301-312`](../../src/world/voxel_world.gd#L301-L312)). Se um dia
+   ([`voxel_world.gd:350-361`](../../src/world/voxel_world.gd#L350-L361)). Se um dia
    existir `SLAB` de meia altura — o id 18 já está reservado no registro de blocos — o número vira
    pergunta do `BlockDefs`, e é aí, no segundo comprador, que ele sobe de degrau.
 

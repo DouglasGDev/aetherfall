@@ -319,5 +319,5 @@ vezes árvore variável (13) é espaço de estados maior, e nenhum número daqui
   [:1085-1090](../../src/entities/wolf.gd#L1085-L1090) (não `:738`), `_build_visual`
   [`:1179-1208`](../../src/entities/wolf.gd#L1179-L1208) (não `:793-823`); `load_state`
   [`:1115-1163`](../../src/entities/wolf.gd#L1115-L1163) (não `:758-789`) e, em `main.gd`,
-  [`state_hash`](../../src/main.gd#L1227-L1228) (não `:856-857`). Conteúdo inalterado: é re-derivação
+  [`state_hash`](../../src/main.gd#L1231-L1232) (não `:856-857`). Conteúdo inalterado: é re-derivação
   de linha, o que o ciclo 1 do contrato cobra.
