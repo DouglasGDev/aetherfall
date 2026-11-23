@@ -45,6 +45,15 @@ dentro de `bench_clean.log` e `runner_journal.log` (`C:/Aetherfall/.qoder/clones
 e a pasta de `user://` do teste do journal) são o que o processo imprimiu na hora — não são instruções nem
 promessa de que o diretório exista para quem clona.
 
+**Qual ponta é cada linha.** A ponta do registro não é um instante só: `registro_tip_suite.log` é a corrida
+feita na árvore de `8d64f49` — os quatro logs novos já dentro do git, a seção do status ainda só na mão — e
+os dois `ruler_*_tip.log` são a corrida na árvore **depois** de a seção estar escrita, que é a deste commit.
+As duas instâncias medem o mesmo contrato porque medem o mesmo código: `git rev-parse HEAD:src` e
+`HEAD:tests` respondem `100af75ded6d50b6a26120be352cf72770f97e80` / `77fcb0510525a82d39bb799ff1376ff0fb6eb17b`,
+os dois valores do pin `cea4379`, e `git diff --name-only cea4379..HEAD -- src tests` devolve vazio. Quem
+re-rodar a suíte em qualquer commit desta branch depois do `5178c5a` tem de ver `255 / 0`; o tempo de parede
+não é contrato e varia de corrida para corrida.
+
 ## 2. A revisão pineada e as árvores
 
 | | |
@@ -120,7 +129,7 @@ mesmo `4` e o mesmo `2`, o que só reforça que é determinístico e não carga 
 Os dois arquivos `ruler_*_tip.log` são a corrida **final**, na árvore que já tem os quatro logs novos e a
 seção do status que os cita: `38 arquivos · 2 854 ponteiros · 197 rótulos · 2 871 links · casos objetivos: 0`
 e `2 669 citações conferidas · 34 arquivos ausentes · numeros de linha fora do arquivo: 0`, exit 0 dos dois.
-A corrida **anterior** das mesmas réguas, feita quando o `>` do redirecimento ainda não tinha escrito
+A corrida **anterior** das mesmas réguas, feita quando o `>` do redirecionamento ainda não tinha escrito
 `ruler_plan_cites_tip.log`, devolveu **`casos objetivos: 1`** com exit 1 — `LINK QUEBRADO` na linha 5398 do
 status. É o instrumento funcionando: um link para um arquivo que ainda não existe é um defeito do documento
 naquele instante, e o verde seguinte veio do redirecionamento ter escrito o arquivo antes, não de construção.
