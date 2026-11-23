@@ -41,16 +41,18 @@ const TESTS: Array[StringName] = [
 	&"_test_work_de_bicho_nao_confundido",
 	&"_test_entrada_de_rastro_exposta_no_chao_lido",
 	&"_test_colheita_de_malha_sem_cavar",
+	&"_test_cavar_sobrevive_ao_save",
 ]
-# 275 = os 271 do commit anterior (ate a checagem 3 do WORK do bicho) mais as
-# quatro da checagem 6, o ramo (b): premissa do chao lido na camada do corpo sem
-# empurrao antes da entrega, o bloco aberto sendo o mesmo que a coluna leu, o `y`
-# descendo um bloco e o par de controles (pedra fora da lista, boca que nao
-# re-arma). O censo se re-deriva a cada checagem nova porque a linha
+# 279 = os 275 do commit anterior (ate a checagem 6, o ramo (b) do nariz) mais as
+# quatro da checagem 8, a sobrevivencia ao save: a premissa de a cova estar parada
+# no meio sem chave de cova no disco, os quatro campos da pata voltando ao nada no
+# load, exatamente uma chave entrando no registro e o `generate` + `apply_edits`
+# devolvendo-a AIR, e o par que nao tem chave voltando como relevo com o delta de
+# bytes impresso. O censo se re-deriva a cada checagem nova porque a linha
 # `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 275
+const EXPECTED_CHECKS: int = 279
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -4985,7 +4987,8 @@ func _dig_plug(p: Vector3i, block: int) -> void:
 ## compromisso, que e o que a checagem precisa distinguir. O integrador roda pelos
 ## mesmos tres frames por passo do `_dig_window` porque a atribuicao so vale se o
 ## instrumento esteve la para produzir o empurrao que ela mesma mostra.
-func _scent_entry_window(block: int, ticks_limit: int = 200) -> Dictionary:
+func _scent_entry_window(block: int, ticks_limit: int = 200,
+		limpar: bool = true) -> Dictionary:
 	_arm(Vector3(57.4, 51.001, 54.0), FAR_PLAYER)
 	var plug := Vector3i(58, 51, 54)
 	_dig_plug(plug, block)
@@ -5067,10 +5070,17 @@ func _scent_entry_window(block: int, ticks_limit: int = 200) -> Dictionary:
 		"bloco": _world.get_block(plug), "bloco_antes": bloco_antes,
 		"chave": _world.edits.has(plug),
 		"nariz_fim": _wolf._dig_scent, "pos_fim": _wolf._scent_pos,
+		"dig_pos": _wolf._dig_pos, "dig_steps": _wolf._dig_steps,
+		"dig_accum": _wolf._dig_accum,
 		"intent": _wolf.intent, "reaction": _wolf.get("_reaction"),
 		"feet": _wolf.body.feet_pos,
 	}
-	_dig_plug(plug, BlockDefs.Block.AIR)
+	# `limpar = false` e o que a checagem 8 pede: a boca tem de continuar no mundo
+	# COM a chave AIR para o `save_game()` do produto gravar, e o `_dig_plug` de
+	# aqui apaga a chave e escreve ar sem registro -- exatamente o que o §2 veda
+	# para o palco, e exatamente o que sumiria com a cova antes da segunda escrita.
+	if limpar:
+		_dig_plug(plug, BlockDefs.Block.AIR)
 	return out
 
 
@@ -5245,4 +5255,157 @@ func _test_colheita_de_malha_sem_cavar() -> bool:
 		feitos, int(colheita["frames"]), int(colheita["max_pending"]),
 		float(colheita["worst_ms"]), int(cost["count"]), int(cost["worst_us"]),
 		float(cost["mean_us"]), int(cost["pending"])])
+	return true
+
+
+func _slot_bytes() -> int:
+	var f := FileAccess.open(SaveManager.slot_path(Session.SLOT), FileAccess.READ)
+	if f == null:
+		return -1
+	var n := f.get_length()
+	f.close()
+	return n
+
+
+## Checagem 8 do dossie 12 §5.8, o §3.3 virado numero, e por isso roda POR ULTIMO
+## no runner: a metade do load escreve no `_world` compartilhado desta casa. E
+## exatamente a razao pela qual a perna 14 deixou o save/load fora deste
+## instrumento de proposito (doc de `_test_feedback_do_jogador_continua_no_hud`), e
+## aqui ela e paga com a boca na mesa: depois desta linha o plateau nao e mais o
+## plateau, entao nenhum numero de malharia ou de passo pode vir depois dele.
+##
+## As quatro portas sao as quatro frases do item, cada uma com o numero que a
+## decide. (1) A obra parada no meio existe de verdade -- acumulo entre zero e a
+## dureza da neve, boca ainda nao aberta, alvo no plug -- e o `state_dict()` do lobo
+## nao carrega chave de cova nenhuma, que e a outra metade de "o disco nao guarda a
+## intencao". (2) `load_state` devolve os quatro campos ao nada: a cova comecada
+## antes do save recomeca depois dele (§3.1). (3) A boca e a UNICA chave que o
+## registro ganha entre as duas escritas do produto, e o `generate` + `apply_edits`
+## do disco a devolve AIR com chave e `edits.size()` batendo -- o §3.3 na letra: "um
+## buraco que some no load e a mentira da vez". (4) O que nao tem chave nao
+## sobrevive: a tapa de neve ao lado, montada com `record = false` pelo mesmo §2,
+## volta como o relevo que o gerador sorteou, e os bytes do arquivo com e sem a
+## cova sao o preco que o item cobra em numero, nao em adjetivo.
+##
+## O load e as DUAS chamadas que `main.load_game()` faz no mundo, na mesma ordem e
+## com a mesma conversao de chave (`main.gd:1050-1054`), e nao a funcao inteira:
+## `load_game()` tambem chama `audio.clear_transient()` e o `audio` e nodo criado no
+## `_ready` da cena (`main.gd:190`), que este runner nunca roda -- pelo caminho
+## completo o passo morreria em SCRIPT ERROR e levaria as checagens dele embora em
+## silencio (mandato 1). O `save_game()` e o produto inteiro, sem atalho.
+## O slot volta ao que era no fim, pelo mesmo motivo escrito na suíte:
+## `user://saves/world_alpha.json` e o jogo gravado pelo dono, e um instrumento que
+## o deixa podre envenena a proxima sessao dele.
+func _test_cavar_sobrevive_ao_save() -> bool:
+	var plug := Vector3i(58, 51, 54)
+	var parede := Vector3i(58, 51, 55)
+	var chave := Coords.block_key(plug)
+	var chave_parede := Coords.block_key(parede)
+	var antes := SaveManager.read_slot(Session.SLOT)
+	var havia_disco := bool(antes["ok"])
+	var dados_antes: Dictionary = antes["data"]
+
+	# (1) A janela para no passo 50: a boca da neve abre no 13º passo de obra e a
+	# obra comeca no tick 40 da entrega, entao aqui o acumulo esta vivo e incompleto.
+	var meio := _scent_entry_window(BlockDefs.Block.SNOW, 50, false)
+	var dureza := BlockDefs.hardness(BlockDefs.Block.SNOW)
+	var d_lobo: Dictionary = _wolf.state_dict()
+	var chaves_dig := ""
+	for k in d_lobo:
+		if String(k).contains("dig"):
+			chaves_dig += String(k) + " "
+	_check(not bool(meio["aberto"]) and bool(meio["dig_pos"] == plug)
+			and float(meio["dig_accum"]) > 0.0 and float(meio["dig_accum"]) < dureza
+			and int(meio["boca_tick"]) < 0 and chaves_dig.is_empty()
+			and int(meio["dig_steps"]) > Wolf.DIG_STEPS_BEFORE,
+			"premissa: a cova esta parada no meio -- alvo vivo, acumulo acima de zero e abaixo da dureza da neve, boca ainda nao aberta -- e o dicionario que o save grava nao tem nenhuma chave de cova",
+			"alvo=%s passos=%d (DIG_STEPS_BEFORE=%d) acumulo=%.3f de %.3f | boca=%d | chaves de dig no state_dict=[%s] | chaves no disco: plug=%s parede=%s" % [
+			meio["dig_pos"], int(meio["dig_steps"]), Wolf.DIG_STEPS_BEFORE,
+			float(meio["dig_accum"]), dureza, int(meio["boca_tick"]),
+			chaves_dig.strip_edges(), _world.edits.has(plug), _world.edits.has(parede)])
+
+	# (2) A transicao real do lobo carregado: `state_dict()` -> `load_state()`, a
+	# mesma dupla que `main.load_game()` chama por bicho do disco.
+	var alvo_antes: Vector3i = _wolf._dig_pos
+	var nariz_antes: Vector3i = _wolf._dig_scent
+	var passos_antes := int(_wolf._dig_steps)
+	var acumulo_antes := float(_wolf._dig_accum)
+	_wolf.load_state(d_lobo)
+	_check(bool(_wolf._dig_pos == Wolf.DIG_NONE) and bool(_wolf._dig_scent == Wolf.DIG_NONE)
+			and _wolf._dig_steps == 0 and absf(_wolf._dig_accum) < 1e-9
+			and acumulo_antes > 0.0,
+			"a cova comecada antes do load recomeca depois dele: os quatro campos da pata voltam ao nada pelo `_dig_reset` do load_state, e o que sobrevive e o mundo, nao a intencao (dossie 12 §3.1)",
+			"antes: alvo=%s passos=%d acumulo=%.3f nariz=%s | depois: alvo=%s passos=%d acumulo=%.3f nariz=%s" % [
+			alvo_antes, passos_antes, acumulo_antes, nariz_antes,
+			_wolf._dig_pos, _wolf._dig_steps, _wolf._dig_accum, _wolf._dig_scent])
+
+	# (3) As duas escritas do produto sobre a MESMA cena. O palco e re-montado
+	# sem registro (chave apagada) para que a unica diferenca entre os dois discos
+	# seja a chave que a pata escreve, e a sessao se monta depois do palco porque
+	# `save_game()` grava o `world` compartilhado, nao uma copia.
+	_dig_plug(plug, BlockDefs.Block.SNOW)
+	_dig_plug(parede, BlockDefs.Block.SNOW)
+	_boot_session(1)
+	var s: Session = _session
+	s.save_game()
+	var sem := SaveManager.read_slot(Session.SLOT)
+	var edits_sem: Dictionary = sem["data"]["edits"]
+	var n_sem := edits_sem.size()
+	var bytes_sem := _slot_bytes()
+	var plug_sem := edits_sem.has(chave)
+	var parede_sem := edits_sem.has(chave_parede)
+	var fim := _scent_entry_window(BlockDefs.Block.SNOW, 200, false)
+	s.save_game()
+	var com := SaveManager.read_slot(Session.SLOT)
+	var edits_com: Dictionary = com["data"]["edits"]
+	var n_com := edits_com.size()
+	var bytes_com := _slot_bytes()
+	var novas := ""
+	var n_novas := 0
+	for k in edits_com:
+		if not edits_sem.has(k):
+			n_novas += 1
+			novas += String(k) + " "
+	var lista := {}
+	for k in edits_com:
+		lista[String(k)] = int(edits_com[k])
+	_world.generate(SEED)
+	_world.apply_edits(lista)
+	_check(n_novas == 1 and novas.strip_edges() == chave
+			and not plug_sem and bool(fim["aberto"])
+			and int(edits_com[chave]) == int(BlockDefs.Block.AIR)
+			and n_com == n_sem + 1 and _world.edits.size() == n_com
+			and _world.get_block(plug) == BlockDefs.Block.AIR
+			and _world.edits.has(plug) and not parede_sem,
+			"o buraco do bicho sobrevive ao save: entre as duas escritas do produto exatamente UMA chave entra no registro -- a da boca, em AIR -- e o `generate` + `apply_edits` do disco (main.gd:1050-1054) devolvem o voxel aberto COM chave e `edits.size()` batendo",
+			"chaves: disco_sem=%d disco_com=%d novas=[%s] | plug no disco antes=%s depois=%s valor=%s | no mundo apos o load: bloco=%s chave=%s | edits do mundo=%d | boca_no_tick=%d passos=%d" % [
+			n_sem, n_com, novas.strip_edges(), plug_sem, edits_com.has(chave),
+			str(edits_com.get(chave, -1)),
+			BlockDefs.display_name(int(_world.get_block(plug))),
+			_world.edits.has(plug), _world.edits.size(),
+			int(fim["boca_tick"]), int(fim["passos_obra"])])
+
+	# (4) O par que faz a (3) poder falhar pelo motivo certo: a tapa ao lado foi
+	# montada com `record = false` (o §2 veda palco registrado) e nao tinha chave em
+	# `edits` nem antes nem depois -- entao o load nao tem de onde a tirar, e ela
+	# volta como o relevo gerado, nao como neve. Se ela voltasse neve, a (3) estaria
+	# medindo o estado do mundo e nao o registro.
+	_check(not _world.edits.has(parede)
+			and _world.get_block(parede) != BlockDefs.Block.SNOW
+			and bytes_com > bytes_sem and bytes_sem > 0,
+			"o que nao tem chave nao sobrevive, e o que tem custa bytes: a neve montada sem registro volta como relevo gerado, e o disco cresce do tamanho exato de uma entrada",
+			"parede sem chave: no disco plug/parede=%s/%s, bloco apos load=%s | plug apos load=%s | bytes %d -> %d (delta %+d) | chave_parede=%s" % [
+			plug_sem, parede_sem,
+			BlockDefs.display_name(int(_world.get_block(parede))),
+			BlockDefs.display_name(int(_world.get_block(plug))),
+			bytes_sem, bytes_com, bytes_com - bytes_sem, chave_parede])
+
+	if havia_disco:
+		var rest := SaveManager.write_slot(Session.SLOT, dados_antes)
+		print("       disco restaurado no slot do dono: %s %d bytes" % [
+				"ok" if bool(rest["ok"]) else String(rest["error"]), rest["bytes"]])
+	else:
+		var rm := DirAccess.remove_absolute(SaveManager.slot_path(Session.SLOT))
+		print("       slot nao existia antes desta checagem: removido (%s)" % error_string(rm))
+	_pack_release()
 	return true

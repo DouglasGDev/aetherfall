@@ -1406,6 +1406,14 @@ func load_state(d: Dictionary) -> void:
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
 	_checked_scents.clear()
+	# Dossie 12 §3.1: a cova comecada antes do save recomeca depois dele, e o que
+	# sobrevive e o mundo (a chave AIR em `world.edits`), nao a intencao de quem a
+	# abriu. O `_dig_reset` e o mesmo fim-de-obra da pata, nao uma limpeza avulsa,
+	# para que os quatro campos nao possam nunca divergir um do outro -- sem esta
+	# linha o `dt` de uma vida anterior voltaria contando como se o bicho tivesse
+	# cavado com o jogo fechado, e o bloco-alvo seria o de um mundo que ja nao e
+	# este (a chave pode ter sumido no load).
+	_dig_reset()
 	# A leitura da matilha e do passo: depois do load o mundo em volta mudou, entao
 	# ela volta a vazia ate o proximo rebuild da sessao.
 	_pack = NO_PACK
