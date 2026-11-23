@@ -262,6 +262,16 @@ var _detour: float = 0.0
 var _dig_pos: Vector3i = DIG_NONE
 var _dig_steps: int = 0
 var _dig_accum: float = 0.0
+## O alvo do ramo (b) (dossie 12 §3.2): a celula do solido que tapa a entrada do
+## rastro, lida no fim da inspecao. Vive separado de `_dig_pos` porque a validade
+## dele nao e geometrica: no tick da entrega o corpo esta parado em cima do assento
+## (`_leaf_investigate` zera o `want`) e `_dig_cell` comeca no `want`, entao a
+## re-derivacao pela faixa do corpo descartaria o alvo no proprio passo em que ele
+## nasce. Depois da entrega o lobo volta a patrulhar e pode ate empurrar o mesmo
+## bloco -- ai os dois ramos querem o mesmo buraco, e nada aqui decide qual dos dois
+## o abriu primeiro. Estado transitorio de proposito: nada de disco (a clausula do
+## load e o commit (f) que paga).
+var _dig_scent: Vector3i = DIG_NONE
 var _heading: float = 0.0
 var _gait: float = 0.0
 var _wander_cd: float = 0.0
@@ -578,6 +588,16 @@ func _leaf_investigate(ctx: Dictionary) -> int:
 	if _inspect_left > 0.0:
 		return BtStatus.RUNNING
 	_remember_scent()
+	# Dossie 12 §3.2 (b), o segundo motivo para cavar: a inspecao acabou sobre uma
+	# celula cuja coluna tem solido dentro da propria faixa -- a entrada do rastro
+	# esta tapada. Aqui, e so aqui, o nariz entrega o bloco ao pata; a obra em si e
+	# o mesmo acumulador do ramo (a) (§3.4 A), e nenhuma linha nova de arvore,
+	# nenhuma string nova de `intent` (o journal hashia `intent`, nao a reacao).
+	# A lista de material decide aqui, nao no passo seguinte: pedra na frente da
+	# entrada e parede, e parede se contorna -- deixar o alvo armado para
+	# `_dig_step` recusa-lo seria escrever um compromisso que nao pode virar obra.
+	var entrada := _scent_entry_cell(_scent_cell)
+	_dig_scent = entrada if _dig_ok(entrada) else DIG_NONE
 	_reaction = "rastro examinado"
 	_scent_found = false
 	_scent_strength = 0.0
@@ -980,19 +1000,55 @@ func _find_scent() -> void:
 	_scent_pos = Vector3(cell_pos.x, _scent_ground_y(best_cell), cell_pos.z)
 
 
-## Chao do rastro: a primeira superficie solida descendo do topo da camada encontrada.
-## surface_height() nao serve aqui porque devolve o topo da coluna inteira — para um
-## rastro dentro de caverna isso e o teto, e o episodio lembrado diria que o sangue
-## estava na superficie. Sem solido na janela, fica no topo da propria camada.
-func _scent_ground_y(c: Vector3i) -> float:
+## O primeiro solido descendo pela coluna do centro da celula de Eter, na janela de
+## `2 * AETHER_CELL` passos. Um so caminho para as duas leituras que a coluna tem
+## agora -- o chao do nariz (abaixo) e a entrada de rastro (dossie 12 §3.2 (b),
+## acima) -- porque o §3.2 diz que o alvo do ramo (b) e "a celula do solido, lida
+## pela MESMA coluna que `_scent_ground_y` percorre": com duas varreduras proprias
+## os dois lados podiam discordar e o buraco aberto nao seria o bloco que o nariz
+## leu. Sem solido na janela, `DIG_NONE`.
+func _scent_column_solid(c: Vector3i) -> Vector3i:
 	var cell_pos := aether.cell_center(c)
 	var bx := int(cell_pos.x)
 	var bz := int(cell_pos.z)
 	var top := c.y * aether.cell + aether.cell - 1
 	for y: int in range(top, top - 2 * aether.cell, -1):
 		if world.is_solid_xyz(bx, y, bz):
-			return float(y) + 0.6
-	return float(top)
+			return Vector3i(bx, y, bz)
+	return DIG_NONE
+
+
+## Chao do rastro: a primeira superficie solida descendo do topo da camada encontrada.
+## surface_height() nao serve aqui porque devolve o topo da coluna inteira — para um
+## rastro dentro de caverna isso e o teto, e o episodio lembrado diria que o sangue
+## estava na superficie. Sem solido na janela, fica no topo da propria camada.
+func _scent_ground_y(c: Vector3i) -> float:
+	var solido := _scent_column_solid(c)
+	if solido == DIG_NONE:
+		return float(c.y * aether.cell + aether.cell - 1)
+	return float(solido.y) + 0.6
+
+
+## A entrada de rastro tapada (dossie 12 §3.2 (b)): o solido que a coluna devolve
+## so e entrada quando esta NA CAMADA DO PROPRIO CORPO -- a mesma grandeza que
+## `_dig_cell` usa para escolher a celula do empurrao (`feet + dims.y * 0,5`,
+## piso), lida aqui porque o §3.4 A nao permite uma segunda regua geometrica. As
+## duas palavras que essa igualdade recusa sao os dois preditos falsos do ramo: um
+## solido ABAIXO da camada e o chao do vale, e remove-lo seria abrir o relevo sob o
+## nariz; um solido ACIMA e o teto de outra camada, e a pata abriria um buraco a
+## quatro metros acima de um corpo que nem encosta nele. Com a igualdade o item
+## tambem se termina sozinho: aberta a boca da camada, a coluna passa a devolver o
+## chao de baixo, a leitura nao casa, e nada re-arma -- sem contador de furos por
+## inspecao nem cadencia nova.
+## `DIG_NONE` quando a coluna nao tem solido na janela ou quando o corpo nao esta na
+## camada do achado; a lista de material fica com quem cave, nao com o nariz.
+func _scent_entry_cell(c: Vector3i) -> Vector3i:
+	var solido := _scent_column_solid(c)
+	if solido == DIG_NONE:
+		return DIG_NONE
+	if solido.y != floori(body.feet_pos.y + dims.y * 0.5):
+		return DIG_NONE
+	return solido
 
 
 # ------------------------------------------------------------------ escavacao (dossie 12)
@@ -1067,8 +1123,15 @@ func _dig_arm() -> void:
 		_dig_accum = 0.0
 
 
+## Fim de obra (ou de compromisso): os dois alvos e o acumulo voltam ao nada juntos.
+## Limpar tambem `_dig_scent` e o que decide que uma boca concluida nao financia a
+## proxima. Nao ha buraco aqui: o nariz re-arma no fim de cada inspecao, e a
+## inspecao so recomeca quando a leitura da celula passa a renovacao do cache
+## (`SCENT_RENEWAL`) -- na cena da checagem 6 e o WORK da propria boca que reabre o
+## farejo depois de 13 passos de patrulha (§3.2 (b)).
 func _dig_reset() -> void:
 	_dig_pos = DIG_NONE
+	_dig_scent = DIG_NONE
 	_dig_steps = 0
 	_dig_accum = 0.0
 
@@ -1083,11 +1146,38 @@ func _dig_reset() -> void:
 ## publica para a BT, e o orcamento e da arvore, nao do corpo.
 func _dig_step(dt: float) -> void:
 	if _dig_pos == DIG_NONE:
+		# O ramo (b) (dossie 12 §3.2): o alvo veio do nariz, nao do empurrao, e por
+		# isso ele nao pode ser re-derivado pela faixa do corpo -- quem chega
+		# farejando PARA na frente da entrada (`_leaf_investigate` zera o `want` no
+		# ramo da chegada), entao `_dig_cell` devolve DIG_NONE e a geometria do ramo
+		# (a) descartaria o compromisso no proprio passo em que ele nasce. Entra
+		# quando a pata do empurrao esta parada, e a janela dos 8 passos e a mesma:
+		# um so acumulador, nenhuma constante nova, nenhuma string nova de `intent`
+		# (o journal hashia `intent`, nao a reacao). Na neve sao 13 passos, 0,65 s
+		# ate o buraco, e medido que nos 13 passos o corpo ja voltou a patrulhar e
+		# empurra a propria tapa: os dois ramos querem este buraco, e o que e do
+		# nariz e a entrega no tick da inspecao, nao o caminho ate ele.
+		if _dig_scent == DIG_NONE:
+			return
+		if not _dig_ok(_dig_scent):
+			_dig_scent = DIG_NONE
+			return
+		_dig_pos = _dig_scent
+		_dig_steps = 0
+		_dig_accum = 0.0
 		return
-	# A obra vale enquanto a geometria vale: re-derivada a celula, um alvo que
-	# sumiu (bloco removido por outro, corpo que virou, coluna que passou a ser
-	# construcao) abandona a pata no mesmo passo, sem estado escondido.
-	if _dig_cell(_dig_pos) != _dig_pos:
+	# A obra vale enquanto o alvo vale. Para o alvo do nariz a validade e a unica
+	# clausula que ele tem: material na lista e nao construicao de alguem. Para o do
+	# empurrao e a geometria, e a re-derivacao ja traz a clausula dentro de si
+	# (`_dig_cell` so devolve celula que passa em `_dig_ok`). Quando os dois ramos
+	# olham a MESMA celula vale a regra do nariz, mais fraca -- e e o caso em que o
+	# corpo encostou na entrada que veio farejando, ou seja, os dois querem o mesmo
+	# buraco.
+	if _dig_pos == _dig_scent:
+		if not _dig_ok(_dig_pos):
+			_dig_reset()
+			return
+	elif _dig_cell(_dig_pos) != _dig_pos:
 		_dig_arm()
 		return
 	_dig_steps += 1
