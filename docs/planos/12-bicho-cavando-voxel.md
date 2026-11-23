@@ -16,7 +16,7 @@ daqui é código: a branch `feat/bicho-cavando-12` não abriu.
 | O texto antigo afirmava | O que a leitura de hoje diz |
 | --- | --- |
 | "Última da série serializada 09 → 10 → 11 → **12**" | Oitava de onze: depois dela vêm 17, 18 e 13, e antes entraram a 19 (defeito em execução) e a pauta da 16 |
-| O gate observava `block_changed` "dispara" | O sinal **não tem nenhum consumidor** no repositório: existem só a declaração ([voxel_world.gd:6](../../src/world/voxel_world.gd#L6)) e o emit ([`:262`](../../src/world/voxel_world.gd#L262)) — o grep de `block_changed` em `src/` e `tests/` devolve essas duas linhas. O dossiê 17 é quem o assina; o gate deste observa estado de mundo lido: `get_block` + `world.edits` |
+| O gate observava `block_changed` "dispara" | O sinal **não tem nenhum consumidor** no repositório: existem só a declaração ([voxel_world.gd:6](../../src/world/voxel_world.gd#L6)) e o emit ([`:276`](../../src/world/voxel_world.gd#L276)) — o grep de `block_changed` em `src/` e `tests/` devolve essas duas linhas. O dossiê 17 é quem o assina; o gate deste observa estado de mundo lido: `get_block` + `world.edits` |
 | `EXPECTED_CHECKS` "**109** na leitura" | Hoje **225** ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39)) |
 | A suíte "hoje **236**" | **252 checagens / 0 falhas**, publicados no pin `5b519f8` da perna 11 |
 | (o runner de RNG não existia) | Hoje existe [tests/simulation_rng_test.gd](../../tests/simulation_rng_test.gd), **27** checagens (`:9`), e uma delas é que o desvio do lobo **não consome a RNG global** ([`:226`](../../tests/simulation_rng_test.gd#L226)) — é o que amarra o §5.9 |
@@ -59,22 +59,22 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
 - **Nenhum bicho escreve no mundo.** Os dois únicos `world.set_block` de gameplay do `src/` são do
   jogador ([player.gd:685](../../src/entities/player.gd#L685),
   [:711](../../src/entities/player.gd#L711)); os outros chamadores são a própria classe
-  ([voxel_world.gd:247](../../src/world/voxel_world.gd#L247), em `_write_raw`) e a geração
+  ([voxel_world.gd:261](../../src/world/voxel_world.gd#L261), em `_write_raw`) e a geração
   ([world_gen.gd:194](../../src/world/world_gen.gd#L194),
   [:196](../../src/world/world_gen.gd#L196), [:275](../../src/world/world_gen.gd#L275),
   [:293](../../src/world/world_gen.gd#L293), [:309](../../src/world/world_gen.gd#L309)). A perna 19
   **não** mudou isso: ela ensinou o lobo a **subir** o obstáculo, não a removê-lo.
 - **A API já é a certa e já é pública**:
-  [`set_block(p, b, record := true) -> bool`](../../src/world/voxel_world.gd#L252-L263) — recusa
+  [`set_block(p, b, record := true) -> bool`](../../src/world/voxel_world.gd#L266-L279) — recusa
   fora dos limites, recusa escrever o que já está lá, grava em
-  [`_write_raw`](../../src/world/voxel_world.gd#L242-L249) (chunk **e** índice linear `_flat`),
+  [`_write_raw`](../../src/world/voxel_world.gd#L256-L265) (chunk **e** índice linear `_flat`),
   guarda a edição em [`edits[p]`](../../src/world/voxel_world.gd#L42), marca chunks sujos em
-  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L266-L277) e emite
+  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L280-L293) e emite
   `block_changed(pos, prev, now)` **para ninguém**. O lobo já segura `world` e `aether` desde o
   [`setup`](../../src/entities/wolf.gd#L240-L259).
 - **`edits` é a proveniência que faltava, e ela já existe.** `record` é o que separa "o mundo gerou
   isto" de "alguém construiu isto": a geração **não** escreve em `edits`, a colocação do jogador
-  escreve ([`:259-260`](../../src/world/voxel_world.gd#L259-L260)). Então
+  escreve ([`:273-274`](../../src/world/voxel_world.gd#L273-L274)). Então
   `not world.edits.has(pos)` é a cláusula que diz "cavar não desmonta a obra de outro" sem perguntar a
   ninguém de quem é o bloco — é o fechamento do furo #22 (§3.2) e custa uma comparação.
 - **O caminho do WORK hoje é do jogador** — o sinal `acted` do `Player` é o que imprime WORK 0,42
@@ -96,17 +96,22 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   **vidro é mais mole que neve**, e a bancada é mais mole que pedra. Lista de material, não ordenação
   por dureza, é o que decide o que uma pata cave.
 - **O custo de cada voxel removido é a malharia, medida:** `set_block` → `_touch_chunks_of` → fila
-  `_dirty`, consumida por [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L178-L186) com
+  `_dirty`, consumida por [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L192-L200) com
   `MESH_BUDGET := 2` chunks por frame ([main.gd:28](../../src/main.gd#L28), chamada em
   [main.gd:309-310](../../src/main.gd#L309-L310)). As duas leituras que o contrato publica: **64 chunks
   em ~4,3 s no boot** ([README.md:642-643](../../README.md#L642-L643); 4.640–4.886 ms nas cinco
   corridas históricas, [docs/melhorias-status.md:83](../../docs/melhorias-status.md#L83)) ≈ 67
   ms/chunk, e o tempo do último lote no F3 ([`ultimo %.2f ms`](../../src/ui/hud.gd#L253-L255), lido de
-  [`last_mesh_ms()`](../../src/world/voxel_world.gd#L193)). Os dois números convivem porque o boot
-  congela a janela e **não há medição de um chunk sujo isolado** — e é ela que o cavar consome.
-  Instrumento que já existe e resolve a pergunta sem código novo:
-  [`pending_meshes()`](../../src/world/voxel_world.gd#L189) e
-  [`meshes_built()`](../../src/world/voxel_world.gd#L197).
+  [`last_mesh_ms()`](../../src/world/voxel_world.gd#L207)). Os dois números convivem porque o boot
+  congela a janela, mas **a medição de um chunk sujo isolado já existe** desde o dossiê 07c: o carimbo
+  posto em [`_mark`](../../src/world/voxel_world.gd#L294-L307) fecha em
+  [`_record_edit_cost`](../../src/world/voxel_world.gd#L312-L320) e sai por
+  [`edit_mesh_cost()`](../../src/world/voxel_world.gd#L326-L336) no `diagnostics()["edit_mesh"]` — o
+  bake-off mediu 52 chunks remalhados por 30 edições com média de 77,6 ms e pico de 162,8 ms no braço A
+  ([readback §4](../evidence/af-bakeoff-voxel/readback.md)). O cavar consome esse preço, não o do lote
+  de boot. Instrumento que já existia e continua útil como testemunha da fila:
+  [`pending_meshes()`](../../src/world/voxel_world.gd#L203) e
+  [`meshes_built()`](../../src/world/voxel_world.gd#L211).
 - **O desemperto tem dois braços hoje, e o segundo define o terceiro.** Em
   [wolf.gd:986-993](../../src/entities/wolf.gd#L986-L993): contato horizontal persistente arma o
   desvio (`_unstick` + `_detour`) e, **dentro do mesmo `if`**, `body.on_ground and
@@ -202,7 +207,7 @@ Escrever em `edits` significa que a cova **sobrevive ao save**
 ([main.gd:990-992](../../src/main.gd#L990-L992) + a chave `"edits"` [`:1009`](../../src/main.gd#L1009),
 reaplicada no load [`:1051-1054`](../../src/main.gd#L1051-L1054)). O lote grava — é o mundo real do lobo, e
 um buraco que some no load é a mentira da vez — e imprime `edits.size()` no `diagnostics()`
-([main.gd:1163](../../src/main.gd#L1163), dentro do corpo [`:1159-1187`](../../src/main.gd#L1159-L1187)) para
+([main.gd:1163](../../src/main.gd#L1163), dentro do corpo [`:1159-1191`](../../src/main.gd#L1159-L1191)) para
 o crescimento do save ficar à vista. Consequência que o §5.8 cobra como número, não como adjetivo: a
 diferença de bytes do arquivo entre o mesmo cenário com e sem cavar.
 
@@ -260,8 +265,8 @@ um **único** comprador hoje, o do jogador; dar ao bicho o segundo comprador é 
   da célula-alvo e, no (b), a coluna que `_scent_ground_y` já percorre
   ([`:942`](../../src/entities/wolf.gd#L942), no máximo 8 passos).
 - **Aloco no caminho quente?** Não no acumulador (`float` + uma `Vector3i` + um `int`). O que aloca é a
-  consequência: `edits[p] = b` ([voxel_world.gd:260](../../src/world/voxel_world.gd#L260)) e a fila
-  `_dirty` (`Array` de chunk, já existente, [`:285-286`](../../src/world/voxel_world.gd#L285-L286)).
+  consequência: `edits[p] = b` ([voxel_world.gd:274](../../src/world/voxel_world.gd#L274)) e a fila
+  `_dirty` (`Array` de chunk, já existente, [`:305-306`](../../src/world/voxel_world.gd#L305-L306)).
   Nada de `Array` novo por tick — que é, aliás, a única linha desta página que encosta no débito
   declarado no contrato ("Alocação no caminho quente existe e não é medida").
 - **Como sei que ficou melhor / quanto custa?** Medindo, antes de celebrar: o lote **primeiro** publica

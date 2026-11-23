@@ -116,7 +116,7 @@ Recorte que a premissa **não** cobre, e que a frase "colocar os lobos em tocas"
 comentário (`llm_server_host.gd:4`, `audio_director.gd:179`, `player.gd:588`), `TREE_DENSITY` /
 `BOULDER_DENSITY` (`world_gen.gd:7-8`, `:236`, `:238`) e `fog_density` (`main.gd:982`). Não há:
 lista de tocas, campo `den` no lobo, chave no save, contador de componentes em `diagnostics()`
-([`main.gd:1159-1188`](../../src/main.gd#L1159-L1188) tem `wolves`, `wolves_alive`, `pack_pairs`,
+([`main.gd:1159-1192`](../../src/main.gd#L1159-L1192) tem `wolves`, `wolves_alive`, `pack_pairs`,
 `pending_respawns`, `census_cap`, `load_created`, `load_retired`, `census_refusals`, `births` —
 nenhum deles diz **onde** a matilha está), nem predicado de distância mínima entre lares de grupos
 diferentes.
@@ -209,7 +209,7 @@ A casa decide: **A primeiro**, e o número que escolhe entre os dois é impresso
 
 ### 3.5 O que sai em observabilidade
 
-`diagnostics()` ([`main.gd:1159-1188`](../../src/main.gd#L1159-L1188)) ganha três números, todos
+`diagnostics()` ([`main.gd:1159-1192`](../../src/main.gd#L1159-L1192)) ganha três números, todos
 derivados do que já existe, nenhum no caminho quente: `dens` (toca fundada), `den_components`
 (componentes conexos do grafo lido) e `den_min_dist` (menor distância centro-a-centro). O F3 não
 chama `diagnostics()` por frame — ele lê `clock.*` direto

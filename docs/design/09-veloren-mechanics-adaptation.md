@@ -236,7 +236,7 @@ Nada aqui está em código — menos as linhas que o
 | Arcos, lanças arremessadas, cetros e magia de projétil | `[TARGET]` P6; magia existe como **Tecelagem** editando o Éter (§02), não como cast bar |
 | 6 espécies, personagens, opção *hardcore* | fora de escopo — solo humano + mentes locais (premissa 3 do README) |
 | Multiplayer | `[TARGET]` P5 |
-| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1180-1187](../../src/main.gd#L1180-L1187). `[TARGET]` P7 |
+| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1184-1191](../../src/main.gd#L1184-L1191). `[TARGET]` P7 |
 | Agricultura/plantação | **não existe no código**: só `_plant_tree` no gerador. `[TARGET]` P7 |
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de

@@ -67,7 +67,7 @@ descartado. Por isso `clock.tick` não é função do tempo de parede decorrido 
 [:17-18](../../src/core/sim_clock.gd#L17-L18) nomeia a regra, "nunca catch-up silencioso", e o contador é
 a metade não silenciosa dela: o estouro vira número lido no F3
 [src/ui/hud.gd:256-258](../../src/ui/hud.gd#L256-L258) e no `diagnostics()`
-[src/main.gd:1181](../../src/main.gd#L1181).
+[src/main.gd:1185](../../src/main.gd#L1185).
 
 Uma precisão que a própria suíte já mede: `dropped_ticks` conta **eventos de estouro**, não passos
 perdidos. [tests/smoke_test.gd:870-872](../../tests/smoke_test.gd#L870-L872) chama `advance(1.0)` —
@@ -114,7 +114,7 @@ SHA256, a escrita e o `flush` do tick [main.gd:300-306](../../src/main.gd#L300-L
 `perdidos` do outro [hud.gd:256-258](../../src/ui/hud.gd#L256-L258), porque medem coisas diferentes.
 
 Consumidores dos dois números: `last_step_ms` só aparece no F3 [hud.gd:258](../../src/ui/hud.gd#L258);
-`worst_step_ms` sai no F3 e como `worst_sim_ms` no `diagnostics()` [main.gd:1180](../../src/main.gd#L1180),
+`worst_step_ms` sai no F3 e como `worst_sim_ms` no `diagnostics()` [main.gd:1184](../../src/main.gd#L1184),
 onde a suíte o confere [tests/smoke_test.gd:227-228](../../tests/smoke_test.gd#L227-L228). A dupla é
 exercitada direto no arquivo [tests/smoke_test.gd:874-877](../../tests/smoke_test.gd#L874-L877), que abre
 e fecha um passo e exige que o pico tenha sido preenchido. E o runner de reações já colhe os mesmos

@@ -56,6 +56,15 @@ var _mat_glass: StandardMaterial3D = null
 var _dirty: Array = []
 var _last_mesh_ms: float = 0.0
 var _meshes_built: int = 0
+# Custo de edicao local (dossie 07 §4): `last_mesh_ms()` times o lote inteiro do
+# frame, nao uma edicao ate o mesh pronto dela, entao o preco do re-mesh — que e
+# exatamente onde um mesher novo ganharia ou perderia — nao tinha clock nenhum.
+# O carimbo nasce em `_mark`, quando a edicao suja o chunk, e morre em
+# `build_chunk_mesh`, que fecha a conta em microsegundos.
+var _edit_stamp: Dictionary = {}    # Vector2i (coord) -> usec do carimbo aberto
+var _edit_us_total: int = 0
+var _edit_us_worst: int = 0
+var _edit_us_count: int = 0
 
 static var _ao_offsets: Array = []
 static var _tables_ready: bool = false
@@ -152,6 +161,11 @@ func _release_mesh_nodes() -> void:
 		c.mesh_instance = null
 		c.dirty = true
 	_dirty.clear()
+	# Carimbos abertos do mundo antigo morrem com ele: o chunk nao vai ser malhado
+	# nunca mais. O AGGREGADO, nao -- azera-lo aqui faria o `worst` mentir depois de
+	# um load e o `count` zerado na ultima linha do diagnostico seria lido como
+	# instrumento morto, que e justamente o erro que o mandato 1 nao deixa passar.
+	_edit_stamp.clear()
 
 
 func generate_meshes_all() -> void:
@@ -282,8 +296,43 @@ func _mark(key: Vector2i) -> void:
 	if c == null:
 		return
 	c.dirty = true
+	# So chunk ja malhado tem "custo de edicao": a primeira malharia do boot e o
+	# lote inteiro, que ja tem coluna propria no `mesh_ms`. Varios edits no mesmo
+	# chunk antes do mesh guardam o PRIMEIRO carimbo porque o que se quer medir e
+	# o atraso ate o jogador ver o bloco trocado, nao a media das chamadas.
+	if c.mesh_instance != null and not _edit_stamp.has(key):
+		_edit_stamp[key] = Time.get_ticks_usec()
 	if not _dirty.has(c):
 		_dirty.append(c)
+
+
+## Fecha a conta de um chunk carimbado: usec entre a edicao que o sujou e o mesh
+## pronto. Roda no fim de `build_chunk_mesh` para o numero cobrir exatamente o
+## trabalho que o jogador esperou, inclusive a espera pelo orcamento de frame.
+func _record_edit_cost(c: VoxelChunk) -> void:
+	if not _edit_stamp.has(c.coord):
+		return
+	var us: int = int(Time.get_ticks_usec()) - int(_edit_stamp[c.coord])
+	_edit_stamp.erase(c.coord)
+	_edit_us_total += us
+	_edit_us_count += 1
+	_edit_us_worst = maxi(_edit_us_worst, us)
+
+
+## Aggregate do custo de edicao local, no estilo das outras colunas de medida.
+## `count` zero significa "ninguem editou ainda", nao "e barato"; `pending` sao os
+## carimbos abertos cujo mesh ainda nao rodou -- sair com pending > 0 descarta
+## latencia real e o readback precisa dizer isso com o numero na mesa.
+func edit_mesh_cost() -> Dictionary:
+	return {
+		"count": _edit_us_count,
+		"worst_us": _edit_us_worst,
+		"mean_us": (
+			float(_edit_us_total) / float(_edit_us_count)
+			if _edit_us_count > 0 else 0.0
+		),
+		"pending": _edit_stamp.size(),
+	}
 
 
 func is_solid(p: Vector3i) -> bool:
@@ -513,6 +562,7 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 	c.mesh_instance.mesh = mesh
 	c.dirty = false
 	_meshes_built += 1
+	_record_edit_cost(c)
 
 
 func _corner_ao_array(gx: int, gy: int, gz: int, f: int) -> PackedFloat32Array:

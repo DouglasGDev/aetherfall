@@ -65,7 +65,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   após 24 tentativas cai **em silêncio** no centro ([`:388-389`](../../src/main.gd#L388-L389)), o
   pior ponto possível num 128×128 ([`:10-11`](../../src/world/voxel_config.gd#L10-L11)) com margem
   sobrando. O `load` põe o jogador onde estava ([`:1065`](../../src/main.gd#L1065)) e a matilha segue
-  no centro fixo. [`line_of_sight`](../../src/world/voxel_world.gd#L393-L399) (DDA) só é lida pelo
+  no centro fixo. [`line_of_sight`](../../src/world/voxel_world.gd#L442-L448) (DDA) só é lida pelo
   portão de 30 m da percepção ([wolf.gd:852](../../src/entities/wolf.gd#L852)) — nunca no spawn.
 - **Dois tipos de aviso numa fila só**
   ([`show_message`](../../src/ui/hud.gd#L154-L157), fade `:212-214`): anúncio de criatura —
