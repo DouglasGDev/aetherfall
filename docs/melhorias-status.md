@@ -5992,4 +5992,75 @@ merge do registro move a ponta da `main` e não move o pin: `git diff --name-onl
 devolve vazio nesta árvore, então `f77c1961…` e `4855f0e8…` continuam sendo as árvores de código medidas de
 que cada número acima sai — pin é identidade de árvore, não SHA de documento. Os artefatos da pasta têm
 `artifacts.sha256` regenerado com **44** entradas e conferido por `sha256sum -c`, que devolve 44 linhas `OK`
-e nenhuma falha, exit 0.
+e nenhuma falha, exit 0 — as 44 são o manifest tal como pousou em `6a9447e`; a conta da ponta de registro
+depois dela está no parágrafo seguinte.
+
+**A `main` mergida do registro, re-medida.** O merge do registro na `main` é `56485fb`, pais `fa94cb5` e
+`6a9447e`. `git diff --name-only fa94cb5 56485fb` devolve **32 arquivos, nenhum em `src/` ou `tests/`** —
+medido com os dois `wc -l` separados (32 no diff todo, **0** no recorte `-- src tests`), então a árvore
+resultante tem o mesmo `src` e os mesmos `tests` do pin e os números dele valem aqui **por identidade de
+árvore**. O pré-gate na árvore mergida é uma linha de banner e exit **0**
+([registro_merge_pregate_check_only.log:1](evidence/bicho-cavando-12/registro_merge_pregate_check_only.log#L1)),
+e a suíte re-rodada nela sai **`== 255 checagens  0 falhas  48.4 s de teste ==`**, exit **0**, com **0**
+`[FAIL]` e **0** `SCRIPT ERROR` contados por `grep -cE` no mesmo stdout
+([registro_merged_main_suite.log:357](evidence/bicho-cavando-12/registro_merged_main_suite.log#L357)) — a
+testemunha de palco na linha **343** (mesmo `dens=3 componentes=2 separacao=55.9 m`, mesmo `tick=403`, pior
+passo **11.14 ms** abaixo dos 25 ms da régua) e o par de vazamento no rodapé, `WARNING: 4 ObjectDB instances
+were leaked at exit` ([:358](evidence/bicho-cavando-12/registro_merged_main_suite.log#L358)) com `ERROR: 2
+resources still in use at exit`
+([:360](evidence/bicho-cavando-12/registro_merged_main_suite.log#L360)). As três réguas na árvore mergida,
+uma corrida cada: `check_doc_anchors.py` **38 arquivos · 2 927 ponteiros · 209 rótulos · 3 023 links** com
+`casos objetivos: 0`
+([registro_merged_main_ruler_doc_anchors.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_doc_anchors.log#L1),
+[:2](evidence/bicho-cavando-12/registro_merged_main_ruler_doc_anchors.log#L2)); `verify_plan_cites.py` **2
+723 citações com número de linha conferidas**, **34** arquivos citados que não existem, `numeros de linha
+fora do arquivo: 0`
+([registro_merged_main_ruler_plan_cites.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_cites.log#L1),
+[:2](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_cites.log#L2),
+[:37](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_cites.log#L37)); `verify_plan_ids.py` **105**
+identificadores em backticks com os mesmos **5** SHA ausentes — `ca88f75`, `d80ac20`, `dcbcbe8`, `e312f58`,
+`ea78b1a`
+([registro_merged_main_ruler_plan_ids.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_ids.log#L1),
+[:2](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_ids.log#L2)). Os quatro números são os
+mesmos das duas rodadas da árvore do registro, o que era o esperado: um merge que não escreve `.gd` nem
+move linha citada não muda régua nenhuma. Aqueles três stdout de régua foram lidos **antes** de este bloco
+existir, portanto não contam os próprios ponteiros. Re-rodadas com a árvore final desta ponta, as três dão
+`check_doc_anchors.py` **38 · 2 927 · 209 · 3 046** com `casos objetivos: 0`
+([registro_merged_main_ruler_doc_anchors_pos_escrita.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_doc_anchors_pos_escrita.log#L1),
+[:2](evidence/bicho-cavando-12/registro_merged_main_ruler_doc_anchors_pos_escrita.log#L2));
+`verify_plan_cites.py` **2 723 · 34 · 0**
+([registro_merged_main_ruler_plan_cites_pos_escrita.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_cites_pos_escrita.log#L1),
+[:2](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_cites_pos_escrita.log#L2),
+[:37](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_cites_pos_escrita.log#L37));
+`verify_plan_ids.py` **105 · 5**
+([registro_merged_main_ruler_plan_ids_pos_escrita.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_ids_pos_escrita.log#L1),
+[:2](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_ids_pos_escrita.log#L2)) — a coluna de links
+sobe dos `3 023` de cima para `3 046`, e os **23** da diferença são os ponteiros que este bloco abriu,
+conferido entre as duas leituras arquivadas, não declarado. Nenhuma das outras colunas se move, e nenhuma
+das três réguas vê ponteiro de prosa cujo alvo continua dentro do arquivo, que é o furo **#28**.
+
+**Os stdout desta ponta e o manifest.** Entram na pasta oito arquivos novos: os cinco stdout do merge da 12
+— o pré-gate
+([registro_merge_pregate_check_only.log:1](evidence/bicho-cavando-12/registro_merge_pregate_check_only.log#L1)),
+a suíte da árvore mergida
+([registro_merged_main_suite.log:357](evidence/bicho-cavando-12/registro_merged_main_suite.log#L357)) e as
+três réguas lidas antes da escrita deste bloco
+([registro_merged_main_ruler_doc_anchors.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_doc_anchors.log#L1),
+[registro_merged_main_ruler_plan_cites.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_cites.log#L1),
+[registro_merged_main_ruler_plan_ids.log:1](evidence/bicho-cavando-12/registro_merged_main_ruler_plan_ids.log#L1))
+— mais as três re-leituras de cima, já com o bloco escrito, nos três `*_pos_escrita.log`. O
+[artifacts.sha256](evidence/bicho-cavando-12/artifacts.sha256) sai regenerado com **52** entradas e
+`sha256sum -c artifacts.sha256`, rodado dentro da pasta, devolve **52** linhas `OK`, nenhuma falha, exit
+**0**. As 44 entradas que pousaram em `6a9447e` continuam todas no manifest novo com o mesmo hash: o
+`git show 56485fb:…/artifacts.sha256` comparado linha a linha com o da árvore de trabalho devolve **0**
+linhas só-no-antigo, então nenhum artefato já publicado mudou de bytes.
+
+Depois do push do registro, `git ls-remote --heads origin` trouxe as três refs, e é isso que fecha a
+promessa da seção acima: `main` em `56485fb2de824c73ddcee247e5be116e8e666c0f`, `feat/bicho-cavando-12` em
+`d62c066e36ef45893d76861b22a7f9b78c188a61` (a branch do código da perna, que **não estava** lá antes) e
+`docs/registro-pouso-do-codigo-12` em `6a9447e18520ebd8b6c125e4d553c6bad50c616c`. **Nenhuma branch foi
+deletada** — nem a local da perna, nem a remota, nem a de registro, nem a `main`. Esta ponta do registro da
+`main` mergida sobe por cima de `56485fb` e o `ls-remote` depois disso é a prova da quarta ref. O que a
+árvore mergida **não** mede continua sendo o que a perna deixou: `block_changed` sem consumidor nenhum em
+`src/`, o `96.48 ms` sem atribuição depois do furo #31, o par de vazamento do quit, e nenhum gate de fase
+fechado.
