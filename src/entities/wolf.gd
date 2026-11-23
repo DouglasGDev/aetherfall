@@ -99,6 +99,47 @@ const DIMS := Vector3(0.75, 0.95, 1.35)
 # celula com folga de pouso. O 5,2 que estava aqui dava 0,563 m -- 44 % de um bloco --
 # e era exatamente o lobo pulsando encostado num talude que o dono ve.
 const STEP_JUMP: float = 7.6
+## Materiais de pata (dossie 12 §3.2 "Alvo"): neve, areia, terra e grama. E uma
+## lista de MATERIAL, nao de dureza, e a diferenca e medida -- dureza no produto e
+## TEMPO de lavra (`player.gd:663-664` soma `_mining_accum += delta` contra
+## `target_hardness` sem teto de bloco, e `:685` escreve AIR em qualquer alvo),
+## entao se a porta fosse a regua o `STONE 0,95` do jogador cairia tambem e o
+## lobo abriria tunel em penhasco. Os dois bracos que dao dente a esta frase, em
+## `cavar_respeita_a_lista`: STONE (dureza alta) e GLASS (dureza 0,10, a mais baja
+## da tabela) continuam inteiros depois da mesma janela de empurrao.
+const DIG_MATERIALS: Array[int] = [
+	BlockDefs.Block.SNOW,
+	BlockDefs.Block.SAND,
+	BlockDefs.Block.DIRT,
+	BlockDefs.Block.GRASS,
+]
+## Passos de 20 Hz parado empurrando antes de a pata comecar a valer: um
+## esbarron breve num talude nao e obra, e sem esta janela todo corpo que encosta
+## remove um bloco. O numero saiu de `[TARGET]` a medida de
+## `abrir_passagem_depois_de_bloqueio`, nos dois sentidos que o §3.2 (a) pede. Que o
+## desvio natural nao cobre o entupimento: o mesmo muro de dois blocos de neve prende
+## o lobo os 200 passos inteiros da janela quando a pata esta vetada (por
+## proveniencia na neve registrada, por material na pedra) e nunca gasta um salto --
+## cavar aqui nao e ruido sobre uma saida que ja existia. E que a janela nao atrasa a
+## obra: do primeiro quadro encostado (passo 15) a primeira boca vao 13 passos, com o
+## acumulo da neve dentro de um unico comprometimento (`maior_run=13`, tres
+## comprometimentos ate cruzar aos 76 passos). O que reabre esta linha e a propria
+## checagem: se um dia o vaivem do `_detour` trocar de celula antes de a dureza
+## fechar, `maior_run` cai abaixo da obra e o ramo morre inerte.
+const DIG_STEPS_BEFORE: int = 8
+## O WORK que a pata deixa e o MESMO numero da lavra do jogador
+## (`_on_acted("break")` em main.gd:913-918), nao um valor proprio: a intencao do
+## §3.5 e "o outro predador esta trabalhando aqui", e um valor diferente faria do
+## rastro de bicho uma categoria que nenhuma curva de utilidade sabe pesar. O
+## caminho tambem nao e novo -- `_imprint` logo abaixo, com o vies de bioma da
+## perna 09. Consequencia registrada pelo proprio dossiê: WORK deixa de ser
+## pegada exclusiva do jogador, e e `work_de_bicho_nao_confundido` (checagem 3,
+## dossie 12 §5.3) que mede se a curva distingue a origem ou nao.
+const DIG_WORK: float = 0.42
+## "Sem alvo", no molde do `_mining_voxel` do jogador (player.gd:136): nao existe
+## voxel (-999,-999,-999) dentro dos limites do mundo, entao o sentinela nunca
+## colide com uma celula de verdade e `world.get_block` dele devolve AIR.
+const DIG_NONE := Vector3i(-999, -999, -999)
 # agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
 # agua (fuga, perseguicao), boia e rema como o jogador nada e procura a margem.
 const SWIM_SPEED_FACTOR: float = 0.55
@@ -213,6 +254,24 @@ var _move_target: Vector3 = Vector3.ZERO
 var _speed: float = SPEED_WALK
 var _unstick: float = 0.0
 var _detour: float = 0.0
+## Escavacao (dossie 12 §3.1): a celula-compromisso, os passos de empurrao antes
+## de a pata valer e o tempo de lavra acumulado. Estado transitorio de proposito:
+## nao e escrito no `to_dict` e e zerado no `from_dict`, como `_cross_target`.
+## Salvar o meio de um buraco abriria uma boca que ninguem viu fechar -- e o
+## §3.1 pede exatamente que o acumulador more no tick, nao no disco.
+var _dig_pos: Vector3i = DIG_NONE
+var _dig_steps: int = 0
+var _dig_accum: float = 0.0
+## O alvo do ramo (b) (dossie 12 §3.2): a celula do solido que tapa a entrada do
+## rastro, lida no fim da inspecao. Vive separado de `_dig_pos` porque a validade
+## dele nao e geometrica: no tick da entrega o corpo esta parado em cima do assento
+## (`_leaf_investigate` zera o `want`) e `_dig_cell` comeca no `want`, entao a
+## re-derivacao pela faixa do corpo descartaria o alvo no proprio passo em que ele
+## nasce. Depois da entrega o lobo volta a patrulhar e pode ate empurrar o mesmo
+## bloco -- ai os dois ramos querem o mesmo buraco, e nada aqui decide qual dos dois
+## o abriu primeiro. Estado transitorio de proposito: nada de disco (a clausula do
+## load e o commit (f) que paga).
+var _dig_scent: Vector3i = DIG_NONE
 var _heading: float = 0.0
 var _gait: float = 0.0
 var _wander_cd: float = 0.0
@@ -529,6 +588,16 @@ func _leaf_investigate(ctx: Dictionary) -> int:
 	if _inspect_left > 0.0:
 		return BtStatus.RUNNING
 	_remember_scent()
+	# Dossie 12 §3.2 (b), o segundo motivo para cavar: a inspecao acabou sobre uma
+	# celula cuja coluna tem solido dentro da propria faixa -- a entrada do rastro
+	# esta tapada. Aqui, e so aqui, o nariz entrega o bloco ao pata; a obra em si e
+	# o mesmo acumulador do ramo (a) (§3.4 A), e nenhuma linha nova de arvore,
+	# nenhuma string nova de `intent` (o journal hashia `intent`, nao a reacao).
+	# A lista de material decide aqui, nao no passo seguinte: pedra na frente da
+	# entrada e parede, e parede se contorna -- deixar o alvo armado para
+	# `_dig_step` recusa-lo seria escrever um compromisso que nao pode virar obra.
+	var entrada := _scent_entry_cell(_scent_cell)
+	_dig_scent = entrada if _dig_ok(entrada) else DIG_NONE
 	_reaction = "rastro examinado"
 	_scent_found = false
 	_scent_strength = 0.0
@@ -841,6 +910,7 @@ func sim_step(elapsed: float, dt: float) -> void:
 		_inspect_left = 0.0
 	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt, "pack": _pack})
 	_resolve_dry_target()
+	_dig_step(dt)
 
 
 func _sense() -> void:
@@ -930,19 +1000,202 @@ func _find_scent() -> void:
 	_scent_pos = Vector3(cell_pos.x, _scent_ground_y(best_cell), cell_pos.z)
 
 
-## Chao do rastro: a primeira superficie solida descendo do topo da camada encontrada.
-## surface_height() nao serve aqui porque devolve o topo da coluna inteira — para um
-## rastro dentro de caverna isso e o teto, e o episodio lembrado diria que o sangue
-## estava na superficie. Sem solido na janela, fica no topo da propria camada.
-func _scent_ground_y(c: Vector3i) -> float:
+## O primeiro solido descendo pela coluna do centro da celula de Eter, na janela de
+## `2 * AETHER_CELL` passos. Um so caminho para as duas leituras que a coluna tem
+## agora -- o chao do nariz (abaixo) e a entrada de rastro (dossie 12 §3.2 (b),
+## acima) -- porque o §3.2 diz que o alvo do ramo (b) e "a celula do solido, lida
+## pela MESMA coluna que `_scent_ground_y` percorre": com duas varreduras proprias
+## os dois lados podiam discordar e o buraco aberto nao seria o bloco que o nariz
+## leu. Sem solido na janela, `DIG_NONE`.
+func _scent_column_solid(c: Vector3i) -> Vector3i:
 	var cell_pos := aether.cell_center(c)
 	var bx := int(cell_pos.x)
 	var bz := int(cell_pos.z)
 	var top := c.y * aether.cell + aether.cell - 1
 	for y: int in range(top, top - 2 * aether.cell, -1):
 		if world.is_solid_xyz(bx, y, bz):
-			return float(y) + 0.6
-	return float(top)
+			return Vector3i(bx, y, bz)
+	return DIG_NONE
+
+
+## Chao do rastro: a primeira superficie solida descendo do topo da camada encontrada.
+## surface_height() nao serve aqui porque devolve o topo da coluna inteira — para um
+## rastro dentro de caverna isso e o teto, e o episodio lembrado diria que o sangue
+## estava na superficie. Sem solido na janela, fica no topo da propria camada.
+func _scent_ground_y(c: Vector3i) -> float:
+	var solido := _scent_column_solid(c)
+	if solido == DIG_NONE:
+		return float(c.y * aether.cell + aether.cell - 1)
+	return float(solido.y) + 0.6
+
+
+## A entrada de rastro tapada (dossie 12 §3.2 (b)): o solido que a coluna devolve
+## so e entrada quando esta NA CAMADA DO PROPRIO CORPO -- a mesma grandeza que
+## `_dig_cell` usa para escolher a celula do empurrao (`feet + dims.y * 0,5`,
+## piso), lida aqui porque o §3.4 A nao permite uma segunda regua geometrica. As
+## duas palavras que essa igualdade recusa sao os dois preditos falsos do ramo: um
+## solido ABAIXO da camada e o chao do vale, e remove-lo seria abrir o relevo sob o
+## nariz; um solido ACIMA e o teto de outra camada, e a pata abriria um buraco a
+## quatro metros acima de um corpo que nem encosta nele. Com a igualdade o item
+## tambem se termina sozinho: aberta a boca da camada, a coluna passa a devolver o
+## chao de baixo, a leitura nao casa, e nada re-arma -- sem contador de furos por
+## inspecao nem cadencia nova.
+## `DIG_NONE` quando a coluna nao tem solido na janela ou quando o corpo nao esta na
+## camada do achado; a lista de material fica com quem cave, nao com o nariz.
+func _scent_entry_cell(c: Vector3i) -> Vector3i:
+	var solido := _scent_column_solid(c)
+	if solido == DIG_NONE:
+		return DIG_NONE
+	if solido.y != floori(body.feet_pos.y + dims.y * 0.5):
+		return DIG_NONE
+	return solido
+
+
+# ------------------------------------------------------------------ escavacao (dossie 12)
+
+
+## Celula escavavel: material da lista E construcao de ninguem (dossie 12 §3.2).
+## A segunda metade e o que fecha o furo #22 por construcao: `main._benches` so e
+## alimentada pelos sinais do `Player` (main.gd:927-930) e nunca por um bicho,
+## entao uma pata que removesse uma bancada deixaria a lista de crafting
+## apontando para o ar ate o proximo load. `world.edits` e justamente o registro
+## de quem escreveu -- relevo gerado nao esta nele, entao e escavavel; o que foi
+## posto por alguem nao esta na lista de ninguem por acidente. Os dois bracos de
+## `cavar_nao_toca_construcao_alheia` mudam SO este campo, com o mesmo DIRT.
+func _dig_ok(p: Vector3i) -> bool:
+	return DIG_MATERIALS.has(world.get_block(p)) and not world.edits.has(p)
+
+
+## A celula da frente que o corpo esta tocando, no MESMO alcance do degrau
+## (`VoxelBody.step_reach`, voxel_body.gd:162) e na MESMA direcao do passo (`want`,
+## o vetor do pe ao alvo, reescrito em `_physics_process`): o §3.2 pede que quem
+## pula e quem cava respondam a um unico predicado de geometria, nao a dois
+## parecidos que divergem quando o corpo muda de tamanho.
+##
+## Devolve a primeira celula valida da FAIXA de corpo naquele ponto, e nao o voxel
+## de um ponto so, por um motivo lido no envelope: `DIMS.z = 1,35` (linha 96) faz
+## o corpo adulto atravessar duas celulas de z a qualquer hora, entao um alvo
+## unico trocaria de celula a cada deriva do pe -- e nunca abriria um entupimento
+## de duas celulas, porque o corpo seguiria batendo na vizinha. A faixa e
+## deterministica (nenhum `randf`, portanto nenhum dreno novo no riacho que
+## tests/simulation_rng_test.gd mede) e o lobo consome a faixa em ordem: cavada
+## a primeira, a segunda passa a ser a primeira no passo seguinte.
+##
+## `prefer` e a unica parte que nao e geometria: se a celula ja comprometida
+## ainda esta na faixa e ainda e escavavel, ela continua sendo o alvo. Sem isso o
+## desvio do desemperto (`_detour`, lido em `_physics_process`) jogaria o corpo de
+## um lado para o outro e a primeira celula da faixa trocaria a cada vaivem,
+## zerando a obra para sempre -- o corpo encostaria num muro de neve e nunca o
+## atravessaria.
+func _dig_cell(prefer: Vector3i = DIG_NONE) -> Vector3i:
+	var want := _move_target - body.feet_pos
+	want.y = 0.0
+	if want.length_squared() < 1e-8:
+		return DIG_NONE
+	var p := body.feet_pos + want.normalized() * body.step_reach() \
+			+ Vector3(0.0, dims.y * 0.5, 0.0)
+	var y: int = floori(p.y)
+	var x0: int = floori(p.x - dims.x * 0.5)
+	var x1: int = floori(p.x + dims.x * 0.5)
+	var z0: int = floori(p.z - dims.z * 0.5)
+	var z1: int = floori(p.z + dims.z * 0.5)
+	var first := DIG_NONE
+	for dz in range(z0, z1 + 1):
+		for dx in range(x0, x1 + 1):
+			var c := Vector3i(dx, y, dz)
+			if not _dig_ok(c):
+				continue
+			if c == prefer:
+				return c
+			if first == DIG_NONE:
+				first = c
+	return first
+
+
+## Compromete a celula do empurrao (dossie 12 §3.2 (a)), chamada pelo ramo novo do
+## desemperto. Trocar de alvo zera a obra: o acumulo de um talude abandonado nao
+## pode financiar a proxima boca.
+func _dig_arm() -> void:
+	var c := _dig_cell(_dig_pos)
+	if c != _dig_pos:
+		_dig_pos = c
+		_dig_steps = 0
+		_dig_accum = 0.0
+
+
+## Fim de obra (ou de compromisso): os dois alvos e o acumulo voltam ao nada juntos.
+## Limpar tambem `_dig_scent` e o que decide que uma boca concluida nao financia a
+## proxima. Nao ha buraco aqui: o nariz re-arma no fim de cada inspecao, e a
+## inspecao so recomeca quando a leitura da celula passa a renovacao do cache
+## (`SCENT_RENEWAL`) -- na cena da checagem 6 e o WORK da propria boca que reabre o
+## farejo depois de 13 passos de patrulha (§3.2 (b)).
+func _dig_reset() -> void:
+	_dig_pos = DIG_NONE
+	_dig_scent = DIG_NONE
+	_dig_steps = 0
+	_dig_accum = 0.0
+
+
+## A obra em si, no tick de 20 Hz e nao no frame de 60 Hz (dossie 12 §3.1):
+## `DIG_STEPS_BEFORE` passos de empurrao e depois `dt` acumulado contra a dureza
+## do material -- a mesma grandeza que o jogador acumula contra `target_hardness`
+## (player.gd:663), entao depois da janela cada boca pede 5 passos de acumulo na
+## neve e 7 na terra, sem uma linha de permissao nova. Roda no FIM do `sim_step`,
+## depois de `_resolve_dry_target()` e FORA dos 400 us do `SubtreeGuard`: escrever
+## no mundo dentro do orcamento da arvore mudaria o numero que `tree_stats()`
+## publica para a BT, e o orcamento e da arvore, nao do corpo.
+func _dig_step(dt: float) -> void:
+	if _dig_pos == DIG_NONE:
+		# O ramo (b) (dossie 12 §3.2): o alvo veio do nariz, nao do empurrao, e por
+		# isso ele nao pode ser re-derivado pela faixa do corpo -- quem chega
+		# farejando PARA na frente da entrada (`_leaf_investigate` zera o `want` no
+		# ramo da chegada), entao `_dig_cell` devolve DIG_NONE e a geometria do ramo
+		# (a) descartaria o compromisso no proprio passo em que ele nasce. Entra
+		# quando a pata do empurrao esta parada, e a janela dos 8 passos e a mesma:
+		# um so acumulador, nenhuma constante nova, nenhuma string nova de `intent`
+		# (o journal hashia `intent`, nao a reacao). Na neve sao 13 passos, 0,65 s
+		# ate o buraco, e medido que nos 13 passos o corpo ja voltou a patrulhar e
+		# empurra a propria tapa: os dois ramos querem este buraco, e o que e do
+		# nariz e a entrega no tick da inspecao, nao o caminho ate ele.
+		if _dig_scent == DIG_NONE:
+			return
+		if not _dig_ok(_dig_scent):
+			_dig_scent = DIG_NONE
+			return
+		_dig_pos = _dig_scent
+		_dig_steps = 0
+		_dig_accum = 0.0
+		return
+	# A obra vale enquanto o alvo vale. Para o alvo do nariz a validade e a unica
+	# clausula que ele tem: material na lista e nao construicao de alguem. Para o do
+	# empurrao e a geometria, e a re-derivacao ja traz a clausula dentro de si
+	# (`_dig_cell` so devolve celula que passa em `_dig_ok`). Quando os dois ramos
+	# olham a MESMA celula vale a regra do nariz, mais fraca -- e e o caso em que o
+	# corpo encostou na entrada que veio farejando, ou seja, os dois querem o mesmo
+	# buraco.
+	if _dig_pos == _dig_scent:
+		if not _dig_ok(_dig_pos):
+			_dig_reset()
+			return
+	elif _dig_cell(_dig_pos) != _dig_pos:
+		_dig_arm()
+		return
+	_dig_steps += 1
+	if _dig_steps <= DIG_STEPS_BEFORE:
+		return
+	_dig_accum += dt
+	if _dig_accum < BlockDefs.hardness(world.get_block(_dig_pos)):
+		return
+	# `record = true` (dossie 12 §3.3): o buraco tem de aparecer em `world.edits`
+	# e no readback do save, senao a clausula do §1 -- "o mundo tem de registrar
+	# isso" -- nao seria observada por nada.
+	world.set_block(_dig_pos, BlockDefs.Block.AIR, true)
+	# O centro do voxel, o mesmo offset do `acted.emit` do jogador
+	# (player.gd:690) para que as duas origens caiam na MESMA celula de Eter: com
+	# um canto qualquer, a diferenca de leitura entre os dois bracos seria do
+	# arredondamento do `cell_of_world`, nao da fonte (dossie 12 §3.5).
+	_imprint(Vector3(_dig_pos) + Vector3(0.5, 0.5, 0.5), AetherField.Channel.WORK, DIG_WORK)
+	_dig_reset()
 
 
 # ------------------------------------------------------------------ locomocao (60 Hz)
@@ -989,8 +1242,16 @@ func _physics_process(delta: float) -> void:
 		# Os dois sorteios acima continuam incondicionais: a regra nova decide apenas se a
 		# velocidade vertical e escrita, e mover um randf() para dentro de um if trocaria o
 		# riacho que tests/simulation_rng_test.gd mede.
-		if body.on_ground and body.can_step_over(want):
+		var degrau := body.can_step_over(want)
+		if body.on_ground and degrau:
 			body.velocity.y = STEP_JUMP
+		elif not degrau:
+			# Terceiro ramo do desemperto (dossie 12 §3.2 (a)): o mesmo bloqueio que
+			# nao da para subir e o que pede uma pata. Uma pergunta de geometria so,
+			# lida em `degrau` -- o cava nao re-pergunta o alcance por conta propria
+			# (voxel_body.gd:162), entao filhote e adulto passam a subir e escavar na
+			# mesma distancia, e um `reach` copiado nao envelhece sozinho.
+			_dig_arm()
 	if body.feet_pos.y < -6.0:
 		body.feet_pos = home
 		body.velocity = Vector3.ZERO
@@ -1145,6 +1406,14 @@ func load_state(d: Dictionary) -> void:
 	mind.from_dict(d.get("mind", {}))
 	_move_target = home
 	_checked_scents.clear()
+	# Dossie 12 §3.1: a cova comecada antes do save recomeca depois dele, e o que
+	# sobrevive e o mundo (a chave AIR em `world.edits`), nao a intencao de quem a
+	# abriu. O `_dig_reset` e o mesmo fim-de-obra da pata, nao uma limpeza avulsa,
+	# para que os quatro campos nao possam nunca divergir um do outro -- sem esta
+	# linha o `dt` de uma vida anterior voltaria contando como se o bicho tivesse
+	# cavado com o jogo fechado, e o bloco-alvo seria o de um mundo que ja nao e
+	# este (a chave pode ter sumido no load).
+	_dig_reset()
 	# A leitura da matilha e do passo: depois do load o mundo em volta mudou, entao
 	# ela volta a vazia ate o proximo rebuild da sessao.
 	_pack = NO_PACK

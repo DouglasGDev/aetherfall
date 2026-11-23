@@ -39,23 +39,23 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
 ## 2. Estado real do código (lido, não medido)
 
 - **A água tem três peças e uma delas mente.**
-  [`_leaf_wander`](../../src/entities/wolf.gd#L583-L605) sorteia até 8 pontos secos a 5–22 m
-  (`continue` se `not _dry_ground`, [`:648-652`](../../src/entities/wolf.gd#L648-L652), que lê a
-  superfície **atual**); [`_shore_point`](../../src/entities/wolf.gd#L656-L666) varre 5 raios
-  (1,6→8 m) × 8 direções; [`sim_step`](../../src/entities/wolf.gd#L825-L836) acumula `_swim_time` em
-  `dt` — já tick-based (`SHORE_AFTER` 2,0 s = 40 passos, [:108](../../src/entities/wolf.gd#L108)).
+  [`_leaf_wander`](../../src/entities/wolf.gd#L652-L674) sorteia até 8 pontos secos a 5–22 m
+  (`continue` se `not _dry_ground`, [`:717-721`](../../src/entities/wolf.gd#L717-L721), que lê a
+  superfície **atual**); [`_shore_point`](../../src/entities/wolf.gd#L725-L735) varre 5 raios
+  (1,6→8 m) × 8 direções; [`sim_step`](../../src/entities/wolf.gd#L894-L905) acumula `_swim_time` em
+  `dt` — já tick-based (`SHORE_AFTER` 2,0 s = 40 passos, [:149](../../src/entities/wolf.gd#L149)).
   **Achado:** o comentário `:454-455` jura que a margem manda "acima de qualquer outra intenção da
-  árvore", mas a atribuição em [`:742`](../../src/entities/wolf.gd#L742) roda **antes** de
-  `_sense`/`_think`/`_tree.tick` ([:838-842](../../src/entities/wolf.gd#L838-L842)) e é sobrescrita
+  árvore", mas a atribuição em [`:811`](../../src/entities/wolf.gd#L811) roda **antes** de
+  `_sense`/`_think`/`_tree.tick` ([:907-911](../../src/entities/wolf.gd#L907-L911)) e é sobrescrita
   por qualquer folha com alvo — inclusive na 10 em curso, que só acrescentou `_read_pack()`.
-- **Quatro folhas sem teste de solo:** [`_leaf_flee`](../../src/entities/wolf.gd#L421-L441),
-  [`_leaf_chase`](../../src/entities/wolf.gd#L444-L462),
-  [`_leaf_stalk`](../../src/entities/wolf.gd#L495-L505),
-  [`_leaf_investigate`](../../src/entities/wolf.gd#L508-L536) → `_scent_pos` de
-  [`_find_scent`](../../src/entities/wolf.gd#L890-L930) com o chão de
-  [`_scent_ground_y`](../../src/entities/wolf.gd#L937-L945). O corpo já nada: `SWIM_SPEED_FACTOR`
-  [:977](../../src/entities/wolf.gd#L977), flutuabilidade `:760-766`, remo `:815-826`, e o
-  `feet_pos.y < -6,0` → `home` [:994-996](../../src/entities/wolf.gd#L994-L996).
+- **Quatro folhas sem teste de solo:** [`_leaf_flee`](../../src/entities/wolf.gd#L480-L500),
+  [`_leaf_chase`](../../src/entities/wolf.gd#L503-L521),
+  [`_leaf_stalk`](../../src/entities/wolf.gd#L554-L564),
+  [`_leaf_investigate`](../../src/entities/wolf.gd#L567-L605) → `_scent_pos` de
+  [`_find_scent`](../../src/entities/wolf.gd#L960-L1000) com o chão de
+  [`_scent_ground_y`](../../src/entities/wolf.gd#L1025-L1029). O corpo já nada: `SWIM_SPEED_FACTOR`
+  [:1230](../../src/entities/wolf.gd#L1230), flutuabilidade `:760-766`, remo `:815-826`, e o
+  `feet_pos.y < -6,0` → `home` [:1255-1257](../../src/entities/wolf.gd#L1255-L1257).
 - **Spawn seco, desencaixado e indiferente ao jogador.** `spawn_point()` é a **coluna central**
   ([`:247-250`](../../src/main.gd#L247-L250)) — onde o próprio jogador é posto
   ([`:149`](../../src/main.gd#L149)) — e o anel 16–46 m gira em torno **dele**
@@ -66,7 +66,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   pior ponto possível num 128×128 ([`:10-11`](../../src/world/voxel_config.gd#L10-L11)) com margem
   sobrando. O `load` põe o jogador onde estava ([`:1065`](../../src/main.gd#L1065)) e a matilha segue
   no centro fixo. [`line_of_sight`](../../src/world/voxel_world.gd#L442-L448) (DDA) só é lida pelo
-  portão de 30 m da percepção ([wolf.gd:852](../../src/entities/wolf.gd#L852)) — nunca no spawn.
+  portão de 30 m da percepção ([wolf.gd:922](../../src/entities/wolf.gd#L922)) — nunca no spawn.
 - **Dois tipos de aviso numa fila só**
   ([`show_message`](../../src/ui/hud.gd#L154-L157), fade `:212-214`): anúncio de criatura —
   [main.gd:277](../../src/main.gd#L277) e `:853` (dispara para **qualquer** morte, vista ou não) — e
@@ -79,7 +79,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   com cooldown global de 18 s ([`_vocalize`](../../src/audio/audio_director.gd#L513-L531);
   `BARK_RANGE`/`HOWL_COOLDOWN`/alcance 64 m [:26-44](../../src/audio/audio_director.gd#L26-L44)),
   sfx espacializado de mordida/dano/morte (`:404-413`), BLOOD 1,1 + FEAR 0,55 do
-  [`die()`](../../src/entities/wolf.gd#L1051-L1062) (lidos por qualquer nariz, vistos no F4) e o
+  [`die()`](../../src/entities/wolf.gd#L1312-L1323) (lidos por qualquer nariz, vistos no F4) e o
   cadáver por 6 s ([wolf.gd:40](../../src/entities/wolf.gd#L40)) até a recolha de 1 s
   ([`_reap_corpses`](../../src/main.gd#L887-L907)). Roster e narrativa só com F3.
 - **A 10 em curso é fronteira, não concorrente:** `pack_provider` no lobo,
@@ -97,10 +97,10 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   `_spawn_wolves` **fora da árvore**, exige `valid == 5` e assinatura estável — é o primeiro a cair
   se a política de spawn consumir `_population_rng` de jeito diferente por braço ou deixar de criar
   os cinco.
-- **Deriva de citação:** o contrato apontava o blackboard para `wolf.gd:553`, fim de
+- **Deriva de citação:** o contrato apontava o blackboard para `wolf.gd:622`, fim de
   `_build_scorer`; re-ancorado, hoje é **um** `Dictionary` por lobo por tick, na chamada da
-  árvore ([`wolf.gd:842`](../../src/entities/wolf.gd#L842)) e no `_breakdown` do escorredor ([`utility_scorer.gd:76`](../../src/ai/utility_scorer.gd#L76)).
-  `EXPECTED_CHECKS` é [`:39`](../../tests/aether_reactions_test.gd#L39) (150 na leitura deste dossiê) e os
+  árvore ([`wolf.gd:911`](../../src/entities/wolf.gd#L911)) e no `_breakdown` do escorredor ([`utility_scorer.gd:76`](../../src/ai/utility_scorer.gd#L76)).
+  `EXPECTED_CHECKS` é [`:60`](../../tests/aether_reactions_test.gd#L60) (150 na leitura deste dossiê) e os
   30 cenários vão de [`:8-29`](../../tests/aether_reactions_test.gd#L8-L29).
 
 ## 3. O que a peça exige
@@ -110,7 +110,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
    `_shore_point()` substitui; sem saída no anel o alvo molhado fica e o nado segue o caminho que já
    existe. Alternativas recusadas: nas folhas seriam cinco cópias (e a quinta já acerta); no
    escorredor é erro de camada — a histerese `min_lead`/`min_interval`
-   ([:734-735](../../src/entities/wolf.gd#L734-L735)) decide **intenção**, não geometria, e "a caça
+   ([:803-804](../../src/entities/wolf.gd#L803-L804)) decide **intenção**, não geometria, e "a caça
    está encharcada" não pode trocar `hunt` por `patrol`. Efeito colateral obrigatório: o filtro
    cumpre a supremacia que `:454-455` promete.
 2. **Nado como último recurso, compromisso em tick.** `SHORE_AFTER` vira piso do estado ensopado,
@@ -119,7 +119,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
    exatamente o "parece desorganizado" do pedido. Nada de `Time.get_ticks_*`.
 3. **Ordem sem invadir a 10.** Da 10 são, e não se reabre: assentos angulares do anel de mordida,
    escalonamento por `_bite_cd`, `pack_provider`, território compartilhado, contágio. Sobram: (i)
-   `_scent_pos` é o **centro da célula** ([`:929-930`](../../src/entities/wolf.gd#L929-L930)) — N
+   `_scent_pos` é o **centro da célula** ([`:999-1000`](../../src/entities/wolf.gd#L999-L1000)) — N
    lobos no mesmo rastro recebem o mesmo ponto; quem chega primeiro mantém, os demais param em offset
    determinístico por `identity` fora da célula (4 blocos,
    [voxel_config.gd:16](../../src/world/voxel_config.gd#L16)); (ii) **alvo estável** sob teto de
@@ -147,7 +147,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
 
 - **Frame, tick ou às vezes?** Filtro: **tick de 20 Hz**, uma pergunta por lobo vivo (100/s), dentro
   de `begin_step`/`end_step` ([main.gd:259-261](../../src/main.gd#L259-L261)) e **fora** dos 400 µs
-  do `SubtreeGuard` ([`:389-390`](../../src/entities/wolf.gd#L389-L390)) — o custo novo sai no
+  do `SubtreeGuard` ([`:448-449`](../../src/entities/wolf.gd#L448-L449)) — o custo novo sai no
   `sim_step` do runner, não no `last_us`. Re-escolha de travessia: 4×/s. Offset de célula: só na
   folha de investigação. Higiene de spawn: **rara** — 5 no boot, 1 por fila de 45 s
   ([main.gd:30](../../src/main.gd#L30)).
@@ -173,7 +173,7 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Cenários novos no runner dedicado, sobre `_arm`/`_advance` já existentes
-([`:264-288`](../../tests/aether_reactions_test.gd#L264-L288)):
+([`:292-316`](../../tests/aether_reactions_test.gd#L292-L316)):
 
 1. **`lobo_escolhe_trilha_seca`** — alvo molhado com margem seca a < 8 m, 200 passos:
    `ticks_com_alvo_molhado_final == 0`, com a distância à margem. **Nasce vermelha.**
@@ -193,7 +193,7 @@ Cenários novos no runner dedicado, sobre `_arm`/`_advance` já existentes
 8. **`feedback_do_jogador_continua_no_hud`** — par obrigatório do 7: inventário cheio, slot vazio,
    craft e save/load seguem chegando. Sem ela, o 7 é remoção silenciosa de feedback.
 9. **`convivio_nao_estoura_orcamento`** — `trips == 0` **e** o rodapé de `sim_step`/`_bt_us`
-   ([`:3097-3098`](../../tests/aether_reactions_test.gd#L3097-L3098)) na banda da revisão; nenhuma
+   ([`:3125-3126`](../../tests/aether_reactions_test.gd#L3125-L3126)) na banda da revisão; nenhuma
    banda absoluta se publica aqui — µs não transferem de janela e a medição é serial.
 
 `EXPECTED_CHECKS` (119), os censores irmãos (audio 73, simulation_rng 27, journal 128) e o rodapé da

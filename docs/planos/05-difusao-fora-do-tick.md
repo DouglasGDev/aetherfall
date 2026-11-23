@@ -1,6 +1,6 @@
 # 05 — Difusão do Éter fora do tick de decisão
 
-Plano derivado de leitura; nada foi rodado por mim. Cobre o item 6 de "Falta" (`docs/melhorias-status.md:524-526`) e a linha não marcada do P1 (`docs/melhorias-status.md:687`), que `docs/design/08-roadmap-risks-licensing.md:68` lista como entrega de P1 e `:36` registra que nenhum gate está fechado. Marcas: `[MEASURED]` lido em log, `[TARGET]` peça que não existe em `src/`.
+Plano derivado de leitura; nada foi rodado por mim. Cobre o item 6 de "Falta" (`docs/melhorias-status.md:524-526`) e a linha não marcada do P1 (`docs/melhorias-status.md:691`), que `docs/design/08-roadmap-risks-licensing.md:68` lista como entrega de P1 e `:36` registra que nenhum gate está fechado. Marcas: `[MEASURED]` lido em log, `[TARGET]` peça que não existe em `src/`.
 
 ## Premissa nomeada: visibilidade síncrona
 
@@ -18,9 +18,9 @@ Hoje a difusão é a única escrita em massa do Éter dentro do passo, e o lobo 
 | Varredura de corte (`MIN_VALUE`) | 49 152 por passada | `src/world/aether_field.gd:146-153` |
 | Alocação por passada | **1 `PackedInt32Array` por canal = 3 por passada, 12/s** | `src/world/aether_field.gd:122` (débito em `docs/melhorias-status.md:85-85`) |
 | Custo da lista `hot` | 6 vizinhos por célula ativa, com `world.is_solid` no meio do laço | `src/world/aether_field.gd:130-142`, `:161-176` |
-| µs de difusão, HOT agregado | **não medido** | — (o runner só cronometra `sim_step` e BT, `tests/aether_reactions_test.gd:277-289`) |
+| µs de difusão, HOT agregado | **não medido** | — (o runner só cronometra `sim_step` e BT, `tests/aether_reactions_test.gd:305-317`) |
 
-Âncora `[MEASURED]` de campo real: WORK 4,0 por 12 s deu **48 passadas**, energia 4,000000 → 2,021455, **19 células ativas** (`docs/melhorias-status.md:1642-1643`). Âncora `[MEASURED]` de passo: `worst_sim_ms=6,779`, `tick=359`, `dropped_ticks=0`, `chunks=64`, `aether_energy=9,67776` (`docs/evidence/third-person-carry/clone-suite.log:305`), com **232 checagens / 0 falhas / 33,7 s** (`docs/evidence/third-person-carry/clone-suite.log:307`). O teto do passo é 50 ms com 5 passos por frame (`src/core/sim_clock.gd:5-7`, `:19-29`) e o cronômetro inclui o journal (`src/main.gd:259-261`, `:300-306`).
+Âncora `[MEASURED]` de campo real: WORK 4,0 por 12 s deu **48 passadas**, energia 4,000000 → 2,021455, **19 células ativas** (`docs/melhorias-status.md:1651-1652`). Âncora `[MEASURED]` de passo: `worst_sim_ms=6,779`, `tick=359`, `dropped_ticks=0`, `chunks=64`, `aether_energy=9,67776` (`docs/evidence/third-person-carry/clone-suite.log:305`), com **232 checagens / 0 falhas / 33,7 s** (`docs/evidence/third-person-carry/clone-suite.log:307`). O teto do passo é 50 ms com 5 passos por frame (`src/core/sim_clock.gd:5-7`, `:19-29`) e o cronômetro inclui o journal (`src/main.gd:259-261`, `:300-306`).
 
 ## Opções reais
 
@@ -41,8 +41,8 @@ godot --headless --path . tests/aether_reactions_test.gd
 godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.jsonl
 ```
 
-1. **Colheita antes do corte** (pré-gate de A/B/C): o runner imprime por cenário `diffuse_us_media`, `diffuse_us_pico`, `passes`, `hot_max_por_canal`, medidos com `Time.get_ticks_usec()` em volta de `diffuse_and_decay` (padrão já usado em `tests/aether_reactions_test.gd:134-138`) — código de produção intocado. Sem esse número, A/B/C são hipótese.
-2. **`difusao_hash_inalterado_por_semente`** (checagem nova, em `tests/aether_reactions_test.gd`, que já controla as cadências): monta o campo, imprint WORK 4,0, N passadas fixas, e compara `Journal.state_hash()` contra um **literal gravado na base**, antes e depois da mudança, junto da âncora lida 4,000000 → 2,021455 e 19 células ativas (`docs/melhorias-status.md:1642-1643`). Imprime `passes=N hash_antes=... hash_depois=... energia=...`. Em A a igualdade é obrigatória; em B/C a checagem existe para mostrar **onde** o hash mudou, com o novo literal e o commit que o declara. Nota honesta: comparar journal entre duas corridas ao vivo não serve — a simulação ao vivo não é determinística (`AGENTS.md`, mandato 3), e a suíte roda sem journal (`docs/evidence/third-person-carry/clone-suite.log:305`: `journal.records=0`).
+1. **Colheita antes do corte** (pré-gate de A/B/C): o runner imprime por cenário `diffuse_us_media`, `diffuse_us_pico`, `passes`, `hot_max_por_canal`, medidos com `Time.get_ticks_usec()` em volta de `diffuse_and_decay` (padrão já usado em `tests/aether_reactions_test.gd:155-159`) — código de produção intocado. Sem esse número, A/B/C são hipótese.
+2. **`difusao_hash_inalterado_por_semente`** (checagem nova, em `tests/aether_reactions_test.gd`, que já controla as cadências): monta o campo, imprint WORK 4,0, N passadas fixas, e compara `Journal.state_hash()` contra um **literal gravado na base**, antes e depois da mudança, junto da âncora lida 4,000000 → 2,021455 e 19 células ativas (`docs/melhorias-status.md:1651-1652`). Imprime `passes=N hash_antes=... hash_depois=... energia=...`. Em A a igualdade é obrigatória; em B/C a checagem existe para mostrar **onde** o hash mudou, com o novo literal e o commit que o declara. Nota honesta: comparar journal entre duas corridas ao vivo não serve — a simulação ao vivo não é determinística (`AGENTS.md`, mandato 3), e a suíte roda sem journal (`docs/evidence/third-person-carry/clone-suite.log:305`: `journal.records=0`).
 3. **Custo sem regressão**: `dropped_ticks=0` e `worst_sim_ms` contra 6,779 ms `[MEASURED]` (`docs/evidence/third-person-carry/clone-suite.log:305`), com a contagem de checagens conferida **antes** do lote (`AGENTS.md`: um `SCRIPT ERROR` dentro de um passo derruba checagens em silêncio).
 4. Gate de fase não se fecha aqui: P1 segue aberto (`docs/design/08-roadmap-risks-licensing.md:72-74`, `:85`), e quem fecha é o dono do repositório.
 
@@ -57,7 +57,7 @@ godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.j
 
 - Não é "melhorar um sistema que já passou no gate": o gate de P1 está aberto (`docs/design/08-roadmap-risks-licensing.md:72-85`) e o item segue não marcado (`docs/melhorias-status.md:524-526`). O que veta o corte agora é a ordem colheita→corte (`AGENTS.md:187`) e a regra de complexidade sem necessidade de gate.
 - Não abrir thread sem a fila de publicação no tick (`docs/design/06-godot-architecture.md:118-120`) nem sem mover o `is_solid` para uma cópia lida (`src/world/aether_field.gd:176`).
-- Não aproveitar para levar o campo a 6 canais: é o item 4 (`docs/melhorias-status.md:510-518`, adiado em `:660`) e `Channel.COUNT` entra na projeção (`src/persistence/tick_journal.gd:36-39`) — dois assuntos, dois hashes, dois commits.
+- Não aproveitar para levar o campo a 6 canais: é o item 4 (`docs/melhorias-status.md:510-518`, adiado em `:664`) e `Channel.COUNT` entra na projeção (`src/persistence/tick_journal.gd:36-39`) — dois assuntos, dois hashes, dois commits.
 - Não tocar `HALF_LIFE`/`DIFFUSE_RATE` (`src/world/aether_field.gd:13-15`) nem o `elapsed` fixo (`src/main.gd:269`): muda Éter e hash por decreto, não por evidência.
 - Não assumir `HotSet`, `SlowSim`, facções, `MindsInspector`, replay nem fita de comandos: nada disso existe em `src/`.
 - Não somar estado novo em `main.gd` (débito de objeto deus reconhecido): a colheita mora no runner, e os contadores ficam em `AetherField`.
@@ -74,12 +74,12 @@ Entre cada commit: contagem de checagens conferida antes do lote, suíte verde, 
 
 ## Citações que não conferem
 
-- `src/entities/wolf.gd:890-930` e `src/entities/player.gd:677`, `:693` foram reconferidas na
+- `src/entities/wolf.gd:960-1000` e `src/entities/player.gd:677`, `:693` foram reconferidas na
   árvore desta rodada: o corpo de `_find_scent()` continua o varredor citado (agora escalonado
-  em camadas, `src/entities/wolf.gd:900-922` — re-ancorado por conteúdo, não por deslocamento: a
+  em camadas, `src/entities/wolf.gd:970-992` — re-ancorado por conteúdo, não por deslocamento: a
   faixa que estava aqui não era o varredor em nenhuma árvore lida desde então), e as duas funções
   do jogador são `_mine_target()` e `_try_place()`,
   donas das escritas de voxel. A cadência de rastros de 0,25 s é `SCENT_PERIOD` em
-  `src/entities/wolf.gd:30`, disparada em `:857-858` — o risco da fase descrito acima é real.
+  `src/entities/wolf.gd:30`, disparada em `:927-928` — o risco da fase descrito acima é real.
 - `AGENTS.md:187` ("colheita, não corte"), `:257` (quatro perguntas) e `:391-400` (comandos) lidos por grep; os números históricos de boot (936–962 ms, 4 640–4 886 ms) citados por `AGENTS.md` não foram re-medidos aqui — a única âncora usada é o log do clone limpo (`docs/evidence/third-person-carry/clone-suite.log:305`, `:307`).
 - Nenhum custo de difusão foi medido: todo valor de µs neste arquivo está ausente por projeto, não por esquecimento.

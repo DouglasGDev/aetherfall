@@ -1,0 +1,222 @@
+$ python .tools/_ruler_old.py --ref d80ac20   # isenção larga (antes do corte do #30)
+corpus em d80ac20  arquivos: 38  ponteiros conferidos: 2855  rotulos conferidos: 197  links relativos conferidos: 2871
+AGENTS.md:335  src/entities/wolf.gd:843-843  BRANCO
+docs/engine/simclock.md:46  src/entities/wolf.gd:405-405  BRANCO
+docs/melhorias-status.md:1403  src/entities/wolf.gd:937-945  ROTULO FORA DO CORPO [_scent_ground_y] em 1025-1044
+docs/melhorias-status.md:235  src/entities/wolf.gd:843-843  BRANCO
+docs/melhorias-status.md:238  src/entities/wolf.gd:421-421  BRANCO
+docs/melhorias-status.md:297  src/entities/wolf.gd:466-466  BRANCO
+docs/melhorias-status.md:3152  src/entities/wolf.gd:466-466  BRANCO
+docs/melhorias-status.md:3261  src/entities/wolf.gd:451-451  BRANCO
+docs/melhorias-status.md:3261  src/entities/wolf.gd:455-455  BRANCO
+docs/melhorias-status.md:3693  src/entities/wolf.gd:1179-1179  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/melhorias-status.md:3695  src/entities/wolf.gd:1027-1027  ROTULO FORA DO CORPO [take_damage] em 1288-1311
+docs/melhorias-status.md:3695  src/entities/wolf.gd:1115-1115  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/melhorias-status.md:3701  src/entities/wolf.gd:566-566  BRANCO
+docs/melhorias-status.md:3895  src/entities/wolf.gd:695-699  ROTULO FORA DO CORPO [_resolve_dry_target] em 764-770
+docs/melhorias-status.md:3896  src/entities/wolf.gd:843-843  BRANCO
+docs/melhorias-status.md:3898  src/entities/wolf.gd:674-685  ROTULO FORA DO CORPO [_demand_shore] em 743-763
+docs/melhorias-status.md:3899  src/entities/wolf.gd:108-108  ROTULO FORA DO CORPO [SHORE_AFTER] em 149-150
+docs/melhorias-status.md:3909  tests/aether_reactions_test.gd:39-39  ROTULO FORA DO CORPO [EXPECTED_CHECKS] em 60-63
+docs/melhorias-status.md:4495  src/entities/wolf.gd:937-945  ROTULO FORA DO CORPO [_scent_ground_y] em 1025-1044
+docs/melhorias-status.md:673  src/entities/wolf.gd:466-466  BRANCO
+docs/melhorias-status.md:964  src/entities/wolf.gd:1052-1053  BRANCO
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md:20  src/entities/wolf.gd:201-201  BRANCO
+docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:136  docs/melhorias-status.md:1309-1309  BRANCO
+docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:137  docs/melhorias-status.md:1309-1309  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:12  src/entities/wolf.gd:1068-1068  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:13  src/entities/wolf.gd:201-201  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:31  src/entities/wolf.gd:1068-1068  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:52  src/entities/wolf.gd:874-874  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:7  src/entities/wolf.gd:874-874  BRANCO
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:49  src/entities/wolf.gd:1179-1179  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/planos/10-alcateia-rutinas.md:101  src/entities/wolf.gd:444-444  ROTULO FORA DO CORPO [_leaf_chase] em 503-524
+docs/planos/10-alcateia-rutinas.md:102  src/entities/wolf.gd:495-495  ROTULO FORA DO CORPO [_leaf_stalk] em 554-566
+docs/planos/10-alcateia-rutinas.md:104  src/entities/wolf.gd:950-998  ROTULO FORA DO CORPO [_physics_process] em 1203-1261
+docs/planos/10-alcateia-rutinas.md:108  src/entities/wolf.gd:489-492  ROTULO FORA DO CORPO [_seat_point] em 548-553
+docs/planos/10-alcateia-rutinas.md:112  src/entities/wolf.gd:702-702  BRANCO
+docs/planos/10-alcateia-rutinas.md:112  src/entities/wolf.gd:702-702  ROTULO FORA DO CORPO [_leaf_bite] em 771-792
+docs/planos/10-alcateia-rutinas.md:120  src/entities/wolf.gd:724-728  ROTULO FORA DO CORPO [_bite_turn] em 793-801
+docs/planos/10-alcateia-rutinas.md:121  src/entities/wolf.gd:466-471  ROTULO FORA DO CORPO [_hunt_pack_size] em 525-535
+docs/planos/10-alcateia-rutinas.md:122  src/entities/wolf.gd:477-482  ROTULO FORA DO CORPO [_hunt_pack_rank] em 536-547
+docs/planos/10-alcateia-rutinas.md:135  src/entities/wolf.gd:1099-1099  ROTULO FORA DO CORPO [state_dict] em 1360-1375
+docs/planos/10-alcateia-rutinas.md:135  src/entities/wolf.gd:1115-1115  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/planos/10-alcateia-rutinas.md:152  src/entities/wolf.gd:508-536  ROTULO FORA DO CORPO [_leaf_investigate] em 567-618
+docs/planos/10-alcateia-rutinas.md:154  src/entities/wolf.gd:566-566  BRANCO
+docs/planos/10-alcateia-rutinas.md:173  src/entities/wolf.gd:477-482  ROTULO FORA DO CORPO [_hunt_pack_rank] em 536-547
+docs/planos/10-alcateia-rutinas.md:174  src/entities/wolf.gd:466-471  ROTULO FORA DO CORPO [_hunt_pack_size] em 525-535
+docs/planos/10-alcateia-rutinas.md:176  src/entities/wolf.gd:539-563  ROTULO FORA DO CORPO [_scent_seat] em 619-634
+docs/planos/10-alcateia-rutinas.md:20  src/entities/wolf.gd:874-876  ROTULO FORA DO CORPO [_sense] em 916-959
+docs/planos/10-alcateia-rutinas.md:213  src/entities/wolf.gd:800-801  ROTULO FORA DO CORPO [_read_pack] em 869-874
+docs/planos/10-alcateia-rutinas.md:33  src/entities/wolf.gd:363-393  ROTULO FORA DO CORPO [_build_tree] em 422-452
+docs/planos/10-alcateia-rutinas.md:38  src/entities/wolf.gd:444-444  ROTULO FORA DO CORPO [_leaf_chase] em 503-524
+docs/planos/10-alcateia-rutinas.md:39  src/entities/wolf.gd:508-536  ROTULO FORA DO CORPO [_leaf_investigate] em 567-618
+docs/planos/10-alcateia-rutinas.md:40  src/entities/wolf.gd:466-466  BRANCO
+docs/planos/10-alcateia-rutinas.md:40  src/entities/wolf.gd:466-466  ROTULO FORA DO CORPO [_hunt_pack_size] em 525-535
+docs/planos/10-alcateia-rutinas.md:41  src/entities/wolf.gd:550-563  ROTULO FORA DO CORPO [_scent_seat] em 619-634
+docs/planos/10-alcateia-rutinas.md:42  src/entities/wolf.gd:583-583  ROTULO FORA DO CORPO [_leaf_wander] em 652-674
+docs/planos/10-alcateia-rutinas.md:43  src/entities/wolf.gd:639-639  ROTULO FORA DO CORPO [_territory_rank] em 708-716
+docs/planos/10-alcateia-rutinas.md:51  src/entities/wolf.gd:800-801  ROTULO FORA DO CORPO [_read_pack] em 869-874
+docs/planos/10-alcateia-rutinas.md:55  src/entities/wolf.gd:846-883  ROTULO FORA DO CORPO [_sense] em 916-959
+docs/planos/10-alcateia-rutinas.md:59  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/10-alcateia-rutinas.md:69  src/entities/wolf.gd:733-789  ROTULO FORA DO CORPO [_build_scorer] em 802-860
+docs/planos/10-alcateia-rutinas.md:83  src/entities/wolf.gd:583-583  ROTULO FORA DO CORPO [_leaf_wander] em 652-674
+docs/planos/10-alcateia-rutinas.md:84  src/entities/wolf.gd:648-648  ROTULO FORA DO CORPO [_dry_ground] em 717-724
+docs/planos/10-alcateia-rutinas.md:85  src/entities/wolf.gd:656-656  ROTULO FORA DO CORPO [_shore_point] em 725-742
+docs/planos/10-alcateia-rutinas.md:98  src/entities/wolf.gd:625-632  ROTULO FORA DO CORPO [_territory_center] em 694-707
+docs/planos/10-alcateia-rutinas.md:99  src/entities/wolf.gd:639-644  ROTULO FORA DO CORPO [_territory_rank] em 708-716
+docs/planos/11-acasalamento-filhote-e-censo.md:125  src/entities/wolf.gd:817-817  BRANCO
+docs/planos/11-acasalamento-filhote-e-censo.md:147  src/entities/wolf.gd:303-308  ROTULO FORA DO CORPO [phase_of_save] em 364-375
+docs/planos/11-acasalamento-filhote-e-censo.md:157  src/entities/wolf.gd:950-998  ROTULO FORA DO CORPO [_physics_process] em 1203-1261
+docs/planos/11-acasalamento-filhote-e-censo.md:59  src/entities/wolf.gd:240-259  ROTULO FORA DO CORPO [setup] em 299-320
+docs/planos/11-acasalamento-filhote-e-censo.md:62  src/entities/wolf.gd:1179-1208  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/planos/11-acasalamento-filhote-e-censo.md:63  src/entities/wolf.gd:1001-1001  BRANCO
+docs/planos/11-acasalamento-filhote-e-censo.md:63  src/entities/wolf.gd:1001-1001  ROTULO FORA DO CORPO [_animate] em 1262-1287
+docs/planos/11-acasalamento-filhote-e-censo.md:67  src/entities/wolf.gd:331-339  ROTULO FORA DO CORPO [set_phase] em 390-399
+docs/planos/11-acasalamento-filhote-e-censo.md:69  src/entities/wolf.gd:270-272  ROTULO FORA DO CORPO [max_hp] em 329-337
+docs/planos/11-acasalamento-filhote-e-censo.md:70  src/entities/wolf.gd:279-281  ROTULO FORA DO CORPO [bite_damage] em 338-341
+docs/planos/11-acasalamento-filhote-e-censo.md:71  src/entities/wolf.gd:1085-1091  ROTULO FORA DO CORPO [debug_line] em 1346-1355
+docs/planos/11-acasalamento-filhote-e-censo.md:78  src/entities/wolf.gd:1099-1112  ROTULO FORA DO CORPO [state_dict] em 1360-1375
+docs/planos/11-acasalamento-filhote-e-censo.md:79  src/entities/wolf.gd:1115-1163  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/planos/11-acasalamento-filhote-e-censo.md:90  src/entities/wolf.gd:1137-1137  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:234  src/entities/wolf.gd:356-358  ROTULO FORA DO CORPO [_imprint] em 415-421
+docs/planos/12-bicho-cavando-voxel.md:74  src/entities/wolf.gd:240-259  ROTULO FORA DO CORPO [setup] em 299-320
+docs/planos/13-arvore-genealogica-e-ether.md:154  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/13-arvore-genealogica-e-ether.md:180  src/entities/wolf.gd:1115-1163  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/planos/13-arvore-genealogica-e-ether.md:187  src/entities/wolf.gd:950-998  ROTULO FORA DO CORPO [_physics_process] em 1203-1261
+docs/planos/13-arvore-genealogica-e-ether.md:229  src/entities/wolf.gd:1027-1027  ROTULO FORA DO CORPO [take_damage] em 1288-1311
+docs/planos/13-arvore-genealogica-e-ether.md:26  src/entities/wolf.gd:240-241  ROTULO FORA DO CORPO [setup] em 299-320
+docs/planos/13-arvore-genealogica-e-ether.md:288  src/entities/wolf.gd:1085-1090  ROTULO FORA DO CORPO [debug_line] em 1346-1355
+docs/planos/13-arvore-genealogica-e-ether.md:314  src/entities/wolf.gd:479-479  BRANCO
+docs/planos/13-arvore-genealogica-e-ether.md:315  src/entities/wolf.gd:455-455  BRANCO
+docs/planos/13-arvore-genealogica-e-ether.md:315  src/entities/wolf.gd:846-883  ROTULO FORA DO CORPO [_sense] em 916-959
+docs/planos/13-arvore-genealogica-e-ether.md:316  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/13-arvore-genealogica-e-ether.md:317  src/entities/wolf.gd:363-391  ROTULO FORA DO CORPO [_build_tree] em 422-452
+docs/planos/13-arvore-genealogica-e-ether.md:53  src/entities/wolf.gd:1184-1184  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/planos/13-arvore-genealogica-e-ether.md:59  src/entities/wolf.gd:1099-1104  ROTULO FORA DO CORPO [state_dict] em 1360-1375
+docs/planos/14-convivio-da-alcateia.md:42  src/entities/wolf.gd:583-605  ROTULO FORA DO CORPO [_leaf_wander] em 652-674
+docs/planos/14-convivio-da-alcateia.md:44  src/entities/wolf.gd:656-666  ROTULO FORA DO CORPO [_shore_point] em 725-742
+docs/planos/14-convivio-da-alcateia.md:45  src/entities/wolf.gd:825-836  ROTULO FORA DO CORPO [sim_step] em 875-915
+docs/planos/14-convivio-da-alcateia.md:51  src/entities/wolf.gd:421-441  ROTULO FORA DO CORPO [_leaf_flee] em 480-502
+docs/planos/14-convivio-da-alcateia.md:52  src/entities/wolf.gd:444-462  ROTULO FORA DO CORPO [_leaf_chase] em 503-524
+docs/planos/14-convivio-da-alcateia.md:53  src/entities/wolf.gd:495-505  ROTULO FORA DO CORPO [_leaf_stalk] em 554-566
+docs/planos/14-convivio-da-alcateia.md:54  src/entities/wolf.gd:508-536  ROTULO FORA DO CORPO [_leaf_investigate] em 567-618
+docs/planos/14-convivio-da-alcateia.md:55  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/14-convivio-da-alcateia.md:56  src/entities/wolf.gd:937-945  ROTULO FORA DO CORPO [_scent_ground_y] em 1025-1044
+docs/planos/14-convivio-da-alcateia.md:82  src/entities/wolf.gd:1051-1062  ROTULO FORA DO CORPO [die] em 1312-1325
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:115  src/entities/wolf.gd:1068-1068  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:128  src/entities/wolf.gd:737-737  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:265  src/entities/wolf.gd:737-737  BRANCO
+casos objetivos: 107
+exit=1
+$ python tools/check_doc_anchors.py --ref d80ac20   # isenção apertada (depois do corte)
+corpus em d80ac20  arquivos: 38  ponteiros conferidos: 2878  rotulos conferidos: 197  links relativos conferidos: 2871
+AGENTS.md:335  src/entities/wolf.gd:843-843  BRANCO
+docs/engine/simclock.md:46  src/entities/wolf.gd:405-405  BRANCO
+docs/melhorias-status.md:1403  src/entities/wolf.gd:937-945  ROTULO FORA DO CORPO [_scent_ground_y] em 1025-1044
+docs/melhorias-status.md:235  src/entities/wolf.gd:843-843  BRANCO
+docs/melhorias-status.md:238  src/entities/wolf.gd:421-421  BRANCO
+docs/melhorias-status.md:297  src/entities/wolf.gd:466-466  BRANCO
+docs/melhorias-status.md:3152  src/entities/wolf.gd:466-466  BRANCO
+docs/melhorias-status.md:3261  src/entities/wolf.gd:451-451  BRANCO
+docs/melhorias-status.md:3261  src/entities/wolf.gd:455-455  BRANCO
+docs/melhorias-status.md:3693  src/entities/wolf.gd:1179-1179  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/melhorias-status.md:3695  src/entities/wolf.gd:1027-1027  ROTULO FORA DO CORPO [take_damage] em 1288-1311
+docs/melhorias-status.md:3695  src/entities/wolf.gd:1115-1115  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/melhorias-status.md:3701  src/entities/wolf.gd:566-566  BRANCO
+docs/melhorias-status.md:3895  src/entities/wolf.gd:695-699  ROTULO FORA DO CORPO [_resolve_dry_target] em 764-770
+docs/melhorias-status.md:3896  src/entities/wolf.gd:843-843  BRANCO
+docs/melhorias-status.md:3898  src/entities/wolf.gd:674-685  ROTULO FORA DO CORPO [_demand_shore] em 743-763
+docs/melhorias-status.md:3899  src/entities/wolf.gd:108-108  ROTULO FORA DO CORPO [SHORE_AFTER] em 149-150
+docs/melhorias-status.md:3909  tests/aether_reactions_test.gd:39-39  ROTULO FORA DO CORPO [EXPECTED_CHECKS] em 60-63
+docs/melhorias-status.md:4495  src/entities/wolf.gd:937-945  ROTULO FORA DO CORPO [_scent_ground_y] em 1025-1044
+docs/melhorias-status.md:673  src/entities/wolf.gd:466-466  BRANCO
+docs/melhorias-status.md:964  src/entities/wolf.gd:1052-1053  BRANCO
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md:20  src/entities/wolf.gd:201-201  BRANCO
+docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:136  docs/melhorias-status.md:1309-1309  BRANCO
+docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:137  docs/melhorias-status.md:1309-1309  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:12  src/entities/wolf.gd:1068-1068  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:13  src/entities/wolf.gd:201-201  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:31  src/entities/wolf.gd:1068-1068  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:52  src/entities/wolf.gd:874-874  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:7  src/entities/wolf.gd:874-874  BRANCO
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:49  src/entities/wolf.gd:1179-1179  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/planos/10-alcateia-rutinas.md:101  src/entities/wolf.gd:444-444  ROTULO FORA DO CORPO [_leaf_chase] em 503-524
+docs/planos/10-alcateia-rutinas.md:102  src/entities/wolf.gd:495-495  ROTULO FORA DO CORPO [_leaf_stalk] em 554-566
+docs/planos/10-alcateia-rutinas.md:104  src/entities/wolf.gd:950-998  ROTULO FORA DO CORPO [_physics_process] em 1203-1261
+docs/planos/10-alcateia-rutinas.md:108  src/entities/wolf.gd:489-492  ROTULO FORA DO CORPO [_seat_point] em 548-553
+docs/planos/10-alcateia-rutinas.md:112  src/entities/wolf.gd:702-702  BRANCO
+docs/planos/10-alcateia-rutinas.md:112  src/entities/wolf.gd:702-702  ROTULO FORA DO CORPO [_leaf_bite] em 771-792
+docs/planos/10-alcateia-rutinas.md:120  src/entities/wolf.gd:724-728  ROTULO FORA DO CORPO [_bite_turn] em 793-801
+docs/planos/10-alcateia-rutinas.md:121  src/entities/wolf.gd:466-471  ROTULO FORA DO CORPO [_hunt_pack_size] em 525-535
+docs/planos/10-alcateia-rutinas.md:122  src/entities/wolf.gd:477-482  ROTULO FORA DO CORPO [_hunt_pack_rank] em 536-547
+docs/planos/10-alcateia-rutinas.md:135  src/entities/wolf.gd:1099-1099  ROTULO FORA DO CORPO [state_dict] em 1360-1375
+docs/planos/10-alcateia-rutinas.md:135  src/entities/wolf.gd:1115-1115  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/planos/10-alcateia-rutinas.md:152  src/entities/wolf.gd:508-536  ROTULO FORA DO CORPO [_leaf_investigate] em 567-618
+docs/planos/10-alcateia-rutinas.md:154  src/entities/wolf.gd:566-566  BRANCO
+docs/planos/10-alcateia-rutinas.md:173  src/entities/wolf.gd:477-482  ROTULO FORA DO CORPO [_hunt_pack_rank] em 536-547
+docs/planos/10-alcateia-rutinas.md:174  src/entities/wolf.gd:466-471  ROTULO FORA DO CORPO [_hunt_pack_size] em 525-535
+docs/planos/10-alcateia-rutinas.md:176  src/entities/wolf.gd:539-563  ROTULO FORA DO CORPO [_scent_seat] em 619-634
+docs/planos/10-alcateia-rutinas.md:20  src/entities/wolf.gd:874-876  ROTULO FORA DO CORPO [_sense] em 916-959
+docs/planos/10-alcateia-rutinas.md:213  src/entities/wolf.gd:800-801  ROTULO FORA DO CORPO [_read_pack] em 869-874
+docs/planos/10-alcateia-rutinas.md:33  src/entities/wolf.gd:363-393  ROTULO FORA DO CORPO [_build_tree] em 422-452
+docs/planos/10-alcateia-rutinas.md:38  src/entities/wolf.gd:444-444  ROTULO FORA DO CORPO [_leaf_chase] em 503-524
+docs/planos/10-alcateia-rutinas.md:39  src/entities/wolf.gd:508-536  ROTULO FORA DO CORPO [_leaf_investigate] em 567-618
+docs/planos/10-alcateia-rutinas.md:40  src/entities/wolf.gd:466-466  BRANCO
+docs/planos/10-alcateia-rutinas.md:40  src/entities/wolf.gd:466-466  ROTULO FORA DO CORPO [_hunt_pack_size] em 525-535
+docs/planos/10-alcateia-rutinas.md:41  src/entities/wolf.gd:550-563  ROTULO FORA DO CORPO [_scent_seat] em 619-634
+docs/planos/10-alcateia-rutinas.md:42  src/entities/wolf.gd:583-583  ROTULO FORA DO CORPO [_leaf_wander] em 652-674
+docs/planos/10-alcateia-rutinas.md:43  src/entities/wolf.gd:639-639  ROTULO FORA DO CORPO [_territory_rank] em 708-716
+docs/planos/10-alcateia-rutinas.md:51  src/entities/wolf.gd:800-801  ROTULO FORA DO CORPO [_read_pack] em 869-874
+docs/planos/10-alcateia-rutinas.md:55  src/entities/wolf.gd:846-883  ROTULO FORA DO CORPO [_sense] em 916-959
+docs/planos/10-alcateia-rutinas.md:59  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/10-alcateia-rutinas.md:69  src/entities/wolf.gd:733-789  ROTULO FORA DO CORPO [_build_scorer] em 802-860
+docs/planos/10-alcateia-rutinas.md:83  src/entities/wolf.gd:583-583  ROTULO FORA DO CORPO [_leaf_wander] em 652-674
+docs/planos/10-alcateia-rutinas.md:84  src/entities/wolf.gd:648-648  ROTULO FORA DO CORPO [_dry_ground] em 717-724
+docs/planos/10-alcateia-rutinas.md:85  src/entities/wolf.gd:656-656  ROTULO FORA DO CORPO [_shore_point] em 725-742
+docs/planos/10-alcateia-rutinas.md:98  src/entities/wolf.gd:625-632  ROTULO FORA DO CORPO [_territory_center] em 694-707
+docs/planos/10-alcateia-rutinas.md:99  src/entities/wolf.gd:639-644  ROTULO FORA DO CORPO [_territory_rank] em 708-716
+docs/planos/11-acasalamento-filhote-e-censo.md:125  src/entities/wolf.gd:817-817  BRANCO
+docs/planos/11-acasalamento-filhote-e-censo.md:147  src/entities/wolf.gd:303-308  ROTULO FORA DO CORPO [phase_of_save] em 364-375
+docs/planos/11-acasalamento-filhote-e-censo.md:157  src/entities/wolf.gd:950-998  ROTULO FORA DO CORPO [_physics_process] em 1203-1261
+docs/planos/11-acasalamento-filhote-e-censo.md:59  src/entities/wolf.gd:240-259  ROTULO FORA DO CORPO [setup] em 299-320
+docs/planos/11-acasalamento-filhote-e-censo.md:62  src/entities/wolf.gd:1179-1208  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/planos/11-acasalamento-filhote-e-censo.md:63  src/entities/wolf.gd:1001-1001  BRANCO
+docs/planos/11-acasalamento-filhote-e-censo.md:63  src/entities/wolf.gd:1001-1001  ROTULO FORA DO CORPO [_animate] em 1262-1287
+docs/planos/11-acasalamento-filhote-e-censo.md:67  src/entities/wolf.gd:331-339  ROTULO FORA DO CORPO [set_phase] em 390-399
+docs/planos/11-acasalamento-filhote-e-censo.md:69  src/entities/wolf.gd:270-272  ROTULO FORA DO CORPO [max_hp] em 329-337
+docs/planos/11-acasalamento-filhote-e-censo.md:70  src/entities/wolf.gd:279-281  ROTULO FORA DO CORPO [bite_damage] em 338-341
+docs/planos/11-acasalamento-filhote-e-censo.md:71  src/entities/wolf.gd:1085-1091  ROTULO FORA DO CORPO [debug_line] em 1346-1355
+docs/planos/11-acasalamento-filhote-e-censo.md:78  src/entities/wolf.gd:1099-1112  ROTULO FORA DO CORPO [state_dict] em 1360-1375
+docs/planos/11-acasalamento-filhote-e-censo.md:79  src/entities/wolf.gd:1115-1163  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/planos/11-acasalamento-filhote-e-censo.md:90  src/entities/wolf.gd:1137-1137  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:234  src/entities/wolf.gd:356-358  ROTULO FORA DO CORPO [_imprint] em 415-421
+docs/planos/12-bicho-cavando-voxel.md:74  src/entities/wolf.gd:240-259  ROTULO FORA DO CORPO [setup] em 299-320
+docs/planos/13-arvore-genealogica-e-ether.md:154  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/13-arvore-genealogica-e-ether.md:180  src/entities/wolf.gd:1115-1163  ROTULO FORA DO CORPO [load_state] em 1376-1447
+docs/planos/13-arvore-genealogica-e-ether.md:187  src/entities/wolf.gd:950-998  ROTULO FORA DO CORPO [_physics_process] em 1203-1261
+docs/planos/13-arvore-genealogica-e-ether.md:229  src/entities/wolf.gd:1027-1027  ROTULO FORA DO CORPO [take_damage] em 1288-1311
+docs/planos/13-arvore-genealogica-e-ether.md:26  src/entities/wolf.gd:240-241  ROTULO FORA DO CORPO [setup] em 299-320
+docs/planos/13-arvore-genealogica-e-ether.md:288  src/entities/wolf.gd:1085-1090  ROTULO FORA DO CORPO [debug_line] em 1346-1355
+docs/planos/13-arvore-genealogica-e-ether.md:314  src/entities/wolf.gd:479-479  BRANCO
+docs/planos/13-arvore-genealogica-e-ether.md:315  src/entities/wolf.gd:455-455  BRANCO
+docs/planos/13-arvore-genealogica-e-ether.md:315  src/entities/wolf.gd:846-883  ROTULO FORA DO CORPO [_sense] em 916-959
+docs/planos/13-arvore-genealogica-e-ether.md:316  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/13-arvore-genealogica-e-ether.md:317  src/entities/wolf.gd:363-391  ROTULO FORA DO CORPO [_build_tree] em 422-452
+docs/planos/13-arvore-genealogica-e-ether.md:53  src/entities/wolf.gd:1184-1184  ROTULO FORA DO CORPO [_build_visual] em 1448-1479
+docs/planos/13-arvore-genealogica-e-ether.md:59  src/entities/wolf.gd:1099-1104  ROTULO FORA DO CORPO [state_dict] em 1360-1375
+docs/planos/14-convivio-da-alcateia.md:42  src/entities/wolf.gd:583-605  ROTULO FORA DO CORPO [_leaf_wander] em 652-674
+docs/planos/14-convivio-da-alcateia.md:44  src/entities/wolf.gd:656-666  ROTULO FORA DO CORPO [_shore_point] em 725-742
+docs/planos/14-convivio-da-alcateia.md:45  src/entities/wolf.gd:825-836  ROTULO FORA DO CORPO [sim_step] em 875-915
+docs/planos/14-convivio-da-alcateia.md:51  src/entities/wolf.gd:421-441  ROTULO FORA DO CORPO [_leaf_flee] em 480-502
+docs/planos/14-convivio-da-alcateia.md:52  src/entities/wolf.gd:444-462  ROTULO FORA DO CORPO [_leaf_chase] em 503-524
+docs/planos/14-convivio-da-alcateia.md:53  src/entities/wolf.gd:495-505  ROTULO FORA DO CORPO [_leaf_stalk] em 554-566
+docs/planos/14-convivio-da-alcateia.md:54  src/entities/wolf.gd:508-536  ROTULO FORA DO CORPO [_leaf_investigate] em 567-618
+docs/planos/14-convivio-da-alcateia.md:55  src/entities/wolf.gd:890-930  ROTULO FORA DO CORPO [_find_scent] em 960-1009
+docs/planos/14-convivio-da-alcateia.md:56  src/entities/wolf.gd:937-945  ROTULO FORA DO CORPO [_scent_ground_y] em 1025-1044
+docs/planos/14-convivio-da-alcateia.md:82  src/entities/wolf.gd:1051-1062  ROTULO FORA DO CORPO [die] em 1312-1325
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:115  src/entities/wolf.gd:1068-1068  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:128  src/entities/wolf.gd:737-737  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:265  src/entities/wolf.gd:737-737  BRANCO
+casos objetivos: 107
+exit=1

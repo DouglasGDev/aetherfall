@@ -287,7 +287,7 @@ godot --headless --path . tests/smoke_test.tscn
    para o status com o log, porque a colocação roda no caminho raro e é justamente onde um custo
    se disfarça de grátis.
 8. **`esgotamento_de_lares_forcado`** — o furo #18 pago aqui, e este dossiê assume o dono que o
-   status ofereceu à 16 ou à 11 ([`melhorias-status.md:1133`](../melhorias-status.md#L1133)): o
+   status ofereceu à 16 ou à 11 ([`melhorias-status.md:1169`](../melhorias-status.md#L1169)): o
    palco marca **todas** as colunas da caixa útil (116 × 116 ≈ 13 456 entradas, num fixture de
    teste, não no jogo) e exige `recusados == 8` com `soma(motivos) == tries × SPAWN_ATTEMPTS × 8`.
    Para `motivos` ser lido em número — hoje ele só é **interpolado na string impressa**

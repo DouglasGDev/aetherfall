@@ -2,6 +2,10 @@ extends SceneTree
 
 const Session = preload("res://src/main.gd")
 const SEED: int = 20261116
+# O MESMO pino do molde (`simulation_rng_test.gd:75`): o numero nao e uma
+# preferencia, e a fita global onde o par `randi()` de antes / `randi()` de depois
+# e conferido. Troca-lo nao troca o que a checagem decide.
+const RNG_PIN: int = 7301
 const SPAWN := Vector3(58.0, 51.001, 62.0)
 const SOURCE := Vector3(66.0, 50.6, 62.0)
 const FAR_PLAYER := Vector3(112.0, 51.001, 112.0)
@@ -35,8 +39,25 @@ const TESTS: Array[StringName] = [
 	&"_test_reposicao_volta_para_a_toca_perdida",
 	&"_test_nascimento_fica_na_toca_dos_pais",
 	&"_test_espalhamento_nao_estoura_o_passo",
+	&"_test_lobo_cava_sem_input_do_jogador",
+	&"_test_cavar_respeita_a_lista", &"_test_cavar_nao_toca_construcao_alheia",
+	&"_test_abrir_passagem_depois_de_bloqueio",
+	&"_test_work_de_bicho_nao_confundido",
+	&"_test_entrada_de_rastro_exposta_no_chao_lido",
+	&"_test_cavar_nao_consome_rng_da_sessao",
+	&"_test_colheita_de_malha_sem_cavar",
+	&"_test_cavar_sobrevive_ao_save",
 ]
-const EXPECTED_CHECKS: int = 240
+# 283 = os 275 da checagem 6 (ramo (b) do nariz) mais as quatro da checagem 8, a
+# sobrevivencia ao save, e as quatro da checagem 9, o pino de RNG: premissa de o
+# braco de neve cavar e armar, o `randi()` depois do pino igual nos dois bracos,
+# cada quadro que arma a pata sorteando o desvio junto, e o par de pedra onde o
+# detector ve o sorteio sem nenhuma pata armada. O censo se re-deriva a cada
+# checagem nova porque a linha
+# `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
+# o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
+# desarma o instrumento inteiro.
+const EXPECTED_CHECKS: int = 283
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -179,6 +200,13 @@ const CAP_SPOTS: Array = [
 	Vector3(70.0, 51.001, 70.0), Vector3(58.0, 51.001, 82.0),
 	Vector3(40.0, 51.001, 82.0),
 ]
+# Onde o nariz da checagem 3 fica de pe, a OESTE do muro de x=56. A coluna nao e
+# escolha de gosto: a celula de Eter da boca cavada (56 / 4 = 14) entra no quadrado
+# de `SCENT_RADIUS = 3` celulas em torno de 46 / 4 = 11 (varre 8..14) e a celula da
+# isca de WORK, em x=66 (= 16), fica FORA. Assim o braco do lobo le "WORK so do
+# lobo" e o braco do jogador le "WORK so do jogador" -- duas misturas diferentes
+# nao comparariam assinatura nenhuma.
+const NARIZ_FEET := Vector3(46.0, 51.001, 54.0)
 
 
 ## Sessao de spawn puro: os cinco lobos vem do `_spawn_wolves` real e ficam onde o
@@ -4392,5 +4420,1095 @@ func _test_espalhamento_nao_estoura_o_passo() -> bool:
 			"worst_sim_ms=%.2f ms  pico_do_passo=%d us  media=%.1f us/passo  total=%d us em %d passos  | colocacao (caminho raro, sem regua): %d us por %d lares com %d tocas fundadas" % [
 			float(d["worst_sim_ms"]), pico_us, media_us, total_us, passos,
 			colocacao_us, int(Session.WOLF_COUNT), s._dens.size()])
+	_pack_release()
+	return true
+
+
+## ------------------------------------------------------------------ cavar (dossie 12)
+
+
+## Palco de escavacao: a coluna de x=`x` com as `rows` solidas do `block` pedido,
+## na faixa de z inteira que o runner usa (40..84). A coluna e larga de proposito:
+## o entupimento da checagem 5 tem de ser um MURO, nao um pilar de cinco celulas
+## que da para contornar -- se desse para contornar, "atravessou" nao diria nada
+## sobre a pata.
+## As duas metades do `registrada = false` nao sao cerimonia, sao a premissa do
+## §1 ("um voxel que o jogador nao tocou"): a escrita sai com `record = false` E a
+## chave antiga e APAGADA de `world.edits`. A plateia da fixture foi montada com
+## `set_block(pos, AIR)` de `record` default (o plateau de `_test_fixture`),
+## entao toda celula de ar acima do y=50 ja tem chave no registro do mundo. Sem o
+## erase a parede de teste seria construcao registrada, a clausula de
+## proveniencia recusaria o lote inteiro e `lobo_cava_sem_input_do_jogador`
+## ficaria verde por nao haver o que cavar.
+func _dig_stage(x: int, rows: Array, block: int, registrada: bool = false) -> void:
+	for z: int in range(40, 85):
+		for y: int in range(51, 58):
+			var p := Vector3i(x, y, z)
+			var b: int = block if y in rows else BlockDefs.Block.AIR
+			if registrada:
+				# Normaliza em ar sem registro e so depois escreve o alvo registrado:
+				# `set_block` recusa no-op (`voxel_world.gd:270-271`), entao uma celula
+				# que ja tinha o bloco pedido nao deixaria chave nenhuma e o braco
+				# "registrado" contaria chaves por acaso do braco anterior.
+				_world.edits.erase(p)
+				_world.set_block(p, BlockDefs.Block.AIR, false)
+				_world.set_block(p, b, true)
+			else:
+				_world.edits.erase(p)
+				_world.set_block(p, b, false)
+
+
+## As duas metades do §3.3, cada uma na sua conta, e a separacao e o que faz a
+## terceira checagem poder falhar. `_opened_cells` e o estado de mundo: ar no y do
+## corpo, com ou sem chave. `_dug_cells` e o registro: ar COM chave AIR em
+## `world.edits`. Se as duas vivessem num predicado so, um `record = false` na
+## pata derrubaria as duas contas juntas e a clausula "o mundo registra o buraco"
+## ficaria verde sem medir nada -- aqui ela so passa se cada celula NOVA aberta
+## carrega a chave. O erase de `_dig_stage` ainda por cima devolve a coluna ao
+## estado virgem no fim do lote, entao as duas leituras tem de acontecer antes da
+## limpeza.
+func _opened_cells(x: int) -> Array:
+	var out: Array = []
+	for z: int in range(40, 85):
+		var p := Vector3i(x, 51, z)
+		if _world.get_block(p) == BlockDefs.Block.AIR:
+			out.append(p)
+	return out
+
+
+func _dug_cells(x: int) -> Array:
+	var out: Array = []
+	for z: int in range(40, 85):
+		var p := Vector3i(x, 51, z)
+		if _world.get_block(p) == BlockDefs.Block.AIR and _world.edits.has(p):
+			out.append(p)
+	return out
+
+
+## A janela do corredor (checagem 5 do dossie 12 §5): os dois numeros que o §3.2 (a)
+## pede antes de `DIG_STEPS_BEFORE` valer alguma coisa -- em quantos passos um
+## entupimento de neve trava um lobo SEM cavar e em quantos o mesmo lobo atravessa
+## COM. Os bracos sem pata nao pedem toggle nem codigo de teste: neve REGISTRADA
+## (`_dig_ok` recusa por proveniencia) e pedra FORA da lista prendem pelo mesmo
+## motivo observavel -- o corpo encosta e nao passa. E por isso que a travessia do
+## braco cavavel nao pode ser lida como "so esperou o tempo do desvio": o desvio
+## natural nao tira ninguem de um muro de dois blocos, e o que o numero compara e o
+## tempo que a pata custa contra o tempo que o muro custa.
+## `degraus` conta os quadros em que o bloqueio tinha subida possivel (o ramo da
+## perna 19) e `maior_run` o mais longo comprometimento consecutivo de uma unica
+## celula: se o `_detour` do desemperto zerasse a obra a cada vaivem, e aqui que
+## isso aparece -- o acumulo nunca chegaria ao fim e o braco novo morreria inerte.
+func _dig_corridor(block: int, rows: Array, registrada: bool,
+		ticks_limit: int = 200) -> Dictionary:
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_dig_stage(56, rows, block, registrada)
+	var abertas_0 := _opened_cells(56).size()
+	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
+	_advance(1, false)
+	var ticks := 0
+	var horizontais := 0
+	var degraus := 0
+	var encostou := false
+	var boca_tick := -1
+	var cruze_tick := -1
+	var encostada_tick := -1
+	var x_max := _wolf.body.feet_pos.x
+	var passos_visto := 0
+	var comprometido := _wolf._dig_pos != Wolf.DIG_NONE
+	var run := 0
+	var maior_run := 0
+	var runs := 0
+	for i: int in ticks_limit:
+		ticks += 1
+		_advance(1, false)
+		for f: int in 3:
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			x_max = maxf(x_max, _wolf.body.feet_pos.x)
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+				if _wolf.body.feet_pos.y < 51.5 and \
+						_wolf.body.feet_pos.x + Wolf.DIMS.x * 0.5 > 55.9:
+					if encostada_tick < 0:
+						encostada_tick = ticks
+					encostou = true
+				var want := _wolf._move_target - _wolf.body.feet_pos
+				want.y = 0.0
+				if _wolf.body.can_step_over(want):
+					degraus += 1
+			if cruze_tick < 0 and _wolf.body.feet_pos.x > 57.4:
+				cruze_tick = ticks
+		passos_visto = maxi(passos_visto, _wolf._dig_steps)
+		var agora := _wolf._dig_pos != Wolf.DIG_NONE
+		if agora:
+			if not comprometido:
+				runs += 1
+				run = 0
+			run += 1
+			maior_run = maxi(maior_run, run)
+		comprometido = agora
+		if boca_tick < 0 and _opened_cells(56).size() > abertas_0:
+			boca_tick = ticks
+		if cruze_tick > 0:
+			break
+	var out := {
+		"ticks": ticks, "horizontais": horizontais, "degraus": degraus,
+		"encostou": encostou, "encostada_tick": encostada_tick,
+		"boca_tick": boca_tick, "cruze_tick": cruze_tick, "x_max": x_max,
+		"bocas": _opened_cells(56).size() - abertas_0,
+		"passos_visto": passos_visto, "maior_run": maior_run, "runs": runs,
+		"feet": _wolf.body.feet_pos, "alvo": _wolf._move_target,
+		"dig_pos": _wolf._dig_pos,
+	}
+	_dig_stage(56, [], BlockDefs.Block.AIR)
+	return out
+
+
+## A janela de empurrao, uma so vez para as tres checagens. Nada aqui escreve
+## `_move_target`, `intent` ou `_dig_pos` na mao: o rastro de WORK atras da coluna
+## e o que da a intencao pela arvore real, e o integrador e que encosta o corpo na
+## face -- o mesmo palco com que a perna 19 mediu o auto-pulo. `extras` poe
+## construcao registrada dentro da faixa (o braco da bancada) depois do palco.
+func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
+		registrada: bool = false, extras: Dictionary = {},
+		pin_rng: bool = false) -> Dictionary:
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_dig_stage(56, rows, block, registrada)
+	for p: Vector3i in extras:
+		_world.set_block(p, int(extras[p]), true)
+	var edits_na_coluna := 0
+	for z: int in range(40, 85):
+		if _world.edits.has(Vector3i(56, 51, z)):
+			edits_na_coluna += 1
+	var abertas_0: Array = _opened_cells(56)
+	var chaves_0: int = _dug_cells(56).size()
+	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
+	_advance(1, false)
+	# O pino do molde (`simulation_rng_test.gd:75-77`): `seed` e o primeiro `randi`
+	# devolvem o valor que o PROXIMO consumo daria; o segundo `seed` re-poe o estado
+	# e a janela roda com a fita no mesmo lugar. Se os N passos nao tocarem na RNG
+	# global, o `randi()` do fim devolve exatamente esse numero.
+	var rng_next := 0
+	if pin_rng:
+		seed(RNG_PIN)
+		rng_next = randi()
+		seed(RNG_PIN)
+	var ticks := 0
+	var horizontais := 0
+	var encostou := false
+	var boca_tick := -1
+	var x_max := _wolf.body.feet_pos.x
+	var rearms := 0
+	var armadas := 0
+	var armadas_com_rearm := 0
+	var detour_min := INF
+	var detour_max := -INF
+	for i: int in ticks_limit:
+		ticks += 1
+		_advance(1, false)
+		for f: int in 3:
+			var unstick_0 := _wolf._unstick
+			var pos_0: Vector3i = _wolf._dig_pos
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			x_max = maxf(x_max, _wolf.body.feet_pos.x)
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+				if _wolf.body.feet_pos.y < 51.5 and \
+						_wolf.body.feet_pos.x + Wolf.DIMS.x * 0.5 > 55.9:
+					encostou = true
+			# `_unstick` so tem duas escritas no arquivo inteiro: o `-= delta` do
+			# passo andante e o `_rng.randf_range(0.35, 0.8)` do desemperto. Diminuir
+			# e o normal, entao SUBIR so pode ser o sorteio -- e o detector nao
+			# precisa de nenhum contador dentro do lobo, que e o que a casa pede de
+			# um instrumento.
+			var rearmou := _wolf._unstick > unstick_0 + 1e-9
+			if rearmou:
+				rearms += 1
+				detour_min = minf(detour_min, _wolf._detour)
+				detour_max = maxf(detour_max, _wolf._detour)
+			if pos_0 == Wolf.DIG_NONE and _wolf._dig_pos != Wolf.DIG_NONE:
+				armadas += 1
+				if rearmou:
+					armadas_com_rearm += 1
+		var n := _opened_cells(56).size() - abertas_0.size()
+		if boca_tick < 0 and n > 0:
+			boca_tick = ticks
+		if n >= boca_alvo:
+			break
+	var rng_depois := 0
+	var rng_preservado := true
+	if pin_rng:
+		# Le DEPOIS da janela e so quando o pino foi pedido: `randi()` consome a
+		# fita, e os outros bracos que chamam esta funcao nao tem de mover o estado
+		# da RNG global por existir um instrumento apontando para ela.
+		rng_depois = randi()
+		rng_preservado = rng_depois == rng_next
+	var novas: Array = []
+	for p: Vector3i in _opened_cells(56):
+		if not abertas_0.has(p):
+			novas.append(p)
+	var com_chave := 0
+	for p: Vector3i in novas:
+		if int(_world.edits.get(p, -1)) == int(BlockDefs.Block.AIR):
+			com_chave += 1
+	var inteiros := 0
+	for z: int in range(40, 85):
+		for y: int in rows:
+			if _world.get_block(Vector3i(56, y, z)) == block:
+				inteiros += 1
+	# Lido ANTES da limpeza do palco: o que a checagem da bancada precisa e do
+	# estado que o lote deixou, e `_dig_stage(56, [], AIR)` devolve a coluna ao ar.
+	var extras_lidos := {}
+	for p: Vector3i in extras:
+		extras_lidos[p] = {
+			"bloco": _world.get_block(p),
+			"registrada": _world.edits.has(p),
+			"valor": int(_world.edits.get(p, -1)),
+		}
+	# O WORK lido na celula de Eter de cada boca nova, antes da limpeza do palco.
+	# `cell_of_world` com o mesmo offset do imprint (voxel + 0,5) e o que garante
+	# que a leitura cai na celula em que a escrita caiu: pedir pelo voxel inteiro
+	# arredondaria para outra celula nos voxels de borda e a checagem acusaria
+	# ausencia onde o instrumento e que esta torto.
+	var work_em := {}
+	var work_acesos := 0
+	for p: Vector3i in novas:
+		var v: float = _field.sample_cell(
+				_field.cell_of_world(Vector3(p) + Vector3(0.5, 0.5, 0.5)),
+				AetherField.Channel.WORK)
+		work_em[p] = v
+		if v > 0.0:
+			work_acesos += 1
+	var out := {
+		"ticks": ticks, "horizontais": horizontais, "encostou": encostou,
+		"boca_tick": boca_tick, "novas": novas, "bocas_n": novas.size(),
+		"chaves_n": _dug_cells(56).size() - chaves_0, "com_chave": com_chave,
+		"edits_na_coluna": edits_na_coluna, "x_max": x_max, "inteiros": inteiros,
+		"celulas": int(rows.size()) * 45, "feet": _wolf.body.feet_pos,
+		"alvo": _wolf._move_target, "dig_pos": _wolf._dig_pos,
+		"dig_steps": _wolf._dig_steps, "extras": extras_lidos,
+		"work_em": work_em, "work_acesos": work_acesos,
+		"rearms": rearms, "armadas": armadas, "armadas_com_rearm": armadas_com_rearm,
+		"detour_min": detour_min, "detour_max": detour_max,
+		"rng_preservado": rng_preservado, "rng_next": rng_next, "rng_depois": rng_depois,
+	}
+	_dig_stage(56, [], BlockDefs.Block.AIR)
+	return out
+
+
+## Checagem 1 do dossie 12 §5, a premissa do §1 virada em numero. Sao quatro
+## clausulas e cada uma paga a sua linha: o voxel nao tinha chave em `world.edits`
+## antes do lote (ninguem tocou, e nenhum botao do jogador esta apertado), a pata
+## o devolve em ar depois de uma janela andando, a escrita e registrada, e o WORK
+## acendeu na celula de Eter. A terceira e a que impede o cavar silencioso: sem a
+## chave o buraco nao entra no save e o jogador reloga num talude que ninguem
+## abriu -- e por isso que ela conta as bocas NOVAS do lote contra `world.edits`,
+## uma a uma, e nao o estado final da coluna, que o `_dig_stage` do proprio palco
+## devolve ao ar no fim da janela.
+func _test_lobo_cava_sem_input_do_jogador() -> bool:
+	var w := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 2)
+	_check(not Input.is_action_pressed("break_block")
+			and not Input.is_action_pressed("place_block") and not _player.panel_open
+			and int(w["edits_na_coluna"]) == 0 and int(w["horizontais"]) > 0
+			and bool(w["encostou"]),
+			"premissa: nenhum input do jogador, coluna sem chave no registro, corpo encostado na face",
+			"break=%s place=%s painel=%s edits_na_coluna=%d horizontais=%d encostou=%s feet=%s alvo=%s" % [
+			Input.is_action_pressed("break_block"), Input.is_action_pressed("place_block"),
+			_player.panel_open, int(w["edits_na_coluna"]), int(w["horizontais"]),
+			w["encostou"], w["feet"], w["alvo"]])
+	_check(int(w["bocas_n"]) >= 1 and int(w["boca_tick"]) > 0,
+			"a pata remove o voxel, atraida pelo rastro e sem um clique na mesa",
+			"bocas=%d primeira_no_tick=%d janela=%d/%d horizontais=%d face_max=%.3f feet=%s" % [
+			int(w["bocas_n"]), int(w["boca_tick"]), int(w["ticks"]), 200,
+			int(w["horizontais"]), float(w["x_max"]) + Wolf.DIMS.x * 0.5, w["feet"]])
+	_check(int(w["com_chave"]) == int(w["bocas_n"]) and int(w["bocas_n"]) >= 1,
+			"o mundo registra o buraco: cada boca nova e uma chave AIR em `world.edits`",
+			"chaves_air=%d bocas=%d chaves_coluna=%d celulas=%s" % [
+			int(w["com_chave"]), int(w["bocas_n"]), int(w["chaves_n"]), str(w["novas"])])
+	# A quarta clausula do §5.1: `o WORK apareceu na celula de Eter`. Ela conta
+	# bocas com WORK > 0 e nao o valor, porque as duas celulas de z da faixa do
+	# corpo (-0.5 ate +0.5 de `DIMS.z = 1,35`) caem na MESMA celula de Eter de 4
+	# blocos e o `imprint` e aditivo: o valor de duas bocas e o dobro e nao e o
+	# que esta em jogo aqui. O peso do imprint, esse, e a checagem 3 que decide.
+	_check(int(w["work_acesos"]) == int(w["bocas_n"]) and int(w["bocas_n"]) >= 1,
+			"o WORK apareceu na celula de Eter: cada boca nova acende a sua",
+			"work_acesos=%d bocas=%d celulas=%s valores=%s" % [
+			int(w["work_acesos"]), int(w["bocas_n"]), str(w["novas"]), str(w["work_em"])])
+	return true
+
+
+## Checagem 2 do dossie 12 §5: a porta e a LISTA DE MATERIAL, e nao a dureza -- a
+## afirmacao que a leitura da pauta de hoje devolveu diferente do prompt original
+## (dossie 12 §2, item 1). `BlockDefs.hardness` e tempo de lavra do jogador, nao
+## permissao (`player.gd:663-664` soma `delta` contra `target_hardness` sem teto
+## de bloco, `:685` escreve AIR em qualquer alvo), entao o braco do vidro e o que
+## da dente: dureza 0,10 s, a mais baja da tabela, e ainda assim a pata nao passa.
+## O braco do STONE (0,95) e o outro lado da mesma moeda, e a premissa abaixo
+## exige que as recusas encostaram na face e esgotaram a janela -- sem ela
+## "nao cavou" poderia significar "nao chegou".
+func _test_cavar_respeita_a_lista() -> bool:
+	# [rotulo, bloco, esperado cavar]
+	var arms: Array = [
+		["neve", BlockDefs.Block.SNOW, true],
+		["areia", BlockDefs.Block.SAND, true],
+		["terra", BlockDefs.Block.DIRT, true],
+		["grama", BlockDefs.Block.GRASS, true],
+		["pedra", BlockDefs.Block.STONE, false],
+		["vidro", BlockDefs.Block.GLASS, false],
+	]
+	var resultados: Array = []
+	for arm: Array in arms:
+		var w := _dig_window(int(arm[1]), [51, 52], 200, 1)
+		resultados.append([String(arm[0]), int(arm[1]), bool(arm[2]),
+				int(w["bocas_n"]) >= 1, w])
+	var recusas_encostadas := true
+	var min_horizontais := 0
+	var min_ticks := 0
+	var recusas := 0
+	for r: Array in resultados:
+		if bool(r[2]):
+			continue
+		recusas += 1
+		var w: Dictionary = r[4]
+		if int(w["horizontais"]) == 0 or not bool(w["encostou"]):
+			recusas_encostadas = false
+		min_horizontais = int(w["horizontais"]) if recusas == 1 \
+				else mini(min_horizontais, int(w["horizontais"]))
+		min_ticks = int(w["ticks"]) if recusas == 1 else mini(min_ticks, int(w["ticks"]))
+	_check(recusas_encostadas and min_ticks >= 200,
+			"premissa: toda recusa encosta na face e esgota os 200 passos, nao desiste antes do muro",
+			"recusas=%d encostadas=%s horizontais_min=%d ticks_min=%d" % [
+			recusas, recusas_encostadas, min_horizontais, min_ticks])
+	for r: Array in resultados:
+		var w: Dictionary = r[4]
+		_check(bool(r[2]) == bool(r[3]),
+				"%s (dureza %.2f s): %s" % [r[0], BlockDefs.hardness(int(r[1])),
+				"cavada" if bool(r[2]) else "recusada"],
+				"bocas=%d inteiros=%d/%d primeira_no_tick=%d ticks=%d alvo=%s dig_pos=%s passos=%d" % [
+				int(w["bocas_n"]), int(w["inteiros"]), int(w["celulas"]),
+				int(w["boca_tick"]), int(w["ticks"]), w["alvo"], w["dig_pos"],
+				int(w["dig_steps"])])
+	return true
+
+
+## Checagem 7 do dossie 12 §5, e o pagamento do furo #22 com o numero que a
+## propria pauta pede. Os dois primeiros bracos sao os unicos que isolam a
+## clausula: MESMO bloco, MESMA coluna, MESMA janela -- o que muda e so a presenca
+## da chave em `world.edits`. Sem o braco B um `_dig_ok` escrito so pela lista de
+## material passaria nas duas checagens acima e a clausula de proveniencia seria
+## Adorno de comentario. O braco C e o caso concreto do furo: uma bancada
+## registrada dentro da faixa de escavacao. Ela nao esta na lista, entao a recusa
+## dela sozinha nao provara nada -- o que se exige aqui e que a pata abra a terra
+## AO LADO sem tocar na construcao, e que a chave da bancada continue valendo o
+## bloco que o jogador poe.
+func _test_cavar_nao_toca_construcao_alheia() -> bool:
+	var a := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 1)
+	var b := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 1, true)
+	var bancada := Vector3i(56, 51, 54)
+	var c := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 1, false,
+			{bancada: BlockDefs.Block.BENCH})
+	_check(int(a["edits_na_coluna"]) == 0 and int(b["edits_na_coluna"]) > 0
+			and int(a["celulas"]) == int(b["celulas"]),
+			"premissa: os dois bracos mudam SO a proveniencia, mesmo DIRT e mesma coluna",
+			"edits_gerada=%d edits_registrada=%d celulas=%d/%d" % [
+			int(a["edits_na_coluna"]), int(b["edits_na_coluna"]),
+			int(a["celulas"]), int(b["celulas"])])
+	_check(int(a["bocas_n"]) >= 1,
+			"terra gerada (sem chave no registro) e cavada",
+			"bocas=%d primeira_no_tick=%d alvo=%s" % [
+			int(a["bocas_n"]), int(a["boca_tick"]), a["alvo"]])
+	_check(int(b["bocas_n"]) == 0 and int(b["inteiros"]) == int(b["celulas"]),
+			"terra escrita como construcao nao e tocada pela pata",
+			"bocas=%d inteiros=%d/%d ticks=%d horizontais=%d encostou=%s" % [
+			int(b["bocas_n"]), int(b["inteiros"]), int(b["celulas"]),
+			int(b["ticks"]), int(b["horizontais"]), b["encostou"]])
+	var leito: Dictionary = c["extras"][bancada]
+	_check(int(leito["bloco"]) == int(BlockDefs.Block.BENCH)
+			and bool(leito["registrada"]) and int(leito["valor"]) == int(BlockDefs.Block.BENCH)
+			and int(c["bocas_n"]) >= 1 and not c["novas"].has(bancada),
+			"construcao alheia na faixa fica de pe e a obra sai na terra do lado",
+			"bancada=%s chave=%s valor=%d bocas=%d bocas_tem_bancada=%s dig_pos_final=%s" % [
+			BlockDefs.display_name(int(leito["bloco"])), leito["registrada"],
+			int(leito["valor"]), int(c["bocas_n"]), c["novas"].has(bancada), c["dig_pos"]])
+	return true
+
+
+## Checagem 5 do dossie 12 §5, a que decide o `DIG_STEPS_BEFORE` por numero em vez
+## de deixa-lo como o `[TARGET]` provisorio com que a pauta chegou. Tres bracos sobre
+## o MESMO muro de dois blocos de neve -- gerado (cavavel), registrado (recusa por
+## proveniencia) e pedra (recusa por material) -- mais um sobre um muro de um bloco,
+## e a comparacao que o §3.2 (a) exige e entre os tres primeiros: os 200 passos que o
+## entupimento prende um lobo sem pata contra os passos que o mesmo lobo leva a
+## atravessar com ela. Se a diferenca nao existir, cavar vira ruido e o ramo morre --
+## e por isso que os bracos "sem pata" usam recusas que ja existem no codigo, sem
+## nenhum toggle de teste: o que muda entre A, B e C e so a resposta de `_dig_ok`.
+## O braco de um bloco e a escada do §3.2 na ordem escrita -- desvia, SOBE, cava. Ali
+## o pulo serve, entao a pata nao deve armar nada, e `runs == 0` e o numero que diz que
+## a precedencia e do degrau e nao uma coincidencia de janela.
+func _test_abrir_passagem_depois_de_bloqueio() -> bool:
+	var a := _dig_corridor(BlockDefs.Block.SNOW, [51, 52], false)
+	var b := _dig_corridor(BlockDefs.Block.SNOW, [51, 52], true)
+	var c := _dig_corridor(BlockDefs.Block.STONE, [51, 52], false)
+	var d := _dig_corridor(BlockDefs.Block.SNOW, [51], false)
+	_check(bool(a["encostou"]) and bool(b["encostou"]) and int(a["degraus"]) == 0
+			and int(b["degraus"]) == 0 and int(a["horizontais"]) > 0,
+			"premissa: nos dois bracos o corpo encosta no mesmo muro de dois blocos e o pulo nao serve em nenhum quadro",
+			"encostada_a_no_tick=%d encostada_b_no_tick=%d horizontais=%d/%d degraus=%d/%d alvo=%s" % [
+			int(a["encostada_tick"]), int(b["encostada_tick"]),
+			int(a["horizontais"]), int(b["horizontais"]), int(a["degraus"]),
+			int(b["degraus"]), a["alvo"]])
+	_check(int(b["ticks"]) >= 200 and int(b["bocas"]) == 0 and float(b["x_max"]) < 56.0
+			and int(b["runs"]) == 0,
+			"SEM a pata o corredor de neve prende os 200 passos: o desvio natural nao da saida",
+			"trava_sem_cavar=%d passos  bocas=%d face_max=%.3f runs=%d feet=%s" % [
+			int(b["ticks"]), int(b["bocas"]), float(b["x_max"]), int(b["runs"]),
+			b["feet"]])
+	_check(int(a["cruze_tick"]) > 0 and int(a["bocas"]) >= 2,
+			"COM a pata o mesmo lobo atravessa: travessia em %d passos contra os %d que o mesmo muro prende" % [
+			int(a["cruze_tick"]), int(b["ticks"])],
+			"cruza_no_tick=%d boca_no_tick=%d bocas=%d face_max=%.3f feet=%s" % [
+			int(a["cruze_tick"]), int(a["boca_tick"]), int(a["bocas"]),
+			float(a["x_max"]), a["feet"]])
+	var obra := Wolf.DIG_STEPS_BEFORE \
+			+ ceili(BlockDefs.hardness(BlockDefs.Block.SNOW) / SimClock.STEP)
+	# `_dig_steps` zera no proprio passo que escreve o AIR, entao o pico observavel do
+	# contador e `obra - 1`, e o `maior_run` conta comprometimentos, que podem emendar a
+	# celula seguinte nos frames do mesmo passo. A assercao pede o pico do contador: o
+	# que tem de poder falhar aqui e o vaivem do desvio trocar de celula e zerar a obra
+	# antes de a dureza fechar -- ai nenhum dos dois chegaria a 12.
+	_check(int(a["maior_run"]) >= obra - 1 and int(a["runs"]) >= 1,
+			"o acumulador completa dentro de UM comprometimento: o desvio nao zera a obra",
+			"DIG_STEPS_BEFORE=%d  obra_pedida=%d passos  maior_run=%d  runs=%d  passos_visto=%d  do empurrao a boca: %d passos" % [
+			Wolf.DIG_STEPS_BEFORE, obra, int(a["maior_run"]), int(a["runs"]),
+			int(a["passos_visto"]), int(a["boca_tick"]) - int(a["encostada_tick"])])
+	_check(int(d["degraus"]) > 0 and int(d["bocas"]) == 0 and int(d["runs"]) == 0
+			and int(d["cruze_tick"]) > 0,
+			"degrau de um bloco: o pulo serve e a pata nao entra -- a escada e desvia, sobe, cava",
+			"degraus=%d bocas=%d runs=%d cruza_no_tick=%d face_max=%.3f feet=%s" % [
+			int(d["degraus"]), int(d["bocas"]), int(d["runs"]), int(d["cruze_tick"]),
+			float(d["x_max"]), d["feet"]])
+	_check(int(c["bocas"]) == 0 and int(c["degraus"]) == 0
+			and int(c["ticks"]) >= 200 and int(c["runs"]) == 0,
+			"controle: pedra fora da lista prende pelo MESMO numero que a neve registrada, entao a travessia do braco A e da pata e nao do tempo",
+			"pedra=%d passos  neve_registrada=%d passos  travessia=%d  bocas=%d runs=%d face_max=%.3f" % [
+			int(c["ticks"]), int(b["ticks"]), int(a["cruze_tick"]),
+			int(c["bocas"]), int(c["runs"]), float(c["x_max"])])
+	return true
+
+
+## Nariz montado sobre o campo ja aceso: um lobo so para ler rastro. O corpo nao
+## anda e nada e escrito na mao: `_find_scent` roda no `sim_step`, entao o que se
+## colhe aqui e a leitura do caminho real, com o MESMO `identity` nos dois bracos
+## para que a personalidade sorteada por `Mind` nao vire uma variavel a mais no
+## par.
+func _lobo_nariz(feet: Vector3, pid: int) -> Wolf:
+	var w := Wolf.new()
+	_stage.add_child(w)
+	w.setup(_world, _field, _player, feet, pid, _clock)
+	return w
+
+
+## Tantos `sim_step` quantos bastam para o nariz cair na cadencia (`SCENT_PERIOD`
+## = 0,25 s = 5 passos) e a arvore devolver um `intent`, sem nenhum frame de
+## locomocao -- o mesmo isolamento que `_advance(ticks, false)` faz com o corpo de
+## quem cava. O `_clock.tick` avanca junto porque o `elapsed` do passo vem dele.
+func _nariz_lee(w: Wolf, ticks: int) -> Dictionary:
+	for i: int in ticks:
+		w.sim_step(float(_clock.tick + 1) * SimClock.STEP, SimClock.STEP)
+		_clock.tick += 1
+	return {
+		"canal": w._scent_channel, "forca": w._scent_strength,
+		"celula": w._scent_cell, "achou": w._scent_found,
+		"pos": w._scent_pos, "intent": w.intent,
+		"reaction": w.get("_reaction"), "tick": _clock.tick,
+	}
+
+
+## Checagem 3 do dossie 12 §5.3, a que o §3.3.(i) da perna 10 aponta como a que
+## DECIDE o desenho. Os dois bracos poem WORK na mesma celula de Eter com a mesma
+## assinatura (0,42 x vies de bioma) e diferem so na fonte: no L escreve a pata
+## (`_dig_step` -> `_imprint`), no P escreve o echo da lavra do jogador
+## (`main._on_acted("break")`, o handler que o `acted.emit` de player.gd:690 acorda
+## no boot). No meio de cada braco, um nariz montado sobre o campo ja aceso le pelo
+## caminho real. O numero que decide e a igualdade: se os dois dao o mesmo canal, a
+## mesma celula e a mesma forca, nada no mundo distingue um WORK do outro e a frase
+## "WORK e pegada do jogador" deixa de ser verdade -- o §2 desta pauta, o README e o
+## status passam a dizer "pegada de quem trabalha no bloco" (fechado no commit (h)).
+## Se alguem separar por canal novo ou por valor proprio, a igualdade quebra e esta
+## linha fica vermelha com os dois numeros na mesa.
+##
+## O braco L pede UMA boca (`boca_alvo = 1`) porque o `imprint` e aditivo e as duas
+## celulas de z da faixa do corpo caem na mesma celula de Eter: duas bocas dariam
+## 2 x 0,42 e a diferenca seria de contagem, nao de origem. O `y` do `_scent_pos`
+## entra na comparacao porque o `_dig_stage` do fim da janela devolve a coluna ao ar
+## nao registrado, entao os dois bracos terminam com o mesmo estado de mundo; o `y`
+## que a propria cova expoe dentro da camada e o assunto da checagem 6 (commit (e)).
+## A terceira linha e a consequencia comportamental do que as duas primeiras
+## medem: quem chega farejando decide `investigate` contra o rastro do que cava do
+## mesmo jeito que decide contra o rastro do jogador, e e ai que o lobo que chegou
+## pode cavar de novo (a auto-alimentacao que o §3.5 registra como aberta). A
+## alavanca se a resposta for "loop" e a cadencia de cavar do §3.2, nao um canal
+## novo -- `Channel.COUNT` e decisao de versao (§6).
+func _test_work_de_bicho_nao_confundido() -> bool:
+	var l := _dig_window(BlockDefs.Block.SNOW, [51, 52], 200, 1)
+	var novas_l: Array = l["novas"]
+	var c: Vector3i = novas_l[0] if novas_l.size() > 0 else Vector3i(56, 51, 54)
+	var work_l: float = float(l["work_em"].get(c, 0.0))
+	var h := _world.gen.surface_height(c.x, c.z)
+	var vies: float = _world.gen.imprint_bias(
+			c.x, c.z, h, AetherField.Channel.WORK)
+	var esperado := Wolf.DIG_WORK * vies
+	var nariz_l := _lobo_nariz(NARIZ_FEET, 7)
+	var read_l := _nariz_lee(nariz_l, 6)
+	nariz_l.free()
+	# Braco P: campo limpo (`_arm` refaz o `AetherField`) e como unica fonte de WORK
+	# a celula da boca do braco L, escrita pelo handler real do echo do jogador.
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s._on_acted("break", Vector3(c) + Vector3(0.5, 0.5, 0.5))
+	s.free()
+	var eterea := _field.cell_of_world(Vector3(c) + Vector3(0.5, 0.5, 0.5))
+	var work_p := _field.sample_cell(eterea, AetherField.Channel.WORK)
+	var nariz_p := _lobo_nariz(NARIZ_FEET, 7)
+	var read_p := _nariz_lee(nariz_p, 6)
+	var mesma_forca := absf(float(read_l["forca"]) - float(read_p["forca"])) < 1e-6
+	var mesma_celula := bool(read_l["celula"] == read_p["celula"]) \
+			and bool(read_l["pos"] == read_p["pos"])
+	_check(int(l["bocas_n"]) == 1 and absf(work_l - esperado) < 1e-6
+			and absf(work_p - esperado) < 1e-6,
+			"as duas origens deixam o MESMO WORK na MESMA celula: 0,42 x vies, sem canal novo nem valor proprio",
+			"voxel=%s celula_eterea=%s pata=%.6f jogador=%.6f esperado=%.6f (0,42 x vies %.4f, bioma=%s)" % [
+			str(c), str(eterea), work_l, work_p, esperado, vies,
+			WorldGen.BIOME_NAMES[_world.gen.biome_at(c.x, c.z)]])
+	_check(bool(read_l["achou"]) and bool(read_p["achou"])
+			and int(read_l["canal"]) == int(read_p["canal"])
+			and int(read_l["canal"]) == int(AetherField.Channel.WORK)
+			and mesma_celula and mesma_forca,
+			"o nariz nao distingue a origem: mesmo canal, mesma celula, mesma forca",
+			"pata canal=%s forca=%.6f celula=%s pos=%s | jogador canal=%s forca=%.6f celula=%s pos=%s" % [
+			AetherField.CHANNEL_NAMES[int(read_l["canal"])], float(read_l["forca"]),
+			read_l["celula"], read_l["pos"],
+			AetherField.CHANNEL_NAMES[int(read_p["canal"])], float(read_p["forca"]),
+			read_p["celula"], read_p["pos"]])
+	_check(String(read_l["intent"]) == String(read_p["intent"]),
+			"a decisao do passo seguinte e a mesma nos dois bracos",
+			"intent pata=%s jogador=%s | reacao pata=%s jogador=%s | passos lidos=6/6 | tick absoluto pata=%d jogador=%d | o cavador continua=%s" % [
+			read_l["intent"], read_p["intent"], read_l["reaction"], read_p["reaction"],
+			int(read_l["tick"]), int(read_p["tick"]), _motion()])
+	nariz_p.free()
+	return true
+
+
+## O palco do ramo (b): um UNICO voxel tapando a coluna que o nariz desce. As duas
+## metades da proveniencia de `_dig_stage` valem aqui pelo mesmo motivo -- escrita
+## com `record = false` E chave antiga apagada -- porque a plateia do fixture e
+## montada com `set_block(pos, AIR)` de `record` default: sem o erase o plug seria
+## construcao registrada, `_dig_ok` recusaria e a checagem verdeiria por nao haver o
+## que cavar. O voxel e (58,51,54) porque `cell_center((14,12,13))` devolve
+## (58,·,54) e `_scent_column_solid` desce a coluna do CENTRO da celula -- o §3.2 (b)
+## diz que o alvo e "a celula do solido, lida pela MESMA coluna", entao o palco tem
+## de mentir exatamente nessa coluna, nao numa vizinha.
+func _dig_plug(p: Vector3i, block: int) -> void:
+	_world.edits.erase(p)
+	_world.set_block(p, block, false)
+
+
+## A janela do faro que vira obra (checagem 6 do dossie 12 §5.6). Medido, a cena nao
+## e o "lobo parado farejando o proprio buraco" que o §3.2 sugere: no tick 40 a
+## inspecao termina e o nariz entrega o bloco, mas no seguinte o cache do
+## `_remember_scent` aposenta a celula (`SCENT_RENEWAL` so vira a contar quando a
+## obra imprime WORK), a utilidade volta para `patrol` e o corpo anda contra a
+## propria tapa -- `intentos_obra={"patrol": 13}`, 13 passos com `want` vivo, 13
+## quadros de `blocked_horizontal`. Entao esta cena NAO pode atribuir a boca ao
+## nariz por "a pata nao encostou": aqui os dois ramos querem o mesmo buraco, que e
+## justamente o caso que o comentario de `_dig_step` nomeia. O que decide que o
+## compromisso nasceu do nariz sao tres numeros: `empurrao antes=0` com
+## `obra_tick == exam_tick` (a pata arma no frame em que encosta, entao se o
+## primeiro `_dig_pos` vivo surge no tick da entrega nada se comprometeu antes),
+## `alvo_trocado == 0` e `passos_de_obra == 13` (nenhum dos 13 passos re-escolheu a
+## celula, logo o acumulo do nariz correu inteiro). As duas leituras que decidem a
+## boca -- o bloco que la estava e o alvo que o passo consome -- sao amostradas no
+## TOPO da iteracao, antes de `_advance`, porque depois do passo o plug ja e AIR e o
+## alvo ja foi zerado pelo `_dig_reset`: amostradas tarde diriam "ar" e nenhum
+## compromisso, que e o que a checagem precisa distinguir. O integrador roda pelos
+## mesmos tres frames por passo do `_dig_window` porque a atribuicao so vale se o
+## instrumento esteve la para produzir o empurrao que ela mesma mostra.
+func _scent_entry_window(block: int, ticks_limit: int = 200,
+		limpar: bool = true) -> Dictionary:
+	_arm(Vector3(57.4, 51.001, 54.0), FAR_PLAYER)
+	var plug := Vector3i(58, 51, 54)
+	_dig_plug(plug, block)
+	_field.imprint(Vector3(58.0, 50.6, 54.0), AetherField.Channel.BLOOD, 0.9)
+	_advance(1, false)
+	var celula: Vector3i = _wolf._scent_cell
+	var achou: bool = _wolf._scent_found
+	var canal: int = _wolf._scent_channel
+	var forca: float = _wolf._scent_strength
+	var pos_antes: Vector3 = _wolf._scent_pos
+	var y_antes := _wolf._scent_ground_y(celula)
+	var ticks := 1
+	var empurra_antes := 0
+	var empurra_obra := 0
+	var exam_tick := -1
+	var obra_tick := -1
+	var boca_tick := -1
+	var arma := Wolf.DIG_NONE
+	var alvo := Wolf.DIG_NONE
+	var alvo_boca := Wolf.DIG_NONE
+	var y_boca := -1.0
+	var bloco_antes := block
+	var passos_obra := -1
+	var passos_andados := 0
+	var alvo_trocado := 0
+	var intentos_obra := {}
+	for i: int in ticks_limit:
+		ticks += 1
+		var topo_alvo: Vector3i = _wolf._dig_pos
+		var topo_bloco: int = _world.get_block(plug)
+		if exam_tick > 0 and boca_tick < 0 and topo_alvo != arma and topo_alvo != Wolf.DIG_NONE:
+			alvo_trocado += 1
+		_advance(1, false)
+		# Logo depois de `_advance` e antes dos tres frames de locomocao: e o `want`
+		# que o corpo vai ver neste passo, ou seja -- a unica entrada com que o ramo
+		# (a) pode armar (`_dig_cell` comeca em `want` e devolve `DIG_NONE` quando
+		# ele e zero).
+		if exam_tick > 0 and boca_tick < 0:
+			var quer := _wolf._move_target - _wolf.body.feet_pos
+			quer.y = 0.0
+			if quer.length_squared() > 1e-8:
+				passos_andados += 1
+			var quem := String(_wolf.intent)
+			intentos_obra[quem] = int(intentos_obra.get(quem, 0)) + 1
+		for f: int in 3:
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			if _wolf.body.blocked_horizontal:
+				if exam_tick < 0:
+					empurra_antes += 1
+				else:
+					empurra_obra += 1
+		if exam_tick < 0 and String(_wolf.get("_reaction")) == "rastro examinado":
+			exam_tick = ticks
+			arma = _wolf._dig_scent
+		if obra_tick < 0 and _wolf._dig_pos != Wolf.DIG_NONE:
+			obra_tick = ticks
+			alvo = _wolf._dig_pos
+		if boca_tick < 0 and _world.get_block(plug) == BlockDefs.Block.AIR:
+			boca_tick = ticks
+			alvo_boca = topo_alvo
+			bloco_antes = topo_bloco
+			passos_obra = ticks - obra_tick
+			y_boca = _wolf._scent_ground_y(celula)
+		# Dez passos depois da boca = duas cadencias do nariz (SCENT_PERIOD = 5): o
+		# suficiente para a releitura da mesma celula acontecer e, se a igualdade de
+		# camada do §3.2 (b) nao existisse, para o bloco de baixo ser re-armado.
+		if boca_tick > 0 and ticks - boca_tick >= 10:
+			break
+	var out := {
+		"ticks": ticks, "empurra_antes": empurra_antes, "empurra_obra": empurra_obra,
+		"passos_andados": passos_andados, "alvo_trocado": alvo_trocado,
+		"intentos_obra": intentos_obra,
+		"celula": celula, "achou": achou, "canal": canal, "forca": forca,
+		"pos_antes": pos_antes, "y_antes": y_antes, "y_boca": y_boca,
+		"y_fim": _wolf._scent_ground_y(celula),
+		"exam_tick": exam_tick, "obra_tick": obra_tick, "boca_tick": boca_tick,
+		"arma": arma, "alvo": alvo, "alvo_boca": alvo_boca, "passos_obra": passos_obra,
+		"aberto": _world.get_block(plug) == BlockDefs.Block.AIR,
+		"bloco": _world.get_block(plug), "bloco_antes": bloco_antes,
+		"chave": _world.edits.has(plug),
+		"nariz_fim": _wolf._dig_scent, "pos_fim": _wolf._scent_pos,
+		"dig_pos": _wolf._dig_pos, "dig_steps": _wolf._dig_steps,
+		"dig_accum": _wolf._dig_accum,
+		"intent": _wolf.intent, "reaction": _wolf.get("_reaction"),
+		"feet": _wolf.body.feet_pos,
+	}
+	# `limpar = false` e o que a checagem 8 pede: a boca tem de continuar no mundo
+	# COM a chave AIR para o `save_game()` do produto gravar, e o `_dig_plug` de
+	# aqui apaga a chave e escreve ar sem registro -- exatamente o que o §2 veda
+	# para o palco, e exatamente o que sumiria com a cova antes da segunda escrita.
+	if limpar:
+		_dig_plug(plug, BlockDefs.Block.AIR)
+	return out
+
+
+## Checagem 6 do dossie 12 §5.6, o item (b). A promessa e uma so e e do codigo que
+## existe: remover o solido que tapa a entrada muda o `y` que `_scent_ground_y`
+## devolve PARA A MESMA CELULA -- o rastro passa a ser lido no chao onde o focinho
+## chega, nao em cima da tapa. A frase antiga ("WORK + BLOOD difundem com menos
+## barreira") nao e observavel com a permeabilidade amostrando um voxel por celula de
+## Eter (furo #23, dono perna 05), entao nada aqui roda difusao nenhuma.
+## Os dois bracos mudam SO o material do plug -- neve (na lista) e pedra (fora dela)
+## -- e e o par que o ciclo de trabalho pede: se o chao lido tambem se movesse com a
+## pedra, ele teria se movido por qualquer coisa que nao a cova, e a morte do item
+## ("se o `y` nao se move, a premissa do (b) era falsa") viria vermelha pelo motivo
+## errado. A terceira metade do braco de neve e a que impede o item de virar pocinho:
+## aberta a boca, a coluna devolve o chao de baixo, a igualdade de camada nao casa,
+## e nada re-arma.
+## A atribuicao tem o teto que a propria cena mostra: entre a entrega e a boca o
+## lobo patrulha e empurra o mesmo bloco, entao "a pata nao o teria cavado" nao e
+## falsificavel aqui e nao e o que se afirma. Afirma-se o que os numeros decidem --
+## nenhum empurrao antes, nenhum alvo re-escolhido depois, e os 13 passos inteiros
+## do acumulador do nariz. Fica como leitura desta perna, e vira linha de status: o
+## ramo (b) entrega o alvo, mas num cenario em que a tapa tambem esta no caminho do
+## corpo os dois ramos convergem para o mesmo buraco.
+func _test_entrada_de_rastro_exposta_no_chao_lido() -> bool:
+	var s := _scent_entry_window(BlockDefs.Block.SNOW)
+	var c := _scent_entry_window(BlockDefs.Block.STONE)
+	_check(bool(s["achou"]) and int(s["canal"]) == int(AetherField.Channel.BLOOD)
+			and bool(s["celula"] == Vector3i(14, 12, 13))
+			and absf(float(s["y_antes"]) - 51.6) < 1e-6
+			and int(s["empurra_antes"]) == 0
+			and int(s["obra_tick"]) == int(s["exam_tick"]),
+			"premissa: o rastro cai na celula (14,12,13), o chao lido dela e a tapa de neve na camada do corpo, e o primeiro alvo vivo da cova nasce no tick em que a inspecao termina sem um unico quadro de empurrao antes",
+			"canal=%s forca=%.6f celula=%s pos=%s chao_lido=%.3f feet=%s | examinado_no_tick=%d primeiro_alvo_no_tick=%d | empurrao antes da entrega=%d quadros, passos=%d" % [
+			AetherField.CHANNEL_NAMES[int(s["canal"])], float(s["forca"]), s["celula"],
+			s["pos_antes"], float(s["y_antes"]), s["feet"], int(s["exam_tick"]),
+			int(s["obra_tick"]), int(s["empurra_antes"]), int(s["ticks"])])
+	_check(int(s["exam_tick"]) > 0 and bool(s["arma"] == Vector3i(58, 51, 54))
+			and bool(s["alvo"] == Vector3i(58, 51, 54))
+			and bool(s["alvo_boca"] == Vector3i(58, 51, 54))
+			and int(s["alvo_trocado"]) == 0 and int(s["passos_obra"]) == 13
+			and int(s["bloco_antes"]) == BlockDefs.Block.SNOW and int(s["boca_tick"]) > 0
+			and bool(s["aberto"]),
+			"a obra abre a MESMA celula que a coluna leu, escolhida no tick da inspecao e nunca re-escolhida: o compromisso e do nariz -- e impresso, nao escondido, que nos 13 passos o corpo patrulha e empurra o proprio bloco, entao os dois ramos queriam este buraco",
+			"examinado_no_tick=%d armado=%s obra_no_tick=%d alvo=%s | boca_no_tick=%d alvo_na_boca=%s passos_de_obra=%d (DIG_STEPS_BEFORE=8 + 5 de neve), alvo trocado=%d | plug=%s virou=%s chave_no_registro=%s | fundo de obra: intentos=%s, want vivo em %d de 13, empurrao=%d quadros" % [
+			int(s["exam_tick"]), s["arma"], int(s["obra_tick"]), s["alvo"],
+			int(s["boca_tick"]), s["alvo_boca"], int(s["passos_obra"]),
+			int(s["alvo_trocado"]),
+			BlockDefs.display_name(int(s["bloco_antes"])),
+			BlockDefs.display_name(int(s["bloco"])), s["chave"], s["intentos_obra"],
+			int(s["passos_andados"]), int(s["empurra_obra"])])
+	_check(absf(float(s["y_boca"]) - 50.6) < 1e-6
+			and absf(float(s["y_antes"]) - float(s["y_fim"]) - 1.0) < 1e-6
+			and String(s["intent"]) == "investigate",
+			"a promessa do (b) medida no numero que ela nomeia: o chao lido da mesma celula desce exatamente um bloco, e o passo seguinte ainda e farejo",
+			"y antes=%.3f depois=%.3f delta=%.3f | pos antes=%s depois=%s | intent=%s reacao=%s" % [
+			float(s["y_antes"]), float(s["y_fim"]),
+			float(s["y_antes"]) - float(s["y_fim"]), s["pos_antes"], s["pos_fim"],
+			s["intent"], s["reaction"]])
+	_check(not bool(c["aberto"]) and int(c["boca_tick"]) < 0
+			and bool(c["arma"] == Wolf.DIG_NONE)
+			and absf(float(c["y_fim"]) - float(c["y_antes"])) < 1e-6
+			and bool(s["nariz_fim"] == Wolf.DIG_NONE),
+			"controles: pedra fora da lista nao arma nada e nao move chao nenhum, e a boca aberta da neve nao re-arma o bloco de baixo -- o item se termina sozinho",
+			"neve: y=%.3f->%.3f novo_alvo=%s | pedra: armado=%s boca=%d y=%.3f->%.3f feet=%s" % [
+			float(s["y_antes"]), float(s["y_fim"]), s["nariz_fim"], c["arma"],
+			int(c["boca_tick"]), float(c["y_antes"]), float(c["y_fim"]), c["feet"]])
+	return true
+
+
+## Frames de malharia pelo orcamento do produto ate a fila esvaziar (ou o teto).
+## Devolve as tres testemunhas que a checagem 4 do dossie 12 exige: quantos frames a
+## fila levou, qual foi a maior fila vista no comeco de um frame e o pior
+## `last_mesh_ms()` de um lote. `MESH_BUDGET` e lido de `src/main.gd:28`, nao copiado
+## para ca: o numero que importa e o preco do orcamento que o jogador sente, e um 2
+## escrito a mao envelheceria no dia em que o budget mudar.
+func _mesh_frames(frames_limit: int = 64) -> Dictionary:
+	var frames := 0
+	var max_pending := _world.pending_meshes()
+	var worst_ms := 0.0
+	while _world.pending_meshes() > 0 and frames < frames_limit:
+		_world.process(int(Session.MESH_BUDGET))
+		frames += 1
+		max_pending = maxi(max_pending, _world.pending_meshes())
+		worst_ms = maxf(worst_ms, _world.last_mesh_ms())
+	return {
+		"frames": frames, "max_pending": max_pending, "worst_ms": worst_ms,
+		"left": _world.pending_meshes(),
+	}
+
+
+## Checagem 9 do dossie 12 §5.9, o outro lado do mandato 3 nesta perna: o cavar nao
+## pode mexer na fita de onde a simulacao sorteia. O palco e o MESMO da checagem 5
+## (o §5.5 que a pauta nomeia), com o pino do molde de
+## `simulation_rng_test.gd:75-77` posto entre o armamento e os N passos e lido
+## depois deles, e o braco de pedra e o que impede a conclusao de vir do acaso: la a
+## pata recusa por material e o desvio sorteia do mesmo jeito.
+##
+## As quatro portas, cada uma com o numero que a decide. (1) A premissa: no braco de
+## neve a boca abre e a pata arma ao menos uma vez, senao as tres linhas seguintes
+## seriam verdade por nada ter acontecido. (2) O `randi()` de depois e o mesmo que o
+## pino previu nos dois bracos -- a cadeia inteira do cavar (`_dig_arm` no corpo,
+## `_dig_step` no passo, `set_block` e `imprint` na obra) nao consome RNG global.
+## (3) O sorteio do desvio nao perdeu o lugar dele: em CADA quadro que arma a pata o
+## `_unstick` sobe junto, e nenhum quadro de armar fica sem sorteio -- e a metade
+## "continuam incondicionais" do item, porque se alguem mover os dois `randf_range`
+## para dentro de um `if`, a linha 3 e a que grita primeiro. (4) O par de pedra: la
+## `armadas == 0` com `rearms >= 2` e os `_detour` ocupando uma faixa, ou seja, o
+## detector ve o sorteio tambem onde a pata nunca chegou a armar -- ele nao esta
+## contando a pata duas vezes, e a faixa e o que impede a linha 3 de se satisfazer
+## com um unico sorteio.
+##
+## O detector do sorteio e uma leitura de estado, nao um contador dentro do lobo:
+## `_unstick` so tem duas escritas no arquivo (`-= delta` no passo andante e o
+## `randf_range(0.35, 0.8)` do desemperto), entao subir so pode ser o sorteio. Isso
+## e o que mantem a checagem olhando o produto em vez de olhar um espelho da propria
+## instrumentacao.
+func _test_cavar_nao_consome_rng_da_sessao() -> bool:
+	var a := _dig_window(BlockDefs.Block.SNOW, [51, 52], 200, 1, false, {}, true)
+	var b := _dig_window(BlockDefs.Block.STONE, [51, 52], 200, 1, false, {}, true)
+	_check(int(a["boca_tick"]) > 0 and int(a["armadas"]) >= 1
+			and int(a["horizontais"]) > 0,
+			"premissa: no palco da checagem 5 a neve cava, a pata arma e o corpo encosta na face",
+			"boca_no_tick=%d janela=%d armadas=%d horizontais=%d encostou=%s bocas=%d" % [
+			int(a["boca_tick"]), int(a["ticks"]), int(a["armadas"]),
+			int(a["horizontais"]), a["encostou"], int(a["bocas_n"])])
+	_check(bool(a["rng_preservado"]) and bool(b["rng_preservado"]),
+			"os N passos do cavar nao consomem RNG global -- o `randi()` depois do pino e o mesmo nos dois bracos",
+			"neve: pino=%d randi_previsto=%d randi_depois=%d | pedra: randi_previsto=%d randi_depois=%d | passos_neve=%d passos_pedra=%d" % [
+			RNG_PIN, int(a["rng_next"]), int(a["rng_depois"]),
+			int(b["rng_next"]), int(b["rng_depois"]), int(a["ticks"]), int(b["ticks"])])
+	_check(int(a["armadas_com_rearm"]) == int(a["armadas"]) and int(a["armadas"]) >= 1
+			and int(a["rearms"]) >= int(a["armadas"]),
+			"os dois `randf_range` do desvio continuam incondicionais: cada um dos quadros que arma a pata sorteia o desvio no mesmo quadro, e nenhum quadro de armar fica sem sorteio",
+			"neve: armadas=%d armadas_com_rearm=%d rearms=%d | detour do armar=%.3f | horizontais=%d boca_no_tick=%d" % [
+			int(a["armadas"]), int(a["armadas_com_rearm"]), int(a["rearms"]),
+			float(a["detour_min"]), int(a["horizontais"]), int(a["boca_tick"])])
+	_check(int(b["armadas"]) == 0 and int(b["rearms"]) >= 2
+			and float(b["detour_max"]) > float(b["detour_min"]),
+			"o detector ve o sorteio onde a pata NAO arma e ele nao vira ponto: o braco de pedra recusa por material, desemperta 2+ vezes e os `_detour` ocupam uma faixa de verdade (codigo: [-1,300, 1,300])",
+			"pedra: armadas=%d rearms=%d bocas=%d detour em [%.3f, %.3f] janela=%d | neve: armadas=%d rearms=%d" % [
+			int(b["armadas"]), int(b["rearms"]), int(b["bocas_n"]),
+			float(b["detour_min"]), float(b["detour_max"]), int(b["ticks"]),
+			int(a["armadas"]), int(a["rearms"])])
+	return true
+
+
+## Dossie 12 §8(a): o instrumento de malharia entra ANTES de o cavar existir, para o
+## numero do estado atual chegar a mesa com a folha ainda inerte. A armadilha que ele
+## desarma e do harness, nao do jogo: `_advance` nunca chama `world.process` porque o
+## campo congelado e o que isola a reacao -- sem dreno a colheita mediria a fila
+## crescendo para sempre, e o `count` de `edit_mesh_cost()` seria zero para sempre
+## tambem, porque `_mark` so carimba um chunk que ja tem mesh
+## (`voxel_world.gd:301`). Os dois numeros que a checagem `malharia_do_cavar_medida`
+## vai publicar so existem depois deste, e e por isso que ele roda por ultimo: malhar
+## o mundo no meio da corrida mudaria o que as checagens de passo colhem.
+##
+## O lote e um voxel removido por lobo do censo do boot, pela mesma escrita que o
+## cavar usara (`set_block(pos, AIR)` com `record` default) e no mesmo teto de
+## concorrencia que a matilha tem hoje -- `WOLF_COUNT` lido do produto, nao chutado.
+func _test_colheita_de_malha_sem_cavar() -> bool:
+	var meshes_0 := _world.meshes_built()
+	var fila_0 := _world.pending_meshes()
+	# O boot pelo caminho do produto: `main.gd:135` malha o mundo inteiro antes de o
+	# primeiro tick rodar, entao o palco do cavar comeca igual ao do jogador.
+	var t0 := Time.get_ticks_usec()
+	_world.generate_meshes_all()
+	var boot_ms := float(Time.get_ticks_usec() - t0) / 1000.0
+	var meshes_1 := _world.meshes_built()
+	# A fila que o palco deixou: este runner monta a plateia com `set_block` ANTES de
+	# malhar, e `generate_meshes_all()` percorre os chunks sujos sem esvaziar `_dirty`
+	# -- no produto isso nao acontece, porque la o `generate` deixa a fila vazia e a
+	# primeira edicao so vem depois do boot. Drenar antes do lote nao e cerimonia: sem
+	# esse passo o `count` do instrumento seria 5 contra 17 remeshes e o `worst_us`
+	# mediria a espera atras de 16 chunks que ninguem pediu.
+	var palco := _mesh_frames()
+	var meshes_2 := _world.meshes_built()
+	var alvos := int(Session.WOLF_COUNT)
+	var feitos := 0
+	var chunks_do_lote := {}
+	var y_lido := -1
+	for key in _world.chunks:
+		if feitos >= alvos:
+			break
+		var c: VoxelChunk = _world.chunks[key]
+		var x: int = c.coord.x * VoxelChunk.SIZE_X + VoxelChunk.SIZE_X / 2
+		var z: int = c.coord.y * VoxelChunk.SIZE_Z + VoxelChunk.SIZE_Z / 2
+		var y: int = _world.surface_height(x, z)
+		# So o plateau da fixture: la o chao e o y=50 que o palco garante, entao a
+		# recusa de um ponto nunca vira "o lote ficou curto por acaso do relevo".
+		if y != 50:
+			continue
+		if _world.set_block(Vector3i(x, y, z), BlockDefs.Block.AIR):
+			feitos += 1
+			chunks_do_lote[key] = true
+			y_lido = y
+	var colheita := _mesh_frames()
+	var meshes_3 := _world.meshes_built()
+	var cost: Dictionary = _world.edit_mesh_cost()
+	_check(meshes_1 == _world.chunks.size(), "boot malha o mundo inteiro pelo caminho do produto",
+			"meshes=%d/%d  fila_no_boot=%d  boot_ms=%.1f  meshes_ant=%d" % [
+			meshes_1, _world.chunks.size(), fila_0, boot_ms, meshes_0])
+	_check(int(palco["left"]) == 0, "a fila que o palco deixou drena antes do lote",
+			"fila_ini=%d remeshes=%d frames=%d fila_max=%d" % [
+			fila_0, meshes_2 - meshes_1, int(palco["frames"]), int(palco["max_pending"])])
+	_check(feitos == alvos and chunks_do_lote.size() == alvos,
+			"o lote removeu um voxel por lobo do censo do boot, em chunks distintos",
+			"aceitas=%d alvos=%d chunks=%d y=%d" % [feitos, alvos, chunks_do_lote.size(), y_lido])
+	_check(int(colheita["left"]) == 0 and int(cost["pending"]) == 0,
+			"fila de malharia drena e nenhum carimbo fica aberto",
+			"fila=%d carimbos_abertos=%d frames=%d" % [
+			int(colheita["left"]), int(cost["pending"]), int(colheita["frames"])])
+	# A conta do instrumento tem de bater com o trabalho que a fila fez: todo chunk
+	# remalhado depois do carimbo fecha um carimbo, e nenhum carimbo fecha sem remesh.
+	_check(int(cost["count"]) == meshes_3 - meshes_2,
+			"custo de edicao == chunks remalhados no lote",
+			"count=%d remeshes=%d (meshes %d -> %d)" % [
+			int(cost["count"]), meshes_3 - meshes_2, meshes_2, meshes_3])
+	_check(int(cost["worst_us"]) > 0 and float(cost["mean_us"]) > 0.0,
+			"instrumento de edicao vivo (worst e mean acima de zero)",
+			"worst_us=%d mean_us=%.1f" % [int(cost["worst_us"]), float(cost["mean_us"])])
+	_check(int(colheita["max_pending"]) <= 8,
+			"nenhum frame com fila acima de 8 chunks",
+			"fila_max=%d budget=%d frames=%d worst_lote_ms=%.1f" % [
+			int(colheita["max_pending"]), int(Session.MESH_BUDGET),
+			int(colheita["frames"]), float(colheita["worst_ms"])])
+	print("COLHEITA DE MALHA SEM CAVAR (dossie 12 §4, estado atual), NAO GATE P1: boot chunks=%d ms=%.1f | fila do palco remeshes=%d frames=%d | lote edicoes=%d frames=%d fila_max=%d worst_lote_ms=%.1f | edit_cost count=%d worst_us=%d mean_us=%.1f pending=%d" % [
+		meshes_1, boot_ms, meshes_2 - meshes_1, int(palco["frames"]),
+		feitos, int(colheita["frames"]), int(colheita["max_pending"]),
+		float(colheita["worst_ms"]), int(cost["count"]), int(cost["worst_us"]),
+		float(cost["mean_us"]), int(cost["pending"])])
+	return true
+
+
+func _slot_bytes() -> int:
+	var f := FileAccess.open(SaveManager.slot_path(Session.SLOT), FileAccess.READ)
+	if f == null:
+		return -1
+	var n := f.get_length()
+	f.close()
+	return n
+
+
+## Checagem 8 do dossie 12 §5.8, o §3.3 virado numero, e por isso roda POR ULTIMO
+## no runner: a metade do load escreve no `_world` compartilhado desta casa. E
+## exatamente a razao pela qual a perna 14 deixou o save/load fora deste
+## instrumento de proposito (doc de `_test_feedback_do_jogador_continua_no_hud`), e
+## aqui ela e paga com a boca na mesa: depois desta linha o plateau nao e mais o
+## plateau, entao nenhum numero de malharia ou de passo pode vir depois dele.
+##
+## As quatro portas sao as quatro frases do item, cada uma com o numero que a
+## decide. (1) A obra parada no meio existe de verdade -- acumulo entre zero e a
+## dureza da neve, boca ainda nao aberta, alvo no plug -- e o `state_dict()` do lobo
+## nao carrega chave de cova nenhuma, que e a outra metade de "o disco nao guarda a
+## intencao". (2) `load_state` devolve os quatro campos ao nada: a cova comecada
+## antes do save recomeca depois dele (§3.1). (3) A boca e a UNICA chave que o
+## registro ganha entre as duas escritas do produto, e o `generate` + `apply_edits`
+## do disco a devolve AIR com chave e `edits.size()` batendo -- o §3.3 na letra: "um
+## buraco que some no load e a mentira da vez". (4) O que nao tem chave nao
+## sobrevive: a tapa de neve ao lado, montada com `record = false` pelo mesmo §2,
+## volta como o relevo que o gerador sorteou, e os bytes do arquivo com e sem a
+## cova sao o preco que o item cobra em numero, nao em adjetivo.
+##
+## O load e as DUAS chamadas que `main.load_game()` faz no mundo, na mesma ordem e
+## com a mesma conversao de chave (`main.gd:1050-1054`), e nao a funcao inteira:
+## `load_game()` tambem chama `audio.clear_transient()` e o `audio` e nodo criado no
+## `_ready` da cena (`main.gd:190`), que este runner nunca roda -- pelo caminho
+## completo o passo morreria em SCRIPT ERROR e levaria as checagens dele embora em
+## silencio (mandato 1). O `save_game()` e o produto inteiro, sem atalho.
+## O slot volta ao que era no fim, pelo mesmo motivo escrito na suíte:
+## `user://saves/world_alpha.json` e o jogo gravado pelo dono, e um instrumento que
+## o deixa podre envenena a proxima sessao dele.
+func _test_cavar_sobrevive_ao_save() -> bool:
+	var plug := Vector3i(58, 51, 54)
+	var parede := Vector3i(58, 51, 55)
+	var chave := Coords.block_key(plug)
+	var chave_parede := Coords.block_key(parede)
+	var antes := SaveManager.read_slot(Session.SLOT)
+	var havia_disco := bool(antes["ok"])
+	var dados_antes: Dictionary = antes["data"]
+
+	# (1) A janela para no passo 50: a boca da neve abre no 13º passo de obra e a
+	# obra comeca no tick 40 da entrega, entao aqui o acumulo esta vivo e incompleto.
+	var meio := _scent_entry_window(BlockDefs.Block.SNOW, 50, false)
+	var dureza := BlockDefs.hardness(BlockDefs.Block.SNOW)
+	var d_lobo: Dictionary = _wolf.state_dict()
+	var chaves_dig := ""
+	for k in d_lobo:
+		if String(k).contains("dig"):
+			chaves_dig += String(k) + " "
+	_check(not bool(meio["aberto"]) and bool(meio["dig_pos"] == plug)
+			and float(meio["dig_accum"]) > 0.0 and float(meio["dig_accum"]) < dureza
+			and int(meio["boca_tick"]) < 0 and chaves_dig.is_empty()
+			and int(meio["dig_steps"]) > Wolf.DIG_STEPS_BEFORE,
+			"premissa: a cova esta parada no meio -- alvo vivo, acumulo acima de zero e abaixo da dureza da neve, boca ainda nao aberta -- e o dicionario que o save grava nao tem nenhuma chave de cova",
+			"alvo=%s passos=%d (DIG_STEPS_BEFORE=%d) acumulo=%.3f de %.3f | boca=%d | chaves de dig no state_dict=[%s] | chaves no disco: plug=%s parede=%s" % [
+			meio["dig_pos"], int(meio["dig_steps"]), Wolf.DIG_STEPS_BEFORE,
+			float(meio["dig_accum"]), dureza, int(meio["boca_tick"]),
+			chaves_dig.strip_edges(), _world.edits.has(plug), _world.edits.has(parede)])
+
+	# (2) A transicao real do lobo carregado: `state_dict()` -> `load_state()`, a
+	# mesma dupla que `main.load_game()` chama por bicho do disco.
+	var alvo_antes: Vector3i = _wolf._dig_pos
+	var nariz_antes: Vector3i = _wolf._dig_scent
+	var passos_antes := int(_wolf._dig_steps)
+	var acumulo_antes := float(_wolf._dig_accum)
+	_wolf.load_state(d_lobo)
+	_check(bool(_wolf._dig_pos == Wolf.DIG_NONE) and bool(_wolf._dig_scent == Wolf.DIG_NONE)
+			and _wolf._dig_steps == 0 and absf(_wolf._dig_accum) < 1e-9
+			and acumulo_antes > 0.0,
+			"a cova comecada antes do load recomeca depois dele: os quatro campos da pata voltam ao nada pelo `_dig_reset` do load_state, e o que sobrevive e o mundo, nao a intencao (dossie 12 §3.1)",
+			"antes: alvo=%s passos=%d acumulo=%.3f nariz=%s | depois: alvo=%s passos=%d acumulo=%.3f nariz=%s" % [
+			alvo_antes, passos_antes, acumulo_antes, nariz_antes,
+			_wolf._dig_pos, _wolf._dig_steps, _wolf._dig_accum, _wolf._dig_scent])
+
+	# (3) As duas escritas do produto sobre a MESMA cena. O palco e re-montado
+	# sem registro (chave apagada) para que a unica diferenca entre os dois discos
+	# seja a chave que a pata escreve, e a sessao se monta depois do palco porque
+	# `save_game()` grava o `world` compartilhado, nao uma copia.
+	_dig_plug(plug, BlockDefs.Block.SNOW)
+	_dig_plug(parede, BlockDefs.Block.SNOW)
+	_boot_session(1)
+	var s: Session = _session
+	s.save_game()
+	var sem := SaveManager.read_slot(Session.SLOT)
+	var edits_sem: Dictionary = sem["data"]["edits"]
+	var n_sem := edits_sem.size()
+	var bytes_sem := _slot_bytes()
+	var plug_sem := edits_sem.has(chave)
+	var parede_sem := edits_sem.has(chave_parede)
+	var fim := _scent_entry_window(BlockDefs.Block.SNOW, 200, false)
+	s.save_game()
+	var com := SaveManager.read_slot(Session.SLOT)
+	var edits_com: Dictionary = com["data"]["edits"]
+	var n_com := edits_com.size()
+	var bytes_com := _slot_bytes()
+	var novas := ""
+	var n_novas := 0
+	for k in edits_com:
+		if not edits_sem.has(k):
+			n_novas += 1
+			novas += String(k) + " "
+	var lista := {}
+	for k in edits_com:
+		lista[String(k)] = int(edits_com[k])
+	_world.generate(SEED)
+	_world.apply_edits(lista)
+	_check(n_novas == 1 and novas.strip_edges() == chave
+			and not plug_sem and bool(fim["aberto"])
+			and int(edits_com[chave]) == int(BlockDefs.Block.AIR)
+			and n_com == n_sem + 1 and _world.edits.size() == n_com
+			and _world.get_block(plug) == BlockDefs.Block.AIR
+			and _world.edits.has(plug) and not parede_sem,
+			"o buraco do bicho sobrevive ao save: entre as duas escritas do produto exatamente UMA chave entra no registro -- a da boca, em AIR -- e o `generate` + `apply_edits` do disco (main.gd:1050-1054) devolvem o voxel aberto COM chave e `edits.size()` batendo",
+			"chaves: disco_sem=%d disco_com=%d novas=[%s] | plug no disco antes=%s depois=%s valor=%s | no mundo apos o load: bloco=%s chave=%s | edits do mundo=%d | boca_no_tick=%d passos=%d" % [
+			n_sem, n_com, novas.strip_edges(), plug_sem, edits_com.has(chave),
+			str(edits_com.get(chave, -1)),
+			BlockDefs.display_name(int(_world.get_block(plug))),
+			_world.edits.has(plug), _world.edits.size(),
+			int(fim["boca_tick"]), int(fim["passos_obra"])])
+
+	# (4) O par que faz a (3) poder falhar pelo motivo certo: a tapa ao lado foi
+	# montada com `record = false` (o §2 veda palco registrado) e nao tinha chave em
+	# `edits` nem antes nem depois -- entao o load nao tem de onde a tirar, e ela
+	# volta como o relevo gerado, nao como neve. Se ela voltasse neve, a (3) estaria
+	# medindo o estado do mundo e nao o registro.
+	_check(not _world.edits.has(parede)
+			and _world.get_block(parede) != BlockDefs.Block.SNOW
+			and bytes_com > bytes_sem and bytes_sem > 0,
+			"o que nao tem chave nao sobrevive, e o que tem custa bytes: a neve montada sem registro volta como relevo gerado, e o disco cresce do tamanho exato de uma entrada",
+			"parede sem chave: no disco plug/parede=%s/%s, bloco apos load=%s | plug apos load=%s | bytes %d -> %d (delta %+d) | chave_parede=%s" % [
+			plug_sem, parede_sem,
+			BlockDefs.display_name(int(_world.get_block(parede))),
+			BlockDefs.display_name(int(_world.get_block(plug))),
+			bytes_sem, bytes_com, bytes_com - bytes_sem, chave_parede])
+
+	if havia_disco:
+		var rest := SaveManager.write_slot(Session.SLOT, dados_antes)
+		print("       disco restaurado no slot do dono: %s %d bytes" % [
+				"ok" if bool(rest["ok"]) else String(rest["error"]), rest["bytes"]])
+	else:
+		var rm := DirAccess.remove_absolute(SaveManager.slot_path(Session.SLOT))
+		print("       slot nao existia antes desta checagem: removido (%s)" % error_string(rm))
 	_pack_release()
 	return true
