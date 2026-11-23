@@ -127,6 +127,15 @@ const DIG_MATERIALS: Array[int] = [
 ## checagem: se um dia o vaivem do `_detour` trocar de celula antes de a dureza
 ## fechar, `maior_run` cai abaixo da obra e o ramo morre inerte.
 const DIG_STEPS_BEFORE: int = 8
+## O WORK que a pata deixa e o MESMO numero da lavra do jogador
+## (`_on_acted("break")` em main.gd:913-918), nao um valor proprio: a intencao do
+## §3.5 e "o outro predador esta trabalhando aqui", e um valor diferente faria do
+## rastro de bicho uma categoria que nenhuma curva de utilidade sabe pesar. O
+## caminho tambem nao e novo -- `_imprint` logo abaixo, com o vies de bioma da
+## perna 09. Consequencia registrada pelo proprio dossiê: WORK deixa de ser
+## pegada exclusiva do jogador, e e `work_de_bicho_nao_confundido` (checagem 3,
+## dossie 12 §5.3) que mede se a curva distingue a origem ou nao.
+const DIG_WORK: float = 0.42
 ## "Sem alvo", no molde do `_mining_voxel` do jogador (player.gd:136): nao existe
 ## voxel (-999,-999,-999) dentro dos limites do mundo, entao o sentinela nunca
 ## colide com uma celula de verdade e `world.get_block` dele devolve AIR.
@@ -1091,6 +1100,11 @@ func _dig_step(dt: float) -> void:
 	# e no readback do save, senao a clausula do §1 -- "o mundo tem de registrar
 	# isso" -- nao seria observada por nada.
 	world.set_block(_dig_pos, BlockDefs.Block.AIR, true)
+	# O centro do voxel, o mesmo offset do `acted.emit` do jogador
+	# (player.gd:690) para que as duas origens caiam na MESMA celula de Eter: com
+	# um canto qualquer, a diferenca de leitura entre os dois bracos seria do
+	# arredondamento do `cell_of_world`, nao da fonte (dossie 12 §3.5).
+	_imprint(Vector3(_dig_pos) + Vector3(0.5, 0.5, 0.5), AetherField.Channel.WORK, DIG_WORK)
 	_dig_reset()
 
 

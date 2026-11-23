@@ -38,16 +38,16 @@ const TESTS: Array[StringName] = [
 	&"_test_lobo_cava_sem_input_do_jogador",
 	&"_test_cavar_respeita_a_lista", &"_test_cavar_nao_toca_construcao_alheia",
 	&"_test_abrir_passagem_depois_de_bloqueio",
+	&"_test_work_de_bicho_nao_confundido",
 	&"_test_colheita_de_malha_sem_cavar",
 ]
-# 267 = os 247 do commit anterior (240 da ponta da perna 16 + 7 da colheita de
-# malha, dossie 12 §8(a)) mais as vinte do cavar: tres da checagem 1, sete da 2,
-# quatro da 7 e seis da 5 (os tres bracos do muro de dois blocos, a obra dentro de
-# um comprometimento, o degrau de um bloco e o controle de pedra).
-# O censo se re-deriva a cada checagem nova porque a linha
-# `_checks + 1 == EXPECTED_CHECKS` de `_finish` e o que converte passo abortado por
-# `SCRIPT ERROR` em vermelho: um numero chutado aqui desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 267
+# 271 = os 267 do commit anterior (247 ate a checagem 5 do cavar) mais a clausula
+# que faltava na checagem 1 ("o WORK apareceu na celula de Eter") e as tres da
+# checagem 3 (valor, leitura do nariz, decisao). O censo se re-deriva a cada
+# checagem nova porque a linha `_checks + 1 == EXPECTED_CHECKS` de `_finish` e o
+# que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
+# desarma o instrumento inteiro.
+const EXPECTED_CHECKS: int = 271
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -190,6 +190,13 @@ const CAP_SPOTS: Array = [
 	Vector3(70.0, 51.001, 70.0), Vector3(58.0, 51.001, 82.0),
 	Vector3(40.0, 51.001, 82.0),
 ]
+# Onde o nariz da checagem 3 fica de pe, a OESTE do muro de x=56. A coluna nao e
+# escolha de gosto: a celula de Eter da boca cavada (56 / 4 = 14) entra no quadrado
+# de `SCENT_RADIUS = 3` celulas em torno de 46 / 4 = 11 (varre 8..14) e a celula da
+# isca de WORK, em x=66 (= 16), fica FORA. Assim o braco do lobo le "WORK so do
+# lobo" e o braco do jogador le "WORK so do jogador" -- duas misturas diferentes
+# nao comparariam assinatura nenhuma.
+const NARIZ_FEET := Vector3(46.0, 51.001, 54.0)
 
 
 ## Sessao de spawn puro: os cinco lobos vem do `_spawn_wolves` real e ficam onde o
@@ -4608,6 +4615,20 @@ func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
 			"registrada": _world.edits.has(p),
 			"valor": int(_world.edits.get(p, -1)),
 		}
+	# O WORK lido na celula de Eter de cada boca nova, antes da limpeza do palco.
+	# `cell_of_world` com o mesmo offset do imprint (voxel + 0,5) e o que garante
+	# que a leitura cai na celula em que a escrita caiu: pedir pelo voxel inteiro
+	# arredondaria para outra celula nos voxels de borda e a checagem acusaria
+	# ausencia onde o instrumento e que esta torto.
+	var work_em := {}
+	var work_acesos := 0
+	for p: Vector3i in novas:
+		var v: float = _field.sample_cell(
+				_field.cell_of_world(Vector3(p) + Vector3(0.5, 0.5, 0.5)),
+				AetherField.Channel.WORK)
+		work_em[p] = v
+		if v > 0.0:
+			work_acesos += 1
 	var out := {
 		"ticks": ticks, "horizontais": horizontais, "encostou": encostou,
 		"boca_tick": boca_tick, "novas": novas, "bocas_n": novas.size(),
@@ -4616,19 +4637,21 @@ func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
 		"celulas": int(rows.size()) * 45, "feet": _wolf.body.feet_pos,
 		"alvo": _wolf._move_target, "dig_pos": _wolf._dig_pos,
 		"dig_steps": _wolf._dig_steps, "extras": extras_lidos,
+		"work_em": work_em, "work_acesos": work_acesos,
 	}
 	_dig_stage(56, [], BlockDefs.Block.AIR)
 	return out
 
 
-## Checagem 1 do dossie 12 §5, a premissa do §1 virada em numero. Sao tres
+## Checagem 1 do dossie 12 §5, a premissa do §1 virada em numero. Sao quatro
 ## clausulas e cada uma paga a sua linha: o voxel nao tinha chave em `world.edits`
 ## antes do lote (ninguem tocou, e nenhum botao do jogador esta apertado), a pata
-## o devolve em ar depois de uma janela andando, e a escrita e registrada. A
-## terceira e a que impede o cavar silencioso: sem a chave o buraco nao entra no
-## save e o jogador reloga num talude que ninguem abriu -- e por isso que ela conta
-## as bocas NOVAS do lote contra `world.edits`, uma a uma, e nao o estado final da
-## coluna, que o `_dig_stage` do proprio palco devolve ao ar no fim da janela.
+## o devolve em ar depois de uma janela andando, a escrita e registrada, e o WORK
+## acendeu na celula de Eter. A terceira e a que impede o cavar silencioso: sem a
+## chave o buraco nao entra no save e o jogador reloga num talude que ninguem
+## abriu -- e por isso que ela conta as bocas NOVAS do lote contra `world.edits`,
+## uma a uma, e nao o estado final da coluna, que o `_dig_stage` do proprio palco
+## devolve ao ar no fim da janela.
 func _test_lobo_cava_sem_input_do_jogador() -> bool:
 	var w := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 2)
 	_check(not Input.is_action_pressed("break_block")
@@ -4649,6 +4672,15 @@ func _test_lobo_cava_sem_input_do_jogador() -> bool:
 			"o mundo registra o buraco: cada boca nova e uma chave AIR em `world.edits`",
 			"chaves_air=%d bocas=%d chaves_coluna=%d celulas=%s" % [
 			int(w["com_chave"]), int(w["bocas_n"]), int(w["chaves_n"]), str(w["novas"])])
+	# A quarta clausula do §5.1: `o WORK apareceu na celula de Eter`. Ela conta
+	# bocas com WORK > 0 e nao o valor, porque as duas celulas de z da faixa do
+	# corpo (-0.5 ate +0.5 de `DIMS.z = 1,35`) caem na MESMA celula de Eter de 4
+	# blocos e o `imprint` e aditivo: o valor de duas bocas e o dobro e nao e o
+	# que esta em jogo aqui. O peso do imprint, esse, e a checagem 3 que decide.
+	_check(int(w["work_acesos"]) == int(w["bocas_n"]) and int(w["bocas_n"]) >= 1,
+			"o WORK apareceu na celula de Eter: cada boca nova acende a sua",
+			"work_acesos=%d bocas=%d celulas=%s valores=%s" % [
+			int(w["work_acesos"]), int(w["bocas_n"]), str(w["novas"]), str(w["work_em"])])
 	return true
 
 
@@ -4808,6 +4840,111 @@ func _test_abrir_passagem_depois_de_bloqueio() -> bool:
 			"pedra=%d passos  neve_registrada=%d passos  travessia=%d  bocas=%d runs=%d face_max=%.3f" % [
 			int(c["ticks"]), int(b["ticks"]), int(a["cruze_tick"]),
 			int(c["bocas"]), int(c["runs"]), float(c["x_max"])])
+	return true
+
+
+## Nariz montado sobre o campo ja aceso: um lobo so para ler rastro. O corpo nao
+## anda e nada e escrito na mao: `_find_scent` roda no `sim_step`, entao o que se
+## colhe aqui e a leitura do caminho real, com o MESMO `identity` nos dois bracos
+## para que a personalidade sorteada por `Mind` nao vire uma variavel a mais no
+## par.
+func _lobo_nariz(feet: Vector3, pid: int) -> Wolf:
+	var w := Wolf.new()
+	_stage.add_child(w)
+	w.setup(_world, _field, _player, feet, pid, _clock)
+	return w
+
+
+## Tantos `sim_step` quantos bastam para o nariz cair na cadencia (`SCENT_PERIOD`
+## = 0,25 s = 5 passos) e a arvore devolver um `intent`, sem nenhum frame de
+## locomocao -- o mesmo isolamento que `_advance(ticks, false)` faz com o corpo de
+## quem cava. O `_clock.tick` avanca junto porque o `elapsed` do passo vem dele.
+func _nariz_lee(w: Wolf, ticks: int) -> Dictionary:
+	for i: int in ticks:
+		w.sim_step(float(_clock.tick + 1) * SimClock.STEP, SimClock.STEP)
+		_clock.tick += 1
+	return {
+		"canal": w._scent_channel, "forca": w._scent_strength,
+		"celula": w._scent_cell, "achou": w._scent_found,
+		"pos": w._scent_pos, "intent": w.intent,
+		"reaction": w.get("_reaction"), "tick": _clock.tick,
+	}
+
+
+## Checagem 3 do dossie 12 §5.3, a que o §3.3.(i) da perna 10 aponta como a que
+## DECIDE o desenho. Os dois bracos poem WORK na mesma celula de Eter com a mesma
+## assinatura (0,42 x vies de bioma) e diferem so na fonte: no L escreve a pata
+## (`_dig_step` -> `_imprint`), no P escreve o echo da lavra do jogador
+## (`main._on_acted("break")`, o handler que o `acted.emit` de player.gd:690 acorda
+## no boot). No meio de cada braco, um nariz montado sobre o campo ja aceso le pelo
+## caminho real. O numero que decide e a igualdade: se os dois dao o mesmo canal, a
+## mesma celula e a mesma forca, nada no mundo distingue um WORK do outro e a frase
+## "WORK e pegada do jogador" deixa de ser verdade -- o §2 desta pauta, o README e o
+## status passam a dizer "pegada de quem trabalha no bloco" (fechado no commit (h)).
+## Se alguem separar por canal novo ou por valor proprio, a igualdade quebra e esta
+## linha fica vermelha com os dois numeros na mesa.
+##
+## O braco L pede UMA boca (`boca_alvo = 1`) porque o `imprint` e aditivo e as duas
+## celulas de z da faixa do corpo caem na mesma celula de Eter: duas bocas dariam
+## 2 x 0,42 e a diferenca seria de contagem, nao de origem. O `y` do `_scent_pos`
+## entra na comparacao porque o `_dig_stage` do fim da janela devolve a coluna ao ar
+## nao registrado, entao os dois bracos terminam com o mesmo estado de mundo; o `y`
+## que a propria cova expoe dentro da camada e o assunto da checagem 6 (commit (e)).
+## A terceira linha e a consequencia comportamental do que as duas primeiras
+## medem: quem chega farejando decide `investigate` contra o rastro do que cava do
+## mesmo jeito que decide contra o rastro do jogador, e e ai que o lobo que chegou
+## pode cavar de novo (a auto-alimentacao que o §3.5 registra como aberta). A
+## alavanca se a resposta for "loop" e a cadencia de cavar do §3.2, nao um canal
+## novo -- `Channel.COUNT` e decisao de versao (§6).
+func _test_work_de_bicho_nao_confundido() -> bool:
+	var l := _dig_window(BlockDefs.Block.SNOW, [51, 52], 200, 1)
+	var novas_l: Array = l["novas"]
+	var c: Vector3i = novas_l[0] if novas_l.size() > 0 else Vector3i(56, 51, 54)
+	var work_l: float = float(l["work_em"].get(c, 0.0))
+	var h := _world.gen.surface_height(c.x, c.z)
+	var vies: float = _world.gen.imprint_bias(
+			c.x, c.z, h, AetherField.Channel.WORK)
+	var esperado := Wolf.DIG_WORK * vies
+	var nariz_l := _lobo_nariz(NARIZ_FEET, 7)
+	var read_l := _nariz_lee(nariz_l, 6)
+	nariz_l.free()
+	# Braco P: campo limpo (`_arm` refaz o `AetherField`) e como unica fonte de WORK
+	# a celula da boca do braco L, escrita pelo handler real do echo do jogador.
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	var s = Session.new()
+	s.world = _world
+	s.aether = _field
+	s._on_acted("break", Vector3(c) + Vector3(0.5, 0.5, 0.5))
+	s.free()
+	var eterea := _field.cell_of_world(Vector3(c) + Vector3(0.5, 0.5, 0.5))
+	var work_p := _field.sample_cell(eterea, AetherField.Channel.WORK)
+	var nariz_p := _lobo_nariz(NARIZ_FEET, 7)
+	var read_p := _nariz_lee(nariz_p, 6)
+	var mesma_forca := absf(float(read_l["forca"]) - float(read_p["forca"])) < 1e-6
+	var mesma_celula := bool(read_l["celula"] == read_p["celula"]) \
+			and bool(read_l["pos"] == read_p["pos"])
+	_check(int(l["bocas_n"]) == 1 and absf(work_l - esperado) < 1e-6
+			and absf(work_p - esperado) < 1e-6,
+			"as duas origens deixam o MESMO WORK na MESMA celula: 0,42 x vies, sem canal novo nem valor proprio",
+			"voxel=%s celula_eterea=%s pata=%.6f jogador=%.6f esperado=%.6f (0,42 x vies %.4f, bioma=%s)" % [
+			str(c), str(eterea), work_l, work_p, esperado, vies,
+			WorldGen.BIOME_NAMES[_world.gen.biome_at(c.x, c.z)]])
+	_check(bool(read_l["achou"]) and bool(read_p["achou"])
+			and int(read_l["canal"]) == int(read_p["canal"])
+			and int(read_l["canal"]) == int(AetherField.Channel.WORK)
+			and mesma_celula and mesma_forca,
+			"o nariz nao distingue a origem: mesmo canal, mesma celula, mesma forca",
+			"pata canal=%s forca=%.6f celula=%s pos=%s | jogador canal=%s forca=%.6f celula=%s pos=%s" % [
+			AetherField.CHANNEL_NAMES[int(read_l["canal"])], float(read_l["forca"]),
+			read_l["celula"], read_l["pos"],
+			AetherField.CHANNEL_NAMES[int(read_p["canal"])], float(read_p["forca"]),
+			read_p["celula"], read_p["pos"]])
+	_check(String(read_l["intent"]) == String(read_p["intent"]),
+			"a decisao do passo seguinte e a mesma nos dois bracos",
+			"intent pata=%s jogador=%s | reacao pata=%s jogador=%s | passos lidos=6/6 | tick absoluto pata=%d jogador=%d | o cavador continua=%s" % [
+			read_l["intent"], read_p["intent"], read_l["reaction"], read_p["reaction"],
+			int(read_l["tick"]), int(read_p["tick"]), _motion()])
+	nariz_p.free()
 	return true
 
 
