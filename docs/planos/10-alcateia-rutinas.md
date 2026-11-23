@@ -17,66 +17,113 @@ comportamento — e a checagem é vazia, exatamente como o dossiê 02 exige do c
 
 Segunda premissa, a que o dono pediu com nome: **a memória do predador tem de ser boa ou ruim para
 o jogador de forma observável.** Hoje ela já é, mas só para quem a ganhou
-([`_sense`](../../src/entities/wolf.gd#L865-L867) lê `danger_from_actor_1` e fecha a porta de
+([`_sense`](../../src/entities/wolf.gd#L874-L876) lê `danger_from_actor_1` e fecha a porta de
 `hunt`). O que falta é o **contágio**: um lobo que viu o jogador hoje não comunica nada a ninguém,
 então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas.
 
-## 2. Estado real do código (lido, não medido)
+## 2. Estado real do código (lido na abertura desta perna, não medido)
 
-- **A árvore é de um animal solitário.**
-  [`_build_tree`](../../src/entities/wolf.gd#L354-L384) monta
+Os itens abaixo são a árvore que a perna 10 encontrou, e é no pretérito que se leem: as ausências
+que ela foi autorizada a preencher. Os ponteiros `wolf.gd:NNN` estão re-derivados contra os
+arquivos de hoje, então cada número aponta o lugar onde a frase mora agora; onde a própria perna
+escreveu o que faltava, o itálico diz isso — a ausência deixou de ser presente, e o número de hoje
+não descreve mais o estado daquele dia.
+
+- **A árvore era de um animal solitário.**
+  [`_build_tree`](../../src/entities/wolf.gd#L363-L393) monta
   `Selector[f Sequence[guard, flee], Sequence[guard, chase], ...]` sobre quatro ramos
   (`flee`, `hunt`, `sniff`, `patrol`) e embrulha tudo em `SubtreeGuard.new().init("mente.lobo", …, 400)`
-  ([:354](../../src/entities/wolf.gd#L354)). Nenhum nó lê outro lobo.
-- **O blackboard não tem matilha.** `sim_step` chama
-  `_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt})`
-  ([:833](../../src/entities/wolf.gd#L833)) e `_think` passa `{"wolf": self, "elapsed": elapsed}` ao
-  escorredor ([:784](../../src/entities/wolf.gd#L784)). É o dicionário novo por lobo por tick que o
-  contrato já registra como débito ([`AGENTS.md`](../../AGENTS.md), "Alocação no caminho quente").
-- **A percepção só enxerga o jogador.**
-  [`_sense`](../../src/entities/wolf.gd#L837-L874): distância e LOS **contra o jogador**, e a LOS só
-  roda a menos de 30 m com ele vivo ([:805](../../src/entities/wolf.gd#L805)); três amostras do
-  Éter no próprio ponto ([:806-808](../../src/entities/wolf.gd#L806-L808)); rastro no ritmo de
-  `SCENT_PERIOD` ([:815-816](../../src/entities/wolf.gd#L815-L816) →
-  [`_find_scent`](../../src/entities/wolf.gd#L881-L926)); `_fear_level` composto (
-  [:817](../../src/entities/wolf.gd#L817)); `_courage` fechado por memória de apanhar
-  ([:732-733](../../src/entities/wolf.gd#L732-L733)); `saw_player` lembrado a cada 2 s
-  ([:829-832](../../src/entities/wolf.gd#L829-L832)). Não existe "outro lobo vê o quê".
-- **Quatro opções no escorredor, e nenhuma delas sabe de vizinho.**
-  [`_build_scorer`](../../src/entities/wolf.gd#L724-L770): `flee` com 5 considerações
-  ([:740-754](../../src/entities/wolf.gd#L740-L754)), `hunt` com 6 — inclusive o veto
-  "presa percebida" ([:750-752](../../src/entities/wolf.gd#L750-L752)) e o veto "coragem contra este
-  ator" ([:753-754](../../src/entities/wolf.gd#L753-L754)) —, `investigate` com 4 e o veto "ha rastro"
-  ([:773-774](../../src/entities/wolf.gd#L773-L774)), e `patrol` com o chão de fundo de 0,22
-  ([:778-780](../../src/entities/wolf.gd#L778-L780)). `min_lead = 0,05` e `min_interval = 0,6`
-  ([:725-726](../../src/entities/wolf.gd#L725-L726)) são a histerese que evita o flicker — e é
+  ([:363](../../src/entities/wolf.gd#L363)). Nenhum nó lia outro lobo.
+  *(Relido nesta ponta: a §3.5 pôs a leitura da matilha nas folhas —
+  [`_leaf_chase`](../../src/entities/wolf.gd#L444) e
+  [`_leaf_investigate`](../../src/entities/wolf.gd#L508-L536) contam vizinhos por `intent` em
+  [`_hunt_pack_size`](../../src/entities/wolf.gd#L466) e em
+  [`_scent_seat`](../../src/entities/wolf.gd#L550-L563), e
+  [`_leaf_wander`](../../src/entities/wolf.gd#L583) pega o setor pelo posto em
+  [`_territory_rank`](../../src/entities/wolf.gd#L639).)*
+- **O blackboard não tinha matilha.** `sim_step` chamava
+  `_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt})` e `_think`
+  passava `{"wolf": self, "elapsed": elapsed}` ao escorredor. Era o dicionário novo por lobo por
+  tick que o contrato já registra como débito
+  ([`AGENTS.md`](../../AGENTS.md), "Alocação no caminho quente").
+  *(Relido nesta ponta: as duas chamadas seguem em
+  [:842](../../src/entities/wolf.gd#L842) e [:793](../../src/entities/wolf.gd#L793) e agora
+  **carregam** `"pack": _pack` — a lista que [`_read_pack`](../../src/entities/wolf.gd#L800-L801)
+  renova uma vez por tick (§3.1). O dicionário continua sendo o mesmo débito, agora com uma
+  `Array` a mais dentro dele, e a alocação segue sem medição própria.)*
+- **A percepção só enxergava o jogador.**
+  [`_sense`](../../src/entities/wolf.gd#L846-L883): distância e LOS **contra o jogador**, e a LOS só
+  roda a menos de 30 m com ele vivo ([:852](../../src/entities/wolf.gd#L852)); três amostras do
+  Éter no próprio ponto ([:853-855](../../src/entities/wolf.gd#L853-L855)); rastro no ritmo de
+  `SCENT_PERIOD` ([:857-858](../../src/entities/wolf.gd#L857-L858) →
+  [`_find_scent`](../../src/entities/wolf.gd#L890-L930)); `_fear_level` composto (
+  [:870-871](../../src/entities/wolf.gd#L870-L871)); `_courage` fechado por memória de apanhar
+  ([:874-876](../../src/entities/wolf.gd#L874-L876)); `saw_player` lembrado a cada 2 s
+  ([:880-882](../../src/entities/wolf.gd#L880-L882)). Não existia "outro lobo vê o quê".
+  *(Relido nesta ponta: o contágio da §3.6 está em
+  [:862-869](../../src/entities/wolf.gd#L862-L869) e soma o `intent` e o `trust` dos vizinhos no
+  `_fear_level` ([:870-871](../../src/entities/wolf.gd#L870-L871)) e no `_courage`
+  ([:876](../../src/entities/wolf.gd#L876)). O percept alheio — o que **ele** viu — continua fora
+  da lista, porque o meio compartilhado entre lobos é o Éter, §3.3.)*
+- **Quatro opções no escorredor, e nenhuma delas sabia de vizinho.**
+  [`_build_scorer`](../../src/entities/wolf.gd#L733-L789): `flee` com 5 considerações
+  ([:737-747](../../src/entities/wolf.gd#L737-L747)), `hunt` com 7 — inclusive o veto
+  "presa percebida" ([:759-761](../../src/entities/wolf.gd#L759-L761)), o veto "coragem contra este
+  ator" ([:762-763](../../src/entities/wolf.gd#L762-L763)) e o veto "filhote não caça"
+  ([:771-773](../../src/entities/wolf.gd#L771-L773), dossiê 11 §3.3) —, `investigate` com 4 e o veto
+  "há rastro" ([:782-783](../../src/entities/wolf.gd#L782-L783)), e `patrol` com o chão de fundo de
+  0,22 ([:787-789](../../src/entities/wolf.gd#L787-L789)). `min_lead = 0,05` e `min_interval = 0,6`
+  ([:734-735](../../src/entities/wolf.gd#L734-L735)) são a histerese que evita o flicker — e é
   nela que uma opção "circle" nova tem de caber, não em `if` solto.
-- **Rondar já existe, mas sem área e sem coordenação.**
-  [`_leaf_wander`](../../src/entities/wolf.gd#L574) sorteia até 8 tentativas de ponto seco a
-  5–22 m do `home` (com [`_dry_ground`](../../src/entities/wolf.gd#L639) e
-  [`_shore_point`](../../src/entities/wolf.gd#L647) como portas). O `home` vinha de
+  *(Relido nesta ponta: `flee` pontua "terror no ar" pelo `_fear_level` que já levou o pânico dos
+  vizinhos e `hunt` pontua "coragem contra este ator" pelo `_courage` amortecido pela confiança
+  deles — os dois números acima. A §3.6 entrou no escorredor pela porta da percepção, sem
+  consideração nova.)*
+- **Rondar já existia, mas sem área e sem coordenação.**
+  [`_leaf_wander`](../../src/entities/wolf.gd#L583) sorteia até 8 tentativas de ponto seco a
+  5–22 m do `home` (com [`_dry_ground`](../../src/entities/wolf.gd#L648) e
+  [`_shore_point`](../../src/entities/wolf.gd#L656) como portas). O `home` vinha de
   `_random_ground_point(16.0, 46.0)` — leitura da ponta deste dossiê —, sorteado um por lobo em
-  [`_spawn_wolves`](../../src/main.gd#L318-L354): cinco lares espalhados, **nenhum território
+  [`_spawn_wolves`](../../src/main.gd#L335-L358): cinco lares espalhados, **nenhum território
   compartilhado**, e a mensagem de respawn dizia "uma nova matilha entrou no vale"
   (`main.gd:242` naquela ponta) sem que nada no código chame aquilo de matilha.
   *(Relida nesta ponta: a perna 14 trocou o sorteio único por
-  [`_spawn_home_point`](../../src/main.gd#L536), chamado em
-  [:328](../../src/main.gd#L328) sobre as [`SPAWN_BANDS`](../../src/main.gd#L460), e removeu o
-  letreiro — o dossiê 14 §1.3 manda nenhuma aviso de criatura na tela.)*
-- **Cercar não existe.** [`_leaf_chase`](../../src/entities/wolf.gd#L435) vai direto ao alvo e
-  [`_leaf_stalk`](../../src/entities/wolf.gd#L486) vai ao último avistamento
-  (`mind.last_atom("saw_player")`). `_move_target` é um ponto só, e a locomoção em
-  [`_physics_process`](../../src/entities/wolf.gd#L941-L989) tem desemperto + desvio
-  ([:972-976](../../src/entities/wolf.gd#L972-L976)) — nada distribui os lobos em torno de nada.
-- **Atacar em grupo só no sentido acidental.** [`_leaf_bite`](../../src/entities/wolf.gd#L693)
+  [`_spawn_home_point`](../../src/main.gd#L735), chamado por
+  [`_place_request`](../../src/main.gd#L651) a partir de
+  [:346](../../src/main.gd#L346) sobre as [`SPAWN_BANDS`](../../src/main.gd#L497), e removeu o
+  letreiro — o dossiê 14 §1.3 manda nenhum aviso de criatura na tela. A área e a coordenação são
+  desta perna: a folha conta o censo em
+  [:584](../../src/entities/wolf.gd#L584), corta o círculo em
+  [:595-597](../../src/entities/wolf.gd#L595-L597) sobre o baricentro de
+  [`_territory_center`](../../src/entities/wolf.gd#L625-L632) e dá a fatia de cada um pelo
+  [`_territory_rank`](../../src/entities/wolf.gd#L639-L644) — não por `identity % n`; com um lobo
+  só o centro volta a ser o próprio lar e a fatia o círculo inteiro, que é a ronda de antes.)*
+- **Cercar não existia.** [`_leaf_chase`](../../src/entities/wolf.gd#L444) ia direto ao alvo e
+  [`_leaf_stalk`](../../src/entities/wolf.gd#L495) ia ao último avistamento
+  (`mind.last_atom("saw_player")`). `_move_target` era um ponto só, e a locomoção em
+  [`_physics_process`](../../src/entities/wolf.gd#L950-L998) só tinha desemperto + desvio
+  ([:986-988](../../src/entities/wolf.gd#L986-L988)) — nada distribuía os lobos em torno de nada.
+  *(Relido nesta ponta: o assento angular da §3.4 escreve o `_move_target` dos que caçam em
+  [:447-455](../../src/entities/wolf.gd#L447-L455) →
+  [`_seat_point`](../../src/entities/wolf.gd#L489-L492), o da ronda em
+  [:596](../../src/entities/wolf.gd#L596) e o do rastro em
+  [:550-563](../../src/entities/wolf.gd#L550-L563); o ramo que falta em
+  [:992-993](../../src/entities/wolf.gd#L992-L993) é o pulo do degrau, perna 19, não cerco.)*
+- **Atacar em grupo só existia no sentido acidental.** [`_leaf_bite`](../../src/entities/wolf.gd#L702)
   alcança `BITE_RANGE` com `_bite_cd` ([:23-25](../../src/entities/wolf.gd#L23-L25) e o cooldown em
-  `sim_step` [:800](../../src/entities/wolf.gd#L800)), imprime BLOOD 0,18
-  ([:703](../../src/entities/wolf.gd#L703)) e reforça `prey_wounded`. Cinco lobos podem morder no
-  mesmo tick porque nada os sincroniza — e nada os **dessedimenta** tampoco: não existe "quem já
-  está em cima espera o outro chegar".
+  `sim_step` [:809](../../src/entities/wolf.gd#L809)), imprime BLOOD 0,18
+  ([:712](../../src/entities/wolf.gd#L712)) e reforça `prey_wounded`. Cinco lobos podiam morder no
+  mesmo tick porque nada os sincronizava — e nada os **dessedimentava** tampoco: não existia "quem
+  já está em cima espera o outro chegar".
+  *(Relido nesta ponta: o escalonamento da §3.5 está na porta de vez da mordida
+  ([:705-708](../../src/entities/wolf.gd#L705-L708) →
+  [`_bite_turn`](../../src/entities/wolf.gd#L724-L728), que conta os participantes em
+  [`_hunt_pack_size`](../../src/entities/wolf.gd#L466-L471) e o posto em
+  [`_hunt_pack_rank`](../../src/entities/wolf.gd#L477-L482)); os dois números acima continuam os
+  mesmos de antes, porque a perna não tocou o alcance nem o cooldown.)*
 - **O precedente de como se injeta visão de fora, sem acoplar:** o jogador recebe um
   `entity_provider: Callable` ([player.gd:91](../../src/entities/player.gd#L91)), montado pela
-  sessão ([main.gd:137](../../src/main.gd#L137)) e lido na mira
+  sessão ([main.gd:150](../../src/main.gd#L150)) e lido na mira
   ([player.gd:619-631](../../src/entities/player.gd#L619-L631)). A matilha entra pelo mesmo
   caminho — `pack_provider`, não um singleton novo.
 - **Memória: por ator, não por matilha.** `Mind` guarda `episodic` (cap 24), `beliefs`,
@@ -85,75 +132,94 @@ então a lembrança de uma matilha inteira é a soma de cinco memórias isoladas
   ([:104-105](../../src/ai/mind.gd#L104-L105)), decaimento exponencial por minuto
   ([:108-123](../../src/ai/mind.gd#L108-L123)) e deriva de temperamento por experiência
   ([:50-58](../../src/ai/mind.gd#L50-L58)). `main` persiste cada mente por
-  [`state_dict`](../../src/entities/wolf.gd#L1090)/[`load_state`](../../src/entities/wolf.gd#L1106).
+  [`state_dict`](../../src/entities/wolf.gd#L1099)/[`load_state`](../../src/entities/wolf.gd#L1115).
   Não há canal de lobo para lobo.
 
 ## 3. O que a peça exige
 
 1. **`pack_provider` no lobo**, montado em `main` como o do jogador, devolvendo uma leitura
    **barata e estável**: para cada lobo, `[{identity, pos, intent, hp_ratio}]` dos vivos a menos de
-   um raio de coesão. A lista entra no blackboard de `sim_step` ([:833](../../src/entities/wolf.gd#L833))
-   e no contexto do escorredor ([:784](../../src/entities/wolf.gd#L784)), uma vez por tick de
+   um raio de coesão. A lista entra no blackboard de `sim_step` ([:842](../../src/entities/wolf.gd#L842))
+   e no contexto do escorredor ([:793](../../src/entities/wolf.gd#L793)), uma vez por tick de
    20 Hz — nunca por frame.
 2. **Rondar com território**: o `home` vira **centro compartilhado** com raio próprio, e o
    `_leaf_wander` escolhe setor por `identity` (o assento angular §3.4) em vez de sortear qualquer
-   ponto. O RNG por lobo ([:243](../../src/entities/wolf.gd#L243)) continua sendo o sorteio; o
+   ponto. O RNG por lobo ([:252](../../src/entities/wolf.gd#L252)) continua sendo o sorteio; o
    `_population_rng` da sessão ([main.gd:64](../../src/main.gd#L64), sorteado em
-   [:556-557](../../src/main.gd#L556-L557)) não pode ser consumido por decisão de lobo — é o que o
+   [:757-758](../../src/main.gd#L757-L758)) não pode ser consumido por decisão de lobo — é o que o
    dossiê de RNG isolou.
-3. **Procurar com o rastro dos outros.** Hoje, quando a inspeção
-   ([`_leaf_investigate`](../../src/entities/wolf.gd#L499-L527), RUNNING por `INSPECT_SECONDS`)
-   termina, quem achou grava **para si mesmo** (`_remember_scent`, `src/entities/wolf.gd:557`) e o
-   cache é do lobo, limpo no load (`:679-710`). O meio compartilhado entre lobos já existe e é o
-   Éter: o único canal que um lobo escreve e outro lê sem referência direta. Então o lote **não
-   inventa chave nem mensagem nova** — o que achou imprime no ponto encontrado (BLOOD já é impresso
-   em `src/entities/wolf.gd:703`, WORK é o canal de "tem alguém mexendo aqui") e os vizinhos chegam
-   pelo `_find_scent` normal (`src/entities/wolf.gd:881-926`), com a seleção `BLOOD + 0,35 × WORK`.
+3. **Procurar com o rastro dos outros.** Na leitura da abertura, quando a inspeção
+   ([`_leaf_investigate`](../../src/entities/wolf.gd#L508-L536), RUNNING por `INSPECT_SECONDS`)
+   terminava, quem achava gravava **para si mesmo** (`_remember_scent`,
+   `src/entities/wolf.gd:566`) e o cache era do lobo (`:577-580`, limpo no load em `:1147`). O meio
+   compartilhado entre lobos já existia e é o Éter: o único canal que um lobo escreve e outro lê sem
+   referência direta. Então o lote **não inventou chave nem mensagem nova** — o que achou imprime no
+   ponto encontrado (BLOOD já era impresso em `src/entities/wolf.gd:712`, WORK é o canal de "tem
+   alguém mexendo aqui") e os vizinhos chegam pelo `_find_scent` normal
+   (`src/entities/wolf.gd:890-930`), com a seleção `BLOOD + 0,35 × WORK`.
    Vantagem: nenhuma estrutura nova, nenhum dicionário compartilhado, e o leitor já é testado pelo
-   cenário `_test_scent_cave_layer` (`tests/aether_reactions_test.gd:1461`). Custo honesto: a partir
+   cenário `_test_scent_cave_layer` (`tests/aether_reactions_test.gd:1466`). Custo honesto: a partir
    daqui WORK deixa de ser assinatura exclusiva do jogador, e é a checagem 3 do dossiê 12 que decide
    isso — os dois arquivos têm de ser lidos juntos antes de escrever qualquer linha.
 4. **Cercar — assentos angulares com histerese.** A posição de ataque passa de "o alvo" para
    "alvo + offset angular", com `seat = identity % n_participantes` e um ângulo que **só muda**
    quando o lobo está fora da faixa do próprio setor (a mesma ideia de `min_lead`/`min_interval`
-   dos `:354-355`, aplicada a ângulo). O `BITE_RANGE` de 1,95 m
-   ([:26](../../src/entities/wolf.gd#L26)) é o que decide o raio do anel: o assento tem de parar a
-   alcance de mordida, não em cima do corpo — é o que hoje causa cinco corpos no mesmo voxel, o
-   mesmo problema que a nota de `_volume_clear` ([main.gd:595-597](../../src/main.gd#L595-L597))
+   dos `:734-735`, aplicada a ângulo). O `BITE_RANGE` de 1,95 m
+   ([:23](../../src/entities/wolf.gd#L23)) é o que decide o raio do anel: o assento tem de parar a
+   alcance de mordida, não em cima do corpo — era isso que punha cinco corpos no mesmo voxel, o
+   mesmo problema que a nota de `_volume_clear` ([main.gd:808-810](../../src/main.gd#L808-L810))
    registrou no spawn.
+   *(Escrito nesta ponta: o assento saiu por **posto de identidade**
+   ([`_hunt_pack_rank`](../../src/entities/wolf.gd#L477-L482), contados em
+   [`_hunt_pack_size`](../../src/entities/wolf.gd#L466-L471)) e não por `identity % n`, porque
+   precedência por "quem chegou primeiro" pediria posse escrita no lobo — o mesmo motivo que a nota
+   de [`_scent_seat`](../../src/entities/wolf.gd#L539-L563) dá para a célula de rastro.)*
 5. **Atacar em grupo — escalonamento, não sincronia.** Quem chega primeiro mantém; quem está no
    segundo assento **espera** (`_bite_cd` já segura 1,15 s — [:25](../../src/entities/wolf.gd#L25))
    e só entra quando o alvo está `prey_wounded` ou quando o primeiro desengatou. Propriedade
    testável: nunca mais de `n_attacking` lobos a `BITE_RANGE` do alvo no mesmo tick, **e** o dano
    total da matilha num cenário fixo cai na banda medida.
 6. **Contágio de memória (o "bom ou ruim para o player" observável).** Um lobo que apanhou e
-   fugiu imprime FEAR; os que lêem esse FEAR hoje já escalam `_fear_level`
-   ([:861](../../src/entities/wolf.gd#L861)) — falta a **outra metade**: um lobo que foi
-   **alimentado** pelo jogador (`feed` [:1062](../../src/entities/wolf.gd#L1062), `on_kill`
-   [:1056](../../src/entities/wolf.gd#L1056)) tem de baixar a agressão de quem está perto dele,
+   fugiu imprime FEAR; os que lêem esse FEAR já escalavam `_fear_level`
+   ([:870](../../src/entities/wolf.gd#L870)) — faltava a **outra metade**: um lobo que foi
+   **alimentado** pelo jogador (`feed` [:1071](../../src/entities/wolf.gd#L1071), `on_kill`
+   [:1065](../../src/entities/wolf.gd#L1065)) tem de baixar a agressão de quem está perto dele,
    não só a sua. Falsificável: cenário com um lobo amigável (trust alto) + dois famintos, e o
    `intent` dos dois muda contra o mesmo jogador. Mandato 2 vale aqui: **nada** disso vem do
    oráculo — a única saída dele é `_narrations`
    ([mind_oracle.gd:47](../../src/ai/mind_oracle.gd#L47), lida em
    [:96-97](../../src/ai/mind_oracle.gd#L96-L97) e entregue ao HUD).
+   *(Escrita nesta ponta: a outra metade é o `trust` publicado pelo vizinho em
+   [`_pack_put`](../../src/main.gd#L869-L884) ([:883](../../src/main.gd#L883)), somado em
+   [:864-869](../../src/entities/wolf.gd#L864-L869) e amortecendo o `_courage` em
+   [:876](../../src/entities/wolf.gd#L876); a testemunha numérica é o cenário
+   `_test_amortece_confianca` ([aether_reactions_test.gd:23](../../tests/aether_reactions_test.gd#L23)).
+   Os dois métodos citados acima são os mesmos, agora lidos de fora.)*
 
 ## 4. Custo — as quatro perguntas
 
 - **Roda por frame, por tick ou às vezes?** Tick de 20 Hz, dentro de `sim_step`, portanto dentro do
-  cronômetro `begin_step`/`end_step` ([main.gd:246-248](../../src/main.gd#L246-L248),
+  cronômetro `begin_step`/`end_step` ([main.gd:259-261](../../src/main.gd#L259-L261),
   [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e dos 50 ms divididos com a difusão e a
   recolha. A lista de vizinhos é construída **uma vez por passo** na sessão, não cinco.
 - **Quantas entidades são alcançadas?** `n(n-1)/2` = 10 comparações por passo com 5 lobos; hoje o
-  `for w in wolves` já roda 5 ([main.gd:259-260](../../src/main.gd#L259-L260)). Com o censo do
+  `for w in wolves` já roda 5 ([main.gd:272-273](../../src/main.gd#L272-L273)). Com o censo do
   dossiê 11 (até ~12), vira 66 — ainda uma fração do `sim_step`, mas o número tem de sair no
   rodapé, não na conversa.
-- **Aloco no caminho quente?** Sim, e é o débito registrado: o dicionário de blackboard por lobo por
-  tick ([:833](../../src/entities/wolf.gd#L833)) passa a carregar uma `Array` nova por lobo. Antes
-  de somar qualquer alocação nova, o lote **reaproveita** um buffer por sessão (o mesmo array,
-  reescrito a cada passo) — se a solução for alocar cinco arrays por tick, ela não entra.
+- **Aloco no caminho quente?** Era o débito registrado: o dicionário de blackboard por lobo por
+  tick ([:842](../../src/entities/wolf.gd#L842)) passou a carregar a leitura da matilha. Antes de
+  somar qualquer alocação nova, o lote **reaproveitou** um buffer por sessão (o mesmo array,
+  reescrito a cada passo) — se a solução fosse alocar cinco arrays por tick, ela não entrava.
+  *(Escrito nesta ponta: [`_read_pack`](../../src/entities/wolf.gd#L800-L801) só troca a referência
+  pelo [`pack_of`](../../src/main.gd#L829-L831) da sessão, e [`_pack_put`](../../src/main.gd#L869-L884)
+  reescreve a entrada no lugar, com o buffer cortado por `resize` em
+  [:857-858](../../src/main.gd#L857-L858); o dicionário do blackboard continua o mesmo débito do
+  contrato, sem medição de alocação própria.)*
 - **Como sei que ficou melhor?** Pelo budget que já é código: `SubtreeGuard` de 400 µs por mente
-  ([:354-356](../../src/entities/wolf.gd#L354-L356)) com `trips` colhido no runner
-  ([aether_reactions_test.gd:1113-1114](../../tests/aether_reactions_test.gd#L1113-L1114)). Critério
+  ([:389-390](../../src/entities/wolf.gd#L389-L390)) com `trips` colhido no runner
+  ([aether_reactions_test.gd:280-288](../../tests/aether_reactions_test.gd#L280-L288), o par da
+  matilha inteira em [:1821-1833](../../tests/aether_reactions_test.gd#L1821-L1833) e a checagem em
+  [:3094-3095](../../tests/aether_reactions_test.gd#L3094-L3095)). Critério
   numérico: **`trips` continua 0** e a soma de `last_us` não sai da banda medida
   (14 551 µs de pico 40 no rodapé pin de `ff347d2`). Se estourar, a alcateia entra com menos
   considerações, não com budget maior. O agregado dos cinco lobos continua sem medição (dossiê 04)
@@ -168,7 +234,8 @@ godot --headless --path . tests/smoke_test.tscn
 ```
 
 Cenários novos no runner dedicado (a lista é `TESTS`
-([aether_reactions_test.gd:7-15](../../tests/aether_reactions_test.gd#L7-L15)), hoje 21 cenários):
+([aether_reactions_test.gd:8-38](../../tests/aether_reactions_test.gd#L8-L38)), 21 cenários na
+leitura desta página — hoje 56):
 
 1. **`contraste_de_alcateia`** — o mesmo cenário com 1 e com 4 lobos; `intent` de pelo menos um
    lobo difere depois de N ticks, e o log imprime as duas intenções. Checagem **propositalmente
@@ -183,15 +250,15 @@ Cenários novos no runner dedicado (a lista é `TESTS`
    0,35, [mind.gd:104-105](../../src/ai/mind.gd#L104-L105)); imprime os dois valores.
 5. **`alcateia_nao_consome_rng_da_sessao`** — `_population_rng` intacta depois de um passo com
    matilha completa (o contrato do RNG isolado, registrado no status).
-6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:34](../../tests/aether_reactions_test.gd#L34),
+6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39),
    **119** na leitura desta página) sobe com o lote, e a suíte (**237** na mesma leitura) idem — os
    dois re-medidos no clone limpo com `--import` frio antes de virar número publicado.
 
 ## 6. O que NÃO fazer
 
 - **Não criar `PackState`, `Alcateia` nem autoload novo.** O dono da matilha é `main.gd` hoje
-  ([`_spawn_wolves`](../../src/main.gd#L318-L352), [`wolves`](../../src/main.gd#L57),
-  [`_reap_corpses`](../../src/main.gd#L674-L692)); mover posse é o dossiê 06 (K3), e ele só abre
+  ([`_spawn_wolves`](../../src/main.gd#L335-L358), [`wolves`](../../src/main.gd#L57),
+  [`_reap_corpses`](../../src/main.gd#L887-L899)); mover posse é o dossiê 06 (K3), e ele só abre
   com comprador fora de `main.gd`.
 - **Não pôr a coordenação no oráculo** (mandato 2). Uma "estratégia de matilha" sugerida por LLM
   entra como crença em quarentena, nunca como intenção escrita no corpo.
@@ -229,7 +296,7 @@ história, e o que existe hoje, com que número, está no status ("Feito nesta s
 
 Duas citações deste arquivo estavam com rótulo ≠ âncora **já na base**: `:382-383` com âncora
 `#L383` e `:392-393` com âncora `#L547`. Conferidas uma a uma na árvore atual: as duas
-considerações continuam lá, texto por texto, em [wolf.gd:753-754](../../src/entities/wolf.gd#L753-L754)
-("coragem contra este ator") e [wolf.gd:773-774](../../src/entities/wolf.gd#L773-L774) ("ha rastro").
+considerações continuam lá, texto por texto, em [wolf.gd:762-763](../../src/entities/wolf.gd#L762-L763)
+("coragem contra este ator") e [wolf.gd:782-783](../../src/entities/wolf.gd#L782-L783) ("ha rastro").
 Onde a frase ainda é verdadeira na árvore, a âncora foi posta na árvore; onde ela deixou de ser, o
 número antigo fica como leitura da base e está dito acima.

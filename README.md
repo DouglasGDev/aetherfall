@@ -256,6 +256,30 @@ material alpha, pilha zerada equivale a mão vazia, o peso do bloco muda a pose 
 braço, o golpe com pedra afunda mais que sem carga, o ciclo de lavra do rig mexe o
 ombro, pedra lavra mais funda e mais lenta que folha, a mão vazia devolve o braço
 ao repouso e a fração da face do cubo que sai do braço no quadro da órbita.
+
+**A perna 16 (tocas da alcateia) ainda não pousou**: os números dela são da ponta de
+`feat/tocas-da-alcateia-16` medida nesta árvore de trabalho, e o pin acima não os inclui. A suíte
+dá **255 checagens, 0 falhas, 48,0 s**, exit 0, linha 357 de
+[head_suite.log](docs/evidence/tocas-alcateia-16/head_suite.log), que traz as duas correntes e não
+tem nenhum `SCRIPT ERROR`; o estado final confere `dropped_ticks` **0**, `tick=403`, `worst_sim_ms`
+**10,766** dos 50 ms do passo, `dens` **3**, `den_components` **3**, `den_min_dist` **55,9 m**
+contra a régua de 48 m, `pack_pairs` **21**, `wolves` **7**, `births` **2**, `census_cap` **12**,
+`edits=13` e `triangles=214480`. São três checagens a mais sobre as 252 do pin e **nenhuma a
+menos**: o `diff` de rótulos entre o `merged_main_suite.log` daquela corrida e este devolve
+exatamente `espalhamento_nao_estoura_o_passo`, `tocas e pertenca sobrevivem ao save` e
+`default derivado: disco sem a chave nao toca nem inventa dens`. O runner de reações sobe de 225
+para **240 / 0** (`head_runner_run1.log:494`, 24,586 s; segunda corrida 24,446 s) e o custo pareado
+contra a base `99d1167` — mesma suíte, mesma semente, quatro corridas, máquina livre — sai
+**−0,70 %** no cenário estreito e **−0,76 %** nos passos de matilha, ambos dentro do espalhamento
+de repetir o próprio braço: nenhuma diferença mensurável, com a conta e o vínculo de revisão em
+[custo-pareado.md](docs/evidence/tocas-alcateia-16/custo-pareado.md). O par de vazamento do quit
+sai na corrida arquivada — `4 ObjectDB` (linha 358) com `2 resources still in use` (linha 360), o
+mesmo par do pin — e **não** sai na re-corrida desta mesma árvore, feita para fechar a doc
+(**255 / 0 / 47,7 s**, exit 0, linha 357 de
+[docs_rerun_suite.log](docs/evidence/tocas-alcateia-16/docs_rerun_suite.log)): é o comportamento já
+registrado no clone da perna 11, e a
+atribuição continua aberta e fora desta perna.
+
 O que a suíte cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
@@ -315,8 +339,15 @@ O que a suíte cobre:
 - campo de Éter: imprint, difusão para a célula vizinha e meia-vida por canal;
 - HUD, morte e renascer, ciclo de vida dos lobos (cadáver, recolhimento e
   reposição de matilha);
+- matilha em tocas (dossie 16): 3 tocas fundadas no boot, cada uma um componente
+  conexo do grafo de coesão e nenhum lobo lendo de outra toca
+  (`arestas_entre_tocas=0`), separação mínima de 55,9 m contra a régua de 48 m
+  (`DEN_MIN_DIST`), a recusa de spawn contada por motivo — `soma(motivos)` igual
+  a buscas × `SPAWN_ATTEMPTS` — e o passo de 20 Hz do espalhamento dentro da
+  régua de 25 ms (pior passo 10,77 ms dos 50 de orçamento, `dropped_ticks` 0);
 - persistência: salvar → mutar o mundo → carregar devolve relevo, diário de
-  edições, posição, vida, tick e a memória dos lobos.
+  edições, posição, vida, tick e a memória dos lobos, agora com a toca de cada
+  um e o `den` do disco conferidos identidade a identidade.
 
 ## Bloco na mão
 
@@ -396,7 +427,8 @@ perna `bench/`.
 Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
 rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por
 SHA-256, evidências e limites nas [notas de medição](docs/melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
-São resultados headless do candidato daquela revisão, com o smoke hoje em 237 checagens; o código
+São resultados headless do candidato daquela revisão — o censo do smoke é sempre o da seção
+*Teste headless*, nunca o deste parágrafo; o código
 está no commit `a8967e0` e o clone limpo dele re-mediu a suíte completa, mas os runners dedicados
 de rastros e journal continuaram na árvore de trabalho. Falta a aprovação visual em janela.
 
@@ -549,8 +581,12 @@ colocar gasta um da pilha), inventário de 36 slots com pilha por bloco e hotbar
 de 10 pinos, painel de inventário e receitas com estação de craft (bancada),
 combate corpo a corpo com vigor, rolamento e
 planar, respiração e dano de queda, vida/dano/morte/renascer,
-HUD, 5 lobos com Behavior Tree + Utilidade + memória episódica e
-confiança no jogador, bioma como código (uma função decide a partir do relevo, e o mesmo
+HUD, matilha de 5 lobos no boot com censo variável (teto `CENSUS_CAP` 12) e cada
+lobo com Behavior Tree + Utilidade + memória
+episódica e confiança no jogador; a matilha nasce espalhada em 3 tocas
+(`DEN_COUNT`) cujo centro tem de ficar a pelo menos 48 m (`DEN_MIN_DIST`) do
+centro de toda toca já fundada, o lar do filhote é herdado do casal e a reposição
+volta para a toca perdida, bioma como código (uma função decide a partir do relevo, e o mesmo
 bioma dá a cor do pelo de quem ali nasceu e o viés por canal do imprint do Éter — o viés é
 aplicado pelo chamador do evento, o campo continua sem conhecer voxel nenhum), campo de Éter
 com 3 canais (work, blood, fear) que difunde
@@ -596,7 +632,7 @@ igual para humano e para agente.
 
 | Caminho | O que faz |
 | --- | --- |
-| `src/main.gd` | composição da cena: mundo, jogador, lobos, Éter, HUD, save, nó de áudio |
+| `src/main.gd` | composição da cena: mundo, jogador, lobos, tocas da matilha, Éter, HUD, save, nó de áudio |
 | `src/world/` | `voxel_world` (chunks + raycast DDA), `world_gen` (relevo, cubas, cavernas, árvores), `voxel_atlas` (texturas desenhadas em runtime), `aether_field` |
 | `src/entities/` | `player` (mira, minerar, colocar, golpe), `voxel_body` (colisão AABB-contra-voxel), `player_avatar` (corpo em 3ª pessoa), `fp_viewmodel` (braço e bloco na mão em 1ª pessoa), `wolf` |
 | `src/ai/` | `bt_tree`/`bt_status` (Behavior Tree), `response_curve` + `utility_scorer` (utilidade), `mind` (personalidade, memória episódica, confiança) |
@@ -638,7 +674,7 @@ igual para humano e para agente.
 ```sh
 # porta de compilação por arquivo alterado (roda em segundos)
 godot --headless --path . --check-only --script res://src/world/world_gen.gd
-# suíte completa: ~35 s, sai com código 1 em qualquer falha
+# suíte completa: ~48 s na ponta desta perna (42,9 s no pin publicado), sai com código 1 em qualquer falha
 godot --headless --path . tests/smoke_test.tscn
 ```
 

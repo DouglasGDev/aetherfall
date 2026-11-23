@@ -108,7 +108,10 @@ run 2 do braço "com", e conferida idêntica (nenhum arquivo mudou no meio de um
 | `src/entities/wolf.gd` | `5fc2ed71d4d61c8c8fc2cc89cdd56b05` | 50 953 |
 | `tests/aether_reactions_test.gd` | `d05a2f8c7f762849d3286f345fef566c` | 176 203 |
 
-`artifacts.sha256` confere os cinco logs acima com `sha256sum -c artifacts.sha256`.
+`artifacts.sha256` confere os cinco logs acima mais `docs_rerun_suite.log` — a re-corrida da suíte
+feita na árvore depois da passada de documentos (`255 checagens / 0 falhas / 47,7 s`, exit 0, linha
+357, sem as duas linhas de quit do `head_suite.log`) — com `sha256sum -c artifacts.sha256` dando OK
+nos seis.
 
 ## 6. O que esta medição não diz
 
