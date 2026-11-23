@@ -1,9 +1,9 @@
 # Aetherfall
 
 RPG open-world em voxels, feito em **Godot 4.7** com **GDScript**, sob licença
-**MIT**. O diferencial do projeto é a IA dos moradores do mundo rodar 100% na
-máquina do jogador: comportamento de criaturas, personalidade e memória de NPCs,
-facções e eventos nascem de simulação local, sem serviço de nuvem.
+**MIT**. O diferencial é a IA dos moradores do mundo rodar 100% na máquina do
+jogador, sem nuvem: comportamento, personalidade e memória já decidem a matilha
+de lobos hoje; NPCs, facções e eventos do design são `[TARGET]` (`docs/design/`).
 
 Este repositório contém o **slice P0/P1**: um mundo procedural jogável em 3D,
 com mecânicas de quebra/colocação, combate, memória do mundo (campo de Éter) e
@@ -95,8 +95,8 @@ lançado.
 Não compila nada: o "executável" do jogo é o projeto GDScript mais a engine
 portável. Não há `npm install` da vida, e atlas e texturas são desenhados em
 runtime — os PNG de `docs/media/` são capturas de tela, não assets do jogo.
-`models/` e `.tools/` estão no `.gitignore`, e o jogo roda sem eles (o oráculo
-de IA local é opcional).
+`models/` e `.tools/` estão no `.gitignore`: sem eles o jogo roda igual, e com
+eles o próprio boot levanta o oráculo local, sem passo manual (veja *IA local*).
 
 O mesmo script atende outras entradas:
 
