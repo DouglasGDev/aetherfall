@@ -549,14 +549,28 @@ AGENTS.md        regras de trabalho: escopo, orçamento de tick, medição, come
 ## IA local (opcional)
 
 A linha `ia:` no debug (F3) narra o estado interno do lobo sob a mira em uma
-frase gerada por um modelo local. Sem o servidor o jogo roda completo — a
-narrativa fica vazia e a utilidade/árvore decidem sempre sozinhas. O modelo
-nunca decide: só explica o que já foi decidido (docs/design/04, camada 5).
+frase gerada por um modelo local, e o modelo nunca decide: só explica o que já
+foi decidido (docs/design/04, camada 5). *Opcional* quer dizer duas coisas: sem
+os pacotes no disco o jogo roda completo (a linha fica `ausente (modelo)`, e
+utilidade e árvore seguem sozinhas), e com eles o **boot levanta o servidor
+sozinho** — o hospedeiro do processo entra no `_ready` antes da geração, sonda a
+porta por frame, cria o filho quando a porta está vazia e reusa um servidor
+nosso que sobrou de outra janela; quando o que responde na porta não é nosso, o
+jogo roda sem oráculo em vez de matar ou adivinhar porta — `kill` só em pid
+próprio. Ele não espera o modelo carregar: a partida é entregue com o boot dele
+em curso, porque geração e malharia já congelam a janela. Em headless nenhum
+hospedeiro é montado, e é isso que mantém o pacote do modelo fora do rodapé de
+tempo da suíte.
+
+O passo manual continua documentado, agora como opção de quem quer ligar o
+servidor antes de abrir o jogo, e as sondas de oráculo vivo são cena própria —
+exatamente para não virarem caminho silencioso dentro de `MindOracle`:
 
 ```sh
 powershell -ExecutionPolicy Bypass -File tools\fetch_models.ps1    # baixa runtime + mind-small com SHA256 conferido
 powershell -ExecutionPolicy Bypass -File tools\run_mind_server.ps1 # sobe llama-server em 127.0.0.1:8741
 godot --headless --path . tests/live_oracle_probe.tscn             # probe de ponta a ponta: sessao real + servidor
+godot --headless --path . tests/llm_server_boot_probe.tscn         # hospedeiro no boot: modos ci, boot, reuso, estrangeiro, morte
 ```
 
 Medido na 9060 XT (Vulkan): boot do modelo em 9,5 s; prompt 52,7 tok/s e
