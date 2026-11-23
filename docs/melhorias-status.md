@@ -91,7 +91,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 
 - **Tocas da alcateia: a matilha nasce espalhada em grupos e o censo diz em quantas tocas cada
   grupo mora (dossiê 16, branch `feat/tocas-da-alcateia-16`, base `99d1167`, ponta de código
-  `90c152f` — a perna ainda não pousou na `main` e nenhum pin é dela).** O pedido do dono, de
+  `90c152f`, docs `edab9c8` — **pousada** na `main` pelo merge `--no-ff` `9b2c65a` de 2026-11-23, o pin novo).** O pedido do dono, de
   2026-11-21, foi espalhar a matilha em **2–3 tocas** depois de ele ter percorrido o vale inteiro e
   visto um lobo só; a premissa lida antes do código é a mordaca: os cinco lares do boot cabiam num
   círculo de `PACK_LEASH = 18 m` porque `_pack_leash()` devolvia o lar do **primeiro** lobo vivo,
@@ -124,10 +124,10 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   ([custo-pareado.md](evidence/tocas-alcateia-16/custo-pareado.md), [Rodada Tocas 16](#rodada-tocas-16--o-custo-do-espalhamento-pareado-medido-com-e-sem-a-perna-2026-11-22-feattocas-da-alcateia-16-base-99d1167-ponta-de-código-90c152f)).
   Contagens: runner de reações **225 → 240** ([aether_reactions_test.gd:39](../tests/aether_reactions_test.gd#L39))
   e suíte **252 → 255 checagens / 0 falhas / 48,0 s**, exit 0
-  ([head_suite.log:357](evidence/tocas-alcateia-16/head_suite.log#L357)). O pin publicado continua
-  `5b519f8` (perna 11) e é dele o número que vale para a `main`; esta perna não pousa, não se mergeia
-  e não se publica sem pedido do dono. A re-derivação de citações que o crescimento de `main.gd`
-  (1004 → **1242** linhas) e `wolf.gd` (1203 → **1218**) obrigou está na Rodada Docs 16 (h) abaixo.
+  ([head_suite.log:357](evidence/tocas-alcateia-16/head_suite.log#L357)). **Pin publicado: o merge
+  `--no-ff` `9b2c65a`**, com **255 / 0 / 48,6 s** no clone limpo e `--import` frio
+  ([pouso_clone_suite.log:357](evidence/tocas-alcateia-16/pouso_clone_suite.log#L357)); substitui o `5b519f8`
+  (perna 11, **252 / 0**) como número da `main`; as cinco corridas do pouso estão na seção final.
 - **Acasalamento, filhote que cresce e censo variável: o bicho nasce de dois adultos, envelhece,
   e o disco deixa de ser uma lista truncada (dossiê 11, branch `feat/acasalamento-e-censo-11`,
   merge `4b858c2` e fecho `5b519f8` na `main`).** O que estava em aberto quando a página foi escrita: a população
@@ -543,18 +543,18 @@ constante de versão foi tocada e `feat/bicho-cavando-12` não abriu; os três n
 lote são os da perna 11 (**252 / 0** na suíte no pin `5b519f8`, **225** no runner de reações, **27** no
 de RNG) e valem o que valiam antes desta página.
 
-**Perna 16 em execução, sem exceção de ordem (2026-11-22).** A fila não muda: **09 → 10 → 15 → 14 →
-11 → 19 → 16 → 12 → 17 → 18 → 13**, porque a 16 foi aberta da `main` no ponto atual (`99d1167`) e a 12
-vem depois dela justamente porque as duas escrevem `src/main.gd` e é a 16 quem decide onde os lares
-ficam. Estado real da branch `feat/tocas-da-alcateia-16`: seis commits de código (`af04504` → `90c152f`,
-um assunto cada, com a suíte verde entre eles), um de medição pareada (`ab4d4c3`) e esta passada de docs
-(citações re-derivadas nos 28 arquivos que o crescimento de `main.gd` e `wolf.gd` alcançou). Nada pousou:
-**nenhum merge, nenhum pin e nenhuma publicação desta perna** — o pin publicado continua `5b519f8` e o
-número que vale para a `main` é o dele (252 / 0), não os 255 medidos aqui. Os dois débitos que a perna
-abriu e não fechou estão escritos: a atribuição do par de vazamento do quit, que nesta árvore saiu num
-run e não saiu no run de refazimento da doc, e a alocação do `_dens`/das travessias de `den_components`
-(colheita nenhuma os mede). A 12 continua vermelha no que depende dela: `block_changed` segue sem
-consumidor e o `feat/bicho-cavando-12` não abre antes de a 16 pousar.
+**Perna 16: aberta 2026-11-22, pousada 2026-11-23, sem exceção de ordem.** A fila não mudou: **09 → 10 →
+15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13**, porque a 16 foi aberta da `main` no ponto atual (`99d1167`)
+e a 12 vem depois dela justamente porque as duas escrevem `src/main.gd` e é a 16 quem decide onde os lares
+ficam. A branch `feat/tocas-da-alcateia-16` fechou com seis commits de código (`af04504` → `90c152f`, um
+assunto cada, com a suíte verde entre eles), um de medição pareada (`ab4d4c3`) e a passada de docs
+(`edab9c8`, citações re-derivadas nos 28 arquivos que o crescimento de `main.gd` e `wolf.gd` alcançou), e
+entrou na `main` pelo merge `--no-ff` `9b2c65a`, que é o pin medido no clone limpo: **255 / 0 / 48,6 s** de
+suíte e **240 / 0 / 24,138 s** de runner. Os dois débitos que a perna abriu seguem abertos e escritos: a
+atribuição do par de vazamento do quit, que saiu num run e não saiu no outro, e a alocação do `_dens`/das
+travessias de `den_components`, que colheita nenhuma mede. O que muda para a frente é a posição da 12:
+`block_changed` continua sem consumidor nenhum, então o gate dela nasce vermelho como a pauta registra, e
+`feat/bicho-cavando-12`, que esperava o pouso da 16, é o elo aberto seguinte da fila.
 
 ## Falta
 
@@ -1090,7 +1090,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     nome (`esgotamento_de_lares_forcado`), e a 11 não o leva porque o censo variável dela já fechou
     e re-romar gate de perna publicada custa uma re-medição do número que está aqui em cima.
 
-    Rodada 2026-11-22 (`0bd3ea7`, ponta da branch `feat/tocas-da-alcateia-16`): pago nos dois
+    Rodada 2026-11-22 (`0bd3ea7`, ponta `feat/tocas-da-alcateia-16`), pousada em `9b2c65a`: pago nos dois
     sentidos que a regra 3 do ciclo cobra. **O estado forçado** é a checagem
     `esgotamento_de_lares_forcado` ([aether_reactions_test.gd:2784-2820](../tests/aether_reactions_test.gd#L2784-L2820)):
     o `_mark_useful_box` de `:2784` marca **todas** as 13 689 colunas da caixa em que o sorteio é
@@ -1268,7 +1268,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     do grafo lido — que é a grandeza que a contagem de pares nunca foi. Esta passada de pauta
     **não escreve** na suíte nem em `src/main.gd`: registro antes do código (mandato 4).
 
-    Rodada 2026-11-22 (`2c6597b`, ponta da branch `feat/tocas-da-alcateia-16`): pago, e pago pela
+    Rodada 2026-11-22 (`2c6597b`, ponta `feat/tocas-da-alcateia-16`), pousada em `9b2c65a`: pago, e pago pela
     grandeza certa. `den_components()` ([main.gd:619-639](../src/main.gd#L619-L639)) faz a travessia
     do grafo que o último rebuild escreveu (`pack_of`, leitura pura, não mexe em buffer) e devolve
     **quantos grupos separados a matilha forma**; roda só dentro de `diagnostics()`
@@ -4563,7 +4563,7 @@ conferida contra `git ls-files`, não contra a rodada do áudio: **39** `.gd` ra
 `.uid`, faltando `tests/audio_test.gd.uid` e `tests/audio_live_probe.gd.uid`, que naquela rodada **nem
 existiam** — o que falta é stagear os dois, nada os cria de volta. (6) As cinco páginas de `docs/design/`,
 o índice de `docs/planos/` e os dossiês que apontam para spawn, matilha e disco trocaram número na mesma
-passada, e o [`README.md`](../README.md) ganhou o parágrafo de que a 16 ainda não pousou, com os números
+passada, e o [`README.md`](../README.md) ganhou o parágrafo de que a 16 ainda não pousava **naquela leitura**, com os números
 da ponta de branch marcados como tal.
 
 **Com esta seção em cima, as mesmas réguas devolvem** — e a conta foi conferida recortando a seção e
@@ -4592,10 +4592,167 @@ e no clone limpo da perna 11 ([clone_suite.err:1](evidence/acasalamento-censo-11
 [:3](evidence/acasalamento-censo-11/clone_suite.err#L3)). É intermitente, é anterior à 16 e continua como
 débito de atribuição, fora do escopo desta perna.
 
-**O que nada disso fecha.** Nenhum gate de fase (mandato 4). A perna 16 **não pousou**: nenhum `merge
---no-ff`, nenhum `git push`, porque nada disso foi pedido pelo dono, e o pin publicado continua sendo o
-`5b519f8` da perna 11 (**252 / 0 / 42,4 s**) — os 255 desta ponta são número de branch, não de `main`.
-`Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram tocados. A perna
-12 continua nascendo vermelha em `block_changed` (zero consumidores na árvore de hoje), e
-`feat/bicho-cavando-12` só abre depois que a 16 pousar, porque as duas escrevem `src/main.gd`.
+**O que nada disso fecha.** Nenhum gate de fase (mandato 4). Nesta leitura (2026-11-22) a perna 16 ainda
+**não tinha pousado**: nenhum `merge --no-ff`, nenhum `git push`, porque nada disso tinha sido pedido pelo dono,
+e o pin publicado era o `5b519f8` da perna 11 (**252 / 0 / 42,4 s**): os 255 desta ponta eram número de
+branch, não de `main`. O pouso veio em 2026-11-23 pelo merge `--no-ff` `9b2c65a` — seção final daqui.
+Nenhuma das duas encosta em `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` ou na projeção do journal,
+e a 12 continua nascendo vermelha em `block_changed` (zero consumidores): é o elo aberto seguinte da fila.
+
+## O pouso da 16 — o merge, o pin medido no clone limpo e as cinco corridas serializadas (2026-11-23, base `99d1167`, ponta `edab9c8`, merge `9b2c65a`)
+
+**O que o dono autorizou e o que continua fechado.** A autorização desta rodada é nomeada: subir o que
+terminar com `push`, e cada agente faz o próprio `merge --no-ff` na `main` e o push. Isso vale para o
+pouso do código da 16 e nada mais — **mandato 4**: gate de fase fecha só o dono, e nenhum gate foi fechado
+aqui. A fila serializada não sofreu exceção de ordem: a 16 era a perna da vez, foi aberta da `main` no
+ponto atual, e pousou nele.
+
+**Pré-gate, conferido antes de encostar em `main`.** `git status --porcelain` vazio na base; `origin/main`
+e `main` locais no mesmo commit (`99d1167`); `git merge-base main feat/tocas-da-alcateia-16` devolvendo
+`99d11673576beba7689033f867851627d63dadad`, que é a `main` — logo a branch é descendente direta e o merge
+não carrega nada de fora da perna. `godot --headless --path . --import` no worktree antes das corridas:
+exit 0, e foi essa árvore importada que mediu.
+
+**O merge.** `git merge --no-ff feat/tocas-da-alcateia-16` → **`9b2c65a30b74a6398fbf4f9c45560be38974fb12`**,
+pais `99d1167` e `edab9c8` (`git log --format=%P -1`), sem conflito e sem toque em `src/` feito aqui: o
+código é exatamente o que a branch trouxe. `git show --stat` do merge: **41 files changed, 5026 insertions(+),
+1033 deletions(-)**, sendo o código `src/main.gd` **+267/−29**, `src/entities/wolf.gd` **+16/−1**,
+`tests/aether_reactions_test.gd` **+670/−1**, `tests/smoke_test.gd` **+109/−5**.
+
+**As cinco corridas, seriais, uma por número, máquina livre conferida antes de cada uma** (`tasklist` sem
+nada do Godot nem carga de chat rodando). Todas exit 0, com **0** `[FAIL]` e **0** `SCRIPT ERROR` contados
+por `grep` no log, e o par de vazamento do quit (`4 ObjectDB instances` / `2 resources still in use`) na
+assinatura intermitente já registrada como débito de atribuição:
+
+- suíte na árvore mergida — **`== 255 checagens  0 falhas  47.7 s de teste ==`**
+  ([pouso_merged_main_suite.log:357](evidence/tocas-alcateia-16/pouso_merged_main_suite.log#L357));
+- runner de reações na árvore mergida — **`240 checagens 0 falhas 24.201 s`** com o censo
+  **`OK censo de checagens | 240/240`**
+  ([pouso_merged_main_runner_reactions.log:494](evidence/tocas-alcateia-16/pouso_merged_main_runner_reactions.log#L494),
+  [:491](evidence/tocas-alcateia-16/pouso_merged_main_runner_reactions.log#L491));
+- **clone limpo** de `9b2c65a` fora da árvore, com `--import` frio — suíte
+  **`== 255 checagens  0 falhas  48.6 s de teste ==`**
+  ([pouso_clone_suite.log:357](evidence/tocas-alcateia-16/pouso_clone_suite.log#L357)) e runner
+  **`240 checagens 0 falhas 24.138 s`** com **`OK censo de checagens | 240/240`**
+  ([pouso_clone_runner_reactions.log:494](evidence/tocas-alcateia-16/pouso_clone_runner_reactions.log#L494),
+  [:491](evidence/tocas-alcateia-16/pouso_clone_runner_reactions.log#L491)); o import está em
+  [pouso_clone_import.log](evidence/tocas-alcateia-16/pouso_clone_import.log);
+- runner de RNG da sessão — **`27 checagens 0 falhas 2.651 s`** com
+  **`OK censo de checagens | 27/27`**
+  ([pouso_merged_main_runner_rng.log:78](evidence/tocas-alcateia-16/pouso_merged_main_runner_rng.log#L78),
+  [:77](evidence/tocas-alcateia-16/pouso_merged_main_runner_rng.log#L77));
+- runner do journal — **`128 checagens 0 falhas 7/7 testes concluidos 5.610 s`** com
+  **`OK contagem completa de checagens 128/128`**
+  ([pouso_merged_main_runner_journal.log:143](evidence/tocas-alcateia-16/pouso_merged_main_runner_journal.log#L143),
+  [:142](evidence/tocas-alcateia-16/pouso_merged_main_runner_journal.log#L142)).
+
+**O pin.** O número que vale para a `main` é o do **clone limpo**: **255 / 0 / 48,6 s**, com o runner em
+240 / 0 / 24,138 s. O clone foi feito fora de qualquer árvore de trabalho, checkout de `9b2c65a`
+(`git rev-parse HEAD` no clone), `--import` frio antes da suíte, e as árvores batem com as da árvore
+mergida: `git rev-parse 9b2c65a:src` = **`64f137bcb1f8e95bd9a64fe7843e4e7b72f7326e`**,
+`9b2c65a:tests` = **`88a1541c2f9f6fc3dd0e1d237b3e5656d9eea3c9`**. Contra o pin anterior (`5b519f8`:
+`30873d664a9577bcd3e709046cc708923456c372` e `975eac5a471dc1e064441474ef6e13866076d34f`) as duas árvores
+**mudaram** — a 16 escreve em `src/` e em `tests/`, então o pin é o merge medido, não um commit de
+documento em cima dele. A suíte substitui o número da perna 11 (**252 / 0**) como leitura da `main`; as
+contagens novas são as três checagens que a perna abriu (`espalhamento_nao_estoura_o_passo`,
+`tocas e pertenca sobrevivem ao save`, `default derivado: disco sem a chave nao toca nem inventa`), e o
+diagnóstico do clone traz `dens` e `den_components` juntos na mesma linha:
+`"den_components":3,"den_min_dist":55.8567733764648,"dens":3,"dropped_ticks":0` … `"worst_sim_ms":11.726`
+([pouso_clone_suite.log:345](evidence/tocas-alcateia-16/pouso_clone_suite.log#L345)), com a árvore mergida
+medindo o mesmo par em 10,97 ms ([pouso_merged_main_suite.log:343](evidence/tocas-alcateia-16/pouso_merged_main_suite.log#L343))
+e o clone em 11,73 ms ([pouso_clone_suite.log:343](evidence/tocas-alcateia-16/pouso_clone_suite.log#L343)).
+
+**As três réguas do corpus, rodadas contra a árvore mergida.** `.tools/verify_plan_cites.py` com
+`AETHER_ROOT` na árvore medida: **`citacoes com numero de linha conferidas: 1352`**,
+**`arquivos citados que nao existem: 13`**, **`numeros de linha fora do arquivo: 0`**
+([pouso_ruler_plan_cites.log:1](evidence/tocas-alcateia-16/pouso_ruler_plan_cites.log#L1),
+[:2](evidence/tocas-alcateia-16/pouso_ruler_plan_cites.log#L2),
+[:16](evidence/tocas-alcateia-16/pouso_ruler_plan_cites.log#L16)); a régua rodou igual contra a **base**
+`99d1167` — **1 296** conferidas, mesmas **13** ausências, **0** fora do arquivo
+([pouso_ruler_plan_cites_base99d1167.log:1](evidence/tocas-alcateia-16/pouso_ruler_plan_cites_base99d1167.log#L1),
+[:16](evidence/tocas-alcateia-16/pouso_ruler_plan_cites_base99d1167.log#L16)) — o que é a prova de que o
+merge não quebrou ponteiro nenhum: só acrescentou os 56 novos da própria perna. `.tools/verify_plan_ids.py`:
+a página 16 em **88** identificadores citados e **8** ausências
+([pouso_ruler_plan_ids.log:31](evidence/tocas-alcateia-16/pouso_ruler_plan_ids.log#L31),
+[:32](evidence/tocas-alcateia-16/pouso_ruler_plan_ids.log#L32)) — conferidas uma a uma: `DEN_RANGE`,
+`PLANT`, `assinatura_de_populacao_estavel`, `fp_viewmodel`, `home_of`, `pack_id`, `player_avatar` e o hash
+`e0450a3` (commit de outra fila, não desta árvore) são peças que o dossiê **declara** inexistentes, não
+ponteiros podres.
+`python tools/check_doc_anchors.py`: **`arquivos: 36  ponteiros conferidos: 2370  rotulos conferidos: 179
+links relativos conferidos: 2348`** com **`casos objetivos: 1`**
+([pouso_ruler_doc_anchors.log:1](evidence/tocas-alcateia-16/pouso_ruler_doc_anchors.log#L1),
+[:3](evidence/tocas-alcateia-16/pouso_ruler_doc_anchors.log#L3)) — o único caso é o ponteiro
+`../.tools/_chk_labels.py` em `docs/melhorias-status.md:3138`
+([:2](evidence/tocas-alcateia-16/pouso_ruler_doc_anchors.log#L2)), instrumento gitignored que a casa já
+tolera aqui. As três contagens são as mesmas publicadas pela ponta da branch: o merge é código, e o
+código não move documento.
+
+**Os dois furos que a 16 paga, cada um com a checagem que o paga.** O **#18** (motivo legível no dicionário
+de recusa) fecha pela `esgotamento_de_lares_forcado`, que força o esgotamento de lares e soma os motivos
+impressos: **`OK esgotamento_de_lares_forcado | recusados=8 de 8 | soma(motivos)=576 == buscas(24) x
+SPAWN_ATTEMPTS(24)=576 | so_a_coluna=true | colunas_marcadas=13689`**
+([pouso_merged_main_runner_reactions.log:279](evidence/tocas-alcateia-16/pouso_merged_main_runner_reactions.log#L279))
+— a aritmética fecha, a coluna é a única marcada e os 13 689 são o tamanho real da caixa sorteada. O
+**#21** (coesão dos lares, antes identidade aritmética sempre verdadeira) fecha pela grandeza:
+`den_components()` ([main.gd:619-639](../src/main.gd#L619-L639)) travessando o grafo do último rebuild,
+publicado em `diagnostics()` ([main.gd:1171](../src/main.gd#L1171)) e lido no smoke por `grupos >= 2`
+([smoke_test.gd:282](../tests/smoke_test.gd#L282)); as três linhas que sustentam a afirmação no runner são
+**`OK diagnostico_publica_a_mesma_leitura_das_tocas | diagnostics dens=3 componentes=3 den_min_dist=49.662
+| runner componentes=3 centros=49.7 | furo21 pack_pairs=10 pares_testados=10`**
+([:407](evidence/tocas-alcateia-16/pouso_merged_main_runner_reactions.log#L407)) e
+**`OK nenhum_lobo_le_de_outra_toca | arestas_entre_tocas=0 bichos_sem_toca=0 lidos=5`**
+([:416](evidence/tocas-alcateia-16/pouso_merged_main_runner_reactions.log#L416)), com o par de save no
+clone em [pouso_clone_suite.log:353](evidence/tocas-alcateia-16/pouso_clone_suite.log#L353) e o default
+derivado em [:354](evidence/tocas-alcateia-16/pouso_clone_suite.log#L354). Os dois furos estavam escritos
+na seção de furos com a rodada da branch; aqui eles ganham o SHA do pouso junto.
+
+**O que nada disso fecha.** A fila **P0/P1 continua aberta**: budget HOT continua sem medição, o censo
+multi-semente continua sem corrida e o bake-off de AF continua sem número — nada dos três foi tocado pela
+16, que é espalhamento de lar e disco, não orçamento nem semente. Os canais do dossiê 03
+(morte, som, fogo) e a difusão fora do tick continuam como pauta. **Nenhum gate de fase foi fechado**
+(mandato 4), nenhum limiar foi abaixado e nada em `src/` foi consertado nesta passada: o vermelho que a 16
+não reproduz não foi escondido. Os dois débitos que a perna abriu seguem em aberto — a atribuição do par
+de vazamento do quit e a alocação de `_dens`/`den_components` sem colheita. Na fila serializada a 16 sai
+da frente: o elo seguinte é **12** (`feat/bicho-cavando-12`, que esperava exatamente este pouso e nasce
+vermelha em `block_changed`), depois **17 → 18 → 20 → 13**.
+
+**A suíte e as réguas re-rodadas na árvore deste registro**, que só acrescenta `.md` e `.log`:
+`git diff --name-only 9b2c65a -- src tests` **vazio**, então as árvores de código continuam
+`64f137bc…` e `88a1541c…` e o número do pin vale para esta árvore por identidade de árvore, não por
+memória. As duas corridas, uma por vez e com a máquina livre conferida antes de cada:
+**`== 255 checagens  0 falhas 47.5 s de teste ==`**
+([registro_rerun_suite_a.log:357](evidence/tocas-alcateia-16/registro_rerun_suite_a.log#L357)) e
+**`== 255 checagens  0 falhas 47.7 s de teste ==`**
+([registro_rerun_suite_b.log:357](evidence/tocas-alcateia-16/registro_rerun_suite_b.log#L357)), as duas
+exit 0, com **255** linhas `[PASS]`, **0** `[FAIL]` e **0** `SCRIPT ERROR`; a primeira fecha em 357
+linhas sem nenhum par de vazamento no rodapé e a segunda imprime `4 ObjectDB` (linha 358) com
+`2 resources still in use` (linha 360) — o mesmo par, em duas corridas seguidas da mesma árvore, o que
+reforça o débito de atribuição em vez de contá-lo como resolvido. As três réguas na
+mesma árvore: `verify_plan_cites.py` **1 352 conferidas · 13 arquivos ausentes · 0 fora do arquivo**
+([registro_ruler_plan_cites.log:1](evidence/tocas-alcateia-16/registro_ruler_plan_cites.log#L1)), iguais
+às da árvore mergida porque nenhuma linha de `docs/planos/` foi editada aqui; `verify_plan_ids.py` com a
+página 16 em **88 identificadores · 8 ausências**
+([registro_ruler_plan_ids.log:31](evidence/tocas-alcateia-16/registro_ruler_plan_ids.log#L31)); e
+`python tools/check_doc_anchors.py` **36 arquivos · 2 374 ponteiros · 179 rótulos · 2 389 links**, ainda
+**1** caso objetivo, o mesmo `../.tools/_chk_labels.py` deste status
+([registro_ruler_doc_anchors.log:1](evidence/tocas-alcateia-16/registro_ruler_doc_anchors.log#L1),
+[:3](evidence/tocas-alcateia-16/registro_ruler_doc_anchors.log#L3)). O acréscimo de ponteiros e links é
+esta seção e o parágrafo novo do README, não deriva de linha: as edições do registro foram medidas para
+serem linha-neutras onde há apontamento — `git diff --numstat` dá **44/44** no README, com o parágrafo do
+pin e o da perna trocando dentro do mesmo número de linhas, o que deixa no lugar os `README.md:501-514`,
+`:533` e `:559-575` que os dossiês apontam — e onde não dá para ser neutro a inserção cai depois da
+última linha que alguém cita: o registro do `AGENTS.md` entra após `AGENTS.md:475-477` e esta seção após
+a maior linha deste arquivo que o corpus aponta (`4326`).
+
+**Publicação provada, não afirmada.** As três refs do pouso ficam no origin, conferidas por `git
+ls-remote --heads origin` depois do push: `main` com este registro por cima de `9b2c65a`,
+`feat/tocas-da-alcateia-16` = `edab9c8` e `docs/registro-pouso-do-codigo-16` nesta ponta; **nenhuma
+branch foi deletada** — a `main` local também não se apaga. O merge do registro move a ponta da `main`
+e não move o pin: `git diff --name-only 9b2c65a..docs/registro-pouso-do-codigo-16 -- src tests` devolve
+vazio, então `64f137bc…` e `88a1541c…` continuam sendo as árvores de código medidas de que cada número
+acima sai — o pin é identidade de árvore, não SHA de documento.
+Os artefatos da pasta têm `artifacts.sha256` com **22** entradas, regenerado por `sha256sum` e conferido
+por `sha256sum -c`, todos **OK**; nele, `pouso_ruler_plan_cites.log` e `registro_ruler_plan_cites.log`
+carregam o **mesmo hash**, e o mesmo par se repete entre os dois logs de identificadores — a igualdade de
+bytes é a prova material de que este registro não encosta em `docs/planos/` nem em `src/` nem em `tests/`.
 

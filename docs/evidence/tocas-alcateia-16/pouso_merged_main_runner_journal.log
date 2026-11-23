@@ -1,0 +1,143 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK runner sem --tick-journal externo 
+OK pasta exclusiva C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea
+OK criar pasta propria OK
+OK instanciar unica main.tscn real 
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+OK boot real concluiu lobos=5 fila=0 teto=5
+OK mentes criadas por Wolf.setup ids=101,102
+OK SHA-256 hexadecimal d230a2f0e882909f219fc6b73a0b942d538fb50994dc2c4ae4b3b935d3a52a01
+OK hash idempotente 10 chamadas; 6802 us medidos
+OK tick participa 7 -> 8
+OK seed participa 20261116 -> 20261117
+OK restaurar seed restaura hash seed=20261116
+OK tres edicoes por set_block edicoes=3
+OK edicoes participam 0 -> 3
+OK ordem Vector3i realmente invertida [(2, 62, 2), (2, 61, 10), (10, 62, 2)]
+OK ordem das edicoes nao participa 3 chaves Vector3i
+OK trocar valor por set_block wood -> stone
+OK valor da edicao participa (10, 62, 2)
+OK restaurar valor restaura hash (10, 62, 2)
+OK troca conserva tres valores stone,wood,snow; p=(10, 62, 2) q=(2, 61, 10)
+OK posicao da edicao participa mesmos valores, posicoes trocadas
+OK state_bytes contem todos os float32 bytes=196608 esperado=196608
+OK canal participa: work valor=0.250000000
+OK amplitude participa: work 0.25 -> 0.5
+OK posicao da celula participa: work energia=0.500000000
+OK residuo existe: work valor=0.000001000
+OK save esparso omite residuo: work cells=0
+OK hash preserva residuo: work valor=0.000001000 bytes=196608
+OK zerar canal restaura hash: work valor=0
+OK canal participa: blood valor=0.250000000
+OK amplitude participa: blood 0.25 -> 0.5
+OK posicao da celula participa: blood energia=0.500000000
+OK residuo existe: blood valor=0.000001000
+OK save esparso omite residuo: blood cells=0
+OK hash preserva residuo: blood valor=0.000001000 bytes=196608
+OK zerar canal restaura hash: blood valor=0
+OK canal participa: fear valor=0.250000000
+OK amplitude participa: fear 0.25 -> 0.5
+OK posicao da celula participa: fear energia=0.500000000
+OK residuo existe: fear valor=0.000001000
+OK save esparso omite residuo: fear cells=0
+OK hash preserva residuo: fear valor=0.000001000 bytes=196608
+OK zerar canal restaura hash: fear valor=0
+OK crencas criadas por reinforce crencas=2+1
+OK crencas participam 0 -> 3
+OK ordem String realmente invertida ["player_visible_recent", "danger_from_actor_1"]
+OK ordem das crencas nao participa 2 chaves String
+OK ordem do roster nao participa 101,102 -> 102,101
+OK confianca participa confianca=0.600000000
+OK source mudou sem mudar confianca confianca=0.600000000
+OK source participa perception -> consolidated
+OK identidade participa com intencao/crencas iguais 102 -> 103
+OK golpe real cria premissa de fuga hp=2.00 medo=1.500
+OK _think muda intencao patrol -> flee
+OK intencao participa sem novo golpe flee
+OK remover mente viva participa 2 -> 1
+OK morte por die vivos=1
+OK morte participa com Eter fixo 2 -> 1 mentes vivas
+OK cadaver equivale a ausencia no roster 1 vivo + 1 morto
+OK crenca de morto nao participa reforco=0.2
+OK telemetria do guard perturbada delta_us=1234 delta_trips=2 (injetados)
+OK telemetria nao participa 
+OK narracao de observacao mudou id=0
+OK narracao nao participa 
+OK visual mudou sem mover corpo rotacao=0.75 rad; visible=false
+OK visual nao participa 
+OK record sem start recusado records=0
+OK start em arquivo novo C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea/records.jsonl
+OK start zera contadores { "active": true, "path": "C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea/records.jsonl", "records": 0, "last_tick": -1, "last_hash": "", "last_us": 0, "worst_us": 0, "total_us": 0 }
+OK instancia ativa recusa outro start 
+OK start nao escreve registro bytes=0
+OK tick negativo inicial recusado sem append tick=-1 bytes=0
+OK primeiro tick nao precisa ser zero tick=7
+OK primeiro registro atualiza diagnostico { "active": true, "path": "C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea/records.jsonl", "records": 1, "last_tick": 7, "last_hash": "73bb23fb98015d8b7f5bc9bb2a27411193c76e27bf0546f083e9bb20f39071e6", "last_us": 701, "worst_us": 701, "total_us": 701 }
+OK JSONL legivel antes do close (flush) bytes=71
+OK duplicata/recuo/salto/negativo recusado tick=7 ultimo=7
+OK recusa nao altera bytes tick=7 bytes=71
+OK recusa nao altera diagnostico tick=7
+OK duplicata/recuo/salto/negativo recusado tick=6 ultimo=7
+OK recusa nao altera bytes tick=6 bytes=71
+OK recusa nao altera diagnostico tick=6
+OK duplicata/recuo/salto/negativo recusado tick=9 ultimo=7
+OK recusa nao altera bytes tick=9 bytes=71
+OK recusa nao altera diagnostico tick=9
+OK duplicata/recuo/salto/negativo recusado tick=-1 ultimo=7
+OK recusa nao altera bytes tick=-1 bytes=71
+OK recusa nao altera diagnostico tick=-1
+OK consecutivo aceito depois das recusas tick=8
+OK append preserva prefixo byte a byte 71 -> 142 bytes
+OK readback exato de dois pares [tick,sha256] linhas=2 bytes=142
+OK tempos agregados correspondem aos registros { "active": true, "path": "C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea/records.jsonl", "records": 2, "last_tick": 8, "last_hash": "15cd70433d71761a2df17329fb322bd803ac70a7115d9228821880e99a62ab31", "last_us": 652, "worst_us": 701, "total_us": 1353 }
+journal medido: records=2 bytes=142 last_us=652 worst_us=701 total_us=1353
+OK close conserva historico 
+OK record depois de close recusado 
+OK record fechado nao altera arquivo nem diagnostico bytes=142
+OK arquivo existente recusado sem truncar 
+OK diretorio nao e arquivo novo 
+OK pai inexistente recusado sem criar diretorio File not found
+OK nova sessao apos close zera historico { "active": true, "path": "C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea/restart.jsonl", "records": 0, "last_tick": -1, "last_hash": "", "last_us": 0, "worst_us": 0, "total_us": 0 }
+OK zero aceito como primeiro tick tick=0
+OK close idempotente preserva registro zero 
+OK integracao sem processos automaticos tick=0
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+OK _sim_tick sem start nao registra tick=1 records=0
+OK _sim_tick sem start nao registra tick=2 records=0
+OK main.state_hash usa estado e tick atuais tick=2
+OK iniciar journal do main C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea/main.jsonl
+OK main sem registro antecipado bytes=0 records=0
+OK um registro apos incremento do tick tick=3 records=1
+OK hash e diagnostico coincidem no fim do passo tick=3
+OK main faz append e flush do estado final linhas=1 bytes=71
+OK um registro apos incremento do tick tick=4 records=2
+OK hash e diagnostico coincidem no fim do passo tick=4
+OK main faz append e flush do estado final linhas=2 bytes=142
+OK um registro apos incremento do tick tick=5 records=3
+OK hash e diagnostico coincidem no fim do passo tick=5
+OK main faz append e flush do estado final linhas=3 bytes=213
+OK um registro apos incremento do tick tick=6 records=4
+OK hash e diagnostico coincidem no fim do passo tick=6
+OK main faz append e flush do estado final linhas=4 bytes=284
+OK um registro apos incremento do tick tick=7 records=5
+OK hash e diagnostico coincidem no fim do passo tick=7
+OK main faz append e flush do estado final linhas=5 bytes=355
+OK um registro apos incremento do tick tick=8 records=6
+OK hash e diagnostico coincidem no fim do passo tick=8
+OK main faz append e flush do estado final linhas=6 bytes=426
+main medido: passos=6 sim_total_us=17201 bytes=426 journal_last_us=716 journal_worst_us=857 journal_total_us=4474
+OK _exit_tree fecha journal records=6
+OK saida impede append e preserva arquivo bytes=426
+OK limpeza somente dos arquivos proprios C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/tick_journal_test_26192_f3e6d6084cbaea090ebd2cc15b2fc3ea
+OK todos os testes devolveram true 7/7
+OK contagem completa de checagens 128/128
+128 checagens 0 falhas 7/7 testes concluidos 5.610 s
