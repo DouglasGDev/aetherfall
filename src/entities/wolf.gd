@@ -99,6 +99,31 @@ const DIMS := Vector3(0.75, 0.95, 1.35)
 # celula com folga de pouso. O 5,2 que estava aqui dava 0,563 m -- 44 % de um bloco --
 # e era exatamente o lobo pulsando encostado num talude que o dono ve.
 const STEP_JUMP: float = 7.6
+## Materiais de pata (dossie 12 §3.2 "Alvo"): neve, areia, terra e grama. E uma
+## lista de MATERIAL, nao de dureza, e a diferenca e medida -- dureza no produto e
+## TEMPO de lavra (`player.gd:663-664` soma `_mining_accum += delta` contra
+## `target_hardness` sem teto de bloco, e `:685` escreve AIR em qualquer alvo),
+## entao se a porta fosse a regua o `STONE 0,95` do jogador cairia tambem e o
+## lobo abriria tunel em penhasco. Os dois bracos que dao dente a esta frase, em
+## `cavar_respeita_a_lista`: STONE (dureza alta) e GLASS (dureza 0,10, a mais baja
+## da tabela) continuam inteiros depois da mesma janela de empurrao.
+const DIG_MATERIALS: Array[int] = [
+	BlockDefs.Block.SNOW,
+	BlockDefs.Block.SAND,
+	BlockDefs.Block.DIRT,
+	BlockDefs.Block.GRASS,
+]
+## Passos de 20 Hz parado empurrando antes de a pata comecar a valer: um
+## esbarron breve num talude nao e obra, e sem esta janela todo corpo que encosta
+## remove um bloco. `[TARGET]` de 8 passos (0,4 s) pelo dossie 12 §3.2 (a); o
+## numero que fica e o que `abrir_passagem_depois_de_bloqueio` decidir nos dois
+## bracos, porque 8 passos e menos que um re-arme do desvio (0,35-0,8 s) e a
+## calibracao e da checagem, nao desta linha.
+const DIG_STEPS_BEFORE: int = 8
+## "Sem alvo", no molde do `_mining_voxel` do jogador (player.gd:136): nao existe
+## voxel (-999,-999,-999) dentro dos limites do mundo, entao o sentinela nunca
+## colide com uma celula de verdade e `world.get_block` dele devolve AIR.
+const DIG_NONE := Vector3i(-999, -999, -999)
 # agua: o lobo nao nada por lazer. A patrulha sorteia terra seca; se acabar na
 # agua (fuga, perseguicao), boia e rema como o jogador nada e procura a margem.
 const SWIM_SPEED_FACTOR: float = 0.55
@@ -213,6 +238,14 @@ var _move_target: Vector3 = Vector3.ZERO
 var _speed: float = SPEED_WALK
 var _unstick: float = 0.0
 var _detour: float = 0.0
+## Escavacao (dossie 12 §3.1): a celula-compromisso, os passos de empurrao antes
+## de a pata valer e o tempo de lavra acumulado. Estado transitorio de proposito:
+## nao e escrito no `to_dict` e e zerado no `from_dict`, como `_cross_target`.
+## Salvar o meio de um buraco abriria uma boca que ninguem viu fechar -- e o
+## §3.1 pede exatamente que o acumulador more no tick, nao no disco.
+var _dig_pos: Vector3i = DIG_NONE
+var _dig_steps: int = 0
+var _dig_accum: float = 0.0
 var _heading: float = 0.0
 var _gait: float = 0.0
 var _wander_cd: float = 0.0
@@ -841,6 +874,7 @@ func sim_step(elapsed: float, dt: float) -> void:
 		_inspect_left = 0.0
 	_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt, "pack": _pack})
 	_resolve_dry_target()
+	_dig_step(dt)
 
 
 func _sense() -> void:
@@ -945,6 +979,114 @@ func _scent_ground_y(c: Vector3i) -> float:
 	return float(top)
 
 
+# ------------------------------------------------------------------ escavacao (dossie 12)
+
+
+## Celula escavavel: material da lista E construcao de ninguem (dossie 12 §3.2).
+## A segunda metade e o que fecha o furo #22 por construcao: `main._benches` so e
+## alimentada pelos sinais do `Player` (main.gd:927-930) e nunca por um bicho,
+## entao uma pata que removesse uma bancada deixaria a lista de crafting
+## apontando para o ar ate o proximo load. `world.edits` e justamente o registro
+## de quem escreveu -- relevo gerado nao esta nele, entao e escavavel; o que foi
+## posto por alguem nao esta na lista de ninguem por acidente. Os dois bracos de
+## `cavar_nao_toca_construcao_alheia` mudam SO este campo, com o mesmo DIRT.
+func _dig_ok(p: Vector3i) -> bool:
+	return DIG_MATERIALS.has(world.get_block(p)) and not world.edits.has(p)
+
+
+## A celula da frente que o corpo esta tocando, no MESMO alcance do degrau
+## (`VoxelBody.step_reach`, voxel_body.gd:162) e na MESMA direcao do passo (`want`,
+## o vetor do pe ao alvo, reescrito em `_physics_process`): o §3.2 pede que quem
+## pula e quem cava respondam a um unico predicado de geometria, nao a dois
+## parecidos que divergem quando o corpo muda de tamanho.
+##
+## Devolve a primeira celula valida da FAIXA de corpo naquele ponto, e nao o voxel
+## de um ponto so, por um motivo lido no envelope: `DIMS.z = 1,35` (linha 96) faz
+## o corpo adulto atravessar duas celulas de z a qualquer hora, entao um alvo
+## unico trocaria de celula a cada deriva do pe -- e nunca abriria um entupimento
+## de duas celulas, porque o corpo seguiria batendo na vizinha. A faixa e
+## deterministica (nenhum `randf`, portanto nenhum dreno novo no riacho que
+## tests/simulation_rng_test.gd mede) e o lobo consome a faixa em ordem: cavada
+## a primeira, a segunda passa a ser a primeira no passo seguinte.
+##
+## `prefer` e a unica parte que nao e geometria: se a celula ja comprometida
+## ainda esta na faixa e ainda e escavavel, ela continua sendo o alvo. Sem isso o
+## desvio do desemperto (`_detour`, lido em `_physics_process`) jogaria o corpo de
+## um lado para o outro e a primeira celula da faixa trocaria a cada vaivem,
+## zerando a obra para sempre -- o corpo encostaria num muro de neve e nunca o
+## atravessaria.
+func _dig_cell(prefer: Vector3i = DIG_NONE) -> Vector3i:
+	var want := _move_target - body.feet_pos
+	want.y = 0.0
+	if want.length_squared() < 1e-8:
+		return DIG_NONE
+	var p := body.feet_pos + want.normalized() * body.step_reach() \
+			+ Vector3(0.0, dims.y * 0.5, 0.0)
+	var y: int = floori(p.y)
+	var x0: int = floori(p.x - dims.x * 0.5)
+	var x1: int = floori(p.x + dims.x * 0.5)
+	var z0: int = floori(p.z - dims.z * 0.5)
+	var z1: int = floori(p.z + dims.z * 0.5)
+	var first := DIG_NONE
+	for dz in range(z0, z1 + 1):
+		for dx in range(x0, x1 + 1):
+			var c := Vector3i(dx, y, dz)
+			if not _dig_ok(c):
+				continue
+			if c == prefer:
+				return c
+			if first == DIG_NONE:
+				first = c
+	return first
+
+
+## Compromete a celula do empurrao (dossie 12 §3.2 (a)), chamada pelo ramo novo do
+## desemperto. Trocar de alvo zera a obra: o acumulo de um talude abandonado nao
+## pode financiar a proxima boca.
+func _dig_arm() -> void:
+	var c := _dig_cell(_dig_pos)
+	if c != _dig_pos:
+		_dig_pos = c
+		_dig_steps = 0
+		_dig_accum = 0.0
+
+
+func _dig_reset() -> void:
+	_dig_pos = DIG_NONE
+	_dig_steps = 0
+	_dig_accum = 0.0
+
+
+## A obra em si, no tick de 20 Hz e nao no frame de 60 Hz (dossie 12 §3.1):
+## `DIG_STEPS_BEFORE` passos de empurrao e depois `dt` acumulado contra a dureza
+## do material -- a mesma grandeza que o jogador acumula contra `target_hardness`
+## (player.gd:663), entao depois da janela cada boca pede 5 passos de acumulo na
+## neve e 7 na terra, sem uma linha de permissao nova. Roda no FIM do `sim_step`,
+## depois de `_resolve_dry_target()` e FORA dos 400 us do `SubtreeGuard`: escrever
+## no mundo dentro do orcamento da arvore mudaria o numero que `tree_stats()`
+## publica para a BT, e o orcamento e da arvore, nao do corpo.
+func _dig_step(dt: float) -> void:
+	if _dig_pos == DIG_NONE:
+		return
+	# A obra vale enquanto a geometria vale: re-derivada a celula, um alvo que
+	# sumiu (bloco removido por outro, corpo que virou, coluna que passou a ser
+	# construcao) abandona a pata no mesmo passo, sem estado escondido.
+	if _dig_cell(_dig_pos) != _dig_pos:
+		_dig_arm()
+		return
+	_dig_steps += 1
+	if _dig_steps <= DIG_STEPS_BEFORE:
+		return
+	_dig_accum += dt
+	if _dig_accum < BlockDefs.hardness(world.get_block(_dig_pos)):
+		return
+	# `record = true` (dossie 12 §3.3): o buraco tem de aparecer em `world.edits`
+	# e no readback do save, senao a clausula do §1 -- "o mundo tem de registrar
+	# isso" -- nao seria observada por nada.
+	world.set_block(_dig_pos, BlockDefs.Block.AIR, true)
+	_dig_reset()
+
+
 # ------------------------------------------------------------------ locomocao (60 Hz)
 
 func _physics_process(delta: float) -> void:
@@ -989,8 +1131,16 @@ func _physics_process(delta: float) -> void:
 		# Os dois sorteios acima continuam incondicionais: a regra nova decide apenas se a
 		# velocidade vertical e escrita, e mover um randf() para dentro de um if trocaria o
 		# riacho que tests/simulation_rng_test.gd mede.
-		if body.on_ground and body.can_step_over(want):
+		var degrau := body.can_step_over(want)
+		if body.on_ground and degrau:
 			body.velocity.y = STEP_JUMP
+		elif not degrau:
+			# Terceiro ramo do desemperto (dossie 12 §3.2 (a)): o mesmo bloqueio que
+			# nao da para subir e o que pede uma pata. Uma pergunta de geometria so,
+			# lida em `degrau` -- o cava nao re-pergunta o alcance por conta propria
+			# (voxel_body.gd:162), entao filhote e adulto passam a subir e escavar na
+			# mesma distancia, e um `reach` copiado nao envelhece sozinho.
+			_dig_arm()
 	if body.feet_pos.y < -6.0:
 		body.feet_pos = home
 		body.velocity = Vector3.ZERO

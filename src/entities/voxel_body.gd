@@ -153,11 +153,21 @@ func can_stand_at(p: Vector3) -> bool:
 	return world.aabb_hits_solid(below)
 
 
+## O alcance do degrau em uma so pergunta (dossie 12 §3.2 "Alvo"). Quem decide qual
+## celula esta na frente do corpo -- o pulo daqui e a escavacao do lobo -- tem de ler
+## este numero e nao um segundo parecido: `dims` e o que diz quanto um filhote de
+## corpo 0,45 alcanca, e uma formula copiada em outro arquivo deixaria de mudar com
+## ele. O 0,6 e a folga entre a face da caixa e a celula testada, porque o bloco
+## comeca na face, nao no pe.
+func step_reach() -> float:
+	return maxf(dims.x, dims.z) * 0.5 + 0.6
+
+
 ## Degrau ou penhasco? A pergunta e "a um bloco acima, na direcao dir, existe onde ficar
 ## de pe", e ela e o que separa o talude de um bloco -- que se sobe -- do muro de seis,
 ## onde saltar e desperdicio: o corpo volta ao chao no mesmo lugar.
 ## O +1,0 nao leva margem porque a celula do grid e de exatamente uma unidade
-## (aabb_hits_solid percorre por floori, voxel_world.gd:301-312) e o pe apoiado nunca
+## (aabb_hits_solid percorre por floori, voxel_world.gd:350-360) e o pe apoiado nunca
 ## fica abaixo da face do solo -- o integrador so aplica o subpasso que nao colide
 ## (":84-88"). Uma margem de 0,05 custaria ao lobo, que mede 0,95, a propria celula de
 ## 1,00 em que ele cabe. Se um dia existir SLAB de meia altura (id 18 reservado no
@@ -167,7 +177,5 @@ func can_step_over(dir: Vector3) -> bool:
 	var flat := Vector3(dir.x, 0.0, dir.z)
 	if flat.length_squared() < 1e-8:
 		return false
-	# O alcance cai fora do corpo porque o bloco comeca na face da caixa, nao no pe.
-	var reach := maxf(dims.x, dims.z) * 0.5 + 0.6
-	var step := flat.normalized() * reach
+	var step := flat.normalized() * step_reach()
 	return can_stand_at(feet_pos + Vector3(step.x, 1.0, step.z))

@@ -35,13 +35,17 @@ const TESTS: Array[StringName] = [
 	&"_test_reposicao_volta_para_a_toca_perdida",
 	&"_test_nascimento_fica_na_toca_dos_pais",
 	&"_test_espalhamento_nao_estoura_o_passo",
+	&"_test_lobo_cava_sem_input_do_jogador",
+	&"_test_cavar_respeita_a_lista", &"_test_cavar_nao_toca_construcao_alheia",
 	&"_test_colheita_de_malha_sem_cavar",
 ]
-# 247 = os 240 da ponta da perna 16 mais as sete da colheita de malha do dossie 12
-# §8(a). O censo se re-deriva a cada checagem nova porque a linha
+# 261 = os 247 do commit anterior (240 da ponta da perna 16 + 7 da colheita de
+# malha, dossie 12 §8(a)) mais as catorze do cavar: tres da checagem 1, sete da 2
+# (uma premissa + seis materiais) e quatro da 7.
+# O censo se re-deriva a cada checagem nova porque a linha
 # `_checks + 1 == EXPECTED_CHECKS` de `_finish` e o que converte passo abortado por
 # `SCRIPT ERROR` em vermelho: um numero chutado aqui desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 247
+const EXPECTED_CHECKS: int = 261
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -4398,6 +4402,265 @@ func _test_espalhamento_nao_estoura_o_passo() -> bool:
 			float(d["worst_sim_ms"]), pico_us, media_us, total_us, passos,
 			colocacao_us, int(Session.WOLF_COUNT), s._dens.size()])
 	_pack_release()
+	return true
+
+
+## ------------------------------------------------------------------ cavar (dossie 12)
+
+
+## Palco de escavacao: a coluna de x=`x` com as `rows` solidas do `block` pedido.
+## As duas metades do `registrada = false` nao sao cerimonia, sao a premissa do
+## §1 ("um voxel que o jogador nao tocou"): a escrita sai com `record = false` E a
+## chave antiga e APAGADA de `world.edits`. A plateia da fixture foi montada com
+## `set_block(pos, AIR)` de `record` default (o plateau de `_test_fixture`),
+## entao toda celula de ar acima do y=50 ja tem chave no registro do mundo. Sem o
+## erase a parede de teste seria construcao registrada, a clausula de
+## proveniencia recusaria o lote inteiro e `lobo_cava_sem_input_do_jogador`
+## ficaria verde por nao haver o que cavar.
+func _dig_stage(x: int, rows: Array, block: int, registrada: bool = false) -> void:
+	for z: int in range(40, 85):
+		for y: int in range(51, 58):
+			var p := Vector3i(x, y, z)
+			var b: int = block if y in rows else BlockDefs.Block.AIR
+			if registrada:
+				# Normaliza em ar sem registro e so depois escreve o alvo registrado:
+				# `set_block` recusa no-op (`voxel_world.gd:270-271`), entao uma celula
+				# que ja tinha o bloco pedido nao deixaria chave nenhuma e o braco
+				# "registrado" contaria chaves por acaso do braco anterior.
+				_world.edits.erase(p)
+				_world.set_block(p, BlockDefs.Block.AIR, false)
+				_world.set_block(p, b, true)
+			else:
+				_world.edits.erase(p)
+				_world.set_block(p, b, false)
+
+
+## As duas metades do §3.3, cada uma na sua conta, e a separacao e o que faz a
+## terceira checagem poder falhar. `_opened_cells` e o estado de mundo: ar no y do
+## corpo, com ou sem chave. `_dug_cells` e o registro: ar COM chave AIR em
+## `world.edits`. Se as duas vivessem num predicado so, um `record = false` na
+## pata derrubaria as duas contas juntas e a clausula "o mundo registra o buraco"
+## ficaria verde sem medir nada -- aqui ela so passa se cada celula NOVA aberta
+## carrega a chave. O erase de `_dig_stage` ainda por cima devolve a coluna ao
+## estado virgem no fim do lote, entao as duas leituras tem de acontecer antes da
+## limpeza.
+func _opened_cells(x: int) -> Array:
+	var out: Array = []
+	for z: int in range(40, 85):
+		var p := Vector3i(x, 51, z)
+		if _world.get_block(p) == BlockDefs.Block.AIR:
+			out.append(p)
+	return out
+
+
+func _dug_cells(x: int) -> Array:
+	var out: Array = []
+	for z: int in range(40, 85):
+		var p := Vector3i(x, 51, z)
+		if _world.get_block(p) == BlockDefs.Block.AIR and _world.edits.has(p):
+			out.append(p)
+	return out
+
+
+## A janela de empurrao, uma so vez para as tres checagens. Nada aqui escreve
+## `_move_target`, `intent` ou `_dig_pos` na mao: o rastro de WORK atras da coluna
+## e o que da a intencao pela arvore real, e o integrador e que encosta o corpo na
+## face -- o mesmo palco com que a perna 19 mediu o auto-pulo. `extras` poe
+## construcao registrada dentro da faixa (o braco da bancada) depois do palco.
+func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
+		registrada: bool = false, extras: Dictionary = {}) -> Dictionary:
+	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
+	_dig_stage(56, rows, block, registrada)
+	for p: Vector3i in extras:
+		_world.set_block(p, int(extras[p]), true)
+	var edits_na_coluna := 0
+	for z: int in range(40, 85):
+		if _world.edits.has(Vector3i(56, 51, z)):
+			edits_na_coluna += 1
+	var abertas_0: Array = _opened_cells(56)
+	var chaves_0: int = _dug_cells(56).size()
+	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
+	_advance(1, false)
+	var ticks := 0
+	var horizontais := 0
+	var encostou := false
+	var boca_tick := -1
+	var x_max := _wolf.body.feet_pos.x
+	for i: int in ticks_limit:
+		ticks += 1
+		_advance(1, false)
+		for f: int in 3:
+			_wolf._physics_process(SimClock.STEP / 3.0)
+			x_max = maxf(x_max, _wolf.body.feet_pos.x)
+			if _wolf.body.blocked_horizontal:
+				horizontais += 1
+				if _wolf.body.feet_pos.y < 51.5 and \
+						_wolf.body.feet_pos.x + Wolf.DIMS.x * 0.5 > 55.9:
+					encostou = true
+		var n := _opened_cells(56).size() - abertas_0.size()
+		if boca_tick < 0 and n > 0:
+			boca_tick = ticks
+		if n >= boca_alvo:
+			break
+	var novas: Array = []
+	for p: Vector3i in _opened_cells(56):
+		if not abertas_0.has(p):
+			novas.append(p)
+	var com_chave := 0
+	for p: Vector3i in novas:
+		if int(_world.edits.get(p, -1)) == int(BlockDefs.Block.AIR):
+			com_chave += 1
+	var inteiros := 0
+	for z: int in range(40, 85):
+		for y: int in rows:
+			if _world.get_block(Vector3i(56, y, z)) == block:
+				inteiros += 1
+	# Lido ANTES da limpeza do palco: o que a checagem da bancada precisa e do
+	# estado que o lote deixou, e `_dig_stage(56, [], AIR)` devolve a coluna ao ar.
+	var extras_lidos := {}
+	for p: Vector3i in extras:
+		extras_lidos[p] = {
+			"bloco": _world.get_block(p),
+			"registrada": _world.edits.has(p),
+			"valor": int(_world.edits.get(p, -1)),
+		}
+	var out := {
+		"ticks": ticks, "horizontais": horizontais, "encostou": encostou,
+		"boca_tick": boca_tick, "novas": novas, "bocas_n": novas.size(),
+		"chaves_n": _dug_cells(56).size() - chaves_0, "com_chave": com_chave,
+		"edits_na_coluna": edits_na_coluna, "x_max": x_max, "inteiros": inteiros,
+		"celulas": int(rows.size()) * 45, "feet": _wolf.body.feet_pos,
+		"alvo": _wolf._move_target, "dig_pos": _wolf._dig_pos,
+		"dig_steps": _wolf._dig_steps, "extras": extras_lidos,
+	}
+	_dig_stage(56, [], BlockDefs.Block.AIR)
+	return out
+
+
+## Checagem 1 do dossie 12 §5, a premissa do §1 virada em numero. Sao tres
+## clausulas e cada uma paga a sua linha: o voxel nao tinha chave em `world.edits`
+## antes do lote (ninguem tocou, e nenhum botao do jogador esta apertado), a pata
+## o devolve em ar depois de uma janela andando, e a escrita e registrada. A
+## terceira e a que impede o cavar silencioso: sem a chave o buraco nao entra no
+## save e o jogador reloga num talude que ninguem abriu -- e por isso que ela conta
+## as bocas NOVAS do lote contra `world.edits`, uma a uma, e nao o estado final da
+## coluna, que o `_dig_stage` do proprio palco devolve ao ar no fim da janela.
+func _test_lobo_cava_sem_input_do_jogador() -> bool:
+	var w := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 2)
+	_check(not Input.is_action_pressed("break_block")
+			and not Input.is_action_pressed("place_block") and not _player.panel_open
+			and int(w["edits_na_coluna"]) == 0 and int(w["horizontais"]) > 0
+			and bool(w["encostou"]),
+			"premissa: nenhum input do jogador, coluna sem chave no registro, corpo encostado na face",
+			"break=%s place=%s painel=%s edits_na_coluna=%d horizontais=%d encostou=%s feet=%s alvo=%s" % [
+			Input.is_action_pressed("break_block"), Input.is_action_pressed("place_block"),
+			_player.panel_open, int(w["edits_na_coluna"]), int(w["horizontais"]),
+			w["encostou"], w["feet"], w["alvo"]])
+	_check(int(w["bocas_n"]) >= 1 and int(w["boca_tick"]) > 0,
+			"a pata remove o voxel, atraida pelo rastro e sem um clique na mesa",
+			"bocas=%d primeira_no_tick=%d janela=%d/%d horizontais=%d face_max=%.3f feet=%s" % [
+			int(w["bocas_n"]), int(w["boca_tick"]), int(w["ticks"]), 200,
+			int(w["horizontais"]), float(w["x_max"]) + Wolf.DIMS.x * 0.5, w["feet"]])
+	_check(int(w["com_chave"]) == int(w["bocas_n"]) and int(w["bocas_n"]) >= 1,
+			"o mundo registra o buraco: cada boca nova e uma chave AIR em `world.edits`",
+			"chaves_air=%d bocas=%d chaves_coluna=%d celulas=%s" % [
+			int(w["com_chave"]), int(w["bocas_n"]), int(w["chaves_n"]), str(w["novas"])])
+	return true
+
+
+## Checagem 2 do dossie 12 §5: a porta e a LISTA DE MATERIAL, e nao a dureza -- a
+## afirmacao que a leitura da pauta de hoje devolveu diferente do prompt original
+## (dossie 12 §2, item 1). `BlockDefs.hardness` e tempo de lavra do jogador, nao
+## permissao (`player.gd:663-664` soma `delta` contra `target_hardness` sem teto
+## de bloco, `:685` escreve AIR em qualquer alvo), entao o braco do vidro e o que
+## da dente: dureza 0,10 s, a mais baja da tabela, e ainda assim a pata nao passa.
+## O braco do STONE (0,95) e o outro lado da mesma moeda, e a premissa abaixo
+## exige que as recusas encostaram na face e esgotaram a janela -- sem ela
+## "nao cavou" poderia significar "nao chegou".
+func _test_cavar_respeita_a_lista() -> bool:
+	# [rotulo, bloco, esperado cavar]
+	var arms: Array = [
+		["neve", BlockDefs.Block.SNOW, true],
+		["areia", BlockDefs.Block.SAND, true],
+		["terra", BlockDefs.Block.DIRT, true],
+		["grama", BlockDefs.Block.GRASS, true],
+		["pedra", BlockDefs.Block.STONE, false],
+		["vidro", BlockDefs.Block.GLASS, false],
+	]
+	var resultados: Array = []
+	for arm: Array in arms:
+		var w := _dig_window(int(arm[1]), [51, 52], 200, 1)
+		resultados.append([String(arm[0]), int(arm[1]), bool(arm[2]),
+				int(w["bocas_n"]) >= 1, w])
+	var recusas_encostadas := true
+	var min_horizontais := 0
+	var min_ticks := 0
+	var recusas := 0
+	for r: Array in resultados:
+		if bool(r[2]):
+			continue
+		recusas += 1
+		var w: Dictionary = r[4]
+		if int(w["horizontais"]) == 0 or not bool(w["encostou"]):
+			recusas_encostadas = false
+		min_horizontais = int(w["horizontais"]) if recusas == 1 \
+				else mini(min_horizontais, int(w["horizontais"]))
+		min_ticks = int(w["ticks"]) if recusas == 1 else mini(min_ticks, int(w["ticks"]))
+	_check(recusas_encostadas and min_ticks >= 200,
+			"premissa: toda recusa encosta na face e esgota os 200 passos, nao desiste antes do muro",
+			"recusas=%d encostadas=%s horizontais_min=%d ticks_min=%d" % [
+			recusas, recusas_encostadas, min_horizontais, min_ticks])
+	for r: Array in resultados:
+		var w: Dictionary = r[4]
+		_check(bool(r[2]) == bool(r[3]),
+				"%s (dureza %.2f s): %s" % [r[0], BlockDefs.hardness(int(r[1])),
+				"cavada" if bool(r[2]) else "recusada"],
+				"bocas=%d inteiros=%d/%d primeira_no_tick=%d ticks=%d alvo=%s dig_pos=%s passos=%d" % [
+				int(w["bocas_n"]), int(w["inteiros"]), int(w["celulas"]),
+				int(w["boca_tick"]), int(w["ticks"]), w["alvo"], w["dig_pos"],
+				int(w["dig_steps"])])
+	return true
+
+
+## Checagem 7 do dossie 12 §5, e o pagamento do furo #22 com o numero que a
+## propria pauta pede. Os dois primeiros bracos sao os unicos que isolam a
+## clausula: MESMO bloco, MESMA coluna, MESMA janela -- o que muda e so a presenca
+## da chave em `world.edits`. Sem o braco B um `_dig_ok` escrito so pela lista de
+## material passaria nas duas checagens acima e a clausula de proveniencia seria
+## Adorno de comentario. O braco C e o caso concreto do furo: uma bancada
+## registrada dentro da faixa de escavacao. Ela nao esta na lista, entao a recusa
+## dela sozinha nao provara nada -- o que se exige aqui e que a pata abra a terra
+## AO LADO sem tocar na construcao, e que a chave da bancada continue valendo o
+## bloco que o jogador poe.
+func _test_cavar_nao_toca_construcao_alheia() -> bool:
+	var a := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 1)
+	var b := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 1, true)
+	var bancada := Vector3i(56, 51, 54)
+	var c := _dig_window(BlockDefs.Block.DIRT, [51, 52], 200, 1, false,
+			{bancada: BlockDefs.Block.BENCH})
+	_check(int(a["edits_na_coluna"]) == 0 and int(b["edits_na_coluna"]) > 0
+			and int(a["celulas"]) == int(b["celulas"]),
+			"premissa: os dois bracos mudam SO a proveniencia, mesmo DIRT e mesma coluna",
+			"edits_gerada=%d edits_registrada=%d celulas=%d/%d" % [
+			int(a["edits_na_coluna"]), int(b["edits_na_coluna"]),
+			int(a["celulas"]), int(b["celulas"])])
+	_check(int(a["bocas_n"]) >= 1,
+			"terra gerada (sem chave no registro) e cavada",
+			"bocas=%d primeira_no_tick=%d alvo=%s" % [
+			int(a["bocas_n"]), int(a["boca_tick"]), a["alvo"]])
+	_check(int(b["bocas_n"]) == 0 and int(b["inteiros"]) == int(b["celulas"]),
+			"terra escrita como construcao nao e tocada pela pata",
+			"bocas=%d inteiros=%d/%d ticks=%d horizontais=%d encostou=%s" % [
+			int(b["bocas_n"]), int(b["inteiros"]), int(b["celulas"]),
+			int(b["ticks"]), int(b["horizontais"]), b["encostou"]])
+	var leito: Dictionary = c["extras"][bancada]
+	_check(int(leito["bloco"]) == int(BlockDefs.Block.BENCH)
+			and bool(leito["registrada"]) and int(leito["valor"]) == int(BlockDefs.Block.BENCH)
+			and int(c["bocas_n"]) >= 1 and not c["novas"].has(bancada),
+			"construcao alheia na faixa fica de pe e a obra sai na terra do lado",
+			"bancada=%s chave=%s valor=%d bocas=%d bocas_tem_bancada=%s dig_pos_final=%s" % [
+			BlockDefs.display_name(int(leito["bloco"])), leito["registrada"],
+			int(leito["valor"]), int(c["bocas_n"]), c["novas"].has(bancada), c["dig_pos"]])
 	return true
 
 
