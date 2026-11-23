@@ -5293,3 +5293,21 @@ passada foram achadas por leitura humana, não pelo instrumento, e a régua cont
 (8) A fila viva passa a **12 → 17 → 18 → 20 → 13**; o elo da frente, `feat/bicho-cavando-12`, nasce vermelho
 porque `block_changed` ([`:6`](../src/world/voxel_world.gd#L6), emit em
 [`:276`](../src/world/voxel_world.gd#L276)) ainda não tem consumidor nenhum em `src/`.
+
+**A `main` mergida.** `git merge --no-ff docs/registro-merged-main-07c` →
+**`f7fef9774b545aeec53dee3fb09f9a63340d0f8f`**, pais `cea4379` e `9a2c510`, **6 arquivos, +178/−35**, todos
+`.md`. As árvores da resultante são `git rev-parse HEAD:src` = `100af75ded6d50b6a26120be352cf72770f97e80` e
+`HEAD:tests` = `77fcb0510525a82d39bb799ff1376ff0fb6eb17b` — **as mesmas do `cea4379`**, porque esta perna não
+escreve uma linha de código: o contrato do clone limpo (255 / 0) vale para `f7fef97` por identidade de
+árvore, e não por herança de prosa. Ainda assim a suíte foi re-rodada na `main` mergida, com a máquina
+livre e nenhum processo do engine antes dela: **`== 255 checagens  0 falhas  47.4 s de teste ==`**, exit 0,
+zero `[FAIL]`, zero `SCRIPT ERROR`. As duas réguas, corridas na mesma árvore, devolvem o número desta
+seção sem tremedeira: `python tools/check_doc_anchors.py` → `38 arquivos · 2 850 ponteiros · 197 rótulos ·
+2 845 links · casos objetivos: 0`, e `python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md
+docs/engine/*.md docs/melhorias-status.md AGENTS.md README.md` → **2 661** conferidas, **34** ausentes,
+**`numeros de linha fora do arquivo: 0`**. Publicação conferida com `git ls-remote --heads origin`:
+`refs/heads/main` = `f7fef9774b545aeec53dee3fb09f9a63340d0f8f` e
+`refs/heads/docs/registro-merged-main-07c` = `9a2c51008ca394b60396a1ff5efa46d447d06588` — nenhuma branch
+apagada, local ou remota. O **#28 continua aberto**: o `casos objetivos: 0` de cima é a régua que não vê o
+defeito que esta seção documenta, e a metade (a) dele — conferir que a linha apontada contém o identificador
+do ponteiro — ainda não tem instrumento nem corredor de teste.
