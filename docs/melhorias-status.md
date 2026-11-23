@@ -5176,16 +5176,23 @@ continuou em **255** checagens: a coluna nova é checada só dentro do bake-off,
 suíte apenas a publica no `diagnostics()`.
 
 **O pin, medido num clone limpo de `cea4379` com `--import` frio, serial, máquina livre** (engine
-`4.7.2.stable.official.ed1daf0bf`; nenhum `[FAIL]`, nenhum `SCRIPT ERROR` em nenhuma das seis corridas):
+`4.7.2.stable.official.ed1daf0bf`; nenhum `[FAIL]`, nenhum `SCRIPT ERROR` em nenhuma das seis corridas). As
+nove corridas desta mesa e das duas que a seguem estão **versionadas** em
+[`docs/evidence/registro-07c/`](evidence/registro-07c/readback.md) — antes cada stdout vivia num diretório
+gitignored (`.tools/` ou o clone sob `.qoder/`) e nenhuma pessoa que clonasse o repositório poderia
+conferir um número:
 
-| Corrida | saída literal do rodapé |
-| --- | --- |
-| suíte | `== 255 checagens  0 falhas  47.6 s de teste ==`, exit 0 |
-| runner de reações | `OK censo de checagens \| 240/240` → `240 checagens 0 falhas 24.546 s` |
-| runner RNG | `OK censo de checagens \| 27/27` → `27 checagens 0 falhas 2.673 s` |
-| runner journal | `128 checagens 0 falhas 7/7 testes concluidos 5.582 s` |
-| `af_bench` (12 000 ticks) | `16 checagens 0 falhas 45.920 s` |
-| `af_bakeoff` braço A | `11 checagens 0 falhas 8.057 s` |
+| Corrida | saída literal do rodapé | log na branch `docs/evidencia-clone-limpo-07c` |
+| --- | --- | --- |
+| `--import` frio do clone | exit 0, `[ DONE ] loading_editor_layout`, 0 `SCRIPT ERROR` | [`clean_import.log`](evidence/registro-07c/clean_import.log) |
+| suíte | `== 255 checagens  0 falhas  47.6 s de teste ==`, exit 0 | [`suite.log`](evidence/registro-07c/suite.log) |
+| runner de reações | `OK censo de checagens \| 240/240` → `240 checagens 0 falhas 24.546 s` | [`runner_reactions.log`](evidence/registro-07c/runner_reactions.log) |
+| runner RNG | `OK censo de checagens \| 27/27` → `27 checagens 0 falhas 2.673 s` | [`runner_rng.log`](evidence/registro-07c/runner_rng.log) |
+| runner journal | `128 checagens 0 falhas 7/7 testes concluidos 5.582 s` | [`runner_journal.log`](evidence/registro-07c/runner_journal.log) |
+| `af_bench` (12 000 ticks) | `16 checagens 0 falhas 45.920 s` | [`bench_clean.log`](evidence/registro-07c/bench_clean.log) |
+| `af_bakeoff` braço A | `11 checagens 0 falhas 8.057 s` | [`bakeoff_A_clean.log`](evidence/registro-07c/bakeoff_A_clean.log) |
+| suíte na ponta do registro | `== 255 checagens  0 falhas  47.9 s de teste ==` | [`registro_branch_suite.log`](evidence/registro-07c/registro_branch_suite.log) |
+| suíte na `main` mergida | `== 255 checagens  0 falhas  47.4 s de teste ==` | [`merged_main_suite.log`](evidence/registro-07c/merged_main_suite.log) |
 
 Duas coisas essa mesa do clone limpo prova, e nenhuma delas é desempenho:
 
@@ -5195,7 +5202,7 @@ Duas coisas essa mesa do clone limpo prova, e nenhuma delas é desempenho:
   ([`docs/evidence/af-bench-boot-walk/readback.md`](evidence/af-bench-boot-walk/readback.md) linhas 65–67).
   O `edit_mesh` novo do `diagnostics()` entra no F3 e no log, não na projeção; `Channel.COUNT`,
   `FORMAT_VERSION`, `GEN_VERSION` e `state_hash()` seguem intocados.
-- **a coluna nova aparece no diagnóstico e no clone.** `suite.log:345`:
+- **a coluna nova aparece no diagnóstico e no clone.** [`docs/evidence/registro-07c/suite.log:345`](evidence/registro-07c/suite.log):
   `"edit_mesh":{"count":14,"mean_us":121496.857,"pending":0,"worst_us":221932}` com
   `"edits":13, "meshes":147, "triangles":214480`. No bake-off do mesmo clone, o braço A deu
   `gen_ms=945.836 mesh_ms=4269.300` e `edit_cost count=52 worst_us=163290 mean_us=78621.4 pending=0` com
@@ -5280,7 +5287,9 @@ registro: `docs/registro-merged-main-07c` é documento puro, e `git rev-parse HE
 devolvem `100af75d…` / `77fcb051…` — as mesmas do `cea4379` medido no clone limpo. Nenhuma linha de código
 desta branch, portanto o contrato **255 / 0** se transmite por identidade de árvore e não por corrida nova.
 A suíte foi re-rodada na ponta ainda assim: **`== 255 checagens  0 falhas  47.9 s de teste ==`**, exit 0,
-zero `[FAIL]` e zero `SCRIPT ERROR` (`.tools/_reg07c_suite.log`, gitignored, como todo `.tools/`). (1) Gate
+zero `[FAIL]` e zero `SCRIPT ERROR` — o stdout inteiro está em
+[`docs/evidence/registro-07c/registro_branch_suite.log`](evidence/registro-07c/registro_branch_suite.log)
+(copiado de `.tools/_reg07c_suite.log`, que por ser gitignored não sobreviveria a nenhum clone). (1) Gate
 de fase fecha o dono do repositório (mandato 4). (2) A 07c não troca
 malhador nenhum: o braço A continua o default, C vive só como patch, B e D seguem `[OPEN]`/`[CLAIMED]`.
 (3) `edit_mesh` é o remesh referenciado por edição, não o caminho de edição inteiro — `apply_edits`
@@ -5301,7 +5310,9 @@ porque `block_changed` ([`:6`](../src/world/voxel_world.gd#L6), emit em
 escreve uma linha de código: o contrato do clone limpo (255 / 0) vale para `f7fef97` por identidade de
 árvore, e não por herança de prosa. Ainda assim a suíte foi re-rodada na `main` mergida, com a máquina
 livre e nenhum processo do engine antes dela: **`== 255 checagens  0 falhas  47.4 s de teste ==`**, exit 0,
-zero `[FAIL]`, zero `SCRIPT ERROR`. As duas réguas, corridas na mesma árvore, devolvem o número desta
+zero `[FAIL]`, zero `SCRIPT ERROR` — o stdout está versionado em
+[`docs/evidence/registro-07c/merged_main_suite.log`](evidence/registro-07c/merged_main_suite.log), copiado de
+`.tools/_reg07c_main_suite.log`. As duas réguas, corridas na mesma árvore, devolvem o número desta
 seção sem tremedeira: `python tools/check_doc_anchors.py` → `38 arquivos · 2 850 ponteiros · 197 rótulos ·
 2 845 links · casos objetivos: 0`, e `python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md
 docs/engine/*.md docs/melhorias-status.md AGENTS.md README.md` → **2 661** conferidas, **34** ausentes,
@@ -5311,3 +5322,37 @@ docs/engine/*.md docs/melhorias-status.md AGENTS.md README.md` → **2 661** con
 apagada, local ou remota. O **#28 continua aberto**: o `casos objetivos: 0` de cima é a régua que não vê o
 defeito que esta seção documenta, e a metade (a) dele — conferir que a linha apontada contém o identificador
 do ponteiro — ainda não tem instrumento nem corredor de teste.
+
+**Os stdout do registro viram artefato versionado.** A branch `docs/evidencia-clone-limpo-07c`, aberta de
+`b1e1dd4`, acrescenta **14 arquivos** em
+[`docs/evidence/registro-07c/`](evidence/registro-07c/readback.md): os **dez** stdout literais que as três
+mesas acima citavam (seis do clone limpo de `cea4379`, o `--import` frio dele, as duas suítes que estavam
+em `.tools/` e a suíte re-rodada nesta ponta — `== 255 checagens  0 falhas  47.6 s de teste ==`, exit 0, com
+a máquina checada livre antes dela), as **duas** réguas re-corridas nesta árvore, a `readback.md` com o
+comando e os rodapés, e o `artifacts.sha256`. O motivo é o mandato 1 e o item 6 do ciclo: até aqui cada um
+desses logs morava num
+diretório gitignored (`.tools/` ou o clone sob `.qoder/`), então nenhum clone do repositório poderia
+conferir um número desta seção — a mesa estava *publicada* mas não estava *checkável*. Na prosa isto muda
+quatro ponteiros: a tabela do pin ganha a coluna do arquivo arquivado, `suite.log:345` passa
+[`docs/evidence/registro-07c/suite.log:345`](evidence/registro-07c/suite.log) (linha conferida: a coluna
+`edit_mesh` está lá, `count=14 mean_us=121496.857 worst_us=221932`), e as duas menções a
+`.tools/_reg07c{,_main}_suite.log` apontam para a cópia versionada, com o log original nomeado ao lado.
+
+Nada de código: `git diff --name-only b1e1dd4..HEAD -- src tests` devolve vazio e as árvores desta ponta são
+`100af75ded6d50b6a26120be352cf72770f97e80` / `77fcb0510525a82d39bb799ff1376ff0fb6eb17b` — as mesmas do pin
+medido no clone, logo o contrato **255 / 0** se transmite por identidade de árvore. As duas réguas, corridas
+**com esta pasta e este parágrafo já dentro da árvore** (o comando é o de sempre, literal na `readback.md`):
+`python tools/check_doc_anchors.py` → `38 arquivos · 2 850 ponteiros · 197 rótulos · 2 860 links · casos
+objetivos: 0`, e `python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md docs/engine/*.md
+docs/melhorias-status.md AGENTS.md README.md` → **2 663** conferidas, **34** ausentes,
+**`numeros de linha fora do arquivo: 0`**, exit 0. Os deltas contra a `main` de cima (2 845 / 2 661) são os
+desta passada e têm explicação lida nos regulares: **+15 links relativos** porque os arquivos agora existem
+como alvo de link, **+2 citações conferidas** (os dois caminhos `…/registro-07c/suite.log:345` que eram
+prosa solta e passaram a caminho resolvível) e **zero** em ponteiros e rótulos — as duas classes do
+instrumento só aceitam alvo `.gd`/`.md`, então um link para `.log` é conferido como *arquivo*, nunca como
+*linha*. O `34` de ausentes não cai: as dez cópias desta
+pasta não substituem os logs de rodadas antigas que continuam citados por `.tools/` (`suite_fix1.log` …
+`suite_fix4.log`, `shot_gallery.*`, os três `_head_*.md`) e esses **não** foram arquiveados aqui — ficam
+como o resto do débito de instrumento. O **#28 continua aberto**, com a mesma cara: `casos objetivos: 0`
+nesta árvore verde não diz que não há ponteiro velho, diz que a régua não procura esse caso.
+
