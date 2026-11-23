@@ -211,28 +211,28 @@ A suíte re-rodou na `main` mergida (`9fe5e45`), e ela devolve os mesmos dois ha
 o que a merge acrescentou são 20 arquivos de `README.md` e `docs/`, e a última linha continua
 `237 checagens 0 falhas`, exit 0, com zero `SCRIPT ERROR`.
 
-**O pin de hoje é `5b519f8`**, a `main` do merge `--no-ff` do fecho da perna 11 (acasalamento,
-filhote e censo variável), que é o merge do fecho `docs/fecho-acasalamento-censo-11` sobre
-`4b858c2`, o merge `--no-ff` da branch `feat/acasalamento-e-censo-11` (ponta de código `0762b43`)
-sobre a base `e7a5fe7`. A árvore de código do pin **mudou** em `src` e `tests` de novo: `git
-rev-parse 5b519f8:src 5b519f8:tests` devolve `30873d664a9577bcd3e709046cc708923456c372` e
-`975eac5a471dc1e064441474ef6e13866076d34f` — e `4b858c2:src` e `4b858c2:tests` devolvem os mesmos
-dois objetos, porque o fecho trouxe `.md` e `.log` e nenhum `.gd`. A perna 11 escreve em
-`src/entities/wolf.gd`, `src/main.gd`, `src/ai/mind_oracle.gd` e nos dois runners. O número do pin
-é a corrida arquivada dessa árvore: **252 checagens, 0 falhas, 42,9 s**, exit 0, zero `SCRIPT
-ERROR` nas duas correntes, `dropped_ticks` **0**, `births` **2**, `census_cap` **12**, `wolves` **7**
-e `worst_sim_ms` **13,684** dos 50 ms do passo — medidos no clone limpo de `4b858c2`, sem
-`.godot/` e com `--import` frio exit 0; a `main` do fecho re-rodada deu **252 / 0 / 43,0 s**, e o
-runner de reações deu **225 / 0 / 15,451 s** no clone, **225 / 0 / 15,348 s** na `main` do fecho
-e **225 / 0 / 15,343 s** na branch. Esse `worst_sim_ms` é uma corrida, não uma faixa. Logs,
-`artifacts.sha256` e a conferência do clone estão em [readback.md](docs/evidence/acasalamento-censo-11/readback.md).
-O par de vazamento do quit sai na **primeira** corrida do clone (stderr de 249 bytes) e **não** sai
-na segunda, no mesmo clone e com o mesmo comando; com `--verbose` o objeto é nomeado — é a
-ambiência `res://assets/audio/amb/amb_birds.ogg` viva no instante em que o processo morre —, e o
-braço de controle na `main` **sem** esta perna dá o mesmo par, maior (**16 ObjectDB com 6
-resources**): ele **precede** a perna 11 e não é dela. O pin anterior, `ab9ffa1` (perna 19), tinha
-`45efe977f74de…` e `37eb429c142d…` e deu **246 / 0 / 39,6 s** no clone limpo; o registro completo
-está em [readback.md](docs/evidence/auto-pulo-19/readback.md).
+**O pin de hoje é `9b2c65a`**, a `main` do merge `--no-ff` da perna 16 (tocas da alcateia; base
+`99d1167`, branch `feat/tocas-da-alcateia-16` com código `90c152f`, medição pareada `ab4d4c3` e docs
+`edab9c8`). A árvore de código do pin **mudou** em `src` e `tests`: `git rev-parse 9b2c65a:src
+9b2c65a:tests` devolve `64f137bcb1f8e95bd9a64fe7843e4e7b72f7326e` e
+`88a1541c2f9f6fc3dd0e1d237b3e5656d9eea3c9`, contra `30873d664a9577…` / `975eac5a471dc1…` do
+`5b519f8` (perna 11), porque a 16 escreve `src/main.gd`, `src/entities/wolf.gd` e os dois runners —
+aqui o pin é o merge medido, não um commit de documento em cima dele. O número do pin é a corrida do
+**clone limpo** de `9b2c65a`, sem `.godot/` e com `--import` frio exit 0: **255 checagens, 0 falhas,
+48,6 s**, exit 0, zero `[FAIL]` e zero `SCRIPT ERROR` nas duas correntes, com `dropped_ticks` **0**,
+`tick=403`, `dens` **3**, `den_components` **3**, `den_min_dist` **55,86 m** contra a régua de 48 m,
+`pack_pairs` **21**, `wolves` **7**, `births` **2**, `census_cap` **12**, `edits=13` e `triangles=214480`;
+a árvore mergida re-rodada deu **255 / 0 / 47,7 s** (`worst_sim_ms` **10,966** no passo de 50 ms, contra
+**11,726** do clone) e o runner de reações **240 / 0 / 24,138 s** no clone e **240 / 0 / 24,201 s** na
+mergida, os dois com `OK censo de checagens | 240/240`. São três checagens a mais sobre as 252 do
+`5b519f8` e **nenhuma a menos**; o `worst_sim_ms` é uma corrida, não uma faixa, e o par de vazamento do
+quit (**4 ObjectDB** com **2 resources still in use**) sai nas duas corridas do pouso. Logs,
+`artifacts.sha256` e a conta das cinco corridas estão em
+[pouso_clone_suite.log](docs/evidence/tocas-alcateia-16/pouso_clone_suite.log); dos pins anteriores fica
+o que foi medido: `5b519f8` deu **252 / 0 / 42,9 s** no clone, runner **225 / 0 / 15,451 s**
+([readback.md](docs/evidence/acasalamento-censo-11/readback.md)), e `ab9ffa1` (perna 19), com
+`45efe977f74de…` e `37eb429c142d…`, deu **246 / 0 / 39,6 s** no clone limpo
+([readback.md](docs/evidence/auto-pulo-19/readback.md)).
 Na revisão histórica `9c6b722` foram quatro corridas seguidas nesta máquina: **220 checagens,
 0 falhas, 35,6 / 35,9 / 36,3 / 36,4 s** — e num clone limpo de `9c6b722`
 (29 `.gd`, sem `.godot/`): **220 checagens, 0 falhas, 35,4 s**. Essas cinco não têm nenhuma
@@ -256,6 +256,30 @@ material alpha, pilha zerada equivale a mão vazia, o peso do bloco muda a pose 
 braço, o golpe com pedra afunda mais que sem carga, o ciclo de lavra do rig mexe o
 ombro, pedra lavra mais funda e mais lenta que folha, a mão vazia devolve o braço
 ao repouso e a fração da face do cubo que sai do braço no quadro da órbita.
+
+**A perna 16 (tocas da alcateia) pousou** no merge `9b2c65a`, e o parágrafo acima é o número dela
+medido no clone limpo: a matilha nasce espalhada em tocas separadas pelo portão `DEN_MIN_DIST`, o censo
+passa a dizer em quantos grupos o grafo de coesão realmente forma, a fila de reposição e o parto
+carregam a toca, e o disco ganha a chave `den` de forma aditiva — disco sem a chave devolve `dens=0`
+e não inventa lar nenhum. O que a ponta de branch mediu continua arquivado ao lado: suíte
+**255 / 0 / 48,0 s** ([head_suite.log:357](docs/evidence/tocas-alcateia-16/head_suite.log#L357)) com
+`tick=403`, `worst_sim_ms` **10,766**, `dens` **3**, `den_components` **3**, `den_min_dist` **55,9 m**
+contra a régua de 48 m, `pack_pairs` **21**, `wolves` **7**, `births` **2**, `edits=13` e `triangles=214480`,
+e o par de vazamento do quit (`4 ObjectDB` na linha 358 com `2 resources still in use` na 360), que não
+sai na re-corrida da doc (**255 / 0 / 47,7 s**, [docs_rerun_suite.log:357](docs/evidence/tocas-alcateia-16/docs_rerun_suite.log#L357)):
+o par **precede** a 16 — o braço de controle da perna 11 deu **16 ObjectDB com 6 resources** — e a
+atribuição continua aberta. As três checagens a mais sobre as 252 do pin anterior, e nenhuma a menos,
+são `espalhamento_nao_estoura_o_passo`, `tocas e pertenca sobrevivem ao save` e
+`default derivado: disco sem a chave nao toca nem inventa`; o trio sai do `diff` de nomes
+entre o `merged_main_suite.log` da perna 11
+([:350](docs/evidence/acasalamento-censo-11/merged_main_suite.log#L350)) e o log do clone do pouso, não a
+contagem de cabeça. O custo pareado contra a base `99d1167` — mesma suíte, mesma semente, quatro
+corridas, máquina livre — sai **−0,70 %** no cenário estreito e **−0,76 %** nos passos de matilha, ambos
+dentro do espalhamento de repetir o próprio braço: nenhuma diferença mensurável, com a conta e o vínculo
+de revisão em [custo-pareado.md](docs/evidence/tocas-alcateia-16/custo-pareado.md). Os dois furos que a
+perna paga, #18 e #21, estão com a linha literal da checagem que paga cada um na seção de pouso de
+`docs/melhorias-status.md`; alocação de `_dens` e atribuição do quit seguem em aberto.
+
 O que a suíte cobre:
 
 - geração determinística (16 colunas de relevo e malha idênticas entre dois
@@ -315,8 +339,15 @@ O que a suíte cobre:
 - campo de Éter: imprint, difusão para a célula vizinha e meia-vida por canal;
 - HUD, morte e renascer, ciclo de vida dos lobos (cadáver, recolhimento e
   reposição de matilha);
+- matilha em tocas (dossie 16): 3 tocas fundadas no boot, cada uma um componente
+  conexo do grafo de coesão e nenhum lobo lendo de outra toca
+  (`arestas_entre_tocas=0`), separação mínima de 55,9 m contra a régua de 48 m
+  (`DEN_MIN_DIST`), a recusa de spawn contada por motivo — `soma(motivos)` igual
+  a buscas × `SPAWN_ATTEMPTS` — e o passo de 20 Hz do espalhamento dentro da
+  régua de 25 ms (pior passo 10,77 ms dos 50 de orçamento, `dropped_ticks` 0);
 - persistência: salvar → mutar o mundo → carregar devolve relevo, diário de
-  edições, posição, vida, tick e a memória dos lobos.
+  edições, posição, vida, tick e a memória dos lobos, agora com a toca de cada
+  um e o `den` do disco conferidos identidade a identidade.
 
 ## Bloco na mão
 
@@ -396,7 +427,8 @@ perna `bench/`.
 Candidato local recém-importado, anterior à correção visual da mão: **89 checagens de
 rastros / 0 falhas**, contrato do journal **128 / 0** e smoke **220 / 0** sem e com gravação. Fontes identificadas por
 SHA-256, evidências e limites nas [notas de medição](docs/melhorias-status.md#rastros-e-reações--publicado-em-a8967e0).
-São resultados headless do candidato daquela revisão, com o smoke hoje em 237 checagens; o código
+São resultados headless do candidato daquela revisão — o censo do smoke é sempre o da seção
+*Teste headless*, nunca o deste parágrafo; o código
 está no commit `a8967e0` e o clone limpo dele re-mediu a suíte completa, mas os runners dedicados
 de rastros e journal continuaram na árvore de trabalho. Falta a aprovação visual em janela.
 
@@ -549,8 +581,12 @@ colocar gasta um da pilha), inventário de 36 slots com pilha por bloco e hotbar
 de 10 pinos, painel de inventário e receitas com estação de craft (bancada),
 combate corpo a corpo com vigor, rolamento e
 planar, respiração e dano de queda, vida/dano/morte/renascer,
-HUD, 5 lobos com Behavior Tree + Utilidade + memória episódica e
-confiança no jogador, bioma como código (uma função decide a partir do relevo, e o mesmo
+HUD, matilha de 5 lobos no boot com censo variável (teto `CENSUS_CAP` 12) e cada
+lobo com Behavior Tree + Utilidade + memória
+episódica e confiança no jogador; a matilha nasce espalhada em 3 tocas
+(`DEN_COUNT`) cujo centro tem de ficar a pelo menos 48 m (`DEN_MIN_DIST`) do
+centro de toda toca já fundada, o lar do filhote é herdado do casal e a reposição
+volta para a toca perdida, bioma como código (uma função decide a partir do relevo, e o mesmo
 bioma dá a cor do pelo de quem ali nasceu e o viés por canal do imprint do Éter — o viés é
 aplicado pelo chamador do evento, o campo continua sem conhecer voxel nenhum), campo de Éter
 com 3 canais (work, blood, fear) que difunde
@@ -596,7 +632,7 @@ igual para humano e para agente.
 
 | Caminho | O que faz |
 | --- | --- |
-| `src/main.gd` | composição da cena: mundo, jogador, lobos, Éter, HUD, save, nó de áudio |
+| `src/main.gd` | composição da cena: mundo, jogador, lobos, tocas da matilha, Éter, HUD, save, nó de áudio |
 | `src/world/` | `voxel_world` (chunks + raycast DDA), `world_gen` (relevo, cubas, cavernas, árvores), `voxel_atlas` (texturas desenhadas em runtime), `aether_field` |
 | `src/entities/` | `player` (mira, minerar, colocar, golpe), `voxel_body` (colisão AABB-contra-voxel), `player_avatar` (corpo em 3ª pessoa), `fp_viewmodel` (braço e bloco na mão em 1ª pessoa), `wolf` |
 | `src/ai/` | `bt_tree`/`bt_status` (Behavior Tree), `response_curve` + `utility_scorer` (utilidade), `mind` (personalidade, memória episódica, confiança) |
@@ -638,7 +674,7 @@ igual para humano e para agente.
 ```sh
 # porta de compilação por arquivo alterado (roda em segundos)
 godot --headless --path . --check-only --script res://src/world/world_gen.gd
-# suíte completa: ~35 s, sai com código 1 em qualquer falha
+# suíte completa: ~48 s na ponta desta perna (42,9 s no pin publicado), sai com código 1 em qualquer falha
 godot --headless --path . tests/smoke_test.tscn
 ```
 

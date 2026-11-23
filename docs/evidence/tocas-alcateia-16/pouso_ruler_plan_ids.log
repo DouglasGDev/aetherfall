@@ -1,0 +1,40 @@
+== docs/planos/01-estado-inicial-e-ordem-autoritativa.md -- identificadores citados em backticks: 40
+   AUSENTES em src/ e tests/: HotSet, formato_declarado, frames_do_tick, ordem_independente_de_quadros, rng_restaurada_no_load, snapshot_resta_hash
+== docs/planos/02-censo-multi-semente.md -- identificadores citados em backticks: 33
+   AUSENTES em src/ e tests/: HotSet, MindsInspector, contagem_travada, contraste_de_cadencia, divergencia_primeiro, hash_varia_dentro_da_corrida, hashes_distintos, repeticao_por_semente, sementes_distintas, ticks_conferidos
+== docs/planos/03-canais-morte-som-fogo.md -- identificadores citados em backticks: 54
+   AUSENTES em src/ e tests/: DECAY_PER_SEC, HotSet, MindStore, MindsInspector, SATURATION, SOURCE_RATE, SlowSim, TrailReader, _sample_trail, _scan_interval, _sighting_cache_cap, _sighting_cache_ttl, a8967e0, ff347d2
+== docs/planos/04-budget-hot-medido.md -- identificadores citados em backticks: 25
+   AUSENTES em src/ e tests/: HotSet, MindsInspector, pico_decisao_us, pico_hot_bt_us
+== docs/planos/05-difusao-fora-do-tick.md -- identificadores citados em backticks: 37
+   AUSENTES em src/ e tests/: HotSet, MindsInspector, SimWorld, SlowSim, Thread, WorkerThreadPool, diffuse_us_media, diffuse_us_pico, difusao_hash_inalterado_por_semente, hot_max_por_canal
+== docs/planos/06-decompor-main-gd.md -- identificadores citados em backticks: 83
+   AUSENTES em src/ e tests/: MindServer, MindsInspector, SavePayload, _random_ground_point, repetib
+== docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -- identificadores citados em backticks: 26
+   AUSENTES em src/ e tests/: EntityStore, a8967e0, f843fa6
+== docs/planos/08-mindstore-e-mindsinspector.md -- identificadores citados em backticks: 38
+   AUSENTES em src/ e tests/: BeliefVerifier, HotSet, MindStore, MindsInspector, SlowSim, a8967e0, mind_store
+== docs/planos/09-bioma-cor-de-pelo-e-ether.md -- identificadores citados em backticks: 47
+   todos existem em src/ ou tests/
+== docs/planos/10-alcateia-rutinas.md -- identificadores citados em backticks: 91
+   AUSENTES em src/ e tests/: Alcateia, MindsInspector, PackState, contraste_de_alcateia, eb6ec8d, fb20707, ff347d2, n_attacking, n_participantes
+== docs/planos/11-acasalamento-filhote-e-censo.md -- identificadores citados em backticks: 69
+   AUSENTES em src/ e tests/: AudioStreamPlaybackOggVorbis, a8967e0, c1ea3f9, e7a5fe7, f33c1d4, fe2fb6d, ff347d2
+== docs/planos/12-bicho-cavando-voxel.md -- identificadores citados em backticks: 84
+   AUSENTES em src/ e tests/: _dig_accum, _dig_pos, abrir_passagem_depois_de_bloqueio, cavar_nao_consome_rng_da_sessao, cavar_nao_toca_construcao_alheia, cavar_respeita_a_lista, cavar_sobrevive_ao_save, entrada_de_rastro_exposta_no_chao_lido, lobo_cava_sem_input_do_jogador, malharia_do_cavar_medida, work_de_bicho_nao_confundido
+== docs/planos/13-arvore-genealogica-e-ether.md -- identificadores citados em backticks: 90
+   AUSENTES em src/ e tests/: BeliefVerifier, FamilyTree, Genealogy, KIN, MindsInspector, Rumor, SimWorld, Species, ascendencia_e_int_nao_referencia, eb6ec8d, eter_devolve_quem_sangrou, genealogia_muda_algo_observavel, genealogia_nao_consome_rng_da_sessao, genome, heranca_nao_repete_deriva, journal_hash_inalterado_sem_nascimento, load_preserva_ascendencia, parents, pelo_de_fundador_vem_do_bioma
+== docs/planos/14-convivio-da-alcateia.md -- identificadores citados em backticks: 76
+   AUSENTES em src/ e tests/: Alcateia, MindsInspector, PackState, _random_ground_point, convivio_nao_estoura_orcamento, eb6ec8d
+== docs/planos/15-oraculo-embutido-no-boot.md -- identificadores citados em backticks: 51
+   AUSENTES em src/ e tests/: ModelPackFetcher, b779cee, boot_nao_bloqueia_janela, chave_do_oraculo_bate_com_a_do_host, host_devolve_health_200, morte_aceita_uma_retentativa, ms_ate_200, narrativa_chega_sem_passo_manual, oracle_cache, porta_alheia_continua_viva, requisicoes_emitidas, reuso_nao_cria_segundo_processo, sem_packs_sem_sucesso_fingido, suite_nao_levanta_modelo, throw
+== docs/planos/16-tocas-da-alcateia.md -- identificadores citados em backticks: 88
+   AUSENTES em src/ e tests/: DEN_RANGE, PLANT, assinatura_de_populacao_estavel, e0450a3, fp_viewmodel, home_of, pack_id, player_avatar
+== docs/planos/17-fisica-de-blocos-que-caem.md -- identificadores citados em backticks: 98
+   AUSENTES em src/ e tests/: ANVIL, BEDROCK, BlockUpdateQueue, DropItem, DropSpawner, FIX, FallingBlock, FallingBlockSpawner, GRAVEL, MAX_FALL_TICKS, MAX_PER_TICK, PLANT, POWDER_SNOW, ROCK_LOOSE, SHATTER, TORCH, _due, _landing_cell, _shatter, blocks_air, bloco_em_queda_nao_sobe, breaks_a_fall, destructible, fall_class, has_gravity, is_replaceable, is_supported, journal_hash_muda_so_com_movimento, overflow, place_falling_block, quebra_queda, queda_cascade_em_passos, queda_move_a_celula, queda_nao_custou_tempo_de_ninguem, queda_pousa_antes_do_save, queda_sem_varredura_de_mundo, sofre_gravidade
+== docs/planos/18-mundo-vivo-grama-e-mato.md -- identificadores citados em backticks: 68
+   AUSENTES em src/ e tests/: GROW_CHANCE, GROW_MAX_PER_TICK, GROW_PERIOD, GROW_RECHECK, PLANT, crescimento_nao_consome_rng_da_sessao, crescimento_nao_estoura_a_malha, crescimento_nao_varre_nada, crescimento_sobrevive_ao_save, grama_nao_cresce_onde_nao_ha_grama, grama_precisa_de_vizinha, growth_converted, growth_queued, mato_e_nao_solidez_nem_pedra, mato_nao_engole_o_clique, substituivel
+== docs/planos/19-auto-pulo-de-bloco.md -- identificadores citados em backticks: 48
+   AUSENTES em src/ e tests/: a1143b0, a518487, a534e23, ab9ffa1, acb7970, c0659fd, c313544, f843fa6, penhasico_nao_gasta_salto
+== docs/planos/README.md -- identificadores citados em backticks: 206
+   AUSENTES em src/ e tests/: ANVIL, AudioStreamPlaybackOggVorbis, BEDROCK, BlockUpdateQueue, DECAY_PER_SEC, DEN_RANGE, DropItem, DropSpawner, FIX, FallingBlock, FallingBlockSpawner, FamilyTree, GRAVEL, GROW_CHANCE, GROW_MAX_PER_TICK, GROW_PERIOD, GROW_RECHECK, MAX_FALL_TICKS, MAX_PER_TICK, MindStore, MindsInspector, ModelPackFetcher, PLANT, POWDER_SNOW, PackState, ROCK_LOOSE, SATURATION, SHATTER, SOURCE_RATE, TORCH, TrailReader, _dig_accum, _dig_pos, _due, _landing_cell, _sample_trail, _scan_interval, _shatter, _sighting_cache_cap, _sighting_cache_ttl, a8967e0, ab9ffa1, abrir_passagem_depois_de_bloqueio, ascendencia_e_int_nao_referencia, assinatura_de_populacao_estavel, b779cee, blocks_air, bloco_em_queda_nao_sobe, boot_nao_bloqueia_janela, breaks_a_fall, c1ea3f9, cavar_nao_consome_rng_da_sessao, cavar_nao_toca_construcao_alheia, cavar_respeita_a_lista, cavar_sobrevive_ao_save, contraste_de_alcateia, contraste_de_cadencia, convivio_nao_estoura_orcamento, crescimento_nao_consome_rng_da_sessao, crescimento_nao_estoura_a_malha, crescimento_nao_varre_nada, crescimento_sobrevive_ao_save, destructible, e0450a3, e7a5fe7, eb6ec8d, entrada_de_rastro_exposta_no_chao_lido, eter_devolve_quem_sangrou, f33c1d4, f843fa6, fall_class, fe2fb6d, ff347d2, formato_declarado, fp_viewmodel, genealogia_muda_algo_observavel, genealogia_nao_consome_rng_da_sessao, grama_nao_cresce_onde_nao_ha_grama, grama_precisa_de_vizinha, growth_converted, growth_queued, has_gravity, heranca_nao_repete_deriva, home_of, host_devolve_health_200, is_replaceable, is_supported, journal_hash_inalterado_sem_nascimento, journal_hash_muda_so_com_movimento, load_preserva_ascendencia, lobo_cava_sem_input_do_jogador, malharia_do_cavar_medida, mato_e_nao_solidez_nem_pedra, mato_nao_engole_o_clique, ms_ate_200, oracle_cache, ordem_independente_de_quadros, overflow, pack_id, pelo_de_fundador_vem_do_bioma, penhasico_nao_gasta_salto, place_falling_block, player_avatar, porta_alheia_continua_viva, queda_cascade_em_passos, queda_move_a_celula, queda_nao_custou_tempo_de_ninguem, queda_pousa_antes_do_save, queda_sem_varredura_de_mundo, repeticao_por_semente, requisicoes_emitidas, reuso_nao_cria_segundo_processo, rng_restaurada_no_load, snapshot_resta_hash, sofre_gravidade, substituivel, suite_nao_levanta_modelo, throw, work_de_bicho_nao_confundido, worst_sim_us

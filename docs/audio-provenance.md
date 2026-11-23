@@ -123,7 +123,7 @@ Total: **51 arquivos, 1.677.718 bytes (1.60 MiB)**.
 
 Nenhum byte dos arquivos muda em runtime. O que se aplica em runtime é ganho,
 cadência e roteamento, no [src/audio/audio_director.gd](../src/audio/audio_director.gd)
-(`AudioDirector`, 619 linhas), que o [src/main.gd:177-181](../src/main.gd#L177-L181)
+(`AudioDirector`, 619 linhas), que o [src/main.gd:190-194](../src/main.gd#L190-L194)
 cria por último no `_ready` — "último a entrar e o primeiro a ser ouvido".
 
 **Barramentos.** `default_bus_layout.tres` (carregado por
@@ -154,15 +154,17 @@ uivo tem cooldown global de 18 s, para não virar coro. A voz livre é escolhida
 avança e um SFX não-looping termina sozinho.
 
 **O diretor não manda no mundo.** Ele escuta seis sinais do jogador
-(`block_broken`, `block_placed`, `attacked`, `damaged`, `died`, `panel_changed`) e três de
+(`block_broken`, `block_placed`, `attacked`, `damaged`, `died`, `panel_changed`, em
+[audio_director.gd:149-154](../src/audio/audio_director.gd#L149-L154)) e três de
 cada lobo (`bit_player`, `wounded`, `died`, conectados em
-[main.gd:368-369](../src/main.gd#L368-L369)); não escreve voxel, não imprime no Éter e
+[audio_director.gd:159-161](../src/audio/audio_director.gd#L159-L161), chamada por
+[main.gd:392-393](../src/main.gd#L392-L393)); não escreve voxel, não imprime no Éter e
 sorteja variante numa RNG própria, semente 20261118. Medido em headless
 ([tests/audio_test.gd](../tests/audio_test.gd)): nove eventos disparados não mexem no
 hash autoritativo do tick (`98313688c61a → 98313688c61a`), nem no `_rng.state` de cada
 lobo, nem no `_population_rng.state`. O transitório por corpo (posição anterior,
 acumulador de passo, água, cooldown) é chaveado por `wolf.identity` e limpo no load
-([main.gd:851](../src/main.gd#L851)) — nunca vira save.
+([main.gd:1073](../src/main.gd#L1073)) — nunca vira save.
 
 **Custo.** 743 µs uma vez no boot (montagem das vozes e leitura dos níveis), ~3 µs por
 frame de física em `update_audio`, ~100 µs por avaliação de ambiência (1×/s) e ~0,66 ms
