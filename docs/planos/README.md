@@ -1,6 +1,6 @@
 # Dossiês por item da fila
 
-Dezenove arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
+Vinte arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
 ("Falta", `:303-430`, e os checklists P0/P1, `:434-451`). Cada dossiê é **leitura de código, não
 corrida**: nenhuma engine foi rodada aqui, nenhum número publicado foi re-medido por estes arquivos
 e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
@@ -19,7 +19,11 @@ o dossiê" — está cumprida: a página existe, a branch **não**.
 No mesmo dia o pedido urgente dele abre a **19**, e ela é de outro tipo: não é mecânica nova, é **defeito do
 jogo em execução** — lobos pulsando encostados num talude de um bloco e o jogador parado na frente de um
 degrau que ele não sobe sem apertar espaço. Por isso ela fura a fila e entra logo depois da 11, com a
-exceção e o motivo escritos no §7 da própria página e no contrato antes de qualquer linha. Nenhuma das
+exceção e o motivo escritos no §7 da própria página e no contrato antes de qualquer linha. No mesmo dia 22,
+o dono manda abrir a **20**, e ela é a mais larga já registrada: sete entregas — alcance calculado, memória
+de falha, tabela de espécie, três grupos de criaturas, drops, troféu colocável e os testes disso — sobre seis
+arquivos que a fila já escreve. Por isso a página 20 entrega o **corte**, não a lista: cada §3 nomeia a
+decisão, o braço rejeitado e o número que reabre o braço. Nenhuma das
 páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
 
 | # | Dossiê | Linha da fila | Premissa nomeada | O que decide, em headless |
@@ -43,6 +47,7 @@ páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do c
 | 17 | [Física de blocos que caem (o evento que ninguém assina)](17-fisica-de-blocos-que-caem.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Reativo" item A; a especificação já estava no doc 10, o código não | um `SAND` sem apoio **some** do grid num tick e **reaparece** mais baixo noutro, `queued` volta a zero e **nenhuma varredura do mapa** aconteceu no meio | `queda_sem_varredura_de_mundo`, `queda_move_a_celula` (nasce **vermelha**: `block_changed` não tem um `.connect(` em lugar nenhum), `queda_cascade_em_passos`, `bloco_em_queda_nao_sobe` (o *auto step-up* do `VoxelBody` tem de ser zerado), `queda_pousa_antes_do_save`, `queda_nao_custou_tempo_de_ninguem`, `journal_hash_muda_so_com_movimento` |
 | 18 | [Mundo vivo: grama que cresce e o mato decorativo](18-mundo-vivo-grama-e-mato.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Vivo" itens B e C; **sem** especificação no doc 10 — esta página é a primeira vez que a regra é escrita | `DIRT` com ar acima e `GRASS` ao lado vira `GRASS` em tempo finito **sem varrer nada** — e sem vizinha não muda em 10 000 ticks | `grama_precisa_de_vizinha` (o par vermelho), `crescimento_nao_varre_nada`, `crescimento_sobrevive_ao_save`, `grama_nao_cresce_onde_nao_ha_grama`, `crescimento_nao_estoura_a_malha`, `mato_e_nao_solidez_nem_pedra`, `mato_nao_engole_o_clique` (o campo `substituivel` lido pelo `_try_place`), `crescimento_nao_consome_rng_da_sessao` |
 | 19 | [Pulo de bloco: o degrau de 1 m que ninguém sobe](19-auto-pulo-de-bloco.md) | **defeito** pedido pelo dono em 2026-11-21 como urgente, fora da lista `Falta` — não é mecânica nova; a fila serializada ganha a exceção de ordem no §7 | um corpo que anda contra um degrau de **exatamente um bloco** sobe o degrau (o jogador sem tecla nenhuma), e um corpo que anda contra parede mais alta que um bloco **não** gasta salto | `degrau_de_um_bloco_lobo_sobe` e `degrau_de_um_bloco_jogador_sobe_sem_tecla` (nascem **vermelhas**: ápice 0,563 m e `step_up` 0,62 contra uma célula de 1,00 m), `penhasico_nao_gasta_salto` (a asserção que o dossiê lia em `aether_reactions_test.gd:1035`, re-derivada hoje em `:1104`, lida do outro lado), `agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem` |
+| 20 | [Mentes autônomas de mobs e o mundo que respira sem input](20-mente-autonoma-de-mobs-e-ecossistema.md) | autorização nova do dono em 2026-11-22, prompt "Inteligência Autônoma de Mobs + Ecossistema Vivo"; item 14 de `Falta` | um corpo que persegue sabe, **por número**, se a coluna à frente cabe no ápice que o próprio corpo alcança — e espécie só existe se muda um número observável por criatura; matar devolve item por **tabela**, não por sorteio escondido | 18 checagens nomeadas no §5, e **todas nascem vermelhas** porque nenhuma das peças existe: `alcance_calcula_altura` (a sonda de hoje testa `+1.0` fixo), `desistencia_vira_crenca`, `estrategia_muda_por_numero`, `especie_decide_numero`, `arvore_por_arquetype` (paga o furo **#24**), `passaro_pousa_em_copa`, `bando_tem_teto_e_o_passo_caibo`, `lobo_morto_dropa_carne` (vermelho contra a árvore de hoje: **zero** drop em `src/`), `trofeu_e_colocavel_e_nao_e_ancora`, `aves_nao_movem_o_censo_da_matilha`, `decisao_nao_vem_do_oraculo`, `journal_hash_inalterado_sem_especies_vivas` — **nenhuma linha de código escrita** |
 
 ## Uma branch por dossiê
 
@@ -71,9 +76,11 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 17 | `feat/fisica-de-blocos-que-caem-17` | `main`, **depois de 12**: as duas pernas escrevem pelo mesmo `set_block` e pelo mesmo `block_changed`, e a fila de gravidade muda o custo medido do cavar — abrir a 17 antes obrigaria a 12 a re-rodar o gate dela com a fila anexada. Não encosta em `wolf.gd` |
 | 18 | `feat/mundo-vivo-grama-e-mato-18` | `main`, **depois de 17**: é o segundo comprador do `BlockUpdateQueue` que a 17 escreve (regra da casa — generalizar no segundo chamador, não no primeiro), e o `PLANT` gasta o id 17 da reserva que a 17 não toca |
 | 19 | `feat/auto-pulo-de-bloco-19` | `main`, **fura a fila e entra logo depois de 11** (exceção do §7 do dossiê, registrada antes do código): é o único item da lista que é defeito do jogo em execução, não mecânica nova. Encosta em `src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 também escreve — por isso a 11 re-rome o gate depois do merge desta, **e já o re-romeu** (merge `010ab25` dentro da branch, gate re-rodado na árvore resultante). **Pousada**: ponta de código `f843fa6`, `main` publicada `ab9ffa1` (clone limpo medido) — a 11 re-rome o gate a partir de `ab9ffa1` |
+| 20 | `feat/mobs-autonomos-e-ecossistema-20` | `main`, **depois de 18 e antes de 13** (exceção de ordem registrada em 2026-11-22 antes de qualquer linha): as duas escrevem [`src/world/block_defs.gd`](../../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 gasta o 17, e drop de criatura não pode encostar na reserva 9–18 — entra a partir de 23, na tabela que as duas acabaram de renumberar. Antes da 13 porque genealogia sobre **uma única** espécie escreveria o que já existe; a 13 continua última porque nenhuma mudança de `Channel.COUNT` cai no meio da fila. Escreve em `src/entities/wolf.gd`, `src/main.gd`, `src/items/inventory.gd`, `src/ui/hud.gd` e, se a metade sonora entrar, `src/audio/audio_director.gd`. **Dossiê escrito antes da branch** — a página existe e nenhuma linha de código dela foi escrita |
 
-A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13 não é preferência: é a exceção de serialização registrada
-**antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora", e reafirmada em
+A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 20 → 13 não é preferência: é a exceção de
+serialização registrada **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora",
+e reafirmada em
 [`docs/melhorias-status.md`](../melhorias-status.md#em-andamento). O encadeamento é de dados, não de
 cerimônia: cor depende de bioma, cercar depende de quem mais existe na matilha, a convivência reusa as
 folhas que a alcateia reorganizou e entrega à 11 o ponto de spawn, acasalamento depende de dois adultos
@@ -83,8 +90,12 @@ cavar entra depois da 16 porque as duas escrevem `src/main.gd` e é a 16 quem de
 e a pauta da 12, re-escrita em 2026-11-22 contra a árvore da 19, diz que cavar **não** abre folha nova na
 `Selector` nem assina `block_changed`: é o terceiro ramo do mesmo `if` de bloqueio, então a gravidade de
 blocos continua sendo a **primeira** consumidora do sinal, não a segunda, o crescimento é o segundo
-comprador da fila que a gravidade escreveu, e a árvore genealógica depende de nascimento por causa
-interna — e a 15 entra no meio porque é o caminho do `Rodar.bat`, não do código da matilha. Além disso,
+comprador da fila que a gravidade escreveu, a mente autônoma e o ecossistema entram depois da 18 porque
+as três escrevem [`src/world/block_defs.gd`](../../src/world/block_defs.gd) e os ids baixos já foram gastos
+— a 17 gasta o 18, a 18 gasta o 17, e drop de criatura só entra a partir do 23, na tabela que as duas
+acabaram de renumberar — e antes da 13 porque genealogia sobre **uma única** espécie escreveria o que a 20
+acaba de criar, e a árvore genealógica depende de nascimento por causa interna — e a 15 entra no meio porque
+é o caminho do `Rodar.bat`, não do código da matilha. Além disso,
 deixar uma mudança de `Channel.COUNT` no meio da fila custaria re-mediar as
 pernas anteriores, porque o número entra no hash do journal. Duas branches abertas tocando
 `wolf.gd`/`main.gd` ao mesmo tempo é exatamente o incidente do dossiê 03, que apagou uma versão já
@@ -100,7 +111,7 @@ com `arquivo:linha` → o que a peça exige → gate em headless com comando que
 pelas quatro perguntas do contrato → o que NÃO fazer → commits atômicos (um assunto, uma corrida) →
 citações que não conferem.
 
-## Verificação destas dezenove páginas
+## Verificação destas vinte páginas
 
 ```sh
 python .tools/verify_plan_cites.py docs/planos/01-estado-inicial-e-ordem-autoritativa.md
@@ -242,6 +253,55 @@ fila" da primeira tabela continua com a numeração do dia em que cada dossiê f
 12 continua dizendo `Falta 11 :372-380`. Re-ancorar essa coluna é a perna de docs que re-deriva o corpus
 inteiro, registrada no furo #14, e não cabe numa pauta: transladá-la aqui mexeria em números que outras
 páginas usam como registro de leitura.
+
+**Medida desta rodada (a pauta 20 escrita antes da branch; `main` em `99d1167` mais a página nova, esta
+página índice, o registro de contrato e as três prosas de status):** **1 468 citações conferidas nos vinte
+dossiês, 0 números fora do arquivo.** As dezenove páginas que não são a 20 estão **elo a elo idênticas** à
+medida da rodada da 12 — 71 · 50 · 25 · 75 · 70 · 34 · 51 · 55 · 39 · 77 · 80 · 139 · 110 · 68 · 115 · 94 ·
+54 · 50 · 29 = **1 286** — e o elo novo é o da própria 20: **182**, que é exatamente o salto do corpus
+(**1 286 → 1 468**). Com esta página índice no corpus, o diretório inteiro dá **1 485** (1 286 + 182 + os
+**17** daqui), e as referências a arquivos que não existem passam de **9** para **11**, agora em **4**
+arquivos: os três de peças já declaradas inexistentes (`src/core/sim/tick_clock.gd`,
+`docs/engine/simclock.md`, `tests/wolf_multiseed_census_test.gd`) mais `src/ai/reach.gd`, que a página 20
+escreve como o Braço B **rejeitado** e esta página nomeia ao medir aquela página — **2** referências novas,
+uma em cada arquivo, e nenhuma peça declarada inexistente virou fato nesta rodada. No
+`verify_plan_ids.py` a 20 devolve **134** identificadores
+em backticks, dos quais **44** não existem em `src/` nem em `tests/`: **18** nomes de checagem proposta do
+§5 (`alcance_calcula_altura`, `arvore_por_arquetype`, `lobo_morto_dropa_carne`, `especie_decide_numero`,
+`desistencia_vira_crenca`, `passaro_pousa_em_copa`, …), **14** peças/constantes/campos/blocos que o §3
+propõe e o §2 diz por escrito que ainda não estão no código (`SpeciesDef`, `DropItem`, `EchoLedger`,
+`SPECIES`, `BIRD_CAP`, `MEAT`, `FEATHER`, `FEATHER_COLOR`, `HEAD_WOLF`, `HEAD_CHICKEN`, `HEAD_DUCK`,
+`_reach_tries`, `NavigationAgent` — classe do motor que nenhuma linha deste repositório usa — e `PLANT`, o
+bloco que o doc 10 numera e a perna 18 gasta) e **12** palavras de domínio lidas com grep zero em `src/`
+(`species`, `archetype`, `animals`, `habitat`, `drops`, `carne`, `feather`, `trophy`, `raio_fuga`,
+`foge_de_humano`, `tentativas_ate_desistir`, `teto_por_arquetype`). Nenhuma classe dessas é invenção de
+fato: é o que a página declara comprar. Somando os três documentos que governam a casa nesta
+árvore — [`AGENTS.md`](../../AGENTS.md), [`README.md`](../../README.md) e
+[`docs/melhorias-status.md`](../melhorias-status.md) — são **174 · 0 · 550 = 724 números, 0 fora do
+arquivo**: o contrato foi de **142** para **174** (**+32**, o registro de 2026-11-22 (3), que é a pauta
+desta rodada) e o status de **525** para **550** (**+25**, o item 14 do "Falta", a nota de "Em andamento" e
+os furos **#24** e **#25**), e o `README.md` da raiz segue em **0** porque cita por seção, não por linha. O
+instrumento de âncoras
+([`tools/check_doc_anchors.py`](../../tools/check_doc_anchors.py)) confere nesta ponta **2 519** ponteiros,
+**151** rótulos e **2 474** links relativos em **37** arquivos e devolve **casos objetivos: 0** — mas esta
+rodada teve de re-derivar **um** ponteiro para chegar lá: o registro de docs do status
+(`docs/melhorias-status.md:2280`) media a frase da ordem serializada na linha **80** desta página, e a
+linha nova da tabela de branches — a da 20 — deslocou-a para a **81**, que é para onde o ponteiro aponta
+hoje. Nenhum número deste parágrafo foi escrito antes de o instrumento devolvê-lo nesta árvore.
+
+**O que esta rodada não fecha, dito pelo índice:** nenhuma linha de `src/` nem de `tests/` foi escrita, a
+branch `feat/mobs-autonomos-e-ecossistema-20` **não** abriu, e nenhuma das dezoito checagens do §5 da
+página 20 existe. O contrato publicado da suíte continua **252 / 0** na árvore do pin `5b519f8`; re-corrida
+serial nesta branch deu **252 / 0 / 42,3 s** (`.tools/pauta20-suite.log:350` — o arquivo é local, `.tools/`
+está no `.gitignore`, e nenhum número publicado depende dele), exit 0 e zero `SCRIPT ERROR`,
+com `git diff --stat 5b519f8 HEAD -- src tests` **vazio** — a `main` desta ponta (`99d1167`) tem `src/` e
+`tests/` byte a byte iguais aos do pin, porque o que ela trouxe foram `.md` e `.log`. O que muda aqui é
+prosa, então a corrida fecha o ciclo de trabalho (item 5 de "Ciclo de trabalho"), não publica contagem nova.
+
+**O que esta rodada não re-ancorou, e por quê (a terceira vez que isto se escreve):** a coluna "Linha da
+fila" da primeira tabela continua com a numeração do dia em que cada dossiê foi escrito — a célula da 20 é
+a única que aponta por **item** (`item 14 de `Falta``) em vez de por linha, e é assim de propósito: a
+perna de docs que re-deriva o corpus inteiro está registrada no furo #14 e não cabe numa pauta.
 
 **Medida da rodada 17/18 (as dezessete páginas, `main` em `86e63c4` + aqueles dois arquivos novos):**
 **1 039 citações conferidas nos dezessete dossiês, 0 números fora do arquivo** — por página, na ordem da

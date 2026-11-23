@@ -2277,7 +2277,7 @@ no §RNG, `:94` → `:95`), as variáveis de colheita `:31` → `:32`, `_advance
 colhido `:736-737` → `:938-939` e a linha de contrato `:740` → `:942`. Corrigidos pelo conteúdo em
 `AGENTS.md:82-83`, `docs/design/08:78-79`, `docs/design/09:266`, `:268-269`, `:274-275`,
 `docs/planos/02:6`, `docs/planos/03:95-96`, `:119`, `:121`, `docs/planos/04:32`, `:54` e
-`docs/planos/README.md:15`, `:80`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
+`docs/planos/README.md:15`, `:81`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
 do plano original: o item que ele numera (canais MORTE/SOM/FOGO) continua não feito. Pin de revisão
 trocado de `9f3622b` para `520c3b4` no README (§"Como rodar a suíte", com o manifesto de 79 arquivos
 agora em `docs/evidence/passo-lobo-plano/sources.sha256`) e em `docs/planos/04:32`.
