@@ -556,6 +556,30 @@ travessias de `den_components`, que colheita nenhuma mede. O que muda para a fre
 `block_changed` continua sem consumidor nenhum, então o gate dela nasce vermelho como a pauta registra, e
 `feat/bicho-cavando-12`, que esperava o pouso da 16, é o elo aberto seguinte da fila.
 
+**Pauta aberta em 2026-11-22 (3), com exceção de ordem registrada antes de qualquer linha:** o dono
+mandou pôr em pauta o prompt que ele mesmo chamou de "Prompt Master — Inteligência Autônoma de Mobs +
+Ecossistema Vivo". A autorização é para a **pauta**, não para o código:
+[`docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md`](planos/20-mente-autonoma-de-mobs-e-ecossistema.md)
+existe, e existem no contrato a branch `feat/mobs-autonomos-e-ecossistema-20` e o agente responsável
+`mente-eco-20`; **nenhuma linha de `src/` foi escrita por esta leitura**. A fila serializada passou a
+**09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 → 17 → 18 → 20 → 13**, e a 16 já cumpriu a sua posição — a
+fila **viva de hoje** é **12 → 17 → 18 → 20 → 13**: depois da 18 porque as duas escrevem
+[`src/world/block_defs.gd`](../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 o id 17, e drop de
+criatura **não pode** encostar na reserva 9–18 — entra a partir de 23; antes da 13 porque árvore
+genealógica sobre **uma única** espécie escreveria o que já existe, e a 13 continua última pelo motivo
+de sempre: nenhuma mudança de `Channel.COUNT` no meio da fila. Nada deste lote encosta em
+`Channel.COUNT`, `FORMAT_VERSION` nem `GEN_VERSION`. A pauta foi escrita contra a `main` de `99d1167`, e
+**a 16 pousou depois disso**: as árvores de `9b2c65a` (`src` = `64f137bc…`, `tests` = `88a1541c…`) **não
+são** as do `5b519f8` (`30873d66…` / `975eac5a…`), então o contrato de referência desta pauta é o da main
+do pouso — **255 / 0** na suíte, **240 / 0** no runner de reações — e não o **252 / 0 / 42,4 s** que a
+página carregava. O que passou a existir e a pauta ainda não citava: **tocas** — `var _dens`
+([main.gd:109](../src/main.gd#L109)), `den_components()` ([`:619`](../src/main.gd#L619)),
+`Wolf.den` ([wolf.gd:145](../src/entities/wolf.gd#L145)) e a chave `den` no disco. Da leitura saem os
+furos **#24** e **#25** abaixo, e três frases do prompt devolvem diferente: drops não são "fracos", **não
+existem**; `died` **não** é sinal órfão — tem dois consumidores em `src/`, nenhum dos dois um item; e o
+leito `amb_birds` tocando sem ave nenhuma no mundo é ambiência de campo aberto correta, não defeito do
+tipo da 19.
+
 ## Falta
 
 Por dependência, não por preferência (cada item aberto tem um dossiê de leitura em [`docs/planos/`](planos/README.md): premissa nomeada, estado do código com `arquivo:linha`, gate headless e custo pelas quatro perguntas — nenhum dossiê rodou a engine e nenhum fecha gate):
@@ -730,6 +754,29 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     ([tick_journal.gd:16-44](../src/persistence/tick_journal.gd#L16-L44), `FORMAT_VERSION`
     [:4](../src/persistence/tick_journal.gd#L4)) muda os hashes que as rodadas publicadas registram
     — é decisão de versão, não detalhe de implementação.
+14. **Mentes autônomas de mobs e o mundo que respira sem input** (dossiê 20; **pauta autorizada pelo
+    dono em 2026-11-22**, na fila depois da 18 e antes da 13 — nenhuma linha de código escrita). O pedido
+    chega em sete entregas — avaliação de alcance, memória de falha, tabela de espécie, três grupos de
+    criaturas, drops, troféu colocável e os testes disso — e o que a página entrega é o **corte**: cada
+    §3 nomeia a decisão, o braço rejeitado e o número que reabre o braço. O estado lido, pelo que faz o
+    gate nascer vermelho: **nenhum item nasce de nenhuma morte** — o `die()` do lobo escreve BLOOD e FEAR
+    ([wolf.gd:1058-1059](../src/entities/wolf.gd#L1058-L1059)), arma o timer de cadáver
+    ([:1060](../src/entities/wolf.gd#L1060)) e só então emite `died` ([:1061](../src/entities/wolf.gd#L1061)),
+    cujos **dois** consumidores somam um contador de abate ([main.gd:969](../src/main.gd#L969)) e tocam um
+    som ([audio_director.gd:412](../src/audio/audio_director.gd#L412)); a sonda de alcance do pulo é
+    **fixa de uma célula** — `can_step_over` testa `feet + (x, 1.0, z)` em
+    [voxel_body.gd:166-173](../src/entities/voxel_body.gd#L166-L173) — enquanto o ápice do impulso é
+    1,203 m (`STEP_JUMP` 7,6 em [wolf.gd:101](../src/entities/wolf.gd#L101) contra gravidade 24 em
+    [voxel_body.gd:17](../src/entities/voxel_body.gd#L17)); **não existe tabela de espécie** — `SPECIES`,
+    `archetype` e `species` dão zero ocorrências em `src/`, e o que há é a string `mind.kind = "wolf"`
+    ([mind.gd:11](../src/ai/mind.gd#L11)); **item é id de bloco**
+    ([inventory.gd:29](../src/items/inventory.gd#L29)), com 9–18 reservados por documento
+    ([block_defs.gd:10-24](../src/world/block_defs.gd#L10-L24), `COUNT = 23` em
+    [`:37`](../src/world/block_defs.gd#L37)) e **nenhum pathfinding** (grep de `NavigationAgent` em
+    `src/` devolve zero — "contornar" é steering + reeleição de alvo). O que a perna **não** faz, escrito
+    antes: folha nova na `Selector`, classe `Blackboard`, canal novo no Éter (é débito do dossiê 03) e
+    `SpeciesDef` como `.tres` — o predado de espécie entra como dados construídos uma vez, no padrão de
+    [`block_defs.gd:123-137`](../src/world/block_defs.gd#L123-L137).
 
 ## Backlog priorizado (P0 → P1)
 
@@ -1335,6 +1382,43 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     sólido na fatia" — é mudança de comportamento de difusão e tem de ser medida contra o hash por
     semente da própria 05, não emprestada de uma perna de IA. Esta passada registra e não escreve em
     `src/world/aether_field.gd`.
+
+24. **O design declara `[DECIDED]` a árvore por arquétipo compartilhada, e o código monta uma árvore por
+    entidade — a frase não é alvo, está marcada como decidida.** [docs/design/04-local-ai-architecture.md:44](design/04-local-ai-architecture.md#L44)
+    escreve que "nós são **instanciados por espécie/archetype, não por entidade**", que "uma BT `.tres` é
+    compartilhada por 1000 lobos" e que o estado vivo mora no `Blackboard` por entidade. Nada dos três
+    nomes existe: não há **nenhum** `.tres` em `src/` — o único `.tres` rastreado no repositório é
+    [`default_bus_layout.tres`](../default_bus_layout.tres), layout de barramento de áudio — não há classe
+    `Blackboard` (a classe não existe — o único `blackboard` de `src/` é o comentário que promete o
+    mecanismo, [src/ai/behavior/bt_tree.gd:3](../src/ai/behavior/bt_tree.gd#L3); o contexto chega como
+    `Dictionary` literal inline no tick,
+    [src/entities/wolf.gd:842](../src/entities/wolf.gd#L842)) e cada lobo constrói a própria árvore:
+    `setup()` ([:240](../src/entities/wolf.gd#L240)) chama `_build_tree()` ([:259](../src/entities/wolf.gd#L259)),
+    corpo em ([:363](../src/entities/wolf.gd#L363)). O comentário de topo do runtime repete a promessa
+    ([src/ai/behavior/bt_tree.gd:2](../src/ai/behavior/bt_tree.gd#L2)), e é ela — não a linha do doc — que
+    a pauta 20 §3.5 declara como **primeira compradora**: `SpeciesDef` existe para que a árvore deixe de
+    ser por entidade. **Por que isto não é cosmético:** o custo da casa hoje é censo × orçamento, e a
+    conta escrita no comentário de [src/main.gd:10-17](../src/main.gd#L10-L17) é 12 mentes × 400 µs =
+    4,8 ms dos 50 ms do passo **com doze árvores vivas**; compartilhada de verdade, a árvore deixaria de
+    crescer com o censo e o `HotSet` do mesmo doc (linha 108 em diante) deixaria de ser a peça cara que é.
+    **Dono:** a perna 20, §3.5, e o número que impede a cláusula de virar prose é a checagem
+    `arvore_por_arquetype` (§5 da mesma página), que imprime quantos objetos de árvore existem com dois
+    lobos da mesma espécie. Esta passada **não escreve** em `src/ai/behavior/` nem em `src/entities/`.
+
+25. **Dois `.uid` de teste estão fora do git, e todo clone limpo aparece sujo depois do `--import`.**
+    `src/` tem 30 scripts `.gd` e 30 `.uid` rastreados; `tests/` tem **9** scripts
+    ([tests/audio_test.gd](../tests/audio_test.gd), [tests/audio_live_probe.gd](../tests/audio_live_probe.gd)
+    e os outros sete) e só **7** `.uid` no índice — faltam `tests/audio_test.gd.uid` e
+    `tests/audio_live_probe.gd.uid`, que o `--import` volta a gerar e o `git status` volta a listar como
+    `??`. Não é defeito de execução: nenhuma cena os referencia por `uid://` — o único consumidor é
+    [tests/audio_live_probe.tscn:3](../tests/audio_live_probe.tscn#L3), e ele resolve por `path=` — e
+    nenhum teste lê os dois arquivos. É **sujeira de instrumento**, e custa caro num lugar específico: o
+    ciclo de trabalho exige re-medir no clone limpo (item 6) e a validade de uma corrida se declara por
+    `git status` limpo, então duas linhas `??` permanentes obrigam a escrever, a cada leitura, que aquelas
+    duas não são trabalho em andamento. **Dono:** arrumação do dono do repositório — `git add` dos dois
+    `.uid` num commit de instrumentação próprio. Esta branch de pauta **não** os comita: ela não toca
+    `tests/`, e commitar artefato alheio dentro de um commit de documento é exatamente o que a regra 6
+    (um assunto por commit) proíbe.
 
 ## Contrato dos rastros e reações
 
@@ -2335,7 +2419,7 @@ no §RNG, `:94` → `:95`), as variáveis de colheita `:31` → `:32`, `_advance
 colhido `:736-737` → `:938-939` e a linha de contrato `:740` → `:942`. Corrigidos pelo conteúdo em
 `AGENTS.md:82-83`, `docs/design/08:78-79`, `docs/design/09:266`, `:268-269`, `:274-275`,
 `docs/planos/02:6`, `docs/planos/03:95-96`, `:119`, `:121`, `docs/planos/04:32`, `:54` e
-`docs/planos/README.md:15`, `:80`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
+`docs/planos/README.md:15`, `:81`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
 do plano original: o item que ele numera (canais MORTE/SOM/FOGO) continua não feito. Pin de revisão
 trocado de `9f3622b` para `520c3b4` no README (§"Como rodar a suíte", com o manifesto de 79 arquivos
 agora em `docs/evidence/passo-lobo-plano/sources.sha256`) e em `docs/planos/04:32`.

@@ -66,7 +66,7 @@ godot --headless --path . --script tests/simulation_rng_test.gd
 Critérios: a última linha do smoke (`tests/smoke_test.gd:189`) continua no censo publicado da
 revisão — nesta ponta **255 checagens / 0 falhas / 48,0 s**
 (`docs/evidence/tocas-alcateia-16/head_suite.log:357`, nota em
-`docs/melhorias-status.md:4326-4328`) — e `dropped_ticks=0`, com `tick=403` (idem `:345`). A
+`docs/melhorias-status.md:4410-4412`) — e `dropped_ticks=0`, com `tick=403` (idem `:345`). A
 pontagem anterior desta página (`237 / 0 / 35,5 s`, `tick=359`) era o censo da ponta do bioma
 (`docs/evidence/bioma-cor-de-pelo/clone-44c9d94-suite.log:312`, `:309`) e continua válida **só**
 para aquele SHA.
@@ -82,9 +82,9 @@ vermelho para corridas que não perderam um tick sequer (`dropped_ticks=0` nas s
 lugar: nenhuma mudança de K1/K2/K3 pode perder tick, e a comparação de passo exige **banda medida
 em N execuções da mesma árvore antes e depois**, não um pico solitário. Atribuição por ablação da
 varredura de corte não foi rodada e fica debitada
-(`docs/melhorias-status.md:1909-1910`).
+(`docs/melhorias-status.md:1993-1994`).
 
-O contrato do journal trava **128 checagens** (`tests/tick_journal_test.gd:13`) e as 6 linhas de `[tick,hash]` do caminho dirigido por `_sim_tick()` (`:401-412`, `MAIN_STEPS = 6` em `:7`) têm de bater entre antes e depois do commit: a checagem de repetibilidade **não existe hoje** (grep de `repetib` em `tests/` e no status devolve zero), então o primeiro passo de K3 roda a suíte duas vezes e publica as sequências; se divergirem na própria árvore antes da mudança, o critério de hash é retirado do gate e fica só censo + `dropped_ticks` + passo. Áudio: **73 checagens** (`tests/audio_test.gd:25`); reações: **240** (`tests/aether_reactions_test.gd:39`), já medidas duas vezes nesta ponta com o mesmo censo (`docs/melhorias-status.md:4326-4328`); RNG: **27** (`tests/simulation_rng_test.gd:9`). Contagem conferida **antes** do lote (`AGENTS.md`, "Nada simulado"): um `SCRIPT ERROR` derruba passos em silêncio.
+O contrato do journal trava **128 checagens** (`tests/tick_journal_test.gd:13`) e as 6 linhas de `[tick,hash]` do caminho dirigido por `_sim_tick()` (`:401-412`, `MAIN_STEPS = 6` em `:7`) têm de bater entre antes e depois do commit: a checagem de repetibilidade **não existe hoje** (grep de `repetib` em `tests/` e no status devolve zero), então o primeiro passo de K3 roda a suíte duas vezes e publica as sequências; se divergirem na própria árvore antes da mudança, o critério de hash é retirado do gate e fica só censo + `dropped_ticks` + passo. Áudio: **73 checagens** (`tests/audio_test.gd:25`); reações: **240** (`tests/aether_reactions_test.gd:39`), já medidas duas vezes nesta ponta com o mesmo censo (`docs/melhorias-status.md:4410-4412`); RNG: **27** (`tests/simulation_rng_test.gd:9`). Contagem conferida **antes** do lote (`AGENTS.md`, "Nada simulado"): um `SCRIPT ERROR` derruba passos em silêncio.
 
 ## O que NÃO fazer
 
