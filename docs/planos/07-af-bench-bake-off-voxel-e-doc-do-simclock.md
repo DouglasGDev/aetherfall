@@ -1,6 +1,6 @@
 # 07 — `af-bench` de 10 min, bake-off de voxel e o doc do `SimClock`
 
-Alvo: as três linhas não marcadas do checklist P0 em `docs/melhorias-status.md:650-656`. São P0,
+Alvo: as três linhas não marcadas do checklist P0 em `docs/melhorias-status.md:674-680`. São P0,
 não P1. Nenhuma das três peças existe hoje em `src/` — este texto diz o que precisa nascer, em
 que ordem e com que comando. Gate de fase fecha o dono do repositório, não este plano.
 
@@ -18,7 +18,7 @@ Existe e roda: `godot --headless --path . tests/smoke_test.tscn` (saída `N chec
 em `tests/smoke_test.gd:174-175`, exit 1 se `M > 0`), os runners `extends SceneTree`
 `tests/simulation_rng_test.gd:1`, `tests/tick_journal_test.gd:1`, `tests/aether_reactions_test.gd:1`,
 o primitivo de hash `src/persistence/tick_journal.gd:16-44`, o CLI `--tick-journal=`
-`src/main.gd:837-844` e `diagnostics()` `src/main.gd:772-783` (já expõe `gen_ms`, `mesh_ms`,
+`src/main.gd:1059-1066` e `diagnostics()` `src/main.gd:987-1004` (já expõe `gen_ms`, `mesh_ms`,
 `triangles`, `tick`, `worst_sim_ms`, `dropped_ticks`, `journal`). Logs abertos por mim:
 `.tools/af-clean-suite2.log:12` geração 939.3 ms / malharia 4.677,9 ms, `:292` `tick=359`,
 `dropped_ticks=0`, `triangles=214480`, `:294` `219 checagens 0 falhas 35,4 s`;
@@ -36,7 +36,7 @@ bake-off com dois braços, medição de custo "edição → malha pronta" e qual
 ritmo de parede sustentado pela suíte (359 ticks em 35,4 s, `.tools/af-clean-suite2.log:292,294`)
 isso é ordem de 20 min de corrida × 3; derivado do código e do log, **não medido**.
 
-API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:833-834` →
+API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:1055-1056` →
 `TickJournal.state_hash` `:16-44`), `clock.step_duration()` (`src/core/sim_clock.gd:42-43`),
 `player.update_local(dt)` chamado pelo próprio runner em `dt` fixo (precedente real:
 `tests/smoke_test.gd:107-113` e o porquê em `:245-254`), e `tick_journal.record()` com recusa de
@@ -44,7 +44,7 @@ arquivo existente (`src/persistence/tick_journal.gd:47-62`) e monotonicidade `la
 (`:69-73`) — o "sem buraco" vem de graça. Forma: runner `extends SceneTree` sob `tests/`, como os
 três já existentes; `src/tools/` não existe.
 
-Hoje o passo vem do `_physics_process` com `delta` real (`src/main.gd:177-183`) e o teto de 5
+Hoje o passo vem do `_physics_process` com `delta` real (`src/main.gd:255-261`) e o teto de 5
 passos por frame zera o acumulador ao estourar (`src/core/sim_clock.gd:19-29`), ou seja: em modo
 vivo o número de ticks e a sequência de estados dependem do relógio de parede — é exatamente isso
 que o driver de `dt` fixo precisa remover. Por isso a checagem é o hash e não fps: fps é função da
@@ -59,12 +59,12 @@ com `--import` (`AGENTS.md:381-383`).
 
 O mesher de hoje é um `ArrayMesh` por chunk, face-culling + AO por vértice (`src/world/voxel_world.gd:2-4`),
 vizinho respondido por cópia linear do mundo inteiro reconstruída uma vez por `generate()`
-(`:123`, `:130-143`), fila com orçamento de 2 chunks por frame (`src/main.gd:27` → `:261-262`,
+(`:123`, `:130-143`), fila com orçamento de 2 chunks por frame (`src/main.gd:27` → `:274-275`,
 consumido em `src/world/voxel_world.gd:178-186`) e geometria só de cubo unitário (`:14-21`).
 O precedente medido está no comentário de `:126-129` (dicionário de chunks ≈ 250 ms/chunk, boot
 congelado ≈ 16 s) e no README: `~0,9 s de geração + ~4,3 s de malharia` dos 64 chunks, 214.480
 triângulos, e a queda de ~16 s para ~7,5 s quando as consultas de vizinhança passaram a ler a
-cópia linear (`README.md:570-575`; os logs locais dão 4.640–4.886 ms de malha,
+cópia linear (`README.md:642-647`; os logs locais dão 4.640–4.886 ms de malha,
 `docs/melhorias-status.md:83`). Braços reais na mesa hoje:
 
 | Braço | O que mudaria | Número que decide |
@@ -87,8 +87,8 @@ com teto de 5 passos/frame e `dropped_ticks += 1` com corte do acumulador, "nunc
 silencioso" (`:17-29`); (c) cronômetro `begin_step`/`end_step` em µs com `worst_step_ms`
 monotônico por reset (`:32-39`, `:46-47`); (d) cadências por subsistema montadas em cima do tick,
 em `src/main.gd:27-31` (`AETHER_PERIOD 0,25`, `MESH_BUDGET 2`, `VIZ_PERIOD 0,25`, `RESPAWN_DELAY 45`, `CORPSE_CHECK_PERIOD 1,0`) e no corpo de
-`_sim_tick` (`src/main.gd:251-281`); (e) o que **não** é autoridade: locomoção do jogador e do
-lobo andam por frame (`src/main.gd:177-183`). Regra da casa: o `EntityStore` SoA que o design
+`_sim_tick` (`src/main.gd:264-298`); (e) o que **não** é autoridade: locomoção do jogador e do
+lobo andam por frame (`src/main.gd:255-261`). Regra da casa: o `EntityStore` SoA que o design
 descreve (`docs/design/06:46-63`) não existe — no doc entra marcado como `[TARGET]`, nunca no
 indicativo; legenda em `docs/design/README.md:12-16`.
 
@@ -105,8 +105,9 @@ bench introduz. Um hash estável em 3 execuções é condição do bake-off, nã
 
 ## 7. Custo nas quatro perguntas
 
-Roda por frame (o `advance` com `delta` real, `src/main.gd:177-183`) ou por tick (o corpo do
-`_sim_tick`, 12 000 vezes por corrida de bench); alcança 5 lobos (`src/main.gd:9`), 64 chunks
+Roda por frame (o `advance` com `delta` real, `src/main.gd:255-261`, o `advance` em `:257`) ou por
+tick (o corpo do `_sim_tick`, 12 000 vezes por corrida de bench); alcança 5 lobos (`src/main.gd:9`),
+64 chunks
 (`src/world/voxel_config.gd:10-11`), 1 jogador. Aloca no caminho quente: `state_bytes()` devolve
 cópia do `_cur` inteiro por registro (`src/world/aether_field.gd:233-234`, tamanho =
 `Channel.COUNT` × `size_x·size_y·size_z`, `:9`, `:45-46`), com serialização + SHA256 + `flush` por
@@ -119,26 +120,26 @@ de journal já medido é histórico: 205 registros / 160.000 µs / pico 1.646 µ
 
 Não: prometer FPS (`docs/design/08:62`), chamar o bench de replay (o journal é `[tick,hash]`
 apêndice-only, `src/persistence/tick_journal.gd:69-87`), contar checagem sem conferir a última
-linha (quatro checagens somem quando a premissa não existe, `docs/melhorias-status.md:723-727`),
+linha (quatro checagens somem quando a premissa não existe, `docs/melhorias-status.md:747-751`),
 escrever estado na mão para o cenário passar, vendorizar addon para "ganhar" o bake-off, ou fechar
 gate de fase por este documento. Commits atômicos, um por linha da tabela do §6, suíte verde entre
 eles: (1) `docs/engine/simclock.md`; (2) runner de `dt` fixo + hash, sem número publicado;
 (3) `--scenario boot_walk_10min` com as 3 execuções e os 3 caminhos no log; (4) braço B/C do
-bake-off com sua corrida; (5) tabela publicada + atualização do status (`docs/melhorias-status.md:650-656`).
+bake-off com sua corrida; (5) tabela publicada + atualização do status (`docs/melhorias-status.md:674-680`).
 
 Citações que não conferem (verificadas abrindo os arquivos):
 
-- `docs/melhorias-status.md:654-655` fixa a "altura certa" do boot em geração **942 ms** e malha
+- `docs/melhorias-status.md:678-679` fixa a "altura certa" do boot em geração **942 ms** e malha
   **4.682 ms**. Nenhuma corrida publicada devolve esse par: a tabela do próprio status dá
-  936,0/944,5/952,3/961,9 ms com malha 4640,6/4847,6/4885,8/4724,2 ms (`docs/melhorias-status.md:1661`) e 929,7/967,7/
-  932,9 com 4684,0/4661,6/4675,9 (`docs/melhorias-status.md:1663`); o clone limpo re-medido dá 926,4 / 4.134,9 ms
-  (`docs/melhorias-status.md:1262`). O par de `:622` é arredondamento de uma corrida que não está nomeada ali — e contra o
-  número de `docs/melhorias-status.md:1262` ele está velho em 1,7% na geração e 13% na malha.
+  936,0/944,5/952,3/961,9 ms com malha 4640,6/4847,6/4885,8/4724,2 ms (`docs/melhorias-status.md:1745`) e 929,7/967,7/
+  932,9 com 4684,0/4661,6/4675,9 (`docs/melhorias-status.md:1747`); o clone limpo re-medido dá 926,4 / 4.134,9 ms
+  (`docs/melhorias-status.md:1309`). O par de `:622` é arredondamento de uma corrida que não está nomeada ali — e contra o
+  número de `docs/melhorias-status.md:1309` ele está velho em 1,7% na geração e 13% na malha.
   Os quatro ponteiros deste item estavam **fora de posição já em `f843fa6`** (o par de corrida em `:1429`/`:1431`,
   o clone em `:1030`, a altura em `:554` — 63 a 72 linhas antes do lugar certo) e a reancoragem é por
   conteúdo lido, não por translação: quem reancora somando o deslocamento do diff leva a podridão adiante
   com aparência de atualizado.
-- `README.md:570` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `docs/melhorias-status.md:1661` e
+- `README.md:642` diz `~4,3 s de malharia` contra 4,64–4,89 s nas quatro corridas de `docs/melhorias-status.md:1745` e
   4.134,9 ms no clone re-medido.
 - `docs/design/06:33` aponta `src/core/sim/tick_clock.gd` (caminho inexistente — o arquivo real é
   `src/core/sim_clock.gd`) e `:200` aponta `src/tools/` (diretório inexistente).
@@ -150,7 +151,7 @@ Citações que não conferem (verificadas abrindo os arquivos):
   malha, `:14` visão, `:16` cadáveres); a alegação de deslocamento em +1 foi deste briefing e o
   código a refuta. `WOLF_COUNT` está em `:9`, `SEED` em `:10`, `SLOT` em `:11`.
 - A contagem publicada é **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
-  (`docs/melhorias-status.md:1770` e a nota em `:1776-1779`). As ocorrências antigas de 232 —
+  (`docs/melhorias-status.md:1972` e a nota em `:1894-1897`). As ocorrências antigas de 232 —
   `docs/design/08-roadmap-risks-licensing.md:44-45` (que agora diz os dois números) e quatro linhas
   do status de antes (91, 249, 665, 702) — são da rodada do `a8967e0` e continuam corretas porque mediram aquele clone.
   Os logs que eu abri aqui são os locais de `.tools/` e dão 219 (um com 4 falhas) — contagem

@@ -270,10 +270,20 @@ func _check_live() -> void:
 	_check("provedor de matilha montado pela sessao real", pack_ok, pack_lines.strip_edges())
 	var n_alive: int = int(d["wolves_alive"])
 	var esperado: int = n_alive * (n_alive - 1) / 2
+	var grupos := int(d["den_components"])
+	var sep_tocas := float(d["den_min_dist"])
+	# Furo #21 (dossie 16 §8), pago com numero: `pack_pairs == n(n-1)/2` e a
+	# identidade aritmetica do laco duplo e valia antes com um circulo unico e com
+	# tres tocas -- nao decidia coesao nenhuma, e por isso continua aqui rotulada
+	# como o que e (pares TESTADOS). O que decide passou a ser `grupos`, os
+	# componentes do grafo lido pela propria sessao. `biggest >= 2` fica porque ele
+	# prova outra coisa: que o provedor chegou bindado ate o lobo (furo #16).
 	_check("alcateia existe na sessao real",
-			int(d["pack_pairs"]) == esperado and biggest >= 2,
-			"pares=%d  esperado=%d  maior_matilha_lida=%d lobos_vivos=%d  vizinhos=[%s]" % [
-			int(d["pack_pairs"]), esperado, biggest, n_alive, pack_lines.strip_edges()])
+			int(d["pack_pairs"]) == esperado and biggest >= 2 and grupos >= 2,
+			"pares_testados=%d  esperado=%d  maior_matilha_lida=%d  grupos=%d  separacao_tocas=%s  lobos_vivos=%d  vizinhos=[%s]" % [
+			int(d["pack_pairs"]), esperado, biggest, grupos,
+			"sem_par" if sep_tocas < 0.0 else "%.1f m" % sep_tocas,
+			n_alive, pack_lines.strip_edges()])
 
 
 ## O gate do movimento, medido em ticks proprios e com a situacao montada. O engine
@@ -2509,6 +2519,23 @@ func _check_reap() -> void:
 	_check("nenhum tick perdido no teste inteiro", int(d["dropped_ticks"]) == 0,
 		"perdidos=%d  pior passo=%.2f ms  tick=%d" % [
 			d["dropped_ticks"], d["worst_sim_ms"], d["tick"]])
+	# Checagem 7 do dossie 16 §5, posta no unico caminho onde os dois numeros dela
+	# podem falhar: `dropped_ticks` so existe se `clock.advance()` estourar o teto de
+	# 5 passos por frame (sim_clock.gd:23-26), e quem chama `advance` e o
+	# `_physics_process` da sessao. Num laco de `_sim_tick()` chamado a mao -- como o
+	# braco de colheita do runner -- o contador fica 0 por construcao e a assercao nao
+	# decidia nada. Aqui a sessao medida e a real deste teste, com as tocas do boot,
+	# entao a testemunha do espalhamento vai DENTRO do criterio: sem >= 2 tocas e >= 2
+	# componentes, o numero nao seria do espalhamento, e a regua de 25 ms e a mesma
+	# dos dossies 17 e 19, nao um numero escolhido para passar.
+	_check("espalhamento_nao_estoura_o_passo",
+		int(d["dropped_ticks"]) == 0 and float(d["worst_sim_ms"]) <= 25.0
+			and int(d["dens"]) >= 2 and int(d["den_components"]) >= 2,
+		"perdidos=%d  pior passo=%.2f ms (regua 25)  dens=%d componentes=%d separacao=%s m  tick=%d" % [
+			d["dropped_ticks"], d["worst_sim_ms"], int(d["dens"]),
+			int(d["den_components"]),
+			"sem_par" if float(d["den_min_dist"]) < 0.0 else "%.1f" % float(d["den_min_dist"]),
+			d["tick"]])
 	_check("lobos seguem vivos e decidindo", int(d["wolves_alive"]) >= 3,
 		"vivos=%d  triangulos=%d" % [d["wolves_alive"], d["triangles"]])
 	print("       diagnostico final: ", JSON.stringify(d))
@@ -2560,9 +2587,16 @@ func _check_censo_disk() -> void:
 			if int(w.phase) != int(e["phase"]) or int(w.age_ticks) != int(e["age_ticks"]):
 				fases_ok = false
 	var fila := int(d["pending_respawns"])
+	# A lista de chaves e lida do proprio disco, nao digitada aqui: ela ja estava
+	# velha (`mate_cd` entrou na perna 11 e nada reprintou a linha), e um rotulo
+	# escrito a mao e justamente o tipo de citacao que o ciclo 7 manda re-derivar.
+	var chaves_disco := ""
+	if saved.size() > 0:
+		for k: String in (saved[0] as Dictionary).keys():
+			chaves_disco += k + ","
 	_check("o save carrega fase e idade como chaves aditivas", chaves_ok,
-			"bichos_no_disco=%d chaves=identity,hp,phase,age_ticks,mind  ids=[%s]" % [
-			saved.size(), ids_disco.strip_edges()])
+			"bichos_no_disco=%d chaves=%s  ids=[%s]" % [
+			saved.size(), chaves_disco, ids_disco.strip_edges()])
 	_check("censo do disco carrega inteiro (load_leva_todo_o_censo)",
 			int(d["wolves"]) == saved.size(),
 			"disco=%d antes=%d depois=%d  disco_ids=[%s] vivo_ids=[%s]" % [
@@ -2575,3 +2609,73 @@ func _check_censo_disk() -> void:
 			"vivos=[%s]" % fases_vivas.strip_edges())
 	_check("a fila de reposicao nao inventa bicho fora do censo gravado", fila == 0,
 			"fila=%d  disco=%d  vivos=%d" % [fila, saved.size(), int(d["wolves"])])
+	# Checagem 9 do dossie 16 §5: a toca e LUGAR, e lugar e estado da sessao -- se o
+	# disco nao o devolve, o load fundaria tocas novas sobre colunas que ja tem dono
+	# e o bicho carregado acordaria sem toca num mapa com tres lugares gravados. Os
+	# dois numeros saem da mesma leitura: o `dens` gravado contra o `_dens`
+	# restaurado, com a derivacao do round-trip JSON impressa (e o unico motivo
+	# plausivel para um centro voltar torto, e `home`/`feet` dos bichos ja fazem o
+	# mesmo caminho), e o `den` de cada entrada do disco contra o `den` do bicho de
+	# mesma identidade -- que e exatamente onde o pareamento por indice mentiria.
+	var data_disco: Dictionary = rd["data"]
+	var dens_disco: Array = data_disco.get("dens", [])
+	var maior_derivacao := 0.0
+	var centros := ""
+	for i in mini(main._dens.size(), dens_disco.size()):
+		var um_centro: Array = dens_disco[i]
+		maior_derivacao = maxf(maior_derivacao, main._dens[i].distance_to(
+				Vector3(float(um_centro[0]), float(um_centro[1]), float(um_centro[2]))))
+		centros += "(%.1f,%.1f) " % [main._dens[i].x, main._dens[i].z]
+	var den_do_disco := {}
+	for e: Dictionary in saved:
+		den_do_disco[int(e["identity"])] = int(e.get("den", -99))
+	var pertencas_ok := true
+	var pertencas := ""
+	for w: Wolf in main.wolves:
+		var no_disco: int = int(den_do_disco.get(w.identity, -98))
+		if int(w.den) != no_disco:
+			pertencas_ok = false
+		pertencas += "lobo%d(toca=%d do disco=%d) " % [w.identity, w.den, no_disco]
+	_check("tocas e pertenca sobrevivem ao save (toca_sobrevive_ao_save)",
+			main._dens.size() == dens_disco.size() and dens_disco.size() >= 2
+			and pertencas_ok and maior_derivacao < 0.01,
+			"dens disco=%d carregadas=%d  maior_derivacao=%.6f m  separacao=%s m  centros=[%s]  pertencas=[%s]" % [
+			dens_disco.size(), main._dens.size(), maior_derivacao,
+			"sem par" if float(d["den_min_dist"]) < 0.0 else "%.1f" % float(d["den_min_dist"]),
+			centros.strip_edges(), pertencas.strip_edges()])
+	# A segunda metade do §5.9, que e para o que o padrao aditivo existe: o MESMO
+	# disco, sem as duas chaves que a perna acrescentou -- um save anterior a perna
+	# -- carrega com default DERIVADO. Nenhuma transicao do jogo produz um save de
+	# antes, entao o palco e o proprio JSON que o jogo gravou com as chaves
+	# removidas, num Dictionary parseado de novo para nao tocar no `data_disco` da
+	# checagem de cima. Nada mais muda: a comparacao e A/B do leitor, nao do mundo,
+	# e `load_leva_todo_o_censo` continua sendo a mesma conta com o disco velho.
+	var velho: Dictionary = JSON.parse_string(
+			FileAccess.get_file_as_string(SaveManager.slot_path(SLOT)))
+	velho.erase("dens")
+	for e: Dictionary in velho.get("wolves", []):
+		e.erase("den")
+	var res_v := SaveManager.write_slot(SLOT, velho)
+	main.load_game()
+	var d_velho: Dictionary = main.diagnostics()
+	var sem_toca := true
+	var ids_velho := ""
+	for w: Wolf in main.wolves:
+		if int(w.den) != -1:
+			sem_toca = false
+		ids_velho += "%d " % w.identity
+	_check("default derivado: disco sem a chave nao toca nem inventa",
+			bool(res_v["ok"]) and int(d_velho["dens"]) == 0 and sem_toca
+			and main.wolves.size() == saved.size(),
+			"dens=%d  todos_em_sem_toca=%s  disco=%d carregados=%d  ids=[%s]  escrita=%s" % [
+			int(d_velho["dens"]), sem_toca, saved.size(), main.wolves.size(),
+			ids_velho.strip_edges(),
+			"ok" if bool(res_v["ok"]) else String(res_v["error"])])
+	# O slot volta ao formato que o proprio jogo escreve. Nao re-load: esta e a
+	# ultima checagem do ultimo passo, nada le a sessao depois dela, e recarregar
+	# custaria os ~5,2 s de geracao + malharia medidos no boot por nenhum numero
+	# novo. A restauracao e impressa porque um slot podre aqui envenena a proxima
+	# sessao do dono.
+	var restaurada := SaveManager.write_slot(SLOT, data_disco)
+	print("       disco restaurado no formato atual: %s %d bytes" % [
+			"ok" if restaurada["ok"] else String(restaurada["error"]), restaurada["bytes"]])

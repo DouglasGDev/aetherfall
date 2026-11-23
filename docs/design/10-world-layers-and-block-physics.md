@@ -29,7 +29,7 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:565-577](../../src/entities/player.gd) |
 | Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:261` |
 | Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:300-310](../../src/world/voxel_world.gd) |
-| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:698-700](../../src/main.gd#L698-L700); coleta em [player.gd:670-683](../../src/entities/player.gd#L670-L683) |
+| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:913-915](../../src/main.gd#L913-L915); coleta em [player.gd:670-683](../../src/entities/player.gd#L670-L683) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
 pelo [documento 11](11-inventory-crafting.md):** a dureza saiu de `Player._hardness()`
@@ -438,14 +438,14 @@ coluna de células (`0.5 ± 0.49 ⊂ [0, 1)`), que é o que permite derivar a c�
 do corpo sem ambiguidade.
 
 Integração `[TARGET]` no tick de simulação, em `Main._sim_tick()`
-([main.gd:251-281](../../src/main.gd#L251-L281)), 20 Hz (`SimClock.HZ`,
+([main.gd:264-298](../../src/main.gd#L264-L298)), 20 Hz (`SimClock.HZ`,
 [sim_clock.gd:5-7](../../src/core/sim_clock.gd)) — nunca em `_process`: queda de
 bloco é estado de mundo, e o hash de estado do gate P0 depende disso. O `TickJournal`
 atual só assina uma projeção mínima, **sem corpos nem comandos**
 ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)); não cobre a
 entidade de queda proposta nem fecha esse gate. Hoje, jogador e locomoção/timers do lobo
-ainda mudam por frame de física ([main.gd:243](../../src/main.gd#L243),
-[wolf.gd:914-959](../../src/entities/wolf.gd#L914-L959)).
+ainda mudam por frame de física ([main.gd:256](../../src/main.gd#L256),
+[wolf.gd:923-968](../../src/entities/wolf.gd#L923-L968)).
 
 ### Matemática
 
@@ -603,10 +603,10 @@ func _overlapping(cell: Vector3i) -> Array:
 ```
 
 `e.has_method("body_aabb")` não é decoração: `body_aabb()` já é o contrato de
-entidade visada do projeto (player.gd:616, [wolf.gd:237-238](../../src/entities/wolf.gd#L237-L238)),
+entidade visada do projeto (player.gd:616, [wolf.gd:246-247](../../src/entities/wolf.gd#L246-L247)),
 e `entity_provider` é o `Callable` que `Main` injeta hoje no jogador
-([main.gd:137](../../src/main.gd#L137) → `targets_under_crosshair`,
-[main.gd:600-605](../../src/main.gd#L600-L605)).
+([main.gd:150](../../src/main.gd#L150) → `targets_under_crosshair`,
+[main.gd:813-818](../../src/main.gd#L813-L818)).
 
 ### Da fila para a entidade
 
@@ -652,10 +652,10 @@ bloco cair para sempre em cima de um suporte recém-colocado.)
 | Necessidade | Estado hoje | Custo real |
 |---|---|---|
 | Entidade física de bloco | inexistente | `src/entities/falling_block.gd` + spawner e step em `Main` |
-| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:698-700](../../src/main.gd#L698-L700)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
+| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:921-924](../../src/main.gd#L921-L924)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
 | Sufocamento em jogador | o medidor `air` existe, mas `_update_breath` só olha água (player.gd:572-574) | uma linha: `no_air := world.is_water_xyz(olho) or BlockDefs.blocks_air(world.get_block(olho))` — `blocks_air` é derivado dos campos de §10.3, não um décimo flag |
 | Sufocamento em NPC | o lobo **não tem medidor de ar** | ou um `Breath` comum aos dois, ou dano por tick direto no NPC enterrado |
-| Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:731-733); nenhum `is Player` dentro da física |
+| Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:946-949); nenhum `is Player` dentro da física |
 | Blocos com geometria própria | a malharia só conhece cubos (`FACE_CORNERS`, voxel_world.gd:14-21) | SLAB grátis via `top_drop`; LAVA pede surface emissivo; TORCH/PLANT pedem shape table |
 
 ## 10.5 Block Update Event — o que nunca varre o mundo
@@ -749,7 +749,7 @@ func stats() -> Dictionary:
 	return {"queued": _pending.size(), "overflow": _overflow}
 ```
 
-`Main.diagnostics()` ([main.gd:920-931](../../src/main.gd#L920-L931)) ganha `"block_updates":
+`Main.diagnostics()` ([main.gd:1152-1163](../../src/main.gd#L1152-L1163)) ganha `"block_updates":
 updates.stats()` junto de `"dropped_ticks"` — os dois são a mesma categoria de medida
 (quantos ticks de simulação o orçamento não absorveu), e sem o número a discussão sobre
 `MAX_PER_TICK` e `MAX_QUEUED` seria opinião.
@@ -1003,7 +1003,7 @@ mundo velho não tinha nada ali, e o novo tem faixa profunda, lava e bedrock. Re
 fechamento `[DECIDED]`: migrar por translação e **recusar o slot se qualquer edição
 antiga cair em faixa que o novo mundo não conhece** (`y_novo < Y_BEDROCK_TOP + 1`).
 A gravação/conferência de `gen_version` já existe em `save_game`/`load_game`
-([main.gd:774](../../src/main.gd#L774), [main.gd:802](../../src/main.gd#L802)):
+([main.gd:989](../../src/main.gd#L989), [main.gd:1024](../../src/main.gd#L1024)):
 hoje o save incompatível é recusado antes da restauração. A migração proposta precisa
 atualizar essa versão junto das edições; não há migração implementada aqui.
 
