@@ -1,6 +1,6 @@
 # 07 — `af-bench` de 10 min, bake-off de voxel e o doc do `SimClock`
 
-Alvo: as três linhas não marcadas do checklist P0 em `docs/melhorias-status.md:674-680`. São P0,
+Alvo: as três linhas do checklist P0 em `docs/melhorias-status.md:809-816` que este dossiê mirava. São P0,
 não P1. Nenhuma das três peças existe hoje em `src/` — este texto diz o que precisa nascer, em
 que ordem e com que comando. Gate de fase fecha o dono do repositório, não este plano.
 
@@ -15,10 +15,10 @@ que ordem e com que comando. Gate de fase fecha o dono do repositório, não est
 ## 2. Estado real do instrumento
 
 Existe e roda: `godot --headless --path . tests/smoke_test.tscn` (saída `N checagens M falhas T s`
-em `tests/smoke_test.gd:174-175`, exit 1 se `M > 0`), os runners `extends SceneTree`
+em `tests/smoke_test.gd:187-190`, exit 1 se `M > 0`), os runners `extends SceneTree`
 `tests/simulation_rng_test.gd:1`, `tests/tick_journal_test.gd:1`, `tests/aether_reactions_test.gd:1`,
 o primitivo de hash `src/persistence/tick_journal.gd:16-44`, o CLI `--tick-journal=`
-`src/main.gd:1059-1066` e `diagnostics()` `src/main.gd:987-1004` (já expõe `gen_ms`, `mesh_ms`,
+`src/main.gd:1235-1242` e `diagnostics()` `src/main.gd:1159-1191` (já expõe `gen_ms`, `mesh_ms`,
 `triangles`, `tick`, `worst_sim_ms`, `dropped_ticks`, `journal`). Logs abertos por mim:
 `.tools/af-clean-suite2.log:12` geração 939.3 ms / malharia 4.677,9 ms, `:292` `tick=359`,
 `dropped_ticks=0`, `triangles=214480`, `:294` `219 checagens 0 falhas 35,4 s`;
@@ -26,9 +26,9 @@ o primitivo de hash `src/persistence/tick_journal.gd:16-44`, o CLI `--tick-journ
 963,6/4.707,8 ms. Reconstruir o mundo uma segunda vez dentro da suíte custou 5.588,9 ms
 (`.tools/af-clean-suite.log:25`).
 
-Não existe: `af-bench` (aparece só como intenção em `docs/design/06-godot-architecture.md:199`),
-`docs/engine/` (o diretório não existe; o arquivo `docs/engine/simclock.md` também não), tabela de
-bake-off com dois braços, medição de custo "edição → malha pronta" e qualquer número de VRAM.
+Não existia quando a pauta foi escrita: `af-bench` (só como intenção em
+`docs/design/06-godot-architecture.md:199`), `docs/engine/`, tabela de bake-off com dois braços e custo
+"edição → malha pronta". Pousaram as três: 07a `779d19b`, 07b merge `35959e0`, 07c aqui. VRAM segue sem número.
 
 ## 3. `af-bench --scenario boot_walk_10min`
 
@@ -36,7 +36,7 @@ bake-off com dois braços, medição de custo "edição → malha pronta" e qual
 ritmo de parede sustentado pela suíte (359 ticks em 35,4 s, `.tools/af-clean-suite2.log:292,294`)
 isso é ordem de 20 min de corrida × 3; derivado do código e do log, **não medido**.
 
-API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:1055-1056` →
+API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:1231-1232` →
 `TickJournal.state_hash` `:16-44`), `clock.step_duration()` (`src/core/sim_clock.gd:42-43`),
 `player.update_local(dt)` chamado pelo próprio runner em `dt` fixo (precedente real:
 `tests/smoke_test.gd:107-113` e o porquê em `:245-254`), e `tick_journal.record()` com recusa de
@@ -59,26 +59,26 @@ com `--import` (`AGENTS.md:381-383`).
 
 O mesher de hoje é um `ArrayMesh` por chunk, face-culling + AO por vértice (`src/world/voxel_world.gd:2-4`),
 vizinho respondido por cópia linear do mundo inteiro reconstruída uma vez por `generate()`
-(`:123`, `:130-143`), fila com orçamento de 2 chunks por frame (`src/main.gd:27` → `:274-275`,
-consumido em `src/world/voxel_world.gd:178-186`) e geometria só de cubo unitário (`:14-21`).
-O precedente medido está no comentário de `:126-129` (dicionário de chunks ≈ 250 ms/chunk, boot
+(`:132`, `:139-152`), fila com orçamento de 2 chunks por frame (`src/main.gd:28` → `:309-310`,
+consumido em `src/world/voxel_world.gd:192-200`) e geometria só de cubo unitário (`:14-21`).
+O precedente medido está no comentário de `:135-138` (dicionário de chunks ≈ 250 ms/chunk, boot
 congelado ≈ 16 s) e no README: `~0,9 s de geração + ~4,3 s de malharia` dos 64 chunks, 214.480
 triângulos, e a queda de ~16 s para ~7,5 s quando as consultas de vizinhança passaram a ler a
 cópia linear (`README.md:642-647`; os logs locais dão 4.640–4.886 ms de malha,
-`docs/melhorias-status.md:83`). Braços reais na mesa hoje:
+`docs/melhorias-status.md:83`). A mesa foi corrida, serial, três execuções por braço, na árvore do pin (`docs/evidence/af-bakeoff-voxel/`):
 
-| Braço | O que mudaria | Número que decide |
-| --- | --- | --- |
-| A — atual (cubo + face-culling + AO, cópia linear global) | referência | `mesh_ms` 4.677,9 ms · `triangles` 214.480 |
-| B — greedy meshing (funde faces coplanares) no mesmo mesher | menos triângulos e menos bytes por chunk | `triangle_count()` `:207-217`, `mesh_ms` |
-| C — halo vizinho por chunk em vez do `_flat` global | mata o `_rebuild_flat` (1 alloc de `128×64×128` bytes por `generate()`, `:131-142`) | `gen_ms`+`mesh_ms`, custo de edição |
-| D — Voxel Tools (Zylann) por GDExtension | `[CLAIMED — medição pendente]`, nada vendorizado aqui (`docs/design/06:76-79`) | boot, disco, build multiplataforma |
+| Braço | O que mudaria | Número que decide | O que a mesa devolveu |
+| --- | --- | --- | --- |
+| A — atual (cubo + face-culling + AO, cópia linear global) | referência da mesa | `gen_ms` 943,77 · `mesh_ms` 4.300,12 · `triangles` 214.448 no boot · 52 remeshes × 77.561,5 µs | **referência com número** (`run-A-1..3`, exit 0, 11 checagens 0 falhas): métrica `mesh_ms + 52·mean_us` = 8.333,32 ms. O `mesh_ms` 4.677,9 que esta linha trazia era `.tools/af-clean-suite2.log:12` de antes das pernas 16 e 19; o `214.480` é o diagnóstico final da suíte, 13 edições e 32 triângulos depois do boot |
+| B — greedy meshing (funde faces coplanares) no mesmo mesher | menos triângulos e menos bytes por chunk | `triangle_count()` `:221-231`, `mesh_ms` | `[OPEN]` — reabre quando a métrica `mesh_ms + 52·mean_us` cair a ≤ **7.500,0 ms** (0,9 × A) em três corridas, o que pede `mesh_ms` ≤ 3.870,1 ms com o custo de edição no lugar. Aí `triangles` deixa de ser invariante e o `REF_TRIANGLES := 214448` do runner vira literal novo |
+| C — halo vizinho por chunk em vez do `_flat` global | mata o `_rebuild_flat` (1 alloc de `128×64×128` = 1.048.576 bytes por `generate()`, `:139-152`) | `gen_ms`+`mesh_ms`, custo de edição | **medido e perdido** (`run-C-1..3`): ganha `gen_ms` −7,75 % (casaco `18×66×18` = 21.384 bytes, 1/49 das do `_flat`) e perde `mesh_ms` +16,23 %, custo de edição +19,94 % em média (pico +31,75 %), `worst_sim_ms` +7,0 %, métrica +18,02 %. Vive só no patch `docs/evidence/af-bakeoff-voxel/arm-c-halo-por-chunk.patch` (base `e486cd3`, branch local `8d9dc97`): nada de halo em `src/` |
+| D — Voxel Tools (Zylann) por GDExtension | `[CLAIMED — medição pendente]`, nada vendorizado aqui (`docs/design/06:76-79`) | boot, disco, build multiplataforma | não corrido nesta mesa — continua `[CLAIMED — medição pendente]` |
 
-O critério com pesos já está escrito (`docs/design/06:81-89`), mas duas colunas dele não têm
-instrumento: "FPS com 50 mentes HOT" (não existem 50 mentes; `WOLF_COUNT = 5`, `src/main.gd:9`) e
-"shapes não-cúbicos" (o mesher só emite cubo). "Custo de edição local" precisa de um carimbo de
-tempo que hoje não existe: só há `last_mesh_ms()` do frame (`:189-194`). Não medir isso é o débito
-de colheita que AGENTS.md já registra.
+O critério com pesos (`docs/design/06:81-89`) tinha uma coluna sem instrumento; hoje ela tem número: o custo
+de edição local é carimbo aberto em `_mark` (`src/world/voxel_world.gd:294-306`), fechado no fim da malha
+(`:312-319`) e lido por `edit_mesh_cost()` (`:326-335`) → `diagnostics()["edit_mesh"]` (`src/main.gd:1176`).
+O agregado cobra chunks carimbados: `apply_edits` (`:178-189`) no boot cai em `mesh_ms`, e `last_mesh_ms()`
+(`:207-208`) é lote do frame. Sem instrumento seguem "FPS com 50 mentes HOT" e "shapes não-cúbicos".
 
 ## 5. `docs/engine/simclock.md`
 
@@ -87,7 +87,7 @@ com teto de 5 passos/frame e `dropped_ticks += 1` com corte do acumulador, "nunc
 silencioso" (`:17-29`); (c) cronômetro `begin_step`/`end_step` em µs com `worst_step_ms`
 monotônico por reset (`:32-39`, `:46-47`); (d) cadências por subsistema montadas em cima do tick,
 em `src/main.gd:27-31` (`AETHER_PERIOD 0,25`, `MESH_BUDGET 2`, `VIZ_PERIOD 0,25`, `RESPAWN_DELAY 45`, `CORPSE_CHECK_PERIOD 1,0`) e no corpo de
-`_sim_tick` (`src/main.gd:264-298`); (e) o que **não** é autoridade: locomoção do jogador e do
+`_sim_tick` (`src/main.gd:264-306`); (e) o que **não** é autoridade: locomoção do jogador e do
 lobo andam por frame (`src/main.gd:255-261`). Regra da casa: o `EntityStore` SoA que o design
 descreve (`docs/design/06:46-63`) não existe — no doc entra marcado como `[TARGET]`, nunca no
 indicativo; legenda em `docs/design/README.md:12-16`.
@@ -98,7 +98,7 @@ indicativo; legenda em `docs/design/README.md:12-16`.
 | --- | --- | --- |
 | doc | `godot --headless --path . --check-only --script src/core/sim_clock.gd` + `python .tools/verify_plan_cites.py docs/engine/simclock.md` | as 5 linhas-limite do §5 aparecem com `arquivo:linha` dentro do range; 0 asserção de existência sem linha correspondente |
 | bench | 3 × `godot --headless --path . --script tests/<bench>.gd` com caminho novo por corrida | `records == 12000`, `dropped_ticks == 0`, hash da última linha idêntico nos 3 arquivos, exit 0 no runner |
-| bake-off | suíte completa serial, 1 braço por corrida, 3 corridas cada | ≥ 2 braços com `gen_ms`, `mesh_ms`, `triangles` e custo de edição impressos; troca de mesher só se o braço novo ganhar por > 10% em `mesh_ms` somado ao custo de edição. Nenhum FPS prometido além da tabela (`docs/design/08:61-63`) |
+| bake-off | suíte completa serial, 1 braço por corrida, 3 corridas cada | ≥ 2 braços com `gen_ms`, `mesh_ms`, `triangles` e custo de edição impressos; troca de mesher só se o braço novo ganhar por > 10% em `mesh_ms` somado ao custo de edição. **Corrido**: `mesh_ms + 52·mean_us` deu A 8.333,32 ms × C 9.835,24 ms (+18,02 %), sem as distribuições se tocarem (pior A 8.458,5 ms, melhor C 9.696,4 ms) — A continua o default e C vive só no patch. B reabre com ≤ 7.500,0 ms na mesma métrica. Nenhum FPS prometido além da tabela (`docs/design/08:61-63`) |
 
 Ordem: doc → harness/bench → bake-off, porque comparar braços exige o driver de `dt` fixo que o
 bench introduz. Um hash estável em 3 execuções é condição do bake-off, não consequência.
@@ -125,7 +125,7 @@ escrever estado na mão para o cenário passar, vendorizar addon para "ganhar" o
 gate de fase por este documento. Commits atômicos, um por linha da tabela do §6, suíte verde entre
 eles: (1) `docs/engine/simclock.md`; (2) runner de `dt` fixo + hash, sem número publicado;
 (3) `--scenario boot_walk_10min` com as 3 execuções e os 3 caminhos no log; (4) braço B/C do
-bake-off com sua corrida; (5) tabela publicada + atualização do status (`docs/melhorias-status.md:674-680`).
+bake-off com sua corrida; (5) tabela publicada + atualização do status (`docs/melhorias-status.md:809-816`).
 
 Citações que não conferem (verificadas abrindo os arquivos):
 
