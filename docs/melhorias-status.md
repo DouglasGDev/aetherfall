@@ -64,7 +64,7 @@ o mesmo texto traz, no mesmo espírito da tabela acima.
 | O que o prompt afirma | O que está em `src/` hoje | Veredicto |
 |---|---|---|
 | "Estamos em P0/P1" | O §08 diz outra coisa, e a suíte confirma: o projeto está **antes** de P1 e **sem nenhum gate fechado** — [08-roadmap-risks-licensing.md:36-38](design/08-roadmap-risks-licensing.md). Existe um slice P0/P1 jogável, não uma fase encerrada | **verdade como ponto de partida, falso como fase**; ler "P0/P1" como "o que existe", nunca como "o que está aprovado" |
-| "Não quebrar determinismo ou a capacidade de hash/journal sem avisar" | O primitivo agora existe: ordenação de edições, identidades e crenças; Float32 integral do Éter; versão do formato; ticks consecutivos em arquivo novo. O save é deliberadamente diferente: filtra Éter e não conserva a origem das crenças. `diagnostics()` expõe custo e última assinatura ([main.gd:1159-1180](../src/main.gd#L1159-L1180)) | **salvaguarda do contrato mínimo**; preservar a projeção não equivale a tornar o jogo determinístico |
+| "Não quebrar determinismo ou a capacidade de hash/journal sem avisar" | O primitivo agora existe: ordenação de edições, identidades e crenças; Float32 integral do Éter; versão do formato; ticks consecutivos em arquivo novo. O save é deliberadamente diferente: filtra Éter e não conserva a origem das crenças. `diagnostics()` expõe custo e última assinatura ([main.gd:1159-1184](../src/main.gd#L1159-L1184)) | **salvaguarda do contrato mínimo**; preservar a projeção não equivale a tornar o jogo determinístico |
 | "A mente propõe, as regras dispõem — LLM nunca decide movimento, dano, posição ou estado" | Verdade hoje por fiação, não por verifier: a única saída de `MindOracle` é `_narrations` — [mind_oracle.gd:47](../src/ai/mind_oracle.gd#L47), [:176](../src/ai/mind_oracle.gd#L176) — lida por `narration_of()` ([:96-97](../src/ai/mind_oracle.gd#L96-L97)) e entregue só ao HUD ([main.gd:183](../src/main.gd#L183) → [hud.gd:276-277](../src/ui/hud.gd#L276-L277)). Grep de `oracle`/`narration` em `src/` não acha nenhum outro consumidor: nem `Mind`, nem `Wolf`, nem o mundo leem o oráculo | **correto hoje**; o dia em que o oráculo *sugerir*, a sugestão entra como crença em quarentena (§04), não como intenção escrita |
 | "Completar o mínimo de P1: AetherField, Mind, consolidação, observabilidade, testes de hash, budget" | Três dos seis existem: `AetherField` (com 3 dos 6 canais), `Mind` e a **consolidação** — mas esta vive dentro de `Mind`, não num `MindStore` à parte. Observabilidade há em texto (F3), inspector não; o primitivo de hash mínimo tem suíte própria, mas o cenário multi-semente ainda não existe; "budget" tem mecanismo e colheita estreita de um lobo, não do agregado HOT | **metade feito**; item por item nas linhas acima e na fila "Falta" |
 | "Melhorar a degradação e a robustez do oráculo atual (ainda HTTP)" | Correto no diagnóstico, e a degradação já é checada sem rede — sonda apontada para a porta 1 em [smoke_test.gd:2123-2128](../tests/smoke_test.gd#L2123-L2128). O caminho feliz depende de `llama-server` de fora e não é testável em headless | **correto**; está dentro do escopo autorizado |
@@ -101,7 +101,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   `fd9b41e0…` **porque o mundo mudou** (tocas/spawn na projeção de Éter+lobos), não o instrumento: o
   valor antigo fica como registro da base `99d1167`, não reescrito. Nesta rodada o runner ganhou uma
   linha de `OBSERVACAO` com `gen_ms`/`mesh_ms`/`worst_sim_ms` (o `diagnostics()` de
-  [`src/main.gd:1161`](../src/main.gd#L1161)/[:1180](../src/main.gd#L1180) já os tinha, o log não os
+  [`src/main.gd:1161`](../src/main.gd#L1161)/[:1184](../src/main.gd#L1184) já os tinha, o log não os
   mostrava); é `print`, não gate, e a rodada dupla confirmou que ele **não move o hash**. Tempo: parede
   46,4 s médios, dentro do runner 45,8 s (~262 ticks/s), `gen_ms≈940`/`mesh_ms≈4317`/`worst_sim_ms 13–15`
   por corrida. **O que isso NÃO fecha:** (a) gate de fase fecha o dono do repositório, não esta peça
@@ -171,7 +171,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   ([:1110-1111](../src/main.gd#L1110-L1111)) e a fila de reposição é limpa para o censo gravado
   mandar ([:1131](../src/main.gd#L1131)). O nascimento é procurado no tick
   ([:299](../src/main.gd#L299), `_scan_breeding` [:422](../src/main.gd#L422)), o par entra em
-  cooldown de 300 s ([`MATE_COOLDOWN` :496](../src/main.gd#L548)) e o teto recusado é **contado**,
+  cooldown de 300 s ([`MATE_COOLDOWN` :548](../src/main.gd#L548)) e o teto recusado é **contado**,
   não mudo ([:451-454](../src/main.gd#L451-L454)). **O journal não se moveu:** o lote novo é
   chave de registro, não campo da projeção mínima, então `FORMAT_VERSION` continua **1** e os
   hashes publicados das rodadas anteriores valem — a checagem 7 fecha nos dois sentidos: o hash
@@ -299,7 +299,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   [[:39](../src/entities/wolf.gd#L39)]); **mordida escalonada** por `clock.tick % n == rank`
   (`_bite_turn` [[:724-728](../src/entities/wolf.gd#L724-L728)], chamada em
   [:705](../src/entities/wolf.gd#L705)); **contágio do medo** — vizinho em `flee` soma `0,55` no
-  `_fear_level` do observador ([`_sense` 716-725](../src/entities/wolf.gd#L862-L871),
+  `_fear_level` do observador ([`_sense` 862-871](../src/entities/wolf.gd#L862-L871),
   `PACK_PANIC_FEAR` [[:53](../src/entities/wolf.gd#L53)]); e **amortecimento por confiança** —
   vizinho com `trust ≥ 0,35` corta `0,9` do `_courage` e fecha a porta de `hunt`
   ([:867-876](../src/entities/wolf.gd#L867-L876); a confiança vem de `take_damage`, único chamador de
@@ -713,7 +713,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     devolve diferente: `hardness` é **duração**, não permissão, então `STONE 0,95` cai em 0,95 s de mão
     nua e o que limita a pata é **lista de material** ([`:663-664`](../src/entities/player.gd#L663-L664),
     [`:685`](../src/entities/player.gd#L685)); `block_changed` **não tem consumidor**
-    ([voxel_world.gd:6](../src/world/voxel_world.gd#L6), [`:262`](../src/world/voxel_world.gd#L262)),
+    ([voxel_world.gd:6](../src/world/voxel_world.gd#L6), [`:276`](../src/world/voxel_world.gd#L276)),
     então o gate observa `get_block` + `world.edits` e quem assina o sinal continua sendo a 17; e o
     desemperto ganhou o segundo ramo da 19
     ([wolf.gd:986-993](../src/entities/wolf.gd#L986-L993)), então cavar é o **terceiro** ramo do mesmo
@@ -811,9 +811,9 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
       `dropped_ticks == 0` ([readback](evidence/af-bench-boot-walk/readback.md)). **Não fecha gate de
       fase** (mandato 4, fecha o dono do repo) e o relógio da guarda (`estouros_guarda=16`, nos mesmos
       8 pares tick/lobo) segue canal aberto — a triplicata é "a mesma sorte", não prova limpa.
-- [ ] bake-off de voxel decidido com números (as alturas já estão certas: geração 942 ms e
-      malha 4682 ms no boot medido; falta a comparação entre abordagens, não o número).
-- [ ] `docs/engine/simclock.md` derivado de [sim_clock.gd](../src/core/sim_clock.gd).
+- [x] bake-off de voxel decidido com números — A × C, três corridas serial de cada na árvore do pin: a métrica
+      `mesh_ms + 52·mean_us` deu A 8.333,32 ms × C 9.835,24 ms (+18,02 %): A fica como default, C segue só como patch, B reabre a ≤ 7.500,0 ms ([readback](evidence/af-bakeoff-voxel/readback.md)). Não fecha gate de fase (mandato 4), e o par "942 ms / 4682 ms" que esta linha afirmava como altura certa nunca teve corrida publicada que o sustentasse.
+- [x] `docs/engine/simclock.md` derivado de [sim_clock.gd](../src/core/sim_clock.gd) — pousou pelo 07a (`779d19b`, âncoras re-derivadas sobre o `src/` da perna 16); marcado aqui porque o checklist é o alvo do dossiê 07, não por conta desta rodada.
 
 **P1 — mentes e memória**
 - [x] Refinar rastros e reações dos três canais atuais — comportamento validado em headless; inspeção visual em janela pendente.
@@ -844,7 +844,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
 - **O som não tem linha no F3 nem chave no diagnóstico.** O diretor já devolve
   `diagnostics()` com driver, níveis, famílias, vozes, toques e cama
   ([:284-300](../src/audio/audio_director.gd#L284-L300)), mas nada em `src/` consome: nem o F3,
-  nem `main.diagnostics()` ([:1159-1180](../src/main.gd#L1159-L1180)), que tem `journal` e não tem
+  nem `main.diagnostics()` ([:1159-1184](../src/main.gd#L1159-L1184)), que tem `journal` e não tem
   `audio`. Só o teste headless e a sonda em janela leem esses números hoje.
 - **A sonda viva de áudio não é testável em CI:** `audio_live_probe.tscn` exige janela e um
   endpoint de render aberto. A mesma árvore, na mesma máquina, deu WASAPI em uma corrida e
@@ -1373,7 +1373,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     `player.block_placed.connect(_on_block_placed)` ([main.gd:152-153](../src/main.gd#L152-L153)), com
     os corpos em [`:921-930`](../src/main.gd#L921-L930); a leitura é `bench_positions()`
     ([`:934-935`](../src/main.gd#L934-L935)) e nada no caminho de `world.set_block` toca a lista —
-    [`_write_raw`](../src/world/voxel_world.gd#L242-L249) e [`set_block`](../src/world/voxel_world.gd#L252-L263)
+    [`_write_raw`](../src/world/voxel_world.gd#L256-L265) e [`set_block`](../src/world/voxel_world.gd#L266-L279)
     escrevem voxel, `edits` e a fila de malha, não `_benches`. A única reconstrução é
     `_rebuild_benches()` ([`:1145-1149`](../src/main.gd#L1145-L1149)), chamada no load
     ([`:1072`](../src/main.gd#L1072)). Então **qualquer** agente que remova uma `BENCH` no mundo vivo
@@ -2416,7 +2416,7 @@ assinatura que o próprio comentário de `escape_embedded` descreve.
 
 O conserto não relaxa o teste nem aperta o corpo: a caixa testada passa a ser a caixa aplicada. O
 contato rente já era tolerado pelo epsilon de `aabb_hits_solid`
-([`voxel_world.gd:305`](../src/world/voxel_world.gd#L305)), que trata face em cima da divisória
+([`voxel_world.gd:354`](../src/world/voxel_world.gd#L354)), que trata face em cima da divisória
 como livre — foi medido `face_x=62.9995`, encostado e não encaixado.
 
 ### O que isso muda nos rastros
@@ -2558,7 +2558,7 @@ delta entre A e F. Nem o caminho de descida nem o escalonamento mudam o que já 
   rastro é a primeira célula sólida descendo do topo da camada encontrada, não o topo da
   coluna.
 - Runner: 103 → **109 checagens**, censo `20/20` → **`21/21`**
-  ([`EXPECTED_CHECKS`:34](../tests/aether_reactions_test.gd#L39),
+  ([`EXPECTED_CHECKS`:39](../tests/aether_reactions_test.gd#L39),
   [TESTS:15](../tests/aether_reactions_test.gd#L15)).
 
 ### Matriz de ablação: o que é o chão e o que é a varredura
@@ -3257,10 +3257,10 @@ número saído de uma prova que não confere.
   citava `main.gd:163`/`:459` (agora `:264`/`:634`), `wolf.gd:441-459` (agora `:532-550`) e o
   `Mind.new` de `wolf.gd:181` (agora `:193`). Cada um dos 42 foi lido no alvo, e o conteúdo da frase
   re-conferido: as quatro folhas que "escolhem alvo sem nenhum teste de solo" continuam sendo as
-  quatro ([_leaf_flee:426](../src/entities/wolf.gd#L435),
-  [_leaf_chase:442](../src/entities/wolf.gd#L451)/[:455](../src/entities/wolf.gd#L455),
-  [_leaf_stalk:488](../src/entities/wolf.gd#L497),
-  [_leaf_investigate:506](../src/entities/wolf.gd#L515)) — a perna 14 fechou o buraco **depois** do
+  quatro ([_leaf_flee:435](../src/entities/wolf.gd#L435),
+  [_leaf_chase:451](../src/entities/wolf.gd#L451)/[:455](../src/entities/wolf.gd#L455),
+  [_leaf_stalk:497](../src/entities/wolf.gd#L497),
+  [_leaf_investigate:515](../src/entities/wolf.gd#L515)) — a perna 14 fechou o buraco **depois** do
   tick, com `_resolve_dry_target()`
   ([wolf.gd:695-699](../src/entities/wolf.gd#L695-L699)), e não copiando o teste para dentro delas.
 
@@ -3598,7 +3598,7 @@ novos, então cada uma foi reancorada pelo que o texto afirma:
 
 | Citação nos documentos | O que havia naquele número em `27800eb` | Agora, em `a6b83d7` |
 | --- | --- | --- |
-| `main.gd:523-535` como `diagnostics()` | 523–531 eram brancos mais `stats_line()`; `func diagnostics` começava em **532** | [`main.gd:1159-1180`](../src/main.gd#L1159-L1180) |
+| `main.gd:523-535` como `diagnostics()` | 523–531 eram brancos mais `stats_line()`; `func diagnostics` começava em **532** | [`main.gd:1159-1184`](../src/main.gd#L1159-L1184) |
 | `main.gd:495` como `audio.clear_transient()` | 495 era `hud.set_death(false)` dentro do load; a limpeza estava em **504** | [`main.gd:1073`](../src/main.gd#L1073) |
 | `smoke_test.gd:1986-1992` como a sonda da porta 1 | 1986–1992 é o passo de planar (`p.pitch = -0.9`, `action_press("glide")`); `_check_oracle_arm` começava em **2066** | `smoke_test.gd:2125-2131` |
 | a lista de `hud.show_message` do estado lido da perna 14 (`main.gd:107`, `:194`, `:303`, `:376`, `:378`, `:384`, `:388`, `:424`) | nenhum desses números tinha `show_message` na base; os sites reais eram 125, 213, 391, 464, 466, 472, 476, 512 | `main.gd` **135**, **273**, **450-451** (conectado em **121**), **524**, **526**, **532**, **536**, **572**, mais [`hud.gd:603`](../src/ui/hud.gd#L603)/`:605`; os dois avisos de criatura ficam em **242** e **483** |
@@ -4055,7 +4055,7 @@ de dossiê: espalhar a matilha em 2–3 tocas, depois de ele ter percorrido o ma
 - [`docs/planos/17-fisica-de-blocos-que-caem.md`](planos/17-fisica-de-blocos-que-caem.md): a premissa
   falsificável (um `SAND` sem apoio some num tick e reaparece mais baixo noutro, com `queued` voltando a
   zero e nenhuma varredura do mapa), o estado real lido — `block_changed` declarado em
-  [`voxel_world.gd:6`](../src/world/voxel_world.gd#L6) e emitido em [`:262`](../src/world/voxel_world.gd#L262),
+  [`voxel_world.gd:6`](../src/world/voxel_world.gd#L6) e emitido em [`:276`](../src/world/voxel_world.gd#L276),
   com **zero** `.connect(` em `src/` e `tests/` — as sete checagens nomeadas e os sete commits atômicos na
   branch `feat/fisica-de-blocos-que-caem-17`;
 - [`docs/planos/18-mundo-vivo-grama-e-mato.md`](planos/18-mundo-vivo-grama-e-mato.md): as duas premissas
@@ -4480,7 +4480,7 @@ descreve onde uma peça se encaixa vale o que valia no dia em que foi lida. Nada
      (0,10 — mais mole que a neve) justamente para a lista não virar teorema de dureza;
   2. **`block_changed` não tem consumidor** — só a declaração
      ([src/world/voxel_world.gd:6](../src/world/voxel_world.gd#L6)) e o emit
-     ([`:262`](../src/world/voxel_world.gd#L262)); o gate observa `get_block` + `world.edits`, que é o
+     ([`:276`](../src/world/voxel_world.gd#L276)); o gate observa `get_block` + `world.edits`, que é o
      que o save grava e o journal hashia, e a 17 continua sendo a primeira a assinar o sinal — com a
      checagem `queda_move_a_celula` nascendo vermelha por isso mesmo;
   3. **cavar é o terceiro ramo do `if` de bloqueio**, não folha nova: o segundo ramo é da 19
@@ -5080,3 +5080,78 @@ inserir texto no meio desloca tudo abaixo deles. As três réguas foram corridas
 
 Nada aqui fecha gate de fase. A rodada só repõe o instrumento e a medição na árvore nova; a prova do
 empurrão de hash (da base antiga para a de hoje) está na seção própria da readback e na nota acima.
+
+## Rodada bake-off de voxel 07c — as seis corridas, a decisão e o que não fecha (2026-11-23, `bench/bake-off-voxel-07c`)
+
+Publicada no fim do arquivo pelo mesmo motivo da nota 07b: este status é comprido e cheio de ponteiros por
+número de linha, e inserir texto no meio desloca todos abaixo deles. Branch aberta de `main` em `166af71`,
+base do contrato `9b2c65a`.
+
+**Feito nesta ponta.** Três commits de substância e nenhuma malharia nova em `src/`:
+
+- `3cbdd4b` — instrumento do custo de edição local: carimbo aberto em
+  [`_mark`](../src/world/voxel_world.gd#L294-L306), conta fechada no fim da malha por
+  [`_record_edit_cost`](../src/world/voxel_world.gd#L312-L319), agregado por
+  [`edit_mesh_cost`](../src/world/voxel_world.gd#L326-L335) e a coluna `edit_mesh` do
+  [`diagnostics()`](../src/main.gd#L1159-L1191).
+- `e486cd3` — [`tests/af_bakeoff.gd`](../tests/af_bakeoff.gd): braço nomeado na CLI (corrida sem `--arm=`
+  não entra em tabela), 11 checagens, rodapé `N checagens M falhas T s`, exit 1 se `M > 0`.
+- `9e636ad` — a evidência: [`readback.md`](evidence/af-bakeoff-voxel/readback.md), os seis logs, o patch do
+  braço C e `artifacts.sha256` conferido por `sha256sum -c`.
+- Docs — o `+50` linhas em `src/world/voxel_world.gd` e o `+4` em `src/main.gd` envelheceram 66 ponteiros em
+  18 arquivos (AGENTS.md, os design 07/08/09, `docs/engine/simclock.md`, este status e os dossiês
+  01/02/04/07/12/13/14/15/16/17/18/19). Todos re-derivados abrindo o arquivo citado e lendo a declaração,
+  nunca somando o delta do diff.
+
+**As seis corridas** (números lidos dos logs, um braço por corrida, serial, máquina livre, engine
+`4.7.2.stable.official.ed1daf0bf`, semente `SEED := 20261116`; invariants iguais nos seis: `chunks=64`,
+`edits_aceitas=30`, `remeshes=52`, `dropped_ticks=0`, `tick=54`, `corpo=619e891c95dc5b44…`):
+
+| Corrida | exit | `gen_ms` | `mesh_ms` | `triangles` boot | `triangles` lote | count | `worst_us` | `mean_us` | `worst_sim_ms` | rodapé |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `run-A-1` | 0 | 936,826 | 4.226,752 | 214.448 | 214.484 | 52 | 159.256 | 76.979,8 | 8,950 | 11 checagens 0 falhas 7,948 s |
+| `run-A-2` | 0 | 953,634 | 4.369,044 | 214.448 | 214.484 | 52 | 162.843 | 78.642,6 | 8,695 | 11 · 0 · 8,163 s |
+| `run-A-3` | 0 | 940,838 | 4.304,575 | 214.448 | 214.484 | 52 | 159.437 | 77.062,1 | 9,353 | 11 · 0 · 8,032 s |
+| `run-C-1` | 0 | 874,352 | 5.105,775 | 214.448 | 214.484 | 52 | 214.549 | 93.104,1 | 9,627 | 11 · 0 · 9,327 s |
+| `run-C-2` | 0 | 871,043 | 4.938,229 | 214.448 | 214.484 | 52 | 200.101 | 91.503,1 | 10,117 | 11 · 0 · 9,109 s |
+| `run-C-3` | 0 | 866,339 | 4.949,574 | 214.448 | 214.484 | 52 | 206.364 | 94.472,4 | 9,146 | 11 · 0 · 9,189 s |
+
+Médias **dentro de cada braço** (nunca entre braços): `gen_ms` A 943,77 × C 870,58 (−73,19 ms, −7,75 %);
+`mesh_ms` A 4.300,12 × C 4.997,86 (+697,74 ms, +16,23 %); boot `gen+mesh` A 5.243,89 × C 5.868,44
+(+11,91 %); custo de edição `mean_us` A 77.561,5 × C 93.026,5 (+15.465 ms, +19,94 %) com pico das três
+corridas 162.843 × 214.549 µs (+31,75 %); `worst_sim_ms` 9,00 × 9,63 (+7,0 %). A métrica do gate do dossiê
+`mesh_ms + 52·mean_us` dá, corrida a corrida, A 8.229,702 / 8.458,459 / 8.311,804 e C 9.947,188 / 9.696,390 /
+9.862,139 ms — médias 8.333,32 × 9.835,24 (+1.501,92 ms, +18,02 %), e as duas distribuições não se tocam: o
+pior A fica 14,63 % abaixo do melhor C.
+
+**Decisão:** o braço A continua sendo o default. C não passa da régua — ganha em bytes e em `gen_ms` (o
+casaco é `18×66×18` = 21.384 bytes por chunk contra a cópia global de `128×64×128` = 1.048.576) e perde em
+tudo que o jogador sente. Vive só como [`arm-c-halo-por-chunk.patch`](evidence/af-bakeoff-voxel/arm-c-halo-por-chunk.patch)
+(65 linhas `+`, 27 `-`, base `e486cd3`; branch local `8d9dc97`), e a prova de que nada landou é
+`grep -c "_halo" src/world/voxel_world.gd` = 0. B (greedy) segue `[OPEN]` e reabre com ≤ 7.500,0 ms na
+mesma métrica em três corridas, o que pede `mesh_ms` ≤ 3.870,1 ms; D segue `[CLAIMED — medição pendente]`.
+
+**O que não fecha.** (1) Gate de fase fecha o dono do repositório, mandato 4 — nada aqui fecha gate nenhum.
+(2) `gen_ms`, `mesh_ms` e `worst_sim_ms` desta tabela são do cenário do bake-off (boot + 20 frames de
+settling + 30 edições com a fila no `MESH_BUDGET` do produto), não o contrato do boot vivo nem o do
+`af-bench` de 12 000 ticks. (3) O instrumento cobra o agregado dos chunks carimbados — 30 edições sujam 52
+chunks (`count == remeshes - fila_inicial`) — e não todo caminho de edição: `apply_edits`
+([`:178-189`](../src/world/voxel_world.gd#L178-L189)) no boot e no load cai em `mesh_ms`, e a primeira
+malharia de um chunk sem `mesh_instance` fica fora da conta porque já é o `mesh_ms`. `pending` foi 0 nos
+seis logs; sair com `pending > 0` descartaria latência real. (4) O `triangles` publicado (214.480) é o
+diagnóstico **final** da suíte, depois de 13 edições e 147 meshes — o mundo recém-gerado dá 214.448, e os
+32 triângulos são o instante, não a discrepância. (5) As alturas que a linha P0 chamava de "certas" (942 ms
+de geração, 4682 ms de malha) continuam sem corrida publicada que as sustente; a mesa de hoje dá
+936,8–953,6 e 4.226,8–4.369,0 no braço A. (6) A variação "halo só da borda" (4.488 bytes por chunk, 68 das
+324 colunas) **não foi medida**, e é ela — não o casaco inteiro — que teria de ser corrida se o mundo
+crescesse além de `128×64×128`. (7) Nenhum FPS foi prometido em nenhuma linha desta rodada, e as duas
+colunas do critério que continuam sem instrumento são "FPS com 50 mentes HOT" e "shapes não-cúbicos".
+
+**Suíte na ponta da branch:** `255 checagens 0 falhas` — 47,6 s com o instrumento landado
+(`suite_instrument.log`) e 47,9 s na ponta (`suite_final.log`), exit 0, e a coluna nova aparece no
+diagnóstico final (`suite_final.log:345`: `"edit_mesh":{"count":14,"mean_us":123838.0,"pending":0,"worst_us":226908}`
+com `"edits":13, "meshes":147, "triangles":214480`). `src/` da base confere com o pin (`166af71:src` =
+`64f137bcb1f8e95bd9a64fe7843e4e7b72f7326e`); `tests/` **não** confere com o `9b2c65a` (`8fbffd907e708c03…`
+contra `88a1541c2f9f6fc3…`), diferença que é `tests/af_bench.gd` (+344) e seu `.uid`, do merge do 07b — a
+frase do briefing de que `tests/` estava idêntico ao pin não segurou, e o contrato de identidade de
+`tests/` com o pin não existe.
