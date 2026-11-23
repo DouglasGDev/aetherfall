@@ -164,8 +164,13 @@ def events_of(line):
         events.append((m.start(), path, int(m.group(2)), int(m.group(3) or m.group(2))))
         spans.append((m.start(), m.end()))
     for m in CONT.finditer(line):
-        # `[`:218-220`](src/...)` é rótulo de link, não continuação: o alvo está no próprio URL
-        if line[m.end():m.end() + 2] == "](" or line[m.end():m.end() + 1] == ")":
+        # `[`:218-220`](src/...)` é rótulo de link, não continuação: o alvo está no próprio URL.
+        # A isenção não pode fechar sobre `)` — `(:142-144)` é a forma dominante de continuação
+        # em prosa nos dossiês, e isentá-la tirava números do corpus sem nenhum vermelho.
+        # Furo #30, pareado na mesma régua: corpus `--ref HEAD` 2.855 ponteiros contra 2.878
+        # apertada (+23, os 107 casos idênticos nos dois lados); página 08 inteira 79 contra 102;
+        # a linha 12 dela, 4 contra 10. O dano é cobertura, não um caso que passou verde aqui.
+        if line[m.end():m.end() + 2] == "](":
             continue
         if any(s <= m.start() < e for s, e in spans):
             continue
