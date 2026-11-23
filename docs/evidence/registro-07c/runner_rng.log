@@ -1,0 +1,78 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK mundo real | seed=20261116 chunks=64
+OK sem input automatico, malharia ou save | ready=true process=false meshes=0
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+toca 0 fundada: centro a 44.4 m do jogador, separacao minima nova (e a primeira)
+spawn banda 3 (70-150 m de jogador): lar aceito a 106.5 m do jogador
+toca 1 fundada: centro a 106.5 m do jogador, separacao minima 63.8 m
+spawn banda 3 (70-150 m de jogador): lar aceito a 123.5 m do jogador
+toca 2 fundada: centro a 123.5 m do jogador, separacao minima 72.7 m
+spawn mordaca (4-18 m de toca): lar aceito a 43.9 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 104.3 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+toca 0 fundada: centro a 44.4 m do jogador, separacao minima nova (e a primeira)
+spawn banda 3 (70-150 m de jogador): lar aceito a 106.5 m do jogador
+toca 1 fundada: centro a 106.5 m do jogador, separacao minima 63.8 m
+spawn banda 3 (70-150 m de jogador): lar aceito a 123.5 m do jogador
+toca 2 fundada: centro a 123.5 m do jogador, separacao minima 72.7 m
+spawn mordaca (4-18 m de toca): lar aceito a 43.9 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 104.3 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+toca 0 fundada: centro a 44.4 m do jogador, separacao minima nova (e a primeira)
+spawn banda 3 (70-150 m de jogador): lar aceito a 106.5 m do jogador
+toca 1 fundada: centro a 106.5 m do jogador, separacao minima 63.8 m
+spawn banda 3 (70-150 m de jogador): lar aceito a 123.5 m do jogador
+toca 2 fundada: centro a 123.5 m do jogador, separacao minima 72.7 m
+spawn mordaca (4-18 m de toca): lar aceito a 43.9 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 104.3 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+toca 0 fundada: centro a 44.4 m do jogador, separacao minima nova (e a primeira)
+spawn banda 3 (70-150 m de jogador): lar aceito a 106.5 m do jogador
+toca 1 fundada: centro a 106.5 m do jogador, separacao minima 63.8 m
+spawn banda 3 (70-150 m de jogador): lar aceito a 123.5 m do jogador
+toca 2 fundada: centro a 123.5 m do jogador, separacao minima 72.7 m
+spawn mordaca (4-18 m de toca): lar aceito a 43.9 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 104.3 m do jogador
+spawn banda 1 (16-46 m de jogador): lar aceito a 44.4 m do jogador
+toca 0 fundada: centro a 44.4 m do jogador, separacao minima nova (e a primeira)
+spawn banda 3 (70-150 m de jogador): lar aceito a 106.5 m do jogador
+toca 1 fundada: centro a 106.5 m do jogador, separacao minima 63.8 m
+spawn banda 3 (70-150 m de jogador): lar aceito a 123.5 m do jogador
+toca 2 fundada: centro a 123.5 m do jogador, separacao minima 72.7 m
+spawn mordaca (4-18 m de toca): lar aceito a 43.9 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 104.3 m do jogador
+OK spawn real sem executar boot completo | braco=0 livres=5/5 fila=0 teto=5 ready=false
+OK spawn real sem executar boot completo | braco=1 livres=5/5 fila=0 teto=5 ready=false
+OK spawn real sem executar boot completo | braco=2 livres=5/5 fila=0 teto=5 ready=false
+OK spawn real sem executar boot completo | braco=3 livres=5/5 fila=0 teto=5 ready=false
+OK spawn real sem executar boot completo | braco=4 livres=5/5 fila=0 teto=5 ready=false
+OK populacao independente: repeticao de controle | base=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]] braco=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]]
+OK populacao independente: sorteios globais | base=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]] braco=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]]
+OK populacao independente: criacao em lotes distintos | base=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]] braco=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]]
+OK populacao independente: patrulha de outro lobo | base=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]] braco=[[0, (67.9109, 51.0, 106.7881), 4.7857579032834], [1, (6.0, 52.0, 122.0), 1.44325636665505], [2, (6.0, 42.0, 49.26418), 2.12294552085939], [3, (70.78609, 46.0, 97.69766), 1.50994754835903], [4, (8.227206, 52.0, 122.0), 0.50888698479697]]
+OK spawn e setup nao consomem RNG global | preservado=true
+OK patrulha real renova destino | ticks=240 destinos=3
+OK patrulha independente por frame | modo=0 base=d827bb3bbdfa036fa38eb977e247d3e86049c8d2cd183401d563f163c8fe28f2 braco=d827bb3bbdfa036fa38eb977e247d3e86049c8d2cd183401d563f163c8fe28f2
+OK patrulha independente por frame | modo=1 base=d827bb3bbdfa036fa38eb977e247d3e86049c8d2cd183401d563f163c8fe28f2 braco=d827bb3bbdfa036fa38eb977e247d3e86049c8d2cd183401d563f163c8fe28f2
+OK patrulha independente por frame | modo=2 base=d827bb3bbdfa036fa38eb977e247d3e86049c8d2cd183401d563f163c8fe28f2 braco=d827bb3bbdfa036fa38eb977e247d3e86049c8d2cd183401d563f163c8fe28f2
+OK identidades distintas tem sequencias distintas | id1=d827bb3bbdfa036fa38eb977e247d3e86049c8d2cd183401d563f163c8fe28f2 id2=5bf8f5f33e845fefd217be6036a16efda6f34dd9ddea4a75b9e3da3cbde73095
+OK patrulha nao consome RNG global | preservado=true
+OK rastro leva a colisao e desvio reais | frames_bloqueados=720 desvios=20
+OK desvio independente por frame | modo=1 desvios=20 base=ce53201c0b9dc0fc375631c3055fbdfa57f4478df9bae264caf99e07702c7ad2 braco=ce53201c0b9dc0fc375631c3055fbdfa57f4478df9bae264caf99e07702c7ad2
+OK desvio independente por frame | modo=2 desvios=20 base=ce53201c0b9dc0fc375631c3055fbdfa57f4478df9bae264caf99e07702c7ad2 braco=ce53201c0b9dc0fc375631c3055fbdfa57f4478df9bae264caf99e07702c7ad2
+OK desvio nao consome RNG global | preservado=true
+spawn banda 1 (16-46 m de jogador): lar aceito a 35.9 m do jogador
+toca 0 fundada: centro a 35.9 m do jogador, separacao minima nova (e a primeira)
+spawn banda 3 (70-150 m de jogador): lar aceito a 110.0 m do jogador
+toca 1 fundada: centro a 110.0 m do jogador, separacao minima 80.8 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 69.5 m do jogador
+toca 2 fundada: centro a 69.5 m do jogador, separacao minima 52.8 m
+spawn mordaca (4-18 m de toca): lar aceito a 41.6 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 98.6 m do jogador
+OK outra semente altera populacao | seed=20261117 populacao=[[0, (86.57831, 33.0, 94.1469), 5.81787605382148], [1, (6.0, 34.0, 87.79451), 4.07465107359534], [2, (105.4673, 34.0, 44.88869), 4.49862186666351], [3, (81.86617, 37.0, 86.97411), 4.25616489302593], [4, (16.15515, 35.0, 95.45621), 4.87861504841335]]
+OK outra semente altera lobo de mesma identidade no mesmo piso | seed=20261117 id=1 hash=8d752f8fae0d35f66a388064ec61f403835172f47fa7fa90875c50a998827059
+OK runner retornou | run=true
+OK censo de testes completos | 5/5
+OK censo de checagens | 27/27
+27 checagens 0 falhas 2.673 s
