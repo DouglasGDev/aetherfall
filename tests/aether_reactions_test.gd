@@ -2,6 +2,10 @@ extends SceneTree
 
 const Session = preload("res://src/main.gd")
 const SEED: int = 20261116
+# O MESMO pino do molde (`simulation_rng_test.gd:75`): o numero nao e uma
+# preferencia, e a fita global onde o par `randi()` de antes / `randi()` de depois
+# e conferido. Troca-lo nao troca o que a checagem decide.
+const RNG_PIN: int = 7301
 const SPAWN := Vector3(58.0, 51.001, 62.0)
 const SOURCE := Vector3(66.0, 50.6, 62.0)
 const FAR_PLAYER := Vector3(112.0, 51.001, 112.0)
@@ -40,19 +44,20 @@ const TESTS: Array[StringName] = [
 	&"_test_abrir_passagem_depois_de_bloqueio",
 	&"_test_work_de_bicho_nao_confundido",
 	&"_test_entrada_de_rastro_exposta_no_chao_lido",
+	&"_test_cavar_nao_consome_rng_da_sessao",
 	&"_test_colheita_de_malha_sem_cavar",
 	&"_test_cavar_sobrevive_ao_save",
 ]
-# 279 = os 275 do commit anterior (ate a checagem 6, o ramo (b) do nariz) mais as
-# quatro da checagem 8, a sobrevivencia ao save: a premissa de a cova estar parada
-# no meio sem chave de cova no disco, os quatro campos da pata voltando ao nada no
-# load, exatamente uma chave entrando no registro e o `generate` + `apply_edits`
-# devolvendo-a AIR, e o par que nao tem chave voltando como relevo com o delta de
-# bytes impresso. O censo se re-deriva a cada checagem nova porque a linha
+# 283 = os 275 da checagem 6 (ramo (b) do nariz) mais as quatro da checagem 8, a
+# sobrevivencia ao save, e as quatro da checagem 9, o pino de RNG: premissa de o
+# braco de neve cavar e armar, o `randi()` depois do pino igual nos dois bracos,
+# cada quadro que arma a pata sorteando o desvio junto, e o par de pedra onde o
+# detector ve o sorteio sem nenhuma pata armada. O censo se re-deriva a cada
+# checagem nova porque a linha
 # `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 279
+const EXPECTED_CHECKS: int = 283
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -4564,7 +4569,8 @@ func _dig_corridor(block: int, rows: Array, registrada: bool,
 ## face -- o mesmo palco com que a perna 19 mediu o auto-pulo. `extras` poe
 ## construcao registrada dentro da faixa (o braco da bancada) depois do palco.
 func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
-		registrada: bool = false, extras: Dictionary = {}) -> Dictionary:
+		registrada: bool = false, extras: Dictionary = {},
+		pin_rng: bool = false) -> Dictionary:
 	_arm(Vector3(54.0, 51.001, 54.0), FAR_PLAYER)
 	_dig_stage(56, rows, block, registrada)
 	for p: Vector3i in extras:
@@ -4577,15 +4583,31 @@ func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
 	var chaves_0: int = _dug_cells(56).size()
 	_field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WORK, 0.9)
 	_advance(1, false)
+	# O pino do molde (`simulation_rng_test.gd:75-77`): `seed` e o primeiro `randi`
+	# devolvem o valor que o PROXIMO consumo daria; o segundo `seed` re-poe o estado
+	# e a janela roda com a fita no mesmo lugar. Se os N passos nao tocarem na RNG
+	# global, o `randi()` do fim devolve exatamente esse numero.
+	var rng_next := 0
+	if pin_rng:
+		seed(RNG_PIN)
+		rng_next = randi()
+		seed(RNG_PIN)
 	var ticks := 0
 	var horizontais := 0
 	var encostou := false
 	var boca_tick := -1
 	var x_max := _wolf.body.feet_pos.x
+	var rearms := 0
+	var armadas := 0
+	var armadas_com_rearm := 0
+	var detour_min := INF
+	var detour_max := -INF
 	for i: int in ticks_limit:
 		ticks += 1
 		_advance(1, false)
 		for f: int in 3:
+			var unstick_0 := _wolf._unstick
+			var pos_0: Vector3i = _wolf._dig_pos
 			_wolf._physics_process(SimClock.STEP / 3.0)
 			x_max = maxf(x_max, _wolf.body.feet_pos.x)
 			if _wolf.body.blocked_horizontal:
@@ -4593,11 +4615,33 @@ func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
 				if _wolf.body.feet_pos.y < 51.5 and \
 						_wolf.body.feet_pos.x + Wolf.DIMS.x * 0.5 > 55.9:
 					encostou = true
+			# `_unstick` so tem duas escritas no arquivo inteiro: o `-= delta` do
+			# passo andante e o `_rng.randf_range(0.35, 0.8)` do desemperto. Diminuir
+			# e o normal, entao SUBIR so pode ser o sorteio -- e o detector nao
+			# precisa de nenhum contador dentro do lobo, que e o que a casa pede de
+			# um instrumento.
+			var rearmou := _wolf._unstick > unstick_0 + 1e-9
+			if rearmou:
+				rearms += 1
+				detour_min = minf(detour_min, _wolf._detour)
+				detour_max = maxf(detour_max, _wolf._detour)
+			if pos_0 == Wolf.DIG_NONE and _wolf._dig_pos != Wolf.DIG_NONE:
+				armadas += 1
+				if rearmou:
+					armadas_com_rearm += 1
 		var n := _opened_cells(56).size() - abertas_0.size()
 		if boca_tick < 0 and n > 0:
 			boca_tick = ticks
 		if n >= boca_alvo:
 			break
+	var rng_depois := 0
+	var rng_preservado := true
+	if pin_rng:
+		# Le DEPOIS da janela e so quando o pino foi pedido: `randi()` consome a
+		# fita, e os outros bracos que chamam esta funcao nao tem de mover o estado
+		# da RNG global por existir um instrumento apontando para ela.
+		rng_depois = randi()
+		rng_preservado = rng_depois == rng_next
 	var novas: Array = []
 	for p: Vector3i in _opened_cells(56):
 		if not abertas_0.has(p):
@@ -4643,6 +4687,9 @@ func _dig_window(block: int, rows: Array, ticks_limit: int, boca_alvo: int,
 		"alvo": _wolf._move_target, "dig_pos": _wolf._dig_pos,
 		"dig_steps": _wolf._dig_steps, "extras": extras_lidos,
 		"work_em": work_em, "work_acesos": work_acesos,
+		"rearms": rearms, "armadas": armadas, "armadas_com_rearm": armadas_com_rearm,
+		"detour_min": detour_min, "detour_max": detour_max,
+		"rng_preservado": rng_preservado, "rng_next": rng_next, "rng_depois": rng_depois,
 	}
 	_dig_stage(56, [], BlockDefs.Block.AIR)
 	return out
@@ -5169,6 +5216,62 @@ func _mesh_frames(frames_limit: int = 64) -> Dictionary:
 		"frames": frames, "max_pending": max_pending, "worst_ms": worst_ms,
 		"left": _world.pending_meshes(),
 	}
+
+
+## Checagem 9 do dossie 12 §5.9, o outro lado do mandato 3 nesta perna: o cavar nao
+## pode mexer na fita de onde a simulacao sorteia. O palco e o MESMO da checagem 5
+## (o §5.5 que a pauta nomeia), com o pino do molde de
+## `simulation_rng_test.gd:75-77` posto entre o armamento e os N passos e lido
+## depois deles, e o braco de pedra e o que impede a conclusao de vir do acaso: la a
+## pata recusa por material e o desvio sorteia do mesmo jeito.
+##
+## As quatro portas, cada uma com o numero que a decide. (1) A premissa: no braco de
+## neve a boca abre e a pata arma ao menos uma vez, senao as tres linhas seguintes
+## seriam verdade por nada ter acontecido. (2) O `randi()` de depois e o mesmo que o
+## pino previu nos dois bracos -- a cadeia inteira do cavar (`_dig_arm` no corpo,
+## `_dig_step` no passo, `set_block` e `imprint` na obra) nao consome RNG global.
+## (3) O sorteio do desvio nao perdeu o lugar dele: em CADA quadro que arma a pata o
+## `_unstick` sobe junto, e nenhum quadro de armar fica sem sorteio -- e a metade
+## "continuam incondicionais" do item, porque se alguem mover os dois `randf_range`
+## para dentro de um `if`, a linha 3 e a que grita primeiro. (4) O par de pedra: la
+## `armadas == 0` com `rearms >= 2` e os `_detour` ocupando uma faixa, ou seja, o
+## detector ve o sorteio tambem onde a pata nunca chegou a armar -- ele nao esta
+## contando a pata duas vezes, e a faixa e o que impede a linha 3 de se satisfazer
+## com um unico sorteio.
+##
+## O detector do sorteio e uma leitura de estado, nao um contador dentro do lobo:
+## `_unstick` so tem duas escritas no arquivo (`-= delta` no passo andante e o
+## `randf_range(0.35, 0.8)` do desemperto), entao subir so pode ser o sorteio. Isso
+## e o que mantem a checagem olhando o produto em vez de olhar um espelho da propria
+## instrumentacao.
+func _test_cavar_nao_consome_rng_da_sessao() -> bool:
+	var a := _dig_window(BlockDefs.Block.SNOW, [51, 52], 200, 1, false, {}, true)
+	var b := _dig_window(BlockDefs.Block.STONE, [51, 52], 200, 1, false, {}, true)
+	_check(int(a["boca_tick"]) > 0 and int(a["armadas"]) >= 1
+			and int(a["horizontais"]) > 0,
+			"premissa: no palco da checagem 5 a neve cava, a pata arma e o corpo encosta na face",
+			"boca_no_tick=%d janela=%d armadas=%d horizontais=%d encostou=%s bocas=%d" % [
+			int(a["boca_tick"]), int(a["ticks"]), int(a["armadas"]),
+			int(a["horizontais"]), a["encostou"], int(a["bocas_n"])])
+	_check(bool(a["rng_preservado"]) and bool(b["rng_preservado"]),
+			"os N passos do cavar nao consomem RNG global -- o `randi()` depois do pino e o mesmo nos dois bracos",
+			"neve: pino=%d randi_previsto=%d randi_depois=%d | pedra: randi_previsto=%d randi_depois=%d | passos_neve=%d passos_pedra=%d" % [
+			RNG_PIN, int(a["rng_next"]), int(a["rng_depois"]),
+			int(b["rng_next"]), int(b["rng_depois"]), int(a["ticks"]), int(b["ticks"])])
+	_check(int(a["armadas_com_rearm"]) == int(a["armadas"]) and int(a["armadas"]) >= 1
+			and int(a["rearms"]) >= int(a["armadas"]),
+			"os dois `randf_range` do desvio continuam incondicionais: cada um dos quadros que arma a pata sorteia o desvio no mesmo quadro, e nenhum quadro de armar fica sem sorteio",
+			"neve: armadas=%d armadas_com_rearm=%d rearms=%d | detour do armar=%.3f | horizontais=%d boca_no_tick=%d" % [
+			int(a["armadas"]), int(a["armadas_com_rearm"]), int(a["rearms"]),
+			float(a["detour_min"]), int(a["horizontais"]), int(a["boca_tick"])])
+	_check(int(b["armadas"]) == 0 and int(b["rearms"]) >= 2
+			and float(b["detour_max"]) > float(b["detour_min"]),
+			"o detector ve o sorteio onde a pata NAO arma e ele nao vira ponto: o braco de pedra recusa por material, desemperta 2+ vezes e os `_detour` ocupam uma faixa de verdade (codigo: [-1,300, 1,300])",
+			"pedra: armadas=%d rearms=%d bocas=%d detour em [%.3f, %.3f] janela=%d | neve: armadas=%d rearms=%d" % [
+			int(b["armadas"]), int(b["rearms"]), int(b["bocas_n"]),
+			float(b["detour_min"]), float(b["detour_max"]), int(b["ticks"]),
+			int(a["armadas"]), int(a["rearms"])])
+	return true
 
 
 ## Dossie 12 §8(a): o instrumento de malharia entra ANTES de o cavar existir, para o

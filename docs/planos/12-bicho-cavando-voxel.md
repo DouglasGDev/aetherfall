@@ -17,8 +17,8 @@ daqui é código: a branch `feat/bicho-cavando-12` não abriu.
 | --- | --- |
 | "Última da série serializada 09 → 10 → 11 → **12**" | Oitava de onze: depois dela vêm 17, 18 e 13, e antes entraram a 19 (defeito em execução) e a pauta da 16 |
 | O gate observava `block_changed` "dispara" | O sinal **não tem nenhum consumidor** no repositório: existem só a declaração ([voxel_world.gd:6](../../src/world/voxel_world.gd#L6)) e o emit ([`:276`](../../src/world/voxel_world.gd#L276)) — o grep de `block_changed` em `src/` e `tests/` devolve essas duas linhas. O dossiê 17 é quem o assina; o gate deste observa estado de mundo lido: `get_block` + `world.edits` |
-| `EXPECTED_CHECKS` "**109** na leitura" | Hoje **225** ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39)) |
-| A suíte "hoje **236**" | **252 checagens / 0 falhas**, publicados no pin `5b519f8` da perna 11 |
+| `EXPECTED_CHECKS` "**109** na leitura" | **283** nesta árvore ([aether_reactions_test.gd:60](../../tests/aether_reactions_test.gd#L60)). A leitura de 2026-11-22 dizia 225 porque a 16 ainda não havia pousado; a base deste lote (`dcbcbe8`) tem **240** em `:39`, e daqui para cá o lote escreveu **+43** — 247 (a) → 261 (b) → 267 (c) → 271 (d) → 275 (e) → 279 (f) → 283 (g) |
+| A suíte "hoje **236**" | Contrato publicado: **255 checagens / 0 falhas**, no pin `9b2c65a` da perna 16 (clone limpo, `--import` frio). Nesta árvore a suíte re-rodou **255 / 0 / 47,9 s** — o lote não toca o `smoke_test.gd`, e é por isso que o número não sobe |
 | (o runner de RNG não existia) | Hoje existe [tests/simulation_rng_test.gd](../../tests/simulation_rng_test.gd), **27** checagens (`:9`), e uma delas é que o desvio do lobo **não consome a RNG global** ([`:226`](../../tests/simulation_rng_test.gd#L226)) — é o que amarra o §5.9 |
 | "`STONE 0,95`, `WOOD 0,55`, `COBBLESTONE 0,85` ficam **fora** do alcance com a mesma régua do jogador" | **Falso, lido hoje**: `hardness` é **duração**, não permissão. O jogador soma `_mining_accum += delta` e compara a `target_hardness` sem nenhum teto de bloco ([player.gd:663-664](../../src/entities/player.gd#L663-L664)), e `_mine_target` escreve `AIR` no alvo seja ele qual for ([`:685`](../../src/entities/player.gd#L685)). A pedra cai em 0,95 s de mão nua. O que limita o bicho é **lista de material**, não a dureza |
 | "o desemperto atual termina em desvio geométrico e nunca em escavação" | Ainda verdade, mas o desemperto **ganhou um segundo braço** depois daquela página: a perna 19 escreveu o pulo de degrau — `STEP_JUMP 7,6` ([wolf.gd:101](../../src/entities/wolf.gd#L101)) e o discriminador `body.can_step_over(want)` ([`:992-993`](../../src/entities/wolf.gd#L992-L993), predicado em [voxel_body.gd:166-173](../../src/entities/voxel_body.gd#L166-L173)). Cavar passa a ser o **terceiro** braço do mesmo `if`, não o destino único do bloqueio |
@@ -328,14 +328,22 @@ godot --headless --path . tests/smoke_test.tscn
 9. **`cavar_nao_consome_rng_da_sessao`** — o mesmo palco do §5.5 com a RNG global pinada antes e depois
    dos N passos, no molde do `desvio nao consome RNG global`
    ([simulation_rng_test.gd:226](../../tests/simulation_rng_test.gd#L226)), e os dois `randf_range` do
-   desvio continuando incondicionais ([wolf.gd:987-991](../../src/entities/wolf.gd#L987-L991)). Imprime
+   desvio continuando incondicionais ([wolf.gd:1240-1241](../../src/entities/wolf.gd#L1240-L1241)). Imprime
    os dois `randi()`.
 
-**Contagens.** `EXPECTED_CHECKS` do runner de reações é **225** hoje
-([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39)) e o do runner de RNG **27**
-([simulation_rng_test.gd:9](../../tests/simulation_rng_test.gd#L9)); a suíte publicada é **252
-checagens / 0 falhas** no pin `5b519f8`. Os três sobem com o lote, re-medidos no clone limpo com
-`--import` frio, e o número novo vai para o status com o SHA ao lado — não antes.
+**Contagens.** `EXPECTED_CHECKS` do runner de reações é **283** nesta árvore
+([aether_reactions_test.gd:60](../../tests/aether_reactions_test.gd#L60)) e o do runner de RNG **27**
+([simulation_rng_test.gd:9](../../tests/simulation_rng_test.gd#L9)); a suíte publicada é **255
+checagens / 0 falhas** no pin `9b2c65a` da perna 16. As três foram re-medidas na árvore deste lote —
+runner **283 / 0 / 32,742 s** com `OK censo de checagens | 283/283`, RNG **27 / 0 / 2,646 s**, suíte
+**255 / 0 / 47,9 s**, zero `SCRIPT ERROR` e zero `[FAIL]` nos três. O que a checagem 9 acrescenta são
+quatro linhas: a premissa de o braço de neve armar a pata (`armadas=1`, `horizontais=40`, boca no
+tick 28), o `randi()` depois do pino **igual nos dois braços** (`2762692978`, com 28 passos de neve e
+200 de pedra), cada quadro de armar sorteando o desvio junto (`armadas_com_rearm == armadas`) e o
+detector vendo o sorteio onde a pata **não** arma (pedra: `armadas=0`, `rearms=17`, `_detour` em
+`[-1,221, 1,290]`) — a faixa é o que impede a terceira linha de passar por um único sorteio. O número
+que vai para o status é o do clone limpo com `--import` frio, medido em (h), com o SHA ao lado — não
+antes.
 
 ## 6. Consequência de versão, declarada aqui
 
