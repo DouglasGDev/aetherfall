@@ -1,0 +1,36 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK cenario nomeado na CLI                     pedido=boot_walk_10min gate=boot_walk_10min ticks=12000
+OK caminho de journal na CLI                  C:/Aetherfall/.qoder/worktrees/agent-general-purpose-eb573c98/.tools/af-bench/run-1.jsonl
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 50.4 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 42.5 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 55.1 m do jogador
+spawn mordaca (4-18 m de irmao): lar aceito a 51.6 m do jogador
+OK journal novo aberto pelo main              ativo=true path=C:/Aetherfall/.qoder/worktrees/agent-general-purpose-eb573c98/.tools/af-bench/run-1.jsonl records=0 last_tick=-1
+OK boot real concluiu                         lobos=5 fila=0 teto=5 tick=0
+OK motor sem processo automatico              main=true player=true oracle=true lobo=true
+spawn mordaca (4-18 m de irmao): lar aceito a 48.0 m do jogador
+nascimento: filhote 5 dos adultos 0+1 a 13.8 m do centro do par
+spawn mordaca (4-18 m de irmao): lar aceito a 41.0 m do jogador
+nascimento: filhote 6 dos adultos 2+3 a 9.1 m do centro do par
+OK cada chamada avanca um tick e grava um registro anomalias=0
+OK o lote fecha em TICKS ticks                tick=12000/12000 passos_chamados=12000
+OK nenhum tick perdido                        perdidos=0 passos_pedidos=12000
+OK um registro por tick, sem buraco           records=12000 last_tick=12000
+OK o cenario anda (nao e boot parado)         maior_distancia_do_spawn=64.19 m
+OK arquivo tem TICKS linhas com tick 1..N     linhas=12000 monotonicas=true bytes=888894
+OK ultima linha == hash do estado atual       arquivo=a6addd428b7140fb memoria=a6addd428b7140fb
+OK a projecao moveu durante a corrida         hashes_distintos=12000/12000 primeiro=7edbdd3c87603bfe ultimo=a6addd428b7140fb
+OBSERVACAO estouros_guarda=4 lobos_com_guarda_lida=7 budget_us=400 last_us=2210..3397 ticks=tick 1859/lobo 6, tick 4333/lobo 6, tick 9056/lobo 6, tick 11537/lobo 6
+POR QUE IMPORTA: a guarda devolve FAILURE pelo relogio de parede (src/ai/behavior/bt_tree.gd:130-137) e a folha suprimida pode escrever Eter (src/entities/wolf.gd:431) ou crenga (:559), que entram na projecao -- corridas com estouros diferentes nao sao prova limpa de determinismo, sao a mesma sorte.
+OK sair da sessao fecha o journal             ativo=false bytes=888894->888894
+escopo: hash cobre Eter(Float32), edicoes, lobos por identidade com mente/intent/crencas e metadados; exclui jogador, corpos, RNG, episodios, relacoes, timers e comandos
+NAO e replay: o arquivo e apendice-only e nenhum byte dele volta para o mundo
+NAO fecha: determinismo da PROJECAO nesta maquina; corpo, RNG, jogador, episodios e relacoes estao fora do hash, e o canal de relogio da guarda segue aberto (veja OBSERVACAO estouros_guarda acima)
+OBSERVACAO lobos_vivos=7/7 nascimentos=2 mortes_jogador=0 edits=0 eter_energia=0.0000 pares=21
+GATE cenario=boot_walk_10min ticks_lote=12000 tick_final=12000 records=12000 linhas_arquivo=12000 dropped_ticks=0 maior_andar=64.2 m hash_ultima_linha=a6addd428b7140fb978aca191a8b3c10b5f7a8a4515531aea775e1574a54dfd7
+ARQUIVO C:/Aetherfall/.qoder/worktrees/agent-general-purpose-eb573c98/.tools/af-bench/run-1.jsonl bytes=888894 sha256=d4ad8992598c128b5d6d2747bce13a28c7b2d44c432f5db2132d87d82bc7ea4d
+OK runner chegou ao fim do lote               run=true
+OK censo de checagens                         16/16
+16 checagens 0 falhas 46.804 s
