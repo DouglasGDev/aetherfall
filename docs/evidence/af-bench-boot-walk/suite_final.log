@@ -1,10 +1,13 @@
 Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
 
 spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
-spawn mordaca (4-18 m de irmao): lar aceito a 50.4 m do jogador
-spawn mordaca (4-18 m de irmao): lar aceito a 42.5 m do jogador
-spawn mordaca (4-18 m de irmao): lar aceito a 55.1 m do jogador
-spawn mordaca (4-18 m de irmao): lar aceito a 51.6 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
 == aetherfall smoke test  seed 20261116 ==
 
 --- boot do mundo ---
@@ -15,24 +18,24 @@ spawn mordaca (4-18 m de irmao): lar aceito a 51.6 m do jogador
   [PASS] spawn em terra firme                   y=31
   [PASS] jogador apoiado no chao                feet=(64.5, 31.0, 64.5)
   [PASS] suite nao levanta modelo               display=headless  llm={  }
-       geracao 963.8 ms   malharia 4364.8 ms
-spawn mordaca (4-18 m de irmao): lar aceito a 48.0 m do jogador
-nascimento: filhote 5 dos adultos 0+1 a 13.8 m do centro do par
+       geracao 934.3 ms   malharia 4187.0 ms
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
 
 --- relogio real ---
   [PASS] tick de simulacao avanca               tick=50 em 2.50 s de logica
   [PASS] ritmo de 20 Hz sustentado              tick=50  esperado=49
-  [PASS] nenhum tick perdido                    perdidos=0  pior passo=8.84 ms
+  [PASS] nenhum tick perdido                    perdidos=0  pior passo=8.86 ms
   [PASS] jogador segue no chao                  feet=(64.5, 31.0, 64.5)
   [PASS] ao menos um lobo se moveu na janela real 5/5 se moveram em 2.50 s de logica  nasceram_depois=1
   [PASS] nenhum lobo com o corpo dentro do terreno encaixados=0
-  [PASS] steering e colisao movem o lobo        lobo0 reach=7.87 m em 200 passos desde (64.5, 31.0, 64.5)  agora em (64.54701, 31.04, 72.30581)
+  [PASS] steering e colisao movem o lobo        lobo0 reach=8.18 m em 200 passos desde (64.5, 31.0, 64.5)  agora em (64.57786, 32.02, 72.56324)
   [PASS] intento sempre valido                  patrol patrol patrol patrol patrol patrol
-  [PASS] provedor de matilha montado pela sessao real lobo0(5 viz) lobo1(5 viz) lobo2(5 viz) lobo3(4 viz) lobo4(3 viz) lobo5(4 viz)
-  [PASS] alcateia existe na sessao real         pares=15  esperado=15  maior_matilha_lida=5 lobos_vivos=6  vizinhos=[lobo0(5 viz) lobo1(5 viz) lobo2(5 viz) lobo3(4 viz) lobo4(3 viz) lobo5(4 viz)]
+  [PASS] provedor de matilha montado pela sessao real lobo0(2 viz) lobo1(1 viz) lobo2(0 viz) lobo3(2 viz) lobo4(1 viz) lobo5(2 viz)
+  [PASS] alcateia existe na sessao real         pares_testados=15  esperado=15  maior_matilha_lida=2  grupos=3  separacao_tocas=55.9 m  lobos_vivos=6  vizinhos=[lobo0(2 viz) lobo1(1 viz) lobo2(0 viz) lobo3(2 viz) lobo4(1 viz) lobo5(2 viz)]
 
 --- malha e face-culling ---
-  [PASS] geracao deterministica (16 colunas)    ms=5313.4
+  [PASS] geracao deterministica (16 colunas)    ms=5343.1
   [PASS] malha identica entre mundos            espelho=214448  sessao=214448
   [PASS] bioma_nao_altera_terreno               divergentes=0/4  voxels=1048576  full=75fb058ed409  rel16=f1fca48dc6d1  hist=1=491 3=6 4=145 5=313 7=69
   [PASS] regiao do cubo estava em ar            voxel=(20,55,20)
@@ -210,8 +213,8 @@ nascimento: filhote 5 dos adultos 0+1 a 13.8 m do centro do par
   [PASS] lobo boiou sem afundar ao leito        y minimo=15.00  leito=14.00
   [PASS] lobo rema na agua                      pata max=0.38 rad
   [PASS] lobo preso busca a margem              override de margem disparou
-  [PASS] lobo sai da agua ou avanca nadando     seco=false  deslocamento=8.6 m
-       nado: 8.6 m desde a queda, pata max 0.38 rad, y min 15.00
+  [PASS] lobo sai da agua ou avanca nadando     seco=false  deslocamento=8.4 m
+       nado: 8.4 m desde a queda, pata max 0.38 rad, y min 15.00
 
 --- golpe no lobo: dano e empurrada ---
   [PASS] mira travada no lobo do passo          alvo=true na_lista=true d_alvo=2.98  rival_mais_proximo=8.02 m
@@ -251,8 +254,8 @@ nascimento: filhote 5 dos adultos 0+1 a 13.8 m do centro do par
   [PASS] combate recente trava a regeneracao    hp 81.4 -> 81.4 apos 2 s
 
 --- oraculo: sonda em porta fechada ---
-spawn mordaca (4-18 m de irmao): lar aceito a 39.5 m do jogador
-nascimento: filhote 6 dos adultos 2+3 a 21.2 m do centro do par
+spawn mordaca (4-18 m de toca): lar aceito a 33.3 m do jogador
+nascimento: filhote 6 dos adultos 1+2 na toca 1, 11.1 m do centro da toca 1
 
 --- oraculo degrada sem servidor ---
   [PASS] narrativa vazia sem servidor           narr=''
@@ -296,22 +299,22 @@ llm_host  ausente (runtime)  sem llama-server em res://tests/sem-runtime-15.exe
   [PASS] dano letal mata                        hp=0.0
   [PASS] overlay de morte apareceu              
   [PASS] contador de mortes                     mortes=1
-  [PASS] morte imprinta sangue no eter          2.646 -> 4.166
+  [PASS] morte imprinta sangue no eter          2.636 -> 4.156
   [PASS] renascer devolve a vida                hp=100.0
   [PASS] overlay some ao renascer               
   [PASS] renascer no ponto de spawn             feet=(64.5, 31.0, 64.5)
 
 --- salvar e carregar ---
-spawn mordaca (4-18 m de irmao): lar aceito a 50.1 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 69.3 m do jogador
   [PASS] a porta de povoamento da sessao abre um bicho novo censo 7 -> 8  WOLF_COUNT=5 (o teto de censo e outro numero)
   [PASS] slot escrito                           caminho=user://saves/world_alpha.json
   [PASS] sem .tmp sobrando                      
-  [PASS] leitura do slot                        5.4 ms
+  [PASS] leitura do slot                        5.0 ms
   [PASS] schema e gen_version gravados          schema=1  gen=4
-  [PASS] save com corpo                         17775 bytes
+  [PASS] save com corpo                         17689 bytes
   [PASS] save guarda o diario, nao os voxels    edicoes=13
   [PASS] save guarda as pilhas e os pinos       slots=7  pins=10
-  [PASS] segunda escrita sobrescreve atomicamente 17775 bytes
+  [PASS] segunda escrita sobrescreve atomicamente 17689 bytes
   [PASS] mundo foi mutado de proposito          edicoes=14  hp lobo=18.0
   [PASS] inventario foi mutado de proposito     assinatura mudou
   [PASS] diario de edicoes restaurado           13 -> 13
@@ -330,24 +333,28 @@ spawn mordaca (4-18 m de irmao): lar aceito a 50.1 m do jogador
   [PASS] morte contabilizada                    abatidos=1
   [PASS] ainda na matilha (tempo de cadaver)    cadaver=6.0 s
   [PASS] lobo morto nao decide                  intencao=morto
-  [PASS] morte imprinta sangue e medo no eter   blood=5.26  fear=6.52
+  [PASS] morte imprinta sangue e medo no eter   blood=5.21  fear=6.52
 
 --- recolhimento e reposicao ---
   [PASS] cadaver recolhido da matilha           8 -> 7 lobos
   [PASS] reposicao enfileirada                  na fila=1  vivos=7
   [PASS] sem no de malha sobrando               nos=64
-  [PASS] nenhum tick perdido no teste inteiro   perdidos=0  pior passo=11.34 ms  tick=403
+  [PASS] nenhum tick perdido no teste inteiro   perdidos=0  pior passo=10.48 ms  tick=403
+  [PASS] espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=10.48 ms (regua 25)  dens=3 componentes=3 separacao=55.9 m  tick=403
   [PASS] lobos seguem vivos e decidindo         vivos=7  triangulos=214480
-       diagnostico final: {"aether_energy":11.7803441542201,"births":2,"census_cap":12,"census_refusals":0,"chunks":64,"dropped_ticks":0,"edits":13,"feet":"(64.5, 31.0, 64.5)","gen_ms":963.801,"hp":0.0,"journal":{"active":false,"last_hash":"","last_tick":-1,"last_us":0,"path":"","records":0,"total_us":0,"worst_us":0},"llm":{},"load_created":0,"load_retired":0,"mesh_ms":4364.807,"meshes":147,"on_ground":true,"pack_pairs":21,"pending_respawns":1,"tick":403,"triangles":214480,"wolves":7,"wolves_alive":7,"worst_sim_ms":11.339}
+       diagnostico final: {"aether_energy":11.763956812676,"births":2,"census_cap":12,"census_refusals":0,"chunks":64,"den_components":3,"den_min_dist":55.8567733764648,"dens":3,"dropped_ticks":0,"edits":13,"feet":"(64.5, 31.0, 64.5)","gen_ms":934.347,"hp":0.0,"journal":{"active":false,"last_hash":"","last_tick":-1,"last_us":0,"path":"","records":0,"total_us":0,"worst_us":0},"llm":{},"load_created":0,"load_retired":0,"mesh_ms":4186.994,"meshes":147,"on_ground":true,"pack_pairs":21,"pending_respawns":1,"tick":403,"triangles":214480,"wolves":7,"wolves_alive":7,"worst_sim_ms":10.483}
 
 --- censo do disco ---
-  [PASS] o save carrega fase e idade como chaves aditivas bichos_no_disco=8 chaves=identity,hp,phase,age_ticks,mind  ids=[0 1 2 3 4 5 6 7]
+  [PASS] o save carrega fase e idade como chaves aditivas bichos_no_disco=8 chaves=age_ticks,alive,den,feet,home,hp,hunger,identity,kills,mate_cd,mind,phase,  ids=[0 1 2 3 4 5 6 7]
   [PASS] censo do disco carrega inteiro (load_leva_todo_o_censo) disco=8 antes=7 depois=8  disco_ids=[0 1 2 3 4 5 6 7] vivo_ids=[0 1 2 3 4 5 6 7]
   [PASS] cada identidade do disco confere com a mente carregada antes=[1 2 3 4 5 6 7] agora=[0 1 2 3 4 5 6 7] mentes=[0<-0 1<-1 2<-2 3<-3 4<-4 5<-5 6<-6 7<-7]
   [PASS] fase e idade do disco voltam para o bicho certo vivos=[0:adulto/5049 1:adulto/5049 2:adulto/5049 3:adulto/5209 4:adulto/5049 5:filhote/248 6:filhote/68 7:adulto/4800]
   [PASS] a fila de reposicao nao inventa bicho fora do censo gravado fila=0  disco=8  vivos=8
+  [PASS] tocas e pertenca sobrevivem ao save (toca_sobrevive_ao_save) dens disco=3 carregadas=3  maior_derivacao=0.000000 m  separacao=55.9 m  centros=[(20.4,59.3) (58.3,100.3) (74.0,6.0)]  pertencas=[lobo0(toca=0 do disco=0) lobo1(toca=1 do disco=1) lobo2(toca=2 do disco=2) lobo3(toca=0 do disco=0) lobo4(toca=1 do disco=1) lobo5(toca=0 do disco=0) lobo6(toca=1 do disco=1) lobo7(toca=2 do disco=2)]
+  [PASS] default derivado: disco sem a chave nao toca nem inventa dens=0  todos_em_sem_toca=true  disco=8 carregados=8  ids=[0 1 2 3 4 5 6 7]  escrita=ok
+       disco restaurado no formato atual: ok 18357 bytes
 
-== 252 checagens  0 falhas  42.5 s de teste ==
+== 255 checagens  0 falhas  47.4 s de teste ==
 WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
    at: cleanup (core/object/object.cpp:2536)
 ERROR: 2 resources still in use at exit (run with --verbose for details).
