@@ -4875,3 +4875,133 @@ registro por cima de `575215d`, `docs/pauta-mente-eco-20` em `2a4b29676dde596fdb
 `docs/registro-merged-main-20` nesta ponta. **Nenhuma branch foi deletada** — nem a local, nem a remota,
 nem a `main`.
 
+**Em andamento/pouso (2026-11-23, pauta 21 — a apresentação do `README.md`).** Nada de código:
+`git diff --name-only c1e77ad..HEAD -- src tests` devolve vazio, e o objeto da perna é a página que o
+resto do mundo lê primeiro. Branch `docs/apresentacao-readme-21`, aberta da `main` em `c1e77ad`, com
+seis commits antes deste registro — `f5dcb1d` (introdução + o clique), `44087b0` (seção do oráculo),
+`0fd7f79` (índice de pastas), `fc559a3` ("O que existe"), `fa9059b` (mapa do código) e `1240489` (a
+re-derivação dos ponteiros). O README sai de 708 para 746 linhas: as duas reescritas acima de `:197`
+foram feitas frase por frase dentro do mesmo número de linhas, então `README.md:148-149`, `:192` e `:197`
+seguem na mesma linha com o mesmo texto.
+
+**O que a página passou a dizer, cada afirmação lida no arquivo antes de escrita.** (1) A introdução
+vendia "personalidade e memória de NPCs, facções e eventos nascem de simulação local" no indicativo;
+`src/entities/` tem `player`, `player_avatar`, `fp_viewmodel`, `voxel_body` e `wolf` — **nenhum NPC,
+uma espécie** — então a frase agora afirma o que já decide, que é a matilha, e marca NPCs, facções e
+eventos como `[TARGET]`,
+que é o que a legenda de `docs/design/README.md` exige e o que a seção "alvo de design" já dizia três
+páginas abaixo. (2) O parágrafo que resolvia o oráculo em "é opcional" passou a dizer que **com os
+pacotes no disco o boot levanta o servidor sozinho**, sem linha de comando com credencial na página —
+o mecanismo é descrito, a argv não. (3) `## IA local (opcional)` (`:552-587`) ganhou o hospedeiro
+inteiro: `_start_llm_host()` no `_ready` (`src/main.gd:120`), antes da geração (`:132`) e da malharia
+(`:135`); cria filho só com a porta vazia (`src/ai/llm_server_host.gd:240-244`); reusa servidor nosso
+que sobrou de outra janela, com o `pid` ficando −1 e matando nunca (`:250-258`); processo alheio vira
+`estrangeiro` e o jogo roda sem oráculo (`:245-249`, `:260`); `kill` só em pid próprio (`:407`,
+`:413-414`); em headless nenhum hospedeiro é montado (`src/main.gd:203-205`), que é o que tira o pacote
+do modelo do rodapé de tempo da suíte. A cena nova da 15, `tests/llm_server_boot_probe.tscn`, entrou no
+bloco ao lado da que já era citada. (4) O índice de pastas (`:528-550`) e o mapa do código ganharam
+`src/items/` — `inventory` com `SLOTS` 36 e `recipes` com estação `mao`/`bancada` existiam em código e
+não existiam na lista —, trocaram "mente do NPC" por mente da criatura e escreveram `MindOracle` e
+`LlmServerHost`, e a linha de `tests/` passou a contar as duas sondas de oráculo. (5) `## O que existe`
+(`:590-631`) alcançou as pernas 10, 11, 14, 16 e 19: auto-pulo (`STEP_JUMP` 7,6 em
+`src/entities/wolf.gd:101`, ápice 1,203 m contra a célula de 1,00 m, ramo em `:986-993`, e o mesmo
+`_jump_buffer` do `Espaço` em `src/entities/player.gd:536-542`, por isso os dois no mesmo quadro somam
+um salto), rondar o setor e cercar em assento próprio (`ENCIRCLE_RING`, `src/entities/wolf.gd:39`),
+acasalamento com filhote que cresce (`MATE_RADIUS` 8 m, um par por varredura, `MATE_COOLDOWN` 300 s,
+`PHASE_NAMES`/`PHASE_SCALE`, recusa contada em `census_refusals`), o grafo de coesão publicado como
+`den_components` no `diagnostics()`, o spawn a 32 m **e** fora da visada (`_spawn_point_ok` em
+`src/main.gd:709-714`, bandas de 16 a 70 m da posição atual) e o oráculo que o próprio boot levanta.
+
+**Ponteiros re-derivados por conteúdo — e é aqui que a perna encontra o furo.** O registro do pouso da
+16, neste arquivo, escreveu que suas edições foram medidas para serem linha-neutras, "o que deixa no
+lugar os `README.md:501-514`, `:533` e `:559-575`". Contra o git isso não é verdade: o merge `9b2c65a`
+tocou o README em **+42/−6 = +36 linhas** (`git diff --numstat 99d1167 9b2c65a -- README.md`), com
+`## IA local` saindo de 517 para 549 e `## Limites` de 569 para 605, e o `44/44` citado é o do commit de
+registro, não o do merge. Nove ponteiros apodreceram aí e passaram verdes por três réguas. A leitura de
+chegada, linha a linha, devolve:
+
+| onde estava | o que afirmava | para onde vai |
+| --- | --- | --- |
+| `README.md:570-575` (planos 07:67) | ~16 s → ~7,5 s pela cópia linear | `README.md:642-647` |
+| `README.md:570` (planos 07:142) | "diz ~4,3 s de malharia" | `README.md:642` |
+| `README.md:571-573` (planos 12:102) | 64 chunks em ~4,3 s no boot | `README.md:642-643` |
+| `README.md:561` (planos 15:81 e 15:323) | ~0,9 s + ~4,3 s publicados | `README.md:642` |
+| `README.md:561-562` (planos 15:414) | congelamento de boot já contado | `README.md:642-643` |
+| `README.md:501-505` (planos 15:77) | bloco que documenta o passo manual | `README.md:572-577` |
+| `README.md:507` (planos 15:397) | "boot do modelo em 9,5 s" | `README.md:579` |
+| `README.md:501-514` (planos 15:446) | texto da seção do oráculo | `README.md:552-568` |
+
+Nenhum número da tabela veio de somar deslocamento: cada um foi conferido no texto da linha de chegada.
+Ficam onde estavam, porque os dois primeiros commits foram escritos frase por frase com net-linha zero
+acima de `:197`: `README.md:148-149` (planos 17:124 e 18:90), `:192` (13:250, 14:200, 15:99) e `:197`
+(13:78). Duas re-derivações mudam de moldura, não só de número — a 15:77 achava o passo manual como
+único caminho e hoje acha o mesmo bloco de comandos rebaixado a opção, e a 15:446 apontava o texto
+antigo da seção. As frases do dossiê são registro da leitura de época e por isso não foram reescritas.
+
+**Furo #26 — as três réguas são cegas a ponteiro de arquivo-raiz, e foi por isso que o dano da 16
+passou.** O instrumento de âncoras casa apenas caminhos que comecem em `src/`, `tests/` ou `docs/`
+([`tools/check_doc_anchors.py:61-62`](../tools/check_doc_anchors.py#L61-L62)): um `README.md:570-575`
+escrito num dossiê não entra na régua 1 nem na 2, e a classe 6 só confere que o arquivo do link existe.
+O verificador de citações vê o `README.md:561` pela sua segunda expressão, mas só pergunta se o número
+cabe no arquivo — 561 cabe em 708 e em 746, então apodrece em silêncio. Dono: o elo seguinte da fila,
+`feat/bicho-cavando-12`, que é quem vai escrever na `main` de novo e vai precisar re-derivar por conta
+própria; a correção de instrumento (uma sétima classe, ou estender as duas expressões ao trio
+`AGENTS|README|THIRD_PARTY_LICENSES` conferindo a faixa por conteúdo lido) fica com o dono do
+repositório, porque mexer no verificador mexe no que toda perna reporta.
+
+**Furo #27 — o status guarda ponteiros de README que são registro de corrida passada e hoje estão fora
+de posição.** `:2993`, `:2996`, `:3246` e `:4826` deste arquivo apontam `README.md:505-512`, `:533`,
+`:559-566` e `:501-514`, números válidos para a revisão em que aquela corrida foi contada, não para a de
+hoje. A regra da casa é não reescrever registro de corrida passada, então ficaram como estavam, e o
+instrumento de âncoras não os vê pelo motivo do furo #26. Falta uma convenção — a mesma que já vale para
+"prefixo de revisão não é ponteiro vivo" no cabeçalho do instrumento, que é exatamente o que um
+`a1405e4:src/entities/wolf.gd` registra. Dono: o dono do repositório escolhe a marca; nenhuma
+perna de documento deve reescrever histórico por conta própria.
+
+**As três réguas, medidas nesta ponta.** O instrumento de âncoras, rodado de dentro do worktree — a
+raiz sai do caminho do próprio arquivo, então a cópia da raiz mediria a árvore errada:
+
+```
+corpus na arvore de trabalho  arquivos: 38  ponteiros conferidos: 2830  rotulos conferidos: 190  links relativos conferidos: 2810
+docs/melhorias-status.md:3222  ../.tools/_chk_labels.py  LINK QUEBRADO
+casos objetivos: 1
+```
+
+O mesmo único caso tolerado de sempre, o link para o verificador de rótulos, que é gitignored. Os dez
+ponteiros e o link que faltam para a medida do pouso da 16 são os que este registro escreve: a tabela de
+re-derivação acima e o link para o `tools/check_doc_anchors.py`, único lugar do corpus onde um ponteiro de
+raiz é conferido por instrumento — e só de existência, que é justamente o furo #26. As citações e os
+identificadores, com `AETHER_ROOT` apontando para o worktree e o corpus dos 24 documentos (os 21 dossiês,
+este status, `AGENTS.md` e o `README.md`):
+
+```
+citacoes com numero de linha conferidas: 2374
+arquivos citados que nao existem: 43
+numeros de linha fora do arquivo: 0
+```
+
+As 43 ausências são o `.tools/` que não existe nesta árvore (gitignore, não ponteiro podre) mais os
+caminhos de pernas que ainda não pousaram, como src/ai/reach.gd e
+`tests/wolf_multiseed_census_test.gd` — declarados inexistentes pelos próprios dossiês. Nenhuma ausência de
+código nova em lugar nenhum: o `README.md` foi de 76 a 90 nomes citados com as mesmas 17 ausências
+históricas (nomes de arquivo e SHA, não símbolos de código), os três dossiês alterados têm conjunto de
+identificadores **idêntico** ao de `c1e77ad`, conferido por diferença de conjuntos e não por memória, e
+este status, de 474 a 490 nomes, ganha quatro ausências que são SHA desta branch — `c1e77ad`, `f5dcb1d`,
+`fc559a3` e `fa9059b`, os únicos dos sete que começam por letra — mais nada.
+
+**Esta passada não re-correu a engine, e o motivo é um fato da máquina.** O binário do pin é
+`D:\Godot\Godot_v4.7.2-stable_win64.exe`, o caminho que o launcher deste repositório usa, e a
+unidade `D:` não está montada nesta sessão — há só `C:`, `E:` e `F:`, e a regra da casa é não caçar
+executável. O contrato publicado continua **255 checagens / 0 falhas** na suíte e **240 / 0** no runner
+de reações, e vale por **identidade de árvore**: `git rev-parse 9b2c65a:src` =
+`64f137bcb1f8e95bd9a64fe7843e4e7b72f7326e` e `:tests` = `88a1541c2f9f6fc3dd0e1d237b3e5656d9eea3c9`, e o
+diff de `src/` e `tests/` entre `9b2c65a` e esta ponta devolve vazio — nada desta perna escreve código,
+então o número do pin é o número da árvore resultante. **Nenhum gate de fase se fecha aqui**: nada desta
+perna toca P0, P1 ou gate nenhum, e o que mudou é apresentação — cujo custo real são os dois furos
+abertos acima, não o texto novo.
+
+**Publicação.** Os seis commits acima vão ao `origin` como `docs/apresentacao-readme-21`, e a branch
+fica: nenhuma branch é deletada nesta casa sem motivo aberto. O pouso é o `git merge --no-ff` na `main`,
+cujo SHA aparece na primeira fila de `git log --first-parent main`, com a régua de âncoras re-corrida na
+árvore mergida antes do push e a prova de publicação em `git ls-remote --heads origin` — não no código
+de saída do push, que já mentiu aqui.
