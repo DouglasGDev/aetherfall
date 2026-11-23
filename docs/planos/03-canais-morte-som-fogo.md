@@ -7,7 +7,7 @@ corrida nova: eu não rodei engine nem suíte. Onde não há log, diz "não medi
 sem canal novo — foi rodado, medido e publicado em `9f3622b`; §5, §7, §8 e a nota de contagem do §9
 foram atualizados com os números daquele clone. Nada do §2 em diante (canais MORTE/SOM/FOGO) saiu,
 e `Channel.COUNT` continua 3. A nota de medição está em
-`docs/melhorias-status.md:1741-1821`.
+`docs/melhorias-status.md:1825-1905`.
 
 ## 1. Premissa nomeada
 
@@ -25,7 +25,7 @@ logo o trabalho é ligar fonte a consumidora, não acrescentar linhas em tabelas
 | decaimento | `HALF_LIFE = [90.0, 55.0, 120.0]`, **lido** em `keep = pow(0.5, elapsed / HALF_LIFE[ch])` | `aether_field.gd:13`, uso em `:120` |
 | fluxo | `DIFFUSE_RATE = [0.06, 0.16, 0.10]`; corte `MIN_VALUE 0,004` (`:16`), teto `MAX_VALUE 4,0` (`:17`) | `aether_field.gd:15` |
 | cor | `CHANNEL_COLOR` com 3 entradas | `src/rendering/aether_viz.gd:12-16` |
-| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1553` |
+| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1637` |
 | porta de escrita | `imprint(world_pos, ch, amount)` — posição primeiro, canal segundo | `aether_field.gd:87-89` |
 | fontes reais | medo no spawn `main.gd:274`; lavra 0,42 / colocação 0,20 `main.gd:456-458`; sangue 0,22 `main.gd:367`; morte do jogador `main.gd:523-524`; lobo ferido `wolf.gd:1030-1031`; lobo morto `wolf.gd:1049-1050`; medo do lobo `wolf.gd:431`, sangue `wolf.gd:703` | as fontes dos 3 canais novos: **zero ocorrências** |
 | passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:269`, constante `src/main.gd:27` |

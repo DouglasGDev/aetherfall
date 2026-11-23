@@ -465,17 +465,17 @@ em [`AGENTS.md:292-295`](../../AGENTS.md#L292-L295) e a ordem nova em
 ([`docs/planos/README.md`](README.md)), é o commit 2 desta branch.
 
 Fica **sabido, e corrigido no passe de status desta ponta**: as duas strings de ordem antigas
-estavam em `docs/melhorias-status.md:295` e `:2302` na numeração em que este dossiê foi escrito
-(`4ac5838`), e ambos os alvos eram verdadeiros ali — e são aqui **texto, não link**, porque um
-link diz "leia agora" e esses números já não descrevem o arquivo de agora. O que os moveu foi o
+estavam nas linhas 295 e 2302 de `docs/melhorias-status.md` na numeração em que este dossiê
+foi escrito (`4ac5838`), e ambos os alvos eram verdadeiros ali — e são aqui **texto, não
+link**, porque um link diz "leia agora" e esses números já não descrevem o arquivo de agora. O que os moveu foi o
 crescimento do próprio status — a perna 10 escreveu 285 linhas aqui dentro e esta nota, mais 206.
 A primeira leitura pelo conteúdo, feita naquela ponta, devolveu `:329` e `:2410`; a perna 14
 voltou a crescer o arquivo e os dois apodreceram de novo — o primeiro caiu em prosa de clone
 limpo (`:386`), o segundo em linha branca (`:2479`), e a linha branca é o único caso que a gateira
 de `tools/check_doc_anchors.py` vê. Re-leram-se pela frase uma terceira vez e são hoje
-[`:463`](../../docs/melhorias-status.md#L463) e
-[`:2723-2724`](../../docs/melhorias-status.md#L2723-L2724); a ordem vigente deste mês está um
-pouco abaixo, em [`:478-479`](../../docs/melhorias-status.md#L478-L479). Cada um dos dois
+[`:502`](../../docs/melhorias-status.md#L502) e
+[`:3059`](../../docs/melhorias-status.md#L3059); a ordem vigente deste mês está cinquenta e três linhas
+abaixo da primeira, em [`:565-566`](../../docs/melhorias-status.md#L565-L566). Cada um dos dois
 conserva a ordem da época que registrou, em vez de ser reescrito: o mandato 4
 registrava a exceção antes do código, e o
 passe de status era o mesmo commit que a fecha. Editar o meio do status empurra cada linha
@@ -515,9 +515,9 @@ delas muda mandato: é deriva de linha e nome de API.
   [`:2121-2148`](../../tests/smoke_test.gd#L2121-L2148) com a porta 1 armada em
   [`:2128`](../../tests/smoke_test.gd#L2128), e os dois passos em
   [`:112-113`](../../tests/smoke_test.gd#L112-L113). Dos dois ponteiros para o status, o [`:70`](../../docs/melhorias-status.md#L70)
-  continua na linha (a tabela de prompts) e já cita `smoke_test.gd:2113-2118`; o `:522-523` era o
+  continua na linha (a tabela de prompts) e já cita `smoke_test.gd:2123-2128`; o `:522-523` era o
   item de débito do gate do oráculo, que hoje está em
-  [`:738-740`](../../docs/melhorias-status.md#L738-L740) e com o alvo da degradação já corrigido.
+  [`:873-875`](../../docs/melhorias-status.md#L873-L875) e com o alvo da degradação já corrigido.
 - `llama-server.exe` **não é** o programa inteiro: 9.728 B de stub com a lógica em DLLs ao lado
   (§0.2). Qualquer texto futuro que proponha "copiar o `.exe`" está errado.
 - O `--timeout` do servidor não é ociosidade, e `--watch-file` não existe no b12499 (§0.1) — as
