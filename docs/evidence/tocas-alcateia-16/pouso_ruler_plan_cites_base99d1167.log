@@ -1,0 +1,16 @@
+citacoes com numero de linha conferidas: 1296
+arquivos citados que nao existem: 13
+   FALTA docs/planos/01-estado-inicial-e-ordem-autoritativa.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/02-censo-multi-semente.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/03-canais-morte-som-fogo.md -> docs/engine/simclock.md
+   FALTA docs/planos/06-decompor-main-gd.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> .tools/af-clean-suite.log
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> .tools/af-clean-suite2.log
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> .tools/clean_suite.log
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> docs/engine/simclock.md
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/09-bioma-cor-de-pelo-e-ether.md -> .tools/shot_gallery.tscn
+   FALTA docs/planos/README.md -> docs/engine/simclock.md
+   FALTA docs/planos/README.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/README.md -> tests/wolf_multiseed_census_test.gd
+numeros de linha fora do arquivo: 0

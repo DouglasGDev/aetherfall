@@ -30,8 +30,13 @@ const TESTS: Array[StringName] = [
 	&"_test_acasalar_aumenta_censo", &"_test_cooldown_segunda_copula",
 	&"_test_censo_respeita_teto", &"_test_filhote_nao_morde",
 	&"_test_journal_hash_inalterado_sem_escolha",
+	&"_test_tocas_distintas_no_boot", &"_test_nenhum_lobo_le_de_outra_toca",
+	&"_test_cada_toca_e_um_lugar_valido", &"_test_toca_nao_deriva_para_unica",
+	&"_test_reposicao_volta_para_a_toca_perdida",
+	&"_test_nascimento_fica_na_toca_dos_pais",
+	&"_test_espalhamento_nao_estoura_o_passo",
 ]
-const EXPECTED_CHECKS: int = 225
+const EXPECTED_CHECKS: int = 240
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -2660,6 +2665,20 @@ func _test_resgate_de_margem_sobrevive_a_arvore() -> bool:
 	return true
 
 
+## Fixture da checagem 8 (dossie 16 §5): marca TODAS as colunas da caixa em que o
+## proprio sorteio de `_spawn_home_point` e clampado -- `6 … tamanho-6` nos dois
+## eixos, lido da mesma expressao do clamp e nao de um numero escrito a mão, para
+## que a porta `coluna` alcance todo ponto que o jogo pode sortear. Escreve num
+## Dictionary de teste, nunca no mundo: nenhum voxel muda.
+func _mark_useful_box(taken: Dictionary) -> int:
+	var marcadas := 0
+	for x: int in range(6, VoxelConfig.world_size_x() - 5):
+		for z: int in range(6, VoxelConfig.world_size_z() - 5):
+			taken[Vector2i(x, z)] = true
+			marcadas += 1
+	return marcadas
+
+
 ## Cenario 4 (dossie 14 §5, premissa 2 no espaco): quantos lobos miram a MESMA
 ## celula de Eter por tick e quantos param no mesmo ponto. Vermelho por ausencia:
 ## `_find_scent` devolve o centro da celula, entao os quatro que leem o mesmo
@@ -2750,6 +2769,55 @@ func _test_dois_lobos_nao_farejam_a_mesma_celula() -> bool:
 	_check(violacoes == 0, "mecanismo: coluna ocupada nao volta como lar",
 			"violacoes=%d em 8 pedidos, recusados=%d, ocupadas=%d, colunas_devolvidas=%d" % [
 			violacoes, recusados, colunas.size(), dadas.size()])
+	# Checagem 8 do dossie 16 §5, o furo #18 pago com numero. A linha de cima nao
+	# alcanca a recusa: com seis colunas marcadas e tres bandas que vao de 16 m ate
+	# a borda util, o mundo entrega lar quase sempre, e o numero que a propria casa
+	# media era `recusados=0` -- a assercao `violacoes == 0` passa identicamente sem
+	# nenhuma recusa. Aqui o fixture marca TODAS as colunas da caixa em que o
+	# sorteio e clampado (ainda fixture: nenhum voxel do mundo e tocado), entao o
+	# esgotamento deixa de ser sorte dos oito pedidos e vira geometrico. O criterio
+	# e a conta do `motivos`, que nunca teve um leitor em `tests/`: cada busca tem
+	# de somar `banda x SPAWN_ATTEMPTS` leituras, e -- porque a primeira porta do
+	# laco e a coluna -- todas elas tem de cair em `coluna`. Se a ordem dos portoes
+	# mudar ou um `continue` passar a engolir uma tentativa sem contar, a soma fecha
+	# curta e esta linha fica vermelha.
+	var marcadas := _mark_useful_box(colunas)
+	var forcados := 0
+	var buscas := 0
+	var vazias := 0
+	var soma_motivos := 0
+	var so_a_coluna := true
+	var primeiro: Dictionary = {}
+	for _k: int in 8:
+		var r: Dictionary = _session._spawn_home_point(colunas)
+		if bool(r["ok"]):
+			continue
+		forcados += 1
+		buscas += int(r["banda"])
+		var m: Dictionary = r["motivos"]
+		if forcados == 1:
+			primeiro = m
+		vazias += int(m["vazia"])
+		var total := 0
+		for chave: String in m:
+			total += int(m[chave])
+		soma_motivos += total
+		if int(m["coluna"]) != total:
+			so_a_coluna = false
+	# Premissa da conta de cima: nenhuma das tres buscas do jogador esta vazia por
+	# geometria (`rmax <= rmin` acontece com o jogador encostado na borda), senao
+	# `buscas x SPAWN_ATTEMPTS` e o numero errado para cobrar.
+	_check(vazias == 0, "premissa: as tres bandas buscam de verdade (nenhuma vazia)",
+			"vazia=%d em %d recusas, buscas=%d, banda=%d por busca, jogador em (%.0f,%.0f), borda=%.1f m" % [
+			vazias, forcados, buscas, buscas / maxi(forcados, 1),
+			_player.position3().x, _player.position3().z,
+			_session._band_edge(_player.position3())])
+	_check(forcados == 8 and soma_motivos == buscas * Session.SPAWN_ATTEMPTS
+			and so_a_coluna,
+			"esgotamento_de_lares_forcado",
+			"recusados=%d de 8 | soma(motivos)=%d == buscas(%d) x SPAWN_ATTEMPTS(%d)=%d | so_a_coluna=%s | colunas_marcadas=%d | primeiro=%s" % [
+			forcados, soma_motivos, buscas, Session.SPAWN_ATTEMPTS,
+			buscas * Session.SPAWN_ATTEMPTS, so_a_coluna, marcadas, str(primeiro)])
 	_pack_release()
 	return true
 
@@ -3724,4 +3792,605 @@ func _test_journal_hash_inalterado_sem_escolha() -> bool:
 			"fase=%s idade=%d mate_cd=%.2f dims=%s escala=%.2f" % [
 			_wolf.phase_name(), _wolf.age_ticks, _wolf.mate_cd, str(_wolf.dims),
 			Wolf.PHASE_SCALE[Wolf.Phase.JUVENILE]])
+	return true
+
+
+## ------------------------------------------------------------------ tocas (dossie 16)
+
+## Componentes conexos do grafo que a matilha le (dossie 16 §1). Os nos sao os
+## vivos da sessao e a aresta e uma entrada de `pack_of()`: nada aqui recalcula
+## distancia, porque o que se quer medir e o que a alcateia **e** para o lobo, nao
+## o que o sorteio tinha em mente -- separacao declarada que o lobo nao le e o
+## mesmo defeito que o dossie 10 §3.2 recusou do outro lado. Devolve uma lista de
+## componentes, cada um a lista de identidades.
+##
+## Alocar aqui e deliberado: a conta roda no gate, nunca no passo (dossie 16 §4
+## prende o rebuild de componentes fora do caminho quente).
+func _componentes_da_matilha(s: Session) -> Array:
+	var nos: Array = []
+	var arestas: Dictionary = {}
+	for w: Wolf in s.wolves:
+		if not w.alive:
+			continue
+		nos.append(w.identity)
+		var viz: Array = []
+		for e: Dictionary in s.pack_of(w.identity):
+			viz.append(int(e["identity"]))
+		arestas[w.identity] = viz
+	var vistos: Dictionary = {}
+	var out: Array = []
+	for id: int in nos:
+		if vistos.has(id):
+			continue
+		var pilha: Array = [id]
+		var comp: Array = []
+		vistos[id] = true
+		while pilha.size() > 0:
+			var c: int = int(pilha.pop_back())
+			comp.append(c)
+			for v: int in arestas[c]:
+				if arestas.has(v) and not vistos.has(v):
+					vistos[v] = true
+					pilha.append(v)
+		out.append(comp)
+	return out
+
+
+## Menor distancia lar-a-lar entre componentes diferentes, no chao. NAO e o
+## `den_min_dist` do §3.5, e dizer isso aqui e o ponto: os dois numeros nao podem
+## ser o mesmo criterio, porque a entrada de §3.2.3 poe um membro a ate
+## `PACK_LEASH` (18 m) do centro da propria toca. Com tocas a 48 m, dois lares de
+## tocas vizinhas podem ficar a 48-18 = 30 m, e a coesao le posicoes, nao centros.
+## A medida decide algo diferente da fundacao: decide se o que se espalhou por
+## lugar continua separado por leitura. Devolve `INF` com um componente so, e a
+## linha impressa diz `sem_par` em vez de disfarçar o vazio de numero grande.
+func _separacao_dos_componentes(s: Session, comps: Array) -> float:
+	var lares: Dictionary = {}
+	for w: Wolf in s.wolves:
+		lares[w.identity] = w.home
+	var menor := INF
+	for i in comps.size():
+		for j in range(i + 1, comps.size()):
+			for a: int in comps[i]:
+				for b: int in comps[j]:
+					var p: Vector3 = lares[a]
+					var q: Vector3 = lares[b]
+					menor = minf(menor, Vector2(p.x, p.z).distance_to(Vector2(q.x, q.z)))
+	return menor
+
+
+## O `den_min_dist` de §3.5, no sentido em que a sessao o publica: minimo entre
+## CENTRO de toca, no chao -- o mesmo eixo do portao `_den_gate_ok`, que tambem
+## mede no chao. E este o numero que a fundacao decide; o de cima e uma
+## observacao impressa ao lado, nao criterio (§5.1.(iii) pedia "separacao" sem
+## dizer qual das duas, e a pagina diz agora).
+func _separacao_das_tocas(s: Session) -> float:
+	var menor := INF
+	for i in s._dens.size():
+		var a: Vector3 = s._dens[i]
+		for j in range(i + 1, s._dens.size()):
+			var b: Vector3 = s._dens[j]
+			menor = minf(menor, _no_chao(a, b))
+	return menor
+
+
+## Distancia no chao (XZ), o eixo que a perna 16 usa para tudo: o portao
+## `_den_gate_ok`, a mordaca `PACK_LEASH` e os dois numeros que as checagens 4 e 5
+## exigem. Medir 3D aqui seria imprimir um numero que nenhuma regra pede -- os
+## centros tem alturas diferentes por relevo, e a promessa e de separacao no solo.
+func _no_chao(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))
+
+
+## O par que `_scan_breeding` acharia AGORA (main.gd:422-434), espelhado na mesma
+## ordem (`i` entao `j` crescentes), no mesmo predicado (`_breedable`) e na mesma
+## metrica (`center()` contra `MATE_RADIUS`), sem escrever nada em lugar nenhum.
+## Devolve os INDICES de `wolves`, e sao eles que saem impressos na premissa da
+## checagem 5: sem esta testemunha, "a cria ficou na toca dos pais" poderia passar
+## com um par que o teste nunca nomeou -- inclusive um par que ja se alcançava no
+## sorteio do boot, que e outro caminho para o mesmo `den`.
+func _primeiro_par(s: Session) -> Array:
+	for i in s.wolves.size():
+		var a: Wolf = s.wolves[i]
+		if not s._breedable(a):
+			continue
+		for j in range(i + 1, s.wolves.size()):
+			var b: Wolf = s.wolves[j]
+			if not s._breedable(b):
+				continue
+			var d2: float = a.center().distance_squared_to(b.center())
+			if d2 <= Session.MATE_RADIUS * Session.MATE_RADIUS:
+				return [i, j]
+	return []
+
+
+## Checagem 1 do dossie 16 §5: **nasce vermelha** e e a premissa inteira da pagina.
+## `_pack_leash()` -- hoje apagada -- ancora os quatro bichos seguintes no lar do
+## PRIMEIRO vivo, entao os cinco lares cabem no disco de 18 m da mordaca, o grafo de
+## coesao fica com um componente so, e o dono percorreu o vale inteiro vendo um lobo.
+##
+## Os dois numeros do criterio vem das constantes da sessao desde o commit (b), e a
+## pagina re-derivou o criterio contra elas: `componentes >= DEN_COUNT` e o espalhado
+## pedido; `maior <= censo - 2` e a anti-farsa de fundo (com 5 bichos, 3 tocas e um
+## componente de 4, a distribuicao e 4/1/1 e o vale continua tendo um dono); e
+## `den_min_dist >= DEN_MIN_DIST` e o portao da fundacao lido entre CENTROS, que e o
+## sentido publicado em §3.5 -- a distancia lar-a-lar sai impressa ao lado como
+## observacao porque ela nao pode ser criterio (§3.2.3 poe membros dentro de 18 m do
+## proprio centro).
+func _test_tocas_distintas_no_boot() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	s._rebuild_packs()
+	var comps := _componentes_da_matilha(s)
+	var maior := 0
+	var censo := 0
+	for c: Array in comps:
+		maior = maxi(maior, c.size())
+	for w: Wolf in _pack_wolves():
+		if w.alive:
+			censo += 1
+	var centros := _separacao_das_tocas(s)
+	var lar := _separacao_dos_componentes(s, comps)
+	var lares := ""
+	for w: Wolf in _pack_wolves():
+		lares += "lobo%d(toca=%s,lar=(%.0f,%.0f)) " % [
+				w.identity, str(w.den), w.home.x, w.home.z]
+	_check(comps.size() >= Session.DEN_COUNT and maior <= censo - 2
+			and centros >= Session.DEN_MIN_DIST,
+			"tocas_distintas_no_boot",
+			"componentes=%d maior=%d censo=%d tocas_fundadas=%d den_min_dist=%s lar_entre_componentes=%s | %s" % [
+			comps.size(), maior, censo, s._dens.size(),
+			"sem_par" if is_inf(centros) else "%.1f" % centros,
+			"sem_par" if is_inf(lar) else "%.1f" % lar, lares.strip_edges()])
+	# O furo #21 pago com numero, e a linha impressa e a cobranca: `pack_pairs` vale
+	# `n(n-1)/2` sempre -- com um componente ou com tres -- entao ele nao decide
+	# coesao nenhuma e continua saindo aqui como o que ele e (pares TESTADOS). O que
+	# decide e `den_components`, e esta checagem exige que o numero publicado pelo
+	# diagnostico seja o MESMO que o grafo lido pelo runner: se um dos dois calcula
+	# componente por outro caminho, o gate perde a testemunha.
+	var d: Dictionary = s.diagnostics()
+	var publicado := float(d["den_min_dist"])
+	var mesma_sep := false
+	if is_inf(centros):
+		mesma_sep = publicado < 0.0
+	else:
+		mesma_sep = absf(publicado - centros) < 1e-6
+	var testados: int = censo * (censo - 1) / 2
+	_check(int(d["den_components"]) == comps.size() and int(d["dens"]) == s._dens.size()
+			and mesma_sep,
+			"diagnostico_publica_a_mesma_leitura_das_tocas",
+			"diagnostics dens=%d componentes=%d den_min_dist=%.3f | runner componentes=%d centros=%s | furo21 pack_pairs=%d pares_testados=%d (aritmetica sempre verdadeira, nao decide)" % [
+			int(d["dens"]), int(d["den_components"]), publicado, comps.size(),
+			"sem_par" if is_inf(centros) else "%.1f" % centros,
+			int(d["pack_pairs"]), testados])
+	_pack_release()
+	return true
+
+
+## Checagem 2 do dossie 16 §5, a anti-farsa do outro lado: pertenca declarada sem
+## separacao lida e o mesmo defeito que a perna 10 cobrou ("cinco lares espalhados
+## que nunca foram territorio"), invertido. Se um lobo do grafo le alguem de outra
+## toca, o "espalhado" e nome novo para o circulo unico -- a coesao continua sendo a
+## unica dona da matilha, e ela nao sabe de toca nenhuma (dossie 16 §6: a toca entra
+## como LUGAR, nao como comportamento).
+##
+## Roda sobre o rebuild real (`pack_of`), nao sobre uma distancia recalculada no
+## teste: o que se quer e exatamente o que o lobo le.
+func _test_nenhum_lobo_le_de_outra_toca() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	s._rebuild_packs()
+	var den_de := {}
+	for w: Wolf in s.wolves:
+		if w.alive:
+			den_de[w.identity] = w.den
+	var travessias := 0
+	var linhas := ""
+	for id: int in den_de:
+		for e: Dictionary in s.pack_of(id):
+			var outro: int = int(e["identity"])
+			if den_de.has(outro) and int(den_de[outro]) != int(den_de[id]):
+				travessias += 1
+				linhas += "lobo%d(toca %d) le lobo%d(toca %d) " % [
+						id, den_de[id], outro, den_de[outro]]
+	var sem_toca := 0
+	for id: int in den_de:
+		if int(den_de[id]) < 0:
+			sem_toca += 1
+	_check(travessias == 0 and sem_toca == 0, "nenhum_lobo_le_de_outra_toca",
+			"arestas_entre_tocas=%d bichos_sem_toca=%d lidos=%d | %s" % [
+			travessias, sem_toca, den_de.size(),
+			linhas if linhas.is_empty() else linhas.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Checagem 3 do dossie 16 §5: uma toca e um LUGAR, entao o centro dela tem de ser
+## um ponto onde o jogo poria um bicho -- coluna seca, volume livre, longe do
+## jogador e fora da visada, os mesmos quatro portoes do spawn, lidos aqui pela
+## API publica da sessao. E nenhum dois centros partilham coluna: dois centros na
+## mesma coluna sao a mesma toca contada duas vezes, e a mordaca de cada uma
+## apontaria para o mesmo chao.
+##
+## Esta checagem nao existia antes do commit (b) porque nao havia o que medir --
+## `_dens` e a lista nova, e ela que carrega a promessa de que espalhar nao foi
+## escrito em cima de um lugar invalido.
+func _test_cada_toca_e_um_lugar_valido() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var colunas := {}
+	var ruins := ""
+	for i in s._dens.size():
+		var c: Vector3 = s._dens[i]
+		var col := Vector2i(int(c.x), int(c.z))
+		if colunas.has(col):
+			ruins += "toca%d divide a coluna %s com toca%d " % [i, str(col), colunas[col]]
+			continue
+		colunas[col] = i
+		if s.world.surface_height(int(c.x), int(c.z)) <= VoxelConfig.SEA_LEVEL:
+			ruins += "toca%d em coluna molhada " % i
+		if not s._volume_clear(c, Wolf.DIMS):
+			ruins += "toca%d sem volume livre " % i
+		if not s._spawn_point_ok(c):
+			ruins += "toca%d a menos de %g m ou na visada do jogador " % [
+					i, Session.SAFE_SPAWN_DIST]
+	_check(ruins.is_empty() and s._dens.size() >= 2, "cada_toca_e_um_lugar_valido",
+			"tocas=%d colunas_distintas=%d | %s" % [
+			s._dens.size(), colunas.size(),
+			"todos os centros validos" if ruins.is_empty() else ruins.strip_edges()])
+	_pack_release()
+	return true
+
+
+## Checagem 6 do dossie 16 §5, e o numero que decide o §3.4 entre os dois bracos.
+## O centro de ronda e o baricentro dos vizinhos lidos, renovado a cada 4-9 s, e
+## com fatias de 5-22 m ele faz passeio aleatorio sem ancora nenhuma: com uma
+## matilha so isso era invisivel, com tres pode re-fundir as tocas. Exige que
+## **todo** rebuild da janela leia >= 2 componentes.
+##
+## Nasce vermelha pelo mesmo motivo da checagem 1 -- sem tocas havia um componente
+## so no passo zero -- e um vermelho dela depois do braco A pousado e o bilhete do braco
+## B, nao uma falha a esconder (§3.4). A janela de 1 400 passos e a mesma do
+## cenario 6 da perna 14: cadaver de 1 s + fila de 45 s cabem inteiros nela.
+## O numero impresso e a distancia lar-a-lar no pior rebuild, nao `den_min_dist`: os
+## centros sao fixos por construcao (§3.2.5), entao o que pode mudar aqui e a
+## leitura -- e e a leitura que o braco B compra.
+func _test_toca_nao_deriva_para_unica() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var pior := 0
+	var pior_passo := -1
+	var pior_sep := INF
+	var bichos_pior := 0
+	var passos := 0
+	while passos < 1400:
+		passos += 1
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+		var comps := _componentes_da_matilha(s)
+		if passos == 1 or comps.size() < pior:
+			pior = comps.size()
+			pior_passo = passos
+			pior_sep = _separacao_dos_componentes(s, comps)
+			bichos_pior = 0
+			for c: Array in comps:
+				bichos_pior += c.size()
+	_check(pior >= 2, "toca_nao_deriva_para_unica",
+			"componentes_minimos=%d bichos_lidos=%d lar_entre_componentes=%s no passo %d de %d" % [
+			pior, bichos_pior,
+			"sem_par" if is_inf(pior_sep) else "%.1f" % pior_sep, pior_passo, passos])
+	_pack_release()
+	return true
+
+
+## Checagem 4 do dossie 16 §5: a pertenca tem de sobreviver ao caminho inteiro da
+## reposicao -- `die()` -> cadaver -> `_reap_corpses` -> fila de 45 s -> `_spawn_wolves`
+## -> `_place_request(for_den)`. O `for_den` existe justamente para ela nao ser
+## sorteada de novo, e a premissa que esta linha exige e que a vaga carregue a toca
+## de quem morreu, nao "uma" toca.
+##
+## A segunda metade do criterio (>= `DEN_MIN_DIST` dos OUTROS centros) e a que fecha
+## a regressao de hoje: um lar a 12 m do centro da toca errada passaria na primeira
+## metade e seria o circulo unico com nome novo.
+##
+## `a_mais_vazia_diria` sai impresso e NAO e criterio, e dizer isso e o ponto da
+## linha: no boot medido (2/2/1) a toca mais vazia depois da morte e a propria toca
+## da vitima, entao esta checagem nao distingue "a vaga carrega" de "pede a mais
+## vazia" -- quem distingue e o braco entre tocas da checagem 5. Deixar o numero
+## impresso e o registro de que a checagem 4 decide o caminho da fila, nao a regra
+## de desempate de §3.2.4.
+func _test_reposicao_volta_para_a_toca_perdida() -> bool:
+	_arm()
+	_boot_session(5)
+	var s: Session = _session
+	var vitima: Wolf = null
+	var membros := 0
+	var quem := ""
+	for w: Wolf in _pack_wolves():
+		if w.alive and int(w.den) == 2:
+			vitima = w
+			membros += 1
+		if w.alive:
+			quem += "lobo%d(toca=%d) " % [w.identity, w.den]
+	_check(vitima != null and membros == 1,
+			"premissa: a toca 2 tem exatamente um membro vivo para perder",
+			"membros=%d tocas=%d | %s" % [membros, s._dens.size(), quem.strip_edges()])
+	if vitima == null:
+		# Sem vitima nao ha o que seguir: um `null` adiante derrubaria o passo com
+		# SCRIPT ERROR e as checagens do passo iriam embora em silencio (mandato 1).
+		_pack_release()
+		return true
+	var id_novo: int = int(s._next_identity)
+	var den_perdido: int = int(vitima.den)
+	vitima.die()
+	var mais_vazia := -99
+	var passos := 0
+	while passos < 1400 and int(s._next_identity) == id_novo:
+		passos += 1
+		if mais_vazia < 0 and s._respawn_queue.size() > 0:
+			# O cadaver ja saiu de `wolves` quando a vaga nasceu (`_reap_corpses`
+			# faz as duas coisas na mesma chamada), entao este e o censo que o
+			# pedido vê -- o contrafactual honesto, nao um chute depois do spawn.
+			mais_vazia = int(s._emptiest_den())
+		s._sim_tick()
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+	var novo: Wolf = null
+	for w: Wolf in _pack_wolves():
+		if w.identity == id_novo:
+			novo = w
+	var propria := -1.0
+	var alheia := INF
+	if novo != null and int(novo.den) >= 0:
+		propria = _no_chao(novo.home, s._dens[int(novo.den)])
+		for i in s._dens.size():
+			if i != int(novo.den):
+				alheia = minf(alheia, _no_chao(novo.home, s._dens[i]))
+	_check(novo != null and int(novo.den) == den_perdido
+			and propria >= 0.0 and propria <= float(Session.PACK_LEASH)
+			and alheia >= float(Session.DEN_MIN_DIST),
+			"reposicao_volta_para_a_toca_perdida",
+			"passos=%d den=%d esperado=%d do_centro_proprio=%.1f m (mordaca %.0f) do_centro_alheio=%s (portao %.0f) fila=%d a_mais_vazia_diria=%d" % [
+			passos, int(novo.den) if novo != null else -99, den_perdido, propria,
+			Session.PACK_LEASH, "sem_outro_centro" if is_inf(alheia) else "%.1f" % alheia,
+			Session.DEN_MIN_DIST, s._respawn_queue.size(), mais_vazia])
+	_pack_release()
+	return true
+
+
+## Checagem 5 do dossie 16 §5, os dois bracos do parto.
+##
+## Braco A -- casal da MESMA toca: a cria fica nela e dentro da mordaca daquele
+## centro. E o braco que o codigo de antes ja faria por acaso (a ancora era o lar
+## do primeiro vivo), entao sozinho ele nao prova nada; ele existe para o B nao ser
+## um numero solto.
+##
+## Braco B -- casal de tocas DIFERENTES, e aqui esta a decisão: a ancora antiga do
+## parto era o **ponto medio** dos dois lares, e o meio-termo de dois lugares a 48 m
+## um do outro e um terceiro lugar que ninguem fundou. Com o medio no codigo, a cria
+## nasce a ~31 m de qualquer centro: fora da mordaca de uma e dentro do portao da
+## outra -- ou seja, o espalhamento da perna se desfaz pelo caminho do nascimento,
+## sem que nenhuma das outras checagem veja. Trocar a ancora para o centro do adulto
+## de identidade MENOR (o mesmo desempate que a ronda usa) e o que esta linha exige,
+## e a premissa impressa (`_primeiro_par`) e a testemunha de que o par escolhido e o
+## par que a roda realmente achou.
+func _test_nascimento_fica_na_toca_dos_pais() -> bool:
+	# --- braco A: mesma toca ---
+	_arm()
+	_boot_session(5, true)
+	var sA: Session = _session
+	var wsA: Array = _pack_wolves()
+	var aA := -1
+	var bA := -1
+	for i in wsA.size():
+		if aA >= 0:
+			break
+		for j in range(i + 1, wsA.size()):
+			var x: Wolf = wsA[i]
+			var y: Wolf = wsA[j]
+			if x.alive and y.alive and int(x.den) >= 0 and int(x.den) == int(y.den):
+				aA = i
+				bA = j
+				break
+	if aA >= 0:
+		_pack_place(aA, MATE_SPOTS[0])
+		_pack_place(bA, MATE_SPOTS[1])
+	var parA := _primeiro_par(sA)
+	_check(aA >= 0 and parA.size() == 2 and int(parA[0]) == aA and int(parA[1]) == bA,
+			"premissa (braco A): o par que a roda acha e o par da mesma toca",
+			"posicionados=[%d,%d] achados=%s toca=%d raio=%.0f m" % [
+			aA, bA, str(parA), int(wsA[aA].den) if aA >= 0 else -99, Session.MATE_RADIUS])
+	if aA < 0 or parA.size() != 2:
+		_pack_release()
+		return true
+	var antesA := {}
+	for w: Wolf in sA.wolves:
+		antesA[w.identity] = true
+	_advance_pack(1)
+	var criaA: Wolf = null
+	for w: Wolf in sA.wolves:
+		if not antesA.has(w.identity):
+			criaA = w
+	var denA := int((wsA[aA] as Wolf).den)
+	var foraA := -1.0
+	var dentroA := INF
+	if criaA != null and int(criaA.den) >= 0:
+		foraA = _no_chao(criaA.home, sA._dens[int(criaA.den)])
+		for i in sA._dens.size():
+			if i != int(criaA.den):
+				dentroA = minf(dentroA, _no_chao(criaA.home, sA._dens[i]))
+	_check(criaA != null and int(criaA.den) == denA
+			and foraA >= 0.0 and foraA <= float(Session.PACK_LEASH),
+			"nascimento_fica_na_toca_do_casal",
+			"cria=%s den=%d esperado=%d do_centro=%.1f m (mordaca %.0f) do_centro_alheio=%s" % [
+			str(criaA.identity) if criaA != null else "nenhuma",
+			int(criaA.den) if criaA != null else -99, denA, foraA, Session.PACK_LEASH,
+			"sem_outro_centro" if is_inf(dentroA) else "%.1f" % dentroA])
+
+	# --- braco B: tocas diferentes ---
+	_arm()
+	_boot_session(5, true)
+	var sB: Session = _session
+	var wsB: Array = _pack_wolves()
+	var aB := -1
+	var bB := -1
+	for i in wsB.size():
+		if aB >= 0:
+			break
+		for j in range(i + 1, wsB.size()):
+			var x: Wolf = wsB[i]
+			var y: Wolf = wsB[j]
+			if x.alive and y.alive and int(x.den) >= 0 and int(y.den) >= 0 \
+					and int(x.den) != int(y.den):
+				aB = i
+				bB = j
+				break
+	if aB >= 0:
+		_pack_place(aB, MATE_SPOTS[0])
+		_pack_place(bB, MATE_SPOTS[1])
+	var parB := _primeiro_par(sB)
+	var sepB := _separacao_das_tocas(sB)
+	_check(aB >= 0 and parB.size() == 2 and int(parB[0]) == aB and int(parB[1]) == bB,
+			"premissa (braco B): o par que a roda acha e o par de duas tocas",
+			"posicionados=[%d,%d] achados=%s tocas=%d+%d separacao=%s m" % [
+			aB, bB, str(parB), int(wsB[aB].den) if aB >= 0 else -99,
+			int(wsB[bB].den) if bB >= 0 else -99,
+			"sem_par" if is_inf(sepB) else "%.1f" % sepB])
+	if aB < 0 or parB.size() != 2:
+		_pack_release()
+		return true
+	var antesB := {}
+	for w: Wolf in sB.wolves:
+		antesB[w.identity] = true
+	_advance_pack(1)
+	var criaB: Wolf = null
+	for w: Wolf in sB.wolves:
+		if not antesB.has(w.identity):
+			criaB = w
+	# O adulto que decide a toca e o de identidade menor -- o mesmo desempate que a
+	# ronda da perna 14 ja usa para ordenar assentos, nao uma preferencia nova.
+	var pai: Wolf = wsB[aB] if (wsB[aB] as Wolf).identity < (wsB[bB] as Wolf).identity \
+			else wsB[bB]
+	var mae: Wolf = wsB[bB] if pai == wsB[aB] else wsB[aB]
+	var denB := int(pai.den)
+	var propriaB := -1.0
+	var alheiaB := INF
+	if criaB != null and int(criaB.den) >= 0:
+		propriaB = _no_chao(criaB.home, sB._dens[int(criaB.den)])
+		for i in sB._dens.size():
+			if i != int(criaB.den):
+				alheiaB = minf(alheiaB, _no_chao(criaB.home, sB._dens[i]))
+	_check(criaB != null and int(criaB.den) == denB
+			and propriaB >= 0.0 and propriaB <= float(Session.PACK_LEASH)
+			and alheiaB >= float(Session.DEN_MIN_DIST),
+			"casal_de_tocas_diferentes_nao_cria_lar_fora_de_toca",
+			"cria=%s den=%d esperado=%d do_adulto_menor(%s)=%.1f m do_adulto_maior(%s)=%.1f m | mordaca %.0f portao %.0f do_centro_proprio=%.1f do_centro_alheio=%s" % [
+			str(criaB.identity) if criaB != null else "nenhuma",
+			int(criaB.den) if criaB != null else -99, denB,
+			str(pai.identity), _no_chao(criaB.home, pai.home) if criaB != null else -1.0,
+			str(mae.identity), _no_chao(criaB.home, mae.home) if criaB != null else -1.0,
+			Session.PACK_LEASH, Session.DEN_MIN_DIST, propriaB,
+			"sem_outro_centro" if is_inf(alheiaB) else "%.1f" % alheiaB])
+	_pack_release()
+	return true
+
+
+## Checagem 7 do dossie 16 §5: o espalhamento nao pode custar passo.
+##
+## O par pedido pela pagina e `sim_step` integral com e sem a perna, mesma cena,
+## mesma semente. Ele nao pode ser montado dentro deste processo: nao existe a
+## porta "sem a perna" -- `Session._dens` e a colocacao que o enche sao o codigo
+## medido, e um braco que esvazia `_dens` a mao encena um estado que nenhuma
+## transicao do jogo produz (a regra do ciclo 3 da casa). O par existe entao como
+## duas corridas do MESMO rodape (`CENARIO ESTREITO` / `PASSOS DE MATILHA`, linhas
+## que a perna nao toca) na `main` anterior e nesta ponta, e os dois numeros vao
+## para o status com os dois logs.
+##
+## O que esta linha gates, e o que so sai impresso, sao coisas diferentes, e a
+## separacao e o ponto:
+## - criterio: a regua de 25 ms por passo (a mesma dos dossies 17 e 19) contra
+##   `clock.worst_step_ms` lido pela API publica, e o pico dos proprios 1 400 passos
+##   cronometrados aqui;
+## - impresso sem ser criterio: a media por passo e o custo da colocacao. Colocar
+##   toca roda no caminho raro -- spawn, fila, parto -- e e justamente onde um custo
+##   se disfarca de gratis, entao o numero tem de estar na mesa mesmo sem regua
+##   publicada; a janela medida e o passo de 20 Hz, e a janela nao cobra o boot.
+##
+## `clock.begin_step()`/`end_step()` dao a volta no `_sim_tick` exatamente como
+## `main.gd:259-261`: sem isso o `worst_sim_ms` do `diagnostics()` seria o chao do
+## relogio novo e a linha diria "nada acima de 25 ms" por nao ter medido nada. Os
+## corpos vao pelos tres sub-passos dos irmaos de tocas (`_test_toca_nao_deriva_para_unica`),
+## para a cena ser a mesma cena daquela checagem.
+func _test_espalhamento_nao_estoura_o_passo() -> bool:
+	_arm()
+	# A colocacao vai cronometrada numa janela propria, e por um motivo que e o
+	# contrario de cosmetico: `_boot_session(0)` poe o jogador e nao sorteia bicho
+	# nenhum, e o `_spawn_wolves(5)` que vem em seguida e a mesma chamada, com o mesmo
+	# cursor de RNG, que `_boot_session(5)` faria uma linha depois. O que muda e so
+	# onde o cronometro esta, e o que ele pega e o caminho raro.
+	var s0: Session = null
+	_boot_session(0)
+	s0 = _session
+	var t_colocacao := Time.get_ticks_usec()
+	s0._spawn_wolves(int(Session.WOLF_COUNT))
+	var colocacao_us := Time.get_ticks_usec() - t_colocacao
+	var d_boot: Dictionary = s0.diagnostics()
+	var comps_boot := _componentes_da_matilha(s0)
+	var sep_boot := _separacao_das_tocas(s0)
+	_pack_release()
+	# A janela de passo, na sessao real dos cinco bichos com as tocas fundadas.
+	# Segundo `_arm()` e obrigatorio, nao limpeza: o sorteio de lar consome o RNG
+	# global e `_arm` e a unica chamada que o devolve para `SEED` -- sem ele a
+	# segunda matilha nasceria de um cursor ja avancado pela primeira e os dois
+	# numeros impressos nao seriam a mesma cena.
+	_arm()
+	_boot_session(int(Session.WOLF_COUNT))
+	var s: Session = _session
+	var tick0 := int(s.diagnostics()["tick"])
+	var total_us := 0
+	var pico_us := 0
+	var passos := 0
+	var pior_comp := 99
+	var bichos_pior := 0
+	while passos < 1400:
+		passos += 1
+		var t0 := Time.get_ticks_usec()
+		s.clock.begin_step()
+		s._sim_tick()
+		s.clock.end_step()
+		var cost := Time.get_ticks_usec() - t0
+		total_us += cost
+		pico_us = maxi(pico_us, cost)
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+		var comps := _componentes_da_matilha(s)
+		if passos == 1 or comps.size() < pior_comp:
+			pior_comp = comps.size()
+			bichos_pior = 0
+			for c: Array in comps:
+				bichos_pior += c.size()
+	var d: Dictionary = s.diagnostics()
+	var media_us := float(total_us) / float(maxi(passos, 1))
+	_check(int(d["tick"]) - tick0 == 1400 and s._dens.size() >= 2
+			and int(d_boot["dens"]) == s._dens.size() and pior_comp >= 2,
+			"premissa: 1 400 passos da matilha espalhada, e a fundacao rodou pela porta do jogo",
+			"passos=%d tick0=%d->%d  dens=%d componentes_min=%d bichos_lidos=%d | boot: dens=%d componentes=%d separacao=%s m matilha=%d fila=%d" % [
+			passos, tick0, int(d["tick"]), s._dens.size(), pior_comp, bichos_pior,
+			int(d_boot["dens"]), comps_boot.size(),
+			"sem_par" if is_inf(sep_boot) else "%.1f" % sep_boot,
+			int(d_boot["wolves"]), int(d_boot["pending_respawns"])])
+	_check(float(d["worst_sim_ms"]) <= 25.0 and pico_us <= 25000,
+			"espalhamento_nao_estoura_o_passo",
+			"worst_sim_ms=%.2f ms  pico_do_passo=%d us  media=%.1f us/passo  total=%d us em %d passos  | colocacao (caminho raro, sem regua): %d us por %d lares com %d tocas fundadas" % [
+			float(d["worst_sim_ms"]), pico_us, media_us, total_us, passos,
+			colocacao_us, int(Session.WOLF_COUNT), s._dens.size()])
+	_pack_release()
 	return true

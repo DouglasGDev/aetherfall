@@ -18,7 +18,7 @@ Existe e roda: `godot --headless --path . tests/smoke_test.tscn` (saída `N chec
 em `tests/smoke_test.gd:174-175`, exit 1 se `M > 0`), os runners `extends SceneTree`
 `tests/simulation_rng_test.gd:1`, `tests/tick_journal_test.gd:1`, `tests/aether_reactions_test.gd:1`,
 o primitivo de hash `src/persistence/tick_journal.gd:16-44`, o CLI `--tick-journal=`
-`src/main.gd:837-844` e `diagnostics()` `src/main.gd:772-783` (já expõe `gen_ms`, `mesh_ms`,
+`src/main.gd:1059-1066` e `diagnostics()` `src/main.gd:987-1004` (já expõe `gen_ms`, `mesh_ms`,
 `triangles`, `tick`, `worst_sim_ms`, `dropped_ticks`, `journal`). Logs abertos por mim:
 `.tools/af-clean-suite2.log:12` geração 939.3 ms / malharia 4.677,9 ms, `:292` `tick=359`,
 `dropped_ticks=0`, `triangles=214480`, `:294` `219 checagens 0 falhas 35,4 s`;
@@ -36,7 +36,7 @@ bake-off com dois braços, medição de custo "edição → malha pronta" e qual
 ritmo de parede sustentado pela suíte (359 ticks em 35,4 s, `.tools/af-clean-suite2.log:292,294`)
 isso é ordem de 20 min de corrida × 3; derivado do código e do log, **não medido**.
 
-API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:833-834` →
+API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:1055-1056` →
 `TickJournal.state_hash` `:16-44`), `clock.step_duration()` (`src/core/sim_clock.gd:42-43`),
 `player.update_local(dt)` chamado pelo próprio runner em `dt` fixo (precedente real:
 `tests/smoke_test.gd:107-113` e o porquê em `:245-254`), e `tick_journal.record()` com recusa de
@@ -44,7 +44,7 @@ arquivo existente (`src/persistence/tick_journal.gd:47-62`) e monotonicidade `la
 (`:69-73`) — o "sem buraco" vem de graça. Forma: runner `extends SceneTree` sob `tests/`, como os
 três já existentes; `src/tools/` não existe.
 
-Hoje o passo vem do `_physics_process` com `delta` real (`src/main.gd:177-183`) e o teto de 5
+Hoje o passo vem do `_physics_process` com `delta` real (`src/main.gd:255-261`) e o teto de 5
 passos por frame zera o acumulador ao estourar (`src/core/sim_clock.gd:19-29`), ou seja: em modo
 vivo o número de ticks e a sequência de estados dependem do relógio de parede — é exatamente isso
 que o driver de `dt` fixo precisa remover. Por isso a checagem é o hash e não fps: fps é função da
@@ -59,7 +59,7 @@ com `--import` (`AGENTS.md:381-383`).
 
 O mesher de hoje é um `ArrayMesh` por chunk, face-culling + AO por vértice (`src/world/voxel_world.gd:2-4`),
 vizinho respondido por cópia linear do mundo inteiro reconstruída uma vez por `generate()`
-(`:123`, `:130-143`), fila com orçamento de 2 chunks por frame (`src/main.gd:27` → `:261-262`,
+(`:123`, `:130-143`), fila com orçamento de 2 chunks por frame (`src/main.gd:27` → `:274-275`,
 consumido em `src/world/voxel_world.gd:178-186`) e geometria só de cubo unitário (`:14-21`).
 O precedente medido está no comentário de `:126-129` (dicionário de chunks ≈ 250 ms/chunk, boot
 congelado ≈ 16 s) e no README: `~0,9 s de geração + ~4,3 s de malharia` dos 64 chunks, 214.480
@@ -87,8 +87,8 @@ com teto de 5 passos/frame e `dropped_ticks += 1` com corte do acumulador, "nunc
 silencioso" (`:17-29`); (c) cronômetro `begin_step`/`end_step` em µs com `worst_step_ms`
 monotônico por reset (`:32-39`, `:46-47`); (d) cadências por subsistema montadas em cima do tick,
 em `src/main.gd:27-31` (`AETHER_PERIOD 0,25`, `MESH_BUDGET 2`, `VIZ_PERIOD 0,25`, `RESPAWN_DELAY 45`, `CORPSE_CHECK_PERIOD 1,0`) e no corpo de
-`_sim_tick` (`src/main.gd:251-281`); (e) o que **não** é autoridade: locomoção do jogador e do
-lobo andam por frame (`src/main.gd:177-183`). Regra da casa: o `EntityStore` SoA que o design
+`_sim_tick` (`src/main.gd:264-298`); (e) o que **não** é autoridade: locomoção do jogador e do
+lobo andam por frame (`src/main.gd:255-261`). Regra da casa: o `EntityStore` SoA que o design
 descreve (`docs/design/06:46-63`) não existe — no doc entra marcado como `[TARGET]`, nunca no
 indicativo; legenda em `docs/design/README.md:12-16`.
 
@@ -105,8 +105,9 @@ bench introduz. Um hash estável em 3 execuções é condição do bake-off, nã
 
 ## 7. Custo nas quatro perguntas
 
-Roda por frame (o `advance` com `delta` real, `src/main.gd:177-183`) ou por tick (o corpo do
-`_sim_tick`, 12 000 vezes por corrida de bench); alcança 5 lobos (`src/main.gd:9`), 64 chunks
+Roda por frame (o `advance` com `delta` real, `src/main.gd:255-261`, o `advance` em `:257`) ou por
+tick (o corpo do `_sim_tick`, 12 000 vezes por corrida de bench); alcança 5 lobos (`src/main.gd:9`),
+64 chunks
 (`src/world/voxel_config.gd:10-11`), 1 jogador. Aloca no caminho quente: `state_bytes()` devolve
 cópia do `_cur` inteiro por registro (`src/world/aether_field.gd:233-234`, tamanho =
 `Channel.COUNT` × `size_x·size_y·size_z`, `:9`, `:45-46`), com serialização + SHA256 + `flush` por
@@ -150,7 +151,7 @@ Citações que não conferem (verificadas abrindo os arquivos):
   malha, `:14` visão, `:16` cadáveres); a alegação de deslocamento em +1 foi deste briefing e o
   código a refuta. `WOLF_COUNT` está em `:9`, `SEED` em `:10`, `SLOT` em `:11`.
 - A contagem publicada é **236 checagens / 0 falhas / 37,1 s** no clone limpo de `9f3622b`
-  (`docs/melhorias-status.md:1770` e a nota em `:1776-1779`). As ocorrências antigas de 232 —
+  (`docs/melhorias-status.md:1888` e a nota em `:1894-1897`). As ocorrências antigas de 232 —
   `docs/design/08-roadmap-risks-licensing.md:44-45` (que agora diz os dois números) e quatro linhas
   do status de antes (91, 249, 665, 702) — são da rodada do `a8967e0` e continuam corretas porque mediram aquele clone.
   Os logs que eu abri aqui são os locais de `.tools/` e dão 219 (um com 4 falhas) — contagem
