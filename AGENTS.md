@@ -240,7 +240,7 @@ perto ou longe ([wolf.gd:837-842](src/entities/wolf.gd#L837-L842)). A peça do d
 
 **Anti-bloat, com o estado real:**
 
-- `main.gd` é o "objeto deus" conhecido — 1242 linhas nesta revisão (`wc -l`), 510 na `main` de `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
+- `main.gd` é o "objeto deus" conhecido — 1246 linhas nesta revisão (`wc -l`), 510 na `main` de `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
   oráculo, visualização, instância do journal, o nó de áudio e o hospedeiro do modelo ([main.gd:43-59](src/main.gd#L43-L59)), com as tocas da perna 16 dentro do bloco da matilha (`var _dens` em [:109](src/main.gd#L109)). Isso está registrado como
   débito, não como licença: mudança que precisa de estado novo pergunta primeiro **quem é o
   dono** daquele estado.
@@ -626,7 +626,12 @@ esta branch **não** os comita. Nenhuma linha de código da perna 20 foi escrita
    pine o SHA no texto. Mudou o código depois da medição, o número volta a ser hipótese.
 7. **Fim de bloco: atualize `docs/melhorias-status.md`** — feito / em andamento / falta /
    débitos / furos descobertos / notas de medição — e re-derive as citações que o bloco tornou
-   velhas. Documento que descreve peça inexistente se marca como alvo, não se escreve no indicativo.
+   velhas. A lista de documentos a re-derivar sai de `git grep -l "<arquivo-tocado>" docs AGENTS.md`,
+   **não** da memória: `tools/check_doc_anchors.py` e `verify_plan_cites.py` não vêem um ponteiro de
+   prosa cujo número-alvo continua dentro do arquivo e continua não-branco, então `casos objetivos: 0`
+   e `fora do arquivo: 0` não significam "nenhum ponteiro velho" (furo #28, medido na 07c: 33 números
+   envelheceram em três páginas que a varredura não abriu, e as duas réguas ficaram verdes). Documento
+   que descreve peça inexistente se marca como alvo, não se escreve no indicativo.
 8. **Commit atômico.** Push só quando o dono pedir, e publicação se confirma com
    `git ls-remote --heads origin`: este repositório já teve um `origin` apontando para ele mesmo,
    de onde o `push` saía com código 0 sem publicar nada.

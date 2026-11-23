@@ -50,7 +50,7 @@ Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 | "testes de determinismo: 20 sementes × 1000 ticks no cenário do lobo" | A suíte roda **uma** semente (`const SEED := 20261116` — [smoke_test.gd:10](../tests/smoke_test.gd#L10)) e a checagem determinística é uma só: 16 colunas de altura geradas duas vezes e comparadas — [smoke_test.gd:360-370](../tests/smoke_test.gd#L360-L370). Não há harness multi-semente em `tests/` | **falso hoje**; só faz sentido depois do hash |
 | "budget HOT medido" | `SubtreeGuard` mede só a árvore e retorna falha no estouro — [bt_tree.gd:117-134](../src/ai/behavior/bt_tree.gd#L117-L134), default 250 µs; o lobo usa **400 µs** — [wolf.gd:389-390](../src/entities/wolf.gd#L389-L390). O F3 mostra custo/estouros — [wolf.gd:883](../src/entities/wolf.gd#L883). O teste de rastros agora colhe `sim_step` integral e `last_us`/`trips`, com um lobo por cenário; não mede o agregado simultâneo da matilha | **parcial**; há colheita estreita, mas o HOT de cinco lobos e o gate P1 continuam abertos |
 | "oráculo ainda é HTTP, não nativo — fortaleça sem fingir que é nativo" | Correto e verificado: `HTTPRequest` contra `http://127.0.0.1:8741`, timeout 8 s, recuo de 30 s, resposta vazia → recuo global sem tocar a decisão — [mind_oracle.gd:11-13](../src/ai/mind_oracle.gd#L11-L13), [:162-174](../src/ai/mind_oracle.gd#L162-L174). Desde a perna 15 o `503` de "carregando" tem recuo próprio de 2 s — `LOADING_COOLDOWN` ([:28](../src/ai/mind_oracle.gd#L28), aplicado em [:168-171](../src/ai/mind_oracle.gd#L168-L171)) — e um portão de prontidão que segura o pedido antes de o modelo estar no ar ([:39](../src/ai/mind_oracle.gd#L39), cobrado em [:77-81](../src/ai/mind_oracle.gd#L77-L81)). Um pedido em voo, round-robin pela matilha, prompt montado do estado interno — [:75-91](../src/ai/mind_oracle.gd#L75-L91), `_prompt_for` em [:131-148](../src/ai/mind_oracle.gd#L131-L148). Não há cache nem embeddings | **falso no projeto, certo no diagnóstico** |
-| "reduza o acoplamento de `main.gd` / `wolf.gd` / memória" | Os números reais hoje (medidos nesta ponta com `wc -l`): `main.gd` 1242 linhas, `wolf.gd` 1218, `player.gd` 787, `voxel_world.gd` 637, `mind.gd` 167, `aether_field.gd` 234, `smoke_test.gd` 2681; o journal é dono de seu arquivo e contadores. O acoplamento é estrutural, não de tamanho: `main.gd` é dono de mundo, relógio, matilha, HUD, oráculo, visualização, o nó de áudio, o hospedeiro do modelo e as tocas ao mesmo tempo — [main.gd:45-57](../src/main.gd#L45-L57), `var _dens` em [:109](../src/main.gd#L109) | **válido**; medir por linhas é proxy, o que importa é o dono único |
+| "reduza o acoplamento de `main.gd` / `wolf.gd` / memória" | Os números reais hoje (medidos nesta ponta com `wc -l`): `main.gd` 1246 linhas, `wolf.gd` 1218, `player.gd` 787, `voxel_world.gd` 687, `mind.gd` 167, `aether_field.gd` 234, `smoke_test.gd` 2681; o journal é dono de seu arquivo e contadores. O acoplamento é estrutural, não de tamanho: `main.gd` é dono de mundo, relógio, matilha, HUD, oráculo, visualização, o nó de áudio, o hospedeiro do modelo e as tocas ao mesmo tempo — [main.gd:45-57](../src/main.gd#L45-L57), `var _dens` em [:109](../src/main.gd#L109) | **válido**; medir por linhas é proxy, o que importa é o dono único |
 | "zero derivação GPL do Veloren" | Verificado por ausência: nenhum `.rs` e nenhum `.ron` no repositório. As menções a Veloren são comentários de idéia e de origem em 12 pontos de `src/` (ex.: [inventory.gd:5-17](../src/items/inventory.gd#L5-L17), que inclusive separa "o que não veio do Veloren") e o link do §09 | **correto**; nada a corrigir |
 | "números medidos, gates subtrativos, docs derivados de código" | Já é a prática da casa: §08 tem a tabela "Estado real do roadmap" com o que existe e o que falta por fase — [08-roadmap-risks-licensing.md:20-38](design/08-roadmap-risks-licensing.md) | **correto**; o §08 já carrega o estado real, não precisa de nova edição |
 
@@ -64,7 +64,7 @@ o mesmo texto traz, no mesmo espírito da tabela acima.
 | O que o prompt afirma | O que está em `src/` hoje | Veredicto |
 |---|---|---|
 | "Estamos em P0/P1" | O §08 diz outra coisa, e a suíte confirma: o projeto está **antes** de P1 e **sem nenhum gate fechado** — [08-roadmap-risks-licensing.md:36-38](design/08-roadmap-risks-licensing.md). Existe um slice P0/P1 jogável, não uma fase encerrada | **verdade como ponto de partida, falso como fase**; ler "P0/P1" como "o que existe", nunca como "o que está aprovado" |
-| "Não quebrar determinismo ou a capacidade de hash/journal sem avisar" | O primitivo agora existe: ordenação de edições, identidades e crenças; Float32 integral do Éter; versão do formato; ticks consecutivos em arquivo novo. O save é deliberadamente diferente: filtra Éter e não conserva a origem das crenças. `diagnostics()` expõe custo e última assinatura ([main.gd:1159-1184](../src/main.gd#L1159-L1184)) | **salvaguarda do contrato mínimo**; preservar a projeção não equivale a tornar o jogo determinístico |
+| "Não quebrar determinismo ou a capacidade de hash/journal sem avisar" | O primitivo agora existe: ordenação de edições, identidades e crenças; Float32 integral do Éter; versão do formato; ticks consecutivos em arquivo novo. O save é deliberadamente diferente: filtra Éter e não conserva a origem das crenças. `diagnostics()` expõe custo e última assinatura ([main.gd:1159-1191](../src/main.gd#L1159-L1191)) | **salvaguarda do contrato mínimo**; preservar a projeção não equivale a tornar o jogo determinístico |
 | "A mente propõe, as regras dispõem — LLM nunca decide movimento, dano, posição ou estado" | Verdade hoje por fiação, não por verifier: a única saída de `MindOracle` é `_narrations` — [mind_oracle.gd:47](../src/ai/mind_oracle.gd#L47), [:176](../src/ai/mind_oracle.gd#L176) — lida por `narration_of()` ([:96-97](../src/ai/mind_oracle.gd#L96-L97)) e entregue só ao HUD ([main.gd:183](../src/main.gd#L183) → [hud.gd:276-277](../src/ui/hud.gd#L276-L277)). Grep de `oracle`/`narration` em `src/` não acha nenhum outro consumidor: nem `Mind`, nem `Wolf`, nem o mundo leem o oráculo | **correto hoje**; o dia em que o oráculo *sugerir*, a sugestão entra como crença em quarentena (§04), não como intenção escrita |
 | "Completar o mínimo de P1: AetherField, Mind, consolidação, observabilidade, testes de hash, budget" | Três dos seis existem: `AetherField` (com 3 dos 6 canais), `Mind` e a **consolidação** — mas esta vive dentro de `Mind`, não num `MindStore` à parte. Observabilidade há em texto (F3), inspector não; o primitivo de hash mínimo tem suíte própria, mas o cenário multi-semente ainda não existe; "budget" tem mecanismo e colheita estreita de um lobo, não do agregado HOT | **metade feito**; item por item nas linhas acima e na fila "Falta" |
 | "Melhorar a degradação e a robustez do oráculo atual (ainda HTTP)" | Correto no diagnóstico, e a degradação já é checada sem rede — sonda apontada para a porta 1 em [smoke_test.gd:2123-2128](../tests/smoke_test.gd#L2123-L2128). O caminho feliz depende de `llama-server` de fora e não é testável em headless | **correto**; está dentro do escopo autorizado |
@@ -5155,3 +5155,141 @@ com `"edits":13, "meshes":147, "triangles":214480`). `src/` da base confere com 
 contra `88a1541c2f9f6fc3…`), diferença que é `tests/af_bench.gd` (+344) e seu `.uid`, do merge do 07b — a
 frase do briefing de que `tests/` estava idêntico ao pin não segurou, e o contrato de identidade de
 `tests/` com o pin não existe.
+
+## Registro do pouso 07c na `main` — o pin medido no clone limpo e o corpus que a varredura deixou de fora (2026-11-23, `docs/registro-merged-main-07c`, base `cea4379`)
+
+Publicada no fim do arquivo pelo mesmo motivo das duas notas anteriores. A perna é código, então o número
+pineado é o do merge medido, não o de um documento em cima dele.
+
+**O pouso.** `git merge --no-ff bench/bake-off-voxel-07c` na `main` → **`cea437959fd0867f65a2d2e2b40663df8dcd753e`**,
+pais `166af71` (o pouso do 07b) e `4355935` (a rodada da mesa), **33 arquivos, +1 747/−106**. As árvores:
+`git rev-parse cea4379:src` = `100af75ded6d50b6a26120be352cf72770f97e80` e `:tests` =
+`77fcb0510525a82d39bb799ff1376ff0fb6eb17b` — diferentes das do `9b2c65a` (`64f137bc…` / `88a1541c…`), como
+se esperava de uma perna que escreve instrumento. O código da perna em `src/` são **+4 linhas em
+`src/main.gd`** (um bloco `@@ -1172,0 +1173,4 @@`, dentro de `diagnostics()`) e **+50 em
+`src/world/voxel_world.gd`** (cinco blocos: `+9 @58`, `+5 @154`, `+6 @284`, `+29 @288`, `+1 @515`), mais o
+runner novo `tests/af_bakeoff.gd` (237 linhas) e mais nada em `tests/`. Consequência lida antes de dizer
+"testado": `git diff --name-only 166af71 cea4379` fora de `docs/` devolve **5 arquivos** — `AGENTS.md`,
+os dois de `src/`, o runner e seu `.uid` — e `tests/smoke_test.gd` **não** está entre eles, então a suíte
+continuou em **255** checagens: a coluna nova é checada só dentro do bake-off, em
+[`tests/af_bakeoff.gd:152`](../tests/af_bakeoff.gd#L152) (`var cost: Dictionary = diag["edit_mesh"]`), e a
+suíte apenas a publica no `diagnostics()`.
+
+**O pin, medido num clone limpo de `cea4379` com `--import` frio, serial, máquina livre** (engine
+`4.7.2.stable.official.ed1daf0bf`; nenhum `[FAIL]`, nenhum `SCRIPT ERROR` em nenhuma das seis corridas):
+
+| Corrida | saída literal do rodapé |
+| --- | --- |
+| suíte | `== 255 checagens  0 falhas  47.6 s de teste ==`, exit 0 |
+| runner de reações | `OK censo de checagens \| 240/240` → `240 checagens 0 falhas 24.546 s` |
+| runner RNG | `OK censo de checagens \| 27/27` → `27 checagens 0 falhas 2.673 s` |
+| runner journal | `128 checagens 0 falhas 7/7 testes concluidos 5.582 s` |
+| `af_bench` (12 000 ticks) | `16 checagens 0 falhas 45.920 s` |
+| `af_bakeoff` braço A | `11 checagens 0 falhas 8.057 s` |
+
+Duas coisas essa mesa do clone limpo prova, e nenhuma delas é desempenho:
+
+- **o instrumento não moveu a projeção do journal.** A linha de gate do `af_bench` devolve
+  `hash_ultima_linha=fd9b41e0dc3ae2eb5f4c76cd6467ffc8d6204134354e5f765fbc1f6f6d604a32` com
+  `hashes_distintos=12000/12000` — **o mesmo hash final** das três corridas publicadas na readback do 07b
+  ([`docs/evidence/af-bench-boot-walk/readback.md`](evidence/af-bench-boot-walk/readback.md) linhas 65–67).
+  O `edit_mesh` novo do `diagnostics()` entra no F3 e no log, não na projeção; `Channel.COUNT`,
+  `FORMAT_VERSION`, `GEN_VERSION` e `state_hash()` seguem intocados.
+- **a coluna nova aparece no diagnóstico e no clone.** `suite.log:345`:
+  `"edit_mesh":{"count":14,"mean_us":121496.857,"pending":0,"worst_us":221932}` com
+  `"edits":13, "meshes":147, "triangles":214480`. No bake-off do mesmo clone, o braço A deu
+  `gen_ms=945.836 mesh_ms=4269.300` e `edit_cost count=52 worst_us=163290 mean_us=78621.4 pending=0` com
+  `corpo=619e891c95dc5b44…` — dentro das faixas das três corridas A da mesa da ponta
+  (936,8–953,6 ms / 4.226,8–4.369,0 ms / 76.979,8–78.642,6 µs), então a publicação do número não dependeu
+  do worktree onde ele foi gerado.
+
+**O que esta passada conserta: o furo #28.** A varredura de 66 ponteiros que a 07c registrou percorreu
+[AGENTS.md](../AGENTS.md), os design 07/08/09, [`docs/engine/simclock.md`](engine/simclock.md), este status
+e os dossiês 01/02/04/07/12/13/14/15/16/17/18/19 — e **não abriu** [`docs/design/10`](design/10-world-layers-and-block-physics.md),
+[`docs/design/11`](design/11-inventory-crafting.md) nem [`docs/planos/06`](planos/06-decompor-main-gd.md).
+Como os dois arquivos de `src/` que a perna alongou são justamente os mais citados dessas três páginas,
+33 números envelheceram ali e passaram verdes por todas as réguas. Re-derivados **por conteúdo**, abrindo
+o arquivo citado e lendo a declaração — nunca somando o delta do diff:
+
+- [`docs/design/10-world-layers-and-block-physics.md`](design/10-world-layers-and-block-physics.md) — 23 linhas.
+  Entre elas `set_block` `:251-262`→`:266-277`, o `emit` `:261`→`:276`, `aabb_hits_solid`
+  `:300-310`→`:350-360`, o loop de `build_chunk_mesh` `:455-488`→`:504-537`, os materiais
+  `:77-82`/`:499-502`/`:503-506`→`:86-91`/`:549-551`/`:553-555`, `_emit_face` `:569-570`→`:619-620`,
+  `apply_edits` `:163-173`→`:178-188`, `surface_height` `:401-407`→`:451-457`, e o ponteiro de
+  `main.gd` `1152-1163`→`1159-1185`.
+- [`docs/design/11-inventory-crafting.md`](design/11-inventory-crafting.md) — 2 linhas (face opaca
+  `:463-483`→`:512-532`; vidro `:92-98 … aplicada em :505`→`:101-107 … :555`).
+- [`docs/planos/06-decompor-main-gd.md`](planos/06-decompor-main-gd.md) — 5 linhas: a contagem do arquivo
+  (`1242`→**1246**, em dois lugares) e as três faixas do bloco de cauda (`diagnostics` `1159-1191`→
+  `1159-1195` com 37 linhas, `_build_environment`→`1196-1230`, `state_hash`/CLI/`_exit_tree`→`1231-1246`),
+  que a perna 16 já havia deslocado e aqui se re-alignou contra o corpo lido hoje.
+- [AGENTS.md](../AGENTS.md) — 1 linha: "`main.gd` é o objeto deus conhecido — **1246** linhas nesta revisão".
+- este status — 2 linhas: a tabela de tamanho de arquivos (`main.gd` 1242→**1246**, `voxel_world.gd`
+  637→**687**; os outros seis da linha conferidos por `wc -l` na hora) e o ponteiro de `diagnostics()`
+  (`1159-1184`→`1159-1191`).
+
+**As réguas, com esta seção já dentro do corpus** (comando literal, número lido da saída):
+
+- `python tools/check_doc_anchors.py` → `corpus na arvore de trabalho  arquivos: 38  ponteiros conferidos:
+  2850  rotulos conferidos: 197  links relativos conferidos: 2845` / **`casos objetivos: 0`**. A mesma
+  régua, corrida num worktree descartável de `cea4379` **antes** das correções desta passada, devolveu
+  `38 · 2844 · 197 · 2830` com **`casos objetivos: 1`** — o `docs/melhorias-status.md:3275 →
+  ../.tools/_chk_labels.py`, gitignored, que só resolve na árvore primária. Os dois números importam
+  juntos: entre a árvore-base e a corrigida, **com esta seção ainda fora**, as contagens não se mexeram —
+  `2844 · 197 · 2830` dos dois lados, porque trocar número não cria nem destrói ponteiro — e o caso que
+  sumiu é o de sempre, explicado pela árvore, **não** por esta passada. As 33 re-derivações abaixo passaram
+  pelas duas réguas sem que nenhuma dissesse nada: é o furo #28. Os **+6 ponteiros e +15 links** de agora
+  são os desta seção.
+- `python .tools/verify_plan_cites.py docs/planos/*.md docs/design/*.md docs/engine/*.md
+  docs/melhorias-status.md AGENTS.md README.md` → **2 661** citações com número de linha conferidas,
+  **34** arquivos citados que não existem, **`numeros de linha fora do arquivo: 0`**, exit 0. Rodada na
+  árvore-base, com `AETHER_ROOT` no worktree: **2 643** conferidas, **64** arquivos ausentes e **o mesmo
+  `fora do arquivo: 0`** — a segunda metade da prova de que o instrumento não vê o defeito. As duas listas
+  de ausentes foram postas lado a lado (`comm` sobre os `FALTA` das duas corridas): a base tem **31** a mais
+  e os 31 são `.tools/` — **27** linhas de log de corrida e **4** de `shot_gallery.gd`/`.tscn` — que existem
+  no disco desta árvore (o `.tools/` é gitignored, mas esta máquina carrega **703** `.log` e os
+  `shot_gallery.*` dele — 1 247 entradas no total) e não existem num worktree limpo. Restam **3** aqui: os `_head_{agents,readme,status}.md` que o pouso da 16 copiou para
+  medir e depois removeu, citados no parágrafo que diz exatamente isso. Como nada de `.tools/` é versionado,
+  um **clone limpo** reportaria os 34 inteiros. Esta árvore tem **1** a mais que a base e é artefato desta
+  página: ao listar os nomes ausentes, o parágrafo os cita. Os outros **33** são 20 caminhos `[TARGET]` que
+  os próprios dossiês declaram inexistentes (`src/core/sim/tick_clock.gd` ×7,
+  `tests/wolf_multiseed_census_test.gd` ×3, `src/ai/reach.gd` ×3, `src/core/sim/entity_store.gd` ×3 e 13
+  avulsos do design 07) mais os **3** `_head_*.md` de cima. O `README.md` e a linha 07 do índice de dossiês
+  entraram no corpus desta vez.
+- `docs/planos/README.md`: a linha 07 trazia o nome único provisório `bench/af-bench-bakeoff-07`; passa a
+  listar as três branches reais na ordem em que pousaram — `docs/engine-simclock-07a` (`c1e77ad`),
+  `bench/af-bench-boot-walk-07b` (`166af71`), `bench/bake-off-voxel-07c` (`cea4379`).
+
+**Furo #28 — a régua não vê ponteiro de prosa em faixa, e a varredura de perna não lista os documentos.**
+Duas falhas de instrumento, uma só consequência. (a) Das seis classes objetivas de
+[`tools/check_doc_anchors.py`](../tools/check_doc_anchors.py), nenhuma marca um ponteiro escrito como prosa
+(`voxel_world.gd:261`) quando o número-alvo **continua dentro do arquivo e continua não-branco**: um `+N`
+desloca a declaração, o ponteiro passa a apontar para outra linha válida, a régua fica verde e o documento
+mente. É outra face do #26 — aquele é a **base de arquivos** (a régua só percorre `src|tests|docs`); este é
+a **classe de defeito**, e vale dentro do corpus. (b) A lista de documentos a re-derivar saiu do que a perna
+lembrou de abrir, não de `git grep -l "voxel_world.gd" docs` — por isso as três páginas ficaram de fora.
+Dono: `tools/check_doc_anchors.py`, arquivo que nenhuma perna da fila escreve; entra como débito de
+instrumento, não como tarefa de gameplay. A metade (b) é rotina e vale desde já: quem escreve `+N` em `src/`
+re-deriva por conteúdo **todos** os documentos que citam o arquivo, com a lista saindo do `git grep`, não da
+memória. A metade (a) pede um corredor de teste que não existe: conferir que a linha `N` contém o
+identificador backticado do próprio ponteiro — e um instrumento sem teste é o que o mandato 6 cobra antes
+de virar código. Enquanto (a) não existir, nenhum `casos objetivos: 0` quer dizer "nenhum ponteiro velho".
+
+**O que nada disso fecha.** (0) Primeiro, a identidade de árvore que faz o número acima valer para este
+registro: `docs/registro-merged-main-07c` é documento puro, e `git rev-parse HEAD:src` / `HEAD:tests` nela
+devolvem `100af75d…` / `77fcb051…` — as mesmas do `cea4379` medido no clone limpo. Nenhuma linha de código
+desta branch, portanto o contrato **255 / 0** se transmite por identidade de árvore e não por corrida nova.
+A suíte foi re-rodada na ponta ainda assim: **`== 255 checagens  0 falhas  47.9 s de teste ==`**, exit 0,
+zero `[FAIL]` e zero `SCRIPT ERROR` (`.tools/_reg07c_suite.log`, gitignored, como todo `.tools/`). (1) Gate
+de fase fecha o dono do repositório (mandato 4). (2) A 07c não troca
+malhador nenhum: o braço A continua o default, C vive só como patch, B e D seguem `[OPEN]`/`[CLAIMED]`.
+(3) `edit_mesh` é o remesh referenciado por edição, não o caminho de edição inteiro — `apply_edits`
+([`:178-188`](../src/world/voxel_world.gd#L178-L188)) no boot e no load cai em `mesh_ms`, e a primeira
+malharia de um chunk sem `mesh_instance` fica fora da conta. (4) As alturas que a linha P0 chamava de
+"certas" (942 ms / 4.682 ms) continuam sem corrida publicada que as sustente. (5) Nenhum FPS em nenhuma
+linha. (6) `tests/audio_test.gd.uid` e `tests/audio_live_probe.gd.uid` continuam fora do git (#25, decisão
+do dono) — e são os dois `??` que todo clone limpo mostra. (7) O #28 fica **aberto**: as 33 correções desta
+passada foram achadas por leitura humana, não pelo instrumento, e a régua continuava verde antes delas.
+(8) A fila viva passa a **12 → 17 → 18 → 20 → 13**; o elo da frente, `feat/bicho-cavando-12`, nasce vermelho
+porque `block_changed` ([`:6`](../src/world/voxel_world.gd#L6), emit em
+[`:276`](../src/world/voxel_world.gd#L276)) ainda não tem consumidor nenhum em `src/`.
