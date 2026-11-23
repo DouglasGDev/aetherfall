@@ -43,11 +43,21 @@ var edits: Dictionary = {}           # Vector3i -> int (edicoes persistentes)
 var gen: WorldGen = WorldGen.new()
 var nodes_root: Node3D = null
 
-# Copia linear do mundo inteiro: (y * _sz + z) * _sx + x.
-var _flat: PackedByteArray = PackedByteArray()
+# Braço C: halo do chunk em malharia. Copia linear de (X+2) x (Y+2) x (Z+2) com o
+# vizinho de borda dentro, montada por chunk no inicio do mesh e descartada no fim —
+# o casaco de 1 voxel e exatamente o alcance das perguntas do mesher (face e AO pedem
+# no maximo ±1 em cada eixo). Substitui a copia linear do mundo inteiro.
+const HALO_HW: int = CHUNK_SIZE_X + 2
+const HALO_HD: int = CHUNK_SIZE_Z + 2
+const HALO_HH: int = CHUNK_SIZE_Y + 2
+var _halo: PackedByteArray = PackedByteArray()
+var _halo_active: bool = false
+var _halo_x0: int = 0
+var _halo_x1: int = 0
+var _halo_z0: int = 0
+var _halo_z1: int = 0
 var _sx: int = 0
 var _sz: int = 0
-var _flat_ready: bool = false
 
 var _atlas: Texture2D = null
 var _mat_opaque: StandardMaterial3D = null
@@ -116,7 +126,7 @@ func atlas_texture() -> Texture2D:
 
 func generate(p_seed: int) -> void:
 	_release_mesh_nodes()
-	_flat_ready = false
+	_halo_active = false
 	gen.setup(p_seed)
 	chunks.clear()
 	for cz in VoxelConfig.WORLD_CHUNKS_Z:
@@ -129,27 +139,48 @@ func generate(p_seed: int) -> void:
 	# (inset de 3), o que mantem a geracao deterministica sem escrita entre vizinhos.
 	for key in chunks:
 		gen.decorate_chunk(chunks[key])
-	_rebuild_flat()
 
 
-## A malharia e o raycast perguntam pelo vizinho de cada voxel, o que da dezenas
-## de milhares de perguntas por chunk. Respondê-las pelo dicionario de chunks
-## (chave Vector2i) custava ~250 ms por chunk e congelava o boot por ~16 s; com a
-## copia linear a resposta vira um indice de array.
-func _rebuild_flat() -> void:
-	_flat.resize(CHUNK_SIZE_Y * _sz * _sx)
-	_flat.fill(BlockDefs.Block.AIR)
-	for key in chunks:
-		var c: VoxelChunk = chunks[key]
-		var ox: int = c.coord.x * CHUNK_SIZE_X
-		var oz: int = c.coord.y * CHUNK_SIZE_Z
-		for y in CHUNK_SIZE_Y:
-			for z in CHUNK_SIZE_Z:
-				var src: int = (y * CHUNK_SIZE_Z + z) * CHUNK_SIZE_X
-				var dst: int = (y * _sz + oz + z) * _sx + ox
-				for x in CHUNK_SIZE_X:
-					_flat[dst + x] = c.data[src + x]
-	_flat_ready = true
+## A malharia pergunta pelo vizinho de cada voxel, o que da dezenas de milhares de
+## perguntas por chunk. Respondê-las pelo dicionario de chunks (chave Vector2i) custava
+## ~250 ms por chunk e congelava o boot por ~16 s; a resposta precisa ser um indice de
+## array. O braco C paga isso por chunk em vez de pagar uma vez pelo mundo inteiro: a
+## copia linear global de 128x64x128 bytes (1 MB por `generate()`) vira um casaco de
+## 18x66x18 (21 KB) reutilizado, e o trabalho de copia acompanha o chunk malhado.
+func _fill_halo(c: VoxelChunk) -> void:
+	_halo_x0 = c.coord.x * CHUNK_SIZE_X - 1
+	_halo_x1 = _halo_x0 + HALO_HW
+	_halo_z0 = c.coord.y * CHUNK_SIZE_Z - 1
+	_halo_z1 = _halo_z0 + HALO_HD
+	_halo.resize(HALO_HH * HALO_HD * HALO_HW)
+	# Camadas de y fora do corpo: o MESMO que o caminho lento devolve (pedra embaixo,
+	# ar em cima). Halo que redefine a borda do mundo muda o face-culling e a tabela.
+	var layer: int = HALO_HD * HALO_HW
+	var top: int = layer * (HALO_HH - 1)
+	for i in layer:
+		_halo[i] = BlockDefs.Block.STONE
+		_halo[top + i] = BlockDefs.Block.AIR
+	# Coluna a coluna: o chunk de origem so muda ao cruzar a borda, entao o lookup de
+	# vizinho e 324 por mesh e nao 21.384, e a parede do mundo vira pedra aqui mesmo.
+	for iz in HALO_HD:
+		var gz: int = _halo_z0 + iz
+		for ix in HALO_HW:
+			var gx: int = _halo_x0 + ix
+			var dst0: int = iz * HALO_HW + ix
+			var n = chunks.get(Coords.chunk_of(Vector3i(gx, 0, gz)))
+			if n == null or gx < 0 or gz < 0 or gx >= _sx or gz >= _sz:
+				for y in CHUNK_SIZE_Y:
+					_halo[layer * (y + 1) + dst0] = BlockDefs.Block.STONE
+				continue
+			var src: int = ((gz - n.coord.y * CHUNK_SIZE_Z) * CHUNK_SIZE_X
+				+ gx - n.coord.x * CHUNK_SIZE_X)
+			var dst: int = layer + dst0
+			# O passo de y no storage do chunk e a fatia inteira (X*Z), nao X: a
+			# coluna do halo atravessa as alturas, e aqui que o indice vira 3D.
+			for y in CHUNK_SIZE_Y:
+				_halo[dst] = n.data[src]
+				dst += layer
+				src += CHUNK_SIZE_X * CHUNK_SIZE_Z
 
 
 ## Regerar o mundo nao pode deixar as malhas antigas penduradas na arvore.
@@ -238,14 +269,18 @@ func get_block(p: Vector3i) -> int:
 ## Fora dos limites: x/z e y<0 sao solidos (parede invisivel e piso do mundo),
 ## y acima do topo e ar.
 func get_block_xyz(x: int, y: int, z: int) -> int:
+	# Malhando, a resposta vem do casaco deste chunk: o mesmo indice de array que a
+	# copia global dava, com 1/49 das bytes. Pedir fora do casaco cai no caminho
+	# lento, que tem as MESMAS regras de borda — por isso o halo nao pode mentir.
+	if (_halo_active and x >= _halo_x0 and x < _halo_x1 and z >= _halo_z0
+			and z < _halo_z1 and y >= -1 and y <= CHUNK_SIZE_Y):
+		return _halo[((y + 1) * HALO_HD + z - _halo_z0) * HALO_HW + x - _halo_x0]
 	if y < 0:
 		return BlockDefs.Block.STONE
 	if y >= CHUNK_SIZE_Y:
 		return BlockDefs.Block.AIR
 	if x < 0 or z < 0 or x >= _sx or z >= _sz:
 		return BlockDefs.Block.STONE
-	if _flat_ready:
-		return _flat[(y * _sz + z) * _sx + x]
 	var c = chunks.get(Coords.chunk_of(Vector3i(x, y, z)))
 	if c == null:
 		return BlockDefs.Block.STONE
@@ -259,8 +294,6 @@ func _write_raw(p: Vector3i, b: int) -> void:
 		return
 	var l := Coords.local_of(p, c.coord)
 	c.set_block(l.x, l.y, l.z, b)
-	if _flat_ready:
-		_flat[(p.y * _sz + p.z) * _sx + p.x] = b
 
 
 func set_block(p: Vector3i, b: int, record: bool = true) -> bool:
@@ -483,6 +516,10 @@ static func _ensure_tables() -> void:
 func build_chunk_mesh(c: VoxelChunk) -> void:
 	var ox: int = c.coord.x * CHUNK_SIZE_X
 	var oz: int = c.coord.y * CHUNK_SIZE_Z
+	# O casaco entra antes do loop e sai no fim: durante o mesh e ele que responde as
+	# perguntas de vizinho (face e AO); fora do mesh nada dele depende.
+	_fill_halo(c)
+	_halo_active = true
 
 	var v := PackedVector3Array()
 	var nr := PackedVector3Array()
@@ -538,6 +575,7 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 							FACE_TINT[f] + jitter, 0.0)
 
 	var mesh := ArrayMesh.new()
+	_halo_active = false
 	# O indice do surface e o que era antes de acrescentar: um chunk de vidro sem
 	# agua tem dois surfaces e o hardcoded 2 caia fora deles, e o pano ficava sem
 	# material nenhum (o erro do engine passavaquieto na suíte de triangulos).
