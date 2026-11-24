@@ -1,0 +1,63 @@
+== Passo 1 (a): leitura do instrumento de build, 2026-11-24T00:42-04:00, base e781e38, branch feat/oraculo-nativo-gdextension-22 ==
+== comando por linha; saida literal decodificada de CP850 (a pagina de codigo do console pt-BR) ==
+
+[where scons]
+  exit=1
+  INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+
+[python -c 'import SCons']
+  exit=1
+  Traceback (most recent call last):
+    File "<string>", line 1, in <module>
+  ModuleNotFoundError: No module named 'SCons'
+
+[where cmake]
+  exit=1
+  INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+
+[where ninja]
+  exit=1
+  INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+
+[vswhere -all -products * : as tres instalacoes]
+  C:\Program Files\Microsoft Visual Studio\2022\Community
+  C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
+  C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+  C:\Program Files\Microsoft Visual Studio\2022\Community  |  17.14.37502.11
+  C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools  |  16.11.37507.1
+  C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools  |  17.14.37502.11
+
+[vswhere -latest (sem -products, sem -requires) ]
+  C:\Program Files\Microsoft Visual Studio\2022\Community
+[vswhere -latest -products * ]
+  C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+[vswhere -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ]
+  C:\Program Files\Microsoft Visual Studio\2022\Community
+
+[MSVC toolset dir Community]: 14.44.35207
+  cl /Banners: Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+  exit=2
+
+[MSVC toolset dir BuildTools-2022]: 14.44.35207
+  cl /Banners: Microsoft (R) C/C++ Optimizing Compiler Versão 19.44.35228 para x64
+  exit=2
+
+[MSVC toolset dir BuildTools-2019]: 14.29.30133
+  cl /Banners: Microsoft (R) C/C++ Optimizing Compiler Versão 19.29.30159 para x64
+  exit=2
+
+[dumpbin fora da casca do vcvars]
+  exit=1
+  INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+[lib.exe fora da casca do vcvars]
+  exit=1
+  INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+
+[.gitignore linha 2]
+  .godot/
+[.godot/extension_list.cfg (a lista de auto-load gerada pelo editor)]
+  existe? False
+[literal 'extension_list.cfg' no binario da engine]
+  ocorrencias=1
+
+[fim]

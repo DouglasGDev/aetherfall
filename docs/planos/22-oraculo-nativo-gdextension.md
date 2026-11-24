@@ -60,7 +60,7 @@ com as três leituras arquivadas na mesma pasta (stdout, stderr e o `.bat` repro
 
 | Condição | Leitura anterior (2026-11-23, mais cedo nesta mesma conversa) | Leitura desta passada |
 |---|---|---|
-| MSVC / `cl.exe` | "sem toolchain — nenhum VS instalado" | **existe**: VS 2022 Community, `cl.exe` 19.44.35207, `vcvars64.bat` |
+| MSVC / `cl.exe` | "sem toolchain — nenhum VS instalado" | **existe**: VS 2022 Community, toolset `14.44.35207`, `cl` 19.44.35228, `vcvars64.bat` — a célula anterior dizia "`cl.exe` 19.44.35207", que é o nome da **pasta** do toolset, não a versão do compilador; o §12.1 separa as duas grandezas |
 | Compilar C++17 | não tentado | **compila** (`af_probe.cpp` → `.exe`, ERRORLEVEL 0) |
 | Por que a primeira leitura mentiu | — | o `.bat` fazia `call vcvars64.bat >nul` e **depois** media `%ERRORLEVEL%`; o redirect engolia a saída e a porta leu o código do redirect. Tirei o `>nul`, a compilação apareceu. |
 
@@ -164,14 +164,23 @@ não `[TARGET]` bonito.
 de `gdextension_interface.json` + `core/extension/make_interface_header.py`. Provar que a Fase 1 tem
 cabeça foi isso: baixei o JSON da tag 4.7.2 (328 021 B), rodei o gerador do próprio Godot com o
 Python do sistema, e a saída é um cabeçalho de **143 170 bytes**
-([`gdextension_interface_472.h`](../evidence/oraculo-nativo-22/gdextension_interface_472.h)). A
-testemunha de que ele é o cabeçalho **certo** é a typedef [`:716`](../evidence/oraculo-nativo-22/gdextension_interface_472.h#L716)
-`GDExtensionInitializationFunction`, que é a assinatura com que o Godot entra na lib, mais as enums de
-`GDEXTENSION_VARIANT_TYPE_*` do topo do arquivo. O que o arquivo **não** tem é a linha que uma leitura
-anterior desta página citava (`#define GDEXTENSION_API_VERSION 5` — não existe no cabeçalho gerado; a
-versão da interface só aparece no `gdextension_interface.json`, e é por `call_func`/`token` que ela é
-conferida em runtime). Caminho de produção da Fase 1, documentado no §5.1: **gerar o header, não
-baixá-lo**.
+([`gdextension_interface_472.h`](../evidence/oraculo-nativo-22/gdextension_interface_472.h)). **A testemunha
+que esta página dava antes não testemunha nada:** ela citava a typedef
+[`GDExtensionInitializationFunction`](../evidence/oraculo-nativo-22/gdextension_interface_472.h#L716)
+"mais as enums `GDEXTENSION_VARIANT_TYPE_*` do topo" como prova de que o cabeçalho é o de 4.7.2 — e os
+dois existem **idênticos** no único cabeçalho que a máquina tinha local, o `gdextension_interface.h` do
+godot-cpp 4.4.1 (a mesma typedef, na linha dele `:782`; `GDEXTENSION_VARIANT_TYPE_` em **48** linhas nos
+dois arquivos). A leitura que discrimina geração é outra, e está no §12.2: `GDExtensionClassCreationInfo6`
+([`:402`](../evidence/oraculo-nativo-22/gdextension_interface_472.h#L402)),
+`GDExtensionClassCreateInstance3` ([`:220`](../evidence/oraculo-nativo-22/gdextension_interface_472.h#L220))
+e `GDExtensionInterfaceClassdbRegisterExtensionClass6`
+([`:2954`](../evidence/oraculo-nativo-22/gdextension_interface_472.h#L2954)) — os três com **0** ocorrências
+no cabeçalho 4.4.1. O que o arquivo **não** tem é a linha que uma leitura anterior desta página citava
+(`#define GDEXTENSION_API_VERSION 5` — não existe no cabeçalho gerado), e a frase que a substituía
+também estava errada: a versão da interface **não** aparece no JSON nem como `api_version` — o JSON tem
+exatamente cinco chaves de topo e `format_version: 1`, que é a versão do **esquema do arquivo**, não da
+interface (§12.2). Caminho de produção da Fase 1, documentado no §5.1 e medido no §12.2: **gerar o
+header, não baixá-lo** — com a ressalva de que o gerador não tem CLI nenhuma.
 
 ### 1.5 A API da engine, medida da própria engine
 
@@ -348,16 +357,22 @@ depende de janela aberta; todos têm comando headless.
 
 ### 5.1 Passo 1 — o esqueleto linka, e o gate é "existe um `.dll` de extensão que o Godot abre"
 
-`native/af_mind/` nasce com: `SConstruct` que (a) gera `gdextension_interface.gen.h` do
-`gdextension_interface.json` pinado, (b) compila `src/*.cpp` contra o **MSVC** medido no §1.1, (c)
-**não** compila o llama.cpp — linka contra as DLLs existentes em `.tools/llama/runtime/` e falha na
-compilação se um símbolo escolhido não estiver no export-set do §1.3. A extensão registra **uma**
-classe, `AfMindOracle`, sem função de IA ainda.
+`native/af_mind/` nasce com: `build.bat` que (a) **confere por SHA-256** o cabeçalho
+`include/gdextension_interface.h` **vendorado** no diretório da extensão — gerar
+`gdextension_interface.gen.h` do JSON pinado não é possível nesta árvore, porque nem o
+`gdextension_interface.json` nem o `make_interface_header.py` estão aqui (§12.2), e o comando que os
+produz fica escrito lá com o hash do fruto — e (b) compila `src/*.cpp` contra o **MSVC** medido no
+§1.1. O Passo 1 (c) **não** encosta no llama.cpp: em `.tools/llama/runtime/` não existe nenhuma
+`.lib` de import (§12.3), então nada é linkado contra o runtime, e o gate de símbolos do §1.3 passa a
+ser gate do **Passo 2**, com import libs gerados do export-set medido e `/DELAYLOAD`. A extensão
+registra **uma** classe, `AfMindOracle`, sem função de IA ainda.
 
-Gate: `godot --headless --path . --import` e depois uma cena que instancia a classe; o stdout tem de
-conter a linha de registro da engine e nenhuma `SCRIPT ERROR`. A checagem se chama
-`extensao_carrega_classe`, e ela **nasce vermelha** (a extensão não existe ainda). O que ela prova é
-a premissa que o §1.3 abriu: que o `.dll` resolve as DLLs do runtime no diretório de processo.
+Gate: `godot --headless --path . --import` e depois a checagem `extensao_carrega_classe`, que abre a
+extensão pela API pública (`GDExtensionManager.load_extension()`), exige `ClassDB.class_exists()` e
+instancia; o stdout tem de conter a linha de registro da engine e nenhuma `SCRIPT ERROR`. Ela **nasce
+vermelha** (a extensão não existe ainda). O que ela prova é a premissa de que o Passo 1 é dono: que o
+`.dll` carrega, registra a classe e devolve um objeto vivo. Que o `.dll` resolve as DLLs do runtime no
+diretório de processo é premissa do Passo 2, e é lá que ela passa a ser checada.
 
 ### 5.2 Passo 2 — carregar o modelo dentro do processo, com o Vulkan da renderização já vivo
 
@@ -440,6 +455,23 @@ não traz o header; baixar o header gerado por outra pessoa é assumir um `api_v
 recusa com `[SLOG]` silencioso. Rejeitado: `godot-cpp` (o binding oficial) como primeiro passo — ele
 traz CMake e um second toolchain para dentro de uma máquina onde o que já existe é MSVC + SCons
 (usado hoje por `godot-cpp`-nenhum); a Fase 1 é uma classe, não um SDK.
+
+**Medido depois, e isto muda a execução sem mudar a decisão:** a frase acima citava SCons como se ele
+existisse nesta máquina — não existe (§12.1, aberto com `where scons` e `python -c "import SCons"`
+ambos vazios), e o `gdextension_interface.json` com o gerador também não estão nesta árvore (§12.2).
+Então a geração vira **procedimento documentado + cabeçalho vendorado conferido por SHA-256 no build**,
+e o §12.2 traz o procedimento re-executado: as duas entradas conferidas, o shim de onze linhas que faz
+as vezes do SCons, e o fruto **byte a byte** igual ao cabeçalho arquivado. A razão de manter o cabeçalho
+no git é a mesma de manter os 51 `.ogg` no git: ele é MIT da própria Godot Foundation, e um clone limpo
+sem ele não compila nada — o que continua **fora** do git são os artefatos de terceiros baixados
+(as DLLs de `.tools/llama/runtime/` e os `.gguf`). **E aqui vai uma correção, porque a frase acima
+prometia o que ainda não existe:** ela escrevia "registrado em [THIRD_PARTY_LICENSES.md](../../THIRD_PARTY_LICENSES.md)"
+no presente. Não está — o arquivo hoje tem 60 linhas, com llama.cpp e Godot Engine, e nenhuma linha sobre
+o cabeçalho de interface; a linha entra com o commit que vendoriza o cabeçalho (Passo 1 (c)), e ela é
+**obrigatória** por um motivo que a Fase 0 não sabia: o bloco de licença existe no JSON (27 linhas, com
+"MIT", "Permission is hereby granted", "AUTHORS"), mas o gerador só **valida** a chave `_copyright` e não
+a escreve — no header gerado as quatro ocorrências são **0** (§12.2). Vender o cabeçalho é, literalmente,
+remover a licença do arquivo; a atribuição passa a ser nossa.
 
 ### 6.2 Fronteira de tipos: dicionário, não objeto de engine
 
@@ -625,3 +657,157 @@ O `.gd` sem `--script` não roda o teste: o motor entende o posicional como cena
 headless, imprimindo gameplay para sempre sem rodapé e sem `quit()` — é o furo **#33** do status,
 aberto numa corrida de 11 minutos e 204 s de CPU que não mediu nada. A cena de smoke aceita o
 posicional porque é `.tscn`.
+
+---
+
+## 12. O que o Passo 1 (a) mediu, e o que isso corrigiu nesta página
+
+Quatro leituras, catorze arquivos de evidência, nenhuma linha de `native/` escrita — seis stdout das
+leituras, três `.sh` e dois `.bat` que os re-executam, mais as três réguas do fim da passada. Cada § abaixo
+diz o que estava escrito nesta página antes, o que a máquina devolveu, e o que passa a valer. Os stdout
+literais estão em [`passo1_build_instrumentado.log`](../evidence/oraculo-nativo-22/passo1_build_instrumentado.log),
+[`passo1_vcvars_onde_resolve.log`](../evidence/oraculo-nativo-22/passo1_vcvars_onde_resolve.log),
+[`passo1_fora_da_casca.log`](../evidence/oraculo-nativo-22/passo1_fora_da_casca.log),
+[`passo1_header_fonte_abi.log`](../evidence/oraculo-nativo-22/passo1_header_fonte_abi.log),
+[`passo1_gerador_entradas.log`](../evidence/oraculo-nativo-22/passo1_gerador_entradas.log) e
+[`passo1_header_reproducao.log`](../evidence/oraculo-nativo-22/passo1_header_reproducao.log); os `.sh` e
+`.bat` do mesmo diretório re-executam cada um. As três réguas do §11, rodadas no fim da passada com a
+página já reescrita, estão em `passo1a_ruler_doc_anchors.log`, `passo1a_ruler_plan_cites.log` e
+`passo1a_ruler_plan_ids.log` — **3 052 ponteiros / 209 rótulos / 3 177 links com 0 casos objetivos**,
+**1 013 citações com número conferidas, 0 fora do arquivo** e as ausências do `verify_plan_ids` são todas
+peças que esta página declara inexistentes. O manifesto da pasta,
+[`artifacts.sha256`](../evidence/oraculo-nativo-22/artifacts.sha256), foi refeito com `sha256sum -b`
+nesta passada — **45 entradas, `sha256sum -c` 45/45 OK** — pelo motivo do §12.4.
+
+### 12.1 Não existe "o MSVC da máquina": existem três, e o `link` do PATH não é um linker
+
+O §1.1 respondeu "o compilador existe?" e ficou nisso. A pergunta que o `build.bat` da Fase 1 faz é
+outra — *qual* compilador, e com qual PATH — e as duas metades da resposta são novas.
+
+**As três instalações** (`vswhere -all -products *`): `2022\Community` 17.14.37502.11,
+`2019\BuildTools` 16.11.37507.1 e `2022\BuildTools` 17.14.37502.11. Os toolsets: **14.44.35207** nos
+dois 2022, **14.29.30133** no 2019. Os banners do `cl`: **19.44.35228**, **19.44.35228**,
+**19.29.30159**. As três consultas `-latest` do vswhere **divergem** entre si: `-latest` devolve
+`2022\Community`, `-latest -products *` devolve `2022\BuildTools`, `-latest -requires
+Microsoft.VisualStudio.Component.VC.Tools.x86.x64` devolve `2022\Community`. É o **furo #34**: um
+`build.bat` que resolva o VS pelo vswhere compila com um toolset que depende da ordem de consulta, e
+dois toolsets diferentes significam ABI diferente no `.dll` da extensão. A regra que sai daqui é a
+do Passo 1 (c): o `build.bat` **nomeia o caminho e o toolset** (`14.44.35207`) e recusa os outros, em
+vez de perguntar ao vswhere qual é o mais novo.
+
+**E a correção do §1.1:** a célula dizia `cl.exe 19.44.35207`. `14.44.35207` é o nome da **pasta** do
+toolset; a versão do compilador é `19.44.35228`. São duas grandezas diferentes, e a página as somava.
+
+**Fora da casca do vcvars** (o PATH que o dono tem hoje, `passo1_fora_da_casca.log`): `cl`, `dumpbin`,
+`lib`, `scons`, `cmake` e `ninja` — exit 1, não resolvidos. `link` **resolve**:
+`C:\Program Files\Git\usr\bin\link.exe`, GNU coreutils 8.32, que cria **hard link de arquivo** e não
+linka nada. Isso é o **furo #35**, e a consequência é concreta: se o `build.bat` esquecer o
+`call vcvars64.bat`, ele não recebe "link não encontrado" — ele chama um programa de outra suíte, que
+reclama de argumentos ou cria um arquivo com o nome do output. Um build que falasse por ausência
+seria diagnóstico; este falha por **presença errada**. Dentro da casca (`passo1_vcvars_onde_resolve.log`)
+os quatro aparecem, `cl`/`link`/`dumpbin`/`lib` sob `14.44.35207\bin\Hostx64\x64\`, o `VCToolsInstallDir`
+aponta para a mesma pasta e o `where link` lista o do Git **depois** do MSVC. Regra do Passo 1 (c): o
+`build.bat` confere `VCToolsInstallDir` e a versão do `cl` antes de compilar, e **não** aceita um
+`link.exe` fora daquela pasta.
+
+**`scons` não existe, e o SCons do §6.1 também não.** `where scons` exit 1 e `python -c "import SCons"`
+`ModuleNotFoundError` — a frase "exatamente como o SCons do Godot faz (§1.4)" descrevia o procedimento
+da engine, não uma ferramenta desta máquina, e a célula do §1.1 tinha deixado isso lido como "MSVC +
+SCons". Corrigido no §6.1.
+
+### 12.2 O cabeçalho de interface: a testemunha antiga não discriminava, e o gerador não tem CLI
+
+O §1.4 citava `GDExtensionInitializationFunction` e as enums `GDEXTENSION_VARIANT_TYPE_*` como prova de
+que o cabeçalho gerado era o de 4.7.2. Medido contra o único cabeçalho local —
+`.tools/godot-cpp-godot-4.4.1-stable/gdextension/gdextension_interface.h`, 129 768 B, 3 085 linhas,
+sha256 `355ff4c6…` — os dois **existem idênticos**: a typedef na linha 782 daquele arquivo, e
+`GDEXTENSION_VARIANT_TYPE_` em **48** linhas nos dois. Nenhuma das duas testemunhas separa 4.4 de 4.7.
+
+O que separa está em `passo1_header_fonte_abi.log`, lido linha a linha do gerado:
+`GDExtensionClassCreationInfo6` (`:402`), `GDExtensionClassCreateInstance3` (`:220`) e
+`GDExtensionInterfaceClassdbRegisterExtensionClass6` (`:2954`). O cabeçalho 4.4.1 para em
+`GDExtensionClassCreationInfo4` e `GDExtensionClassCreateInstance2`, e tem **0** ocorrências de
+`RegisterExtensionClass6`. São estes três nomes que a Fase 1 assina, e é por eles que ela é 4.7.2.
+
+**O `api_version` não está em lugar nenhum** — e a frase do §1.4 que dizia que ele "só aparece no JSON"
+estava errada. O JSON (`gdextension_interface.json`, 328 021 B, 9 327 linhas, sha256 `7d8c0a03…`) tem
+exatamente cinco chaves de topo — `_copyright`, `$schema`, `format_version`, `types`, `interface` —,
+`format_version: 1`, **sem** `api_version`, com **147** tipos e **179** funções de interface.
+`format_version` é a versão do **esquema do arquivo**. A versão da interface é o que a engine devolve
+em runtime pelo `call_func`/`token` da própria `GDExtensionInitializationFunction`, e é isso — não um
+`#define` — que a Fase 1 confere.
+
+**O gerador não é um script.** `make_interface_header.py` (12 015 B, 353 linhas, sha256 `a4ed7de9…`) tem
+`ocorrencias_de___main___=0`, `ocorrencias_de_argparse=0`, `ocorrencias_de_sys_argv=0`: o ponto de
+entrada é `def run(target, source, env)` (`:27`), um **emissor do SCons**, que escreve dentro de
+`methods.generated_wrapper(str(target[0]))` (`:38`) e lê o JSON por `methods.get_buffer` — ou seja, as
+duas funções vêm do `methods.py` do build do Godot, e não do arquivo. Rodá-lo foi isso: as duas entradas
+na tag `4.7.2-stable`, um shim de **11 linhas / 267 B / sha256 `7d0b6de2…`** que fornece
+`get_buffer` e `generated_wrapper`, e três linhas de driver.
+
+**E a reprodução foi re-executada, não prometida.** `passo1_header_reproducao.sh` confere as entradas
+pelos hashes acima, roda o gerador num work temporário e compara com o arquivo arquivado:
+gerado **143 170 B** sha256 `777a3fe517c1b29eece0646c50ec0da1c617586ea2e9ffbc1965e8fdb9149b2b` —
+`cmp` exit **0**, byte a byte o mesmo fruto. As entradas ficam em
+`.tools/gdextension-interface-src/` (gitignored: `.gitignore:5`), porque são arquivo de terceiro
+baixado; o que entra no git é o cabeçalho gerado, como o §6.1 decide.
+
+**Licença: o bloco existe no JSON e o gerador o descarta.** O `_copyright` do JSON tem **27 linhas** e
+contém as marcações `Copyright`, `Permission is hereby granted`, `WITHOUT WARRANTY`, `MIT` e `AUTHORS`.
+No cabeçalho gerado a leitura procura as contrapartidas — `GODOT ENGINE`, `Permission is hereby granted`,
+`MIT`, `AUTHORS` — e devolve **False** nas quatro; `grep -ci 'licen'` no arquivo inteiro é **0**. O
+gerador usa `_copyright` uma única vez, como chave **válida** no `check_allowed_keys` (`:32`), e nunca a
+escreve. (A leitura anterior desta página, que contava quatro ocorrências de licença dentro do cabeçalho,
+foi feita no header do godot-cpp — que tem o bloco, linha 15 em diante — e não no gerado.) Vendorizar o
+cabeçalho é, portanto, distribuí-lo **sem** a licença dentro dele: a atribuição deixa de ser um efeito
+colateral do arquivo e passa a ser uma linha nossa em `THIRD_PARTY_LICENSES.md`, escrita no mesmo commit
+que o vendoriza.
+
+**Forma do arquivo, porque o hash depende dela.** O fruto cru tem 3 178 linhas e **todas** terminam em
+CRLF: `CR=3178`, `LF=3178`, `linhas_sem_CR=0`, e a diferença entre o cru (143 170 B) e a forma LF
+(139 992 B) é exatamente 3 178 — um CR por linha. A afirmação anterior, de "24 linhas sem CR", não
+reproduz. O `git check-attr` dos dois caminhos onde ele vai morar (log, linhas 32-41):
+`native/af_mind/include/gdextension_interface.h` → `text: auto`, `eol: lf` (o checkout é **LF**, sha256
+`4c0aac8d…`), e `docs/evidence/**` → `text: unset` (a cópia de evidência **preserva CRLF**, sha256
+`777a3fe5…`). Consequência escrita antes do Passo 1 (c): o gate de SHA do `build.bat` confere **as duas
+formas** — a do checkout do git e a do fruto cru — e recusa qualquer outra. Uma régua que soubesse só
+um dos dois hashes passaria ou falharia conforme o `core.autocrlf` de quem clonou, que é exatamente a
+classe de defeito do furo #32.
+
+### 12.3 Nada é linkado no Passo 1: zero `.lib` na árvore inteira
+
+A procura por `*.lib` em todo o repositório (fora `.git`) devolve **0** arquivos, e
+`.tools/llama/runtime/` tem **53** entradas — **30** `.dll`, **22** `.exe` e uma linha de licença LLVM
+OpenMP. Não existe biblioteca de importação do llama.cpp nesta máquina: o Passo 1 **não** linka contra
+o runtime, e qualquer frase que prometesse "linkar o `llama.dll`" no passo do esqueleto estaria
+descrevendo um link por `LoadLibrary` que é o Passo 2. É por isso que o gate de símbolos do §1.3 saiu do
+Passo 1 e foi escrito no §5.1 como gate do **Passo 2**, com import libs gerados do export-set medido e
+`/DELAYLOAD`. O que sobra no Passo 1 é compilação contra o cabeçalho de interface e o `.dll` da própria
+extensão — nada de llama.cpp.
+
+### 12.4 O manifesto da pasta estava com hash de outra forma de arquivo
+
+`sha256sum -c artifacts.sha256`, na pasta, dava **3 FAILED em 31 entradas (28 OK)** antes desta passada:
+`af_exports_build.bat`, `af_np2_build.bat`, `af_np3_build.bat`. As três linhas armazenavam o hash da
+forma **LF** do conteúdo; os arquivos, no disco e em qualquer clone limpo, são CRLF, porque
+[`.gitattributes:22`](../../.gitattributes#L22) tem `*.bat text eol=crlf` (o `git check-attr` dos três
+devolve `text: set`, `eol: crlf`). A convenção da casa, escrita no **item 11** da lista de furos
+descobertos do [status](../melhorias-status.md), é que os manifests são computados **`sha256sum -b`** —
+sobre os bytes
+que o checkout produz, porque a regra `* text=auto eol=lf`
+([`.gitattributes:3`](../../.gitattributes#L3)) normaliza texto no add e a linha `docs/evidence/** -text`
+([`:9`](../../.gitattributes#L9)) é justamente o que preserva os CR da evidência. Aqui o erro foi do
+**instrumento**, não da evidência: as três linhas foram computadas sem o `-b`. Refeito com `-b` e com as
+quatorze evidências desta passada dentro — 31 + 14 = **45 entradas / 45 OK** —, e as únicas linhas de
+arquivo pré-existente cujo conteúdo mudou são essas três. Fica como
+**furo #36**, com a régua: `sha256sum -c` do manifesto de
+qualquer pasta de evidência tem de ser **tudo OK num clone limpo**, e um `FAILED` em `.bat` ou `.log` é
+defeito do hash, não do arquivo.
+
+E a régua pegou um caso nosso na hora de fechar o lote: `passo1_vcvars_onde_resolve.bat` estava **LF**, e
+a mesma linha 22 do `.gitattributes` que conserta os três `.bat` velhos converte todo `.bat` do checkout
+para CRLF — ou seja, o arquivo que eu hash-ei não era o arquivo que o clone devolve. Convertido e
+re-rodado, o corpo do stdout saiu **idêntico linha a linha** ao da corrida em LF (a nota está no topo do
+próprio log), e o `sha256sum -c` refeito deu 45/45. A lição é a do furo #36 em chave invertida: a forma que
+o hash tem de registrar é a do **checkout**, não a do editor.
+

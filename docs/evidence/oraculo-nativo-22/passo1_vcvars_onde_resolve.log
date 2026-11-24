@@ -1,0 +1,30 @@
+== Passo 1 (a): resolucao da casca do vcvars64, 2026-11-24T01:36:32-04:00, base e781e38, branch feat/oraculo-nativo-gdextension-22 ==
+== comando: cmd //c passo1_vcvars_onde_resolve.bat ==
+== saida literal; o banner do Community 2022 esta em ingles, entao nada aqui precisou de decodificacao ==
+== o mesmo arquivo foi re-rodado depois de convertido para CRLF (a forma que *.bat text eol=crlf devolve no
+== checkout): corpo identico ao da corrida anterior, linha a linha, com a unica diferenca sendo esta
+== propria nota e a linha final do envoltorio. A forma LF nao estava mudando a medicao -- mas o hash
+== do manifesto nao batia num clone limpo, e isso e o furo #36 da pagina 22.
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.36
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+[vcvarsall.bat] Environment initialized for: 'x64'
+call vcvars64 exit=0
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\cl.exe
+where cl exit=0
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe
+C:\Program Files\Git\usr\bin\link.exe
+where link exit=0
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\dumpbin.exe
+where dumpbin exit=0
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\lib.exe
+where lib exit=0
+cl sem arquivo exit=0
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+onde esta o linker que o cl usa
+VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\
+PATH tem Git\usr\bin?
+git_bin_no_path exit=0
+[exit do bat]=0

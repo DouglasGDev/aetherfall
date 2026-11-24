@@ -1,0 +1,40 @@
+== Passo 1 (a): leitura fora da casca do vcvars, 2026-11-24T01:22-04:00, base e781e38, branch feat/oraculo-nativo-gdextension-22 ==
+== comando: MSYS_NO_PATHCONV=1 cmd /c docs\evidence\oraculo-nativo-22\passo1_fora_da_casca.bat ==
+== saida literal, decodificada de CP850 (pagina de codigo do console pt-BR) para UTF-8 ==
+
+== Passo 1 (a): resolucao fora da casca do vcvars, 24/11/2026  1:22:04,78 ==
+
+[where cl]
+INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+  exit=1 - nao resolvido
+[where link]
+C:\Program Files\Git\usr\bin\link.exe
+  exit=0
+[where dumpbin]
+INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+  exit=1 - nao resolvido
+[where lib]
+INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+  exit=1 - nao resolvido
+[where scons]
+INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+  exit=1 - nao resolvido
+[where cmake]
+INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+  exit=1 - nao resolvido
+[where ninja]
+INFORMAÇÕES: não foi possível localizar arquivos para o(s) padrão(ões) especificado(s).
+  exit=1 - nao resolvido
+
+[o que o link.exe que o PATH devolve faz]
+C:\Program Files\Git\usr\bin\link.exe
+link (GNU coreutils) 8.32
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Written by Michael Stone.
+
+
+[fim]
