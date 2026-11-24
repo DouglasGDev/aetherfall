@@ -1,0 +1,12 @@
+== Pouso do Passo 1 (c) do dossier 22: build.bat na arvore do clone limpo, 2026-11-24T03:57:57-04:00, arvore 6b817a5 em clone limpo, branch docs/registro-pouso-passo1c-22 ==
+== comando: cmd //c native\af_mind\build.bat ==
+[regua] header_sha256=4c0aac8da3dfedc14d0e049205aeaaa11f32802bee56d4a275a466ac231fa916 forma=aceita
+[regua] vcvars=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat toolset=14.44.35207
+[regua] VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\
+[regua] cl_banner=Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+[regua] link_primeiro=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe
+register_types.cpp
+   Creating library C:\Users\dougl\AppData\Local\Temp\afclean22c\native\af_mind\bin\af_mind.lib and object C:\Users\dougl\AppData\Local\Temp\afclean22c\native\af_mind\bin\af_mind.exp
+[regua] dll_bytes=105472
+[regua] export=          1    0 00001120 af_mind_entry
+[ok] build.bat: C:\Users\dougl\AppData\Local\Temp\afclean22c\native\af_mind\bin\af_mind.dll

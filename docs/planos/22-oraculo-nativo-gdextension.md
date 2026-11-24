@@ -1202,3 +1202,51 @@ re-derive o instrumento depois de publicar o número dele é fazer as duas gera�
 versionado. Dono do furo #39: o dono do repositório. Até lá a leitura correta desta passada é a que está
 na tabela: `native/` conferido à mão, nome por nome, e o `AUSENTES` da régua lido como "fora de `src/` e
 `tests/`" — que é o que ele sempre disse.
+
+### 14.8 O pouso: a `main` mergida, o clone limpo e as duas testemunhas do par de vazamento
+
+`git merge --no-ff feat/oraculo-nativo-gdextension-22` devolve **`6b817a5`** sobre `85263d5`, **57 arquivos,
++11 949/−20**, e a régua do §14.6 fecha na árvore resultante por hash de árvore, não por diff:
+`git rev-parse 6b817a5:src` = **`f77c1961bb8065ea5a78b24677a36c5840891c75`** = a mesma árvore de `85263d5:src`
+e a mesma do pouso da 12. Isso é o que autoriza a frase "os hashes de journal publicados valem para a árvore
+resultante" sem re-corrida. O `tests/` mudou de árvore (`4855f0e8…` → `0faee7ff…`, uma linha, o gate da (b)),
+então o censo **288** é medido aqui, não herdado.
+
+As quatro corridas da mergida e as quatro do clone limpo de `6b817a5` estão em
+[`docs/evidence/registro-pouso-passo1c-22/`](../evidence/registro-pouso-passo1c-22/artifacts.sha256), cada
+log com o comando gravado na segunda linha. Os números, nas duas árvores: suíte **255 / 0** (48,6 s e 48,8 s),
+runner **288 / 0** com as cinco `OK extensao_carrega_classe` nas mesmas linhas 537-541 dos dois logs
+(33,417 s e 33,552 s), RNG **27 / 0**, journal **128 / 0 / 7 de 7**. `trips=0` nos dois rodapés de BT, nas
+quatro pernas — o que não toca o furo #20, cuja amostra da (c) continua 7 verdes e 1 vermelha.
+
+O build dentro do clone é a parte que fecha a dúvida de forma. Sem `bin/` no git, o clone limpo executa
+`cmd //c native\af_mind\build.bat` e devolve exit 0, stderr 0 bytes e as oito `[regua]` com
+`forma=aceita` sobre `4c0aac8da3df…` (139 992 B — a forma LF que o §12.2 aceita e que o `eol=lf` do
+`.gitattributes` produz num checkout Windows), `toolset=14.44.35207`, `dll_bytes=105472` e
+`export= 1 00001120 af_mind_entry`. **Os mesmos 105 472 B e o mesmo offset `00001120` da branch** querem dizer
+que o `.cpp` comitado é o `.cpp` compilado, que é a única coisa que separa "esqueleto publicado" de "esqueleto
+descrito". O `git status --short` do clone é vazio, e é o sidecar `.uid` comitado que faz isso ser verdade.
+
+Uma assimetria ficou registrada em vez de alisada: o stderr da suíte na árvore mergida é **0 bytes**
+([`main_mergida_suite.err`](../evidence/registro-pouso-passo1c-22/main_mergida_suite.err)) e no clone limpo é
+**249 bytes** ([`clone_limpo_suite.err`](../evidence/registro-pouso-passo1c-22/clone_limpo_suite.err)) — o par
+`4 ObjectDB instances were leaked at exit` / `2 resources still in use at exit`, atribuído na época a
+`AudioStreamPlaybackOggVorbis` / `AudioStreamOggVorbis` de `assets/audio/amb/amb_birds.ogg` e intermitente por
+medição. As duas testemunhas ficam arquivadas porque a intermitência é a afirmação, e nenhuma das duas linhas
+menciona `af_mind`: a extensão não pagou nem quitou o débito.
+
+As três réguas do §11, rodadas com esta subseção escrita e re-rodadas depois de o manifesto existir:
+**39 arquivos · 3 062 ponteiros · 209 rótulos · 3 254 links · 0 casos objetivos** (os 17 links novos são os
+ponteiros desta subseção e da rodada do status para os logs e para o manifesto; o corpus não ganhou
+arquivo, porque a pasta nova é `.log`), **1 024 citações conferidas / 10 arquivos inexistentes / 0 números
+fora do arquivo** — os mesmos três números da (c), porque aqui se cita linha de log arquivado, não de
+código — e a régua de identificadores move esta página de **195 / 87** para **196 / 88**, com **24** ainda
+dentro de `native/` e **64** fora das três raízes. O identificador novo é o hash de árvore desta própria
+prova, que a régua lê como nome de peça inexistente: é o §14.7 acontecendo de novo, um identificador por
+vez, e é por isso que os números daquela subseção ficam escopados na árvore deles.
+
+O §10 pedia a ordem §5.1 → §5.2 → §5.3 → §5.4 → §5.5 com docs antes de código; o que pousou aqui é o
+Passo 1 (c) nessa ordem, e os passos 2, 3 e 4 da Fase 1 continuam por escrever, com o #38 e o #39 abertos
+e o #20 sem colheita. Nenhum gate de fase (mandato 4), e a fila segue **22 → 17 → 18 → 20 → 13** com a 22
+ainda na frente, porque a perna não fechou.
+

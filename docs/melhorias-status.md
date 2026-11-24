@@ -6669,3 +6669,106 @@ citações conferidas, 10 arquivos inexistentes, 0 números fora do arquivo**) e
 (**195 identificadores na página 22, 87 AUSENTES**) — e é o **furo #39** o número que esta passada abre e
 não fecha: 24 dos 87 existem hoje dentro de `native/`, que a régua não alcança. A fila continua
 **22 → 17 → 18 → 20 → 13**.
+
+## O pouso do Passo 1 (c) na `main` — o `src` provado por hash de árvore, as quatro corridas da mergida, o build dentro do clone limpo e as réguas no ponto fixo (2026-11-24, `docs/registro-pouso-passo1c-22`, base `6b817a5`)
+
+### O que o merge toca, com o número em cada régua
+
+`git merge --no-ff feat/oraculo-nativo-gdextension-22` devolve **`6b817a5`** sobre **`85263d5`** (pais
+da ponta: `cd7fd7c`), **57 arquivos, +11 949/−20**. A régua que o §14.6 da página 22 escreveu como
+`git diff --name-only main...HEAD -- src` vazio foi re-fechada na árvore mergida, e o número é mais
+forte que o diff: `git rev-parse 6b817a5:src` = **`f77c1961bb8065ea5a78b24677a36c5840891c75`** =
+`git rev-parse 85263d5:src` — a mesma árvore do pouso da 12. Disso segue, sem re-corrida e sem adjetivo,
+que `Channel.COUNT`, `FORMAT_VERSION` e `GEN_VERSION` continuam intocados e que os hashes de journal
+publicados nas rodadas anteriores valem para a árvore resultante. `tests/` **não** vale por identidade:
+`4855f0e85c88…` → **`0faee7ff5b26…`**, uma linha (`tests/aether_reactions_test.gd`, o gate nascido na
+(b)) — e é por isso que o censo 283 → **288** é medição nesta árvore, não herança. Em `native/` entram os
+cinco arquivos do esqueleto, mais `THIRD_PARTY_LICENSES.md` no mesmo commit de código: a quarta raiz do
+repositório, cujo efeito sobre as réguas é o **furo #39**, escrito no §14.7 da página.
+
+Publicação conferida com `git ls-remote --heads origin`: `refs/heads/main` =
+**`6b817a59180d43ff0d6b8cb6d9c016fac40d82eb`**, `refs/heads/feat/oraculo-nativo-gdextension-22` =
+`cd7fd7c4f4a778e2b1ee76a75414e46e7f0fe2f4`. É a única prova de que saiu; o exit 0 do `push` não prova.
+
+### As quatro corridas da árvore mergida, com a máquina livre
+
+Antes delas, `--import` na árvore mergida: exit 0, stderr **0 bytes**, e o `.godot/extension_list.cfg`
+com a linha `res://native/af_mind/af_mind.gdextension`
+([`main_mergida_import.log`](evidence/registro-pouso-passo1c-22/main_mergida_import.log)). Nenhuma linha
+em `Get-Process -Name Godot*` antes da primeira invocação, e as corridas de tempo rodaram serial.
+
+- Suíte: [`main_mergida_suite.log`](evidence/registro-pouso-passo1c-22/main_mergida_suite.log) — linha
+  **359** `== 255 checagens  0 falhas  48.6 s de teste ==`, exit 0, zero `SCRIPT ERROR`, e
+  [`main_mergida_suite.err`](evidence/registro-pouso-passo1c-22/main_mergida_suite.err) com **0 bytes**:
+  nesta corrida o par de vazamento do quit não apareceu. Ele volta no clone limpo, logo abaixo, com as
+  duas linhas nomeadas — as duas testemunhas ficam arquivadas porque a intermitência é a afirmação.
+- Runner de reações: [`main_mergida_runner.log`](evidence/registro-pouso-passo1c-22/main_mergida_runner.log)
+  — linhas **537-541** as cinco `OK extensao_carrega_classe` em ordem, descritor no disco, extensão
+  carregada no boot, `is_library_open=true`, `class_exists(AfMindOracle)=true` e
+  `instantiate_valido=true get_class=AfMindOracle`; **543** `66/66`, **545** `288/288`, **546** cenário
+  estreito com **10 568** passos (`sim_step total=2 220 787 µs`, pico `3 478 µs`, `trips=0`), **547**
+  matilha com **1 341** passos (`sim_tick total=3 080 492 µs`, pico `13 169 µs`, `trips=0`) e **548**
+  `288 checagens 0 falhas 33,417 s`. Exit 0, stderr de 0 bytes
+  ([`main_mergida_runner.err`](evidence/registro-pouso-passo1c-22/main_mergida_runner.err)).
+- RNG da sessão: [`main_mergida_rng.log`](evidence/registro-pouso-passo1c-22/main_mergida_rng.log) — **79**
+  `27/27`, **80** `27 checagens 0 falhas 2,682 s`.
+- Journal por tick: [`main_mergida_journal.log`](evidence/registro-pouso-passo1c-22/main_mergida_journal.log)
+  — **144** `128/128`, **145** `128 checagens 0 falhas 7/7 testes concluidos 5,881 s`.
+
+Os dois `trips=0` não fecham o **furo #20**: o guard mede parede de relógio, a amostra arquivada da (c)
+continua em 7 verdes e 1 vermelha com a extensão no disco, e a colheita que diria qual folha estoura em
+qual tick segue por escrever.
+
+### O pin: clone limpo de `6b817a5`, com o `build.bat` rodando dentro dele
+
+`git clone` do repositório local, HEAD `6b817a59180d43ff0d6b8cb6d9c016fac40d82eb` e `git status --short`
+**vazio** — é o sidecar `af_mind.gdextension.uid` comitado que faz um clone limpo não aparecer sujo, o
+furo #25 lido ao contrário. O `bin/` não vem (linha 8 do `.gitignore`), então o build faz parte do pin.
+
+- Cabeçalho no clone: `4c0aac8da3dfedc14d0e049205aeaaa11f32802bee56d4a275a466ac231fa916`, **139 992 B** —
+  a forma LF que o §12.2 da página aceita e que o `eol=lf` do `.gitattributes` devolve num checkout
+  Windows. O gate do toolset lê o mesmo número da branch.
+- `cmd //c native\af_mind\build.bat` no clone
+  ([`clone_limpo_build.log`](evidence/registro-pouso-passo1c-22/clone_limpo_build.log), stderr 0 bytes):
+  exit 0 e as oito `[regua]` com `forma=aceita`, `toolset=14.44.35207`,
+  `cl_banner=… 19.44.35228 for x64`, `dll_bytes=105472` e `export= 1 00001120 af_mind_entry` — os mesmos
+  **105 472 B** e o mesmo offset `00001120` medidos na branch, o que é a prova de que o `.cpp` comitado é
+  o `.cpp` compilado.
+- `--import` frio ([`clone_limpo_import.log`](evidence/registro-pouso-passo1c-22/clone_limpo_import.log),
+  303 linhas, exit 0, stderr 0 bytes) escreve o `extension_list.cfg` com o descritor.
+- Runner: [`clone_limpo_runner.log`](evidence/registro-pouso-passo1c-22/clone_limpo_runner.log) — as cinco
+  `OK extensao_carrega_classe` nas mesmas linhas **537-541**, `66/66` em 543, `288/288` em 545, cenário
+  estreito `sim_step total=2 249 042 µs` pico `4 110 µs` e matilha `sim_tick total=3 087 998 µs` pico
+  `13 569 µs`, ambos `trips=0`, e **548** `288 checagens 0 falhas 33,552 s`; exit 0, stderr 0 bytes.
+- Suíte: [`clone_limpo_suite.log`](evidence/registro-pouso-passo1c-22/clone_limpo_suite.log) linha **359**
+  `== 255 checagens  0 falhas  48.8 s de teste ==`, exit 0, zero `SCRIPT ERROR` e
+  [`clone_limpo_suite.err`](evidence/registro-pouso-passo1c-22/clone_limpo_suite.err) com **249 bytes**: as
+  duas linhas do par de vazamento do quit (`4 ObjectDB instances were leaked at exit`,
+  `2 resources still in use at exit`). Nenhuma das duas menciona `af_mind`; o débito continua o mesmo.
+- RNG **27 / 0 / 2,701 s** e journal **128 / 0 / 7 de 7 / 5,758 s**, exit 0 e stderr 0 bytes nas duas
+  ([`clone_limpo_rng.log`](evidence/registro-pouso-passo1c-22/clone_limpo_rng.log),
+  [`clone_limpo_journal.log`](evidence/registro-pouso-passo1c-22/clone_limpo_journal.log)).
+
+O número pineado para esta árvore é, na ordem das quatro corridas: suíte **255 / 0**, runner **288 / 0**
+com as cinco premissas da extensão, RNG **27 / 0**, journal **128 / 0**.
+
+### As três réguas no ponto fixo desta passada
+
+Rodadas com o §14.8 da página e esta rodada escritos, e re-rodadas depois de o manifesto existir:
+`pouso_ruler_doc_anchors.log` devolve **39 arquivos · 3 062 ponteiros · 209 rótulos · 3 254 links ·
+0 casos objetivos** — os 17 links novos são os ponteiros do §14.8 para os logs e para o manifesto, e o
+corpus não ganhou arquivo porque a pasta nova é `.log`, não `.md`. `pouso_ruler_plan_cites.log` segue com
+**1 024 citações conferidas, 10 arquivos inexistentes, 0 números fora do arquivo**, exatamente os três
+números da (c): esta rodada cita linha de log arquivado, não de código. E `pouso_ruler_plan_ids.log` move
+a página 22 de **195 / 87** para **196 / 88** — com **24** ainda dentro de `native/` e **64** fora das três
+raízes. O identificador novo é `f77c1961bb8065ea5a78b24677a36c5840891c75`, o hash de árvore que o §14.8
+citou em backticks para provar que o `src/` não mudou: a régua ficou um identificador mais cega no exato
+passo em que a prova do pouso foi escrita, que é a mecânica do **furo #39** repetida em vez de resolvida.
+
+### O que o pouso deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna faltam o **Passo 2** (gate de símbolos com as import libs
+do export-set medido e `/DELAYLOAD`, §1.3 e §5.1), o **Passo 3** (testemunha da regra de ouro) e o
+**Passo 4** (`transporte_http_zerado`). Dos furos, **#38** e **#39** continuam abertos e são decisão do
+dono, e o **#20** continua sem a colheita que nomeia a folha. A fila serializada não muda:
+**22 → 17 → 18 → 20 → 13**, e a 22 segue na frente porque a perna não fechou.
