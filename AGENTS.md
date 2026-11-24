@@ -770,6 +770,70 @@ mesmo SHA-256. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção d
 esta perna; o que a cláusula `fx_nao_escreve_o_mundo` paga é o estado, porque a não-determinismo da
 simulação ao vivo já está registrado no mandato 3.
 
+**Registro de 2026-11-24 — o código da perna 23 pousa na `main`, e a fila perde o elo da frente.** Nada
+aqui é exceção de ordem nem gate de fase: a autorização usada é a nomeada das pernas anteriores — `merge
+--no-ff` na `main` e `push`, com gate de fase continuando do dono (mandato 4). A perna era a da vez, foi
+aberta da `main` no ponto atual (`b0ed929`) e pousou sobre o que a `main` tinha entretanto — o pouso do
+Passo 2 (b) da 22: `git merge --no-ff feat/elevacao-visual-agua-23` → **`05e8917`**, pais `c05f1df` e
+`3c7aae9`, **57 arquivos, +4 422/−655**, com o código em dois arquivos novos
+([`src/world/water_surface.gd`](src/world/water_surface.gd), 237 linhas, e
+[`src/rendering/water_fx.gd`](src/rendering/water_fx.gd), 352), em `src/world/voxel_world.gd` (+71/−10),
+`src/main.gd` (+22) e `tests/smoke_test.gd` (+372).
+
+A cláusula do dono — **"só visual"** — foi conferida contra o diff, não contra a frase: os sete arquivos
+que o merge escreve em `src` e `tests` são os cinco acima mais os dois `.uid`, e `git diff --name-only
+c05f1df 05e8917 -- src/ai src/items native` devolve **vazio**. É a primeira vez que o repositório tem
+**um** shader e **uma** partícula, e as duas coisas estavam medidas como ausentes antes de abrir branch
+(§2 da página, os dois greps vazios em `b0ed929`). O que decide a cláusula em execução é
+`fx_nao_escreve_o_mundo`, com a linha literal da corrida (`edits_globais=0->0  eter_seco=0.000000
+eter_salpico=0.000000  canais=3`), e o que decide o furo **#43** — fechado por este pouso, com dono que
+era esta perna — são `material_da_agua_e_shader` (`shader=true  surface=1  declarados=16  gravados=14
+sem_fonte=0`) e `mascara_de_onda_do_bloco_isolado` (`verts=24  tri=12  mascarados=12  fora_do_plano=0`):
+o `COLOR` que a malharia já escrevia passou a ser lido pelo vértice. `agua_nao_muda_a_malha` existe
+justamente para o re-rome de 17 e 18 não achar o número de triângulos deslocado por causa alheia, e ela
+devolve `base=214448  espelho=214448  sessao=214448`. As nove checagens, cada uma com a linha literal,
+estão na seção `O pouso da perna 23 na main` de
+[`docs/melhorias-status.md`](docs/melhorias-status.md).
+
+O número pineado é o do **clone limpo** de `05e8917` com `--import` frio: suíte **264 checagens / 0
+falhas / 53,6 s** (amostrado) e **53,8 s** (silencioso), runner de reações **289 / 6 / 34,988 s** com
+`FALHA censo de checagens | 289/296`, RNG **27 / 0 / 2,675 s** e journal **128 / 0 / 5,983 s**. As
+árvores do pin são `3c436fb6d6f3…` (`src`) e `8decf7d42e3c…` (`tests`), **iguais** às da ponta `3c7aae9`
+— `git diff --name-only 3c7aae9 05e8917 -- src tests docs` devolve vazio, o merge não acrescenta nada
+sobre o que foi medido. Os **seis** vermelhos do runner não são desta perna e têm controle, não adjetivo:
+a corrida da base `c05f1df` num clone limpo devolve o **mesmo** rodapé com as **mesmas** cinco linhas
+(`extensao_carrega_classe` ×4 e `extensao_pack_no_processo`), que são checagens da 22 falhando onde
+`native/` não existe — é o **furo #38**, decisão do dono, e a suíte de lá dá **255 / 0**. A prova com
+janela, que é a única que pode dizer que o shader compila, deu `SHADER ERROR` **0** dos dois lados e
+`fracao_ge3` **0,8471** contra **0,0000**, com os dois PNGs da base no **mesmo** SHA-256.
+
+Duas coisas este pouso abre e não fecha. (1) **A régua de 25 ms deu um vermelho** —
+`pior passo=25,76 ms` uma vez em dez corridas da árvore mergida, com `264 checagens 1 falhas 57,8 s`. Nada
+foi silenciado e nenhum teto se moveu; **a atribuição continua aberta, escrita assim**, porque nenhuma
+porcentagem medida nesta passada cai sobre a janela daquela corrida — ela não foi amostrada. O
+instrumento que o **furo #31** cobrava foi escrito agora, obedece a regra dele (filtrar por
+`ExecutablePath` dentro do projeto) e achou um furo próprio no caminho: **#44**, a chave da tabela de
+desempenho é `IDProcess`, não `ProcessId`, e o join comparava `$null` — 143 linhas de `cpu=-1` que
+pareciam testemunha e eram constante. Fica como débito com dono: a próxima perna que rodar a suíte nesta
+árvore roda com o amostrador ligado e arquiva o par. (2) As **Fases 2→5** do prompt continuam autorizadas
+como pauta, com **nenhuma** linha escrita, e o §3.9 da página diz o que cada uma exige que hoje não existe
+(`Weather` como dono de estado, `Environment` versionado, o canal livre no `COLOR` opaco, normal/roughness
+por bloco). Nada encosta em `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` nem na projeção do
+`TickJournal`, e `block_changed` segue sem consumidor em `src/` — débito da 17.
+
+As três réguas rodaram na árvore dos documentos deste pouso e o ponto fixo é log arquivado:
+`python tools/check_doc_anchors.py` dá **40 arquivos · 3 163 ponteiros · 209 rótulos · 3 534 links** com
+**5** casos objetivos — os mesmos cinco `../.tools/...` gitignored da base, que dava **39 · 3 079 · 209 ·
+3 417** com os mesmos **5**. Antes do conserto eram **22**, e os 17 novos são a **nova face do furo #28**
+contada por régua: um rótulo cujo corpo se moveu 16 linhas para frente e um número de linha que hoje é
+branco são invisíveis para a varredura numérica da casa, que mexe em ponteiro e não em frase.
+`verify_plan_cites.py` no corpus de **51** arquivos dá **3 012 / 76 / 0** contra **2 930 / 75 / 0** da
+base, e o septuagésimo sexto é a própria frase que lista as ausências contando a si mesma.
+`verify_plan_ids.py` na página 23 dá **97** identificadores com **10** ausentes, conferidos um a um e
+todos da classe "peça que a página declara comprar". A fila serializada passa a **22 → 17 → 18 → 20 →
+13**: a 23 sai da frente, o elo seguinte é `feat/oraculo-nativo-gdextension-22`, que continua em voo na
+árvore primária com trabalho não commitado em `native/af_mind/`.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do

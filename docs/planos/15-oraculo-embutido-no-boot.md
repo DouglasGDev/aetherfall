@@ -472,10 +472,14 @@ crescimento do próprio status — a perna 10 escreveu 285 linhas aqui dentro e 
 A primeira leitura pelo conteúdo, feita naquela ponta, devolveu `:329` e `:2410`; a perna 14
 voltou a crescer o arquivo e os dois apodreceram de novo — o primeiro caiu em prosa de clone
 limpo (`:386`), o segundo em linha branca (`:2479`), e a linha branca é o único caso que a gateira
-de `tools/check_doc_anchors.py` vê. Re-leram-se pela frase uma terceira vez e são hoje
-[`:502`](../../docs/melhorias-status.md#L502) e
-[`:3059`](../../docs/melhorias-status.md#L3059); a ordem vigente deste mês está cinquenta e três linhas
-abaixo da primeira, em [`:565-566`](../../docs/melhorias-status.md#L565-L566). Cada um dos dois
+de `tools/check_doc_anchors.py` vê. Re-leram-se pela frase uma terceira vez na passada do pouso da
+23 (2026-11-24) e são
+[`:553`](../../docs/melhorias-status.md#L553) e
+[`:3169`](../../docs/melhorias-status.md#L3169); a ordem então vigente está treze linhas abaixo da
+primeira, em [`:566-567`](../../docs/melhorias-status.md#L566-L567). Naquela re-leitura o `:502` da
+linha de cima já não descrevia o alvo — a gateira deu **BRANCO** no `:3059` e **nada** no `:502`,
+porque o número que ela substituiu caiu em prosa de outra exceção, e é exatamente essa face que o
+furo #28 registra. Cada um dos dois
 conserva a ordem da época que registrou, em vez de ser reescrito: o mandato 4
 registrava a exceção antes do código, e o
 passe de status era o mesmo commit que a fecha. Editar o meio do status empurra cada linha
