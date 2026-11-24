@@ -1,0 +1,4 @@
+corpus na arvore de trabalho  arquivos: 39  ponteiros conferidos: 3079  rotulos conferidos: 209  links relativos conferidos: 3390
+docs/melhorias-status.md:3919  tests/aether_reactions_test.gd:60-60  ROTULO FORA DO CORPO [EXPECTED_CHECKS] em 65-68
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md:34  tests/aether_reactions_test.gd:535-535  BRANCO
+casos objetivos: 2

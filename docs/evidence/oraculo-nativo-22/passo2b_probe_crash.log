@@ -1,0 +1,121 @@
+== Passo 2 (b): PRIMEIRA corrida do probe rota -- queda 0xC0000005 apos o load ==
+== capturada dos scratch probe_stdout.txt/probe_stderr.txt, 2026-11-24 ==
+== Causa medida: assinatura errada de `llama_model_desc` (o callee leia RDX como ==
+== ponteiro de buffer). O stdout termina no [pack] sem nenhum [numero]; o stderr ==
+== termina nos load_tensors -- 1276 linhas no total; aqui vai o cabecalho (40) e ==
+== o rabo (60) com uma linha `... (1176 linhas omitidas ...)` no meio. ==
+-- stdout --
+[exe] diretorio_do_processo=C:\Aetherfall\native\af_mind\bin
+[exe] caminho=C:\Aetherfall\native\af_mind\bin\af_pack_probe.exe
+[simbolo] AF_MIND slots
+[rota] preload_absoluto dir=C:\Aetherfall\.tools\llama\runtime
+[rota] preload=5 estado=1 mods=5 stage=0 code=0 qual=0 texto=
+[base] load_pack_vazio=0 open_ms=99 backends_loaded=0 reg_count=3 dev_count=2 vk=1
+[base] dispositivo_vulkan nome=Vulkan0 descricao=AMD Radeon RX 9060 XT
+[base] llama_version=-1926548272 pino_pinado=12499 veredito=DIFERE
+[base] gpu_offload=1
+[base] vram_total=17095983104 (15.922 GB) livre=16195903344 usada=-1 (-1.000 GB)
+[pack] arquivo=C:\Aetherfall\models\qwen3.5-4b-q4_k_m.gguf bytes_no_disco=2740937888
+-- stderr: primeiras 40 linhas --
+load_backend: loaded RPC backend from C:\Aetherfall\.tools\llama\runtime\ggml-rpc.dll
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = AMD Radeon RX 9060 XT (AMD proprietary driver) | uma: 0 | rebar: 0 | fp16: 1 | bf16: 1 | fp4: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+load_backend: loaded Vulkan backend from C:\Aetherfall\.tools\llama\runtime\ggml-vulkan.dll
+load_backend: loaded CPU backend from C:\Aetherfall\.tools\llama\runtime\ggml-cpu-haswell.dll
+llama_model_loader: loaded meta data with 46 key-value pairs and 426 tensors from C:\Aetherfall\models\qwen3.5-4b-q4_k_m.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Qwen3.5-4B
+llama_model_loader: - kv   3:                           general.basename str              = Qwen3.5-4B
+llama_model_loader: - kv   4:                       general.quantized_by str              = Unsloth
+llama_model_loader: - kv   5:                         general.size_label str              = 4B
+llama_model_loader: - kv   6:                            general.license str              = apache-2.0
+llama_model_loader: - kv   7:                       general.license.link str              = https://huggingface.co/Qwen/Qwen3.5-4...
+llama_model_loader: - kv   8:                           general.repo_url str              = https://huggingface.co/unsloth
+llama_model_loader: - kv   9:                   general.base_model.count u32              = 1
+llama_model_loader: - kv  10:                  general.base_model.0.name str              = Qwen3.5 4B
+llama_model_loader: - kv  11:          general.base_model.0.organization str              = Qwen
+llama_model_loader: - kv  12:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen3.5-4B
+llama_model_loader: - kv  13:                               general.tags arr[str,2]       = ["unsloth", "image-text-to-text"]
+llama_model_loader: - kv  14:                         qwen35.block_count u32              = 32
+llama_model_loader: - kv  15:                      qwen35.context_length u32              = 262144
+llama_model_loader: - kv  16:                    qwen35.embedding_length u32              = 2560
+llama_model_loader: - kv  17:                 qwen35.feed_forward_length u32              = 9216
+llama_model_loader: - kv  18:                qwen35.attention.head_count u32              = 16
+llama_model_loader: - kv  19:             qwen35.attention.head_count_kv u32              = 4
+llama_model_loader: - kv  20:             qwen35.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  21:                      qwen35.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  22:    qwen35.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  23:                qwen35.attention.key_length u32              = 256
+llama_model_loader: - kv  24:              qwen35.attention.value_length u32              = 256
+llama_model_loader: - kv  25:                     qwen35.ssm.conv_kernel u32              = 4
+llama_model_loader: - kv  26:                      qwen35.ssm.state_size u32              = 128
+llama_model_loader: - kv  27:                     qwen35.ssm.group_count u32              = 16
+llama_model_loader: - kv  28:                  qwen35.ssm.time_step_rank u32              = 32
+llama_model_loader: - kv  29:                      qwen35.ssm.inner_size u32              = 4096
+llama_model_loader: - kv  30:             qwen35.full_attention_interval u32              = 4
+llama_model_loader: - kv  31:                qwen35.rope.dimension_count u32              = 64
+llama_model_loader: - kv  32:                       tokenizer.ggml.model str              = gpt2
+... (1176 linhas omitidas) ...
+create_tensor: loading tensor blk.28.ssm_beta.input_scale
+create_tensor: loading tensor blk.29.attn_k.k_scale
+create_tensor: loading tensor blk.29.attn_v.v_scale
+create_tensor: loading tensor blk.29.attn_qkv.scale
+create_tensor: loading tensor blk.29.attn_gate.scale
+create_tensor: loading tensor blk.29.ffn_gate.scale
+create_tensor: loading tensor blk.29.ffn_down.scale
+create_tensor: loading tensor blk.29.ffn_up.scale
+create_tensor: loading tensor blk.29.ssm_out.scale
+create_tensor: loading tensor blk.29.ssm_alpha.scale
+create_tensor: loading tensor blk.29.ssm_beta.scale
+create_tensor: loading tensor blk.29.attn_qkv.input_scale
+create_tensor: loading tensor blk.29.attn_gate.input_scale
+create_tensor: loading tensor blk.29.ffn_gate.input_scale
+create_tensor: loading tensor blk.29.ffn_down.input_scale
+create_tensor: loading tensor blk.29.ffn_up.input_scale
+create_tensor: loading tensor blk.29.ssm_out.input_scale
+create_tensor: loading tensor blk.29.ssm_alpha.input_scale
+create_tensor: loading tensor blk.29.ssm_beta.input_scale
+create_tensor: loading tensor blk.30.attn_k.k_scale
+create_tensor: loading tensor blk.30.attn_v.v_scale
+create_tensor: loading tensor blk.30.attn_qkv.scale
+create_tensor: loading tensor blk.30.attn_gate.scale
+create_tensor: loading tensor blk.30.ffn_gate.scale
+create_tensor: loading tensor blk.30.ffn_down.scale
+create_tensor: loading tensor blk.30.ffn_up.scale
+create_tensor: loading tensor blk.30.ssm_out.scale
+create_tensor: loading tensor blk.30.ssm_alpha.scale
+create_tensor: loading tensor blk.30.ssm_beta.scale
+create_tensor: loading tensor blk.30.attn_qkv.input_scale
+create_tensor: loading tensor blk.30.attn_gate.input_scale
+create_tensor: loading tensor blk.30.ffn_gate.input_scale
+create_tensor: loading tensor blk.30.ffn_down.input_scale
+create_tensor: loading tensor blk.30.ffn_up.input_scale
+create_tensor: loading tensor blk.30.ssm_out.input_scale
+create_tensor: loading tensor blk.30.ssm_alpha.input_scale
+create_tensor: loading tensor blk.30.ssm_beta.input_scale
+create_tensor: loading tensor blk.31.attn_k.k_scale
+create_tensor: loading tensor blk.31.attn_v.v_scale
+create_tensor: loading tensor blk.31.attn_q.scale
+create_tensor: loading tensor blk.31.attn_k.scale
+create_tensor: loading tensor blk.31.attn_v.scale
+create_tensor: loading tensor blk.31.attn_output.scale
+create_tensor: loading tensor blk.31.ffn_gate.scale
+create_tensor: loading tensor blk.31.ffn_down.scale
+create_tensor: loading tensor blk.31.ffn_up.scale
+create_tensor: loading tensor blk.31.attn_q.input_scale
+create_tensor: loading tensor blk.31.attn_k.input_scale
+create_tensor: loading tensor blk.31.attn_v.input_scale
+create_tensor: loading tensor blk.31.attn_output.input_scale
+create_tensor: loading tensor blk.31.ffn_gate.input_scale
+create_tensor: loading tensor blk.31.ffn_down.input_scale
+create_tensor: loading tensor blk.31.ffn_up.input_scale
+done_getting_tensors: tensor 'token_embd.weight' (q6_K) (and 0 others) cannot be used with preferred buffer type Vulkan_Host, using CPU instead
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 31 repeating layers to GPU
+load_tensors: offloaded 33/33 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   497.31 MiB
+load_tensors:      Vulkan0 model buffer size =  2603.50 MiB
+......................................................................
+== fim ==

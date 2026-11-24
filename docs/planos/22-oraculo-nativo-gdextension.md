@@ -393,13 +393,17 @@ Critério escrito **antes** da corrida: o jogo abre com a cena de prova, o proce
 números saem, e o passo 1 continua verde. Vermelho aqui é achado, não falha de plano — e é o que a
 Fase 1 tem de descobrir cedo.
 
-**Estado deste passo (medido 2026-11-24):** ele tem duas metades, e a primeira fechou. **Passo 2 (a)** —
+**Estado deste passo (medido 2026-11-24):** ele tem duas metades, e as duas fecharam. **Passo 2 (a)** —
 o gate de símbolos do §1.3 executado, os import libs gerados do export-set medido, `/DELAYLOAD` e a
-premissa do diretório de processo checada — está rodando e está no §15. **Passo 2 (b)** — estes três
-números — ainda não existe, e nasce com uma condição que a (a) escreveu: como o nome nu recusou os cinco
-nomes com `erro=126` (§15.5), o load do pack só acontece por caminho absoluto antes de qualquer delay
-helper, ou com as DLLs do runtime no diretório do processo do Godot. Nenhuma das duas rotas é escolha de
-gosto; é o que a premissa FALSA obriga, e as três métricas têm de sair por ela.
+premissa do diretório de processo checada FALSA — está no §15. **Passo 2 (b)** — os três números —
+fechou no §16, pela rota que a premissa FALSA obrigou: `set_runtime_dir` por **caminho absoluto** antes
+de qualquer delay helper (5 módulos), o `load_pack()` vazio abrindo a **base medida** (900 079 760 B,
+com `vram_used == vram_base` — um getter nascendo -1 faria o `af_vram_gb` um número inventado por
+subtração), o `.gguf` entrando no processo (RSS do SO 176 MB → 3,56 GB) e `af_ctx_cells` **lido do
+modelo** — `ctx_probe(2048)` e o runtime devolve `ctx_readback == 2048`
+(`ESCRITA_CONFIRMADA_PELO_RUNTIME`), com `ctx_train = 262 144` igual à meta `qwen35.context_length` que
+o próprio `.gguf` carrega. O gate do runner é `_test_extensao_pack_no_processo` — oito checagens,
+censo 288 → **296**, nascendo vermelho num clone sem o runtime e sem o modelo (ambos gitignored).
 
 ### 5.3 Passo 3 — a API do prompt, com o contrato de tipos do §2.3
 
@@ -546,7 +550,7 @@ põe `mind.kind`, `intent` e as crenças ordenadas é [`:35`](../../src/persiste
 Um modelo amostrado não é determinístico. A resposta é a §6.5: **CI lê cache**, e a checagem que
 garante que rodar sem modelo não move hash **já existe e está verde** —
 `journal_hash_inalterado_sem_escolha`
-([`tests/aether_reactions_test.gd:3769`](../../tests/aether_reactions_test.gd#L3769), registrada no
+([`tests/aether_reactions_test.gd:3774`](../../tests/aether_reactions_test.gd#L3774), registrada no
 runner em [`:36`](../../tests/aether_reactions_test.gd#L36)): ela prova os dois lados, o de que o
 que **não** está na projeção não move o hash e o de que uma confiança mexida na mesma chave move.
 O que a Fase 1 acrescenta a esse contrato é o terceiro lado: **com cache, o texto tem de ser o mesmo**
@@ -846,7 +850,7 @@ o hash tem de registrar é a do **checkout**, não a do editor.
 
 O §5.1 prometia uma checagem que **nasce vermelha**. Ela existe, roda, e o vermelho é número, não
 adjetivo. `_test_extensao_carrega_classe`
-([`tests/aether_reactions_test.gd:5529`](../../tests/aether_reactions_test.gd#L5529)) entrou no fim da
+([`tests/aether_reactions_test.gd:5534`](../../tests/aether_reactions_test.gd#L5534)) entrou no fim da
 lista de testes (`:49`) e imprime, nesta ordem, as cinco premissas de que o Passo 1 é dono:
 
 1. **descritor no disco** — `FileAccess.file_exists("res://native/af_mind/af_mind.gdextension")`;
@@ -868,7 +872,7 @@ roubada por um `SCRIPT ERROR` no meio, e os três `stderr` da rodada estão em *
 ([`passo1b_stderr_conta.log`](../evidence/oraculo-nativo-22/passo1b_stderr_conta.log)).
 
 O censo foi re-derivado na hora, não depois: `EXPECTED_CHECKS` passa de **283** a **288**
-([`:60`](../../tests/aether_reactions_test.gd#L60)), porque a linha `_checks + 1 == EXPECTED_CHECKS` de
+([`:65`](../../tests/aether_reactions_test.gd#L65)), porque a linha `_checks + 1 == EXPECTED_CHECKS` de
 `_finish` é justamente o instrumento que converte passo abortado em vermelho. As outras duas corridas não
 se moveram: suíte **255 checagens / 0 falhas / 48,7 s**
 ([`passo1b_suite.log`](../evidence/oraculo-nativo-22/passo1b_suite.log)) e journal **128 / 0 / 5,770 s**
@@ -1279,7 +1283,7 @@ ainda na frente, porque a perna não fechou.
 O §5.1 tirou duas frases do Passo 1 e as escreveu como débito do Passo 2: o gate de **símbolos** do §1.3,
 "com import libs gerados do export-set medido e `/DELAYLOAD`", e a premissa de que "o `.dll` resolve as
 DLLs do runtime no diretório do processo". Este passo executa as duas. As seis etapas estão no bloco do
-Passo 2 (a) de [`native/af_mind/build.bat`](../../native/af_mind/build.bat#L113), na ordem — `.def` do
+Passo 2 (a) de [`native/af_mind/build.bat`](../../native/af_mind/build.bat#L101), na ordem — `.def` do
 export-set medido, quatro import libs, o link do gate com `/DELAYLOAD`, a régua de módulos, as duas
 corridas, o controle negativo — e o veredito é `BUILD_RC=0`. A régua lê
 [`passo2a_build.log`](../evidence/oraculo-nativo-22/passo2a_build.log): **190 linhas** com as duas correntes
@@ -1368,7 +1372,7 @@ RVA, o hint e o nome. As duas formas medidas no binário são alinhadas por colu
 `                          E6 CreateFileW` e delay-load
 `                                    0000000140001B7F    8C llama_print_system_info`. O `dumpbin`
 **preenche** a largura da coluna; a régua lia o texto como se fosse CSV. Corrigido o
-[`check_imports.py:59`](../../native/af_mind/check_imports.py#L59) para `\s+` entre os tokens, os 37 nomes
+[`check_imports.py:69`](../../native/af_mind/check_imports.py#L69) para `\s+` entre os tokens, os 37 nomes
 apareceram. O discriminador entre nome e rótulo de tabela continua sendo a **forma** — o token colado
 antes do nome é hex de no máximo quatro dígitos, então `00000001 Characteristics` (8) e
 `0000000140025D68 Address of HMODULE` (16) não passam — e não uma lista de palavras em inglês, que é o
@@ -1500,5 +1504,140 @@ O que este passo **não** fecha:
   para a árvore resultante, sem re-corrida.
 - **Nenhum gate de fase** (mandato 4), e os furos **#38, #39 e #20** continuam exatamente onde estavam: o
   primeiro é decisão do dono, o segundo é o limite das réguas, o terceiro é a colheita que falta.
+
+
+## 16. O Passo 2 (b): o pack dentro do processo, os três números lidos do runtime, e a prova de layout que quase ficou inatingível
+
+O critério de §5.2 — o jogo abre com a cena de prova, o processo não morre, os três números saem, e o
+passo 1 continua verde — fechou na árvore desta branch
+(`feat/oraculo-nativo-passo2b-22`): a rota completa do §15.5 (preload por caminho absoluto → pack vazio
+como base → `.gguf` → contexto só na sonda) roda dentro do processo da engine por `AfMindOracle`, o
+probe `af_pack_probe` confirma a mesma rota de pe **antes** do Godot, e os três números saem nos dois.
+Duas corridas anteriores desta mesma perna são evidência também — e as duas são instrumento, não festa.
+
+### 16.1 A primeira corrida caiu `0xC0000005`, e foi a assinatura, não o runtime
+
+O stdout da primeira corrida do probe rota termina no `[pack] arquivo=...bytes_no_disco=2740937888`, sem
+nenhum `[numero]`; o stderr termina nos `load_tensors`, com os 33/33 layers offloaded para a GPU e o
+`Vulkan0 model buffer size = 2603.50 MiB` já escrito
+([`passo2b_probe_crash.log`](../evidence/oraculo-nativo-22/passo2b_probe_crash.log)). O modelo carregou;
+a queda veio **depois** do load, na linha do descritor: `llama_model_desc` tinha sido declarada com
+argumentos trocados, e o callee leu RDX como ponteiro de buffer do chamador. `llama_version` tinha o
+mesmo defeito de lado — a sonda leu `-1926548272` onde devia ler uma string — porque a função do runtime
+devolve `const char *` e não um inteiro. As duas assinaturas foram re-auditadas contra o `llama.h` do
+pin b12499 e corrigidas em [`mind_pack.cpp`](../../native/af_mind/src/mind_pack.cpp); a build seguinte
+imprime `llama_version=1.0.0-dev` ([`passo2b_build.log:202`](../evidence/oraculo-nativo-22/passo2b_build.log)).
+
+### 16.2 O achado: build verde, exit 0, e uma prova de layout que não podia passar
+
+A segunda build compilou, linkou, passou as duas corridas da régua de imports e **saiu 0** — com o
+veredito `NAO_CONFIRMADA` na mesma linha
+([`passo2b_build_inatingivel.log`](../evidence/oraculo-nativo-22/passo2b_build_inatingivel.log)):
+
+```
+[ctx] word0_default=512 estado=4
+[ctx] probe=0 pedido=2048 lido=512 n_batch=512 n_ubatch=512
+[ctx] ctx_cells=512 state_bytes=606 veredito=NAO_CONFIRMADA
+```
+
+O motivo é do design, não do runtime: o **load** criava o contexto default (512 células) antes da
+sonda, então `af_pack_ctx_probe(2048)` caía no "já medido", o pedido 2048 nunca chegou ao runtime, e a
+afirmação de layout (primeira palavra do blob de params de contexto = `n_ctx`) ficou **inatingível** sob
+um exit 0. Um `[numero]` com `NAO_CONFIRMADA` e código 0 não é número publicado — é o instrumento
+dizendo que a prova dele não pôde acontecer. O conserto tirou a criação de contexto do load de vez:
+`af_pack_ctx_probe` é o **único** contexto do processo (a rota de
+[`mind_pack.h`](../../native/af_mind/src/mind_pack.h), passo 4), `guarda_do_contexto` saiu da árvore, e
+a observação do default virou só leitura — `[ctx] word0_default=512 estado=3` na build final
+([`passo2b_build.log:214`](../evidence/oraculo-nativo-22/passo2b_build.log)): o runtime **reporta** 512,
+e nada é alocado com ele.
+
+A segunda metade do achado é o código de saída, e ela fechou com a regra do próprio achado: um veredito
+sob exit 0 não é número publicado. O `af_pack_probe` recusa com **exit 8** quando o runtime **aceita** o
+contexto mas devolve outro `n_ctx` — a afirmação de layout caiu, os `[numero]` saem para o leitor e o
+build **não** segue para o dll; o `build.bat` nomeia o exit 8 na recusa, junto do exit 7 que já dizia
+"não cabe, `[OPEN]`". A corrida final da mesma árvore sai `ESCRITA_CONFIRMADA_PELO_RUNTIME` com exit 0
+([`passo2b_build.log:216`](../evidence/oraculo-nativo-22/passo2b_build.log)), e os números abaixo são
+dessa corrida.
+
+### 16.3 A rota executada, com os três números
+
+A build final executa as duas pontas no mesmo log
+([`passo2b_build.log`](../evidence/oraculo-nativo-22/passo2b_build.log)). O controle de recusa continua
+de pé (`probe_recusa_codigo=9`, `RECUSOU_SEM_TOCAR_O_RUNTIME`, [:186-193](../evidence/oraculo-nativo-22/passo2b_build.log)), e a rota
+sai completa: `preload=5` pelo caminho absoluto
+([:199](../evidence/oraculo-nativo-22/passo2b_build.log)), pack vazio abrindo a base
+([:204](../evidence/oraculo-nativo-22/passo2b_build.log)), o `.gguf` entrando
+([:206](../evidence/oraculo-nativo-22/passo2b_build.log)), e o confronto de layout que a 16.2 deixou
+inatingível agora passa
+([:215-216](../evidence/oraculo-nativo-22/passo2b_build.log)):
+
+```
+[ctx] probe=0 pedido=2048 lido=2048 n_batch=2048 n_ubatch=512
+[ctx] ctx_cells=2048 state_bytes=606 veredito=ESCRITA_CONFIRMADA_PELO_RUNTIME
+```
+
+Os três números do §5.2, lidos do runtime e não de documentação
+([:220-226](../evidence/oraculo-nativo-22/passo2b_build.log)):
+
+| Grandeza | Valor medido | Linha |
+| --- | --- | --- |
+| `af_vram_gb` — base (pack vazio) | **0,838 GB** (900 079 760 B) | [:204](../evidence/oraculo-nativo-22/passo2b_build.log) |
+| `af_vram_gb` — depois do load | **3,381 GB** (3 630 637 200 B; Δ 2,543 GB) | [:220](../evidence/oraculo-nativo-22/passo2b_build.log), [:222](../evidence/oraculo-nativo-22/passo2b_build.log) |
+| `af_vram_gb` — depois do contexto | **3,988 GB** (4 282 327 184 B; Δ 0,607 GB) | idem |
+| `af_load_ms` | **2 057 ms** no probe (1 939 na corrida do runner desta revisão — cache frio/quente) | [:223](../evidence/oraculo-nativo-22/passo2b_build.log), [`passo2b_runner.log:544`](../evidence/oraculo-nativo-22/passo2b_runner.log) |
+| `af_ctx_cells` — lido do modelo | **2 048** (o pedido escrito; `ctx_train` 262 144 = meta `qwen35.context_length` do `.gguf`) | [:224](../evidence/oraculo-nativo-22/passo2b_build.log), [:212](../evidence/oraculo-nativo-22/passo2b_build.log) |
+
+As testemunhas ao redor, todas do mesmo log: `vram_total=17095983104` (RX 9060 XT, 16 GB),
+`estado=3` após o load e `estado=4` após o probe, `state_bytes=606` (0,3 B por célula, [:225](../evidence/oraculo-nativo-22/passo2b_build.log)),
+RSS do SO no passo do contexto **0,026 GB** ([passo2b_build.log:226](../evidence/oraculo-nativo-22/passo2b_build.log)) —
+a testemunha de que o contexto morou na VRAM, não no heap —, `offloaded 33/33 layers to GPU` com
+`Vulkan0 compute buffer size = 507.02 MiB` no stderr da corrida, `model_bytes=2729969664` contra
+2 740 937 888 no disco (a diferença é metadado; impressa, não afirmada), e `ctx_size_pedido_por_fora=4096`
+([:227](../evidence/oraculo-nativo-22/passo2b_build.log), o `--ctx-size` do host) `identico_ao_lido=nao` — o número
+lido **não** é confundível com o pedido por fora.
+
+### 16.4 O gate do runner: oito checagens, censo 296, e a lição do `rss_antes`
+
+A checagem nova é [`_test_extensao_pack_no_processo`](../../tests/aether_reactions_test.gd) — oito
+verificações, cada uma nomeando a premissa que exige e imprimindo o número que a decide
+([`passo2b_runner.log:540-547`](../evidence/oraculo-nativo-22/passo2b_runner.log)): runtime e modelo no
+disco (com o caminho impresso — num clone sem eles, ambos gitignored, as oito nascem vermelhas com o
+motivo, não com um número chutado); pack vazio abrindo a base por caminho absoluto (`modulos=5`,
+`estado=2`); base honesta (`vram_used == vram_base`); o `.gguf` entrando com o RSS do SO crescendo
+(174 813 184 → 3 556 532 224); a leitura conferindo com a meta do próprio modelo (`ctx_train ==
+int(meta_ctx)`); o runtime confirmando o contexto pedido por escrito (`probe2048=0 lido=2048`); e os
+três números do §5.2 na ordem que decide (`base < depois do load < depois do contexto`). O censo sobe
+288 → **296**, o rodapé sai **296 checagens 0 falhas 44,648 s** com `67/67` testes completos e
+`trips=0`, e o passo 1 continua verde — as cinco `extensao_carrega_classe` seguem OK
+([`passo2b_runner.log:535-539`](../evidence/oraculo-nativo-22/passo2b_runner.log)).
+
+A primeira corrida do runner ensinou a ordem de leitura, e a lição está escrita no próprio teste: os
+dois RSS são **grandezas capturadas pelo load** (o SO, sobre o mesmo instante, antes e depois de
+mapear), não leituras vivas — ler `rss_antes_bytes()` **antes** do `load_pack` devolve o `-1` da
+inicialização, e a linha saía `rss_antes=-1 rss_apos=3582414848`: vermelho disfarçado de testemunha.
+Lidos depois da chamada, o par impresso é o par que o load capturou
+([passo2b_runner.log:544](../evidence/oraculo-nativo-22/passo2b_runner.log)).
+
+As quatro corridas da revisão, todas nesta árvore: runner **296 / 0 / 44,648 s**
+([`passo2b_runner.log`](../evidence/oraculo-nativo-22/passo2b_runner.log)), suíte **255 / 0 / 51,0 s**
+([`passo2b_suite.log`](../evidence/oraculo-nativo-22/passo2b_suite.log)), RNG **27 / 0 / 2,895 s**
+([`passo2b_rng.log`](../evidence/oraculo-nativo-22/passo2b_rng.log)) e journal **128 / 0 / 6,182 s**
+([`passo2b_journal.log`](../evidence/oraculo-nativo-22/passo2b_journal.log)) — os dois `.err` dos
+portões curtos são vazios, e nenhum `SCRIPT ERROR` aparece em log nenhum.
+
+### 16.5 O que este passo não fecha
+
+- **Não há API de prompt ainda** (§5.3 é o Passo 3): `enqueue`, `wait`, sinais e métricas de fila não
+  existem, e `mind_oracle.gd` continua falando HTTP. O `load_pack` desta perna é a rota de carga
+  medida, não o transporte de inferência.
+- **`src/` intocado**, com a régua em `git diff --name-only main...HEAD -- src` devolvendo **vazio**, e
+  `Channel.COUNT`, `FORMAT_VERSION` e `GEN_VERSION` parados — os hashes de journal publicados valem
+  para a árvore resultante, sem re-corrida.
+- **Nenhum gate de fase** (mandato 4), e os furos **#38, #39 e #20** seguem onde estavam. A premissa do
+  diretório do processo continua FALSA (§15.5) — e agora com a consequência exercitada: todo acesso ao
+  runtime dentro do processo passa por `set_runtime_dir` com caminho absoluto, cinco de cinco.
+- O contexto medido é o **custo** (0,607 GB por 2 048 células), não a escolha do tamanho de produção:
+  o `--ctx-size` do host segue 4096 até o Passo 3 decidir o que a fila de prompts pede.
+
 
 

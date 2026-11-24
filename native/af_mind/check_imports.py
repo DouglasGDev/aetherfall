@@ -10,8 +10,10 @@ do exe construido e comparada com o dono medido no export-set.
 
 De onde vem cada lista, e por que nenhuma e escrita aqui:
 
- * os NOMES REFERENCIADOS saem do proprio `symbol_gate.cpp`, das linhas `AF_SLOT(nome)` — a
-   mesma lista que o exe imprime ao rodar. Copia nenhuma; se o gate referencia, esta aqui.
+ * os NOMES REFERENCIADOS saem da propria fonte passada em `--gate`, das linhas `AF_SLOT(nome)`
+   (o gate do Passo 2 (a), que imprime os enderecos ao rodar) e `AF_REF(nome)` (o corpo do pack do
+   Passo 2 (b), cujo `af_pack_slots` mistura os enderecos num checksum). Mesma regua para os dois
+   binarios: copia nenhuma; se a fonte referencia, esta aqui.
  * o DONO de cada nome sai dos `.def` gerados do dumpbin arquivado (`gen_import_libs.py`), e um
    nome referenciado que apareca em dois `.def` e recusa: o linker pegaria o primeiro da linha e
    a tabela mentiria sobre quem exporta.
@@ -27,6 +29,14 @@ Uso (dentro da casca do vcvars, chamado pelo build.bat):
         --absent native\\af_mind\\src\\symbol_gate_absent.cpp ^
         --defs native\\af_mind\\bin --imports native\\af_mind\\bin\\gate-imports.txt
 
+    python native\\af_mind\\check_imports.py --gate native\\af_mind\\src\\mind_pack.cpp ^
+        --absent native\\af_mind\\src\\symbol_gate_absent.cpp ^
+        --defs native\\af_mind\\bin --imports native\\af_mind\\bin\\af_mind-imports.txt
+
+A segunda corrida e a do Passo 2 (b): a fonte agora e o corpo do pack e a tabela e a do
+`af_mind.dll` (que so toca o runtime por delay-load), porque e ESSE binario que o Godot carrega --
+um gate verde no exe e um `.dll` sem regua seria a mesma mentira de sempre, so que com outra voz.
+
 Saida: linhas `[referencia]`, `[dono]`, `[import]` e uma linha de veredito. 0 = confere; 1 =
 recusa com `[recusa]` impresso.
 """
@@ -39,7 +49,7 @@ import os
 import re
 import sys
 
-SLOT_RE = re.compile(r"^\s*AF_SLOT\((\w+)\)\s*;\s*$")
+SLOT_RE = re.compile(r"^\s*AF_(?:SLOT|REF)\((\w+)\)\s*;\s*$")
 DATA_RE = re.compile(r'^extern void \* (\w+);\s*$')
 # O `.def` do Passo 2 (a) traz nomes SEM ordinal (ver gen_import_libs.py); o ` @n` continua
 # aceito aqui para que a regua nao dependa de qual das duas formas o .def nasceu.
@@ -149,7 +159,7 @@ def main() -> int:
             f"`dumpbin /imports` nao mostrou nenhum dos modulos do runtime ({', '.join(sorted(modulos_def))})"
         )
 
-    print(f"[referencia] gate AF_SLOT={len(referenciados)} nomes")
+    print(f"[referencia] gate AF_SLOT/AF_REF={len(referenciados)} nomes")
     print(f"[referencia] controle_negativo={len(ausentes)} nomes")
 
     esperado: dict[str, set[str]] = {}

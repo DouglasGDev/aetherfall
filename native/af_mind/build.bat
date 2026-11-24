@@ -92,22 +92,10 @@ if not defined LINK_FIRST goto :sem_link
 if /i not "%LINK_FIRST%"=="%VCToolsInstallDir%bin\Hostx64\x64\link.exe" goto :link_recusado
 echo [regua] link_primeiro=%LINK_FIRST%
 
-rem --- compilar e linkar ----------------------------------------------------------------
-cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /I "%ROOT%include" /c "%SRC%" /Fo"%OUTDIR%\register_types.obj"
+rem --- compilar -------------------------------------------------------------------------
+rem A ponte (register_types.cpp) inclui mind_pack.h, de src/: sem este /I o Passo 1 nem compila.
+cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /I "%ROOT%include" /I "%ROOT%src" /c "%SRC%" /Fo"%OUTDIR%\register_types.obj"
 if errorlevel 1 goto :compilou_errado
-
-link /nologo /DLL /OUT:"%DLL%" /IMPLIB:"%OUTDIR%\af_mind.lib" "%OUTDIR%\register_types.obj"
-if errorlevel 1 goto :linkou_errado
-
-if not exist "%DLL%" goto :sem_dll
-for %%F in ("%DLL%") do set "DLL_BYTES=%%~zF"
-echo [regua] dll_bytes=%DLL_BYTES%
-
-rem --- regua 5: o simbolo que o .gdextension nomeia existe na tabela de exports --------
-set "EXPORT_LINE="
-for /f "usebackq delims=" %%L in (`dumpbin /exports "%DLL%" 2^>^&1 ^| findstr /c:"af_mind_entry"`) do if not defined EXPORT_LINE set "EXPORT_LINE=%%L"
-if not defined EXPORT_LINE goto :sem_export
-echo [regua] export=%EXPORT_LINE%
 
 rem ================================================================================
 rem Passo 2 (a) do dossie 22 (S1.3, S5.1): o gate de simbolos, executado.
@@ -227,6 +215,90 @@ if "%RC%"=="0" goto :controle_linkou
 for %%N in (ggml_backend_buffer_type_get_base_buffer llama_model_n_ctx llama_new_context_with_model ggml_backend_buffer_type_get_alloc_size) do call :exige_lnk2019 %%N
 if exist "%OUTDIR%\af_symbol_gate_absent.exe" goto :controle_exe_existe
 echo [controle] OK: o gate e falsificavel -- os quatro nomes foram recusados pelo linker
+
+rem ================================================================================
+rem Passo 2 (b) do dossie 22 (S5.2): o corpo do pack, a sonda de pe e o dll com metodos.
+rem
+rem A ordem e a da rota que o S15.5 mediu obrigatoria: a RECUSA antes de qualquer preload,
+rem o preload por caminho ABSOLUTO, o pack vazio (a base de VRAM medida, nao zero assumido),
+rem o pack, o contexto. Tudo roda DE PE antes de o Godot ler qualquer numero: uma ABI errada
+rem vira linha impressa na sonda, nao um crash no processo da engine (mandato 1). O dll so
+rem nasce depois de a sonda sair com exit 0 -- um dll sem sonda e o "0 backends" silencioso
+rem de S1.3 com outra voz.
+rem
+rem O modelo vem de %2; sem argumento cai no caminho que o fetch script da perna 15 baixa.
+rem Sem modelo no disco o build recusa (codigo 10): a recusa e a regua de imports do dll sao
+rem validas sem ele, mas os tres numeros de S5.2 nao, e corrida pulada nao pode virar verde.
+rem ================================================================================
+
+set "PACK=%ROOT%src\mind_pack.cpp"
+set "HDRP=%ROOT%src\mind_pack.h"
+set "PROBE=%ROOT%src\pack_probe_main.cpp"
+set "PROBE_EXE=%OUTDIR%\af_pack_probe.exe"
+set "MODEL=%~2"
+if not exist "%PACK%" goto :sem_pack
+if not exist "%HDRP%" goto :sem_pack
+if not exist "%PROBE%" goto :sem_pack
+if not defined MODEL set "MODEL=C:\Aetherfall\models\qwen3.5-4b-q4_k_m.gguf"
+if not exist "%MODEL%" goto :sem_model
+
+rem --- 1: o corpo, compilado UMA vez para os dois binarios (probe e dll) ----------------
+cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /I "%ROOT%src" /c "%PACK%" /Fo"%OUTDIR%\mind_pack.obj"
+set "RC=%ERRORLEVEL%"
+echo [pack] cl_codigo=%RC%
+if not "%RC%"=="0" goto :compilou_errado
+
+rem --- 2: a sonda de pe, linkada contra o mesmo objeto ----------------------------------
+cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /I "%ROOT%src" /c "%PROBE%" /Fo"%OUTDIR%\pack_probe_main.obj"
+set "RC=%ERRORLEVEL%"
+echo [probe] cl_codigo=%RC%
+if not "%RC%"=="0" goto :compilou_errado
+link /nologo /OUT:"%PROBE_EXE%" "%OUTDIR%\pack_probe_main.obj" "%OUTDIR%\mind_pack.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS%
+set "RC=%ERRORLEVEL%"
+echo [probe] link_codigo=%RC%
+if not "%RC%"=="0" goto :linkou_errado
+if not exist "%PROBE_EXE%" goto :sem_probe_exe
+
+rem --- 3: a recusa sem preload: o exit 9 e do programa, nao do loader -------------------
+echo [corrida] probe_recusa
+"%PROBE_EXE%" recusa
+set "RC=%ERRORLEVEL%"
+echo [corrida] probe_recusa_codigo=%RC%
+if not "%RC%"=="9" goto :probe_recusa_errada
+
+rem --- 4: a rota inteira: preload absoluto, base, pack, contexto -------------------------
+echo [corrida] probe_rota
+"%PROBE_EXE%" "%RUNTIME%" "%MODEL%"
+set "RC=%ERRORLEVEL%"
+echo [corrida] probe_rota_codigo=%RC%
+if not "%RC%"=="0" goto :probe_rota_recusada
+
+rem --- 5: o dll, so depois de a sonda sair zero -----------------------------------------
+link /nologo /DLL /OUT:"%DLL%" /IMPLIB:"%OUTDIR%\af_mind.lib" "%OUTDIR%\register_types.obj" "%OUTDIR%\mind_pack.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS%
+set "RC=%ERRORLEVEL%"
+echo [ponte] link_codigo=%RC%
+if not "%RC%"=="0" goto :linkou_errado
+if not exist "%DLL%" goto :sem_dll
+for %%F in ("%DLL%") do set "DLL_BYTES=%%~zF"
+echo [regua] dll_bytes=%DLL_BYTES%
+
+rem --- regua 5 do Passo 1, agora sobre o dll que de fato sai ---------------------------
+set "EXPORT_LINE="
+for /f "usebackq delims=" %%L in (`dumpbin /exports "%DLL%" 2^>^&1 ^| findstr /c:"af_mind_entry"`) do if not defined EXPORT_LINE set "EXPORT_LINE=%%L"
+if not defined EXPORT_LINE goto :sem_export
+echo [regua] export=%EXPORT_LINE%
+
+rem --- 6: a regua de imports do DLL -- a segunda corrida que o check_imports documenta --
+dumpbin /imports "%DLL%" > "%OUTDIR%\af_mind-imports.txt" 2>&1
+set "RC=%ERRORLEVEL%"
+echo [dumpbin] dll_imports_codigo=%RC%
+if not "%RC%"=="0" goto :dumpbin_recusou
+pushd "%ROOT%..\.."
+python "%CHK%" --gate "%PACK%" --absent "%ABSENT%" --defs "%OUTDIR%" --imports "%OUTDIR%\af_mind-imports.txt"
+set "RC=%ERRORLEVEL%"
+echo [imports] dll_codigo=%RC%
+if not "%RC%"=="0" goto :imports_dll_recusou
+popd
 
 echo [ok] build.bat: %DLL%
 exit /b 0
@@ -353,3 +425,24 @@ exit /b 9
 :controle_silencioso
 echo [falha] Passo 2 (a): o link recusou sem nomear %~1 em gate-absent-link.txt -- recusou pelo motivo errado e o controle nao vale
 exit /b 9
+
+rem --- codigos 10..12 sao do Passo 2 (b); 2..6 do Passo 1 e 7..9 do Passo 2 (a) ---------
+:sem_pack
+echo [falha] Passo 2 (b): sem src\mind_pack.cpp, src\mind_pack.h ou src\pack_probe_main.cpp -- o corpo do pack nao existe
+exit /b 10
+:sem_model
+echo [falha] Passo 2 (b): sem o .gguf em %MODEL% -- os tres numeros de S5.2 nao saem e corrida pulada nao e verde
+echo [falha] passe o caminho do modelo como segundo argumento: build.bat "C:\caminho\do\runtime" "C:\caminho\do\modelo.gguf"
+exit /b 10
+:sem_probe_exe
+echo [falha] Passo 2 (b): o link da sonda saiu zero mas af_pack_probe.exe nao existe
+exit /b 10
+:probe_recusa_errada
+echo [falha] Passo 2 (b): a recusa sem preload saiu com %RC%; o aceito e 9 (RECUSOU_SEM_TOCAR_O_RUNTIME, estado 0, retorno -1) -- qualquer outro e ou crash do loader ou recusa pelo motivo errado
+exit /b 11
+:probe_rota_recusada
+echo [falha] Passo 2 (b): a rota da sonda saiu com %RC% -- leia as linhas [base]/[pack]/[ctx]/[numero] acima; exit 7 e o ctx nao confirmado pelo runtime ([OPEN] na pagina, e seguir para o Godot sem esta testemunha e vermelho); exit 8 e o NAO_CONFIRMADA -- o runtime aceitou o contexto mas devolveu outro n_ctx, a prova de layout caiu, e vermelho aqui e o achado, nao falha de plano
+exit /b 11
+:imports_dll_recusou
+echo [falha] Passo 2 (b): a regua de imports do DLL recusou -- nome referenciado sem dono medido, dono duplo, ou importado do modulo errado
+exit /b 12
