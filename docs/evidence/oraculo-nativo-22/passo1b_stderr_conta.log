@@ -1,0 +1,9 @@
+== Passo 1 (b): contagem de bytes dos tres streams, 2026-11-24T01:55:56-04:00, base 85263d5 ==
+== comando: wc -c .tools/_b_runner.err .tools/_b_suite.err .tools/_b_journal.err .tools/_b_runner.out ==
+Os tres stderr saem com 0 bytes: o vermelho de extensao_carrega_classe nao cuspiu um ERROR
+de engine nem um SCRIPT ERROR -- o gate pede stdout com a premissa impressa e stderr mudo.
+    0 .tools/_b_runner.err
+    0 .tools/_b_suite.err
+    0 .tools/_b_journal.err
+65061 .tools/_b_runner.out
+65061 total

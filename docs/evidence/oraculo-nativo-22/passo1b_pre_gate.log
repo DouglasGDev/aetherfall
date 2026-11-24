@@ -1,0 +1,5 @@
+== Passo 1 (b): pre-gate de parseio do runner, 2026-11-24T01:55:56-04:00, base 85263d5, branch feat/oraculo-nativo-gdextension-22 ==
+== comando: godot --headless --path . --check-only --script tests/aether_reactions_test.gd ==
+== exit do processo: 0 (medido na mesma corrida) ==
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+

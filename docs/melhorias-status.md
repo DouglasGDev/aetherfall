@@ -6422,3 +6422,81 @@ e nasce vermelho). O contrato publicado não foi re-medido aqui porque a árvore
 mudou: **255 / 0** na suíte e **283 / 0** de reações. Dos quatro furos que esta rodada abre, nenhum tem
 consequência em runtime hoje — são defeitos de instrumento e de leitura, com dono escrito antes do código —
 e a fila continua **22 → 17 → 18 → 20 → 13**.
+
+---
+
+## Rodada 2026-11-24 (3) — Passo 1 (b) do dossiê 22: o gate do esqueleto nativo nasce vermelho, com a conta feita (branch `feat/oraculo-nativo-gdextension-22`, base `85263d5`)
+
+**Puridade medida, não afirmada:** `git diff --name-only 85263d5..HEAD -- src native models` devolve **vazio**.
+O que muda é um arquivo de teste ([`tests/aether_reactions_test.gd`](../tests/aether_reactions_test.gd)), a
+página do dossiê (§13 dela), esta rodada e a evidência nova em
+[`docs/evidence/oraculo-nativo-22/`](evidence/oraculo-nativo-22/). Nenhum arquivo de `native/` existe ainda — e
+é justamente isso que faz o vermelho ser honesto: não há `.dll` nenhum para a checagem acusar por engano.
+
+**O que entrou.** `_test_extensao_carrega_classe`
+([`tests/aether_reactions_test.gd:5529`](../tests/aether_reactions_test.gd#L5529)) fechou o §5.1 da página 22,
+que até aqui prometia a checagem no futuro. São **cinco** premissas impressas em ordem, cada uma chamada só
+depois de a anterior confirmar que o objeto existe: **descritor no disco**
+(`FileAccess.file_exists("res://native/af_mind/af_mind.gdextension")`), **extensão listada pela engine**
+(`GDExtensionManager.is_extension_loaded()`, com `load_extension()` só quando o descritor está presente),
+**biblioteca aberta no processo** (`GDExtension.is_library_open()` — a lista da engine não dá esse fato: um
+descritor apontando para um `.dll` inexistente entra na lista e não abre), **classe na ClassDB**
+(`ClassDB.class_exists("AfMindOracle")`) e **objeto vivo** (`ClassDB.instantiate()` com `get_class()` batendo
+o nome). O `-1` impresso na segunda linha é a marca de que a API não foi chamada às cegas: medido em sonda,
+`load_extension` sem arquivo faz a engine cuspir dois `ERROR` no stderr, e o vermelho passaria a ser do
+instrumento, não da premissa.
+
+**O vermelho medido.** Runner de reações: [`passo1b_runner_vermelho.log`](evidence/oraculo-nativo-22/passo1b_runner_vermelho.log)
+traz as cinco linhas `FALHA` e o rodapé **`288 checagens 5 falhas 33.330 s`**, com
+`OK censo de testes completos | 66/66` e `OK censo de checagens | 288/288` **acima** delas. Os dois `OK` do
+censo são o que separa este vermelho do furo **#1** desta página: as cinco checagens contaram, logo nenhuma
+foi roubada por um `SCRIPT ERROR` no meio do passo. As outras duas corridas não se moveram — suíte
+**255 checagens / 0 falhas / 48,7 s** ([`passo1b_suite.log`](evidence/oraculo-nativo-22/passo1b_suite.log)) e
+journal **128 / 0 / 5,770 s** ([`passo1b_journal.log`](evidence/oraculo-nativo-22/passo1b_journal.log)) — e o
+pre-gate de parseio do runner editado saiu **exit 0** ([`passo1b_pre_gate.log`](evidence/oraculo-nativo-22/passo1b_pre_gate.log)).
+Os três `stderr` da rodada estão em **0 0 0 bytes** ([`passo1b_stderr_conta.log`](evidence/oraculo-nativo-22/passo1b_stderr_conta.log)):
+nenhum `ERROR` de engine, nenhum `SCRIPT ERROR`.
+
+**Censo re-derivado na hora:** `EXPECTED_CHECKS` passa de **283** a **288**
+([`:60`](../tests/aether_reactions_test.gd#L60)), e o comentário da linha traz a conta (os 283 da perna 12
+mais as cinco deste gate). A régua que confere o censo é a própria linha `_checks + 1 == EXPECTED_CHECKS` de
+`_finish`, e é por isso que o número não podia ser estimado: um chute aqui desarma o instrumento inteiro.
+
+**Nenhum `arquivo:linha` do repositório envelheceu com este commit, e o motivo é aritmético, não sorte:** as
+três edições no topo do runner substituem linha por linha (hunks `49→49`, `51-56→51-56`, `60→60`) e a função
+entrou **depois** da última linha do arquivo (`@@ -5514,0 +5515,58 @@`), então nada abaixo da linha 5 514 se
+moveu. Foi decisão de escrita, tomada contra o furo **#28** (trinta e três números envelheceram em três
+páginas que a varredura não abriu): mexer no fim do arquivo quando o topo pode ficar do mesmo tamanho.
+
+**As três réguas do §11 do dossiê, na árvore desta rodada:** `python tools/check_doc_anchors.py` deu
+**39 arquivos · 3 058 ponteiros · 209 rótulos · 3 194 links · 0 casos objetivos** (eram 3 052 e 3 178 antes
+dos links desta passada; exit 0); `python .tools/verify_plan_cites.py AGENTS.md README.md
+docs/melhorias-status.md docs/planos/README.md docs/planos/22-oraculo-nativo-gdextension.md` deu **1 019
+citações conferidas, 10 arquivos citados inexistentes, 0 números fora do arquivo** (exit 0); e
+`python .tools/verify_plan_ids.py AGENTS.md docs/planos/README.md docs/planos/22-oraculo-nativo-gdextension.md`
+saiu **exit 0** com as ausências de sempre, todas peças que os próprios dossiês declaram inexistentes
+(`AfMindRuntime`, `GDExtensionClassCreationInfo6`, `_copyright`, `model_oversave`). Logs arquivados como
+`passo1b_ruler_doc_anchors.log`, `passo1b_ruler_plan_cites.log` e `passo1b_ruler_plan_ids.log`. O dossiê
+cresceu **56 linhas** (813 → 869), esta página ganhou uma rodada, e o manifesto da pasta de evidência passa
+de 45 a **53 entradas** com as oito logs novos.
+
+**Nota de instrumento, com o par medido.** A primeira sonda de API desta rodada **pendurou**: ela lia
+`m["return_class"]` do dicionário de `ClassDB.class_get_method_list`, a chave não existe na 4.7.2, o
+`SCRIPT ERROR` derrubou `_initialize` antes do `quit()` e o `SceneTree` ficou vivo — órfão PID 24080, morto
+por quem o criou, e a corrida não mediu nada. O par que fecha a atribuição rodou nesta máquina: o mesmo
+script com `--check-only` devolve **exit 0** (a régua de parseio não vê erro de chave em runtime), e o mesmo
+script sob `timeout 60` devolve **exit 124** (foi o `timeout` que matou, não o teste). Ou seja: a defesa não
+é o pre-gate — é o `timeout` externo em **toda** corrida headless, inclusive nas sondas, regra que a casa já
+escreveu e que aqui foi violada por mim antes de ser conferida. Toda corrida desta rodada, a partir da
+segunda sonda, rodou sob `timeout 90/300/400` com o código do processo lido.
+
+### O que esta passada não fecha
+
+Nenhum gate de fase, e nenhum `.dll`: `native/af_mind/` continua inexistente, `HTTPRequest` continua em
+`src/ai/mind_oracle.gd`, e as cinco linhas de `extensao_carrega_classe` seguem vermelhas até o Passo 1 (c) —
+`build.bat` com o toolset pinado (§12.1 da página 22) e o gate de SHA nas **duas formas** do cabeçalho
+(§12.2), o cabeçalho vendorizado com a linha de licença em `THIRD_PARTY_LICENSES.md` no mesmo commit (§6.1) e
+`register_types.cpp` registrando **uma** classe sem função de IA. A `main` pousada continua em **255 / 0** e
+**283 / 0** na revisão dela; o pouso desta perna se dá com o runner em **288 / 0**, e a regra de ouro do
+prompt ("a mente propõe, as regras dispõem") continua sem testemunha de runtime porque ainda não existe
+prompt nenhum para desobedecer — ela é cobrada no Passo 3. A fila continua **22 → 17 → 18 → 20 → 13**.

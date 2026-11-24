@@ -799,7 +799,9 @@ que o checkout produz, porque a regra `* text=auto eol=lf`
 ([`:9`](../../.gitattributes#L9)) é justamente o que preserva os CR da evidência. Aqui o erro foi do
 **instrumento**, não da evidência: as três linhas foram computadas sem o `-b`. Refeito com `-b` e com as
 quatorze evidências desta passada dentro — 31 + 14 = **45 entradas / 45 OK** —, e as únicas linhas de
-arquivo pré-existente cujo conteúdo mudou são essas três. Fica como
+arquivo pré-existente cujo conteúdo mudou são essas três. Quarenta e cinco era a conta **daquele** lote, e
+é por isso que a régua dele vale para os seguintes: o Passo 1 (b) acrescenta oito e o manifesto passa a
+**53 entradas**, com a conta re-rodada por `sha256sum -c` no mesmo clone limpo. Fica como
 **furo #36**, com a régua: `sha256sum -c` do manifesto de
 qualquer pasta de evidência tem de ser **tudo OK num clone limpo**, e um `FAILED` em `.bat` ou `.log` é
 defeito do hash, não do arquivo.
@@ -811,3 +813,57 @@ re-rodado, o corpo do stdout saiu **idêntico linha a linha** ao da corrida em L
 próprio log), e o `sha256sum -c` refeito deu 45/45. A lição é a do furo #36 em chave invertida: a forma que
 o hash tem de registrar é a do **checkout**, não a do editor.
 
+
+---
+
+## 13. O Passo 1 (b): o gate nasceu vermelho, e o vermelho é conta feita
+
+O §5.1 prometia uma checagem que **nasce vermelha**. Ela existe, roda, e o vermelho é número, não
+adjetivo. `_test_extensao_carrega_classe`
+([`tests/aether_reactions_test.gd:5529`](../../tests/aether_reactions_test.gd#L5529)) entrou no fim da
+lista de testes (`:49`) e imprime, nesta ordem, as cinco premissas de que o Passo 1 é dono:
+
+1. **descritor no disco** — `FileAccess.file_exists("res://native/af_mind/af_mind.gdextension")`;
+2. **extensão listada pela engine** — `GDExtensionManager.is_extension_loaded()`, e `load_extension()`
+   só com o descritor presente. O `-1` impresso quando a chamada não acontece é a prova de que o passo
+   não chamou API às cegas: medido em sonda, chamar sem arquivo faz a engine cuspir dois `ERROR` no
+   stderr, e o vermelho passaria a ser do instrumento, não da premissa;
+3. **biblioteca aberta no processo** — `GDExtension.is_library_open()`. É o fato que a lista da engine
+   não dá: um descritor apontando para um `.dll` inexistente entra na lista e não abre;
+4. **classe na ClassDB** — `ClassDB.class_exists("AfMindOracle")`;
+5. **objeto vivo** — `ClassDB.instantiate()` devolvendo corpo, com `get_class()` batendo o nome.
+
+A corrida está em
+[`passo1b_runner_vermelho.log`](../evidence/oraculo-nativo-22/passo1b_runner_vermelho.log): cinco linhas
+`FALHA` e rodapé **`288 checagens 5 falhas 33.330 s`**, e acima delas
+`OK censo de testes completos | 66/66` e `OK censo de checagens | 288/288`. Os dois `OK` do censo são o
+que separa este vermelho do furo **#1** do status: as cinco checagens **contaram**, então nenhuma foi
+roubada por um `SCRIPT ERROR` no meio, e os três `stderr` da rodada estão em **0 0 0 bytes**
+([`passo1b_stderr_conta.log`](../evidence/oraculo-nativo-22/passo1b_stderr_conta.log)).
+
+O censo foi re-derivado na hora, não depois: `EXPECTED_CHECKS` passa de **283** a **288**
+([`:60`](../../tests/aether_reactions_test.gd#L60)), porque a linha `_checks + 1 == EXPECTED_CHECKS` de
+`_finish` é justamente o instrumento que converte passo abortado em vermelho. As outras duas corridas não
+se moveram: suíte **255 checagens / 0 falhas / 48,7 s**
+([`passo1b_suite.log`](../evidence/oraculo-nativo-22/passo1b_suite.log)) e journal **128 / 0 / 5,770 s**
+([`passo1b_journal.log`](../evidence/oraculo-nativo-22/passo1b_journal.log)); o pre-gate de parseio
+(`--check-only`) saiu **exit 0** ([`passo1b_pre_gate.log`](../evidence/oraculo-nativo-22/passo1b_pre_gate.log)).
+
+**Nenhum `arquivo:linha` do repositório envelheceu com este commit, e o motivo é aritmético:** as três
+edições no topo do runner substituem linha por linha (hunks `49→49`, `51-56→51-56`, `60→60`) e a função
+entra **depois** da última linha do arquivo, então nada abaixo de 5 514 se moveu. As três réguas do §11,
+rodadas depois da prosa desta sessão, estão em `passo1b_ruler_doc_anchors.log`,
+`passo1b_ruler_plan_cites.log` e `passo1b_ruler_plan_ids.log` na mesma pasta.
+
+O manifesto da pasta acompanha: as oito evidências desta passada somam-se às quarenta e cinco do lote (a)
+e a conta fecha em **45 + 8 = 53 entradas**, computada `sha256sum -b` e conferida `sha256sum -c` **num
+clone limpo** — a régua do furo #36, que é exatamente o teste de que um lote (a) precisa para valer como
+contrato e não como fotografia.
+
+O que **não** fecha aqui: `native/` continua sem existir, e o verde das cinco linhas é o Passo 1 (c) —
+`build.bat` com o toolset pinado (§12.1) e o gate de SHA conferindo **as duas formas** do cabeçalho
+(§12.2), o cabeçalho vendorizado com a linha de licença em `THIRD_PARTY_LICENSES.md` no mesmo commit
+(§6.1), e `register_types.cpp` registrando **uma** classe sem função de IA nenhuma. A `main` pousada está
+em 283/0 na revisão dela; o pouso desta perna se dá com o runner em **288/0**, e enquanto a (c) não
+existe o que se publica na branch é o vermelho com número — um gate verde por decreto seria exatamente o
+que o mandato 4 veda.

@@ -46,18 +46,18 @@ const TESTS: Array[StringName] = [
 	&"_test_entrada_de_rastro_exposta_no_chao_lido",
 	&"_test_cavar_nao_consome_rng_da_sessao",
 	&"_test_colheita_de_malha_sem_cavar",
-	&"_test_cavar_sobrevive_ao_save",
+	&"_test_cavar_sobrevive_ao_save", &"_test_extensao_carrega_classe",
 ]
-# 283 = os 275 da checagem 6 (ramo (b) do nariz) mais as quatro da checagem 8, a
-# sobrevivencia ao save, e as quatro da checagem 9, o pino de RNG: premissa de o
-# braco de neve cavar e armar, o `randi()` depois do pino igual nos dois bracos,
-# cada quadro que arma a pata sorteando o desvio junto, e o par de pedra onde o
-# detector ve o sorteio sem nenhuma pata armada. O censo se re-deriva a cada
-# checagem nova porque a linha
+# 288 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
+# §5.1), o gate do esqueleto nativo: descritor no disco, extensao listada pela
+# engine, biblioteca aberta no processo, classe na ClassDB e objeto vivo devolvido
+# por ela. As cinco contam tambem no vermelho -- o gate nasce vermelho de
+# proposito, e um censo que so vale depois do codigo existir nao decide nada. O
+# censo se re-deriva a cada checagem nova porque a linha
 # `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 283
+const EXPECTED_CHECKS: int = 288
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -5511,4 +5511,62 @@ func _test_cavar_sobrevive_ao_save() -> bool:
 		var rm := DirAccess.remove_absolute(SaveManager.slot_path(Session.SLOT))
 		print("       slot nao existia antes desta checagem: removido (%s)" % error_string(rm))
 	_pack_release()
+	return true
+
+
+## Passo 1 (b) do dossie 22 §5.1 -- o gate do esqueleto nativo. A premissa e uma so,
+## e ela nao fala de IA: existe um `.dll` de extensao que o Godot abre, e esse `.dll`
+## registra a classe `AfMindOracle`. A regra de ouro do prompt ("a mente propoe, as
+## regras dispoe") comeca a ser cobrada no Passo 3, quando existir prompt pra propor;
+## aqui ainda nao ha o que desobedecer, e fingir que ha seria o furo #1 de volta.
+##
+## A checagem NASCE VERMELHA de proposito: `native/` nao existe nesta arvore, e um
+## gate que so aparece junto com o codigo que ele confere nao conferiu nada. Por
+## isso cada passo daqui usa somente o objeto que o passo anterior confirmou existir
+## -- um `null` chamado derrubaria a funcao com `SCRIPT ERROR` e levaria as cinco
+## checagens embora em silencio, que e exatamente o roubo que o censo de `_finish`
+## existe para pegar.
+func _test_extensao_carrega_classe() -> bool:
+	var caminho := "res://native/af_mind/af_mind.gdextension"
+	var classe := &"AfMindOracle"
+	var mgr: Object = Engine.get_singleton(&"GDExtensionManager")
+	var no_disco := FileAccess.file_exists(caminho)
+	_check(no_disco, "extensao_carrega_classe: o descritor existe no disco",
+			"caminho=%s existe=%s" % [caminho, str(no_disco)])
+	# `load_extension` so e chamado com o descritor em disco: medido em sonda, chama-lo
+	# sem arquivo faz a engine cuspir dois `ERROR` no stderr, e o vermelho passaria a
+	# ser do instrumento em vez de ser da premissa. Carregada no boot tambem nao se
+	# re-carrega -- a engine recusa, e a recusa nao e o fato que se quer provar.
+	var ja_no_boot: bool = bool(mgr.is_extension_loaded(caminho))
+	var codigo: int = -1
+	if no_disco and not ja_no_boot:
+		codigo = int(mgr.load_extension(caminho))
+	var carregada: bool = bool(mgr.is_extension_loaded(caminho))
+	var registradas: PackedStringArray = mgr.get_loaded_extensions()
+	_check(carregada and (codigo == -1 or codigo == OK),
+			"extensao_carrega_classe: a engine lista a extensao como carregada",
+			"load_extension=%d ja_vinha_do_boot=%s agora=%s total_registradas=%d lista=%s" % [
+				codigo, str(ja_no_boot), str(carregada), registradas.size(), str(registradas)])
+	# O registro na lista e da engine; a biblioteca aberta e do processo. Sao fatos
+	# diferentes: um `.gdextension` apontando para um `.dll` inexistente entra na lista
+	# e nao abre, e e a segunda metade que o Passo 1 diz que linka.
+	var ext: Object = mgr.get_extension(caminho) if carregada else null
+	var valida := is_instance_valid(ext)
+	var aberta: bool = valida and bool(ext.is_library_open())
+	var nivel: int = int(ext.get_minimum_library_initialization_level()) if valida else -1
+	_check(aberta, "extensao_carrega_classe: a biblioteca abriu dentro deste processo",
+			"objeto_valido=%s is_library_open=%s nivel_minimo_de_init=%d" % [
+				str(valida), str(aberta), nivel])
+	var tem_classe := ClassDB.class_exists(classe)
+	_check(tem_classe, "extensao_carrega_classe: a classe esta registrada na ClassDB",
+			"class_exists(%s)=%s" % [String(classe), str(tem_classe)])
+	# Instanciar e o que separa "a engine sabe o nome" de "existe um construtor que
+	# devolve corpo": sem `class_creator` na estrutura de criacao, a classe existe e
+	# `instantiate` devolve null.
+	var obj: Object = ClassDB.instantiate(classe) if tem_classe else null
+	var vivo := is_instance_valid(obj)
+	var nome := String(obj.get_class()) if vivo else ""
+	_check(vivo and nome == String(classe),
+			"extensao_carrega_classe: a ClassDB devolve um objeto vivo daquela classe",
+			"instantiate_valido=%s get_class=%s" % [str(vivo), nome if nome != "" else "n/d"])
 	return true
