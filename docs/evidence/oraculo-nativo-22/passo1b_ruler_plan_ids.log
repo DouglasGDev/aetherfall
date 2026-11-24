@@ -1,4 +1,4 @@
-== Passo 1 (b): regua 3 de 3 - plan ids, 2026-11-24T02:07:06-04:00, base 85263d5, branch feat/oraculo-nativo-gdextension-22 ==
+== Passo 1 (b): regua 3 de 3 - plan ids, 2026-11-24T02:19:22-04:00, base 85263d5, branch feat/oraculo-nativo-gdextension-22 ==
 == comando: python .tools/verify_plan_ids.py AGENTS.md docs/planos/README.md docs/planos/22-oraculo-nativo-gdextension.md ==
 == AGENTS.md -- identificadores citados em backticks: 135
    AUSENTES em src/ e tests/: Blackboard, BlockUpdateQueue, ExecutablePath, GDExtensionClassCreateInstance3, GDExtensionClassCreationInfo6, GDExtensionInitializationFunction, GDExtensionInterfaceClassdbRegisterExtensionClass6, HotSet, LICENSE, MindsInspector, PLANT, QuantumEngine, SlowSim, TORCH, _copyright, _random_ground_point, a8967e0, ab9ffa1, api_version, arvore_por_arquetype, bb13752, cmp, d62c066, d80ac20, dcbcbe8, eb6ec8d, edab9c8, f2823a8, fa94cb5, fp_viewmodel, ggml_backend_buffer_type_get_base_buffer, llama_params_get_fit_params, model_oversave, player_avatar, queda_move_a_celula, reg_count

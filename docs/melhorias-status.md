@@ -6477,8 +6477,22 @@ citações conferidas, 10 arquivos citados inexistentes, 0 números fora do arqu
 saiu **exit 0** com as ausências de sempre, todas peças que os próprios dossiês declaram inexistentes
 (`AfMindRuntime`, `GDExtensionClassCreationInfo6`, `_copyright`, `model_oversave`). Logs arquivados como
 `passo1b_ruler_doc_anchors.log`, `passo1b_ruler_plan_cites.log` e `passo1b_ruler_plan_ids.log`. O dossiê
-cresceu **56 linhas** (813 → 869), esta página ganhou uma rodada, e o manifesto da pasta de evidência passa
-de 45 a **53 entradas** com as oito logs novos.
+cresceu **69 linhas** (813 → 882), esta página ganhou uma rodada, e o manifesto da pasta de evidência passa
+de 45 a **54 entradas** com os nove logs novos.
+
+**Clone limpo, e o furo #33 pegando esta passada.** `git clone --branch feat/oraculo-nativo-gdextension-22`
+do próprio repositório, `--import` frio (exit 0) e, na pasta de evidência, `sha256sum -c artifacts.sha256`
+dando **53 entradas OK / 0 não-OK** — cinquenta e três porque o log que registra o clone ainda não estava
+dentro do commit clonado, e é a mesma régua do furo #36 em outra árvore. A primeira corrida, porém, foi
+convocada errada: `.gd` passado por posição, **sem `--script`**, e a engine boota o jogo headless em vez de
+rodar o teste — 909 bytes de stdout com `spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do
+jogador` e `toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)`, nenhum `OK`
+de teste, e o processo só parou porque o `timeout 400` externo o matou: **exit 124**, 2 060 bytes de stderr
+com os `ERROR: BUG: Unreferenced static string` do encerramento. Refeita com
+`--script res://tests/aether_reactions_test.gd`, a árvore de fora devolve **exit 1**, **stderr 0 bytes**, as
+cinco linhas `FALHA extensao_carrega_classe` literais, `66/66`, `288/288` e rodapé **`288 checagens 5 falhas
+33,629 s`** — o vermelho reproduzido fora da árvore de trabalho, em `passo1b_clone_limpo.log`. Que a regra
+`--script` continue sendo cobrada é exatamente o motivo de o furo existir.
 
 **Nota de instrumento, com o par medido.** A primeira sonda de API desta rodada **pendurou**: ela lia
 `m["return_class"]` do dicionário de `ClassDB.class_get_method_list`, a chave não existe na 4.7.2, o

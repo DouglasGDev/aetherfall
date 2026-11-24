@@ -1,4 +1,4 @@
-== Passo 1 (b): regua 2 de 3 - plan cites, 2026-11-24T02:07:06-04:00, base 85263d5, branch feat/oraculo-nativo-gdextension-22 ==
+== Passo 1 (b): regua 2 de 3 - plan cites, 2026-11-24T02:19:22-04:00, base 85263d5, branch feat/oraculo-nativo-gdextension-22 ==
 == comando: python .tools/verify_plan_cites.py AGENTS.md README.md docs/melhorias-status.md docs/planos/README.md docs/planos/22-oraculo-nativo-gdextension.md ==
 citacoes com numero de linha conferidas: 1019
 arquivos citados que nao existem: 10

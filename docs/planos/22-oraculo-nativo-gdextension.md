@@ -800,8 +800,9 @@ que o checkout produz, porque a regra `* text=auto eol=lf`
 **instrumento**, não da evidência: as três linhas foram computadas sem o `-b`. Refeito com `-b` e com as
 quatorze evidências desta passada dentro — 31 + 14 = **45 entradas / 45 OK** —, e as únicas linhas de
 arquivo pré-existente cujo conteúdo mudou são essas três. Quarenta e cinco era a conta **daquele** lote, e
-é por isso que a régua dele vale para os seguintes: o Passo 1 (b) acrescenta oito e o manifesto passa a
-**53 entradas**, com a conta re-rodada por `sha256sum -c` no mesmo clone limpo. Fica como
+é por isso que a régua dele vale para os seguintes: o Passo 1 (b) acrescenta nove evidências e o manifesto
+passa a **54 entradas**, com a conta re-rodada por `sha256sum -c` num clone limpo — onde ela dá 53/53 OK,
+porque o log que registra o clone ainda não estava dentro do commit clonado. Fica como
 **furo #36**, com a régua: `sha256sum -c` do manifesto de
 qualquer pasta de evidência tem de ser **tudo OK num clone limpo**, e um `FAILED` em `.bat` ou `.log` é
 defeito do hash, não do arquivo.
@@ -855,10 +856,22 @@ entra **depois** da última linha do arquivo, então nada abaixo de 5 514 se mov
 rodadas depois da prosa desta sessão, estão em `passo1b_ruler_doc_anchors.log`,
 `passo1b_ruler_plan_cites.log` e `passo1b_ruler_plan_ids.log` na mesma pasta.
 
-O manifesto da pasta acompanha: as oito evidências desta passada somam-se às quarenta e cinco do lote (a)
-e a conta fecha em **45 + 8 = 53 entradas**, computada `sha256sum -b` e conferida `sha256sum -c` **num
-clone limpo** — a régua do furo #36, que é exatamente o teste de que um lote (a) precisa para valer como
-contrato e não como fotografia.
+O manifesto da pasta acompanha: as nove evidências desta passada somam-se às quarenta e cinco do lote (a)
+e a conta fecha em **45 + 9 = 54 entradas**, computada `sha256sum -b`. A conferência não foi feita nesta
+árvore: foi feita **num clone limpo** de `68416f5` — `git clone --branch` do próprio repositório, `--import`
+frio antes de qualquer corrida — e lá o `sha256sum -c` devolve **53 entradas OK, 0 não-OK**. Cinquenta e
+três, e não cinquenta e quatro, porque o log que registra o clone ainda não estava dentro do commit
+clonado; é a mesma conta, em dois momentos, e é por isso que as duas linhas acima não se contradizem. A
+régua continua sendo a do furo #36: um `FAILED` em `.log` ou `.bat` é defeito do hash, não do arquivo.
+
+E o clone pegou o **furo #33** em quem o rodou, logo na primeira invocação. Passado o `.gd` por posição,
+sem `--script`, a engine **boota o jogo** headless: 909 bytes de stdout com `spawn banda 1 ...` e
+`toca 0 fundada ...`, nenhum `OK` de teste, e o processo só parou porque o `timeout 400` externo o matou —
+**exit 124** e 2 060 bytes de stderr com os `ERROR: BUG: Unreferenced static string` do encerramento.
+Refeita a corrida com `--script res://tests/aether_reactions_test.gd`, a mesma árvore de fora devolve
+**exit 1**, **stderr 0 bytes**, as cinco linhas `FALHA extensao_carrega_classe` literais,
+`OK censo de testes completos | 66/66`, `OK censo de checagens | 288/288` e rodapé **`288 checagens 5
+falhas 33,629 s`** — o vermelho reproduzido fora da árvore de trabalho, em `passo1b_clone_limpo.log`.
 
 O que **não** fecha aqui: `native/` continua sem existir, e o verde das cinco linhas é o Passo 1 (c) —
 `build.bat` com o toolset pinado (§12.1) e o gate de SHA conferindo **as duas formas** do cabeçalho
