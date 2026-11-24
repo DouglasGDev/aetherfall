@@ -7935,3 +7935,11 @@ número que o reabre (a reflexão de tela mostrando o **chão** no lugar do céu
 sonda) **não** foi medido por esta passada: a sonda contou a fração de água na caixa, não o conteúdo
 do raio espelhado. `block_changed` segue sem consumidor em `src/` (débito da 17). A fila serializada
 volta a **22 → 17 → 18 → 20 → 13**, com a 23 fora da frente e a 22 ainda em voo na árvore primária.
+
+**O fecho de docs desta ponta não re-rodou a suíte, e o motivo é de árvore, não de pressa.** O merge do
+registro toca apenas `AGENTS.md`, este arquivo, o índice dos dossiês, as cinco páginas que a varredura
+re-derivou e a pasta de evidência: `git diff --name-only main docs/registro-pouso-23 -- src tests` devolve
+**vazio**, então `src/` e `tests/` da árvore resultante são byte a byte os do pin `05e8917`, e os números
+publicados acima — **264 / 0** e **289 / 6** — valem por identidade de árvore, a mesma regra que a pauta
+da 20 declarou. Rodar a suíte aqui seria, além de tudo, uma corrida de timing concorrente com o trabalho
+não commitado da perna 22 na árvore primária, e a casa não faz isso ("Medição de tempo é serial").
