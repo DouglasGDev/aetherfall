@@ -23,7 +23,7 @@ Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:692-695), de
 ## 4. As duas formas de inspector, com custo
 
 - **F3 estendida**: reaproveita o roster (src/main.gd:837-838), o laço por mente (src/ui/hud.gd:273-281) e a linha de narrativa. Custo em código que já existe: uma função ao lado de `debug_line()` (src/entities/wolf.gd:1346-1351) devolvendo o `_breakdown` inteiro (src/ai/utility_scorer.gd:109-110), mais 1 a 3 linhas no laço do HUD. Nada é jogado fora.
-- **UI nova** (`minds_inspector.tscn`): cena + tecla + três providers injetados (src/main.gd:180, :173, :183) + render, duplicando o que `debug_line()` já imprime. Linhas reaproveitáveis: nenhuma, porque o arquivo não existe para medir.
+- **UI nova** (`minds_inspector.tscn`): cena + tecla + três providers injetados (src/main.gd:181, :189, :191) + render, duplicando o que `debug_line()` já imprime. Linhas reaproveitáveis: nenhuma, porque o arquivo não existe para medir.
 - **Recomendação: F3 estendida** — é a mais barata que não desperdiça o existente e a única que fecha dentro de `--check-only` + suíte sem cena nova. A UI só se justifica se a trilha por nó do BT for exigida.
 
 ## 5. Constraint do mandato 2

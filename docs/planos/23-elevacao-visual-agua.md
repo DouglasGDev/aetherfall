@@ -322,11 +322,11 @@ e do culling `LIQUID` (`nb != AIR` → descarta), não lembrados:
 
 | Checagem | O que exige | Número que decide |
 |---|---|---|
-| `material_da_agua_e_shader` | o surface de água de um chunk real carrega `_mat_water`, e este é um `ShaderMaterial` | `surfaces_com_shader` ≥ 1 e o código do shader **declara** cada uniforme que o GDScript grava (lista lida dos dois lados, `uniformes_sem_fonte` = 0) |
+| `material_da_agua_e_shader` | o surface de água de um chunk real carrega `_mat_water`, e este é um `ShaderMaterial` | `shader=true` com `surface=1`, e o código do shader **declara** cada uniforme que o GDScript grava (lista lida dos dois lados: `declarados=16`, `gravados=14`, `sem_fonte=0`) |
 | `mascara_de_onda_do_bloco_isolado` | um bloco de água no ar: 6 faces, 12 triângulos | 24 vértices, **12** com máscara 1 (4 do topo + 4 faces × 2 cantos de topo) e 12 com 0 |
 | `coluna_de_agua_ondula_so_no_topo` | dois blocos empilhados no ar | 20 triângulos, 40 vértices, **12** mascarados — o bloco de baixo tem **0**, porque tem água em cima |
 | `agua_nao_muda_a_malha` | o total de triângulos do mundo gerado e as 16 colunas de relevo não se movem com a perna | `triangulos` idêntico entre o mundo espelho e o da sessão, e igual ao da base antes da mudança (número impresso na corrida) |
-| `orcamento_de_particulas` | o teto do FX é aritmética dos `amount` declarados, e nenhum disparo passa dele | `teto_particulas` == `pool × amount` (impresso) e `salpicos_vivos` ≤ teto na janela de teste |
+| `orcamento_de_particulas` | o teto do FX é aritmética dos `amount` declarados, e nenhum disparo passa dele | a árvore de nós conta os emissores — `emissores=12` (`SPLASH_POOL` 8 + `BUBBLE_POOL` 4) e `anis=12` — e `soma=364` == `teto=364` (8×24 + 12 + 4×40, lido de `teto_particulas()`), com `vivas=41` ≤ teto e `picos=1` na janela |
 | `queda_na_agua_dispara_salpico` | o **jogo** derruba o corpo na coluna (nada de campo escrito à mão — §"O que não fazer" do contrato) | `salpicos` ≥ 1 com o `vy` da entrada impresso, e o anel pousado no plano `y` que `water_surface_y` devolve |
 | `corpo_seco_nao_dispara` (braço de indiferença) | o mesmo corpo andando em terra seca, mesma janela | `salpicos` == 0 **e** `in_water` false na janela inteira |
 | `coluna_de_queda_funda` (premissa da janela de queda) | a coluna mais funda lida no mapa, não fixa em banco, tem mais blocos que `BUBBLE_MIN_BLOCKS` e plano > 0 | `coluna=(x,z) blocos=N plano=P` impresso — sem esta linha a checagem de salpico poderia estar caindo sobre rocha e dando verde pelo motivo errado |

@@ -178,7 +178,7 @@ com default explícito (fase/idade/`mate_cd`, [`:1130-1138`](../../src/entities/
 
 - **Sorteio** ([`main.gd:351-374`](../../src/main.gd#L351-L374)): a primeira `DEN_COUNT` crias
   fundam; o resto entra.
-- **Fila** ([`main.gd:294-307`](../../src/main.gd#L294-L307), `:333`, `:684`): o elemento da fila
+- **Fila** ([`main.gd:294-307`](../../src/main.gd#L294-L307), `:368`, `:915`): o elemento da fila
   passa a carregar a **toca de quem morreu**, e a reposição entra nela. Hoje a fila é uma lista de
   floats; é a mudança que faz "a toca que perdeu" existir. O `.size()` lido por
   `pending_respawns` ([`:1188`](../../src/main.gd#L1188)) e por

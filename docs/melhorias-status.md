@@ -3622,15 +3622,20 @@ escrita. O mesmo vale para a conta do "objeto deus": 599 → 662 linhas e um don
 hospedeiro do modelo), em [`AGENTS.md`](../AGENTS.md) e aqui na linha do acoplamento. Desde aquela
 ponta a conta subiu de novo — 759 em [`src/main.gd`](../src/main.gd) — sem que o dono mudasse.
 Relida na ponta da perna 14: **787**, e o acréscimo é o spawn —
-[`_home_columns`](../src/main.gd#L486), [`SPAWN_BANDS`](../src/main.gd#L497),
-[`PACK_LEASH`](../src/main.gd#L506), [`_spawn_point_ok`](../src/main.gd#L709) e
-[`_spawn_home_point`](../src/main.gd#L735) — não um dono novo.
+[`_home_columns`](../src/main.gd#L502-L512), [`SPAWN_BANDS`](../src/main.gd#L513),
+[`PACK_LEASH`](../src/main.gd#L522-L528), [`_spawn_point_ok`](../src/main.gd#L725-L735) e
+[`_spawn_home_point`](../src/main.gd#L751-L823) — não um dono novo.
 Relida na ponta da perna 16: **1242** linhas, e o acréscimo é a toca dentro do bloco da matilha —
-[`var _dens`](../src/main.gd#L109), [`_den_counts`](../src/main.gd#L554),
-[`_emptiest_den`](../src/main.gd#L566), [`_den_gate_ok`](../src/main.gd#L584),
-[`den_min_dist`](../src/main.gd#L597-L604), [`den_components`](../src/main.gd#L619-L639),
-[`DEN_COUNT`](../src/main.gd#L513) e [`DEN_MIN_DIST`](../src/main.gd#L521) — a nona linha da conta,
+[`var _dens`](../src/main.gd#L116), [`_den_counts`](../src/main.gd#L570-L581),
+[`_emptiest_den`](../src/main.gd#L582-L599), [`_den_gate_ok`](../src/main.gd#L600-L612),
+[`den_min_dist`](../src/main.gd#L613-L634), [`den_components`](../src/main.gd#L635-L666),
+[`DEN_COUNT`](../src/main.gd#L529-L536) e [`DEN_MIN_DIST`](../src/main.gd#L537-L547) — a nona linha da conta,
 não um décimo dono: a lista de donos continua a mesma, e é justamente isso que o dossiê 06 cobra.
+**Os dois parágrafos de cima são contagens das pontas daquelas pernas** — 787 e 1242 são números
+da árvore de cada uma, lidos nela, e continuam escritos como foram. Os ponteiros por símbolo é que
+são vivos, e foram re-derivados na perna 23, que moveu `src/main.gd` de 1246 para **1268** linhas: a
+varredura numérica desta casa mexe em link, não em frase, e os **treze** números acima são os de hoje,
+conferidos um a um contra o corpo que o rótulo nomeia.
 
 ### O que nada disso fecha
 
