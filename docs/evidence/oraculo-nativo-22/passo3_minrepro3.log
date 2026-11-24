@@ -1,0 +1,18 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[repro] ClassDB existe: true
+[repro] estado: 4 err=''
+[repro] ciclo 0: id=1 depth=1
+[repro] ciclo 1: id=2 depth=2
+[repro] ciclo 2: id=3 depth=3
+[repro] ciclo 3: id=4 depth=4
+[repro] ciclo 4: id=5 depth=5
+[repro] ciclo 5: id=6 depth=6
+[repro] ciclo 6: id=7 depth=7
+[repro] ciclo 7: id=8 depth=8
+[repro] ciclo 8: id=9 depth=9
+[repro] ciclo 9: id=10 depth=10
+[repro] wait(1): status=0 tokens_out=31 decode_us=531507 chaves=6
+[repro] wait(10): status=0 tokens_out=26 decode_us=439415
+[repro] metricas depth=0 hits=0 misses=10 worst_us=531507 vram=4294127760
+[repro] VEREDITO: v3 verde — 10 enqueues, 2 decodes reais, recusas nomeadas
