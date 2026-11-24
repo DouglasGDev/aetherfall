@@ -47,22 +47,29 @@ const TESTS: Array[StringName] = [
 	&"_test_cavar_nao_consome_rng_da_sessao",
 	&"_test_colheita_de_malha_sem_cavar",
 	&"_test_cavar_sobrevive_ao_save", &"_test_extensao_carrega_classe",
-	&"_test_extensao_pack_no_processo",
+	&"_test_extensao_pack_no_processo", &"_test_contrato_igal_ao_http",
 ]
-# 296 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
+# 318 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
 # §5.1), o gate do esqueleto nativo: descritor no disco, extensao listada pela
 # engine, biblioteca aberta no processo, classe na ClassDB e objeto vivo devolvido
 # por ela -- mais as oito de `extensao_pack_no_processo` (dossie 22 §5.2), a rota do
 # pack dentro do processo: runtime por caminho absoluto, pack vazio como base medida,
 # gguf no processo, leitura conferida contra a meta do proprio modelo, contexto cujo
-# pedido o runtime devolve e os tres numeros do §5.2. As treze contam tambem no
+# pedido o runtime devolve e os tres numeros do §5.2 -- mais as vinte e duas de
+# `contrato_igal_ao_http` (dossie 22 §5.3), o gate do contrato do prompt: o MESMO
+# roster de um cenario fixo passa DUAS vezes, uma pela transporta HTTP (o `MindOracle`
+# real contra um llama-server que o proprio gate levanta e derruba pelo pid exato) e
+# uma pela extensao (`AfMindOracle.enqueue`/`wait` pela rota ClassDB), e a comparacao
+# e de FORMA -- as chaves e os tipos do Dictionary, o motivo nomeado, nunca a frase.
+# As trinta e cinco contam tambem no
 # vermelho -- o gate nasce vermelho de proposito (o runtime e o `.gguf` sao
-# gitignored: num clone sem eles as oito saem vermelhas com o caminho impresso), e um
+# gitignored: num clone sem eles as oito e as de fila saem vermelhas com o caminho
+# impresso, e sem o dll o censo inteiro e o vermelho, contrato do passo 1), e um
 # censo que so vale depois do codigo existir nao decide nada. O censo se re-deriva a
 # cada checagem nova porque a linha `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 296
+const EXPECTED_CHECKS: int = 318
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -106,6 +113,14 @@ var _pack_bt_trips: int = 0
 # o escalonamento exige, e o sinal e a unica forma de ver a mordida sem ler um campo
 # escrito a mao.
 var _bite_events: Array = []
+
+# Estado do gate `contrato_igal_ao_http` (Passo 3 do dossie 22 §5.3): o pid EXATO do
+# llama-server que O PROPRIO gate subiu (nunca um nome para adivinhar -- o desmanche e
+# por lancamento, como o `LlmServerHost` manda) e a contagem de emissoes do sinal
+# `inference_completed`, conectado antes dos decodes. O `_finish` mata o pid que
+# sobrar de um aborto no meio do gate.
+var _af_server_pid: int = -1
+var _gate_emissoes: int = 0
 
 # Geometria da matilha no plateau da fixture: tres lobos se enxergam (8,5 m e
 # 17 m), o quarto fica a 25,6 m do vizinho mais proximo -- do lado de la do raio
@@ -238,13 +253,26 @@ func _initialize() -> void:
 	_started_us = Time.get_ticks_usec()
 	_mouse_mode = Input.mouse_mode
 	# O fechamento independe do retorno de _run: erro de script nao pode deixar a CLI aberta.
-	_run.call_deferred()
+	# Com o gate do oraculo (`contrato_igal_ao_http`) a `_run` virou corotina -- o `await` dela
+	# devolve o controle ao laco de frames enquanto o servidor sobe e o modelo narra -- entao
+	# quem agenda o fechamento e a `_run_all` DEPOIS do `await`. O par de `call_deferred` de
+	# antes nao serve mais: ele agendaria o fechamento no MESMO quadro do comeco, antes do
+	# gate ter rodado.
+	_run_all.call_deferred()
+
+
+func _run_all() -> void:
+	await _run()
 	_finish.call_deferred()
 
 
 func _run() -> void:
 	for test_name: StringName in TESTS:
-		if call(test_name) != true:
+		# `await` num teste sincrono e passagem direta (devolve o bool); na corotina do gate
+		# e o que suspende o laco ate ela terminar. Um SCRIPT ERROR no meio de um teste
+		# devolve null aqui -- ABORTOU + break, e o censo de `_finish` converge o vermelho.
+		var resultado = await call(test_name)
+		if resultado != true:
 			_failures += 1
 			push_error("ABORTOU %s: nao devolveu true" % test_name)
 			break
@@ -3133,6 +3161,13 @@ func _finish() -> void:
 		_pack_steps, _pack_sim_us, _pack_sim_worst_us, _pack_bt_us, _pack_bt_worst_us, _pack_bt_trips])
 	if is_instance_valid(_stage):
 		_stage.free()
+	# Cinto e suspensorio do desmanche do gate (§5.3): se a corrida abortou no meio do
+	# `contrato_igal_ao_http`, o filho que ELE subiu nao pode ficar orfao na porta 8791
+	# com 2,7 GB residentes -- mata pelo pid exato guardado no lancamento, nunca por nome.
+	if _af_server_pid > 0 and OS.is_process_running(_af_server_pid):
+		OS.kill(_af_server_pid)
+		print("contrato: desmanche tardio do llama-server pid %d que o gate subiu" % _af_server_pid)
+		_af_server_pid = -1
 	print("%d checagens %d falhas %.3f s" % [_checks, _failures, float(Time.get_ticks_usec() - _started_us) / 1000000.0])
 	quit(1 if _failures > 0 else 0)
 
@@ -5687,3 +5722,409 @@ func _test_extensao_pack_no_processo() -> bool:
 			"base=%d apos_load=%d apos_ctx=%d ctx_state_bytes=%d versao=%s" % [
 				vram_base, vram_apos_load, vram_apos_ctx, state_bytes, versao])
 	return true
+
+
+## Passo 3 do dossie 22 (§5.3): o gate `contrato_igal_ao_http`. O MESMO roster de um
+## cenario fixo -- o lobo que o `_arm` cria, congelado no `_stage` -- passa DUAS vezes:
+## uma pela transporta HTTP (o `MindOracle` REAL contra um llama-server que o proprio
+## gate levanta com o argv do `LlmServerHost` e derruba pelo pid exato do lancamento) e
+## uma pela extensao (`AfMindOracle.enqueue`/`wait`, a rota ClassDB que ate este gate
+## nunca tinha sido exercida do GDScript). A comparacao e de FORMA e nunca de frase:
+## chaves e tipos do Dictionary de saida, reason vazio no sucesso, motivo nomeado na
+## recusa -- o texto da narrativa e leitura do modelo, nao contrato. As 22 checagens
+## saem em TODOS os caminhos (servidor que nao sobe, gguf que falta): cada uma nomeia a
+## premissa com o numero que a decide, e recusa legivel nunca e hang -- todos os
+## `await` desta corotina tem prazo. A chave do servidor nao vai para o log (ele vira
+## evidencia publica): so `key_source` e o COMPRIMENTO dela.
+func _test_contrato_igal_ao_http() -> bool:
+	var classe := &"AfMindOracle"
+	if not ClassDB.class_exists(classe):
+		_check(false, "contrato_igal_ao_http: a classe do esqueleto nao esta na ClassDB",
+				"class_exists(%s)=false -- o passo 1 nao fechou nesta arvore" % String(classe))
+		return true
+	var runtime_dir := ProjectSettings.globalize_path("res://.tools/llama/runtime")
+	var server_exe := runtime_dir + "/llama-server.exe"
+	var gguf := ProjectSettings.globalize_path("res://models/qwen3.5-4b-q4_k_m.gguf")
+	var porta := 8791
+	var url := "http://127.0.0.1:%d" % porta
+	var chave := MindOracle.resolve_api_key()
+	var fonte_chave := MindOracle.key_source
+	_arm()
+	var id_lobo := int(_wolf.identity)
+
+	# 1) as premissas de disco do lado HTTP: sem elas o gate nao levanta nada e as
+	# checagens seguintes saem vermelhas com o caminho como motivo, nunca penduradas.
+	var tem_server := FileAccess.file_exists(server_exe)
+	var tem_gguf := FileAccess.file_exists(gguf)
+	_check(tem_server and tem_gguf, "contrato: llama-server e gguf no disco",
+			"server=%s gguf=%s" % [str(tem_server), str(tem_gguf)])
+
+	var http := HTTPRequest.new()
+	http.name = "GateHttp"
+	root.add_child(http)
+	var cabecalhos_chave: PackedStringArray = ["Authorization: Bearer " + chave]
+
+	# 2) a porta pergunta ANTES de qualquer lancamento (o padrao do `LlmServerHost`):
+	# livre -> levantar; nosso reuso (200 com o alias) -> reusar sem matar; estrangeiro
+	# (401, ou 200 sem o alias) -> nao matar, nao reusar, imprimir o motivo.
+	var r0 := await _gate_http_get(http, url + "/v1/models", cabecalhos_chave, 3.0)
+	var codigo_porta := int(r0[1])
+	var porta_livre := int(r0[0]) != HTTPRequest.RESULT_SUCCESS or codigo_porta == 0
+	var nosso_reuso := int(r0[0]) == HTTPRequest.RESULT_SUCCESS and codigo_porta == 200 \
+			and _gate_body_tem_alias(r0[3])
+	var motivo_porta := ""
+	if porta_livre:
+		motivo_porta = "sem resposta na porta %d (result %d)" % [porta, int(r0[0])]
+	elif nosso_reuso:
+		motivo_porta = "200 com o alias %s (reuso)" % MindOracle.MODEL_ALIAS
+	elif codigo_porta == 401:
+		motivo_porta = "401: servidor estrangeiro ou de outra chave"
+	else:
+		motivo_porta = "%d sem o alias %s" % [codigo_porta, MindOracle.MODEL_ALIAS]
+	_check(nosso_reuso or porta_livre, "contrato: a porta %d esta livre ou e nosso reuso" % porta,
+			"code=%d (%s)" % [codigo_porta, motivo_porta])
+
+	# 3) o lancamento proprio, pelo pid exato: o mesmo argv do `_spawn` do
+	# `LlmServerHost` (alias, reasoning off, imprint da chave) -- a chave NAO vai
+	# para o log, so a fonte dela e o comprimento.
+	var pid_subido := -1
+	if nosso_reuso:
+		pass  # reuso nao e nosso para matar: pid fica -1 e o desmanche o sabe
+	elif porta_livre and tem_server and tem_gguf:
+		var argv := PackedStringArray([
+			"-m", gguf,
+			"--host", "127.0.0.1", "--port", str(porta),
+			"-c", "4096", "-ngl", "99",
+			"--alias", MindOracle.MODEL_ALIAS, "--reasoning", "off",
+			"--api-key", chave,
+		])
+		pid_subido = OS.create_process(server_exe, argv, false)
+		if pid_subido > 0:
+			_af_server_pid = pid_subido
+	_check(pid_subido > 0 or nosso_reuso,
+			"contrato: servidor levantado por lancamento proprio ou reuso nomeado",
+			"pid=%d fonte_da_chave=%s len_chave=%d" % [pid_subido, fonte_chave, chave.length()])
+
+	# 4) a saude pelo /health publico: 200 e pronto, 503 e "carregando" e conta, o
+	# prazo e o BOOT_DEADLINE do hospedeiro (90 s) -- estourar e vermelho, nao hang.
+	var health_ok := false
+	var health_code := 0
+	var health_503 := 0
+	var boot_ms := -1
+	if pid_subido > 0 or nosso_reuso:
+		var inicio_saude := Time.get_ticks_msec()
+		var prazo_saude := inicio_saude + 90000
+		while Time.get_ticks_msec() < prazo_saude:
+			var rh := await _gate_http_get(http, url + "/health", [], 3.0)
+			health_code = int(rh[1])
+			if int(rh[0]) == HTTPRequest.RESULT_SUCCESS and health_code == 200:
+				health_ok = true
+				boot_ms = Time.get_ticks_msec() - inicio_saude
+				break
+			if health_code == 503:
+				health_503 += 1
+			await _gate_frame_sleep(250)
+	_check(health_ok, "contrato: /health 200 dentro de 90 s (503 conta como carregando)",
+			"code=%d 503=%d boot_ms=%d" % [health_code, health_503, boot_ms])
+
+	# 5) a impressao digital: com a chave, /v1/models devolve 200 e lista o alias que
+	# separa O NOSSO servidor de um terceiro na mesma porta.
+	var fp_ok := false
+	var fp_code := 0
+	if pid_subido > 0 or nosso_reuso:
+		var rf := await _gate_http_get(http, url + "/v1/models", cabecalhos_chave, 3.0)
+		fp_code = int(rf[1])
+		fp_ok = int(rf[0]) == HTTPRequest.RESULT_SUCCESS and fp_code == 200 \
+				and _gate_body_tem_alias(rf[3])
+	_check(fp_ok, "contrato: /v1/models com a chave devolve 200 com o alias",
+			"code=%d alias=%s" % [fp_code, MindOracle.MODEL_ALIAS])
+
+	# --- metade HTTP: o MindOracle real --------------------------------------------------
+	var oraculo := MindOracle.new()
+	_check(oraculo.api_key == chave and chave.length() > 0,
+			"contrato: o oraculo HTTP le a MESMA chave que subiu o servidor",
+			"len_oraculo=%d len_host=%d fonte=%s" % [
+				oraculo.api_key.length(), chave.length(), fonte_chave])
+	oraculo.server_url = url
+	oraculo.roster_provider = Callable(self, "_gate_roster")
+	root.add_child(oraculo)
+
+	# 6) FORMA do sucesso HTTP: narrativa String nao vazia e last_reason vazio. O
+	# prazo e 60 s, e a recusa legivel e o proprio last_reason impresso.
+	var prazo_narr := Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < prazo_narr and oraculo.narration_of(id_lobo) == "":
+		await process_frame
+	var narrativa := oraculo.narration_of(id_lobo)
+	var razao_http := oraculo.last_reason
+	_check(narrativa is String and narrativa != "" and razao_http == "",
+			"contrato: FORMA do sucesso HTTP (narrativa String nao vazia, last_reason vazia)",
+			"narrativa=%d chars reason='%s' pedidos=%d" % [
+				narrativa.length(), razao_http, oraculo.requests_issued])
+
+	# 7) FORMA da recusa HTTP: chave errada e 401 NOMEADO no last_reason, narrativa
+	# vazia. O segundo oraculo e derrubado depois de medido (roster cortado primeiro).
+	var oraculo2 := MindOracle.new()
+	oraculo2.api_key = "chave-errada-do-gate-401"
+	oraculo2.server_url = url
+	oraculo2.roster_provider = Callable(self, "_gate_roster")
+	root.add_child(oraculo2)
+	var prazo_401 := Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < prazo_401 and oraculo2.last_reason == "":
+		await process_frame
+	var razao_401 := oraculo2.last_reason
+	var narrativa_401 := oraculo2.narration_of(id_lobo)
+	_check(narrativa_401 == "" and razao_401.contains("401"),
+			"contrato: FORMA da recusa HTTP (chave errada nomeia 401, narrativa vazia)",
+			"narrativa=%d chars reason='%s'" % [narrativa_401.length(), razao_401])
+	oraculo2.roster_provider = Callable()
+	oraculo2.queue_free()
+
+	# --- metade extensao: a rota ClassDB do mesmo cenario --------------------------------
+	var obj: Object = ClassDB.instantiate(classe)
+	var tem_obj := is_instance_valid(obj)
+	# 8) o pack no estado de fila (4) pela rota do passo 2 (b), sem atalho: runtime
+	# absoluto, pack vazio, gguf, ctx_probe -- e NUNCA recarregar modelo num processo
+	# que ja tem um (a recusa -5 da ponte existe para isso).
+	var estado_ext := -1
+	var codigo_ctx := -1
+	var texto_erro_pack := ""
+	if tem_obj:
+		int(obj.set_runtime_dir(runtime_dir))
+		if tem_gguf:
+			int(obj.load_pack("", ""))
+			int(obj.load_pack("mind-small", gguf))
+			codigo_ctx = int(obj.ctx_probe(2048))
+		estado_ext = int(obj.pack_state())
+		texto_erro_pack = String(obj.err_text())
+	_check(estado_ext == 4 and codigo_ctx == 0,
+			"contrato: o pack da extensao chega ao estado de fila (4) pela rota do passo 2 (b)",
+			"estado=%d ctx_probe=%d gguf=%s err_pack='%s'" % [
+				estado_ext, codigo_ctx, str(tem_gguf), texto_erro_pack])
+
+	# 9) enqueue pela rota ClassDB: o pedido e O MESMO que o oraculo HTTP montou para o
+	# mesmo lobo -- o texto sai do proprio `_prompt_for` do oraculo, para as duas
+	# transportas levarem o mesmo conteudo sem copiar o formato a mao.
+	var id1 := -1
+	var depth1 := -1
+	var texto_erro := ""
+	if tem_obj:
+		var req := {
+			"role": "user",
+			"prompt": oraculo._prompt_for(_wolf),
+			"max_tokens": 64,
+			"temperature": 0.7,
+		}
+		id1 = int(obj.enqueue(req))
+		depth1 = int(obj.queue_depth())
+		texto_erro = String(obj.prompt_err_text())
+	_check(id1 > 0 and depth1 == 1,
+			"contrato: enqueue pela rota ClassDB devolve id e a fila cresce para 1",
+			"id=%d depth=%d err='%s'" % [id1, depth1, texto_erro])
+
+	# 10) campo de tipo errado recusa -2 nomeada na superficie do prompt (a guardinha
+	# da ponte), e o codigo e lido na linha do enqueue.
+	var r_tipo := -99
+	var texto_tipo := ""
+	if tem_obj:
+		r_tipo = int(obj.enqueue({"role": "user", "prompt": "ping", "max_tokens": "muito"}))
+		texto_tipo = String(obj.prompt_err_text())
+	_check(r_tipo == -2 and texto_tipo.contains("max_tokens"),
+			"contrato: campo de tipo errado recusa -2 nomeada na superficie do prompt",
+			"retorno=%d err='%s'" % [r_tipo, texto_tipo])
+
+	# 11) papel fora do mapeamento recusa -4 na PORTA (nao so dentro da thread).
+	var r_papel := -99
+	var texto_papel := ""
+	if tem_obj:
+		r_papel = int(obj.enqueue({"role": "cozinheiro", "prompt": "ping"}))
+		texto_papel = String(obj.prompt_err_text())
+	_check(r_papel == -4 and texto_papel.contains("fora do mapeamento"),
+			"contrato: papel fora do mapeamento recusa -4 na porta",
+			"retorno=%d err='%s'" % [r_papel, texto_papel])
+
+	# 12) os tres sinais do §5.3 existem na superficie da classe, lidos da ClassDB.
+	var nomes_sinais: Array = []
+	if tem_obj:
+		for s in ClassDB.class_get_signal_list(classe, false):
+			nomes_sinais.append(String(s["name"]))
+	var tem_tres_sinais := nomes_sinais.has("inference_completed") \
+			and nomes_sinais.has("pack_loaded") and nomes_sinais.has("pack_failed")
+	_check(tem_tres_sinais, "contrato: os tres sinais do §5.3 estao na ClassDB",
+			"sinais=%s" % [str(nomes_sinais)])
+
+	# 13) a conexao e feita ANTES dos decodes: a contagem de emissoes que decide a
+	# checagem 16 tem de estar armada antes de qualquer wait.
+	_gate_emissoes = 0
+	if tem_obj:
+		obj.inference_completed.connect(
+				func(_id: int, _saida: Dictionary) -> void: _gate_emissoes += 1)
+
+	# 14) FORMA do wait de sucesso: as 6 chaves exatas de AfPromptOut com os tipos
+	# delas, reason vazio e texto nao vazio. O prazo de 30 s e teto, nao medida.
+	var out1 := {}
+	if tem_obj:
+		out1 = obj.wait(id1, 30000)
+	var chaves1: Array = out1.keys()
+	chaves1.sort()
+	var forma_ok: bool = chaves1.size() == 6 \
+			and typeof(out1.get("request_id", null)) == TYPE_INT \
+			and typeof(out1.get("status", null)) == TYPE_INT \
+			and typeof(out1.get("reason", null)) == TYPE_STRING \
+			and typeof(out1.get("text", null)) == TYPE_STRING \
+			and typeof(out1.get("decode_us", null)) == TYPE_INT \
+			and typeof(out1.get("tokens_out", null)) == TYPE_INT
+	var sucesso1 := forma_ok and int(out1.get("status", -99)) == 0 \
+			and String(out1.get("reason", "?")) == "" and String(out1.get("text", "")) != ""
+	_check(sucesso1,
+			"contrato: FORMA do wait de sucesso (6 chaves tipadas, reason vazia, texto nao vazio)",
+			"chaves=%s status=%s tokens_out=%s decode_us=%s reason='%s'" % [
+				str(chaves1), str(out1.get("status", "?")), str(out1.get("tokens_out", "?")),
+				str(out1.get("decode_us", "?")), String(out1.get("reason", ""))])
+
+	# 15) FORMA do timeout: status 1, motivo nomeado, slot PRESERVADO (depth nao cai --
+	# descartar no timeout seria perder trabalho pago).
+	var id2 := -1
+	if tem_obj:
+		id2 = int(obj.enqueue({"role": "user", "prompt": oraculo._prompt_for(_wolf),
+				"max_tokens": 64, "temperature": 0.7}))
+	var out2 := {}
+	if tem_obj:
+		out2 = obj.wait(id2, 1)
+	var status2 := int(out2.get("status", -99))
+	var reason2 := String(out2.get("reason", ""))
+	var depth2 := int(obj.queue_depth()) if tem_obj else -1
+	_check(status2 == 1 and reason2.begins_with("timeout") and depth2 >= 1,
+			"contrato: FORMA do timeout (status 1, motivo nomeado, slot preservado)",
+			"status=%d reason='%s' depth=%d" % [status2, reason2, depth2])
+
+	# 16) o pedido que sofreu o timeout completa num wait seguinte com mais tempo:
+	# e o mesmo slot, nao um pedido novo.
+	var out2b := {}
+	if tem_obj:
+		out2b = obj.wait(id2, 30000)
+	var status2b := int(out2b.get("status", -99))
+	var tokens2b := int(out2b.get("tokens_out", -1))
+	_check(status2b == 0 and tokens2b > 0,
+			"contrato: o pedido que sofreu timeout completa no wait seguinte",
+			"status=%d tokens_out=%d decode_us=%s" % [
+				status2b, tokens2b, str(out2b.get("decode_us", "?"))])
+
+	# 17) a emissao do sinal segue [ABERTA] e vai ESCRITA: conectado de verdade,
+	# ZERO emissoes atraves dos dois decodes -- o header vendorado 4.7.2 nao traz
+	# `object_emit_signal`, e quem emite e o Passo 4/5.
+	_check(_gate_emissoes == 0,
+			"contrato: a emissao do sinal segue [ABERTA] (quem emite e o Passo 4/5)",
+			"emissoes=%d decodes=2" % _gate_emissoes)
+
+	# 18) o GATE do sucesso, a forma IGUAL nas duas transportas: os campos comuns
+	# text/reason com os mesmos tipos e a mesma semantica de vazio, e a extensao
+	# so acrescenta os extras int {request_id, status, decode_us, tokens_out}.
+	var extras_ok := forma_ok
+	if extras_ok:
+		for e in ["request_id", "status", "decode_us", "tokens_out"]:
+			extras_ok = extras_ok and chaves1.has(e) \
+					and typeof(out1.get(e, null)) == TYPE_INT
+	var gate_sucesso := sucesso1 and narrativa != "" and razao_http == "" and extras_ok
+	_check(gate_sucesso,
+			"contrato: GATE do sucesso -- FORMA igual nas duas transportas",
+			"reason_http='%s' reason_ext='%s' extras_int=%s textos=%d/%d chars" % [
+				razao_http, String(out1.get("reason", "")), str(extras_ok),
+				narrativa.length(), String(out1.get("text", "")).length()])
+
+	# 19) FORMA da recusa da extensao: id desconhecido devolve o MESMO Dictionary de
+	# 6 chaves com status negativo, motivo nomeado e texto vazio -- a forma nao muda
+	# com o codigo.
+	var outx := {}
+	if tem_obj:
+		outx = obj.wait(999999, 50)
+	var statusx := int(outx.get("status", -99))
+	var reasonx := String(outx.get("reason", ""))
+	var textx := String(outx.get("text", "<ausente>"))
+	_check(statusx < 0 and reasonx != "" and textx == "",
+			"contrato: FORMA da recusa da extensao (id desconhecido: status<0, motivo nomeado, texto vazio)",
+			"status=%d reason='%s'" % [statusx, reasonx])
+
+	# 20) o GATE da recusa: texto vazio e motivo nomeado nas DUAS transportas.
+	var gate_recusa := narrativa_401 == "" and razao_401 != "" \
+			and statusx < 0 and reasonx != "" and textx == ""
+	_check(gate_recusa,
+			"contrato: GATE da recusa -- FORMA igual nas duas transportas",
+			"reason_http_len=%d reason_ext_len=%d status_ext=%d" % [
+				razao_401.length(), reasonx.length(), statusx])
+
+	# 21) as metricas honestas da fila: a fila esvaziou pelos waits, o cache nao
+	# existe no Passo 3 (hits 0 e misses = os 2 enqueues bem-sucedidos), o pior
+	# decode e numero medido e a VRAM e a do contexto vivo.
+	var depth_f := -1
+	var hits := -1
+	var misses := -1
+	var worst := -1
+	var vram := -1
+	if tem_obj:
+		depth_f = int(obj.queue_depth())
+		hits = int(obj.cache_hits())
+		misses = int(obj.cache_misses())
+		worst = int(obj.worst_decode_us())
+		vram = int(obj.vram_bytes())
+	_check(depth_f == 0 and hits == 0 and misses == 2 and worst > 0 and vram > 0,
+			"contrato: metricas honestas da fila (cache nao existe no Passo 3)",
+			"depth=%d hits=%d misses=%d worst_decode_us=%d vram_bytes=%d" % [
+				depth_f, hits, misses, worst, vram])
+
+	# 22) o desmanche pelo pid exato do lancamento: mata, espera a morte com prazo e
+	# confere `is_process_running` -- o orfao com a porta aberta e o defeito que o
+	# dossie 15 §0.1 documentou.
+	var derrubado := false
+	if pid_subido > 0:
+		OS.kill(pid_subido)
+		var prazo_kill := Time.get_ticks_msec() + 5000
+		while Time.get_ticks_msec() < prazo_kill and OS.is_process_running(pid_subido):
+			await _gate_frame_sleep(100)
+		derrubado = not OS.is_process_running(pid_subido)
+		_af_server_pid = -1
+	_check(derrubado or pid_subido <= 0,
+			"contrato: desmanche pelo pid exato do lancamento (ou nada nosso foi levantado)",
+			"pid=%d derrubado=%s reuso=%s" % [pid_subido, str(derrubado), str(nosso_reuso)])
+
+	# O objeto e RefCounted (PARENT_NAME da ponte): quem solta e o refcount quando a
+	# corotina sai, nunca um free() a mao. Os nodos HTTP e os dois oraculos saem da
+	# arvore; o roster do primeiro e cortado antes para nao haver pedido novo.
+	oraculo.roster_provider = Callable()
+	oraculo.queue_free()
+	http.queue_free()
+	return true
+
+
+## GET sequencial com UM HTTPRequest reusado: pedido aberto com erro de abertura
+## devolve o resultado -1 sem nunca pendurar -- `await` so acontece com a requisicao
+## aceita, e o `timeout` do nodo garante que ela sempre completa.
+func _gate_http_get(http: HTTPRequest, url_get: String, cabecalhos: PackedStringArray,
+		tempo_s: float) -> Array:
+	http.timeout = tempo_s
+	var err := http.request(url_get, cabecalhos, HTTPClient.METHOD_GET)
+	if err != OK:
+		return [-1, 0, PackedStringArray(), PackedByteArray()]
+	return await http.request_completed
+
+
+## O corpo veio com o alias que separa o nosso servidor de um terceiro (dossie 15 §4.2).
+func _gate_body_tem_alias(body: PackedByteArray) -> bool:
+	var data = JSON.parse_string(body.get_string_from_utf8())
+	if not (data is Dictionary):
+		return false
+	for m in (data as Dictionary).get("data", []):
+		if m is Dictionary and String((m as Dictionary).get("id", "")) == MindOracle.MODEL_ALIAS:
+			return true
+	return false
+
+
+## O roster do cenario fixo: UM lobo, o que o `_arm` criou e o `_stage` congela.
+func _gate_roster() -> Array:
+	return [_wolf] if is_instance_valid(_wolf) else []
+
+
+## Espera por quadros com prazo: o `await` do gate nunca fica sem saida.
+func _gate_frame_sleep(ms: int) -> void:
+	var prazo := Time.get_ticks_msec() + ms
+	while Time.get_ticks_msec() < prazo:
+		await process_frame

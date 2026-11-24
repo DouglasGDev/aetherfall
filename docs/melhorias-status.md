@@ -1378,7 +1378,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     GDScript **não expõe relógio de CPU**: a única leitura é `Time.get_ticks_usec()`, que conta
     o tempo em que o processo esteve fora do seu fluxo. A checagem que consome esse contador
     ("nenhum estouro de subtree no budget",
-    [aether_reactions_test.gd:3122-3123](../tests/aether_reactions_test.gd#L3122-L3123)) pode
+    [aether_reactions_test.gd:3155-3156](../tests/aether_reactions_test.gd#L3155-L3156)) pode
     então reprovar por uma preempção do sistema operacional sem que a árvore tenha ficado mais
     cara. **A atribuição fecha nos dois braços:** na branch da perna 11, **2 de 7** corridas do
     runner reprovaram nessa linha (`branch_flake_runner02` e `:05`), e na `main` **sem** a perna 11
@@ -3985,7 +3985,7 @@ irmão vivo. Os dois letreiros de criatura saíram; o contador de abate fica.
 
 ### A corrida que sustenta os números
 
-Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L65)
+Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L72)
 **150 → 183** com **oito cenários novos** nomeados em
 [:28-32](../tests/aether_reactions_test.gd#L28-L32). A suíte ficou em **246 checagens** do primeiro
 ao último degrau — o degrau (f) mudou uma asserção
@@ -7943,3 +7943,77 @@ re-derivou e a pasta de evidência: `git diff --name-only main docs/registro-pou
 publicados acima — **264 / 0** e **289 / 6** — valem por identidade de árvore, a mesma regra que a pauta
 da 20 declarou. Rodar a suíte aqui seria, além de tudo, uma corrida de timing concorrente com o trabalho
 não commitado da perna 22 na árvore primária, e a casa não faz isso ("Medição de tempo é serial").
+## Rodada 2026-11-24 (8) — Passo 3 do dossiê 22: a API do prompt dentro do processo, o gate de forma contra forma, e o sinal 11 fechado na causa (branch `feat/oraculo-nativo-passo3-22`, base `c05f1df`)
+
+O §5.3 fechou: `enqueue`/`wait`/métricas/sinais existem na `AfMindOracle`, duas narrativas reais
+decodaram **dentro do processo do Godot**, e o gate
+[`contrato_igal_ao_http`](../tests/aether_reactions_test.gd) compara a **forma** da saída das duas
+transportas — HTTP e extensão — porque frase é do modelo, não do transporte. O §17 da
+[`página 22`](planos/22-oraculo-nativo-gdextension.md) guarda a história completa; aqui ficam o número
+e a regra que a perna deixa.
+
+**Três commits, um assunto cada.** (a) [`8dbc978`] a fila na porta C++ (`mind_prompt.cpp`) com recusas
+nomeadas e duas narrativas decodadas de pe na sonda — runner **296 / 0 / 37,480 s**;
+(b) [`11d13bb`] a ponte no GDScript pela rota Variant crua, 55 nomes na tabela de imports do dll —
+runner **296 / 0 / 37,689 s**; (c) [`e8301c0`] o gate (22 checagens, censo 296 → **318**) mais os dois
+consertos que ele cobrou — runner **318 / 0 / 46,034 s**
+([passo3_runner_commit_c.log:576](evidence/oraculo-nativo-22/passo3_runner_commit_c.log)). As quatro
+corridas do fecho na ponta [`e8301c0`]: suíte **255 / 0 / 49,7 s**, runner **318 / 0 / 44,153 s**
+(`68/68` testes, `trips=0`),
+[RNG](evidence/oraculo-nativo-22/passo3_gates_rng.log) **27 / 0 / 2,734 s** e
+[journal](evidence/oraculo-nativo-22/passo3_gates_journal.log) **128 / 0 / 6,720 s** (`7/7 testes
+concluidos`), todas com `.err` limpo e zero `SCRIPT ERROR`.
+
+**O que o gate compara, e o que decide cada forma** — as 22 checagens imprimem o número
+([passo3_runner_commit_c.log:548-569](evidence/oraculo-nativo-22/passo3_runner_commit_c.log)): os seis
+mesmos nomes de chave com `status=0 tokens_out=64` (`textos=143/144 chars`); recusas nomeadas nas duas
+transportas (`-2` por tipo, `-4` por papel); timeout preservando o slot (`status=1
+reason='timeout de 1 ms' depth=1`, e o pedido completa no wait seguinte); os três sinais de §5.3 na
+ClassDB; métricas honestas (`depth=0 hits=0 misses=2 worst_decode_us=1510272` — cache **não existe** no
+Passo 3); desmanche pelo **pid exato** do lançamento (`pid=27352 derrubado=true reuso=false`). A
+emissão do sinal segue **`[ABERTA]`** (`emissoes=0 decodes=2`): quem emite é o Passo 4/5.
+
+**O sinal 11 fechou na causa, com o repro pagando a atribuição.** O getter por chave e o por índice da
+engine **atribuem** no destino (semântica de `operator=`, lê o `type` antes de copiar): storage cru de
+stack sem inicializar com lixo de tipo que carrega ponteiro = wild `clear()` = corrupção de heap. O
+conserto é o protocolo de teardown completo em
+[`register_types.cpp`](../native/af_mind/src/register_types.cpp) — `variant_destroy` carregado e
+null-checked, `inicia_varianto` (NIL válido antes da primeira escrita) e `destroi_varianto` (destrutor
+real + NIL de novo) em todo storage cru — e fechou de quebra a classe de vazamento de `String` de
+argumento/retorno. A prova é o par arquivado: o
+[repro v3](evidence/oraculo-nativo-22/passo3_minrepro3.log) sob a pressão do gate (churn entre os
+enqueues) sai **exit 0** com dez enqueues e dois decodes reais, e o runner com o gate sai 318/0 onde as
+duas primeiras corridas caíam.
+
+**A segunda grandeza que o repro achou antes do gate:** `tokens_out` chegava com o decode certo e o
+número errado — o construtor de INT lê um **int64 inteiro** do ponteiro, e o `int32_t` deixava lixo de
+stack na metade alta (`3066606649375` medido na depuração; a largura errada está nomeada no comentário
+do próprio código). Depois do conserto (`int64_t tokens_out64`), a régua do repro devolve inteiros
+limpos — `tokens_out=31` e `26`
+([passo3_minrepro3.log:15-16](evidence/oraculo-nativo-22/passo3_minrepro3.log)). A regra que a perna
+deixa: **toda grandeza que cruza a ponte entra como int64 de largura escrita**, não como o `sizeof` de
+quem passa.
+
+**Réguas e citações no ponto fixo** — a régua de âncoras abriu **4 casos** na primeira captura
+([passo3_ruler_anchors.err](evidence/oraculo-nativo-22/passo3_ruler_anchors.err)), todos do runner que
+cresceu +455 linhas: dois ponteiros do `estouro de subtree` (3122-3123 → **3155-3156**, no status e na
+página 10), o `:281` da fixture da página 02 (**→ 310**) e o `EXPECTED_CHECKS` do status (65 → **72**)
+— re-derivados um a um contra o conteúdo, re-rodados com **`casos objetivos: 0`** em 39 arquivos ·
+3 079 ponteiros · 209 rótulos
+([passo3_ruler_anchors.log](evidence/oraculo-nativo-22/passo3_ruler_anchors.log));
+[plan_cites](evidence/oraculo-nativo-22/passo3_ruler_cites.log) com **1 041** citações conferidas, 10
+arquivos citados que não existem (os de sempre — rascunhos e peças `[TARGET]` declaradas) e **0**
+números fora do arquivo; [plan_ids](evidence/oraculo-nativo-22/passo3_ruler_ids.log) exit 0 com as
+ausências de sempre.
+
+### O que a rodada deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna faltam o **Passo 4** (`mind_oracle.gd` vira wrapper e
+`grep -rn HTTPRequest src` devolve vazio) e o **Passo 5** (cache, validador e a régua do budget); a
+ponte existe, **nenhum consumidor do jogo a lê ainda**, e `mind_oracle.gd` continua HTTP.
+`git diff --name-only main...HEAD -- src` devolve **vazio** e `Channel.COUNT`, `FORMAT_VERSION`,
+`GEN_VERSION` ficam parados — nenhum hash publicado é invalidado. Dos furos, **#38** (clone sem build)
+e **#39** (réguas cegas a `native/`) seguem como decisão do dono, o **#20** sem a colheita que nomeia a
+folha, e a alocação do caminho quente segue sem colheita própria. A fila serializada não muda:
+**22 → 17 → 18 → 20 → 13**.
+

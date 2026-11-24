@@ -9,16 +9,20 @@
 // os dois.
 //
 // Modos:
-//   af_pack_probe recusa [dir]     -- chama `af_pack_load` sem preload. A recusa (codigo -1,
-//                                     estado 0) e a prova de que nenhum delay-helper roda antes do
-//                                     caminho absoluto, e de que recusar nao e crash: o exit 9 e do
-//                                     programa, nao do loader.
+//   af_pack_probe recusa [dir]     -- chama `af_pack_load` sem preload e `af_prompt_enqueue`
+//                                     sem contexto. As duas recusas (codigo -1, estado 0) sao a
+//                                     prova de que nenhum delay-helper roda antes do caminho
+//                                     absoluto e de que a fila recusa sem contexto (S16.5), e de
+//                                     que recusar nao e crash: o exit 9 e do programa, nao do
+//                                     loader.
 //   af_pack_probe <dir> <gguf|"">  -- a rota inteira, com as testemunhas de cada assinatura nova.
 //                                     Sai 0 saindo toda a rota com a escrita confirmada; sai 7
-//                                     quando o runtime RECUSA o contexto (nao cabe), e 8 quando
-//                                     ACEITA mas o readback difere do pedido -- o NAO_CONFIRMADA
-//                                     medido nesta perna saiu com exit 0, e um veredito sob exit
-//                                     0 nao e numero publicado, e a recusa do build.
+//                                     quando o runtime RECUSA o contexto (nao cabe), 8 quando
+//                                     ACEITA mas o readback difere do pedido, e 12 quando a rota
+//                                     de prompt do S5.3 recusa (o build mapeia 12 -> codigo 14).
+//                                     O NAO_CONFIRMADA medido nesta perna saiu com exit 0, e um
+//                                     veredito sob exit 0 nao e numero publicado, e a recusa do
+//                                     build.
 //
 // Toda linha `[abi]`, `[modelo]`, `[cache]` e `[numero]` abaixo existe para responder a uma
 // grandeza com um numero e uma testemunha independente ao lado: o tamanho do arquivo no disco
@@ -34,6 +38,7 @@
 #include <cstring>
 
 #include "mind_pack.h"
+#include "mind_prompt.h"
 
 static void onde_estou() {
 	char exe[MAX_PATH] = {0};
@@ -78,8 +83,19 @@ int main(int argc, char * * argv) {
 				(int) af_pack_err_which());
 		printf("[recusa] texto=%s\n", af_pack_err_text());
 		printf("[recusa] veredito=%s\n", (c == -1 && af_pack_state() == 0) ? "RECUSOU_SEM_TOCAR_O_RUNTIME" : "NAO_RECUSOU");
+		// A recusa da fila sem contexto (S16.5): `enqueue` com estado 0 recusa -1 e nao toca no
+		// runtime -- e a mesma guardinha que o runner vai ler, medida de pe antes de o Godot.
+		AfPromptReq r0 = {};
+		snprintf(r0.role, sizeof(r0.role), "%s", "user");
+		snprintf(r0.prompt, sizeof(r0.prompt), "%s", "recusa sem contexto");
+		r0.max_tokens = 4;
+		const int64_t ep0 = af_prompt_enqueue(&r0);
+		printf("[recusa] enqueue_sem_contexto=%lld estado=%lld texto=%s veredito=%s\n",
+				(long long) ep0, (long long) af_pack_state(), af_prompt_err_text(),
+				(ep0 == -1 && af_pack_state() == 0) ? "RECUSOU_SEM_CONTEXTO" : "NAO_RECUSOU");
+		const int recusou_tudo = (c == -1 && af_pack_state() == 0 && ep0 == -1) ? 1 : 0;
 		fflush(stdout);
-		return (c == -1 && af_pack_state() == 0) ? 9 : 10;
+		return recusou_tudo ? 9 : 10;
 	}
 	if (argc < 3) {
 		printf("[recusa] uso: af_pack_probe <dir-runtime> <path-gguf|vazio> | recusa\n");
@@ -205,6 +221,94 @@ int main(int argc, char * * argv) {
 	// recusa e aqui -- os [numero] acima saem para o leitor, o build nao segue para o dll.
 	if (af_pack_ctx_readback() != PEDIDO_CELULAS) {
 		return 8;
+	}
+
+	// --- a rota de prompt do Passo 3 (S5.3), de pe, antes de o Godot chamar qualquer metodo ----
+	// A sequencia mede: as recusas nomeadas do enqueue (papel fora do mapeamento, max_tokens fora
+	// do teto), a fila com depth 2 enquanto o primeiro decode roda, o timeout de wait com o slot
+	// PRESERVADO (o wait seguinte acha o pedido pronto), as duas narrativas com reason vazio e
+	// as metricas com o cache_hit em 0 honesto (nao existe cache no Passo 3). Qualquer recusa
+	// aqui e exit 12 e o build recusa (codigo 14) -- o dll nao nasce sem a rota de prompt de pe.
+	// O slots(1) nao e so medida: e o que mantem as 15 referencias AF_PROMPT_REF VIVAS neste
+	// exe -- sem consumo, o /OPT:REF as retira e a tabela de imports perde os nomes (medido na
+	// primeira corrida deste passo: o dll sem ponte ficou com 29 nomes do pack e ZERO do prompt).
+	af_prompt_init();
+	const int64_t slots_prompt = af_prompt_slots(1);
+
+	AfPromptReq rq = {};
+	snprintf(rq.role, sizeof(rq.role), "%s", "user");
+	snprintf(rq.prompt, sizeof(rq.prompt),
+			"lobo 7; intencao atual: seguir; vida 92%%; fome 34%%; confianca no jogador 0.80; "
+			"memorias recentes: achou rastro (forca 0.62); crencas: jogador_confiavel=0.80. "
+			"O que passa na cabeca dele agora?");
+	rq.max_tokens = 64;
+	rq.temperature = 0.7;
+	snprintf(rq.schema, sizeof(rq.schema), "%s", "");
+	rq.priority = 0;
+	rq.context_count = 0;
+
+	// as duas recusas nomeadas do enqueue, cada uma com o codigo esperado
+	{
+		AfPromptReq bad = rq;
+		snprintf(bad.role, sizeof(bad.role), "%s", "cozinheiro");
+		const int64_t e1 = af_prompt_enqueue(&bad);
+		printf("[prompt] recusa_papel=%lld texto=%s veredito=%s\n", (long long) e1,
+				af_prompt_err_text(), (e1 == -4) ? "RECUSOU_PAPEL" : "NAO_RECUSOU");
+		AfPromptReq big = rq;
+		big.max_tokens = 4096;
+		const int64_t e2 = af_prompt_enqueue(&big);
+		printf("[prompt] recusa_teto=%lld texto=%s veredito=%s\n", (long long) e2,
+				af_prompt_err_text(), (e2 == -2) ? "RECUSOU_TETO" : "NAO_RECUSOU");
+		if (e1 != -4 || e2 != -2) {
+			return 12;
+		}
+	}
+
+	const int64_t id1 = af_prompt_enqueue(&rq);
+	rq.temperature = 0.7;
+	rq.priority = 1;
+	const int64_t id2 = af_prompt_enqueue(&rq); // o segundo entra enquanto o primeiro decodifica
+	printf("[prompt] ids=%lld,%lld depth_apos_2=%d slots_checksum=%lld\n",
+			(long long) id1, (long long) id2, (int) af_prompt_queue_depth(), (long long) slots_prompt);
+	if (id1 < 1 || id2 < 1 || id1 == id2) {
+		return 12;
+	}
+	const int32_t depth_antes = af_prompt_queue_depth();
+
+	// o timeout curto num pedido com decode em curso: recusa 1 e o slot PRESERVADO
+	AfPromptOut o1 = {};
+	const int w0 = af_prompt_wait(id1, 1, &o1);
+	printf("[prompt] wait_timeout_ms1=%d reason=%s depth=%d (pedido continua na fila/rodando)\n",
+			w0, o1.reason, (int) af_prompt_queue_depth());
+	if (w0 != 1 || af_prompt_queue_depth() > depth_antes) {
+		return 12;
+	}
+
+	// os dois waits de verdade, com orcamento generoso (um decode de 64 tokens e de segundos)
+	const int32_t WAIT_MS = 180000;
+	const int w1 = af_prompt_wait(id1, WAIT_MS, &o1);
+	AfPromptOut o2 = {};
+	const int w2 = af_prompt_wait(id2, WAIT_MS, &o2);
+	printf("[prompt] wait1=%d status=%d tokens_out=%d decode_us=%lld texto=%s\n", w1, (int) o1.status,
+			(int) o1.tokens_out, (long long) o1.decode_us, o1.text);
+	printf("[prompt] wait2=%d status=%d tokens_out=%d decode_us=%lld texto=%s\n", w2, (int) o2.status,
+			(int) o2.tokens_out, (long long) o2.decode_us, o2.text);
+	printf("[prompt] metricas depth=%d cache_hits=%lld cache_misses=%lld worst_decode_us=%lld "
+			"vram_usada_agora=%lld (%.3f GB)\n", (int) af_prompt_queue_depth(),
+			(long long) af_prompt_cache_hits(), (long long) af_prompt_cache_misses(),
+			(long long) af_prompt_worst_decode_us(), (long long) af_pack_vram_usado_agora(),
+			gb(af_pack_vram_usado_agora()));
+	printf("[prompt] veredito=%s\n",
+			(w1 == 0 && w2 == 0 && o1.status == 0 && o2.status == 0 && o1.reason[0] == '\0'
+					&& o2.reason[0] == '\0' && o1.text[0] != '\0' && o2.text[0] != '\0'
+					&& af_prompt_cache_hits() == 0 && af_prompt_cache_misses() >= 2
+					&& o1.decode_us > 0 && o2.decode_us > 0)
+					? "ROTA_DE_PROMPT_CONFIRMADA" : "ROTA_DE_PROMPT_RECUSADA");
+	if (!(w1 == 0 && w2 == 0 && o1.status == 0 && o2.status == 0 && o1.reason[0] == '\0'
+			&& o2.reason[0] == '\0' && o1.text[0] != '\0' && o2.text[0] != '\0'
+			&& af_prompt_cache_hits() == 0 && af_prompt_cache_misses() >= 2
+			&& o1.decode_us > 0 && o2.decode_us > 0)) {
+		return 12;
 	}
 
 	if (c != 0) {

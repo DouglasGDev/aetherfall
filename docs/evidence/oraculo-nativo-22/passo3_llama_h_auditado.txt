@@ -1,0 +1,69 @@
+# Signatures auditadas do llama.h do pin b12499-401563f10 (fetch temporario, copia NAO entra na arvore - S12.3)
+# fonte: https://raw.githubusercontent.com/ggml-org/llama.cpp/401563f10ec60754e688cd3165c1343cf4be9642/include/llama.h
+# sha256 do arquivo baixado: 81de282d3c3a6e74f876c5954749efc9aabd3dd3fd3014479d5194cb4381298b
+
+== llama_model_get_vocab ==
+    LLAMA_API const struct llama_vocab * llama_model_get_vocab(const struct llama_model * model);
+== llama_tokenize ==
+    LLAMA_API int32_t llama_tokenize(
+        const struct llama_vocab * vocab,
+                      const char * text,
+                         int32_t   text_len,
+                     llama_token * tokens,
+                         int32_t   n_tokens_max,
+                            bool   add_special,
+                            bool   parse_special);
+== llama_detokenize ==
+    LLAMA_API int32_t llama_detokenize(
+        const struct llama_vocab * vocab,
+               const llama_token * tokens,
+                         int32_t   n_tokens,
+                            char * text,
+                         int32_t   text_len_max,
+                            bool   remove_special,
+                            bool   unparse_special);
+== llama_batch_ext_init ==
+== llama_batch_ext_free ==
+== llama_batch_ext_clear ==
+    LLAMA_API void                     llama_batch_ext_clear(struct llama_batch_ext * batch);
+== llama_batch_ext_add_token ==
+    LLAMA_API int32_t llama_batch_ext_add_token(struct llama_batch_ext * batch, llama_seq_id seq_id, llama_token id);
+== llama_batch_ext_set_pos ==
+    LLAMA_API bool llama_batch_ext_set_pos(
+                                struct llama_batch_ext * batch,
+                                               int32_t   idx,
+                                       const llama_pos * pos);
+== llama_batch_ext_set_output_logits ==
+    LLAMA_API bool llama_batch_ext_set_output_logits(
+                                struct llama_batch_ext * batch,
+                                               int32_t  idx,
+                                                  bool  value);
+== llama_process ==
+    LLAMA_API int32_t llama_process(
+                                struct llama_context * ctx,
+                             enum llama_process_type   type,
+                              struct llama_batch_ext * batch);
+== llama_get_memory ==
+== llama_memory_clear ==
+    LLAMA_API void llama_memory_clear(
+            llama_memory_t mem,
+                      bool data);
+== llama_n_batch ==
+== llama_sampler_init_greedy ==
+    LLAMA_API struct llama_sampler * llama_sampler_init_greedy(void);
+== llama_sampler_sample ==
+    LLAMA_API llama_token llama_sampler_sample(struct llama_sampler * smpl, struct llama_context * ctx, int32_t idx);
+== llama_sampler_free ==
+== llama_vocab_eos ==
+    LLAMA_API llama_token llama_vocab_eos(const struct llama_vocab * vocab); // end-of-sentence
+    LLAMA_API llama_token llama_vocab_eot(const struct llama_vocab * vocab); // end-of-turn
+    LLAMA_API llama_token llama_vocab_sep(const struct llama_vocab * vocab); // sentence separator
+    LLAMA_API llama_token llama_vocab_nl (const struct llama_vocab * vocab); // next-line
+    LLAMA_API llama_token llama_vocab_pad(const struct llama_vocab * vocab); // padding
+    LLAMA_API llama_token llama_vocab_mask(const struct llama_vocab * vocab); // mask
+
+    LLAMA_API bool llama_vocab_get_add_bos(const struct llama_vocab * vocab);
+== llama_vocab_is_eog ==
+    LLAMA_API bool llama_vocab_is_eog(const struct llama_vocab * vocab, llama_token token);
+== llama_get_logits_ith ==
+    LLAMA_API float * llama_get_logits_ith(struct llama_context * ctx, int32_t i);

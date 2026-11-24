@@ -219,7 +219,7 @@ não descreve mais o estado daquele dia.
   ([:448-449](../../src/entities/wolf.gd#L448-L449)) com `trips` colhido no runner
   ([aether_reactions_test.gd:308-316](../../tests/aether_reactions_test.gd#L308-L316), o par da
   matilha inteira em [:1849-1861](../../tests/aether_reactions_test.gd#L1849-L1861) e a checagem em
-  [:3122-3123](../../tests/aether_reactions_test.gd#L3122-L3123)). Critério
+  [:3155-3156](../../tests/aether_reactions_test.gd#L3155-L3156)). Critério
   numérico: **`trips` continua 0** e a soma de `last_us` não sai da banda medida
   (14 551 µs de pico 40 no rodapé pin de `ff347d2`). Se estourar, a alcateia entra com menos
   considerações, não com budget maior. O agregado dos cinco lobos continua sem medição (dossiê 04)

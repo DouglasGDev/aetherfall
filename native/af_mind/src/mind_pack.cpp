@@ -788,6 +788,41 @@ extern "C" int64_t af_pack_vram_base(void) {
 extern "C" int64_t af_pack_vram_used(void) {
 	return g.vram_used;
 }
+
+// --- os ponteiros do runtime, para a fila de prompts (Passo 3) -------------------------------
+// Nada aqui alocou, carregou ou liberou nada: os ponteiros sao os que a rota ja criou, e a
+// guardinha de estado existe para o chamador receber nullptr em vez de um ponteiro para uma
+// rota que ainda nao passou por ali. O vocabulario (`af_pack_state`) e o mesmo da maquina de
+// estados de S5.3 -- quem recusa, recusa nomeando o estado lido.
+extern "C" void * af_pack_model(void) {
+	return (g.estado >= 3) ? (void *) g.model : nullptr;
+}
+extern "C" void * af_pack_ctx(void) {
+	return (g.estado >= 4) ? (void *) g.ctx : nullptr;
+}
+extern "C" void * af_pack_vocab(void) {
+	// `llama_model_get_vocab` e chamada de novo aqui de proposito: a leitura e barata e o vocab
+	// e do modelo, nao meu para guardar copiado. Se o modelo sumiu, o runtime e quem recusa.
+	return (g.estado >= 3 && g.model != nullptr) ? (void *) llama_model_get_vocab(g.model) : nullptr;
+}
+extern "C" int64_t af_pack_vram_usado_agora(void) {
+	// Metrica viva: re-mede o dispositivo AGORA e atualiza as grandezas de S5.2 em cima da
+	// leitura nova. O getter de cima (`af_pack_vram_used`) continua devolvendo o instante da
+	// rota -- os dois numeros tem donos diferentes e propositos diferentes.
+	if (g.vulkan_dev == nullptr) {
+		return -1;
+	}
+	int64_t total = 0;
+	int64_t livre = 0;
+	if (!le_vram(g.vulkan_dev, &total, &livre)) {
+		return -1;
+	}
+	g.vram_total = total;
+	g.vram_free = livre;
+	g.vram_used = total - livre;
+	return g.vram_used;
+}
+
 extern "C" int64_t af_pack_load_ms(void) {
 	return g.load_ms;
 }

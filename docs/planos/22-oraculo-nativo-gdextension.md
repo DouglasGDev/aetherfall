@@ -1639,5 +1639,123 @@ portões curtos são vazios, e nenhum `SCRIPT ERROR` aparece em log nenhum.
 - O contexto medido é o **custo** (0,607 GB por 2 048 células), não a escolha do tamanho de produção:
   o `--ctx-size` do host segue 4096 até o Passo 3 decidir o que a fila de prompts pede.
 
+## 17. O Passo 3: a API do prompt dentro do processo, a ponte de Variant cru, e o gate que compara forma — não frase
+
+O critério de §5.3 fechou na árvore desta branch (`feat/oraculo-nativo-passo3-22`): `enqueue`, `wait`,
+métricas de fila e os três sinais existem na `AfMindOracle` pela rota ClassDB, o `.gguf` decodou duas
+narrativas **dentro do processo do Godot** sem tocar rede, e o gate
+[`contrato_igal_ao_http`](../../tests/aether_reactions_test.gd) compara a **forma** da saída das duas
+transportas — HTTP e extensão — sobre o mesmo roster, porque frase é do modelo, não do transporte. O
+censo do runner sobe 296 → **318**. Três commits, um assunto cada.
+
+### 17.1 Os três commits, com o número de cada árvore
+
+- **(a) [`8dbc978`] a fila de prompts na porta C++** (`mind_prompt.cpp`): `enqueue`/`wait` com recusas
+  **nomeadas na porta** — papel fora do mapeamento devolve `-4`
+  (`enqueue: papel cozinheiro fora do mapeamento user/system`), campo fora do tipo devolve `-2`
+  (`max_tokens 4096 passa do teto de 256`),
+  [:232-234](../evidence/oraculo-nativo-22/passo3_build.log) —, timeout preservando o slot na fila
+  ([passo3_build.log:235](../evidence/oraculo-nativo-22/passo3_build.log)) e **duas narrativas reais
+  decodadas** por `ROTA_DE_PROMPT_CONFIRMADA`
+  ([passo3_build.log:236-239](../evidence/oraculo-nativo-22/passo3_build.log)). Tudo de pé na sonda
+  **antes** de o dll nascer, como o passo 2 (b) ensinou. Corridas da árvore: runner
+  **296 / 0 / 37,480 s** ([passo3_runner_commit_a.log:576](../evidence/oraculo-nativo-22/passo3_runner_commit_a.log))
+  e suíte **255 / 0 / 50,5 s** ([passo3_suite_commit_a.log:357](../evidence/oraculo-nativo-22/passo3_suite_commit_a.log)).
+- **(b) [`11d13bb`] a ponte no GDScript**: `enqueue`/`wait`/métricas na `AfMindOracle` pela rota
+  **Variant crua** — leitura de dicionário pelo getter por chave do cabeçalho vendorado, montagem pelo
+  construtor por ponteiro + setter por ponteiro, **nenhum layout de Variant ou de Dictionary suposto**
+  (o comentário de [`register_types.cpp`](../../native/af_mind/src/register_types.cpp) é o contrato);
+  a régua de imports fecha com os **55 nomes** do corpo na tabela do dll, 4 módulos, e os controles
+  negativos ausentes ([passo3_build_ponte_verde.log:248-253](../evidence/oraculo-nativo-22/passo3_build_ponte_verde.log)).
+  Corridas: runner **296 / 0 / 37,689 s**
+  ([passo3_runner_commit_b.log:576](../evidence/oraculo-nativo-22/passo3_runner_commit_b.log)),
+  suíte **255 / 0 / 50,8 s**
+  ([passo3_suite_commit_b.log:357](../evidence/oraculo-nativo-22/passo3_suite_commit_b.log)).
+- **(c) [`e8301c0`] o gate e os dois consertos que o gate cobrou** — §17.2 e §17.3 abaixo. Runner
+  **318 / 0 / 46,034 s** ([passo3_runner_commit_c.log:576](../evidence/oraculo-nativo-22/passo3_runner_commit_c.log)),
+  suíte **255 / 0**, e a build final sai `ROTA_DE_PROMPT_CONFIRMADA` com exit 0 e dll
+  `938e60f3a0e60bd17511198ee10810af477a5a52827b8926b8089faaf5f3f219`
+  ([passo3_build_ponte_verde.log:239](../evidence/oraculo-nativo-22/passo3_build_ponte_verde.log),
+  [:258](../evidence/oraculo-nativo-22/passo3_build_ponte_verde.log)).
+
+### 17.2 O sinal 11, fechado na causa: o getter da engine **atribui** no destino
+
+Duas corridas do runner caíram com signal 11 dentro do `enqueue` — não sempre, e o repro v2 com o mesmo
+shape não reproduzia. A causa lida do protocolo do cabeçalho vendorado: o getter **por chave** e o
+**por índice** da engine não escrevem em campo novo — eles **atribuem** no destino (semântica de
+`operator=`, que lê o `type` **antes** de copiar). Nossos storages eram bytes crus de stack sem
+inicializar: lixo de stack com um `type` que carrega ponteiro manda a engine rodar o `clear()` de um
+tipo qualquer sobre memória qualquer — corrupção de heap com as quatro molduras de `ntdll`, caindo no
+primeiro get de cada `enqueue`. O repro não reproduzia porque as páginas de stack novas dele estavam
+zeradas (lixo benigno); a pressão do gate — dicionários de 24 chaves e strings de 60 caracteres entre
+os enqueues — deixa o mesmo padrão de tamanho sujo, e é essa pressão que o repro v3 copia.
+
+O conserto é o protocolo de teardown completo, no corpo de
+[`register_types.cpp`](../../native/af_mind/src/register_types.cpp): `variant_destroy` entra na lista
+de procedimentos carregados e null-checked, e todo storage cru passa por um dos dois ajudantes —
+`inicia_varianto` (NIL **válido** antes da primeira escrita de qualquer getter) e `destroi_varianto`
+(destrutor real + NIL de novo, porque `variant_new_nil` sobre storage viva vazaria a referência). A
+mesma leitura fechou uma segunda classe de defeito que ninguém tinha contado: os storages de `String`
+de argumento e de retorno vazavam a referência em ambos os caminhos — agora fecham com destrutor nos
+dois. A prova de causa é o par arquivado: o repro v3 sob a pressão do gate roda **exit 0** com dez
+enqueues, churning entre eles, recusas nomeadas e dois decodes reais
+([passo3_minrepro3.log:18](../evidence/oraculo-nativo-22/passo3_minrepro3.log)), e o runner com o gate
+inteiro sai 318/0 —
+[passo3_runner_commit_c.log](../evidence/oraculo-nativo-22/passo3_runner_commit_c.log),
+[passo3_gates_runner.log](../evidence/oraculo-nativo-22/passo3_gates_runner.log) — onde as duas
+primeiras corridas caíam.
+
+### 17.3 O `tokens_out` que ninguém tinha lido até o repro
+
+O mesmo repro encontrou o segundo defeito antes de o gate nascer: `tokens_out` chegava ao GDScript com
+o decode **certo** e o número **errado** — o v3 mediu `tokens_out=3066606649375`. O construtor de INT
+lê um **int64 inteiro** do ponteiro de origem; um `int32_t*` passado direto deixa lixo de stack na
+metade alta. O conserto dá largura nomeada a cada grandeza que cruza a ponte
+([`register_types.cpp`](../../native/af_mind/src/register_types.cpp), `int64_t tokens_out64 =
+tokens_out;`), e a mesma régua do repro devolve inteiros limpos — `tokens_out=31` e `tokens_out=26`
+nos dois waits reais ([passo3_minrepro3.log:15-16](../evidence/oraculo-nativo-22/passo3_minrepro3.log)).
+A classe fica nomeada na fonte: **toda grandeza que cruza a ponte entra como int64 de largura
+escrita**, não como o `sizeof` de quem passa.
+
+### 17.4 O gate `contrato_igal_ao_http`: 22 checagens, forma contra forma
+
+A checagem nova é
+[`_test_contrato_igal_ao_http`](../../tests/aether_reactions_test.gd) — o roster de §5.3 rodado duas
+vezes sobre o mesmo cenário: uma com o transporte de rede (`llama-server` levantado por lançamento
+próprio, porta 8791, chave do arquivo — o pid **exato** do lançamento é o único que o desmanche derruba:
+`pid=27352 derrubado=true reuso=false`,
+[passo3_runner_commit_c.log:550](../evidence/oraculo-nativo-22/passo3_runner_commit_c.log),
+[:569](../evidence/oraculo-nativo-22/passo3_runner_commit_c.log)) e uma com a extensão. O que se
+compara é **forma**, não frase — e as 22 checagens imprimem o número que decide cada uma
+([passo3_runner_commit_c.log:548-569](../evidence/oraculo-nativo-22/passo3_runner_commit_c.log)):
+
+| Checagem | O número que decide |
+| --- | --- |
+| o oráculo HTTP lê a MESMA chave que subiu o servidor | `len_oraculo=32 len_host=32 fonte=arquivo` — comprimento, nunca a chave |
+| FORMA do sucesso HTTP × FORMA do wait da extensão | os **seis** mesmo nomes de chave, `status=0`, `tokens_out=64`, `reason=''` — `textos=143/144 chars` |
+| FORMA da recusa nas duas transportas | `reason` não vazio nomeando o motivo, `status_ext=-2` para id desconhecido |
+| recusas nomeadas na porta do prompt | `max_tokens` errado → `-2`; papel fora do mapeamento → `-4` |
+| timeout preserva o slot | `status=1 reason='timeout de 1 ms' depth=1`, e o pedido completa no wait seguinte (`status=0 tokens_out=64`) |
+| os três sinais de §5.3 existem na ClassDB | `["script_changed", "property_list_changed", "inference_completed", "pack_loaded", "pack_failed"]` |
+| métricas honestas da fila | `depth=0 hits=0 misses=2 worst_decode_us=1510272 vram_bytes=7017017488` — cache **não existe** no Passo 3, e o getter diz isso |
+
+A emissão do sinal segue **`[ABERTA]`** — `emissoes=0 decodes=2`
+([passo3_runner_commit_c.log:564](../evidence/oraculo-nativo-22/passo3_runner_commit_c.log)): quem
+emite `inference_completed` é o Passo 4/5, e o gate que fecha essa parte está nomeado lá, não aqui.
+
+### 17.5 O que este passo não fecha
+
+- **`mind_oracle.gd` continua HTTP** — o Passo 4 (`transporte_http_zerado`:
+  `grep -rn HTTPRequest src` vazio, `Rodar.bat` sem processo de IA) é quem troca o transporte e apaga o
+  host da árvore. Nada do jogo leu a extensão ainda: a ponte existe, o consumidor não.
+- **Cache e validador** são o Passo 5 (§5.5); as métricas do gate contam fila, não cache.
+- **`src/` intocado** — `git diff --name-only main...HEAD -- src` devolve **vazio** — e
+  `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` parados: os hashes de journal publicados valem para
+  a árvore resultante, sem re-corrida.
+- **Nenhum gate de fase** (mandato 4); os furos **#38, #39 e #20** seguem onde estavam, e o desmanche
+  do servidor de teste não é o desmanche do hospedeiro do jogo (o `llm_server_host.gd` continua dono do
+  processo dele até o Passo 4).
+
+
 
 
