@@ -49,10 +49,10 @@ var player: Player = null
 var viz: AetherViz = null
 var hud: Hud = null
 var oracle: MindOracle = null
-## Dono do processo filho do oraculo (dossie 15). Null em headless de proposito: a
-## suite nao pode levantar 2,7 GB por rodada — quem exercita o host e a cena de
-## prova, que o constroi com `attach_llm_host`.
-var llm_host: LlmServerHost = null
+## Dono do ciclo de vida do pack nativo (dossie 22 §6.3). Null em headless de
+## proposito: a suite nao pode carregar 2,7 GB de modelo por rodada — quem
+## exercita o runtime e o runner, que carrega o pack pela rota do §5.2.
+var llm_host: AfMindRuntime = null
 var audio: AudioDirector = null
 ## O FX da agua (dossie 23 §3.6): leitura de corpo, pool fixo, nenhuma escrita no
 ## mundo — `fx_nao_escreve_o_mundo` e a checagem que paga a frase.
@@ -119,11 +119,13 @@ var _dens: Array = []
 func _ready() -> void:
 	InputActions.install()
 	BlockDefs.init_tables()
-	# O hospedeiro entra antes da geracao porque o boot do modelo tem de
-	# sobrepor-se aos ~5,2 s de geracao + malharia (dossie 15 §6):
-	# `OS.create_process` volta com o pid imediatamente e a sonda do host roda por
-	# frame, nunca por tick. Nada aqui espera o modelo de forma sincrona: um
-	# `await` nesta porta e o congelamento de boot que a casa ja contou uma vez.
+	# O dono do pack entra antes da geracao (dossie 22 §6.3): o `load_pack` do
+	# gguf e uma chamada sincrona da extensao e o frame que o executa trava o
+	# tempo do load — o overlap que o processo filho do dossie 15 dava com os
+	# ~5,2 s de geracao + malharia acabou com o transporte HTTP, e o regresso e
+	# o numero do `open_ms` da ponte, registrado na nota do Passo 4. Nada aqui
+	# espera o modelo de forma sincrona ALEM do proprio load: o carregamento
+	# anda um passo por frame (`AfMindRuntime.STEP_PERIOD`) para o F3 acompanhar.
 	_start_llm_host()
 	_terrain = Node3D.new()
 	_terrain.name = "Terrain"
@@ -213,29 +215,31 @@ func _ready() -> void:
 	_start_journal_from_args()
 
 
-## Decisao 4.6 do dossie 15: em headless o hospedeiro nao entra na arvore, porque
-## a suite e a corriqueira e o modelo e de 2,7 GB. O nome do display server e o
-## documentado no motor (`DisplayServer.get_name()`).
+## Decisao 4.6 do dossie 15, ajustada pelo §6.3 do dossie 22: em headless o dono
+## do pack nao entra na arvore, porque a suite e a corriqueira e o modelo e de
+## 2,7 GB. O nome do display server e o documentado no motor
+## (`DisplayServer.get_name()`).
 func _start_llm_host() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
-	attach_llm_host(LlmServerHost.new())
+	attach_llm_host(AfMindRuntime.new())
 
 
-## Entrada do boot normal e da cena de prova. O host e o unico que conhece o pid;
-## a sessao so empresta o oraculo e o hud para a ligacao.
-func attach_llm_host(host: LlmServerHost) -> void:
+## Entrada do boot normal e de quem injeta um runtime por fora. O host e o unico
+## que conhece o estado do pack; a sessao so empresta o oraculo e o hud para a
+## ligacao.
+func attach_llm_host(host: AfMindRuntime) -> void:
 	if llm_host != null and llm_host != host:
-		# Um dono por porta. Medido na janela real: o boot da janela criou o host
-		# dele e a cena de prova injetou o seu por cima — dois `create_process`
-		# na 8741, pids 2556 e 27328, os dois `pronto`. O `remove_child` roda o
-		# `_exit_tree` do retiro na hora, entao o filho dele morre antes do novo
-		# sondar a porta.
-		var retiro: LlmServerHost = llm_host
+		# Um dono por pack. Medido na janela real (perna 15): o boot da janela criou
+		# o host dele e a cena de prova injetou o seu por cima — dois donos brigando
+		# pelo mesmo recurso. O `remove_child` roda o `_exit_tree` do retiro na hora;
+		# hoje nao ha processo para matar, mas dois runtimes carregariam dois packs
+		# e dobrariam a VRAM.
+		var retiro: AfMindRuntime = llm_host
 		remove_child(retiro)
 		retiro.queue_free()
 	llm_host = host
-	host.name = "LlmServerHost"
+	host.name = "AfMindRuntime"
 	add_child(host)
 	_wire_llm_host()
 
@@ -247,8 +251,9 @@ func _wire_llm_host() -> void:
 		return
 	if oracle != null:
 		llm_host.oracle = oracle
-		# Portao de prontidao: sem ele a primeira requisicao da sessao cairia num
-		# 503 e o recuo de 30 s engoliria a meia-minuta seguinte (dossie 15 §4.4).
+		# Portao de prontidao: sem ele o primeiro pedido cairia na recusa "sem
+		# contexto" (o pack ainda fora do estado de fila) e o recuo de 30 s
+		# engoliria a meia-minuta seguinte (dossie 15 §4.4, semantica do §6.3).
 		oracle.ready_provider = Callable(llm_host, "ready")
 	if hud != null:
 		hud.llm_status_provider = Callable(llm_host, "status_line")

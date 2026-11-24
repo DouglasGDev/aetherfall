@@ -58,8 +58,9 @@ const TESTS: Array[StringName] = [
 # gguf no processo, leitura conferida contra a meta do proprio modelo, contexto cujo
 # pedido o runtime devolve e os tres numeros do §5.2 -- mais as vinte e duas de
 # `contrato_igal_ao_http` (dossie 22 §5.3), o gate do contrato do prompt: o MESMO
-# roster de um cenario fixo passa DUAS vezes, uma pela transporta HTTP (o `MindOracle`
-# real contra um llama-server que o proprio gate levanta e derruba pelo pid exato) e
+# roster de um cenario fixo passa DUAS vezes, uma pela transporta HTTP (um CLIENTE
+# DE REFERENCIA montado dentro do proprio gate, contra um llama-server que ele
+# levanta e derruba pelo pid exato) e
 # uma pela extensao (`AfMindOracle.enqueue`/`wait` pela rota ClassDB), e a comparacao
 # e de FORMA -- as chaves e os tipos do Dictionary, o motivo nomeado, nunca a frase --
 # mais as DUAS de `transporte_http_zerado` (dossie 22 §5.4), o gate do Passo 4 que e
@@ -5729,17 +5730,19 @@ func _test_extensao_pack_no_processo() -> bool:
 	return true
 
 
-## Passo 3 do dossie 22 (§5.3): o gate `contrato_igal_ao_http`. O MESMO roster de um
-## cenario fixo -- o lobo que o `_arm` cria, congelado no `_stage` -- passa DUAS vezes:
-## uma pela transporta HTTP (o `MindOracle` REAL contra um llama-server que o proprio
-## gate levanta com o argv do `LlmServerHost` e derruba pelo pid exato do lancamento) e
-## uma pela extensao (`AfMindOracle.enqueue`/`wait`, a rota ClassDB que ate este gate
-## nunca tinha sido exercida do GDScript). A comparacao e de FORMA e nunca de frase:
-## chaves e tipos do Dictionary de saida, reason vazio no sucesso, motivo nomeado na
-## recusa -- o texto da narrativa e leitura do modelo, nao contrato. As 22 checagens
-## saem em TODOS os caminhos (servidor que nao sobe, gguf que falta): cada uma nomeia a
-## premissa com o numero que a decide, e recusa legivel nunca e hang -- todos os
-## `await` desta corotina tem prazo. A chave do servidor nao vai para o log (ele vira
+## Passo 3 do dossie 22 (§5.3), ajustado ao Passo 4 (§5.4): o gate `contrato_igal_ao_http`.
+## O MESMO roster de um cenario fixo -- o lobo que o `_arm` cria, congelado no `_stage` --
+## passa DUAS vezes: uma pela transporta HTTP (um CLIENTE DE REFERENCIA montado aqui
+## dentro, contra um llama-server que o proprio gate levanta com o argv do antigo host e
+## derruba pelo pid exato do lancamento -- tests/ pode usar HTTPRequest, o gate do §5.4
+## grepa apenas src/) e uma pela extensao (`AfMindOracle.enqueue`/`wait`, a rota ClassDB
+## que ate este gate nunca tinha sido exercida do GDScript), com o prompt narrativo
+## EXATO que o wrapper `MindOracle` envia (`_prompt_narracao`, static). A comparacao e de
+## FORMA e nunca de frase: chaves e tipos do Dictionary de saida, reason vazio no sucesso,
+## motivo nomeado na recusa -- o texto da narrativa e leitura do modelo, nao contrato. As
+## 22 checagens saem em TODOS os caminhos (servidor que nao sobe, gguf que falta): cada
+## uma nomeia a premissa com o numero que a decide, e recusa legivel nunca e hang -- todos
+## os `await` desta corotina tem prazo. A chave do servidor nao vai para o log (ele vira
 ## evidencia publica): so `key_source` e o COMPRIMENTO dela.
 func _test_contrato_igal_ao_http() -> bool:
 	var classe := &"AfMindOracle"
@@ -5755,7 +5758,6 @@ func _test_contrato_igal_ao_http() -> bool:
 	var chave := MindOracle.resolve_api_key()
 	var fonte_chave := MindOracle.key_source
 	_arm()
-	var id_lobo := int(_wolf.identity)
 
 	# 1) as premissas de disco do lado HTTP: sem elas o gate nao levanta nada e as
 	# checagens seguintes saem vermelhas com o caminho como motivo, nunca penduradas.
@@ -5844,45 +5846,71 @@ func _test_contrato_igal_ao_http() -> bool:
 	_check(fp_ok, "contrato: /v1/models com a chave devolve 200 com o alias",
 			"code=%d alias=%s" % [fp_code, MindOracle.MODEL_ALIAS])
 
-	# --- metade HTTP: o MindOracle real --------------------------------------------------
-	var oraculo := MindOracle.new()
-	_check(oraculo.api_key == chave and chave.length() > 0,
-			"contrato: o oraculo HTTP le a MESMA chave que subiu o servidor",
-			"len_oraculo=%d len_host=%d fonte=%s" % [
-				oraculo.api_key.length(), chave.length(), fonte_chave])
-	oraculo.server_url = url
-	oraculo.roster_provider = Callable(self, "_gate_roster")
-	root.add_child(oraculo)
+	# --- metade HTTP: cliente de REFERENCIA dentro do gate -------------------------------
+	# O Passo 4 aposenta o MindOracle que fala HTTP (§5.4); a metade HTTP do gate
+	# vira um cliente cru AQUI dentro (tests/ pode usar HTTPRequest; o gate do
+	# §5.4 grepa apenas src/). O payload e o MESMO formato que o wrapper antigo
+	# montava: uma mensagem de system + uma de user com o prompt puro do lobo,
+	# e a resposta passa pelo MESMO `_clean` antes de virar narrativa.
+	var payload_ref := {
+		"model": MindOracle.MODEL_ALIAS,
+		"messages": [
+			{"role": "system", "content": "Voce narra o interior de um lobo de um " \
+					+ "jogo para uma linha de debug. Responda com UMA frase curta em " \
+					+ "portugues, sem nomes de sistemas, sem listas, sem pense em voz alta."},
+			{"role": "user", "content": MindOracle._prompt_for(_wolf)},
+		],
+		"max_tokens": 64,
+		"temperature": 0.7,
+	}
 
-	# 6) FORMA do sucesso HTTP: narrativa String nao vazia e last_reason vazio. O
-	# prazo e 60 s, e a recusa legivel e o proprio last_reason impresso.
-	var prazo_narr := Time.get_ticks_msec() + 60000
-	while Time.get_ticks_msec() < prazo_narr and oraculo.narration_of(id_lobo) == "":
-		await process_frame
-	var narrativa := oraculo.narration_of(id_lobo)
-	var razao_http := oraculo.last_reason
+	# 6) a MESMA chave resolve nos dois lados: o que subiu o servidor e o que monta
+	# o pedido leem a mesma resolucao estatica.
+	_check(MindOracle.resolve_api_key() == chave and chave.length() > 0,
+			"contrato: o oraculo le a MESMA chave que subiu o servidor",
+			"len_chave=%d fonte=%s" % [chave.length(), fonte_chave])
+
+	# 7) FORMA do sucesso HTTP: narrativa String nao vazia apos o `_clean`. O
+	# prazo e 60 s de teto, e a recusa legivel e o codigo impresso.
+	var narrativa := ""
+	var razao_http := "sem resposta"
+	var pedidos_ref := 0
+	if pid_subido > 0 or nosso_reuso:
+		var prazo_narr := Time.get_ticks_msec() + 60000
+		while Time.get_ticks_msec() < prazo_narr:
+			var rr := await _gate_http_post(http, url + "/v1/chat/completions",
+					cabecalhos_chave, JSON.stringify(payload_ref), 60.0)
+			pedidos_ref += 1
+			if int(rr[0]) == HTTPRequest.RESULT_SUCCESS and int(rr[1]) == 200:
+				var data = JSON.parse_string((rr[3] as PackedByteArray).get_string_from_utf8())
+				if data is Dictionary:
+					var choices: Array = (data as Dictionary).get("choices", [])
+					if not choices.is_empty() and choices[0] is Dictionary:
+						narrativa = MindOracle._clean(String(
+								(choices[0] as Dictionary).get("message", {}).get("content", "")))
+						razao_http = ""
+						break
+			razao_http = "codigo http %d" % int(rr[1])
+			await _gate_frame_sleep(500)
 	_check(narrativa is String and narrativa != "" and razao_http == "",
-			"contrato: FORMA do sucesso HTTP (narrativa String nao vazia, last_reason vazia)",
+			"contrato: FORMA do sucesso HTTP (cliente de referencia, narrativa String nao vazia)",
 			"narrativa=%d chars reason='%s' pedidos=%d" % [
-				narrativa.length(), razao_http, oraculo.requests_issued])
+				narrativa.length(), razao_http, pedidos_ref])
 
-	# 7) FORMA da recusa HTTP: chave errada e 401 NOMEADO no last_reason, narrativa
-	# vazia. O segundo oraculo e derrubado depois de medido (roster cortado primeiro).
-	var oraculo2 := MindOracle.new()
-	oraculo2.api_key = "chave-errada-do-gate-401"
-	oraculo2.server_url = url
-	oraculo2.roster_provider = Callable(self, "_gate_roster")
-	root.add_child(oraculo2)
-	var prazo_401 := Time.get_ticks_msec() + 30000
-	while Time.get_ticks_msec() < prazo_401 and oraculo2.last_reason == "":
-		await process_frame
-	var razao_401 := oraculo2.last_reason
-	var narrativa_401 := oraculo2.narration_of(id_lobo)
+	# 8) FORMA da recusa HTTP: chave errada e 401 NOMEADO no codigo, nenhum texto
+	# aceito. O cliente de mentira morre com o gate, nao ha nodo para desmanchar.
+	var narrativa_401 := ""
+	var razao_401 := "sem resposta"
+	if pid_subido > 0 or nosso_reuso:
+		var cabecalhos_401: PackedStringArray = ["Content-Type: application/json",
+				"Authorization: Bearer chave-errada-do-gate-401"]
+		var rq := await _gate_http_post(http, url + "/v1/chat/completions",
+				cabecalhos_401, JSON.stringify(payload_ref), 10.0)
+		razao_401 = "codigo http %d" % int(rq[1]) if int(rq[0]) == HTTPRequest.RESULT_SUCCESS \
+				else "sem resposta (result %d)" % int(rq[0])
 	_check(narrativa_401 == "" and razao_401.contains("401"),
-			"contrato: FORMA da recusa HTTP (chave errada nomeia 401, narrativa vazia)",
-			"narrativa=%d chars reason='%s'" % [narrativa_401.length(), razao_401])
-	oraculo2.roster_provider = Callable()
-	oraculo2.queue_free()
+			"contrato: FORMA da recusa HTTP (chave errada nomeia 401)",
+			"reason='%s'" % razao_401)
 
 	# --- metade extensao: a rota ClassDB do mesmo cenario --------------------------------
 	var obj: Object = ClassDB.instantiate(classe)
@@ -5906,16 +5934,16 @@ func _test_contrato_igal_ao_http() -> bool:
 			"estado=%d ctx_probe=%d gguf=%s err_pack='%s'" % [
 				estado_ext, codigo_ctx, str(tem_gguf), texto_erro_pack])
 
-	# 9) enqueue pela rota ClassDB: o pedido e O MESMO que o oraculo HTTP montou para o
-	# mesmo lobo -- o texto sai do proprio `_prompt_for` do oraculo, para as duas
-	# transportas levarem o mesmo conteudo sem copiar o formato a mao.
+	# 9) enqueue pela rota ClassDB: o pedido leva o MESMO prompt narrativo que o
+	# wrapper envia ao jogo (`_prompt_narracao`, static, dobrado numa mensagem so)
+	# -- as duas transportas levam o mesmo conteudo sem copiar o formato a mao.
 	var id1 := -1
 	var depth1 := -1
 	var texto_erro := ""
 	if tem_obj:
 		var req := {
 			"role": "user",
-			"prompt": oraculo._prompt_for(_wolf),
+			"prompt": MindOracle._prompt_narracao(_wolf),
 			"max_tokens": 64,
 			"temperature": 0.7,
 		}
@@ -5990,7 +6018,7 @@ func _test_contrato_igal_ao_http() -> bool:
 	# descartar no timeout seria perder trabalho pago).
 	var id2 := -1
 	if tem_obj:
-		id2 = int(obj.enqueue({"role": "user", "prompt": oraculo._prompt_for(_wolf),
+		id2 = int(obj.enqueue({"role": "user", "prompt": MindOracle._prompt_narracao(_wolf),
 				"max_tokens": 64, "temperature": 0.7}))
 	var out2 := {}
 	if tem_obj:
@@ -6092,12 +6120,22 @@ func _test_contrato_igal_ao_http() -> bool:
 			"pid=%d derrubado=%s reuso=%s" % [pid_subido, str(derrubado), str(nosso_reuso)])
 
 	# O objeto e RefCounted (PARENT_NAME da ponte): quem solta e o refcount quando a
-	# corotina sai, nunca um free() a mao. Os nodos HTTP e os dois oraculos saem da
-	# arvore; o roster do primeiro e cortado antes para nao haver pedido novo.
-	oraculo.roster_provider = Callable()
-	oraculo.queue_free()
+	# corotina sai, nunca um free() a mao. O nodo HTTP do cliente de referencia
+	# sai da arvore; nao ha mais oraculo nenhum montado pelo gate (§5.4).
 	http.queue_free()
 	return true
+
+
+## POST do cliente de referencia do gate: a mesma disciplina do GET sequencial --
+## `await` so acontece com a requisicao aceita, e o `timeout` do nodo garante que
+## ela sempre completa.
+func _gate_http_post(http: HTTPRequest, url_post: String, cabecalhos: PackedStringArray,
+		corpo: String, tempo_s: float) -> Array:
+	http.timeout = tempo_s
+	var err := http.request(url_post, cabecalhos, HTTPClient.METHOD_POST, corpo)
+	if err != OK:
+		return [-1, 0, PackedStringArray(), PackedByteArray()]
+	return await http.request_completed
 
 
 ## Passo 4 do dossie 22 (§5.4) -- o gate `transporte_http_zerado`, que e a frase do
@@ -6184,11 +6222,6 @@ func _gate_body_tem_alias(body: PackedByteArray) -> bool:
 		if m is Dictionary and String((m as Dictionary).get("id", "")) == MindOracle.MODEL_ALIAS:
 			return true
 	return false
-
-
-## O roster do cenario fixo: UM lobo, o que o `_arm` criou e o `_stage` congela.
-func _gate_roster() -> Array:
-	return [_wolf] if is_instance_valid(_wolf) else []
 
 
 ## Espera por quadros com prazo: o `await` do gate nunca fica sem saida.
