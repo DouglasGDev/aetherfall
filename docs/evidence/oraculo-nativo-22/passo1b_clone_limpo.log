@@ -1,0 +1,33 @@
+== Passo 1 (b): clone limpo de 68416f5, 2026-11-24T02:17:25-04:00, branch feat/oraculo-nativo-gdextension-22 ==
+== clone: git clone --branch feat/oraculo-nativo-gdextension-22 file:///c/Aetherfall  ->  /tmp/_clone22b ==
+== HEAD do clone: 68416f55b5b6338f9ac9e37b1968c83d8258d7ca ==
+
+== manifesto da pasta de evidencia no clone, sha256sum -c (regua do furo #36) ==
+entradas OK=53  nao-OK=0
+
+== primeira invocacao (ERRADA, e o furo #33 que pega esta passada) ==
+== comando: godot --headless --path <clone> tests/aether_reactions_test.gd ==
+== exit do processo: 124 (foi o timeout 400 que matou; sem --script a engine BOOTA o jogo headless e o SceneTree nunca chama quit)
+== stderr da corrida errada: 2060 bytes, as linhas abaixo sao literais ==
+ERROR: BUG: Unreferenced static string to 0: Physics3DConstraintSolveIslands
+   at: unref (core/string/string_name.cpp:118)
+ERROR: BUG: Unreferenced static string to 0: Physics3DConstraintSetup
+   at: unref (core/string/string_name.cpp:118)
+== stdout da corrida errada: 909 bytes; as 4 primeiras linhas mostram o jogo andando, nao o teste:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+
+== corrida valida (com --script) ==
+== comando: godot --headless --path <clone> --script res://tests/aether_reactions_test.gd ==
+== exit do processo: 1  |  stderr: 0 bytes  |  import frio antes (--import, exit 0)
+FALHA extensao_carrega_classe: o descritor existe no disco | caminho=res://native/af_mind/af_mind.gdextension existe=false
+FALHA extensao_carrega_classe: a engine lista a extensao como carregada | load_extension=-1 ja_vinha_do_boot=false agora=false total_registradas=0 lista=[]
+FALHA extensao_carrega_classe: a biblioteca abriu dentro deste processo | objeto_valido=false is_library_open=false nivel_minimo_de_init=-1
+FALHA extensao_carrega_classe: a classe esta registrada na ClassDB | class_exists(AfMindOracle)=false
+FALHA extensao_carrega_classe: a ClassDB devolve um objeto vivo daquela classe | instantiate_valido=false get_class=n/d
+OK censo de testes completos | 66/66
+OK nenhum estouro de subtree no budget | trips_solo=0 trips_matilha=0
+OK censo de checagens | 288/288
+288 checagens 5 falhas 33.629 s

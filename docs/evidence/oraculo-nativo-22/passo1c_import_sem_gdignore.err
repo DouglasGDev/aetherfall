@@ -1,0 +1,6 @@
+ERROR: Couldn't read OBJ file 'res://native/af_mind/bin/register_types.obj', it seems to be binary, corrupted, or empty.
+   at: _parse_obj (editor/import/3d/resource_importer_obj.cpp:236)
+ERROR: Condition "meshes.size() != 1" is true. Returning: ERR_BUG
+   at: import (editor/import/3d/resource_importer_obj.cpp:691)
+ERROR: Error importing 'res://native/af_mind/bin/register_types.obj'.
+   at: _reimport_file (editor/file_system/editor_file_system.cpp:3093)
