@@ -673,11 +673,14 @@ literais estão em [`passo1_build_instrumentado.log`](../evidence/oraculo-nativo
 [`passo1_header_reproducao.log`](../evidence/oraculo-nativo-22/passo1_header_reproducao.log); os `.sh` e
 `.bat` do mesmo diretório re-executam cada um. As três réguas do §11, rodadas no fim da passada com a
 página já reescrita, estão em `passo1a_ruler_doc_anchors.log`, `passo1a_ruler_plan_cites.log` e
-`passo1a_ruler_plan_ids.log` — **3 052 ponteiros / 209 rótulos / 3 177 links com 0 casos objetivos**,
-**1 013 citações com número conferidas, 0 fora do arquivo** e as ausências do `verify_plan_ids` são todas
-peças que esta página declara inexistentes. O manifesto da pasta,
+`passo1a_ruler_plan_ids.log` — **3 052 ponteiros / 209 rótulos / 3 178 links com 0 casos objetivos**,
+**1 013 citações com número conferidas, 0 fora do arquivo** e as ausências do `verify_plan_ids` eram, na
+árvore daquela passada, todas peças que esta página declara inexistentes. **A frase envelheceu com o
+Passo 1 (c)** e está re-lida no §14.7: a régua varre só os `.gd` de `src/` e `tests/`, e `native/` é a
+quarta raiz de código do repositório desde aquele passo. O manifesto da pasta,
 [`artifacts.sha256`](../evidence/oraculo-nativo-22/artifacts.sha256), foi refeito com `sha256sum -b`
-nesta passada — **45 entradas, `sha256sum -c` 45/45 OK** — pelo motivo do §12.4.
+naquela passada — **45 entradas, `sha256sum -c` 45/45 OK** — pelo motivo do §12.4, e refeito de novo no
+Passo 1 (c) com os 38 logs novos da subseção: **92 entradas, `sha256sum -c` 92/92 OK**.
 
 ### 12.1 Não existe "o MSVC da máquina": existem três, e o `link` do PATH não é um linker
 
@@ -880,3 +883,322 @@ O que **não** fecha aqui: `native/` continua sem existir, e o verde das cinco l
 em 283/0 na revisão dela; o pouso desta perna se dá com o runner em **288/0**, e enquanto a (c) não
 existe o que se publica na branch é o vermelho com número — um gate verde por decreto seria exatamente o
 que o mandato 4 veda.
+
+---
+
+## 14. O Passo 1 (c): a engine abre a biblioteca e devolve um objeto vivo
+
+Cinco arquivos entram no git; o sexto, não. `native/af_mind/af_mind.gdextension` (14 linhas, 502 B),
+`native/af_mind/build.bat` (167 linhas, 7 954 B, CRLF), `native/af_mind/src/register_types.cpp` (183
+linhas, 8 734 B, LF) e `native/af_mind/include/gdextension_interface.h` (139 992 B, **LF**,
+`4c0aac8da3df…`) — a forma do checkout conferida por `sha256sum -b` antes do commit, porque é o valor que
+o §12.2 compara e um `git config core.autocrlf` torto o mudaria em silêncio. Entra também o sidecar
+`native/af_mind/af_mind.gdextension.uid` (20 B, uma linha: `uid://bnq2qg4snmnep`), que a engine escreve no
+primeiro `--import` e que **fica** no commit pelo mesmo motivo que o furo #25 do status chama de sujeira
+quando falta: sem ele, todo clone limpo mostra uma linha `??` depois do import, e o `uid` deixaria de ser
+estável entre máquinas. Nada no repositório referencia a extensão por `uid://` — o descritor e as cinco
+linhas do gate falam por `res://` — então o que se preserva aqui é a limpeza do clone, não uma ligação. O
+que fica **fora** é `bin/`: a linha 8
+do `.gitignore` já cobria esse caminho antes de a pasta existir, e o `git check-ignore -v` desta árvore,
+rodado arquivo por arquivo, devolve `.gitignore:8:bin/` para `native/af_mind/bin/af_mind.dll`, para o
+`register_types.obj` e para o `.gdignore` do item 2 do §14.4, e **nada** para os outros cinco. O §6.1 escrevia que "um clone limpo sem ele [o cabeçalho] não compila
+nada"; o complemento medido agora é que o clone **com** o cabeçalho compila — é o que a conferência do
+pin faz, e é o único caminho pelo qual este commit é reproduzível em outra máquina.
+
+### 14.1 A régua do build, em stdout
+
+`cmd //c native\af_mind\build.bat` devolve **exit 0**, **stderr 0 bytes** e oito linhas de régua, em
+ordem, em [`passo1c_build_final.log`](../evidence/oraculo-nativo-22/passo1c_build_final.log) — abaixo só
+as oito, porque o arquivo tem também as duas linhas de conversa do próprio `cl` e `link`
+(`register_types.cpp` e `Creating library ...af_mind.lib and object ...af_mind.exp`), que o `.bat` não
+filtra:
+
+```
+[regua] header_sha256=4c0aac8da3dfedc14d0e049205aeaaa11f32802bee56d4a275a466ac231fa916 forma=aceita
+[regua] vcvars=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat toolset=14.44.35207
+[regua] VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\
+[regua] cl_banner=Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+[regua] link_primeiro=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe
+[regua] dll_bytes=105472
+[regua] export=          1    0 00001120 af_mind_entry
+[ok] build.bat: C:\Aetherfall\native\af_mind\bin\af_mind.dll
+```
+
+As três primeiras são o §12.1 e o §12.2 executados, não prometidos: as duas formas do cabeçalho
+(`SHA_LF` e `SHA_CRLF`) estão escritas no `.bat` e o `goto :hash_recusado` pega qualquer outro valor; o
+toolset é nomeado e a cauda de `VCToolsInstallDir` é comparada caractere a caractere, então o 2019
+(14.29.30133) desta máquina é recusado com `[falha]` impressa em vez de compilar torto. O `export=` é o
+`dumpbin /exports` confirmando o símbolo que o descritor nomeia — com ele, a régua 5 do `.bat` decide o
+link sem depender de rodar a engine. O log arquivado é o da **última** compilação desta árvore, rodada já
+com os cinco arquivos na forma em que entram no commit, e o stderr accompanyante está vazio
+([`passo1c_build_final.err`](../evidence/oraculo-nativo-22/passo1c_build_final.err)).
+
+### 14.2 O que matava o `instantiate`, decidido por A/B e não pelo comentário do header
+
+Quatro premissas passavam e a quinta derrubava o processo com **exit 127** e **stderr 0 bytes**: o
+`ClassDB.instantiate("AfMindOracle")` morria dentro do `create_instance_func`. Havia duas candidatas na
+mesa (reentrância no próprio construtor, e storage de `StringName` mal dimensionado), e a segunda não
+sobrevive à primeira corrida: a sonda imprimia `p3_aberta=true nivel=0` e `p4_class_exists=true` — ou
+seja, a classe estava registrada com o nome certo, lido pelo próprio `StringName` que se passou ao
+registro. Sobrou a primeira, e ela foi decidida por A/B na mesma sonda (`.tools/probe_af_mind.gd`, seis
+linhas de print, cena nenhuma, `timeout 90` por fora — o par do furo #33).
+
+**Braço 1 — construir pelo pai** ([`passo1c_arm1_probe.log`](../evidence/oraculo-nativo-22/passo1c_arm1_probe.log),
+stderr **0 bytes** — o arquivo vazio é a régua): `construct_object3(parent_name_sn())`, e a quinta
+linha sai
+
+```
+p5_get_class=AfMindOracle refcounted=true iid=-9223372010229332533
+p5_metodos=66
+```
+
+**Braço 2 — construir pelo nosso nome, com um contador de profundidade instalado só para a
+atribuição** ([`passo1c_arm2_probe.err`](../evidence/oraculo-nativo-22/passo1c_arm2_probe.err),
+[`passo1c_arm2_probe.log`](../evidence/oraculo-nativo-22/passo1c_arm2_probe.log)): o stdout **para em
+`p4_class_exists=true`** — nada depois da linha 24 da sonda roda — e o stderr, 266 bytes, tem uma única
+ocorrência de
+
+```
+ERROR: af_mind: create_instance entrou de novo em si mesmo (profundidade 9)
+   at: create_instance (C:\Aetherfall\native\af_mind\src\register_types.cpp:77)
+       [0] _initialize (res://.tools/probe_af_mind.gd:24)
+```
+
+Nove profundidades, não uma: cada `construct_object3("AfMindOracle")` reinvoca o
+`create_instance_func` registrado para "AfMindOracle", e o processo estoura antes de devolver objeto. O
+`classdb_construct_object3` do header admite construir "an already-registered extension class" e **não
+diz** que esse caminho reentrancia; a referência em `.tools/godot-cpp-godot-4.4.1-stable` faz o que o
+braço 1 faz (`src/classes/wrapped.cpp:77` constrói pelo nome do pai e depois amarra a instância com
+`object_set_instance`). A palavra aqui é a corrida, não o comentário do header — e o contador de
+profundidade foi **removido** depois: o arquivo restaurado, re-compilado, e o binário de fecho saiu com
+os mesmos `dll_bytes=105472` e o mesmo offset `00001120` do braço 1, o que diz que a instrumentação
+temporária não ficou no que entra no git.
+
+O que o Passo 1 (c) escreve, então: o alvo do `construct_object3` é o **pai built-in**, a instância é
+amarrada com `object_set_instance(obj, class_name_sn(), inst)`, e `AfMindOracleInstance` tem um marker
+`0x41464D31` ("AFM1") em vez de corpo — o `GDExtensionClassCreationInfo6` é zero-initialized e **não**
+declara método nenhum, então os 66 que a sonda conta são os herdados de `RefCounted`, e a linha de
+`get_class()` batendo o nome é o que prova que o objeto é da nossa classe.
+
+### 14.3 As cinco premissas verdes, e o vermelho intermitente que não é daqui
+
+A checagem da perna 22 (b) sai verde na árvore de fecho, com a cache de import **nova** —
+[`passo1c_runner_pos_build.log`](../evidence/oraculo-nativo-22/passo1c_runner_pos_build.log), linhas
+535-539, exit 0 e stderr **0 bytes**:
+
+```
+OK extensao_carrega_classe: o descritor existe no disco | caminho=res://native/af_mind/af_mind.gdextension existe=true
+OK extensao_carrega_classe: a engine lista a extensao como carregada | load_extension=-1 ja_vinha_do_boot=true agora=true total_registradas=1 lista=["res://native/af_mind/af_mind.gdextension"]
+OK extensao_carrega_classe: a biblioteca abriu dentro deste processo | objeto_valido=true is_library_open=true nivel_minimo_de_init=0
+OK extensao_carrega_classe: a classe esta registrada na ClassDB | class_exists(AfMindOracle)=true
+OK extensao_carrega_classe: a ClassDB devolve um objeto vivo daquela classe | instantiate_valido=true get_class=AfMindOracle
+```
+
+e o rodapé `288 checagens 0 falhas 33,813 s`, com `OK censo de testes completos | 66/66` e
+`OK censo de checagens | 288/288` acima. Note o `load_extension=-1`: **a checagem não chamou o load**,
+porque `ja_vinha_do_boot=true` — a engine já tinha aberto a extensão sozinha (o §14.4 diz o que põe ela
+na lista). O `-1` é o sentinela de "não chamado", medido na (b) exatamente para não virar premissa
+muda. As outras três corridas, na mesma árvore: suíte **255 checagens / 0 falhas / 49,3 s** com zero
+`SCRIPT ERROR` ([`passo1c_suite_pos_build.log`](../evidence/oraculo-nativo-22/passo1c_suite_pos_build.log)),
+RNG **27 / 0 / 2,703 s** e journal **128 / 0 / 7 de 7 / 5,809 s**
+([`passo1c_rng.log`](../evidence/oraculo-nativo-22/passo1c_rng.log),
+[`passo1c_journal.log`](../evidence/oraculo-nativo-22/passo1c_journal.log)).
+
+A árvore do commit foi re-confirmada depois do último `build.bat`, com o `.dll` recompilado do que entra
+no git: as mesmas cinco linhas, exit 0, stderr **0 bytes** e rodapé **`288 checagens 0 falhas 34,852 s`**
+([`passo1c_confirm_runner.log`](../evidence/oraculo-nativo-22/passo1c_confirm_runner.log),
+[`passo1c_confirm_runner.err`](../evidence/oraculo-nativo-22/passo1c_confirm_runner.err)), e suíte **255 /
+0 / 48,8 s** com zero `SCRIPT ERROR`
+([`passo1c_confirm_suite.log`](../evidence/oraculo-nativo-22/passo1c_confirm_suite.log)). O stderr dessa
+suíte, porém, saiu com **249 bytes**, e a régua manda ler: são as duas linhas do **par de vazamento do
+quit** que o status registra desde a perna 11 — `4 ObjectDB instances were leaked at exit` e `2 resources
+still in use at exit`, nomeados por `--verbose` como `AudioStreamPlaybackOggVorbis` / `AudioStreamOggVorbis`
+de `assets/audio/amb/amb_birds.ogg`. Ele é intermitente por medição da própria época (a segunda corrida do
+mesmo clone, mesmo comando, deu **0** bytes) e nenhuma das duas linhas menciona `af_mind`, `AfMindOracle`
+ou a extensão: esta perna não o atribui e não o conserta — quem o deve é o débito já escrito na seção de
+débitos, e a corrida de fecho acima é testemunha nova de que ele sobrevive ao Passo 1 (c).
+
+A primeira corrida de fecho, porém, deu **`288 checagens 1 falhas`**
+([`passo1c_runner.log`](../evidence/oraculo-nativo-22/passo1c_runner.log)) e a falha não era de
+extensão nenhuma: `FALHA nenhum estouro de subtree no budget | trips_solo=0 trips_matilha=1`, com o
+pico de BT da matilha em 418 µs contra o `SubtreeGuard` de 400 µs. A atribuição fecha nos dois sentidos
+que a casa exige:
+
+- **o mesmo vermelho existia antes desta perna, inclusive em braço de controle sem perna nenhuma**: a
+  linha `FALHA nenhum estouro de subtree no budget` está em
+  `docs/evidence/alcateia-rutinas/contagio-runner-2.log:153` (`trips_solo=0 trips_matilha=1`), em
+  `alcateia-rutinas/amortecimento-runner-2.log:157` (`trips_solo=1 trips_matilha=0`) e em
+  `alcateia-rutinas/ataque-runner-1.log:319` com `trips_matilha=10` — as três da perna 10, quando não
+  havia `native/` nem GDExtension no repositório. E o mais direto:
+  `acasalamento-censo-11/control_main_runner03.log:275` e `control_main_runner10.log:276`, que são o
+  **braço de controle** da perna 11 — o runner rodado na `main` sem o código daquela perna — e os dois
+  deram `trips_solo=1`. A leitura registrada na época é a do **furo #20** do status: o `SubtreeGuard`
+  cronometra parede de relógio e GDScript não tem relógio de CPU, então `trips == 0` é portão de
+  velocidade de máquina, não de código. Amostra desta árvore, com as oito corridas do runner
+  archivadas: **8 com a extensão no disco (1 vermelha, 7 verdes)** —
+  `passo1c_runner.log`, `passo1c_runner_run2.log`, `passo1c_amostra_com_{1,2,3}.log`,
+  `passo1c_runner_final.log`, `passo1c_confirm_runner.log` e a de fecho acima — e **2 com o descritor
+  fora da árvore, as duas verdes**.
+- **e a ablação do descritor não move o contador**: com `native/af_mind/af_mind.gdextension` fora da
+  árvore, o rodapé volta a **`288 checagens 5 falhas`** com as cinco linhas `FALHA extensao_carrega_classe`
+  literais — o vermelho da (b) reproduzido sob demanda, em
+  [`passo1c_semtensa_run1.log`](../evidence/oraculo-nativo-22/passo1c_semtensa_run1.log) e
+  `..._run2.log` (33,637 s e 33,739 s). As duas saem com `trips_matilha=0`, e isto **não** é atribuição:
+  dois braços não distinguem 1-em-8 de 0-em-2. O que fecha a atribuição é o item de cima — a assinatura
+  existe seis pernas antes desta e o `SubtreeGuard` mede parede de relógio — e o que ela diz é que o
+  vermelho é o #20, não a extensão.
+
+Um ponto que a rodada corrige em prosa antiga desta página, e ele é de consequência, não de gosto: o
+`SubtreeGuard` **retorna FAILURE** quando estoura ([src/ai/behavior/bt_tree.gd:134-136](../../src/ai/behavior/bt_tree.gd#L134-L136)),
+então um `trips` não é só medição — é a árvore daquela passada perdendo o nó. A colheita que falta para
+fechar o #20 por dentro é o `tick`/folha onde o estouro aconteceu, que hoje não é impresso; e nenhuma
+linha disso é escrita por esta perna.
+
+### 14.4 Quem põe o descritor na lista do boot, e o `.obj` que o importador comia como malha
+
+Duas coisas que nenhuma corrida da Fase 0 tinha olhado, e as duas mudam o que se escreve no README.
+
+1. **O `--import` é quem registra a extensão, não a presença do arquivo.** Com a cache de import
+   anterior ao `native/`, a sonda de boot em **cena real** (não `--script`) devolvia
+   `b2_ja_no_boot=false`, `b2_lista=[]`, `b3_class_exists=false`
+   ([`passo1c_boot_cache_velho.log`](../evidence/oraculo-nativo-22/passo1c_boot_cache_velho.log),
+   stderr 0 bytes). Feito o `godot --headless --path . --import`, o `.godot/extension_list.cfg` passa a
+   ter a linha `res://native/af_mind/af_mind.gdextension` e a mesma sonda devolve
+   `b2_ja_no_boot=true`, `b4_total_registradas=1`, `b3_class_exists=true`
+   ([`passo1c_boot_pos_import.log`](../evidence/oraculo-nativo-22/passo1c_boot_pos_import.log),
+   exit 0, stderr 0 bytes). O passo já era obrigatório no protocolo de clone do README, então nada muda
+   para quem segue a ordem — mas a frase "a engine abre a extensão" agora tem o antecedente certo. A
+   testemunha inversa está no mesmo lote arquivado: a corrida dada com a cache antiga imprimiu
+   `load_extension=0 ja_vinha_do_boot=false` na segunda linha
+   ([`passo1c_runner.log`:536](../evidence/oraculo-nativo-22/passo1c_runner.log)) e as cinco premissas
+   continuaram verdes, porque a checagem chamou o load ela mesma. O `-1` existe exatamente para as duas
+   situações aparecerem escritas no stdout em vez de virar uma premissa muda.
+2. **Furo #37, descoberto e fechado nesta perna:** o importador do editor varre `res://` e reclamou o
+   `native/af_mind/bin/register_types.obj` do linker como **Wavefront**. Um `--import` desta árvore
+   devolvia **464 bytes** de stderr com três `ERROR` —
+   `Couldn't read OBJ file 'res://native/af_mind/bin/register_types.obj'`
+   (`resource_importer_obj.cpp:236`), `Condition "meshes.size() != 1" is true. Returning: ERR_BUG`
+   (`resource_importer_obj.cpp:691`) e `Error importing ...` (`editor_file_system.cpp:3093`), e deixava
+   um `register_types.obj.import` ao lado do arquivo. A correção é o mecanismo da própria engine, escrito
+   pelo `build.bat`: `bin/.gdignore` criado antes de compilar, com `[falha]` impressa se o arquivo não
+   puder ser escrito — é o `.bat` que o cria porque `bin/` é gitignored, e num clone sem build não há
+   `bin` nenhum. O `--import` seguinte devolve **exit 0 e stderr 0 bytes**
+   ([`passo1c_import_com_gdignore.err`](../evidence/oraculo-nativo-22/passo1c_import_com_gdignore.err))
+   mantendo a linha da extensão no `extension_list.cfg`, e a sonda de boot continua
+   `ja_no_boot=true`. O que **não** foi medido, e vai escrito para não virar promessa: o descritor só
+   tem as chaves `windows.*` (motivo: o §12.1 mediu **um** compilador, o MSVC do toolset 14.44.35207),
+   e ninguém abriu esta extensão em Linux ou macOS — o comportamento lá é `[OPEN]`, e a perna que o
+   medir é a que adiciona a chave, não esta.
+
+### 14.5 O estado de quem clona e não compila: três `ERROR` por boot (furo #38, aberto)
+
+Com o descritor no disco, a linha no `extension_list.cfg` e o `.dll` **ausente** — que é exatamente o
+estado de todo clone deste commit cujo dono não rodou `build.bat` — a engine reclama em cada boot, na
+cena real: exit 0, o jogo continua abrindo, e o stderr sai com **447 bytes**
+([`passo1c_boot_sem_dll.err`](../evidence/oraculo-nativo-22/passo1c_boot_sem_dll.err)):
+
+```
+ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+   at: open_dynamic_library (platform/windows/os_windows.cpp:483)
+ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+   at: open_library (core/extension/gdextension.cpp:810)
+ERROR: Error loading extension: 'res://native/af_mind/af_mind.gdextension'.
+   at: load_extensions (core/extension/gdextension_manager.cpp:333)
+```
+
+Nada em `src/` consome a extensão, então o jogo está intacto nesse estado — mas reclamar três linhas por
+boot de um repositório público é ruído que alguém vai ler como defeito do jogo, e a decisão de calar
+isso **não** é desta passada. As duas mãos possíveis estão postas, com o custo de cada uma: **(a)** o
+`.dll` de 105 472 B entrar no git (produto nosso, MIT, compilável de novo pelo `build.bat`; custo: binário
+por revisão num repositório que hoje guarda só fontes e packs com licença por arquivo); **(b)** `Rodar.bat`
+e o README passarem a chamar `native\af_mind\build.bat` como passo de onboarding, com o pré-gate de que a
+máquina tem o toolset do §12.1 (custo: quem não tem MSVC 2022 vê a recusa impressa em vez de abrir o
+jogo). Dono: o dono do repositório escolhe a mão, e enquanto ele não escolhe o furo fica aberto com este
+número — que é medido, não previsto.
+
+### 14.6 O que este commit não fecha
+
+- **Nada de IA na extensão.** `AfMindOracle` tem construtor, destruidor e um marker; nenhum método,
+  nenhum `load_pack`, nenhum enqueue. O §1.3 — o gate de **símbolos**, com as import libs geradas do
+  export-set medido e `/DELAYLOAD` — é o **Passo 2**, e é nele que a premissa "o `.dll` resolve as DLLs
+  do runtime no diretório do processo" passa a ser checada (§5.1).
+- **O transporte continua HTTP.** `src/ai/mind_oracle.gd` não sabe que a extensão existe, e
+  `grep -rn HTTPRequest src` continua devolvendo o que devolvia; isso é o Passo 4, com a checagem
+  `transporte_http_zerado` dele.
+- **Nenhuma linha de `src/` foi tocada por esta perna**, e a régua é `git diff --name-only main...HEAD
+  -- src` devolvendo **vazio**. Disso segue, sem re-corrida: `Channel.COUNT`, `FORMAT_VERSION` e
+  `GEN_VERSION` continuam intocados e os hashes de journal publicados nas rodadas anteriores valem para
+  a árvore resultante. O que se move é o censo do runner, 283 → **288**, pago na (b).
+- **Os três furos novos (#37 fechado, #38 e #39 abertos)** e a colheita que falta ao #20 (a folha onde o
+  `SubtreeGuard` estourou) vão para o status com número, não como adjetivo.
+- **Nenhum gate de fase** (mandato 4). A Fase 1 termina no §5.1 + §5.2 + §5.3 + §5.4; aqui fechou a
+  perna (c) do Passo 1.
+
+### 14.7 A quarta raiz de código é a primeira que as réguas não vêem (furo #39, aberto)
+
+O §12 fechava a passada com "as ausências do `verify_plan_ids` são todas peças que esta página declara
+inexistentes". A frase era verdadeira contra o corpus daquela passada e deixou de ser contra esta, e o
+motivo não é prosa velha: é a régua. O `verify_plan_ids.py` constrói o corpus numa linha só —
+`src/**/*.gd`, `tests/**/*.gd`, `tests/*.gd` — e este commit acrescenta ao repositório **3 543 linhas /
+157 202 bytes em cinco arquivos de quatro extensões que nenhum dos três globos alcança** (`.cpp`, `.h`,
+`.bat`, `.gdextension`; a quinta é o sidecar `.uid`). O rótulo impresso nunca mentiu — "AUSENTES **em src/
+e tests/**" é exatamente o escopo daquela linha — mas a leitura que a casa faz dele, essa sim, mudou de
+sentido sem aviso. O arquivo mora em `.tools/`, que a linha 5 do `.gitignore` cobre, e é por isso que ele
+aparece aqui citado por nome, sem ponteiro: um link para um caminho que o clone não tem seria um caso
+aberto pela própria página.
+
+Medido na saída arquivada desta passada, rodada já com esta subseção no corpo
+([`passo1c_ruler_plan_ids.log`](../evidence/oraculo-nativo-22/passo1c_ruler_plan_ids.log)): a página 22
+sai com **195** identificadores em backticks, **87** deles AUSENTES, e **24** desses 87 existem agora
+dentro de `native/` — a mesma regra de substring da régua, aplicada à mão sobre os cinco arquivos, com os
+`bin/` de fora:
+
+| identificador | onde existe em `native/` |
+| --- | --- |
+| `GDExtensionClassCreationInfo6` | `register_types.cpp` 2, `gdextension_interface.h` 8 |
+| `create_instance_func` | `.cpp` 2, header 9 |
+| `object_set_instance` | `.cpp` 2, header 5 |
+| `classdb_construct_object3` | `.cpp` 3, header 3 |
+| `construct_object3` | `.cpp` 7, header 3 |
+| `AfMindOracleInstance` | `.cpp` 4 |
+| `GDExtensionInterfaceClassdbRegisterExtensionClass6` | `.cpp` 2, header 1 |
+| `RegisterExtensionClass6` | `.cpp` 2, header 1 |
+| `GDExtensionInterfaceClassdbRegisterExtensionClassSignal` | header 1 |
+| `GDExtensionClassCreateInstance2` / `…Instance3` | header 2 / header 4 |
+| `GDExtensionClassCreationInfo4` | header 4 |
+| `GDExtensionInitializationFunction` | header 2 |
+| `GDEXTENSION_VARIANT_TYPE_` | header 48 |
+| `call_func` | header 11 |
+| `SHA_LF` / `SHA_CRLF` / `dumpbin` | `build.bat` 2 / 2 / 2 |
+| `VCToolsInstallDir` | `build.bat` 8 |
+| `HEADER_SHA` | `build.bat` 8 |
+
+Dos 24, **20** são nomes que este commit pôs no disco: **14** símbolos de ABI pelos quais o `.dll` se
+registra, **1** nome nosso (`AfMindOracleInstance`) e **5** réguas do `.bat`. Os outros **4** coincidem por
+substring com palavras que existem no cabeçalho e no `.bat` e não dizem nada: `HEAD` está dentro de
+`HEADER_SHA`, `Signal` dentro de
+`GDExtensionInterfaceClassdbRegisterExtensionClassSignal`, e `interface` e `types` dentro de identificadores
+compostos. Dois dos 20 entraram na lista **por causa desta subseção**, que precisou nomear a variável e o
+símbolo para explicar a coincidência: a régua ficou dois identificadores mais cega no exato passo em que o
+defeito foi escrito. É por isso que a tabela acima traz a origem por nome, não um total: ler "24 ausências
+falsas" sem essa separação seria exatamente o tipo de número que o mandato 1 proíbe.
+
+A contraprova, para a frase não virar desculpa: **63** dos 87 continuam fora de todo código do
+repositório, somadas as três raízes, e são os nomes que esta página promete para as pontas seguintes —
+`llama_backend_init`, `llama_model_load_from_file`, `llama_chat_apply_template`,
+`llama_params_get_fit_params`, `ggml_backend_buffer_type_get_base_buffer`, `load_pack`, `AfMindRuntime`,
+`transporte_http_zerado`, `_copyright` (esta última é chave do JSON do gerador, que o §6.1 mediu como
+**descartada** — ela nunca vai existir em código nenhum deste repo). A régua continua útil; o que este
+registro faz é escrever o limite dela antes que alguém leia `AUSENTES` como "falta no jogo".
+
+Por que esta passada **não** conserta a régua, com as duas razões medidas: **(1)** o arquivo está fora do
+git — `git check-ignore -v .tools/verify_plan_ids.py` devolve `.gitignore:5:.tools/` com exit 0, então
+nenhum commit desta branch pode levar a correção junto; **(2)** alargar o corpus muda o veredito de uma
+régua cujo stdout já está publicado: as rodadas da 12 e da 16 citam **84 identificadores / 11 ausentes** e
+**88 / 22**, os dois medidos com o corpus de três globos, e nenhuma das duas foi re-rodada aqui —
+re-derive o instrumento depois de publicar o número dele é fazer as duas gerações de rodadas falarem de
+árvores diferentes (a classe do furo #36). A escolha, quando ela for feita,
+é do dono do repositório, e o lugar natural é a passada que transformar `.tools/` em instrumento
+versionado. Dono do furo #39: o dono do repositório. Até lá a leitura correta desta passada é a que está
+na tabela: `native/` conferido à mão, nome por nome, e o `AUSENTES` da régua lido como "fora de `src/` e
+`tests/`" — que é o que ele sempre disse.

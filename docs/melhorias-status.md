@@ -6514,3 +6514,158 @@ Nenhum gate de fase, e nenhum `.dll`: `native/af_mind/` continua inexistente, `H
 **283 / 0** na revisão dela; o pouso desta perna se dá com o runner em **288 / 0**, e a regra de ouro do
 prompt ("a mente propõe, as regras dispõem") continua sem testemunha de runtime porque ainda não existe
 prompt nenhum para desobedecer — ela é cobrada no Passo 3. A fila continua **22 → 17 → 18 → 20 → 13**.
+
+## Rodada 2026-11-24 (4) — Passo 1 (c) do dossiê 22: `native/af_mind/` existe, a engine abre a biblioteca e devolve um objeto vivo (branch `feat/oraculo-nativo-gdextension-22`, ponta anterior `6cfa469`)
+
+**O que entrou, e onde cada arquivo está.** Cinco arquivos novos em `native/af_mind/` e um documento
+mexido: [`af_mind.gdextension`](../native/af_mind/af_mind.gdextension) (14 linhas, 502 B),
+[`build.bat`](../native/af_mind/build.bat) (167 linhas, 7 954 B, CRLF),
+[`src/register_types.cpp`](../native/af_mind/src/register_types.cpp) (183 linhas, 8 734 B, LF),
+[`include/gdextension_interface.h`](../native/af_mind/include/gdextension_interface.h) (139 992 B, LF,
+`4c0aac8da3df…`) e o sidecar [`af_mind.gdextension.uid`](../native/af_mind/af_mind.gdextension.uid) (20 B),
+que a engine escreve no primeiro `--import` e que entra no git para o clone limpo não aparecer sujo — a
+mesma lição do furo **#25**, lida ao contrário. O `bin/` fica fora pela linha 8 do `.gitignore`, conferida
+arquivo por arquivo com `git check-ignore -v`. A linha de licença do cabeçalho vendorizado está em
+[`THIRD_PARTY_LICENSES.md`](../THIRD_PARTY_LICENSES.md) **no mesmo commit**, que é o que o §6.1 da página 22
+exige: o gerador de interface valida a chave `_copyright` do JSON e nunca a escreve, então o arquivo
+chegaria sem atribuição nenhum sem ela.
+
+**A régua do build, executada.** `cmd //c native\af_mind\build.bat` devolve exit 0, stderr 0 bytes e oito
+linhas de `[regua]`, com `header_sha256=4c0aac8da3df… forma=aceita`, `toolset=14.44.35207`,
+`cl_banner=… 19.44.35228 for x64`, `dll_bytes=105472` e `export= 1 00001120 af_mind_entry`
+([`passo1c_build_final.log`](evidence/oraculo-nativo-22/passo1c_build_final.log)). O §12.1 e o §12.2 da
+página deixaram de ser promessa: as duas formas do cabeçalho estão escritas no `.bat`, o toolset é comparado
+caractere a caractere e o 2019 desta máquina é recusado com `[falha]` impressa.
+
+**O `instantiate` foi decidido por A/B, não pelo header.** Quatro premissas passavam e a quinta derrubava o
+processo com **exit 127** e **stderr 0 bytes**. Das duas candidatas na mesa, a sonda eliminou a primeira
+corrida: `p3_aberta=true` e `p4_class_exists=true` diziam que o nome estava certo no registro. O par que
+fecha a atribuição está arquivado: construir pelo **pai built-in** devolve
+`p5_get_class=AfMindOracle refcounted=true iid=-9223372010229332533` e `p5_metodos=66` com stderr vazio
+([`passo1c_arm1_probe.log`](evidence/oraculo-nativo-22/passo1c_arm1_probe.log)), e construir pelo **nosso
+nome**, com um contador de profundidade instalado só para a medição, para o stdout em
+`p4_class_exists=true` e cospe no stderr
+`ERROR: af_mind: create_instance entrou de novo em si mesmo (profundidade 9)`
+([`passo1c_arm2_probe.err`](evidence/oraculo-nativo-22/passo1c_arm2_probe.err),
+[`passo1c_arm2_probe.log`](evidence/oraculo-nativo-22/passo1c_arm2_probe.log)). O contador foi **removido**
+depois: arquivo restaurado, re-compilado, e os mesmos 105 472 B e o mesmo offset `00001120` do braço 1. Os
+66 métodos são os herdados de `RefCounted` — o `GDExtensionClassCreationInfo6` é zero-initialized e não
+declara método nenhum, que é o recorte do Passo 1.
+
+**O gate verde, com as cinco linhas literais.** Runner de reações **`288 checagens 0 falhas 33,813 s`**,
+exit 0, stderr 0 bytes, com as cinco `OK extensao_carrega_classe` em ordem
+([`passo1c_runner_pos_build.log`](evidence/oraculo-nativo-22/passo1c_runner_pos_build.log), linhas 535-539)
+e os dois censo acima delas (`66/66`, `288/288`). A árvore do commit foi re-confirmada depois da última
+compilação: as mesmas cinco linhas, **`288 0 34,852 s`**, exit 0 e stderr 0 bytes
+([`passo1c_confirm_runner.log`](evidence/oraculo-nativo-22/passo1c_confirm_runner.log)). As outras três
+corridas na mesma árvore: suíte **255 checagens / 0 falhas / 49,3 s**
+([`passo1c_suite_pos_build.log`](evidence/oraculo-nativo-22/passo1c_suite_pos_build.log)), RNG
+**27 / 0 / 2,703 s** e journal **128 / 0 / 7 de 7 / 5,809 s**. A suíte de confirmação deu **255 / 0 / 48,8 s**
+com zero `SCRIPT ERROR` e stderr de **249 bytes** — e os 249 bytes são as duas linhas do par de vazamento do
+quit (`4 ObjectDB instances were leaked at exit`, `2 resources still in use at exit`), nomeadas por
+`--verbose` na seção da perna 11 como `AudioStreamPlaybackOggVorbis` / `AudioStreamOggVorbis` de
+`assets/audio/amb/amb_birds.ogg`, intermitentes por medição da época. Nenhuma das duas menciona `af_mind`;
+o débito continua o mesmo e esta corrida é testemunha nova de que ele sobrevive à extensão.
+
+**O vermelho intermitente voltou uma vez nesta árvore, e a atribuição não é daqui.** A primeira corrida de
+fecho deu `FALHA nenhum estouro de subtree no budget | trips_solo=0 trips_matilha=1` com o pico de BT da
+matilha em 418 µs contra o `SubtreeGuard` de 400 µs
+([`passo1c_runner.log`](evidence/oraculo-nativo-22/passo1c_runner.log), linha 542). Amostra arquivada desta
+árvore: **8 corridas com a extensão no disco — 1 vermelha, 7 verdes — e 2 com o descritor fora da árvore, as
+duas verdes**. A ablação reproduz o vermelho da (b) sob demanda (288 / **5** falhas, as cinco
+`FALHA extensao_carrega_classe` literais) e não move o contador de `trips`; dois braços não distinguem
+1-em-8 de 0-em-2, então o que fecha a atribuição é a assinatura existir **antes** desta perna, em cinco
+corridas arquivadas das pernas 10 e 11 —
+`alcateia-rutinas/contagio-runner-2.log:153`, `amortecimento-runner-2.log:157`,
+`ataque-runner-1.log:319` e, no **braço de controle** da perna 11, `acasalamento-censo-11/control_main_runner03.log:275`
+e `..._runner10.log:276` — e o **furo #20**: o guard cronometra parede de relógio. Um ponto que esta passada
+corrige em prosa antiga da página 22: o guard **retorna FAILURE** ao estoura
+([src/ai/behavior/bt_tree.gd:134-136](../src/ai/behavior/bt_tree.gd#L134-L136)), então `trips` não é só
+medição — é a árvore daquela passada perdendo o nó. A colheita que falta para fechar o #20 por dentro (qual
+folha, em qual tick) continua em aberto e nenhuma linha dela é escrita aqui.
+
+### Furo #37 — o importador do editor comia o `.obj` do linker como malha Wavefront
+
+Descoberto e **fechado** nesta perna. Um `--import` desta árvore devolvia **464 bytes** de stderr com três
+`ERROR`: `Couldn't read OBJ file 'res://native/af_mind/bin/register_types.obj'`
+(`resource_importer_obj.cpp:236`), `Condition "meshes.size() != 1" is true. Returning: ERR_BUG`
+(`resource_importer_obj.cpp:691`) e `Error importing ...` (`editor_file_system.cpp:3093`), e deixava um
+`register_types.obj.import` ao lado do arquivo
+([`passo1c_import_sem_gdignore.err`](evidence/oraculo-nativo-22/passo1c_import_sem_gdignore.err)). O
+`build.bat` agora escreve `bin/.gdignore` antes de compilar — o mecanismo da própria engine para tirar a
+pasta da varredura — e imprime `[falha]` se não conseguir criá-lo; o `--import` seguinte devolve **exit 0 e
+stderr 0 bytes** ([`passo1c_import_com_gdignore.err`](evidence/oraculo-nativo-22/passo1c_import_com_gdignore.err)),
+re-confirmado nesta passada ([`passo1c_confirm_import.err`](evidence/oraculo-nativo-22/passo1c_confirm_import.err)).
+A régua que fica: **um artefato de build dentro de `res://` entra no escrutínio do importador do editor**, e
+`bin/` gitignored não é proteção nenhuma — é o `.gdignore` que protege.
+
+### Furo #38 — quem clona e não compila vê três `ERROR` em cada boot (aberto, decisão do dono)
+
+Com o descritor no disco, a linha no `.godot/extension_list.cfg` e o `.dll` **ausente** — o estado de todo
+clone deste commit cujo dono não rodou `build.bat` — a engine reclama em cada boot na cena real: exit 0, o
+jogo abre, e o stderr sai com **447 bytes**
+([`passo1c_boot_sem_dll.err`](evidence/oraculo-nativo-22/passo1c_boot_sem_dll.err)): `!FileAccess::exists`
+em `open_dynamic_library` (`platform/windows/os_windows.cpp:483`), `GDExtension dynamic library not found`
+(`core/extension/gdextension.cpp:810`) e `Error loading extension` (`gdextension_manager.cpp:333`). Nada em
+`src/` consome a extensão, então o jogo está intacto, mas ruído de três linhas por boot num repositório
+público vai ser lido como defeito do jogo. As duas mãos estão postas com o custo de cada uma: **(a)** o
+`.dll` de 105 472 B entrar no git (produto nosso, MIT, recompilável pelo `build.bat`; custo: binário por
+revisão num repositório que hoje só guarda fontes e packs com licença por arquivo); **(b)** `Rodar.bat` e o
+README chamarem `native\af_mind\build.bat` como passo de onboarding, com pré-gate do toolset (§12.1; custo:
+quem não tem MSVC 2022 vê recusa em vez de abrir o jogo). **Dono: o dono do repositório escolhe a mão.**
+Enquanto ele não escolhe, o furo fica aberto com este número medido, e esta perna não decide por ele.
+
+### Furo #39 — a régua de identificadores não vê a quarta raiz de código (aberto, decisão do dono)
+
+`verify_plan_ids.py` monta o corpus com três globos — `src/**/*.gd`, `tests/**/*.gd`, `tests/*.gd` — e
+`native/` não é nenhum deles. Com os cinco arquivos deste commit no disco, a régua rodando na árvore final
+([`passo1c_ruler_plan_ids.log`](evidence/oraculo-nativo-22/passo1c_ruler_plan_ids.log)) diz que a página 22
+tem **195** identificadores em backticks e **87** AUSENTES — e **24** desses 87 existem agora dentro de
+`native/`. Conferidos à mão, nome por nome, com a mesma regra de substring da régua: **20** são reais (14
+símbolos de ABI pelos quais o `.dll` se registra, `AfMindOracleInstance` e as cinco réguas do `.bat`), **4**
+coincidem por substring com palavras maiores (`HEAD` dentro de `HEADER_SHA`, `Signal` dentro de
+`GDExtensionInterfaceClassdbRegisterExtensionClassSignal`, `interface` e `types` dentro de identificadores
+compostos) e **63** continuam fora das três raízes. A tabela com a origem de cada um está no §14.7 da
+página, junto da contraprova: dois dos 20 entraram na lista **por causa do próprio §14.7**, que precisou
+nomear a variável e o símbolo para explicar a coincidência — a régua ficou dois identificadores mais cega no
+passo em que o defeito foi escrito. O rótulo impresso nunca mentiu ("AUSENTES **em src/ e tests/**"), mas a
+leitura que a casa faz dele, sim, e por isso o §12 da página 22 foi reescrito com esta subseção como
+antecedente. Esta passada não conserta: **(1)** `.tools/` é gitignored — `git check-ignore -v
+.tools/verify_plan_ids.py` devolve `.gitignore:5:.tools/` com exit 0, então nenhum commit leva a correção
+junto — e **(2)** alargar o corpus muda o veredito de uma régua já publicada (as rodadas da 12 e da 16
+citam **84 / 11** e **88 / 22**, medidos com três globos), que é a classe do furo #36. **Dono: o dono do
+repositório**, no passo que transformar `.tools/` em instrumento versionado.
+
+### Uma frase que a rodada escreve porque a corrida obrigou
+
+**O `--import` é quem põe a extensão na lista do boot, não a presença do arquivo.** Com a cache anterior ao
+`native/`, a sonda em cena real devolvia `b2_ja_no_boot=false`, `b2_lista=[]`, `b3_class_exists=false`
+([`passo1c_boot_cache_velho.log`](evidence/oraculo-nativo-22/passo1c_boot_cache_velho.log)); feito o
+`--import`, o `.godot/extension_list.cfg` ganha a linha do descritor e a mesma sonda devolve
+`b2_ja_no_boot=true`, `b4_total_registradas=1`, `b3_class_exists=true`
+([`passo1c_boot_pos_import.log`](evidence/oraculo-nativo-22/passo1c_boot_pos_import.log), exit 0, stderr 0
+bytes). O passo já era obrigatório no protocolo de clone do README, então nada muda para quem segue a ordem
+— mas o `load_extension=-1 ja_vinha_do_boot=true` da segunda linha do gate agora tem antecedente certo, e a
+corrida com cache antiga imprimiu `load_extension=0 ja_vinha_do_boot=false` com as cinco premissas verdes:
+o sentinela existe exatamente para as duas situações aparecerem escritas.
+
+### O que esta passada não fecha
+
+Nenhum gate de fase (mandato 4), e nada de IA dentro da extensão: `AfMindOracle` tem construtor, destruidor
+e um marker `0x41464D31` ("AFM1"), nenhum método, nenhum `load_pack`, nenhum enqueue. O §1.3 — gate de
+**símbolos** com as import libs geradas do export-set medido e `/DELAYLOAD` — é o **Passo 2**, e é nele que
+a premissa "o `.dll` resolve as DLLs do runtime no diretório do processo" passa a ser checada (§5.1). O
+transporte continua HTTP: `src/ai/mind_oracle.gd` não sabe que a extensão existe, e a régua
+`git diff --name-only main...HEAD -- src` devolve **vazio** nesta ponta — de que segue, sem re-corrida, que
+`Channel.COUNT`, `FORMAT_VERSION` e `GEN_VERSION` continuam intocados e os hashes de journal publicados nas
+rodadas anteriores valem para a árvore resultante. O descritor só tem chaves `windows.*`, porque o §12.1
+mediu **um** compilador; o comportamento em Linux ou macOS é `[OPEN]` e a perna que o medir é a que adiciona
+a chave. O censo do runner é 283 → **288**, pago na (b). A página 22 cresceu **322 linhas** (882 → 1 204)
+com o §14 inteiro, esta rodada entra no histórico, e o manifesto da pasta de evidência passa de 54 a **92
+entradas** — os 38 logs novos desta passada, `sha256sum -c` conferido no fim. As três réguas, rodadas com a
+página e esta rodada já reescritas, estão em `passo1c_ruler_doc_anchors.log` (**39 arquivos · 3 062
+ponteiros · 209 rótulos · 3 237 links · 0 casos objetivos**), `passo1c_ruler_plan_cites.log` (**1 024
+citações conferidas, 10 arquivos inexistentes, 0 números fora do arquivo**) e `passo1c_ruler_plan_ids.log`
+(**195 identificadores na página 22, 87 AUSENTES**) — e é o **furo #39** o número que esta passada abre e
+não fecha: 24 dos 87 existem hoje dentro de `native/`, que a régua não alcança. A fila continua
+**22 → 17 → 18 → 20 → 13**.

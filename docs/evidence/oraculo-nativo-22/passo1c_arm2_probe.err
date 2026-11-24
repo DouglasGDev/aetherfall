@@ -1,0 +1,4 @@
+ERROR: af_mind: create_instance entrou de novo em si mesmo (profundidade 9)
+   at: create_instance (C:\Aetherfall\native\af_mind\src\register_types.cpp:77)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://.tools/probe_af_mind.gd:24)
