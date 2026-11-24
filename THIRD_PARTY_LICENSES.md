@@ -1,18 +1,22 @@
 # Licenças de terceiros
 
-Pacotes que o Aetherfall usa localmente. Nenhum desses três entra no repositório: `models/`
+Pacotes que o Aetherfall usa. Os três primeiros **não entram** no repositório: `models/`
 e `.tools/` estão no `.gitignore` e são baixados por
 [tools/fetch_models.ps1](tools/fetch_models.ps1), que confere SHA256 e tamanho
 antes de instalar; download parcial nunca vira modelo.
 
-O que **acompanha** o repositório é só o som: 51 arquivos CC0 em `assets/audio/`, com origem,
-licença lida e SHA-256 por arquivo em [`docs/audio-provenance.md`](docs/audio-provenance.md).
+O que **acompanha** o repositório são duas coisas: o som — 51 arquivos CC0 em `assets/audio/`,
+com origem, licença lida e SHA-256 por arquivo em [`docs/audio-provenance.md`](docs/audio-provenance.md)
+— e **um** arquivo de terceiro em código: o cabeçalho de interface do GDExtension vendorado em
+[`native/af_mind/include/gdextension_interface.h`](native/af_mind/include/gdextension_interface.h),
+linha por linha na tabela abaixo.
 
 | Pacote | Origem | Licença | Destino local |
 |---|---|---|---|
 | Qwen3.5-4B (GGUF Q4_K_M, quantização unsloth) | [unsloth/Qwen3.5-4B-GGUF](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF) | Apache-2.0 | `models/qwen3.5-4b-q4_k_m.gguf` |
 | llama.cpp b12499 (build win-vulkan-x64) | [ggml-org/llama.cpp release b12499](https://github.com/ggml-org/llama.cpp/releases/tag/b12499) | MIT | `.tools/llama/runtime/` |
 | Godot Engine 4.7.2-stable | [godotengine.org](https://godotengine.org/download) | MIT | `.tools/` |
+| `gdextension_interface.h` (Godot 4.7.2-stable) | produto do gerador de interface do próprio build do Godot na tag `4.7.2-stable` — medido no dossiê 22 §12.2: não é arquivo baixável do site, é o que o SCons do engine escreve | MIT (Godot Engine) | `native/af_mind/include/`, **dentro do repositório** |
 
 Notas:
 
@@ -25,14 +29,27 @@ Notas:
   backend Vulkan (AMD Radeon 9060 XT e qualquer GPU moderna).
 - **Godot Engine** — engine MIT; o binário portável em `.tools/` é ferramenta
   local de validação (janela/headless) e não acompanha o projeto.
+- **`gdextension_interface.h`** — é o cabeçalho de ABI contra o qual
+  [`native/af_mind/src/register_types.cpp`](native/af_mind/src/register_types.cpp) compila, e o
+  único arquivo de terceiro que **entra** no repositório como código. A procedência é conferida
+  por SHA-256 no próprio build, não por memória: `777a3fe517c1b29eece0646c50ec0da1c617586ea2e9ffbc1965e8fdb9149b2b`
+  na forma gerada (143 170 B, 3 178 linhas CRLF, arquivada em
+  [`docs/evidence/oraculo-nativo-22/gdextension_interface_472.h`](docs/evidence/oraculo-nativo-22/gdextension_interface_472.h))
+  e `4c0aac8da3dfedc14d0e049205aeaaa11f32802bee56d4a275a466ac231fa916` na forma do checkout
+  (139 992 B, LF — é esta que está em `native/af_mind/include/`); o
+  [`native/af_mind/build.bat`](native/af_mind/build.bat) recusa qualquer outro hash. O motivo de a
+  licença morar **aqui** e não no arquivo é medido (dossiê 22 §6.1): o gerador valida a chave
+  `_copyright` do JSON, mas nunca a escreve — o cabeçalho gerado tem **zero** marcadores de
+  licença, então sem esta linha o arquivo vendorizado estaria sem atribuição.
 
 ## De onde veio a arte (e de onde ela não veio)
 
 **Nenhum modelo 3D nem textura de terceiro entra no jogo — a imagem é 100% código.** Conferido
-em 2026-11-18: `git ls-files` não devolve `.glb`, `.gltf` nem `.png` de arte. O único material de
-terceiro no repositório é o som (`.ogg`/`.wav` em `assets/audio/`), e ele é domínio público CC0,
-arquivo por arquivo, com origem e SHA-256 em
-[`docs/audio-provenance.md`](docs/audio-provenance.md):
+em 2026-11-18: `git ls-files` não devolve `.glb`, `.gltf` nem `.png` de arte. O material de
+terceiro versionado no repositório é o som (`.ogg`/`.wav` em `assets/audio/`) e o cabeçalho de ABI
+do GDExtension em `native/af_mind/include/` — um é domínio público CC0, arquivo por arquivo, com
+origem e SHA-256 em [`docs/audio-provenance.md`](docs/audio-provenance.md); o outro é MIT do Godot,
+com SHA-256 na nota acima.
 
 | O que você vê | Como é feito |
 |---|---|
