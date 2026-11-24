@@ -1,0 +1,16 @@
+== Passo 1 (a): regua 2 de 3 - plan cites, 2026-11-24T01:38:00-04:00, base e781e38, branch feat/oraculo-nativo-gdextension-22 ==
+== comando: python .tools/verify_plan_cites.py AGENTS.md README.md docs/melhorias-status.md docs/planos/README.md docs/planos/22-oraculo-nativo-gdextension.md ==
+citacoes com numero de linha conferidas: 1013
+arquivos citados que nao existem: 10
+   FALTA docs/melhorias-status.md -> .tools/_head_agents.md
+   FALTA docs/melhorias-status.md -> .tools/_head_readme.md
+   FALTA docs/melhorias-status.md -> .tools/_head_status.md
+   FALTA docs/melhorias-status.md -> src/ai/reach.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/entity_store.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/tick_clock.gd
+   FALTA docs/melhorias-status.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/README.md -> src/ai/reach.gd
+   FALTA docs/planos/README.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/README.md -> tests/wolf_multiseed_census_test.gd
+numeros de linha fora do arquivo: 0
+  exit=0

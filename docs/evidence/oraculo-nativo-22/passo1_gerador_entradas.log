@@ -1,0 +1,40 @@
+== Passo 1 (a): entradas do gerador, 2026-11-24T01:19:32-04:00, base e781e38, branch feat/oraculo-nativo-gdextension-22 ==
+
+[os dois arquivos, como chegaram]
+  gdextension_interface.json bytes=328021  linhas=9327  sha256=7d8c0a039d9743eb8ebf88681ae0c641d8d3aa5ffca11081745a84da803e09a1
+  make_interface_header.py bytes=12015  linhas=353  sha256=a4ed7de907bd4e692faa76ac4232a8461b44256d961c734bb378d0566236fae2
+
+[o JSON, por dentro]
+  chaves de topo (ordem): ['_copyright', '$schema', 'format_version', 'types', 'interface']
+  format_version = 1
+  api_version presente? False
+  types = 147 entradas, interface = 179 funcoes
+  enum[0] = GDExtensionVariantType com 40 valores (ultimo: GDEXTENSION_VARIANT_TYPE_VARIANT_MAX = 39)
+  _copyright = 27 linhas
+    contem 'Copyright'? True
+    contem 'Permission is hereby granted'? True
+    contem 'WITHOUT WARRANTY'? True
+    contem 'MIT'? True
+    contem 'AUTHORS'? True
+  exit=0
+
+[o gerador: existe CLI?]
+  ocorrencias_de___main___=0
+  ocorrencias_de_argparse=0
+  ocorrencias_de_sys_argv=0
+  27:def run(target, source, env):
+  32:    check_allowed_keys(data, ["_copyright", "$schema", "format_version", "types", "interface"])
+  38:    with methods.generated_wrapper(str(target[0])) as file:
+
+[o shim minimo que o invocou — as duas funcoes que o SCons fornece]
+  bytes=267  linhas=11  sha256=7d0b6de2b6b5496e4c256912a0c94b55e1a6bef9f24f6982259da26adf5c1e36
+
+[o mesmo bloco _copyright, aplicado: quantas linhas de licenca saem no header gerado]
+  linhas do bloco no JSON: 27
+  header gerado contem 'GODOT ENGINE'? False
+  header gerado contem 'Permission is hereby granted'? False
+  header gerado contem 'MIT'? False
+  header gerado contem 'AUTHORS'? False
+  exit=0
+
+[fim]

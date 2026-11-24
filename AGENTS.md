@@ -671,8 +671,8 @@ A razão que punha a 22 atrás da 18 — obrigar a 18 a re-rodar o gate com um `
 do oráculo já mudou (item 5 de "Branches": re-rome o gate). Antes da 20 porque as duas escrevem a mesma
 frase de contrato sobre o oráculo; a 13 continua última: nenhuma mudança de `Channel.COUNT` na fila.
 
-O que a Fase 0 desta perna mediu, e o que isso mudou no plano (§1 e §8 da página): o MSVC **existe**
-(VS 2022 Community, `cl.exe` 19.44.35207) e a leitura anterior — "nenhum VS instalado" — estava errada
+O que a Fase 0 desta perna mediu, e o que isso mudou no plano (§1 e §8 da página): o MSVC **existe** e a
+leitura anterior — "nenhum VS instalado" — estava errada
 porque o `.bat` da sonda fazia `call vcvars64.bat >nul` e media `%ERRORLEVEL%` **depois** do redirect;
 o instrumento imprimiu o código da própria casca. Isso é o **furo #32**, e a régua dele é "um redirect
 entre o `call` e o `echo %ERRORLEVEL%` lê o redirect, não o compilador". Medido também: as DLLs do
@@ -682,8 +682,23 @@ Godot (143 170 B, não baixável como arquivo) e o export-set pinado não conté
 `ggml_backend_buffer_type_get_base_buffer` nem `llama_params_get_fit_params` — os dois nomes com que o
 prompt descrevia a memória fina (`model_oversave`) e o ajuste automático de parâmetros. Consequência
 escrita antes do código: nenhuma linha de `native/` compila contra documentação; o gate de **link** da
-Fase 1 (§1.3, §5.1) é quem decide a escolha de símbolo. Nada disto é código da Fase 1 — a branch desta
-passada é documento puro.
+Fase 1 (§1.3, §5.1) é quem decide a escolha de símbolo.
+
+O **Passo 1 (a)** da mesma perna (branch `feat/oraculo-nativo-gdextension-22`, §12 da página) reescreveu
+três frases dessa medição com número na mesa, e nenhuma delas é cosmética. "VS 2022 Community,
+`cl.exe` 19.44.35207" somava duas grandezas e escolhia uma entre três instalações: `14.44.35207` é o nome
+da **pasta** do toolset, a versão do `cl` é `19.44.35228`, e a máquina tem **três** instalações com as três
+consultas `-latest` do vswhere **divergindo** entre si — é o **furo #34**, e a regra do `build.bat` é nomear
+caminho e toolset, não perguntar qual é o mais novo. Fora da casca do `vcvars64.bat` o `link` que resolve no
+PATH é o `link.exe` do Git (GNU coreutils 8.32, que cria hard link de arquivo): **furo #35**. E a testemunha
+de 4.7.2 que o §1.4 da página usava (`GDExtensionInitializationFunction`, `GDEXTENSION_VARIANT_TYPE_*`) existe
+idêntica no cabeçalho do godot-cpp 4.4.1 — o que discrimina é `GDExtensionClassCreationInfo6`,
+`GDExtensionClassCreateInstance3` e `GDExtensionInterfaceClassdbRegisterExtensionClass6`, e não há
+`api_version` em lugar nenhum. O gerador do cabeçalho não tem CLI (`run(target, source, env)`, emissor do
+SCons): a reprodução foi **executada** com um shim de 11 linhas e o `cmp` saiu com exit 0 contra o arquivo
+arquivado, e o `_copyright` de 27 linhas do JSON **não** chega ao fruto — vendorizar o cabeçalho é
+distribuí-lo sem licença dentro, então a atribuição passa a ser linha nossa em
+`THIRD_PARTY_LICENSES.md`. Nada disto é código da Fase 1 — a branch desta passada é documento puro.
 
 ## Ciclo de trabalho
 

@@ -1,0 +1,97 @@
+== Passo 1 (a): fonte do cabecalho + ABI, 2026-11-24T01:08:52-04:00, base e781e38, branch feat/oraculo-nativo-gdextension-22 ==
+
+[onde esta o gerador do cabecalho]
+  exit=0  (sem saida acima = nem o JSON nem o gerador estao nesta arvore)
+[cabecalhos de interface em qualquer caminho local]
+./.tools/godot-cpp-godot-4.4.1-stable/gdextension/gdextension_interface.h
+./docs/evidence/oraculo-nativo-22/gdextension_interface_472.h
+  exit=0
+
+[o unico cabecalho local: 4.4.1, na arvore do godot-cpp]
+  bytes=129768  linhas=3085
+  sha256=355ff4c6254fdd434ea16d9a8ef0f18e3f95aeb3e3f00d98db10769ece3c7fe5
+  CreationInfomax=GDExtensionClassCreationInfo4
+  CreateInstancimax=GDExtensionClassCreateInstance2
+  ocorrencias_RegisterExtensionClass6=0
+
+[o cabecalho de 4.7.2, fruto do gerador do proprio Godot]
+  bytes_cru=143170
+  sha256_cru=777a3fe517c1b29eece0646c50ec0da1c617586ea2e9ffbc1965e8fdb9149b2b
+  bytes_forma_lf=139992
+  sha256_forma_lf=4c0aac8da3dfedc14d0e049205aeaaa11f32802bee56d4a275a466ac231fa916
+  linhas_totais=3178
+  CR=3178  LF=3178
+  linhas_terminadas_CRLF=3178
+  linhas_sem_CR=0
+  diferenca_bytes=3178 (= linhas x 1 CR)
+  typedefs_de_interface_unicos=181
+  ocorrencias_de_GDExtensionInterface=184
+  macro_de_API_VERSION=0
+  linhas_com_a_palavra_license=0
+
+[.gitattributes: o que o git faz com cada caminho]
+  docs/evidence/oraculo-nativo-22/gdextension_interface_472.h
+    docs/evidence/oraculo-nativo-22/gdextension_interface_472.h: text: unset
+    docs/evidence/oraculo-nativo-22/gdextension_interface_472.h: eol: lf
+  native/af_mind/include/gdextension_interface.h
+    native/af_mind/include/gdextension_interface.h: text: auto
+    native/af_mind/include/gdextension_interface.h: eol: lf
+  native/af_mind/build.bat
+    native/af_mind/build.bat: text: set
+    native/af_mind/build.bat: eol: crlf
+
+[ABI que o Passo 1 assina, linha a linha do cabecalho de 4.7.2]
+  :118 typedef int64_t GDExtensionInt;
+  :119 typedef uint8_t GDExtensionBool;
+  :212 typedef GDExtensionObjectPtr (*GDExtensionClassCreateInstance)(void *p_class_userdata); /* Deprecated in Godot 4.4. Use `GDExtensionClassCreateInstance3` instead. */
+  :216 typedef GDExtensionObjectPtr (*GDExtensionClassCreateInstance2)(void *p_class_userdata, GDExtensionBool p_notify_postinitialize); /* Deprecated in Godot 4.7. Use `GDExtensionClassCreateInstance3` instead. */
+  :220 typedef GDExtensionObjectPtr (*GDExtensionClassCreateInstance3)(void *p_class_userdata, GDExtensionBool p_notify_postinitialize);
+  :221 typedef void (*GDExtensionClassFreeInstance)(void *p_class_userdata, GDExtensionClassInstancePtr p_instance);
+  :222 typedef GDExtensionClassInstancePtr (*GDExtensionClassRecreateInstance)(void *p_class_userdata, GDExtensionObjectPtr p_object);
+  :223 typedef GDExtensionClassCallVirtual (*GDExtensionClassGetVirtual)(void *p_class_userdata, GDExtensionConstStringNamePtr p_name); /* Deprecated in Godot 4.4. Use `GDExtensionClassGetVirtual2` instead. */
+  :224 typedef GDExtensionClassCallVirtual (*GDExtensionClassGetVirtual2)(void *p_class_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash);
+  :225 typedef void *(*GDExtensionClassGetVirtualCallData)(void *p_class_userdata, GDExtensionConstStringNamePtr p_name); /* Deprecated in Godot 4.4. Use `GDExtensionClassGetVirtualCallData2` instead. */
+  :226 typedef void *(*GDExtensionClassGetVirtualCallData2)(void *p_class_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash);
+  :366 typedef struct {
+  :367 	GDExtensionBool is_virtual;
+  :368 	GDExtensionBool is_abstract;
+  :369 	GDExtensionBool is_exposed;
+  :370 	GDExtensionBool is_runtime;
+  :371 	GDExtensionConstStringPtr icon_path;
+  :372 	GDExtensionClassSet set_func;
+  :373 	GDExtensionClassGet get_func;
+  :374 	GDExtensionClassGetPropertyList get_property_list_func;
+  :375 	GDExtensionClassFreePropertyList2 free_property_list_func;
+  :376 	GDExtensionClassPropertyCanRevert property_can_revert_func;
+  :377 	GDExtensionClassPropertyGetRevert property_get_revert_func;
+  :378 	GDExtensionClassValidateProperty validate_property_func;
+  :379 	GDExtensionClassNotification2 notification_func;
+  :380 	GDExtensionClassToString to_string_func;
+  :381 	GDExtensionClassReference reference_func;
+  :382 	GDExtensionClassUnreference unreference_func;
+  :384 	GDExtensionClassCreateInstance3 create_instance_func;
+  :386 	GDExtensionClassFreeInstance free_instance_func;
+  :387 	GDExtensionClassRecreateInstance recreate_instance_func;
+  :389 	GDExtensionClassGetVirtual2 get_virtual_func;
+  :397 	GDExtensionClassGetVirtualCallData2 get_virtual_call_data_func;
+  :399 	GDExtensionClassCallVirtualWithData call_virtual_with_data_func;
+  :401 	void *class_userdata;
+  :402 } GDExtensionClassCreationInfo6;
+  :716 typedef GDExtensionBool (*GDExtensionInitializationFunction)(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization);
+  :2954 typedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass6)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstStringNamePtr p_parent_class_name, const GDExtensionClassCreationInfo6 *p_extension_funcs);
+  CreationInfo7_existe=0
+  InterfaceObjectNotification_existe=0
+  ObjectNotification_no_arquivo=0
+  CreateInstance3_nao_deprecado=0
+
+[o binario da engine: tokens de registro de extensao]
+  Godot_v4.7.2-stable_win64.exe bytes=180858888 sha256=ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424
+    classdb_register_extension_class6 -> 1 ocorrencias
+    extension_list.cfg -> 1 ocorrencias
+    gdextension_interface.json -> 2 ocorrencias
+  Godot_v4.7.2-stable_win64_console.exe bytes=198152 sha256=c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643
+    classdb_register_extension_class6 -> 0 ocorrencias
+    extension_list.cfg -> 0 ocorrencias
+    gdextension_interface.json -> 0 ocorrencias
+
+[fim]

@@ -6311,3 +6311,114 @@ f387034..HEAD -- src tests` devolve vazio), e o contrato publicado continua **25
 da página: `extensao_carrega_classe` — existe um `.dll` de extensão que o Godot abre, e a classe
 registra — com o vermelho de "nenhuma extensão existe" já pago pela Fase 0 e o de "o símbolo não está
 no export-set" ainda em aberto.
+
+
+## Rodada 2026-11-24 (2) — Passo 1 (a) do dossiê 22: quatro leituras que corrigiram a própria página, e os furos #34, #35 e #36 (branch `feat/oraculo-nativo-gdextension-22`, base `e781e38`)
+
+Nenhuma linha de `native/`, `src/` ou `tests/` foi escrita por esta passada, e nenhuma linha de gameplay
+foi tocada: `git diff --name-only e781e38..HEAD -- src tests native` devolve vazio. Ela é o
+**Passo 1 (a)** do §11 da [`página 22`](planos/22-oraculo-nativo-gdextension.md) — as leituras que têm de
+estar na mesa antes de o primeiro `.cpp` do oráculo nativo existir. O produto é o **§12** daquela página,
+mais catorze arquivos em [`docs/evidence/oraculo-nativo-22/`](evidence/oraculo-nativo-22/) — seis stdout
+literais das leituras, três `.sh` e dois `.bat` que os re-executam, três `.log` das réguas do fim — e o
+manifesto da pasta refeito com `-b`: **45 entradas, `sha256sum -c` 45/45 OK**.
+
+Quatro afirmações da página caíram, e cada uma caiu por número lido no comando ou no arquivo:
+
+1. **"o compilador existe" era resposta incompleta.** A pergunta do `build.bat` é *qual* compilador, e a
+   máquina tem **três** instalações (VS 2022 Community 17.14.37502.11, VS 2019 BuildTools 16.11.37507.1,
+   VS 2022 BuildTools 17.14.37502.11), **dois toolsets** (14.44.35207 e 14.29.30133) e **duas versões de
+   `cl`** (19.44.35228 ×2, 19.29.30159). Além disso o §1.1 somava duas grandezas na mesma célula:
+   `14.44.35207` é o nome da **pasta** do toolset, não a versão do compilador. Correção e regra no §12.1.
+2. **A testemunha de 4.7.2 não discriminava.** `GDExtensionInitializationFunction` e
+   `GDEXTENSION_VARIANT_TYPE_*` existem **idênticas** no único cabeçalho local (o do godot-cpp 4.4.1,
+   129 768 B / 3 085 linhas / sha `355ff4c6…` — typedef na linha 782, `GDEXTENSION_VARIANT_TYPE_` em
+   **48** linhas nos dois). O que separa é `GDExtensionClassCreationInfo6` (`:402`),
+   `GDExtensionClassCreateInstance3` (`:220`) e `GDExtensionInterfaceClassdbRegisterExtensionClass6`
+   (`:2954`) — e o 4.4.1 tem **0** ocorrências do terceiro. Também não existe `api_version` no JSON (cinco
+   chaves de topo, `format_version: 1`): a versão da interface é o que a engine devolve em runtime, não um
+   `#define`. §12.2.
+3. **O gerador do cabeçalho não tem CLI, e a reprodução foi executada.** `make_interface_header.py`
+   (12 015 B, 353 linhas, sha `a4ed7de9…`) tem `__main__`, `argparse` e `sys.argv` em **zero** ocorrências:
+   o ponto de entrada é `def run(target, source, env)` (`:27`), um emissor do SCons. Rodá-lo pediu um shim
+   de **11 linhas / 267 B / sha `7d0b6de2…`** com as duas funções do `methods.py` da engine e três linhas de
+   driver. O fruto — **143 170 B**, sha `777a3fe5…` — foi re-gerado neste passo e comparado com o arquivo
+   arquivado: `cmp` exit **0**. §12.2 e `passo1_header_reproducao.log`.
+4. **Licença: o bloco está no JSON e o gerador o descarta.** O `_copyright` do JSON (328 021 B,
+   9 327 linhas, sha `7d8c0a03…`) tem **27 linhas** com as cinco marcações MIT; no cabeçalho gerado as
+   quatro contrapartidas procuradas devolvem **False** e `grep -ci licen` é **0** — o gerador usa
+   `_copyright` só como chave válida no `check_allowed_keys` (`:32`) e nunca o escreve. A leitura anterior,
+   que contava quatro ocorrências dentro do cabeçalho, tinha sido feita no header do godot-cpp (que tem o
+   bloco) e não no gerado. Vendorizar o arquivo é distribuí-lo **sem** licença dentro: a atribuição passa a
+   ser linha nossa em `THIRD_PARTY_LICENSES.md`, no mesmo commit que o vendoriza. §12.2 e o §6.1 corrigido.
+
+Duas coisas que a leitura acrescentou e não estavam em lugar nenhum: **zero `.lib`** na árvore inteira e
+53 entradas em `.tools/llama/runtime/` (30 `.dll`, 22 `.exe`, uma linha de licença LLVM OpenMP) — ou seja,
+o Passo 1 **não linka** o llama.cpp, e o gate de símbolos é do Passo 2 (§12.3); e a **forma do arquivo**,
+que é o que o hash mede: as 3 178 linhas do fruto cru terminam todas em CRLF (a forma LF tem 139 992 B; a
+diferença é exatamente 3 178, um CR por linha), `native/af_mind/include/**` cai como `text: auto eol: lf`
+e `docs/evidence/**` como `text: unset`, então o gate de SHA do `build.bat` confere **as duas formas**
+(§12.2, último parágrafo).
+
+As três réguas do §11 foram rodadas com a página já reescrita, e a saída literal está nos três `.log`
+`passo1a_ruler_*`: `check_doc_anchors.py` com **39 arquivos, 3 052 ponteiros, 209 rótulos, 3 178 links
+relativos e 0 casos objetivos**; `verify_plan_cites.py` com **1 013 citações com número conferidas, 10
+arquivos citados que não existem** — os mesmos dez de antes, todos peças que as páginas declaram
+inexistentes ou scratch gitignored — e **0 números fora do arquivo**; `verify_plan_ids.py` com as ausências
+de costume, nenhuma delas um identificador que alguma página prometa como código que existe. É esse o
+número que prova que a página 22 ganhou **186 linhas líquidas** (`git diff --numstat main`: 205 acrescentadas,
+19 removidas) sem quebrar nenhum ponteiro que apontava para dentro dela.
+
+### Furo #34 — "o MSVC da máquina" não é único: três instalações e três consultas `-latest` que divergem
+
+`vswhere -latest` devolve `2022\Community`; `vswhere -latest -products *` devolve `2022\BuildTools`;
+`vswhere -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64` devolve `2022\Community`. As
+três consultas "mais novo" da mesma ferramenta apontam para instalações diferentes, e as duas de 2022
+partilham o toolset `14.44.35207` enquanto a de 2019 traz `14.29.30133` — compilador de outra geração, ABI
+de outro gerador. Um `build.bat` que resolvesse o VS perguntando ao vswhere "qual é o mais novo" compila
+com um toolset que depende da **ordem da consulta**, e o `.dll` da extensão não declara isso em lugar
+nenhum. **Dono:** Passo 1 (c) — o `build.bat` nomeia caminho e toolset (`14.44.35207`), confere o banner do
+`cl` (`19.44.35228`) e o `VCToolsInstallDir` antes de compilar, e recusa os outros. Testemunha:
+[`passo1_build_instrumentado.log`](evidence/oraculo-nativo-22/passo1_build_instrumentado.log) e
+[`passo1_vcvars_onde_resolve.log`](evidence/oraculo-nativo-22/passo1_vcvars_onde_resolve.log).
+
+### Furo #35 — o `link` que resolve fora da casca do vcvars é o coreutils do Git, não um linker
+
+No PATH que a máquina tem hoje, sem `vcvars64.bat`, `cl`, `dumpbin`, `lib`, `scons`, `cmake` e `ninja`
+saem com exit 1 e nenhuma linha impressa — mas `link` **resolve**:
+`C:\Program Files\Git\usr\bin\link.exe`, GNU coreutils 8.32, que cria *hard link de arquivo* e não linka
+binário nenhum. O build não falhariaria por ausência com um diagnóstico limpo: falharia (ou pior — criaria
+um arquivo com o nome do output) por **presença errada**. Dentro da casca os quatro aparecem sob
+`14.44.35207\bin\Hostx64\x64\`, e o `where link` lista o MSVC **antes** do do Git, que continua lá.
+**Dono:** Passo 1 (c) — o `build.bat` não aceita um `link.exe` fora de `VCToolsInstallDir`. Testemunha:
+[`passo1_fora_da_casca.log`](evidence/oraculo-nativo-22/passo1_fora_da_casca.log) com o
+`.bat` do mesmo nome. É a mesma classe do furo #32: o instrumento leu uma coisa e a página escreveu outra.
+
+### Furo #36 — manifesto de evidência com hash da forma errada do arquivo: 3 FAILED em 31 entradas
+
+`sha256sum -c artifacts.sha256`, na pasta do dossiê 22, dava **28 OK / 3 FAILED** — os três `.bat`
+(`af_exports_build.bat`, `af_np2_build.bat`, `af_np3_build.bat`). As linhas armazenavam o hash da forma
+**LF** do conteúdo; os arquivos, no disco e em qualquer clone limpo, são CRLF porque
+[`.gitattributes:22`](../.gitattributes#L22) tem `*.bat text eol=crlf` (o `git check-attr` dos três devolve
+`text: set`, `eol: crlf`). A convenção da casa — item 11 da lista de furos descobertos desta mesma página —
+é que manifesto se computa **`sha256sum -b`**, sobre os bytes que o checkout produz; aqui o erro foi do
+instrumento, não da evidência. Refeito com `-b` e com as catorze evidências novas dentro (31 + 14), o
+manifesto passou a **45 entradas / 45 OK**, e as únicas linhas de arquivo pré-existente cujo conteúdo
+mudou são essas três. **Dono:** este registro, com a régua: `sha256sum -c` de
+qualquer manifesto de evidência tem de ser **tudo OK num clone limpo**, e um `FAILED` em `.bat` ou `.log` é
+defeito do hash, não do arquivo. Testemunha: [`artifacts.sha256`](evidence/oraculo-nativo-22/artifacts.sha256).
+
+A régua pegou um caso nosso antes do lote fechar: `passo1_vcvars_onde_resolve.bat` tinha sido gravado em
+**LF**, e a mesma linha 22 que converte os três `.bat` velhos vale para todo `.bat` do checkout — o hash
+registrava bytes que nenhum clone devolve. Convertido e **re-rodado**, o stdout saiu idêntico linha a linha
+(nota no topo do próprio [`passo1_vcvars_onde_resolve.log`](evidence/oraculo-nativo-22/passo1_vcvars_onde_resolve.log)),
+e o manifesto refeito deu 45/45. Forma que se hash-a é a do checkout, não a do editor.
+
+### O que esta passada não fecha
+
+Nenhum gate de fase e nenhum código: `native/af_mind/` não existe, `HTTPRequest` continua em
+`src/ai/mind_oracle.gd`, e `extensao_carrega_classe` — o gate do §5.1 — ainda não nasceu (é o Passo 1 (b),
+e nasce vermelho). O contrato publicado não foi re-medido aqui porque a árvore de `src/` e `tests/` não
+mudou: **255 / 0** na suíte e **283 / 0** de reações. Dos quatro furos que esta rodada abre, nenhum tem
+consequência em runtime hoje — são defeitos de instrumento e de leitura, com dono escrito antes do código —
+e a fila continua **22 → 17 → 18 → 20 → 13**.

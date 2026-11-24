@@ -1,0 +1,5 @@
+== Passo 1 (a): regua 1 de 3 - anchors, 2026-11-24T01:37:59-04:00, base e781e38, branch feat/oraculo-nativo-gdextension-22 ==
+== comando: python tools/check_doc_anchors.py ==
+corpus na arvore de trabalho  arquivos: 39  ponteiros conferidos: 3052  rotulos conferidos: 209  links relativos conferidos: 3178
+casos objetivos: 0
+  exit=0
