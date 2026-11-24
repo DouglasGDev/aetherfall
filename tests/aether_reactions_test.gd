@@ -47,17 +47,22 @@ const TESTS: Array[StringName] = [
 	&"_test_cavar_nao_consome_rng_da_sessao",
 	&"_test_colheita_de_malha_sem_cavar",
 	&"_test_cavar_sobrevive_ao_save", &"_test_extensao_carrega_classe",
+	&"_test_extensao_pack_no_processo",
 ]
-# 288 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
+# 296 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
 # §5.1), o gate do esqueleto nativo: descritor no disco, extensao listada pela
 # engine, biblioteca aberta no processo, classe na ClassDB e objeto vivo devolvido
-# por ela. As cinco contam tambem no vermelho -- o gate nasce vermelho de
-# proposito, e um censo que so vale depois do codigo existir nao decide nada. O
-# censo se re-deriva a cada checagem nova porque a linha
-# `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
+# por ela -- mais as oito de `extensao_pack_no_processo` (dossie 22 §5.2), a rota do
+# pack dentro do processo: runtime por caminho absoluto, pack vazio como base medida,
+# gguf no processo, leitura conferida contra a meta do proprio modelo, contexto cujo
+# pedido o runtime devolve e os tres numeros do §5.2. As treze contam tambem no
+# vermelho -- o gate nasce vermelho de proposito (o runtime e o `.gguf` sao
+# gitignored: num clone sem eles as oito saem vermelhas com o caminho impresso), e um
+# censo que so vale depois do codigo existir nao decide nada. O censo se re-deriva a
+# cada checagem nova porque a linha `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 288
+const EXPECTED_CHECKS: int = 296
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -5569,4 +5574,116 @@ func _test_extensao_carrega_classe() -> bool:
 	_check(vivo and nome == String(classe),
 			"extensao_carrega_classe: a ClassDB devolve um objeto vivo daquela classe",
 			"instantiate_valido=%s get_class=%s" % [str(vivo), nome if nome != "" else "n/d"])
+	return true
+
+
+## Passo 2 (b) do dossie 22 (§5.2): o pack do modelo carregado DENTRO do processo da
+## engine, com os tres numeros saindo do runtime -- `af_vram_gb` com o `load_pack()`
+## vazio como base medida, `af_load_ms` e `af_ctx_cells` lido do modelo. A rota e a que
+## a premissa FALSA do §15.5 obriga: `set_runtime_dir` por CAMINHO ABSOLUTO antes de
+## qualquer delay helper, o pack vazio primeiro (a base nao e um zero assumido), so
+## depois o `.gguf` -- e o contexto nasce SO no `ctx_probe`, o unico lugar onde um
+## numero escrito na primeira palavra do blob chega ao runtime e volta lido igual.
+## Nasce vermelho de proposito num clone sem `models/` e sem `.tools/llama/runtime`
+## (ambos gitignored): a recusa vem com o caminho impresso, nao com um numero chutado.
+## O mesmo cuidado do passo 1 vale aqui: so se chama metodo no objeto que a checagem
+## anterior confirmou vivo, porque um `null` chamado derrubaria as oito em silencio.
+func _test_extensao_pack_no_processo() -> bool:
+	var classe := &"AfMindOracle"
+	if not ClassDB.class_exists(classe):
+		_check(false, "extensao_pack_no_processo: a classe do esqueleto nao esta na ClassDB",
+				"class_exists(%s)=false -- o passo 1 nao fechou nesta arvore" % String(classe))
+		return true
+	var obj: Object = ClassDB.instantiate(classe)
+	if not is_instance_valid(obj):
+		_check(false, "extensao_pack_no_processo: a ClassDB nao devolveu objeto vivo",
+				"instantiate(%s)=null" % String(classe))
+		return true
+	var runtime_dir := ProjectSettings.globalize_path("res://.tools/llama/runtime")
+	var gguf := ProjectSettings.globalize_path("res://models/qwen3.5-4b-q4_k_m.gguf")
+	# 1) o runtime no disco, pelo diretorio gitignored: sem ele o preload nao tem o que
+	# carregar e as checagens seguintes saem vermelhas com este caminho como motivo.
+	var tem_llama := FileAccess.file_exists(runtime_dir + "/llama.dll")
+	_check(tem_llama, "extensao_pack_no_processo: o runtime do llama esta no disco",
+			"dir=%s llama_dll=%s" % [runtime_dir, str(tem_llama)])
+	# 2) o `.gguf` no disco com bytes de testemunha: o corte vermelho e a existencia --
+	# trocar o arquivo por outro quant e premissa nova, e o numero na linha mostra qual.
+	var bytes_modelo := -1
+	if FileAccess.file_exists(gguf):
+		var leitor := FileAccess.open(gguf, FileAccess.READ)
+		if leitor != null:
+			bytes_modelo = int(leitor.get_length())
+			leitor.close()
+	_check(bytes_modelo > 0, "extensao_pack_no_processo: o modelo pinado esta no disco",
+			"gguf=%s bytes=%d" % [gguf, bytes_modelo])
+	# 3) a rota comeca pelo pack VAZIO: cinco modulos pelo caminho absoluto, base aberta
+	# (estado 2) e VRAM total lida -- e o `load_pack()` vazio que o §5.2 exige como base.
+	var modulos: int = int(obj.set_runtime_dir(runtime_dir))
+	var codigo_base: int = int(obj.load_pack("", ""))
+	var estado_base: int = int(obj.pack_state())
+	var vram_total: int = int(obj.vram_total_bytes())
+	var open_ms: int = int(obj.open_ms())
+	_check(modulos == 5 and codigo_base == 0 and estado_base == 2 and vram_total > 0
+			and open_ms >= 0,
+			"extensao_pack_no_processo: o pack vazio abre a base por caminho absoluto",
+			"modulos=%d codigo=%d estado=%d vram_total=%d open_ms=%d" % [
+				modulos, codigo_base, estado_base, vram_total, open_ms])
+	# 4) a base e honesta: no pack vazio o usado E a base -- um getter nascendo -1
+	# faria o `af_vram_gb` do §5.2 um numero inventado por subtracao.
+	var vram_base: int = int(obj.vram_base_bytes())
+	var vram_usada_base: int = int(obj.vram_used_bytes())
+	_check(vram_base > 0 and vram_usada_base == vram_base,
+			"extensao_pack_no_processo: a base medida e a propria VRAM usada no pack vazio",
+			"vram_base=%d vram_used_na_base=%d" % [vram_base, vram_usada_base])
+	# 5) o `.gguf` entra no processo: estado 3, tempo de load medido, bytes do modelo e
+	# RSS crescendo -- a testemunha de que a memoria dele esta mesmo dentro deste processo.
+	# Os dois RSS sao GRANDEZAS CAPTURADAS pelo proprio load (SO sobre o mesmo instante,
+	# antes e depois de mapear): ler o `antes` antes do load devolve o -1 da inicializacao,
+	# medido na primeira corrida.
+	var codigo_modelo: int = int(obj.load_pack("mind-small", gguf))
+	var estado_modelo: int = int(obj.pack_state())
+	var load_ms: int = int(obj.load_ms())
+	var model_bytes: int = int(obj.model_bytes())
+	var rss_antes: int = int(obj.rss_antes_bytes())
+	var rss_apos: int = int(obj.rss_apos_bytes())
+	_check(codigo_modelo == 0 and estado_modelo == 3 and load_ms >= 0 and model_bytes > 0
+			and rss_apos > rss_antes,
+			"extensao_pack_no_processo: o gguf entra no processo e cresce o RSS dele",
+			"codigo=%d estado=%d load_ms=%d model_bytes=%d rss_antes=%d rss_apos=%d" % [
+				codigo_modelo, estado_modelo, load_ms, model_bytes, rss_antes, rss_apos])
+	# 6) a leitura vem do modelo, nao do `--ctx-size`: o treino de contexto confere com a
+	# meta que o proprio `.gguf` carrega, e vocab/arquitetura saem preenchidos.
+	var meta_ctx_txt := String(obj.meta_ctx())
+	var ctx_train: int = int(obj.ctx_train())
+	var vocab: int = int(obj.vocab_tokens())
+	var arch_txt := String(obj.arch())
+	var meta_ctx_num := int(meta_ctx_txt)
+	_check(ctx_train > 0 and meta_ctx_num > 0 and ctx_train == meta_ctx_num
+			and vocab > 0 and arch_txt != "",
+			"extensao_pack_no_processo: a leitura confere com a meta do proprio modelo",
+			"ctx_train=%d meta_ctx=%s vocab=%d arch=%s" % [
+				ctx_train, meta_ctx_txt, vocab, arch_txt])
+	# 7) o contexto SO aqui, com o pedido escrito na primeira palavra: o runtime devolve o
+	# MESMO numero, e e isso que confirma o layout do blob -- a prova que o load criar o
+	# contexto default deixou inatingivel (medido: probe saia 0 com NAO_CONFIRMADA). A
+	# VRAM lida aqui e a DEPOIS do load, e o §5.2 exige ela antes de qualquer contexto.
+	var vram_apos_load: int = int(obj.vram_used_bytes())
+	var codigo_ctx: int = int(obj.ctx_probe(2048))
+	var lido: int = int(obj.ctx_readback())
+	var ctx_cells: int = int(obj.ctx_cells())
+	var estado_ctx: int = int(obj.pack_state())
+	_check(codigo_ctx == 0 and lido == 2048 and ctx_cells == 2048 and estado_ctx == 4,
+			"extensao_pack_no_processo: o runtime confirma o contexto pedido por escrito",
+			"probe2048=%d lido=%d ctx_cells=%d estado=%d" % [
+				codigo_ctx, lido, ctx_cells, estado_ctx])
+	# 8) os tres numeros do §5.2, na ordem que decide: base < depois do load < depois do
+	# contexto, o estado do contexto com bytes, e a versao do runtime como string.
+	var vram_apos_ctx: int = int(obj.vram_used_bytes())
+	var state_bytes: int = int(obj.ctx_state_bytes())
+	var versao := String(obj.runtime_version())
+	_check(vram_apos_ctx > vram_apos_load and vram_apos_load > vram_base
+			and state_bytes > 0 and versao != "",
+			"extensao_pack_no_processo: os tres numeros do §5.2 saem na ordem certa",
+			"base=%d apos_load=%d apos_ctx=%d ctx_state_bytes=%d versao=%s" % [
+				vram_base, vram_apos_load, vram_apos_ctx, state_bytes, versao])
 	return true

@@ -1,0 +1,88 @@
+== Passo 2 (b): o ACHADO -- segunda build verde, probe saiu 0 com NAO_CONFIRMADA ==
+== capturada do transcript da sessao de trabalho (jsonl linha 122720), 2026-11-24 ==
+== O load criava o contexto default (512) antes da sonda: o pedido 2048 nunca chegou ao ==
+== runtime, `af_pack_ctx_probe` caiu no 'ja medido', e o veredito saiu NAO_CONFIRMADA com ==
+== codigo 0 na mesma linha -- uma prova de layout inatingivel sob um exit 0. O conserto ==
+== tirou a criacao de contexto do load; `af_pack_ctx_probe` passou a ser o unico contexto ==
+== do processo (mind_pack.h, rota passo 4), e a build seguinte confirmou a escrita. ==
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1326' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1342' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1431' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1447' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1497' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1513' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1563' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1579' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1668' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1684' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1734' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1750' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1800' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                       rs_s_copy' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_1816' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l3 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l7 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l11 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l15 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l19 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l23 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l27 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l31 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_226' (FLASH_ATTN_EXT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_463' (FLASH_ATTN_EXT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_700' (FLASH_ATTN_EXT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_937' (FLASH_ATTN_EXT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_1174' (FLASH_ATTN_EXT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_1411' (FLASH_ATTN_EXT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_1648' (FLASH_ATTN_EXT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f16, ne = {   512,   512,     1,     1 }] is used by node 'node_1885' (FLASH_ATTN_EXT)
+sched_reserve:    Vulkan0 compute buffer size =   505.52 MiB
+sched_reserve: Vulkan_Host compute buffer size =    20.53 MiB
+sched_reserve: graph: nodes = 1905, splits = 2, input objects = 4, input tensors = 10
+sched_reserve: reserve took 49.74 ms, sched copies = 1
+state_write_data: writing state
+state_write_data: - writing model info
+state_write_data: - writing memory module
+state_write_data: writing state
+state_write_data: - writing model info
+state_write_data: - writing memory module
+[pack] load=0 load_ms=2549 estado=4 stage=0 code=0 texto=
+[abi] llama_model_default_params escritos=80 ultimo_offset=79
+[abi] llama_context_default_params escritos=176 ultimo_offset=175
+[abi] llama_model_size bytes=2729969664 disco=2740937888 veredito=DIFERE
+[modelo] n_layer=32 n_head=16 n_head_kv=4 n_embd=2560 vocab=248320 ftype=15
+[modelo] arch=qwen35 ftype_nome=Q4_K - Medium desc=qwen35 4B Q4_K - Medium hibrido=1
+[modelo] ctx_train=262144 meta_qwen35.context_length=262144
+[modelo] meta_count=41 meta_key0=general.name
+[ctx] word0_default=512 estado=4
+[ctx] probe=0 pedido=2048 lido=512 n_batch=512 n_ubatch=512
+[ctx] ctx_cells=512 state_bytes=606 veredito=NAO_CONFIRMADA
+[ctx] rss_antes_do_ctx=38924288 rss_apos_do_ctx=3421290496 (3.186 GB)
+[ctx] vram_apos_ctx_total=17095983104 usada=4230422672
+[cache] ctx_cells=512 state_bytes=606
+[numero] af_vram_base_gb=0.838 af_vram_apos_gb=3.940 af_vram_delta_gb=3.102
+[numero] af_vram_apos_bytes=4230422672
+[numero] af_load_ms=2549
+[numero] af_ctx_cells=512 ctx_train=262144
+[numero] ctx_state_bytes=606 bytes_por_celula=1.2
+[numero] rss_antes=38924288 rss_apos=3421290496 delta=3.150 GB (testemunha do SO, nao do runtime)
+[numero] ctx_size_pedido_por_fora=4096 (src/ai/llm_server_host.gd:64) identico_ao_lido=nao
+[corrida] probe_rota_codigo=0
+   Creating library C:\Aetherfall\native\af_mind\bin\af_mind.lib and object C:\Aetherfall\native\af_mind\bin\af_mind.exp
+[ponte] link_codigo=0
+[regua] dll_bytes=165376
+[regua] export=          1    0 00001EF0 af_mind_entry
+[dumpbin] dll_imports_codigo=0
+[referencia] gate AF_SLOT/AF_REF=40 nomes
+[referencia] controle_negativo=4 nomes
+[import] modulo=ggml-base.dll referenciado=5 na_tabela=5
+[import] modulo=ggml-vulkan.dll referenciado=1 na_tabela=1
+[import] modulo=ggml.dll referenciado=5 na_tabela=5
+[import] modulo=llama.dll referenciado=29 na_tabela=29
+[controle] ggml_backend_buffer_type_get_base_buffer nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_model_n_ctx nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_new_context_with_model nao esta na tabela de imports (como o export-set medido diz)
+[controle] ggml_backend_buffer_type_get_alloc_size nao esta na tabela de imports (como o export-set medido diz)
+[import] OK referenciados=40 modulos=4 nomes_na_tabela=40
+[imports] dll_codigo=0
+[ok] build.bat: C:\Aetherfall\native\af_mind\bin\af_mind.dll
+== fim ==

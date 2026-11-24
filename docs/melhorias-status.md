@@ -3916,7 +3916,7 @@ irmão vivo. Os dois letreiros de criatura saíram; o contador de abate fica.
 
 ### A corrida que sustenta os números
 
-Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L60)
+Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L65)
 **150 → 183** com **oito cenários novos** nomeados em
 [:28-32](../tests/aether_reactions_test.gd#L28-L32). A suíte ficou em **246 checagens** do primeiro
 ao último degrau — o degrau (f) mudou uma asserção
@@ -7388,3 +7388,251 @@ outras. Escrita como débito abaixo, não como feito.
   clone limpo do pouso acima.
 - A régua de tempo desta rodada **não mede alocação** e não substitui a colheita do budget HOT (regras 3
   e 5 do AGENTS.md): o que ela mede é período de quadro e o que estava ligado nele.
+
+## Rodada 2026-11-24 (7) — Passo 2 (b) do dossiê 22: o pack dentro do processo, os três números lidos do runtime, e a prova de layout que quase ficou inatingível (branch `feat/oraculo-nativo-passo2b-22`, base `b0ed929`)
+
+O critério de §5.2 fechou: o jogo abre com a cena de prova, o processo não morre, os três números saem,
+e o passo 1 continua verde. O §16 da [`página 22`](planos/22-oraculo-nativo-gdextension.md) guarda a
+história completa; aqui ficam o número e a regra que a perna deixa.
+
+**A rota que a premissa FALSA (§15.5) obrigou, executada nas duas pontas.** `set_runtime_dir` com
+caminho **absoluto** (cinco de cinco módulos) abre o pack vazio como base medida, o `.gguf` entra
+dentro do processo do Godot por `AfMindOracle`, e o contexto só existe dentro de `ctx_probe(2048)` — o
+pedido é propositalmente diferente do `--ctx-size` 4096 do host
+([`src/ai/llm_server_host.gd:64`](../src/ai/llm_server_host.gd#L64)), para o número lido não ser
+confundível com o pedido por fora. A sonda de PE (`af_pack_probe`) roda a mesma rota, do mesmo corpo
+(`mind_pack.cpp`), fora da engine antes — nada é copiado entre sonda e extensão.
+
+**Os três números de §5.2, lidos do runtime** — o bloco `[numero]` da build
+([`passo2b_build.log:220-227`](evidence/oraculo-nativo-22/passo2b_build.log)) e as oito checagens do
+runner ([`passo2b_runner.log:540-547`](evidence/oraculo-nativo-22/passo2b_runner.log)):
+
+| Grandeza | Valor medido |
+| --- | --- |
+| `af_vram_gb` — base (pack vazio) | **0,838 GB** (900 079 760 B), com `vram_used == vram_base` |
+| `af_vram_gb` — depois do load | **3,381 GB** (3 630 637 200 B; Δ 2,543 GB) |
+| `af_vram_gb` — depois do contexto | **3,988 GB** (4 282 327 184 B; Δ 0,607 GB) |
+| `af_load_ms` | **2 057** no probe ([passo2b_build.log:223](evidence/oraculo-nativo-22/passo2b_build.log)), **1 939** na corrida do runner |
+| `af_ctx_cells` — lido do modelo | **2 048** com `ESCRITA_CONFIRMADA_PELO_RUNTIME`; `ctx_train` 262 144 = meta `qwen35.context_length` do próprio `.gguf` |
+
+Testemunhas ao redor: `vram_total=17095983104` (RX 9060 XT), RSS do SO crescendo no load
+(174 813 184 → 3 556 532 224 B) e apenas 0,027 GB no passo do contexto — o cache morou na VRAM, não no
+heap —, `state_bytes=606` (0,3 B por célula), `model_bytes=2729969664` contra 2 740 937 888 no disco,
+e 33/33 layers offloaded para a Vulkan0.
+
+**Duas corridas anteriores são instrumento, não festa.** A primeira caiu `0xC0000005` **depois** do
+load, na linha do descritor: `llama_model_desc` tinha argumentos trocados e `llama_version` foi lida
+como inteiro onde o runtime devolve `const char *` — assinaturas re-auditadas contra o `llama.h` do pin
+b12499, que não entra na árvore (a cópia verificada foi apagada depois do confronto; S12.3 segue de
+pé), e o log do crash está arquivado
+([`passo2b_probe_crash.log`](evidence/oraculo-nativo-22/passo2b_probe_crash.log)). A segunda compilou,
+linkou e saiu **exit 0** com o veredito `NAO_CONFIRMADA` na mesa
+([`passo2b_build_inatingivel.log`](evidence/oraculo-nativo-22/passo2b_build_inatingivel.log)): o
+**load** criava um contexto default de 512 células, o pedido 2048 nunca chegava ao runtime, e a
+afirmação de layout (primeira palavra do blob de params de contexto = `n_ctx`) ficava inatingível sob
+um exit 0.
+
+**A regra que a perna deixa, fechada na causa:** um veredito de instrumento sob exit 0 não é número
+publicado. O conserto tirou a criação de contexto do load de vez (`ctx_probe` é o único contexto do
+processo), e o probe hoje recusa com **exit 8** quando o runtime aceita o contexto mas devolve outro
+`n_ctx` — o [`build.bat`](../native/af_mind/build.bat) nomeia o exit 8 na recusa, e o dll não nasce sem
+a testemunha. A build final sai `ESCRITA_CONFIRMADA_PELO_RUNTIME` com exit 0
+([`passo2b_build.log:216`](evidence/oraculo-nativo-22/passo2b_build.log)) e os números acima são dela.
+
+**O gate do runner** (`_test_extensao_pack_no_processo`,
+[`tests/aether_reactions_test.gd`](../tests/aether_reactions_test.gd)): oito checagens, cada uma
+nomeando a premissa que exige, censo **288 → 296**. Num clone sem o runtime e sem o `.gguf` (ambos
+gitignored), as oito nascem vermelhas com o caminho impresso. A primeira corrida ensinou a ordem de
+leitura: os dois RSS são grandezas **capturadas pelo load**, não leituras vivas — ler
+`rss_antes_bytes()` antes do `load_pack` devolve o `-1` da inicialização, e a lição está escrita no
+comentário do próprio teste.
+
+**As quatro corridas da revisão, todas nesta árvore:** runner **296 / 0 / 44,648 s**
+([`passo2b_runner.log`](evidence/oraculo-nativo-22/passo2b_runner.log)), suíte **255 / 0 / 51,0 s**
+([`passo2b_suite.log`](evidence/oraculo-nativo-22/passo2b_suite.log)), RNG **27 / 0 / 2,895 s**
+([`passo2b_rng.log`](evidence/oraculo-nativo-22/passo2b_rng.log)), journal **128 / 0 / 6,182 s**
+([`passo2b_journal.log`](evidence/oraculo-nativo-22/passo2b_journal.log)). Nenhum `SCRIPT ERROR`; o
+`.err` do runner é o chatter do ggml/Vulkan (a extensão carrega os backends dentro do processo), e o
+da suíte é o par de vazamento conhecido do quit. O [`artifacts.sha256`](evidence/oraculo-nativo-22/artifacts.sha256)
+do diretório foi regenerado com os 12 arquivos `passo2b` (121 entradas) e conferido com
+`sha256sum -c` na pasta dele.
+
+**O que esta passada não fecha:**
+
+- **Não há API de prompt** (§5.3 é o Passo 3): `enqueue`, `wait`, sinais e métricas de fila não
+  existem, e `mind_oracle.gd` continua HTTP. O `load_pack` é a rota de carga medida, não o transporte
+  de inferência.
+- **`src/` intocado** — `git diff --name-only main...HEAD -- src` devolve **vazio** — e
+  `Channel.COUNT`, `FORMAT_VERSION` e `GEN_VERSION` parados; os hashes de journal publicados valem
+  para a árvore resultante sem re-corrida.
+- **Nenhum gate de fase** (mandato 4), e os furos **#38, #39 e #20** seguem onde estavam. O contexto
+  medido é o **custo** (0,607 GB por 2 048 células), não a escolha do tamanho de produção.
+- **Clone limpo:** os números acima são da árvore da branch; o pouso re-mede no clone limpo do merge
+  (mandato 3, item 6) e o registro do pouso pina os dois lados, como o pouso do Passo 2 (a) fez.
+
+*(Estado re-derivado pelo pouso abaixo: as quatro corridas e a régua de âncoras da (7) valem para a
+ponta `e674d8d`; a `main` mergida é `a637ee9` e foi re-medida nas quatro corridas, com o `build.bat`
+re-executado dentro do clone limpo. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.)*
+
+## O pouso do Passo 2 (b) na `main` — o `src` parado e o `tests` que se move, as quatro corridas da mergida, os dois vermelhos nascidos do clone e a trip marginal de 3 µs (2026-11-24, `docs/registro-pouso-passo2b-22`, base `b0ed929`, ponta `e674d8d`, merge `a637ee9`)
+
+### O que o merge toca, com o número em cada árvore
+
+`git merge --no-ff feat/oraculo-nativo-passo2b-22` devolve **`a637ee9`** sobre **`b0ed929`** (ponta da
+branch: `e674d8d`), **28 arquivos, +7 954/−63**: em `native/af_mind/`, o corpo do pack
+[`mind_pack.cpp`](../native/af_mind/src/mind_pack.cpp) novo com **928** linhas e
+[`mind_pack.h`](../native/af_mind/src/mind_pack.h) com 114, a sonda de pé
+[`pack_probe_main.cpp`](../native/af_mind/src/pack_probe_main.cpp) com 214, a ponte em
+[`register_types.cpp`](../native/af_mind/src/register_types.cpp) **+519**, o
+[`build.bat`](../native/af_mind/build.bat) **+123** e o
+[`check_imports.py`](../native/af_mind/check_imports.py) **+18**; no `tests/`, o runner com as oito
+checagens novas (`tests/aether_reactions_test.gd` +129); e a prosa de três documentos.
+
+| Árvore | `b0ed929` | `e674d8d` | `a637ee9` |
+| --- | --- | --- | --- |
+| `src` | `f77c1961bb8065ea…` | idem | **idem** |
+| `tests` | `0faee7ff5b26d6ef…` | `acd872ebcd69fb8f…` | **`acd872eb…`** |
+| `native` | `bec0fc7ac4089c40…` | `94dbd12e8ba73113…` | **`94dbd12e…`** |
+
+Diferente do pouso do (a), onde `tests` também não se moveu, este passo escreve checagem: o `tests`
+**mexe** — são as oito checagens `_test_extensao_pack_no_processo` do censo 288 → **296** — e por isso
+os números de runner abaixo são **re-medição de contrato**, não herança por identidade. O `src` continua
+parado desde o merge do (a): `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do journal
+não têm o que mudar, e os hashes publicados nas rodadas anteriores valem para a árvore resultante.
+
+Publicação da branch conferida com `git ls-remote --heads origin`:
+`refs/heads/feat/oraculo-nativo-passo2b-22` = `e674d8d5ec05d5238c343333f2e1a8e8b5e89a5e`. A da `main`
+desta passada é conferida pelo mesmo comando no fecho deste registro — é a única prova de que saiu; o
+exit 0 do `push` não prova.
+
+### As quatro corridas da árvore mergida, com a máquina livre
+
+Antes delas, `--import` na árvore mergida
+([`main_mergida_import.log`](evidence/registro-pouso-passo2b-22/main_mergida_import.log), 16 linhas,
+exit 0, stderr **0 bytes**). Nenhum processo `Godot*` antes da primeira invocação; as quatro rodaram
+serial.
+
+- Runner de reações: [`main_mergida_runner.log`](evidence/registro-pouso-passo2b-22/main_mergida_runner.log)
+  — as cinco `OK extensao_carrega_classe` nas linhas **535-539** (mesmas posições do (a): descritor no
+  disco, `ja_vinha_do_boot=true agora=true total_registradas=1`, `is_library_open=true`,
+  `class_exists(AfMindOracle)=true`, `instantiate_valido=true get_class=AfMindOracle`), as oito
+  `OK extensao_pack_no_processo` em **542-547** com os três números de §5.2 na **547**
+  (`base=900079760 apos_load=3630637200 apos_ctx=4282327184 ctx_state_bytes=606 versao=1.0.0-dev`),
+  `load_ms=2145`, `model_bytes=2729969664`, RSS do SO 174 501 888 → 3 556 454 400 B, `67/67` em 549,
+  `trips_solo=0 trips_matilha=0` em 550, `296/296` em 551, cenário estreito com **10 568** passos
+  (`sim_step total=2 727 389 µs`, pico `5 945 µs`) em 552, matilha com **1 341** passos
+  (`sim_tick total=3 800 821 µs`, pico `19 349 µs`) em 553, e **554** `296 checagens 0 falhas 45.955 s`.
+  Exit 0; o `.err` de **183 717 bytes** é o chatter do ggml/Vulkan — a extensão carrega os backends
+  dentro do processo (`loaded RPC backend`, `0 = AMD Radeon RX 9060 XT`).
+- Suíte: [`main_mergida_suite.log`](evidence/registro-pouso-passo2b-22/main_mergida_suite.log) — linha
+  **357** `== 255 checagens  0 falhas  60.3 s de teste ==`, exit 0, zero `SCRIPT ERROR`, e o `.err` saiu
+  com **0 bytes**: o par de vazamento do quit (249 B quando aparece) não apareceu nesta corrida — é a
+  intermitência já registrada, e a ausência não é conserto.
+- RNG da sessão: [`main_mergida_rng.log`](evidence/registro-pouso-passo2b-22/main_mergida_rng.log) —
+  **78** `27 checagens 0 falhas 2.948 s`.
+- Journal por tick:
+  [`main_mergida_journal.log`](evidence/registro-pouso-passo2b-22/main_mergida_journal.log) — **143**
+  `128 checagens 0 falhas 7/7 testes concluidos 7.325 s`.
+
+### O pin: clone limpo de `a637ee9`, com o `build.bat` rodando dentro dele
+
+`git clone` do repositório local, HEAD `a637ee9…`. O `git status --short` do clone devolve **exatamente
+duas** linhas — `?? tests/audio_live_probe.gd.uid` e `?? tests/audio_test.gd.uid` — é o **furo #25**
+impresso, na forma esperada. O `bin/` não vem ([`.gitignore:8`](../.gitignore#L8)), então o build faz
+parte do pin.
+
+- `--import` frio ([`clone_limpo_import.log`](evidence/registro-pouso-passo2b-22/clone_limpo_import.log),
+  exit 0): o `.err` de **602 bytes** traz as quatro linhas `GDExtension dynamic library not found:
+  'res://native/af_mind/af_mind.gdextension'` — o **furo #38** se repetindo no clone, antes do build
+  existir, pela mesma razão do (a): o import roda sem `bin/`, e a ordem honesta é import → build →
+  runner.
+- `build.bat` no clone
+  ([`clone_limpo_build.log`](evidence/registro-pouso-passo2b-22/clone_limpo_build.log), 246 linhas,
+  exit 0): a sonda de pé roda a rota completa antes de o dll existir (`probe_rota_codigo=0` em **228**),
+  a ponte linka (`link_codigo=0` em **230**), o dll sai com **165 376 B** e
+  `export= 1 00001EF0 af_mind_entry` (**232**) e a régua de imports lê **40/40** —
+  `[import] OK referenciados=40 modulos=4 nomes_na_tabela=40` (**244**), a tabela nova do Passo 2 (b)
+  (`AF_SLOT` **e** `AF_REF`) confirmada inteira dentro do clone. O `.err` de 184 224 bytes é o chatter
+  dos backends de terceiro no stderr da build (`load_backend: loaded RPC backend from
+  C:\Aetherfall\.tools\llama\runtime\…`), a mesma forma do (a).
+- Os dois recursos que a checagem resolve pelo diretório do projeto —
+  `res://.tools/llama/runtime` e `res://models/qwen3.5-4b-q4_k_m.gguf` — são gitignored
+  ([`.gitignore:5`](../.gitignore#L5) e [`.gitignore:16`](../.gitignore#L16)), e o clone nasce sem os
+  dois **por design**. O provisionamento do clone desta medição é **junção** (`…\.tools\llama` apontando
+  para a árvore de trabalho) mais **hardlink** do `.gguf` de 2 740 937 888 B — ambiente de máquina, não
+  mudança de árvore; um clone em outra máquina chega aos vermelhos abaixo, que são o comportamento
+  esperado dele.
+- A sequência de vermelhos do clone é instrumento arquivado, não fracasso. **Sem nada**, as oito
+  nascem vermelhas com os dois caminhos impressos como motivo, nunca número chutado
+  ([`clone_limpo_runner_sem_recursos.log`](evidence/registro-pouso-passo2b-22/clone_limpo_runner_sem_recursos.log)
+  540-547: `llama_dll=false`, `bytes=-1`, `modulos=-2 codigo=-1`; rodapé `296 checagens 8 falhas
+  37.098 s`). **Com runtime e sem modelo**, cinco falhas e o load recusa com `codigo=-6`
+  ([`clone_limpo_runner_sem_modelo.log`](evidence/registro-pouso-passo2b-22/clone_limpo_runner_sem_modelo.log)
+  **544**, `estado=2`; a **542** `OK … modulos=5 codigo=0 estado=2` prova que a base abre sem modelo —
+  rodapé `296 checagens 5 falhas 37.219 s`). E **com tudo**, uma corrida saiu `trips_matilha=1` com
+  `pico=403` — **3 µs** sobre o teto de 400 µs — em árvore byte-idêntica
+  ([`clone_limpo_runner_trips_red.log`](evidence/registro-pouso-passo2b-22/clone_limpo_runner_trips_red.log)
+  **550**, rodapé `296 checagens 1 falhas 41.614 s`); a re-corrida imediatamente depois saiu verde com
+  `trips=0`, e **as duas ficam arquivadas** — a regra já medida: trip marginal em 3 µs é ruído de
+  máquina na borda do teto e não se atribui a causa sem re-corrida.
+- O pin verde: runner
+  [`clone_limpo_runner.log`](evidence/registro-pouso-passo2b-22/clone_limpo_runner.log) — as cinco
+  `OK extensao_carrega_classe` nas mesmas linhas **535-539**, as oito pack em **541-547** com
+  `load_ms=2251` no clone (2 145 na mergida, 1 963 no probe da build — grandezas distintas entre
+  corridas, os três números de §5.2 idênticos), RSS 175 210 496 → 3 556 106 240 B, `trips=0`,
+  `296/296`, cenário estreito `sim_step total=2 954 399 µs` pico `6 094 µs`, matilha
+  `sim_tick total=4 224 149 µs` pico `20 044 µs`, e **554** `296 checagens 0 falhas 45.278 s`; exit 0.
+  Suíte: [`clone_limpo_suite.log`](evidence/registro-pouso-passo2b-22/clone_limpo_suite.log) linha
+  **357** `== 255 checagens  0 falhas  56.1 s de teste ==`, exit 0, zero `SCRIPT ERROR`, `.err` com os
+  mesmos **249 bytes** do par de vazamento. RNG e journal não rodaram no clone — o que o clone renova
+  aqui é a suíte e o runner com a extensão nova; o journal tem a árvore `src` parada como garantia.
+
+O número pineado para `a637ee9` é: runner **296 / 0 / 45,955 s** na mergida e **296 / 0 / 45,278 s** no
+clone, suíte **255 / 0 / 60,3 s** e **255 / 0 / 56,1 s**, RNG **27 / 0 / 2,948 s** e journal
+**128 / 0 / 7,325 s** — as duas últimas só na mergida.
+
+### As três réguas no ponto fixo desta passada, e o manifesto
+
+Elas rodam **depois** da prosa existir, não antes — item 7 do ciclo de trabalho.
+
+- [`pouso_ruler_doc_anchors.log`](evidence/registro-pouso-passo2b-22/pouso_ruler_doc_anchors.log):
+  39 arquivos · **3 079 ponteiros conferidos · 209 rótulos · 3 415 links · 0 casos objetivos**, exit 0.
+  Contra os **3 079 / 3 390** que a ponta `e674d8d` media
+  ([`passo2b_ruler_anchors.log`](evidence/oraculo-nativo-22/passo2b_ruler_anchors.log)), o acréscimo de
+  **27 links** é desta escrita — a prosa do pouso referencia a pasta de evidência nova — e não abriu
+  caso nenhum. A primeira captura desta régua abriu três `LINK QUEBRADO`, e os três são a ordem das
+  coisas, não defeito: a prosa cita os dois logs de régua restantes e o manifesto **antes** de os três
+  existirem; re-rodou verde depois de os três serem criados. O único caso tolerado continua sendo o
+  ponteiro `../.tools/...`, gitignored.
+- [`pouso_ruler_plan_cites.log`](evidence/registro-pouso-passo2b-22/pouso_ruler_plan_cites.log):
+  **1 041** citações com número de linha conferidas, **10** arquivos citados que não existem, **0**
+  números fora do arquivo, exit 0. Os dez são os de sempre — os três rascunhos `.tools/_head_*.md` e as
+  peças `[TARGET]` que as próprias páginas declaram inexistentes (`src/ai/reach.gd`,
+  `src/core/sim/entity_store.gd`, `src/core/sim/tick_clock.gd`,
+  `tests/wolf_multiseed_census_test.gd`) — e nenhum deles é afirmação de que o arquivo está lá. Contra
+  o **1 039** do pouso do (a), o acréscimo é da prosa da (7) mais a desta — e uma testemunha deste
+  pouso precisa dizer a verdade sobre a (7): o
+  [`passo2b_ruler_cites.log`](evidence/oraculo-nativo-22/passo2b_ruler_cites.log) arquivado por ela saiu
+  **0 citações conferidas** porque rodou **sem corpus** — a ferramenta recebe os arquivos em
+  `sys.argv[1:]`, a mesma armadilha que o pouso do (a) registrou —, e nenhuma prosa da (7) cita esse
+  número como medição. A régua certa é esta daqui.
+- [`pouso_ruler_plan_ids.log`](evidence/registro-pouso-passo2b-22/pouso_ruler_plan_ids.log): exit 0 com
+  as ausências de sempre, e nelas a classe do **furo #39** — a régua monta o corpus com `src/**/*.gd` e
+  `tests/**/*.gd` e nunca abriu um `.cpp`, então os nomes de `native/` aparecem aqui sem serem defeito.
+
+A pasta de evidência deste pouso fecha com manifesto:
+[`artifacts.sha256`](evidence/registro-pouso-passo2b-22/artifacts.sha256) com **27** entradas, gerado
+com `sha256sum -b` a partir de dentro da pasta (o `-b` importa: `.gitattributes:9` marca
+`docs/evidence/**` como `-text` justamente para o log sair byte a byte) e conferido com
+`sha256sum -c --quiet` na pasta dele, **27 OK** e **0** bytes de CR no manifesto.
+
+### O que o pouso deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna faltam o **Passo 3** (testemunha da regra de ouro —
+nenhuma camada de linguagem move pé) e o **Passo 4** (`transporte_http_zerado`); não há API de prompt
+(§5.3 é o Passo 3) e `mind_oracle.gd` continua HTTP. O `src` da mergida é o mesmo do merge do (a), então
+nenhuma rodada anterior tem número invalidado por este merge. Dos furos, **#38** (clone sem build) e
+**#39** (réguas cegas a `native/`) continuam abertos como decisão do dono, o **#20** continua sem a
+colheita que nomeia a folha, e a **alocação** do caminho quente (dicionário por lobo por tick, `keys()`
+do cache de rastros) segue sem colheita própria — o que este passo mediu é **custo de memória e
+contexto**, não custo de alocação. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
