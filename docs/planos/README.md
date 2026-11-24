@@ -1,6 +1,6 @@
 # Dossiês por item da fila
 
-Vinte e um arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
+Vinte e dois arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
 ("Falta", `:610-812`, e os checklists P0/P1, `:813-837`). Cada dossiê é **leitura de código, não
 corrida**: nenhuma engine foi rodada aqui, nenhum número publicado foi re-medido por estes arquivos
 e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
@@ -30,7 +30,15 @@ do oráculo sai do HTTP e passa a ser uma extensão C++ com llama.cpp dentro do 
 dele escrita como cláusula verificável (nenhuma camada de linguagem move pé, aplica dano ou escreve no
 ledger). É a primeira página do índice que **mede** alguma coisa antes de existir código: o §1 dela é a Fase 0
 rodada — toolchain, as DLLs do runtime carregando in-process e vendo a RX 9060 XT, os export-sets contados e
-o cabeçalho de interface gerado. Nenhuma das
+o cabeçalho de interface gerado. No dia 24 o dono amplia outra vez, agora só de imagem —
+o prompt "Aetherfall: Elevação Visual (Texturas + Água + Atmosfera)", cinco fases — e a **23**
+([23-elevacao-visual-agua.md](23-elevacao-visual-agua.md)) é a página da Fase 1 dele: a água sai do
+`StandardMaterial3D` parado e passa a um `ShaderMaterial` gerado em runtime, com onda de vértice,
+refração e reflexão de tela, cor por profundidade e Fresnel, mais a partícula de entrada — a **primeira**
+partícula e o **primeiro** shader do repositório, os dois contados por grep zero antes de existir código.
+A regra de ouro dele entra como cláusula verificável e com o mesmo formato da 22: **só visual** — nenhum
+`set_block`, nenhum Éter, nenhum canal, nenhuma linha de `src/ai/` ou `src/entities/wolf.gd`, e isso é
+checagem (`fx_nao_escreve_o_mundo`), não frase. Nenhuma das
 páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
 
 | # | Dossiê | Linha da fila | Premissa nomeada | O que decide, em headless |
@@ -56,6 +64,7 @@ páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do c
 | 19 | [Pulo de bloco: o degrau de 1 m que ninguém sobe](19-auto-pulo-de-bloco.md) | **defeito** pedido pelo dono em 2026-11-21 como urgente, fora da lista `Falta` — não é mecânica nova; a fila serializada ganha a exceção de ordem no §7 | um corpo que anda contra um degrau de **exatamente um bloco** sobe o degrau (o jogador sem tecla nenhuma), e um corpo que anda contra parede mais alta que um bloco **não** gasta salto | `degrau_de_um_bloco_lobo_sobe` e `degrau_de_um_bloco_jogador_sobe_sem_tecla` (nascem **vermelhas**: ápice 0,563 m e `step_up` 0,62 contra uma célula de 1,00 m), `penhasico_nao_gasta_salto` (a asserção que o dossiê lia em `aether_reactions_test.gd:1063`, re-derivada hoje em `:1132`, lida do outro lado), `agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem` |
 | 20 | [Mentes autônomas de mobs e o mundo que respira sem input](20-mente-autonoma-de-mobs-e-ecossistema.md) | autorização nova do dono em 2026-11-22, prompt "Inteligência Autônoma de Mobs + Ecossistema Vivo"; item 14 de `Falta` | um corpo que persegue sabe, **por número**, se a coluna à frente cabe no ápice que o próprio corpo alcança — e espécie só existe se muda um número observável por criatura; matar devolve item por **tabela**, não por sorteio escondido | 18 checagens nomeadas no §5, e **todas nascem vermelhas** porque nenhuma das peças existe: `alcance_calcula_altura` (a sonda de hoje testa `+1.0` fixo), `desistencia_vira_crenca`, `estrategia_muda_por_numero`, `especie_decide_numero`, `arvore_por_arquetype` (paga o furo **#24**), `passaro_pousa_em_copa`, `bando_tem_teto_e_o_passo_caibo`, `lobo_morto_dropa_carne` (vermelho contra a árvore de hoje: **zero** drop em `src/`), `trofeu_e_colocavel_e_nao_e_ancora`, `aves_nao_movem_o_censo_da_matilha`, `decisao_nao_vem_do_oraculo`, `journal_hash_inalterado_sem_especies_vivas` — **nenhuma linha de código escrita** |
 | 22 | [Oráculo nativo em GDExtension: llama.cpp dentro do processo](22-oraculo-nativo-gdextension.md) | autorização nova do dono em 2026-11-23, prompt "Aetherfall: Elevação da IA Local para Outro Nível" (cinco fases); na fila serializada ela entra **depois da 18 e antes da 20** | o transporte do oráculo hoje é `HTTPRequest` em GDScript para um `llama-server` levantado como processo à parte — e a regra de ouro do dono é que nenhuma camada de linguagem move pé, aplica dano ou escreve no ledger | `extensao_carrega_classe` (nasce **vermelha**: `native/af_mind/` não existe), os três números do load (`af_vram_gb`, `af_load_ms`, `af_ctx_cells`), `transporte_http_zerado` (`grep -rn HTTPRequest src` devolve vazio), `af_cache_determina_replay`, `budget_do_oraculo_nao_estoura_a_arvore` e `af_sem_rede_no_tick`. A **Fase 0 está medida**, não prometida: MSVC 19.44.35207 compila C++17, as cinco DLLs do runtime carregam in-process e veem a RX 9060 XT (`reg_count` 3), e os export-sets contados são 266 · 689 · 16 · 9 · 53 — de onde sai a cláusula de *link* do §1.3 e o motivo pelo qual `model_oversave` vira `[OPEN]` |
+| 23 | [Água viva: o material que não existe e a partícula que nunca foi criada](23-elevacao-visual-agua.md) | autorização nova do dono em 2026-11-24, prompt "Aetherfall: Elevação Visual (Texturas + Água + Atmosfera)" (cinco fases); na fila serializada entra **na frente de todas**, com a 22 parada em voo | a água de hoje é um `StandardMaterial3D` sem tempo, sem normal e sem leitura de cena, com o alfa **0,72 escrito no pixel** do atlas — e o `COLOR` que a malharia já preenche com o `FACE_TINT` da face **não é lido por ninguém** (furo **#43**). A cláusula dele é "só visual": nenhum `set_block`, nenhum Éter, nenhuma IA | `material_da_agua_e_shader` (nascem **vermelhas** as duas famílias: `grep` de `ShaderMaterial\|Shader.new\|gdshader` e de `GPUParticles3D\|CPUParticles3D\|ParticleProcessMaterial` em `src tests` devolvem **vazio**), `mascara_de_onda_do_bloco_isolado` (24 vértices, **12** mascarados — aritmética de `FACE_CORNERS` derivada à mão), `coluna_de_agua_ondula_so_no_topo` (o braço de indiferença: 40 vértices, **12** mascarados, o bloco de baixo **0**), `agua_nao_muda_a_malha`, `orcamento_de_particulas`, `queda_na_agua_dispara_salpico`, `corpo_seco_nao_dispara`, `fx_nao_escreve_o_mundo` — e a compilação **não** é da suíte: headless não exercita o `RenderingDevice`, então o §5.2 é uma sonda com janela que grepa `SHADER ERROR` e compara dois PNGs do mesmo enquadramento |
 
 ## Uma branch por dossiê
 
@@ -86,10 +95,11 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 19 | `feat/auto-pulo-de-bloco-19` | `main`, **fura a fila e entra logo depois de 11** (exceção do §7 do dossiê, registrada antes do código): é o único item da lista que é defeito do jogo em execução, não mecânica nova. Encosta em `src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 também escreve — por isso a 11 re-rome o gate depois do merge desta, **e já o re-romeu** (merge `010ab25` dentro da branch, gate re-rodado na árvore resultante). **Pousada**: ponta de código `f843fa6`, `main` publicada `ab9ffa1` (clone limpo medido) — a 11 re-rome o gate a partir de `ab9ffa1` |
 | 20 | `feat/mobs-autonomos-e-ecossistema-20` | `main`, **depois de 18 e antes de 13** (exceção de ordem registrada em 2026-11-22 antes de qualquer linha): as duas escrevem [`src/world/block_defs.gd`](../../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 gasta o 17, e drop de criatura não pode encostar na reserva 9–18 — entra a partir de 23, na tabela que as duas acabaram de renumberar. Antes da 13 porque genealogia sobre **uma única** espécie escreveria o que já existe; a 13 continua última porque nenhuma mudança de `Channel.COUNT` cai no meio da fila. Escreve em `src/entities/wolf.gd`, `src/main.gd`, `src/items/inventory.gd`, `src/ui/hud.gd` e, se a metade sonora entrar, `src/audio/audio_director.gd`. **Dossiê escrito antes da branch** — a página existe e nenhuma linha de código dela foi escrita. **Re-derivada contra a `main` do pouso da 16** (`bb13752`): as árvores de `9b2c65a` não são as do pin `5b519f8`, o contrato de referência passa a **255 / 0** com **240 / 0** de reações, e a toca da matilha (`_dens`, `den_components`, `Wolf.den`) entra na página como fato que a 16 criou |
 | 22 | `docs/pauta-oraculo-nativo-22` (esta página + o arquivo de índice + o status) → `feat/oraculo-nativo-gdextension-22` (os cinco passos de código do §5) | `main`, **na frente da fila, depois de 12** (a exceção de 2026-11-23 punha a 22 depois da 18; o dono moveu-a em 2026-11-23 com "pode continuar", e o registro está em `docs/excecao-de-ordem-fila-22`): a 22 é transversal — escreve `src/ai/`, `native/`, `tests/` e três linhas de injeção em `src/main.gd`, e **não** escreve `src/world/block_defs.gd`, que é por onde a 17 e a 18 se empurram. O preço aceito é que 17 e 18 rebasem com o transporte do oráculo já trocado e re-rode cada uma o gate dela. Vem antes da 20 porque as duas escrevem a mesma frase de contrato sobre o oráculo e a 22 é a que tem a palavra autoritativa. **Dossiê escrito antes da branch de código** — nenhuma linha de `native/` existe na pauta |
+| 23 | `docs/pauta-agua-viva-23` (esta página + o arquivo de índice + o contrato) → `feat/elevacao-visual-agua-23` (os passos de código do §8) | `main` em `b0ed929`, **na frente de tudo** (exceção de ordem do dono registrada em 2026-11-24 antes de qualquer linha, §7 da página): ele pediu esta perna agora e mandou aplicar. A 22 continua na posição dela e **em voo**, com trabalho não commitado em `native/af_mind/` na árvore primária — por isso a 23 abre **em `git worktree` separado** (`.qoder/worktrees/elevacao-visual-23`) e não troca de branch na árvore de outra perna: item 6 de "Branches", o incidente do dossiê 03. Escreve `src/world/voxel_world.gd`, dois arquivos novos (`water_surface.gd`, `water_fx.gd`), três linhas em `src/main.gd` (o choque com a 22 é ali) e `tests/smoke_test.gd`; **não** encosta em `block_defs.gd`, `src/ai/`, `native/` nem `wolf.gd`. O preço aceito: 17 e 18 rebasem com o material da água trocado, e `agua_nao_muda_a_malha` existe para que o re-rome delas não ache o número de malha deslocado por causa alheia |
 
-A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 ✅ → 22 → 17 → 18 → 20 → 13 — a 16 cumprida em `9b2c65a` e
-`bb13752`, a 12 em `fa94cb5`, e a fila viva de hoje ter a 22 na frente não é preferência: é a exceção de
-serialização registrada **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora",
+A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 ✅ → 23 → 22 → 17 → 18 → 20 → 13 — a 16 cumprida em `9b2c65a` e
+`bb13752`, a 12 em `fa94cb5`, e a fila viva de hoje ter a 23 e a 22 na frente não é preferência: são as exceções de
+serialização registradas **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora",
 e reafirmada em
 [`docs/melhorias-status.md`](../melhorias-status.md#em-andamento). O encadeamento é de dados, não de
 cerimônia: cor depende de bioma, cercar depende de quem mais existe na matilha, a convivência reusa as
@@ -122,7 +132,7 @@ com `arquivo:linha` → o que a peça exige → gate em headless com comando que
 pelas quatro perguntas do contrato → o que NÃO fazer → commits atômicos (um assunto, uma corrida) →
 citações que não conferem.
 
-## Verificação destas vinte e uma páginas
+## Verificação destas vinte e duas páginas
 
 ```sh
 python .tools/verify_plan_cites.py docs/planos/01-estado-inicial-e-ordem-autoritativa.md
@@ -503,6 +513,13 @@ entrou como fato; estão documentadas nos arquivos que as receberam:
   `blocked_horizontal` do jogador sem nenhum leitor em `src/`. "Auto pular o bloco" também não é
   "aumentar o step-up": a formulação mais curta teletransporta o corpo e mata a animação de voo
   → **19 §2, §3.4 e §9**.
+- "água com refração e reflexão, caústicas quando o sol está alto": lido contra a árvore, não há **um
+  shader** nem **uma partícula** no repositório (os dois greps devolvem vazio), o sol é **parado** em
+  `rotation_degrees (-42, 55, 0)` e não existe variável de clima — então "quando o sol está alto" é uma
+  constante, não uma condição, e a Fase 2 (chuva) não tem dono de estado onde se pendurar. E o canal que
+  a refração pedia já estava lá e jogado fora: o `COLOR` dos vértices de água sai com o `FACE_TINT` da
+  face e `_mat_water` nunca liga `vertex_color_use_as_albedo` → **23 §2, §3.3 e §3.9**, com o número no
+  **furo #43**.
 
 As imprecisões reais achadas em `AGENTS.md` nesta rodada foram corrigidas no próprio contrato, uma por
 uma, depois de lidas as duas pontas — e os números desta frase são **registro das rodadas que os

@@ -700,6 +700,68 @@ arquivado, e o `_copyright` de 27 linhas do JSON **não** chega ao fruto — ven
 distribuí-lo sem licença dentro, então a atribuição passa a ser linha nossa em
 `THIRD_PARTY_LICENSES.md`. Nada disto é código da Fase 1 — a branch desta passada é documento puro.
 
+**Extensão de 2026-11-24, autorizada pelo dono na própria conversa — elevação visual, cinco fases, e a
+regra dele: só visual.** O pedido chega como o prompt "Aetherfall: Elevação Visual (Texturas + Água +
+Atmosfera)" e entra no "dentro" como
+[`docs/planos/23-elevacao-visual-agua.md`](docs/planos/23-elevacao-visual-agua.md), branch
+`feat/elevacao-visual-agua-23`, dono o agente `visual-agua-23`. A cláusula verificável dele, escrita no
+topo da página como cláusula e não como intenção: **"Não tocar na IA ou na lógica de gameplay neste
+prompt — só visual"**, e ela é a mesma forma da regra de ouro da perna 22 — nenhuma camada nova move pé,
+aplica dano ou escreve no ledger. Aqui isso virou checagem com número (§5.1 `fx_nao_escreve_o_mundo`:
+`world.edits` inalterado na janela com salpico, `Channel.COUNT` == 3), não declaração. O escopo
+autorizado é a **Fase 1** (água: shader de superfície com ondulação procedural, refração e reflexão de
+tela, cor por profundidade, Fresnel, caústicas; partículas de margem, salpico de entrada e bolhas); as
+**Fases 2→5** — chuva e superfícies molhadas, vegetação viva com vento, atmosfera, materiais dos blocos —
+ficam autorizadas **como pauta dentro dessa mesma perna**, cada uma com gate próprio e nenhuma linha
+escrita antes de a anterior fechar o dela, exatamente como a 22 recebeu as cinco fases dela. O que o
+prompt nomeia e este registro **não** autoriza: texturas 4K ou PBR completo, água hiper-complexa que
+estoure o frame, mistura de estilo e abandonar a linguagem voxel — os quatro "não" do prompt, lidos como
+§6 da página. `Channel.COUNT` ([aether_field.gd:9](src/world/aether_field.gd#L9)), `FORMAT_VERSION`
+([tick_journal.gd:4](src/persistence/tick_journal.gd#L4)) e `GEN_VERSION` continuam intocados, e nenhuma
+linha de `src/ai/`, `native/`, `src/entities/wolf.gd` ou `block_defs.gd` é escrita por esta perna.
+
+A posição na fila serializada é exceção de ordem registrada **antes** de qualquer linha (mandato 4). A
+fila viva era **22 → 17 → 18 → 20 → 13**; passa a **23 → 22 → 17 → 18 → 20 → 13**, com a **22 parada
+onde está e em voo** — `feat/oraculo-nativo-passo2b-22` tem trabalho **não commitado** em
+`native/af_mind/` nesta árvore, e é por isso que a 23 abre **em worktree separado**, da `main` no ponto
+atual (`b0ed929`), sem tocar a árvore primária nem o trabalho da 22. O motivo de a 23 vir na frente da 17
+não é preferência: o dono pediu esta perna agora e mandou aplicar. O preço é o mesmo que a 22 aceitou —
+17 e 18 rebaseiam numa árvore onde o material da água e o `COLOR` dos vértices de água já mudaram, e cada
+uma **re-rome o gate** na árvore resultante (item 5 de "Branches"). O choque lido antes de abrir:
+`src/main.gd` é de escritor único e a 22 também o toca (o hospedeiro do modelo,
+[main.gd:211-244](src/main.gd#L211-L244)); esta perna escreve **três linhas** nele — instantiate do nó de
+FX e a linha de diagnóstico.
+
+Quatro afirmações do prompt a leitura do código devolve diferente, e nenhuma é cosmética. (1) "A água é
+um bloco transparente simples" é **menos** do que a árvore faz hoje: `_mat_water` é um
+`StandardMaterial3D` com `TRANSPARENCY_ALPHA`, sem tempo, sem normal e sem leitura de cena
+([voxel_world.gd:92-97](src/world/voxel_world.gd#L92-L97)), e o único "movimento" do tile é a faixa fixa
+por linha (`y % 4 == 0` clareia, `y % 4 == 2` escurece) com **alfa 0,72 escrito no pixel** do atlas
+([voxel_atlas.gd:162-171](src/world/voxel_atlas.gd#L162-L171)). (2) Não há **um shader nenhum** no
+repositório: `grep -rn "ShaderMaterial\|Shader.new\|gdshader" src tests` devolve **vazio** — e não há
+**uma partícula nenhuma**: o mesmo grep de `GPUParticles3D\|CPUParticles3D\|ParticleProcessMaterial`
+devolve **vazio**. A página 23 é a primeira vez que o projeto tem um e outra, e o gate nasce vermelho por
+isso, não por descrever peça inexistente. (3) "Refração" já tem onde cair sem mexer no mesher: o
+`COLOR` dos vértices do surface de água é **escrito e nunca lido** — a malharia o preenche com o
+`FACE_TINT` da face ([voxel_world.gd:528-530](src/world/voxel_world.gd#L528-L530),
+[:627-628](src/world/voxel_world.gd#L627-L628)) e `_mat_water` não liga
+`vertex_color_use_as_albedo` (ligam o opaco [:88](src/world/voxel_world.gd#L88) e o vidro
+[:104](src/world/voxel_world.gd#L104)); isso é o **furo #43**, com a face lateral da água incluindo o
+tint descartado, e é o canal que a página escolhe como portador da máscara (§3.3). (4) "Caústicas quando
+o sol está alto" não tem variável: `_build_environment` escreve um sol **parado** em
+`rotation_degrees (-42, 55, 0)` com elevação fixa de ~48° e uma `fog_density` de `0,006`
+([main.gd:1196-1229](src/main.gd#L1196-L1229)); não existe clima no projeto, e isso é o que segura a
+Fase 2 como pauta e não como código desta perna (§3.9).
+
+Uma consequência de instrumento, escrita antes do código porque é ela que divide o gate: **headless não
+exercita o `RenderingDevice`, então nenhuma corrida da suíte pode afirmar que o shader compila.** O
+mandato 1 não permite publicar "shader ok" com o número de uma corrida que não compila nada, e por isso a
+página separa as duas provas — oito checagens estruturais em `tests/smoke_test.gd` (§5.1) e uma **sonda
+com janela** em `.tools/` (§5.2) que é a única que grepa `SHADER ERROR` do stdout e compara dois PNGs do
+mesmo enquadramento em instantes diferentes de `TIME`. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e
+a projeção do `TickJournal` não mudam com esta perna; o que a cláusula `fx_nao_escreve_o_mundo` paga é o
+estado, porque a não-determinismo da simulação ao vivo já está registrado no mandato 3.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do
