@@ -8017,3 +8017,136 @@ e **#39** (réguas cegas a `native/`) seguem como decisão do dono, o **#20** se
 folha, e a alocação do caminho quente segue sem colheita própria. A fila serializada não muda:
 **22 → 17 → 18 → 20 → 13**.
 
+## O pouso do Passo 3 na `main` — o `src` parado provado por diff contra a main, a suíte da mergida que parseia antes de correr sem re-import, e o pin com o `build.bat` rodando dentro do clone (2026-11-24, `docs/registro-pouso-passo3-22`, base `3989217`, ponta `4a68174`, merge `7262d7e`)
+
+### O que o merge toca, com o número em cada árvore
+
+O merge `--no-ff` tem pais **`3989217`** (a `main` com o pouso da perna 23) e **`4a68174`** (a ponta da
+branch deste passo) e fecha em **`7262d7e`** — **51 arquivos, +30 333/−56**. Duas frentes paralelas
+escreveram na mesma janela (a 23 e este passo), e o merge veio com conflito em **dois** documentos, os
+dois da mesma forma: o fim do `melhorias-status.md` (as duas seções novas juntas) e a
+[`docs/planos/02-censo-multi-semente.md`](planos/02-censo-multi-semente.md), onde **os dois lados
+consertaram a mesma âncora velha contra árvores diferentes**. A resolução foi por conteúdo, não por
+lado: a página 02 ficou com **os dois** consertos verificados na árvore mergida — as âncoras do runner
+desta perna (`285-317`/`:310`) **e** a da derivação da população que a 23 re-derivou
+(`src/main.gd:773-774`) — e o status ficou com a seção do pouso da 23 seguida da Rodada (8) deste
+passo, na ordem em que pousaram.
+
+A prova de que este merge não move código vem por árvore, não por promessa: `git rev-parse 7262d7e:src`
+= `3c436fb6d6f3392b36f054ed36a5e0846b8c74b4`, `:tests` = `7b2d2f1d2fe49c8ce0bb55b99bc659cdb095cfd3`, e
+`git diff --name-only 3989217 7262d7e -- src` devolve **vazio** — contra a `main`, o merge não trouxe
+nenhuma linha de `src`; os 6 arquivos de `src` que diferem da ponta da branch
+(`git diff 4a68174 7262d7e -- src`) são **exatamente** os da água que a perna 23 pousou na `main` antes
+deste merge, não nada deste passo.
+
+### O vermelho nascido no pouso: a suíte da mergida parseia antes de correr
+
+A primeira suíte na árvore mergida **nem abriu a cena**: 16 `SCRIPT ERROR` de parse —
+`WaterSurface` não declarado na [:1](evidence/registro-pouso-passo3-22/main_mergida_suite_pre_import.err#L1)
+e `WaterFx` na [:9](evidence/registro-pouso-passo3-22/main_mergida_suite_pre_import.err#L9), fechando
+com `Failed to load script "res://tests/smoke_test.gd"` na
+[:33](evidence/registro-pouso-passo3-22/main_mergida_suite_pre_import.err#L33). O motivo é o mesmo da
+classe "clone precisa `--import`": o cache global de classes (`.godot/`) era da árvore **pré-merge**, o
+merge trouxe as duas `class_name` novas da perna 23, e o parse do `smoke_test.gd` resolve `class_name`
+pelo cache — que só o import reconstrói. O par vermelho fica arquivado
+([`.log`](evidence/registro-pouso-passo3-22/main_mergida_suite_pre_import.log) de 2 linhas — só o
+cabeçalho da engine; todo o conteúdo foi para o `.err` de 34 linhas). Duas consequências escritas: a
+regra do clone vale também para a **árvore de trabalho** depois de um merge que traz `class_name`
+novo — import antes de qualquer corrida; e a corrida vermelha desse formato **fica viva headless para
+sempre** (a cena não abre, nada chama `quit()`, o orfão queima núcleo) — os dois processos desta
+tentativa só saíram por `taskkill` do dono do probe, com o comando de cada um provando que eram da
+leg.
+
+### As quatro corridas da árvore mergida, com a máquina livre
+
+- Suíte: [`main_mergida_suite.log`](evidence/registro-pouso-passo3-22/main_mergida_suite.log) linha
+  **378** `== 264 checagens  0 falhas  54.7 s de teste ==`, exit 0 — censo **255 + as 9 da água** da
+  perna 23; o `.err` de 4 linhas é o par de vazamento conhecido do quit.
+- Runner:
+  [`main_mergida_runner.log`](evidence/registro-pouso-passo3-22/main_mergida_runner.log) — as cinco
+  `OK extensao_carrega_classe` em **535-539**, o pack em **544** com `load_ms=1937` e RSS
+  `176 754 688 → 3 558 457 344` B, o gate do contrato em **564**
+  (`emissoes=0 decodes=2`) e **569** (`pid=8008 derrubado=true reuso=false`), `trips_solo=0
+  trips_matilha=0` em **572**, cenário estreito em **574** (`passos=10568 sim_step total=2 316 362 µs
+  pico=4 762 µs`), matilha em **575** (`passos=1341 sim_tick total=3 253 271 µs pico=16 469 µs`), e
+  **576** `318 checagens 0 falhas 44.332 s`; exit 0.
+- RNG: **27 checagens 0 falhas 2.755 s**. Journal: **128 checagens 0 falhas 7/7 testes concluidos
+  5.930 s**.
+
+### O pin: clone limpo de `7262d7e`, com o `build.bat` rodando dentro dele
+
+`git clone` do repositório local, HEAD `7262d7e…`. O `--import` frio sai exit 0 com o **furo #38**
+impresso na mesma forma de sempre — 602 bytes de `.err` com os dois pares `FileAccess::exists` +
+`GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'`
+([clone_limpo_import.err](evidence/registro-pouso-passo3-22/clone_limpo_import.err), a ordem honesta é
+import → build → runner). O `git status --short` do clone **depois** do import devolve **seis** linhas
+`??` — as duas do furo #25 (`tests/audio_test.gd.uid`, `tests/audio_live_probe.gd.uid`) e **quatro
+novas**: `caixa-23-t1.png.import`, `caixa-23-t2.png.import`, `caixa-base-t1.png.import`,
+`caixa-base-t2.png.import`. É um **furo #45** da mesma classe do #25: a perna 23 commitou os quatro
+PNGs da água **sem** os `.png.import` versionados, então todo clone limpo gera os sidecars no import e
+os imprime como lixo não-rastreado; nenhum problema de execução — as cenas os referenciam por `path`,
+não por `uid://` — e este pouso **não os comita**. Dono: arrumação do dono do repositório.
+
+`build.bat` no clone
+([clone_limpo_build.log](evidence/registro-pouso-passo3-22/clone_limpo_build.log), exit 0): a sonda de
+pé roda a rota do prompt completa antes de qualquer jogo (`[prompt] veredito=ROTA_DE_PROMPT_CONFIRMADA`
+em **239**, `[corrida] probe_rota_codigo=0` em **240**), a ponte linka (`[ponte] link_codigo=0` em
+**242**), o dll sai com **184 320 B** e `export= 1 00002FD0 af_mind_entry` (**244**) e a régua de
+imports lê **55/55** — `[import] OK referenciados=55 modulos=4 nomes_na_tabela=55` (**256**), a tabela
+nova do Passo 3 confirmada inteira dentro do clone. O dll do passo 2 (b) tinha **165 376 B**: a API do
+prompt cresceu a extensão em **~19 KB**. O `.err` de 184 224 bytes é o chatter dos backends de
+terceiro no stderr da build — o mesmo tamanho byte a byte do `.err` do pouso do passo 2 (b).
+
+Os dois recursos que a checagem resolve pelo diretório do projeto são gitignored e o clone nasce sem
+eles **por design**; o provisionamento desta medição é **junção** (`.tools\llama` apontando para a
+árvore de trabalho) mais **hardlink** do `.gguf` de 2 740 937 888 B — ambiente de máquina, não mudança
+de árvore.
+
+- Runner no clone:
+  [`clone_limpo_runner.log`](evidence/registro-pouso-passo3-22/clone_limpo_runner.log) — as cinco
+  `OK extensao_carrega_classe` nas mesmas linhas **535-539**, os recursos no disco com os **caminhos do
+  clone** impressos em **540** (`C:/aetherfall_pin_pouso3/.tools/llama/runtime llama_dll=true`) e
+  **541** (`bytes=2740937888`), o pack em **544** com `load_ms=1922` e RSS
+  `177 131 520 → 3 558 600 704` B, o gate do contrato em **564** (`emissoes=0 decodes=2`) e **569**
+  (`pid=28588 derrubado=true reuso=false`) — a dupla HTTP × extensão corre inteira **dentro do
+  clone**, com o `llama-server` subindo da junção —, `trips_solo=0 trips_matilha=0` em **572**,
+  estreito em **574** (`sim_step total=2 421 221 µs pico=4 857 µs`), matilha em **575**
+  (`sim_tick total=3 449 678 µs pico=16 228 µs`), e **576** `318 checagens 0 falhas 51.776 s`; exit 0.
+- Suíte no clone:
+  [`clone_limpo_suite.log`](evidence/registro-pouso-passo3-22/clone_limpo_suite.log) linha **378**
+  `== 264 checagens  0 falhas  53.5 s de teste ==`, exit 0, zero `SCRIPT ERROR`.
+- RNG e journal não rodaram no clone — o que o clone renova aqui é a suíte e o runner com a ponte e o
+  gate novos; o journal tem a árvore `src` parada como garantia.
+
+O número pineado para `7262d7e` é: runner **318 / 0** (44,332 s na mergida; **51,776 s** no clone),
+suíte **264 / 0** (54,7 s; **53,5 s**), RNG **27 / 0 / 2,755 s** e journal **128 / 0 / 5,930 s** — as
+duas últimas só na mergida.
+
+### As três réguas no ponto fixo desta passada
+
+- Âncoras ([pouso_ruler_doc_anchors.log](evidence/registro-pouso-passo3-22/pouso_ruler_doc_anchors.log)):
+  **40 arquivos · 3 164 ponteiros · 209 rótulos · 3 587 links relativos**, `casos objetivos: 0`.
+- Citações
+  ([pouso_ruler_plan_cites.log](evidence/registro-pouso-passo3-22/pouso_ruler_plan_cites.log), exit 0):
+  `numeros de linha fora do arquivo: 0`, com **11** arquivos citados inexistentes — os **10** da
+  passada (d) conferidos um a um como pauta declarada, mais **um** que entrou no corpus com o merge:
+  `src/entities/falling_block.gd`, citado pela prosa da perna 23 em
+  [melhorias-status.md:7865](melhorias-status.md#L7865) e
+  [:7868](melhorias-status.md#L7868) (a própria seção dela sobre a régua cega a arquivo futuro), mesma
+  classe de pauta declarada pelo dossiê 17.
+- IDs ([pouso_ruler_plan_ids.log](evidence/registro-pouso-passo3-22/pouso_ruler_plan_ids.log)): as
+  listas `AUSENTES` dos dois documentos seguem sendo as peças que os próprios dossiês declaram
+  inexistentes — pauta dos passos 4/5, dos dossiês 17/18/20/13 e dos nomes medidos que vivem só em
+  `native/`, que a régua não alcança (furo #39).
+
+### O que o pouso deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna 22 continuam o **Passo 4** (`transporte_http_zerado`:
+`mind_oracle.gd` vira wrapper e `grep -rn HTTPRequest src` devolve vazio) e o **Passo 5** (cache,
+`BeliefVerifier` e a régua do budget) — a ponte do Passo 3 está na `main` e **nenhum consumidor do
+jogo a lê ainda**. Dos furos, **#38** (o import continua reclamando antes do build) e **#39** (réguas
+cegas a `native/`) seguem como decisão do dono; o **#20** sem a colheita que nomeia a folha; o **#31**
+sem atribuição; o **#41** como furo da contagem de malha; o **#44** fica onde a 23 o deixou; o **#45**
+é novo e não tem conserto nesta perna. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção
+do `TickJournal` não foram tocados. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+

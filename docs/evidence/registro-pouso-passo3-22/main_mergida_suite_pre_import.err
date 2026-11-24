@@ -1,0 +1,34 @@
+SCRIPT ERROR: Parse Error: Identifier "WaterSurface" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:535)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "declarados" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/smoke_test.gd:535)
+SCRIPT ERROR: Parse Error: Identifier "WaterSurface" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:536)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "gravados" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/smoke_test.gd:536)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:707)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:709)
+SCRIPT ERROR: Parse Error: Could not find type "WaterFx" in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:728)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:749)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:750)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "vivas" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/smoke_test.gd:749)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:751)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "teto" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/smoke_test.gd:751)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:753)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:753)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:753)
+SCRIPT ERROR: Parse Error: Identifier "WaterFx" not declared in the current scope.
+   at: GDScript::reload (res://tests/smoke_test.gd:763)
+ERROR: Failed to load script "res://tests/smoke_test.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
