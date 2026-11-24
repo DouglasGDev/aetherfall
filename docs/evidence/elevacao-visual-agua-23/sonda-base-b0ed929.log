@@ -1,0 +1,21 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+llm_host  ausente (runtime)  sem llama-server em C:/Aetherfall/.qoder/base-check-23/.tools/llama/runtime/llama-server.exe
+PROBE  arvore=C:/Aetherfall/.qoder/base-check-23/  moldura=(1920, 1080)  seed=20261116  coluna=(100,52)  blocos=12  topo=26  plano=27.00
+PROBE  mirante coluna=(101,39) chao=27 dist=14 olho=(101.50, 29.62, 39.50) pitch=-0.198
+PIXEL  moldura=1920x1080  centro_agua=(960.0,540.0) dentro=1  dt=1503 ms  camera_deslocou=0.0000 m  lobos_na_caixa=0  fx=ausente
+PIXEL  caixa  amostras=9216  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+PIXEL  quadro amostras=518400  ge1=25176  ge3=24255  fracao_ge3=0.0468  media_canal r=0.011397 g=0.008023 b=0.007389
+PIXEL  veredito agua_muda_de_quadro=false  pngs=C:/Aetherfall/.qoder/base-check-23/.tools/water_px/agua-t1.png C:/Aetherfall/.qoder/base-check-23/.tools/water_px/agua-t2.png
+PROBE ok

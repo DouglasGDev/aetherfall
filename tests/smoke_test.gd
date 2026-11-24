@@ -68,6 +68,22 @@ var _swim_min_y := 999.0
 var _swim_max_leg := 0.0
 var _swim_seek := false
 var _lake := Vector3i.ZERO
+## Estado do FX da agua (dossie 23 §5.1): a coluna escolhida para a queda, o plano que
+## o mundo devolve para ela, e as leituras de antes/depois de cada janela de 70 quadros.
+var _fx_col := Vector2i.ZERO
+var _fx_plane := -1.0
+var _fx_home := Vector3.ZERO
+var _fx_edits0 := 0
+var _fx_sig := ""
+var _fx_e0 := 0.0
+var _fx_e1 := 0.0
+var _fx_salpicos0 := 0
+var _fx_seco0 := 0
+var _fx_seco_e0 := 0.0
+var _fx_seco_e1 := 0.0
+var _fx_seco_p0 := Vector3.ZERO
+var _fx_track := false
+var _fx_seco_molhado := false
 var _oracle_probe: MindOracle = null
 ## Host de mentira da checagem do portao (dossie 15 §7.8): caminhos inexistentes,
 ## entao nem processo nem porta sao tocados.
@@ -87,6 +103,11 @@ func _ready() -> void:
 		["boot do mundo", 2, _check_boot],
 		["relogio real", 150, _check_live],
 		["malha e face-culling", 0, _check_meshing],
+		["agua: material, mascara e malha", 0, _check_water_surface],
+		["agua: fx — corpo seco", 0, _check_fx_dry_setup],
+		["agua: fx — indiferenca na terra", 70, _check_fx_dry_assert],
+		["agua: fx — queda na coluna", 0, _check_fx_drop],
+		["agua: fx — salpico e teto", 70, _check_fx_splash],
 		["corpo encaixado se solta", 0, _check_embedded_body],
 		["edicoes no mundo", 0, _check_edits],
 		["sistema de coordenadas", 0, _check_coords],
@@ -141,6 +162,10 @@ func _physics_process(_delta: float) -> void:
 		if _swim_wolf._swim_time > Wolf.SHORE_AFTER \
 				and _swim_wolf._dry_ground(_swim_wolf._move_target):
 			_swim_seek = true
+	if _fx_track and main.water_fx != null and main.player.body.in_water:
+		# A janela seca e testemunhada quadro a quadro: `in_water` falso so porque
+		# ninguem olhou no meio dela nao e prova de indiferenca.
+		_fx_seco_molhado = true
 	if _armed and Input.is_action_just_pressed("place_block"):
 		var p: Player = main.player
 		_armed = false
@@ -181,6 +206,15 @@ func _check(label: String, ok: bool, detail := "") -> void:
 	if not ok:
 		_fails += 1
 	var tag := "PASS" if ok else "FAIL"
+	# Um detalhe que devolve a propria barra de formato e o instrumento mudo: `String %`
+	# do Godot nao implementa `%g` nem `%e` e nao avisa nada -- devolve a string como
+	# veio, medido em `.tools/format_spec_probe.gd`. Um PASS com a barra crua nao e
+	# testemunha de numero nenhum, entao a barra quebrada conta como falha.
+	var quebrada := detail.contains("%s") or detail.contains("%d") or detail.contains("%f") \
+			or detail.contains("%v") or detail.contains("%.")
+	if quebrada:
+		_fails += 1
+		tag = "FAIL"
 	print("  [%s] %-38s %s" % [tag, label, detail])
 
 
@@ -369,6 +403,13 @@ func _check_meshing() -> void:
 			same = false
 	_check("geracao deterministica (16 colunas)", same, "ms=%.1f" % ms)
 	_check("malha identica entre mundos", tri_a == tri_b, "espelho=%d  sessao=%d" % [tri_a, tri_b])
+	# O numero e a base medida ANTES da perna 23 (clone limpo de b0ed929, seed
+	# 20261116, nenhuma edicao). A agua ganhou shader e deslocamento de vertice, e
+	# deslocamento nao acrescenta triangulo nenhum: se este numero se mover, a perna
+	# mexeu na malharia — que e justamente o terreno que o re-rome das pernas 17 e 18
+	# espera encontrar no mesmo lugar (dossie 23 §5.1, `agua_nao_muda_a_malha`).
+	_check("agua nao muda a malha", tri_a == 214448 and tri_b == 214448,
+		"base=214448  espelho=%d  sessao=%d" % [tri_a, tri_b])
 	_check_biome_nao_altera_terreno(_scratch)
 
 	var cx := 20
@@ -467,6 +508,337 @@ func _check_meshing() -> void:
 	_check("winding = face frontal do Godot", wn == 0, "triangulos contra=%d" % wn)
 	_scratch_root.queue_free()
 	_scratch = null
+
+
+# --------------------------------------------------------------------- agua
+
+## O gate visual do dossie 23 §5.1. Headless nao tem `RenderingDevice`, entao nada
+## aqui pode afirmar que o shader compila nem que a agua mudou de quadro — as duas
+## perguntas sao da sonda com janela (§5.2), e escrever "compila" num verde headless
+## seria o furo que a casa ja contou duas vezes. O que esta funcão decide e
+## estrutura: qual material pousa no surface de água e o que os três canais do
+## `COLOR` dizem vértice por vértice. Os rótulos são os identificadores da página,
+## para a régua de ids achar cada um no código que os imprime.
+func _check_water_surface() -> void:
+	_scratch_root = Node3D.new()
+	add_child(_scratch_root)
+	_scratch = VoxelWorld.new()
+	_scratch.setup_world(_scratch_root)
+	_scratch.generate(SEED)
+
+	var mat := _scratch.water_material()
+	# Os dois lados da testemunha de uniforme: a lista que o GDScript grava e a que a
+	# SOURCE declara. Nome gravado sem declaracao correspondente e um no-op
+	# silencioso — e headless nao compila shader nenhum para avisar. A regex le a
+	# constante em vez de repetir a lista, senao a checagem conferiria um numero
+	# contra ele mesmo.
+	var declarados := WaterSurface.declared_uniforms()
+	var gravados := WaterSurface.written_uniforms()
+	var sem_fonte := 0
+	for k: String in gravados:
+		if not declarados.has(k):
+			sem_fonte += 1
+	# `declarados` e maior que `gravados` por dois: `screen_tex` e `depth_tex` sao
+	# ligados pelo engine, nao por `set_shader_parameter`, e estao fora da lista que o
+	# codigo grava de proposito. O que morde e `sem_fonte`: nome gravado sem
+	# declaracao.
+
+	# Uma celula de agua no ar, longe das bordas do chunk: o `LIQUID` so culling
+	# contra AIR, entao saem as 6 faces — 24 vertices, 12 triangulos. Os numeros sao
+	# derivados de FACE_CORNERS e do culling, nao lembrados (§5.1).
+	var x := 21
+	var z := 21
+	var y := VoxelConfig.CHUNK_SIZE_Y - 6
+	var cell := Vector3i(x, y, z)
+	# `record = false`: o teste nao pode deixar edicao no mundo (a clausula "so
+	# visual" e checagem, nao declaracao), e o mesh se reconstrói aqui, uma vez, sem
+	# esperar o orcamento de 2 chunks por frame.
+	_scratch.set_block(cell, BlockDefs.Block.WATER, false)
+	_scratch.build_chunk_mesh(_scratch.chunk_at(cell))
+	var mesh: Mesh = _scratch.chunk_at(cell).mesh_instance.mesh
+	var wi := _water_surface_index(mesh, mat)
+	_check("material_da_agua_e_shader",
+		mat != null and mat is ShaderMaterial and mat.shader != null
+			and wi >= 0 and sem_fonte == 0,
+		"shader=%s  surface=%d  declarados=%d  gravados=%d  sem_fonte=%d" % [
+			mat != null and mat is ShaderMaterial, wi, declarados.size(), gravados.size(), sem_fonte])
+
+	var topo := float(y) + 1.0 - VoxelWorld.WATER_TOP_DROP
+	var a := _water_attrs(mesh, wi, topo)
+	_check("mascara_de_onda_do_bloco_isolado",
+		a["verts"] == 24 and a["tri"] == 12 and a["masc"] == 12 and a["fora"] == 0
+			and a["wall"] == 16 and a["gmax"] < 0.01,
+		"verts=%d  tri=%d  mascarados=%d  fora_do_plano=%d  verticais=%d  g_max=%.3f"
+			% [a["verts"], a["tri"], a["masc"], a["fora"], a["wall"], a["gmax"]])
+
+	# O segundo bloco em cima do primeiro: o de baixo passa a ter agua no vizinho de
+	# cima, entao a mascara dele e zero e a onda so existe no topo da coluna. Faces:
+	# 5 do de cima (fundo culling contra agua) + 5 do de baixo (topo idem) = 40
+	# vertices, 20 triangulos.
+	var topo2 := float(y + 1) + 1.0 - VoxelWorld.WATER_TOP_DROP
+	_scratch.set_block(Vector3i(x, y + 1, z), BlockDefs.Block.WATER, false)
+	_scratch.build_chunk_mesh(_scratch.chunk_at(cell))
+	var malha2: Mesh = _scratch.chunk_at(cell).mesh_instance.mesh
+	var b := _water_attrs(malha2, _water_surface_index(malha2, mat), topo2)
+	_check("coluna_de_agua_ondula_so_no_topo",
+		b["verts"] == 40 and b["tri"] == 20 and b["masc"] == 12 and b["fora"] == 0
+			and b["gmax"] > 0.15 and b["gmax"] < 0.35,
+		"verts=%d  tri=%d  mascarados=%d  fora_do_plano=%d  g_max=%.3f (1 bloco embaixo = 0,25)"
+			% [b["verts"], b["tri"], b["masc"], b["fora"], b["gmax"]])
+	_scratch_root.queue_free()
+	_scratch = null
+
+
+## O surface que carrega a instancia exata do material da agua; -1 quando o chunk nao
+## tem agua malhada. O indice nunca e fixo: os tres grupos sao acrescentados
+## condicionalmente, e e o proprio indice 2 hardcoded que a checagem de material da
+## malharia ja guarda.
+func _water_surface_index(mesh: Mesh, mat: Material) -> int:
+	if mesh == null:
+		return -1
+	for i in mesh.get_surface_count():
+		if mesh.surface_get_material(i) == mat:
+			return i
+	return -1
+
+
+## Census do que a malharia escreveu nos tres canais do `COLOR` de um surface de agua.
+## `topo` e o plano de topo esperado: todo vertice mascarado tem de estar exatamente
+## nele, porque e o mesmo XZ que o quad de topo divide com as laterais (§3.2). O G e
+## lido com tolerancia: o canal e um byte por componente, entao 1/4 chega como
+## 64/255 = 0,25098.
+func _water_attrs(mesh: Mesh, wi: int, topo: float) -> Dictionary:
+	var out := {"verts": 0, "tri": 0, "masc": 0, "fora": 0, "wall": 0, "gmax": 0.0}
+	if mesh == null or wi < 0:
+		return out
+	var arr := mesh.surface_get_arrays(wi)
+	var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var cols: PackedColorArray = arr[Mesh.ARRAY_COLOR]
+	out["verts"] = verts.size()
+	out["tri"] = int(arr[Mesh.ARRAY_INDEX].size()) / 3
+	for k in verts.size():
+		if cols[k].r > 0.5:
+			out["masc"] = int(out["masc"]) + 1
+			if absf(verts[k].y - topo) > 0.001:
+				out["fora"] = int(out["fora"]) + 1
+		if cols[k].b > 0.5:
+			out["wall"] = int(out["wall"]) + 1
+		out["gmax"] = maxf(float(out["gmax"]), cols[k].g)
+	return out
+
+
+# ------------------------------------------------------- fx da agua (dossie 23 §5.1)
+
+## A janela seca abre a perna do FX e faz isso por dois motivos, e o segundo e o que
+## manda: o corpo andando em terra tem de sair dela sem um salpico do jogador
+## (`corpo_seco_nao_dispara`), e a deriva do Eter nos mesmos 70 quadros e o chao contra
+## o qual `fx_nao_escreve_o_mundo` compara a janela do salpico. Sem essa referencia, um
+## verde de nao-escrita seria lido a partir de nenhum instrumento.
+func _check_fx_dry_setup() -> void:
+	var p: Player = main.player
+	var world: VoxelWorld = main.world
+	_fx_home = p.body.feet_pos
+	var sx := int(floorf(_spawn.x))
+	var sz := int(floorf(_spawn.z))
+	# Anda para onde o jogo anda: o `yaw` e o que `_wish_direction` (player.gd:429)
+	# traduz no `move_forward`, entao a direcao sai escolhida do terreno e nenhum pe e
+	# empurrado por fora de um passo do jogador. Sem a busca, uma semente com lago no
+	# caminho do spawn faria a janela molhar o corpo e a indiferenca viraria vermelho
+	# por geografia.
+	var escolhido := -1
+	for k in 4:
+		var yaw := float(k) * PI / 2.0
+		if _fx_caminho_seco(sx, sz, Vector3(-sin(yaw), 0.0, -cos(yaw)), 8):
+			p.yaw = yaw
+			escolhido = k
+			break
+	p.body.feet_pos = Vector3(float(sx) + 0.5, float(world.surface_height(sx, sz)) + 1.4,
+		float(sz) + 0.5)
+	p.body.velocity = Vector3.ZERO
+	var d: Dictionary = main.water_fx.diagnostics()
+	_fx_seco0 = int(d["salpicos_jogador"])
+	_fx_seco_e0 = main.aether.total_energy()
+	_fx_seco_p0 = p.body.feet_pos
+	_fx_seco_molhado = false
+	_fx_track = true
+	_tick_player = true
+	Input.action_press("move_forward")
+	print("  seco: coluna=(%d,%d) yaw=%d  colunas_a_frente=8 secas=%s" % [
+		sx, sz, escolhido, escolhido >= 0])
+
+
+func _check_fx_dry_assert() -> void:
+	Input.action_release("move_forward")
+	_fx_track = false
+	_tick_player = false
+	var p: Player = main.player
+	_fx_seco_e1 = main.aether.total_energy()
+	var d: Dictionary = main.water_fx.diagnostics()
+	var andou := Vector3(p.body.feet_pos.x - _fx_seco_p0.x, 0.0,
+		p.body.feet_pos.z - _fx_seco_p0.z).length()
+	# Os tres lados juntos: nenhum salpico do jogador, o corpo nunca esteve na agua em
+	# quadro nenhum da janela (o laço de `_physics_process` testemunha isso), e ele
+	# realmente andou — sem a ultima frase a indiferenca poderia ser um corpo parado.
+	_check("corpo_seco_nao_dispara",
+		int(d["salpicos_jogador"]) == _fx_seco0 and not _fx_seco_molhado and andou > 0.4,
+		"salpicos_jogador=%d->%d  molhado_na_janela=%s  andado=%.2f m" % [
+			_fx_seco0, int(d["salpicos_jogador"]), _fx_seco_molhado, andou])
+
+
+## A coluna mais funda do mapa, lida em vez de fixa, e o corpo pousado 3,4 m acima do
+## plano com velocidade zerada: quem derruba o corpo e a gravidade de 24 m/s² do próprio
+## `VoxelBody`, nao um `velocity.y` escrito pelo teste — o §5.1 exige que O JOGO faça a
+## queda, porque o campo escrito na mao e exatamente o que o contrato desta casa veta.
+func _check_fx_drop() -> void:
+	var p: Player = main.player
+	var world: VoxelWorld = main.world
+	var best := Vector2i(-1, -1)
+	var best_n := 0
+	var best_y := -1.0
+	for x in range(4, VoxelConfig.world_size_x() - 4, 2):
+		for z in range(4, VoxelConfig.world_size_z() - 4, 2):
+			var n := _fx_coluna_agua(x, z)
+			if n > best_n:
+				best_n = n
+				best = Vector2i(x, z)
+				best_y = world.water_surface_y(x, z)
+	_fx_col = best
+	_fx_plane = best_y
+	_check("coluna_de_queda_funda", best_n > WaterFx.BUBBLE_MIN_BLOCKS and best_y > 0.0,
+		"coluna=(%d,%d)  blocos=%d  plano=%.3f" % [best.x, best.y, best_n, best_y])
+	if best_n <= WaterFx.BUBBLE_MIN_BLOCKS or best_y <= 0.0:
+		return
+	var d0: Dictionary = main.water_fx.diagnostics()
+	_fx_salpicos0 = int(d0["salpicos_disparados"])
+	_fx_e0 = main.aether.total_energy()
+	_fx_edits0 = world.edits.size()
+	_fx_sig = _fx_assinatura_coluna(best.x, best.y)
+	p.body.feet_pos = Vector3(float(best.x) + 0.5, best_y + 3.4, float(best.y) + 0.5)
+	p.body.velocity = Vector3.ZERO
+	_fx_seco_molhado = false
+	_fx_track = true
+	_tick_player = true
+
+
+func _check_fx_splash() -> void:
+	_fx_track = false
+	_tick_player = false
+	var p: Player = main.player
+	var world: VoxelWorld = main.world
+	var fx: WaterFx = main.water_fx
+	var d: Dictionary = fx.diagnostics()
+	_fx_e1 = main.aether.total_energy()
+	if _fx_plane <= 0.0:
+		_check("orcamento_de_particulas", false, "sem coluna de queda: a janela nao rodou")
+		return
+
+	# O teto e conferido contra a arvore de nodes, nao contra a minha memoria: os
+	# emissores que existem sao os do pool, e a soma dos `amount` deles e o numero que a
+	# checagem compara. Um emissor criado fora do boot aparece aqui como contagem
+	# diferente — que e o modo honesto de pagar o §3.6.
+	var emissores := 0
+	var anis := 0
+	var soma := 0
+	for c in fx.get_children():
+		if c is GPUParticles3D:
+			emissores += 1
+			soma += (c as GPUParticles3D).amount
+		elif c is MeshInstance3D:
+			anis += 1
+			soma += 1
+	var vivas := int(d["salpicos"]) * WaterFx.SPLASH_AMOUNT + int(d["anis"]) \
+			+ int(d["bolhas"]) * WaterFx.BUBBLE_AMOUNT
+	var teto := WaterFx.teto_particulas()
+	_check("orcamento_de_particulas",
+		emissores == WaterFx.SPLASH_POOL + WaterFx.BUBBLE_POOL and anis == WaterFx.RING_POOL
+			and soma == teto and vivas <= teto,
+		"emissores=%d  anis=%d  soma=%d  teto=%d  vivas=%d  picos=%d" % [
+			emissores, anis, soma, teto, vivas, int(d["picos"])])
+
+	var plano := world.water_surface_y(_fx_col.x, _fx_col.y)
+	var jcol: Vector2i = d["jogador_col"]
+	_check("queda_na_agua_dispara_salpico",
+		int(d["salpicos_disparados"]) > _fx_salpicos0
+			and int(d["salpicos_jogador"]) > _fx_seco0
+			and float(d["jogador_vy"]) < WaterFx.SPLASH_MIN_VY
+			and jcol == _fx_col
+			and absf(float(d["jogador_plano"]) - plano) < 0.001,
+		"disparados=%d->%d  jogador=%d->%d  vy=%.2f  col=%s  plano_fx=%.3f plano_mundo=%.3f  blocos=%d" % [
+			_fx_salpicos0, int(d["salpicos_disparados"]), _fx_seco0, int(d["salpicos_jogador"]),
+			float(d["jogador_vy"]), jcol, float(d["jogador_plano"]), plano,
+			int(d["jogador_blocos"])])
+
+	# Nao-escrita com as tres testemunhas do §5.1. A assinatura e por COLUNA porque o
+	# lobo cava (perna 12) e a grama cresce (18): o tamanho global de `edits` muda por
+	# causa legitima, e uma checagem nele daria vermelho pelo motivo errado — por isso
+	# `edits=%d->%d` sai impresso sem ser assercao. A banda do Eter e 4x a deriva da
+	# janela seca, medida na mesma arvore, e o numero das duas aparece na linha.
+	var seca := absf(_fx_seco_e1 - _fx_seco_e0)
+	var molhada := absf(_fx_e1 - _fx_e0)
+	var sem_eter := true
+	for prop in fx.get_property_list():
+		if String(prop["class_name"]) == "AetherField":
+			sem_eter = false
+	_check("fx_nao_escreve_o_mundo",
+		_fx_sig == _fx_assinatura_coluna(_fx_col.x, _fx_col.y) and molhada <= 4.0 * seca
+			and AetherField.Channel.COUNT == 3 and sem_eter,
+		"assinatura_ok=%s  edits_globais=%d->%d  eter_seco=%.6f  eter_salpico=%.6f  canais=%d  fx_sem_eter=%s" % [
+			_fx_sig == _fx_assinatura_coluna(_fx_col.x, _fx_col.y), _fx_edits0, world.edits.size(),
+			seca, molhada, AetherField.Channel.COUNT, sem_eter])
+
+	# Custo colhido, nao asserido (mandato 5): o FX roda por frame de fisica, e esta e a
+	# primeira vez que a casa tem um numero dele. Sem piso medido, qualquer teto escrito
+	# aqui seria um chute com cara de gate — o numero vai para o status, e a checagem de
+	# orcamento que morde e a de particulas.
+	print("  custo do FX: quadros=%d  us_total=%d  media=%.2f us/quadro  pico=%d us" % [
+		int(d["quadros"]), int(d["us_total"]), float(d["us_por_quadro"]), int(d["us_pico"])])
+
+	# Devolve o corpo ao lugar de antes: os passos seguintes (lavra, golpe, respiracao)
+	# miram a partir do spawn, e um jogador dentro de um lago mudaria o motivo de cada
+	# verde deles.
+	p.body.feet_pos = _fx_home
+	p.body.velocity = Vector3.ZERO
+
+
+## Terra seca pelos proximos `n` passos de uma direcao: coluna sem agua nenhuma, e nao
+## apenas o `in_water` falso no comeco da janela.
+func _fx_caminho_seco(x: int, z: int, d: Vector3, n: int) -> bool:
+	for k in range(1, n + 1):
+		var cx := x + int(roundf(d.x * float(k)))
+		var cz := z + int(roundf(d.z * float(k)))
+		if not VoxelConfig.in_world_bounds(Vector3i(cx, 1, cz)):
+			return false
+		if main.world.water_surface_y(cx, cz) >= 0.0:
+			return false
+	return true
+
+
+## Quantos voxels de agua ha na coluna, do topo da agua para baixo, sem saturar: a
+## premissa quer a profundidade real para escolher a mais funda, e o FX tem a sua
+## contagem saturada em 6 dentro dele (`_blocos_na_coluna`).
+func _fx_coluna_agua(x: int, z: int) -> int:
+	var y := VoxelConfig.CHUNK_SIZE_Y - 1
+	while y >= 0:
+		if main.world.is_water_xyz(x, y, z):
+			break
+		y -= 1
+	if y < 0:
+		return 0
+	var n := 0
+	while y - n >= 0 and main.world.is_water_xyz(x, y - n, z):
+		n += 1
+	return n
+
+
+## Assinatura das edicoes registradas numa coluna. `world.edits` e o disco do estado
+## autoritativo, e e ele que a checagem de nao-escrita compara antes/depois da janela.
+func _fx_assinatura_coluna(x: int, z: int) -> String:
+	var partes := PackedStringArray()
+	for y in VoxelConfig.CHUNK_SIZE_Y:
+		var k := Vector3i(x, y, z)
+		if main.world.edits.has(k):
+			partes.append("%d=%d" % [y, int(main.world.edits[k])])
+	return "%d,%d:%s" % [x, z, "|".join(partes)]
 
 
 static func _sha_hex(s: String) -> String:

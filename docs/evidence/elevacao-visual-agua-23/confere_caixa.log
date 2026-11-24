@@ -1,0 +1,6 @@
+confere_caixa.py sobre os recortes arquivados — corrida de 2026-11-24
+python=3.10.11 numpy=2.2.6 Pillow=10.2.0
+CAIXA  docs/evidence/elevacao-visual-agua-23/caixa-23-t1.png vs docs/evidence/elevacao-visual-agua-23/caixa-23-t2.png  tamanho=96x96
+CAIXA  amostras=9216  ge1=8867  ge3=7807  fracao_ge3=0.8471  media_canal r=0.032264 g=0.031319 b=0.026414
+CAIXA  docs/evidence/elevacao-visual-agua-23/caixa-base-t1.png vs docs/evidence/elevacao-visual-agua-23/caixa-base-t2.png  tamanho=96x96
+CAIXA  amostras=9216  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000

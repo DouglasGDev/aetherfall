@@ -51,8 +51,13 @@ var _flat_ready: bool = false
 
 var _atlas: Texture2D = null
 var _mat_opaque: StandardMaterial3D = null
-var _mat_water: StandardMaterial3D = null
+var _mat_water: ShaderMaterial = null
 var _mat_glass: StandardMaterial3D = null
+# A direcao do sol e do `main.gd`, que cria o no, nao daqui; o material da agua
+# precisa dela porque a caustica so liga com o sol alto (dossie 23 §2). O default
+# e o zenith, que e o que o shader tambem declara -- ausencia de fiação muda o
+# visual, nunca o comportamento do mundo.
+var _water_sun: Vector3 = Vector3.UP
 var _dirty: Array = []
 var _last_mesh_ms: float = 0.0
 var _meshes_built: int = 0
@@ -89,12 +94,7 @@ func _build_materials() -> void:
 	_mat_opaque.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 	_mat_opaque.roughness = 0.92
 	_mat_opaque.metallic = 0.0
-	_mat_water = StandardMaterial3D.new()
-	_mat_water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_mat_water.albedo_texture = _atlas
-	_mat_water.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_mat_water.roughness = 0.3
-	_mat_water.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_mat_water = WaterSurface.build_material(_atlas, _water_sun)
 	# O vidro e amostrado como a agua mas sem o recuo de topo, e com o filtro
 	# NEAREST da pedra: linear em cima de um tile que e quase todo alpha deixa a
 	# chapa borrada em vez de limpa.
@@ -112,6 +112,18 @@ func _build_materials() -> void:
 ## parede, nao uma reamostragem a parte.
 func atlas_texture() -> Texture2D:
 	return _atlas
+
+
+## O material da agua, emprestado a quem precisa olhá-lo: a suíte (§5.1) prova por
+## aqui que o surface de água de um chunk real carrega um `ShaderMaterial`, e o
+## `main.gd` grava nele a direção do sol.
+func water_material() -> ShaderMaterial:
+	return _mat_water
+
+
+func set_water_sun_direction(dir: Vector3) -> void:
+	_water_sun = dir
+	_mat_water.set_shader_parameter("sun_dir", dir)
 
 
 func generate(p_seed: int) -> void:
@@ -457,6 +469,20 @@ func surface_height(x: int, z: int) -> int:
 	return 0
 
 
+## O plano de agua da coluna (dossie 23 §3.7): o `y` de mundo onde a superficie
+## ondulada daquele ponto esta — topo do bloco de agua mais alto, menos o recuo de
+## topo que a malharia usa — ou `-1,0` quando a coluna nao tem agua nenhuma. Desce
+## do teto e para no primeiro voxel de agua, entao custa no maximo `CHUNK_SIZE_Y`
+## leituras de uma coluna, e isso acontece por evento, nunca por frame.
+func water_surface_y(x: int, z: int) -> float:
+	var y := CHUNK_SIZE_Y - 1
+	while y >= 0:
+		if is_water_xyz(x, y, z):
+			return float(y) + 1.0 - WATER_TOP_DROP
+		y -= 1
+	return -1.0
+
+
 # ------------------------------------------------------------------ malharia
 
 static func _ensure_tables() -> void:
@@ -511,6 +537,14 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 					continue
 				var gx: int = ox + x
 				var dr: int = BlockDefs.draw_of(b)
+				# O que o shader precisa saber antes de existir pixel (§3.3): se este
+				# bloco e o topo de uma coluna (vizinho de cima AIR) e quantos blocos
+				# de agua ha embaixo dele, em quartos de 1, saturado em 4. Le-se uma
+				# unica vez por bloco, e so quando a primeira face dele sai: no
+				# interior do oceano todo vizinho e agua, nenhuma face e emitida, e
+				# ler a coluna la seria pagar cinco consultas por voxel para alimentar
+				# triangulo nenhum. O -1 e o "ainda nao lido", nao um valor de canal.
+				var water_flags := Vector2(-1.0, -1.0)
 				for f in 6:
 					var n: Vector3i = FACE_NORMALS[f]
 					var nb: int = get_block_xyz(gx + n.x, y + n.y, gz + n.z)
@@ -526,8 +560,13 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 						continue
 					var tile: int = BlockDefs.tile_for(b, FACE_TILE[f])
 					if dr == BlockDefs.Draw.LIQUID:
+						if water_flags.x < 0.0:
+							water_flags = Vector2(
+								1.0 if get_block_xyz(gx, y + 1, gz) == BlockDefs.Block.AIR else 0.0,
+								float(_water_blocks_below(gx, y, gz)) / 4.0)
 						_emit_face(wv, wn, wuv, wc, wi, gx, y, gz, f, tile,
-							PackedFloat32Array([1.0, 1.0, 1.0, 1.0]), FACE_TINT[f], WATER_TOP_DROP)
+							PackedFloat32Array([1.0, 1.0, 1.0, 1.0]), FACE_TINT[f],
+							WATER_TOP_DROP, water_flags)
 					elif dr == BlockDefs.Draw.ALPHA:
 						_emit_face(gv, gn, guv, gc, gi, gx, y, gz, f, tile,
 							_corner_ao_array(gx, y, gz, f), FACE_TINT[f], 0.0)
@@ -563,6 +602,16 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 	c.dirty = false
 	_meshes_built += 1
 	_record_edit_cost(c)
+
+
+## Quantos blocos de agua contiguos existem embaixo deste (dossie 23 §3.3, canal G).
+## Saturado em 4 porque o `COLOR` e um byte por canal e 4 ja leva o corpo ao azul
+## fundo: alem dai nao ha mais cor a ganhar, so leituras a perder.
+func _water_blocks_below(x: int, y: int, z: int) -> int:
+	var n := 0
+	while n < 4 and is_water_xyz(x, y - 1 - n, z):
+		n += 1
+	return n
 
 
 func _corner_ao_array(gx: int, gy: int, gz: int, f: int) -> PackedFloat32Array:
@@ -605,7 +654,8 @@ func _emit_face(
 	verts: PackedVector3Array, norms: PackedVector3Array, uvs: PackedVector2Array,
 	cols: PackedColorArray, idx: PackedInt32Array,
 	gx: int, gy: int, gz: int, f: int, tile: int,
-	ao: PackedFloat32Array, tint: float, top_drop: float) -> void:
+	ao: PackedFloat32Array, tint: float, top_drop: float,
+	water_flags: Vector2 = Vector2.ZERO) -> void:
 	var base: int = verts.size()
 	var corners: Array = FACE_CORNERS[f]
 	var face_uvs: Array = FACE_UVS[f]
@@ -625,7 +675,18 @@ func _emit_face(
 			tu + inset + face_uvs[k].x * (span - 2.0 * inset),
 			tv + inset + face_uvs[k].y * (span - 2.0 * inset)))
 		var bright: float = clampf(tint * ao[k], 0.05, 1.2)
-		cols.append(Color(bright, bright, bright, 1.0))
+		if top_drop > 0.0:
+			# Agua: aqui o COLOR nao e cor, e o atributo que o shader lee, e com isto
+			# o furo #43 fecha (o canal era escrito com o tint da face e lido por
+			# ninguem). R vale so no canto de topo de quem nao tem agua em cima, para
+			# o quad de topo e as laterais do mesmo bloco se moverem pelo mesmo numero.
+			cols.append(Color(
+				water_flags.x if corner.y == 1 else 0.0,
+				water_flags.y,
+				0.0 if f == 4 or f == 5 else 1.0,
+				1.0))
+		else:
+			cols.append(Color(bright, bright, bright, 1.0))
 	# CW visto de fora = face frontal no Godot (Vulkan inverte o Y no framebuffer):
 	# com (0,1,2)/(0,2,3) o rasterizador descartava todo topo e os blocos
 	# apareciam transparentes.

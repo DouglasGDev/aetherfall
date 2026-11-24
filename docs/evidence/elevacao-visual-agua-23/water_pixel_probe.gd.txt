@@ -1,0 +1,291 @@
+extends Node
+## Sonda com janela do dossie 23 §5.2 — as duas perguntas que headless nao
+## responde: o shader da superficie **compila** (a prova e o stdout desta corrida,
+## grepado por `SHADER ERROR` e `ERROR:`, com as ocorrencias contadas depois) e a
+## agua **muda de quadro** (a prova e a diferenca pixel a pixel entre dois
+## instantes de `TIME` do MESMO enquadramento, com a media por canal impressa).
+##
+## Roda em duas arvores com este mesmo arquivo: nesta (com o shader) e no clone de
+## `b0ed929` (sem ele). O par e o chao do instrumento: a diferenca que nao vem da
+## onda vem de dither/TAA, e e isso que a arvore de controle mede.
+##
+## A sonda nao toca simbolo nenhum que a arvore de controle nao tenha — por isso
+## procura a coluna mais funda por `get_block_xyz` e nao por `water_surface_y`, e
+## so pergunta pelo FX com `get()`.
+##
+## Nada de captura de desktop: o frame vem do RenderingServer da propria janela.
+
+## Meio-lado da caixa amostrada em torno da superficie projetada, em pixels.
+const HALF := 96
+## Passo da varredura de pixels: 2 em 1920x1080 da 46 464 amostras na caixa.
+const STEP := 2
+## Frames ate a camera assentar depois do teletransporte (o pivo em 1a pessoa e a
+## propria cabeca, entao assentar e so o primeiro frame de render).
+const APOS_COLOCAR := 6
+## Intervalo entre os dois quadros, em segundos de relogio — e o quanto de `TIME`
+## do shader separa as duas amostras.
+const PAUSA := 1.25
+
+var root := ""
+var out_dir := ""
+var main: Node3D = null
+var p: Player = null
+var w: VoxelWorld = null
+var hud = null
+## O mirante escolhido, impresso na linha PROBE: sem o sitio escrito o par de
+## arvores nao e conferivel, porque a caixa depende do enquadramento.
+var _cadrado := {}
+
+
+func _ready() -> void:
+	# O audio real nao serve a nenhuma das duas perguntas e o dono da maquina nao
+	# pediu trilha tocando durante a sonda.
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
+	root = ProjectSettings.globalize_path("res://")
+	out_dir = root.path_join(".tools/water_px")
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	get_window().size = Vector2i(1920, 1080)
+	main = load("res://src/main.tscn").instantiate()
+	add_child(main)
+	p = main.player
+	w = main.world
+	hud = main.hud
+	await get_tree().create_timer(1.5).timeout
+	_limpar_hud()
+
+	var coluna := _coluna_mais_funda()
+	if coluna.is_empty():
+		print("PROBE  nenhuma coluna de agua no mundo")
+		get_tree().quit()
+		return
+	var topo := int(coluna["top"])
+	var alvo := Vector3(float(int(coluna["x"])) + 0.5, float(topo) + 1.0,
+			float(int(coluna["z"])) + 0.5)
+	var img0 := get_viewport().get_texture().get_image()
+	print("PROBE  arvore=%s  moldura=%s  seed=%d  coluna=(%d,%d)  blocos=%d  topo=%d  plano=%.2f" % [
+		root, img0.get_size(), int(w.gen.world_seed), int(coluna["x"]), int(coluna["z"]),
+		int(coluna["n"]), topo, alvo.y])
+
+	if not _enquadrar(alvo):
+		print("PROBE  sem enquadramento valido (nenhum mirante seco com visada)")
+		get_tree().quit()
+		return
+	var olho: Vector3 = _cadrado["olho"]
+	print("PROBE  mirante coluna=(%d,%d) chao=%d dist=%.0f olho=(%.2f, %.2f, %.2f) pitch=%.3f" % [
+		int(_cadrado["x"]), int(_cadrado["z"]), int(_cadrado["chao"]),
+		float(_cadrado["dist"]), olho.x, olho.y, olho.z, p.pitch])
+
+	await _frames(APOS_COLOCAR)
+	_limpar_hud()
+	var cam_a := p.camera.global_position
+	var img_a := get_viewport().get_texture().get_image()
+	img_a.save_png(out_dir.path_join("agua-t1.png"))
+	var t_a := Time.get_ticks_msec()
+
+	await get_tree().create_timer(PAUSA).timeout
+	_limpar_hud()
+	var cam_b := p.camera.global_position
+	var img_b := get_viewport().get_texture().get_image()
+	img_b.save_png(out_dir.path_join("agua-t2.png"))
+	var t_b := Time.get_ticks_msec()
+
+	var wd := img_a.get_width()
+	var ht := img_a.get_height()
+	var sp := p.camera.unproject_position(alvo)
+	var dentro := sp.x >= float(HALF) and sp.y >= float(HALF) \
+			and sp.x <= float(wd - HALF) and sp.y <= float(ht - HALF)
+	var lobos := _lobos_na_caixa(sp, alvo)
+	var fx := _fx_da_arvore()
+
+	var caixa := _diff(img_a, img_b, int(sp.x) - HALF, int(sp.y) - HALF,
+			int(sp.x) + HALF, int(sp.y) + HALF)
+	var quadro := _diff(img_a, img_b, 0, 0, wd, ht)
+
+	# O `%` liga antes do `+`: sem os parenteses a primeira metade da barra fica
+	# literal e as nove argumentos sobram na segunda — medido, a linha saiu com os
+	# `%d` na cara e com tres `ERROR: String formatting error` no stderr.
+	print(("PIXEL  moldura=%dx%d  centro_agua=(%.1f,%.1f) dentro=%d  dt=%d ms  "
+			+ "camera_deslocou=%.4f m  lobos_na_caixa=%d  %s") % [
+		wd, ht, sp.x, sp.y, int(dentro), t_b - t_a,
+		cam_a.distance_to(cam_b), lobos, fx])
+	print(("PIXEL  caixa  amostras=%d  ge1=%d  ge3=%d  fracao_ge3=%.4f  "
+			+ "media_canal r=%.6f g=%.6f b=%.6f") % [
+		int(caixa["n"]), int(caixa["ge1"]), int(caixa["ge3"]),
+		float(caixa["ge3"]) / float(maxi(int(caixa["n"]), 1)),
+		float(caixa["mr"]), float(caixa["mg"]), float(caixa["mb"])])
+	print(("PIXEL  quadro amostras=%d  ge1=%d  ge3=%d  fracao_ge3=%.4f  "
+			+ "media_canal r=%.6f g=%.6f b=%.6f") % [
+		int(quadro["n"]), int(quadro["ge1"]), int(quadro["ge3"]),
+		float(quadro["ge3"]) / float(maxi(int(quadro["n"]), 1)),
+		float(quadro["mr"]), float(quadro["mg"]), float(quadro["mb"])])
+	# A régua é a caixa, nao o quadro: fora dela o ceu e o relevo sao estaticos e
+	# diluem a fracao. 1% da caixa movida e o corte — na arvore com shader a
+	# medida e dezenas de vezes acima; no controle ela e zero.
+	var mexe := bool(dentro) and (float(caixa["ge3"]) / float(maxi(int(caixa["n"]), 1))) >= 0.01
+	print("PIXEL  veredito agua_muda_de_quadro=%s  pngs=%s %s" % [
+		str(mexe), out_dir.path_join("agua-t1.png"), out_dir.path_join("agua-t2.png")])
+	print("PROBE ok")
+	get_tree().quit()
+
+
+## Os dois avisos do HUD saem do quadro porque a moldura e comparada pixel a
+## pixel entre os instantes: um letreiro que aparece no meio da caixa seria
+## contado como onda. Nao se escreve campo na mao — e o metodo real do HUD.
+func _limpar_hud() -> void:
+	hud.show_binds(false)
+	hud.show_message("", 0.0)
+
+
+## A coluna mais funda do mundo gerado: desce do teto ate a primeira agua e conta
+## a corrida continua. Ordem de varredura e desempate fixos (estrito `>`), senao o
+## par de arvores nao enquadra o mesmo ponto.
+func _coluna_mais_funda() -> Dictionary:
+	var melhor := {}
+	var melhor_n := 0
+	var sx: int = VoxelConfig.world_size_x()
+	var sz: int = VoxelConfig.world_size_z()
+	for x in range(4, sx - 4, 2):
+		for z in range(4, sz - 4, 2):
+			var y: int = VoxelConfig.CHUNK_SIZE_Y - 1
+			while y >= 0 and not _is_water(x, y, z):
+				y -= 1
+			if y < 0:
+				continue
+			var topo := y
+			var n := 0
+			while y >= 0 and _is_water(x, y, z):
+				n += 1
+				y -= 1
+			if n > melhor_n:
+				melhor_n = n
+				melhor = {"x": x, "z": z, "n": n, "top": topo}
+	return melhor
+
+
+func _is_water(x: int, y: int, z: int) -> bool:
+	return int(w.get_block_xyz(x, y, z)) == int(BlockDefs.Block.WATER)
+
+
+## Pe em chao seco, 1a pessoa (a orbita de 3a pessoa recua quando algo solido se
+## poe na frente e o enquadramento deixaria de ser o mesmo entre os instantes),
+## olho na superficie da coluna. O mirante e a primeira coluna, em aneis de 6 a
+## 16 blocos, que e paro, deixa o olho um metro acima do plano da agua e tem o
+## cone de cinco raios livre: mais perto a caixa de 192 px cobre a margem
+## inteira, mais longe a agua sai pequena demais para a regua da caixa.
+func _enquadrar(alvo: Vector3) -> bool:
+	for dist in [6.0, 8.0, 11.0, 14.0, 16.0]:
+		for k in 16:
+			var a := TAU * float(k) / 16.0
+			var cx := int(round(alvo.x + cos(a) * dist))
+			var cz := int(round(alvo.z + sin(a) * dist))
+			var h: int = w.surface_height(cx, cz)
+			if h <= VoxelConfig.SEA_LEVEL or not _paravel(cx, h, cz):
+				continue
+			p.third_person = false
+			p.feet_to_spawn(Vector3(float(cx) + 0.5, float(h + 1), float(cz) + 0.5))
+			p.body.velocity = Vector3.ZERO
+			_apontar(alvo)
+			# Olho pelo menos um metro acima do plano: de nivelado com a agua o
+			# plano de topo vira uma linha de dois pixels e a caixa amostraria a
+			# margem, nao a superficie.
+			if p.eye_position().y - alvo.y < 1.0:
+				continue
+			if not _cone_livre(alvo):
+				continue
+			_cadrado = {"dist": dist, "x": cx, "z": cz, "chao": h,
+					"olho": p.eye_position()}
+			return true
+	return false
+
+
+## Cinco raios: do olho real ate a superficie e aos quatro cantos de um quadrado
+## de dois blocos em torno dela. O teste vem depois do teletransporte porque o
+## olho medido e o do jogador colocado — a moldura que se compara, nao uma
+## estimativa geometrica.
+func _cone_livre(alvo: Vector3) -> bool:
+	var eye := p.eye_position()
+	for c in [alvo,
+			alvo + Vector3(1.0, 0.0, 1.0), alvo + Vector3(-1.0, 0.0, 1.0),
+			alvo + Vector3(1.0, 0.0, -1.0), alvo + Vector3(-1.0, 0.0, -1.0)]:
+		var d: Vector3 = c - eye
+		var hit := w.ray_voxel(eye, d.normalized(), d.length() - 0.2)
+		if hit.valid:
+			return false
+	return true
+
+
+func _paravel(x: int, h: int, z: int) -> bool:
+	if not w.is_solid_xyz(x, h, z):
+		return false
+	for dy in [1, 2, 3]:
+		if w.is_solid_xyz(x, h + dy, z):
+			return false
+	return true
+
+
+func _apontar(at: Vector3) -> void:
+	var eye := p.eye_position()
+	var d := at - eye
+	p.yaw = atan2(-d.x, -d.z)
+	p.pitch = asin(clampf(d.y / d.length(), -1.0, 1.0))
+
+
+## Quantos lobos vivos caem dentro da caixa medida no quadro B. Um corpo dentro
+## da caixa moveria pixels por conta propria e a asseriao deixaria de ser sobre a
+## agua; o numero e impresso, nao escondido.
+func _lobos_na_caixa(sp: Vector2, alvo: Vector3) -> int:
+	var n := 0
+	for wolf in main.wolves:
+		if not wolf.alive:
+			continue
+		var s := p.camera.unproject_position(wolf.body.feet_pos + Vector3(0.0, 0.7, 0.0))
+		if absf(s.x - sp.x) <= float(HALF) and absf(s.y - sp.y) <= float(HALF):
+			n += 1
+	if p.body.feet_pos.distance_to(alvo) < 3.0:
+		n += 1
+	return n
+
+
+## Testemunha de que a sonda nao disparou FX: em `b0ed929` o no nao existe e a
+## linha diz `fx=ausente`, em desta arvore diz os salpicos disparados no boot.
+func _fx_da_arvore() -> String:
+	var fx: Variant = main.get("water_fx")
+	if fx == null:
+		return "fx=ausente"
+	var d: Dictionary = fx.call("diagnostics")
+	return "fx_presente vivas_pool=%d/%d/%d salpicos_disparados=%d picos=%d" % [
+		int(d["salpicos"]), int(d["anis"]), int(d["bolhas"]),
+		int(d["salpicos_disparados"]), int(d["picos"])]
+
+
+func _diff(a: Image, b: Image, x0: int, y0: int, x1: int, y1: int) -> Dictionary:
+	var n := 0
+	var um := 0
+	var tres := 0
+	var sr := 0.0
+	var sg := 0.0
+	var sb := 0.0
+	for y in range(maxi(y0, 0), mini(y1, a.get_height()), STEP):
+		for x in range(maxi(x0, 0), mini(x1, a.get_width()), STEP):
+			var ca := a.get_pixel(x, y)
+			var cb := b.get_pixel(x, y)
+			var dr: float = absf(ca.r - cb.r)
+			var dg: float = absf(ca.g - cb.g)
+			var db: float = absf(ca.b - cb.b)
+			n += 1
+			sr += dr
+			sg += dg
+			sb += db
+			var mx: float = maxf(dr, maxf(dg, db))
+			if mx >= 1.0 / 255.0:
+				um += 1
+			if mx >= 3.0 / 255.0:
+				tres += 1
+	return {"n": n, "ge1": um, "ge3": tres,
+		"mr": sr / float(maxi(n, 1)), "mg": sg / float(maxi(n, 1)),
+		"mb": sb / float(maxi(n, 1))}
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame

@@ -26,17 +26,17 @@ estado do relógio são seis variáveis: o contador `tick` [:9](../../src/core/s
 [:14](../../src/core/sim_clock.gd#L14).
 
 `tick` conta passos e a própria classe nunca o incrementa: quem faz isso é a sessão, na última linha
-útil do corpo do passo, antes do journal [src/main.gd:300](../../src/main.gd#L300). Lido junto com
-[main.gd:300-306](../../src/main.gd#L300-L306), isso dá uma regra que quem escreve código dentro do
+útil do corpo do passo, antes do journal [src/main.gd:316](../../src/main.gd#L316). Lido junto com
+[main.gd:316-322](../../src/main.gd#L316-L322), isso dá uma regra que quem escreve código dentro do
 passo precisa saber: durante o `_sim_tick`, `clock.tick` ainda é o índice do passo que está
 terminando, e o hash do journal entra gravado com o número seguinte. O contador atravessa o save
-[main.gd:1006](../../src/main.gd#L1006) e volta do disco [main.gd:1136](../../src/main.gd#L1136); o
+[main.gd:1022](../../src/main.gd#L1022) e volta do disco [main.gd:1152](../../src/main.gd#L1152); o
 `_accumulator` não volta — o relógio recomeça do zero e o que estava sobrando no acumulador do
 processo anterior não existe mais.
 
 A proporção entre os dois relógios tem checagem na suíte, e ela pode falhar: 600 chamadas de
-`advance(1.0 / 60.0)` somam 200 passos [tests/smoke_test.gd:866-869](../../tests/smoke_test.gd#L866-L869),
-e `step_duration()` é checado igual a 0,05 [tests/smoke_test.gd:873](../../tests/smoke_test.gd#L873).
+`advance(1.0 / 60.0)` somam 200 passos [tests/smoke_test.gd:1238-1241](../../tests/smoke_test.gd#L1238-L1241),
+e `step_duration()` é checado igual a 0,05 [tests/smoke_test.gd:1245](../../tests/smoke_test.gd#L1245).
 Dela sai a conta do bench que o dossiê pede: 600 s ÷ 0,05 s = 12 000 ticks, derivado de
 [sim_clock.gd:6](../../src/core/sim_clock.gd#L6) e do texto do §3
 [docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:35](../planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md)
@@ -46,7 +46,7 @@ Fora da classe, `HZ` tem um único leitor em `src/`: a memória de avistamento d
 segundos em passos com `SimClock.HZ` [src/entities/wolf.gd:464](../../src/entities/wolf.gd#L464) sobre
 `SIGHT_MEMORY_SECONDS = 6.0` [wolf.gd:35](../../src/entities/wolf.gd#L35), ou 120 ticks, derivado das
 duas linhas. [`step_duration()`](../../src/core/sim_clock.gd#L42-L43) tem um chamador em `src/`: o corpo
-do tick pega `dt` dele [src/main.gd:265](../../src/main.gd#L265) e nunca lê relógio de parede. É essa a
+do tick pega `dt` dele [src/main.gd:281](../../src/main.gd#L281) e nunca lê relógio de parede. É essa a
 costura que o "driver de `dt` fixo" do dossiê
 [docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:37-45](../planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md)
 quer exercitar, e a peça ainda é `[TARGET]`.
@@ -67,10 +67,10 @@ descartado. Por isso `clock.tick` não é função do tempo de parede decorrido 
 [:17-18](../../src/core/sim_clock.gd#L17-L18) nomeia a regra, "nunca catch-up silencioso", e o contador é
 a metade não silenciosa dela: o estouro vira número lido no F3
 [src/ui/hud.gd:256-258](../../src/ui/hud.gd#L256-L258) e no `diagnostics()`
-[src/main.gd:1185](../../src/main.gd#L1185).
+[src/main.gd:1201](../../src/main.gd#L1201).
 
 Uma precisão que a própria suíte já mede: `dropped_ticks` conta **eventos de estouro**, não passos
-perdidos. [tests/smoke_test.gd:870-872](../../tests/smoke_test.gd#L870-L872) chama `advance(1.0)` —
+perdidos. [tests/smoke_test.gd:1242-1244](../../tests/smoke_test.gd#L1242-L1244) chama `advance(1.0)` —
 vinte passos inteiros de acumulado — e espera `s == 5 and c.dropped_ticks == 1`. Cinco rodam, quinze
 são descartados, o contador andou um. Quem lê o número no overlay tem de lê-lo assim: "quantos frames
 estouraram o teto", e não "quantos ticks o mundo deixou de viver". O nome da variável
@@ -81,7 +81,7 @@ O teto está longe de ser o caminho comum: 5 × 0,05 s = 0,25 s de tempo simulad
 chamada, contra os ~16,7 ms que chegam num frame de 60 Hz — aritmética sobre
 [sim_clock.gd:6-7](../../src/core/sim_clock.gd#L6-L7), não medição. Estourar exige um frame que ainda
 deixe um passo inteiro depois de cinco. [`advance()`](../../src/core/sim_clock.gd#L19-L29) tem um
-chamador em `src/`, o `_physics_process` da sessão [src/main.gd:257](../../src/main.gd#L257), e
+chamador em `src/`, o `_physics_process` da sessão [src/main.gd:273](../../src/main.gd#L273), e
 `dropped_ticks` não tem reset nenhum: é acumulado do processo, do mesmo jeito que o pico da seção
 abaixo.
 
@@ -103,20 +103,20 @@ hoje o `worst_step_ms` que sai no F3 e no `diagnostics()` é o pior passo do **p
 de uma janela de observação. Quem quiser comparar dois trechos da mesma corrida precisa reiniciar o
 processo ou escrever o chamador que falta — e isso é tarefa, não texto desta página.
 
-O que está dentro do cronômetro é exatamente uma chamada: [`_sim_tick()`](../../src/main.gd#L264-L306)
-entre [`begin_step`/`end_step`](../../src/main.gd#L259-L261). Ficam fora do número o
-`player.update_local(delta)` que roda antes [main.gd:256](../../src/main.gd#L256) e todo o
-[`_process()`](../../src/main.gd#L309-L315), inclusive o malhamento. Entram nele a difusão do Éter, as
+O que está dentro do cronômetro é exatamente uma chamada: [`_sim_tick()`](../../src/main.gd#L280-L322)
+entre [`begin_step`/`end_step`](../../src/main.gd#L275-L277). Ficam fora do número o
+`player.update_local(delta)` que roda antes [main.gd:272](../../src/main.gd#L272) e todo o
+[`_process()`](../../src/main.gd#L325-L331), inclusive o malhamento. Entram nele a difusão do Éter, as
 mentes, a recolha de cadáveres, a fila de respawn, a roda de acasalamento e — com o journal ativo — o
-SHA256, a escrita e o `flush` do tick [main.gd:300-306](../../src/main.gd#L300-L306). Então
+SHA256, a escrita e o `flush` do tick [main.gd:316-322](../../src/main.gd#L316-L322). Então
 `worst_step_ms` não é tempo de frame: o overlay mostra os dois lado a lado, `fps` / `processo` /
 `fisica` de um lado [hud.gd:248-251](../../src/ui/hud.gd#L248-L251) e `tick` / `sim` / `pior` /
 `perdidos` do outro [hud.gd:256-258](../../src/ui/hud.gd#L256-L258), porque medem coisas diferentes.
 
 Consumidores dos dois números: `last_step_ms` só aparece no F3 [hud.gd:258](../../src/ui/hud.gd#L258);
-`worst_step_ms` sai no F3 e como `worst_sim_ms` no `diagnostics()` [main.gd:1184](../../src/main.gd#L1184),
-onde a suíte o confere [tests/smoke_test.gd:227-228](../../tests/smoke_test.gd#L227-L228). A dupla é
-exercitada direto no arquivo [tests/smoke_test.gd:874-877](../../tests/smoke_test.gd#L874-L877), que abre
+`worst_step_ms` sai no F3 e como `worst_sim_ms` no `diagnostics()` [main.gd:1200](../../src/main.gd#L1200),
+onde a suíte o confere [tests/smoke_test.gd:261-262](../../tests/smoke_test.gd#L261-L262). A dupla é
+exercitada direto no arquivo [tests/smoke_test.gd:1246-1249](../../tests/smoke_test.gd#L1246-L1249), que abre
 e fecha um passo e exige que o pico tenha sido preenchido. E o runner de reações já colhe os mesmos
 dois números pelo caminho real do frame, com `dt` fixo
 [tests/aether_reactions_test.gd:1369-1374](../../tests/aether_reactions_test.gd#L1369-L1374) e
@@ -126,33 +126,33 @@ dois números pelo caminho real do frame, com `dt` fixo
 
 O relógio só sabe contar passos de 50 ms. Quase tudo o mais no jogo é construído **em cima** disso:
 um contador que decai de `dt` em `dt` até a porta abrir. A tabela é o corpo de
-[`_sim_tick()`](../../src/main.gd#L264-L306) lido por inteiro, mais as duas constantes que o corpo não
+[`_sim_tick()`](../../src/main.gd#L280-L322) lido por inteiro, mais as duas constantes que o corpo não
 usa.
 
 | Subsistema | Cadência hoje | Constante | Onde decai e dispara |
 | --- | --- | --- | --- |
-| Difusão + decaimento do Éter | 4 passadas por segundo | `AETHER_PERIOD = 0.25` [main.gd:27](../../src/main.gd#L27) | contador [main.gd:84](../../src/main.gd#L84), porta e reset [main.gd:267-270](../../src/main.gd#L267-L270) |
-| Decisão de cada lobo vivo | todo tick, com budget de 400 µs | [wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449) | laço [main.gd:272-273](../../src/main.gd#L272-L273), corpo [wolf.gd:875](../../src/entities/wolf.gd#L875) |
-| Grafos de coesão da matilha | todo tick | — | chamada [main.gd:271](../../src/main.gd#L271), corpo [main.gd:838](../../src/main.gd#L838) |
+| Difusão + decaimento do Éter | 4 passadas por segundo | `AETHER_PERIOD = 0.25` [main.gd:27](../../src/main.gd#L27) | contador [main.gd:91](../../src/main.gd#L91), porta e reset [main.gd:283-286](../../src/main.gd#L283-L286) |
+| Decisão de cada lobo vivo | todo tick, com budget de 400 µs | [wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449) | laço [main.gd:288-289](../../src/main.gd#L288-L289), corpo [wolf.gd:875](../../src/entities/wolf.gd#L875) |
+| Grafos de coesão da matilha | todo tick | — | chamada [main.gd:287](../../src/main.gd#L287), corpo [main.gd:854](../../src/main.gd#L854) |
 | Leitor de rastros do lobo | 4 varreduras por segundo | `SCENT_PERIOD = 0.25` [wolf.gd:30](../../src/entities/wolf.gd#L30) | decai [wolf.gd:884](../../src/entities/wolf.gd#L884), porta [:927](../../src/entities/wolf.gd#L927), rearma [:961](../../src/entities/wolf.gd#L961) |
-| Recolha de cadáveres | 1 por segundo | `CORPSE_CHECK_PERIOD = 1.0` [main.gd:31](../../src/main.gd#L31) | contador [main.gd:86](../../src/main.gd#L86), porta [main.gd:274-277](../../src/main.gd#L274-L277) |
-| Fila de respawn | contagem regressiva por tick | `RESPAWN_DELAY = 45.0` [main.gd:30](../../src/main.gd#L30) | entradas, cada uma o par `[segundos, toca]` desde a 16, [main.gd:352](../../src/main.gd#L352) e [:899](../../src/main.gd#L899), decaimento sobre `vaga[0]` [main.gd:278-282](../../src/main.gd#L278-L282) |
-| Roda de acasalamento | 1 varredura por segundo | `MATE_PERIOD = 1.0` [main.gd:532](../../src/main.gd#L532) | contador [main.gd:83](../../src/main.gd#L83), porta [main.gd:296-299](../../src/main.gd#L296-L299) |
-| `tick += 1` e gravação do journal | todo tick | — | [main.gd:300-306](../../src/main.gd#L300-L306) |
-| Malhamento de chunks | **por frame**, não por tick: 2 chunks | `MESH_BUDGET = 2` [main.gd:28](../../src/main.gd#L28) | [`_process()`](../../src/main.gd#L309-L310) |
-| Visualização do Éter | **por frame**, não por tick: 0,25 s | `VIZ_PERIOD = 0.25` [main.gd:29](../../src/main.gd#L29) | contador [main.gd:85](../../src/main.gd#L85), decaimento em `delta` de frame [main.gd:311-315](../../src/main.gd#L311-L315) |
+| Recolha de cadáveres | 1 por segundo | `CORPSE_CHECK_PERIOD = 1.0` [main.gd:31](../../src/main.gd#L31) | contador [main.gd:93](../../src/main.gd#L93), porta [main.gd:290-293](../../src/main.gd#L290-L293) |
+| Fila de respawn | contagem regressiva por tick | `RESPAWN_DELAY = 45.0` [main.gd:30](../../src/main.gd#L30) | entradas, cada uma o par `[segundos, toca]` desde a 16, [main.gd:368](../../src/main.gd#L368) e [:915](../../src/main.gd#L915), decaimento sobre `vaga[0]` [main.gd:294-298](../../src/main.gd#L294-L298) |
+| Roda de acasalamento | 1 varredura por segundo | `MATE_PERIOD = 1.0` [main.gd:548](../../src/main.gd#L548) | contador [main.gd:90](../../src/main.gd#L90), porta [main.gd:312-315](../../src/main.gd#L312-L315) |
+| `tick += 1` e gravação do journal | todo tick | — | [main.gd:316-322](../../src/main.gd#L316-L322) |
+| Malhamento de chunks | **por frame**, não por tick: 2 chunks | `MESH_BUDGET = 2` [main.gd:28](../../src/main.gd#L28) | [`_process()`](../../src/main.gd#L325-L326) |
+| Visualização do Éter | **por frame**, não por tick: 0,25 s | `VIZ_PERIOD = 0.25` [main.gd:29](../../src/main.gd#L29) | contador [main.gd:92](../../src/main.gd#L92), decaimento em `delta` de frame [main.gd:327-331](../../src/main.gd#L327-L331) |
 
 Três leituras dessa tabela pagam a seção.
 
 **Duas das cinco constantes que o dossiê lista como montadas em cima do tick não estão no tick.**
 `MESH_BUDGET` e `VIZ_PERIOD` correm no `_process`, com o `delta` de frame
-[main.gd:309-315](../../src/main.gd#L309-L315); o texto de §5 do dossiê
+[main.gd:325-331](../../src/main.gd#L325-L331); o texto de §5 do dossiê
 [docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:88-89](../planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md)
 as coloca junto das outras três. Consequência: "2 chunks por frame" e "0,25 s de visualização" escalam
 com o `fps`, não com os 20 Hz. Numa máquina mais lenta a malha anda mais devagar em tempo de mundo, e
 o relógio não tem nada com isso.
 
-**O difusor recebe o período, não o `dt`.** [main.gd:269](../../src/main.gd#L269) chama
+**O difusor recebe o período, não o `dt`.** [main.gd:285](../../src/main.gd#L285) chama
 `diffuse_and_decay(AETHER_PERIOD)`: a passada é quantizada em 0,25 s de lógica por design, e o próprio
 campo declara a convenção no comentário do método
 [src/world/aether_field.gd:108](../../src/world/aether_field.gd#L108). Lido contra
@@ -160,7 +160,7 @@ campo declara a convenção no comentário do método
 
 **O laço do passo não é de cinco lobos.** Ele percorre `wolves`, que nasce com `WOLF_COUNT = 5`
 [main.gd:9](../../src/main.gd#L9) e tem teto de censo em `CENSUS_CAP = 12` [main.gd:18](../../src/main.gd#L18);
-o que a suíte imprime é `wolves` do `diagnostics()` [main.gd:1164](../../src/main.gd#L1164). O custo do
+o que a suíte imprime é `wolves` do `diagnostics()` [main.gd:1180](../../src/main.gd#L1180). O custo do
 tick escala com o censo do momento, não com o número do boot. Com doze mentes a conta bruta de árvores
 é 12 × 400 µs = 4,8 ms dos 50 ms, derivado de [main.gd:18](../../src/main.gd#L18) e
 [wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449) — e a soma real não está medida em log nenhum. O
@@ -173,24 +173,24 @@ utilidade ficam fora dele, como o `tree_stats()` declara [wolf.gd:1356-1357](../
 
 O cabeçalho do arquivo afirma "Toda decisao de IA, todo imprint de Eter e todo tick de rede vivem
 aqui" [src/core/sim_clock.gd:2-3](../../src/core/sim_clock.gd#L2-L3). A primeira metade é verificável e
-verdadeira: `sim_step` tem um chamador em `src/` [main.gd:273](../../src/main.gd#L273). A segunda não é,
-e a própria sessão documenta o motivo em [main.gd:904-907](../../src/main.gd#L904-L907), que diz que a
+verdadeira: `sim_step` tem um chamador em `src/` [main.gd:289](../../src/main.gd#L289). A segunda não é,
+e a própria sessão documenta o motivo em [main.gd:920-923](../../src/main.gd#L920-L923), que diz que a
 pergunta ao gerador roda em evento, "nunca no tick de 20 Hz".
 
 O que anda por **frame de física**, e não por tick:
 
 - **Locomoção e ações do jogador.** `player.update_local(delta)` é chamado antes do `advance`
-  [main.gd:256](../../src/main.gd#L256), dentro do [`_physics_process`](../../src/main.gd#L255-L261) que o
+  [main.gd:272](../../src/main.gd#L272), dentro do [`_physics_process`](../../src/main.gd#L271-L277) que o
   engine dispara, e o corpo dele está em
   [src/entities/player.gd:354](../../src/entities/player.gd#L354). A lavra soma `delta` de frame até
   estourar a dureza [player.gd:663-665](../../src/entities/player.gd#L663-L665) e escreve voxel direto em
   [player.gd:685](../../src/entities/player.gd#L685) e [player.gd:711](../../src/entities/player.gd#L711),
   fora de qualquer passo do relógio.
 - **Os imprints do Éter causados pelo jogador.** `_on_acted` escreve WORK
-  [main.gd:913-918](../../src/main.gd#L913-L918) porque o sinal `acted` é emitido dentro do `update_local`
+  [main.gd:929-934](../../src/main.gd#L929-L934) porque o sinal `acted` é emitido dentro do `update_local`
   [player.gd:690](../../src/entities/player.gd#L690) e [:715](../../src/entities/player.gd#L715); dano e
-  morte escrevem BLOOD e FEAR pelos handlers [main.gd:951-958](../../src/main.gd#L951-L958). As ligações
-  são de sinal [main.gd:152-163](../../src/main.gd#L152-L163), não de tick.
+  morte escrevem BLOOD e FEAR pelos handlers [main.gd:967-974](../../src/main.gd#L967-L974). As ligações
+  são de sinal [main.gd:160-171](../../src/main.gd#L160-L171), não de tick.
 - **Locomoção e timers do lobo.** `Wolf._physics_process`
   [src/entities/wolf.gd:1203-1259](../../src/entities/wolf.gd#L1203-L1259) é callback do engine: aplica
   gravidade e empuxo, faz o steering, chama `move_and_collide` [wolf.gd:1238](../../src/entities/wolf.gd#L1238)
@@ -237,7 +237,7 @@ indicativo.
   [docs/design/08-roadmap-risks-licensing.md:30](../design/08-roadmap-risks-licensing.md#L30), e a
   entrega descrita em [docs/design/08-roadmap-risks-licensing.md:89-93](../design/08-roadmap-risks-licensing.md#L89-L93).
   O que existe hoje é throttle temporal por subsistema — a tabela da §4 — e avaliação da árvore de todo
-  lobo vivo a cada tick [main.gd:272-273](../../src/main.gd#L272-L273). LOD por distância não existe.
+  lobo vivo a cada tick [main.gd:288-289](../../src/main.gd#L288-L289). LOD por distância não existe.
 - **`af-bench` `[TARGET]`.** O nome aparece como intenção de ferramenta própria em
   [docs/design/06-godot-architecture.md:199-201](../design/06-godot-architecture.md#L199-L201), sob um
   `src/tools/` que não existe no repositório, e é a primeira linha do gate de P0 em

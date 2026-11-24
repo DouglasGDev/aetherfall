@@ -266,7 +266,7 @@ essa mesma porta. O braço escolhido está no §6.3; o rejeitado está no §8.4.
 
 A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de leitura:
 
-- [`src/main.gd:183`](../../src/main.gd#L183) — injeta o `narration_provider` no HUD chamando
+- [`src/main.gd:191`](../../src/main.gd#L191) — injeta o `narration_provider` no HUD chamando
   `oracle.narration_of(id)`;
 - [`src/ui/hud.gd:276-277`](../../src/ui/hud.gd#L276-L277) — imprime `ia:` no F3;
 - o `narration_ready` ([`src/ai/mind_oracle.gd:9`](../../src/ai/mind_oracle.gd#L9)) que o lobo não
@@ -274,17 +274,17 @@ A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de l
   futuro MindsInspector, e a Fase 5 da tabela do §5.6 é o comprador que faltava.
 
 E a única porta de **entrada** é o roster (`roster_provider`, [`:40`](../../src/ai/mind_oracle.gd#L40),
-ligado em [`src/main.gd:181`](../../src/main.gd#L181) com `Callable(self, "wolves_roster")`) mais os
+ligado em [`src/main.gd:189`](../../src/main.gd#L189) com `Callable(self, "wolves_roster")`) mais os
 campos injetáveis de `server_url`/`request_timeout`/`api_key`/`ready_provider`
 ([`:32-40`](../../src/ai/mind_oracle.gd#L32-L40)); o `ready_provider` é ligado pelo hospedeiro em
-[`src/main.gd:236`](../../src/main.gd#L236). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
+[`src/main.gd:252`](../../src/main.gd#L252). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
 A regra do dono — "a mente propõe, as regras dispõem" — hoje é verdadeira **por topologia**: não existe
 caminho do oráculo para a intenção. A Fase 1 tem de manter a topologia, e o §7.1 registra que topologia
 não é prova.
 
 ### 2.4 O que o F3 já diz sobre a IA, e o que ele não diz
 
-`diagnostics()` de [`src/main.gd:1190`](../../src/main.gd#L1190) expõe `"llm": llm_host.diagnostics()`,
+`diagnostics()` de [`src/main.gd:1209`](../../src/main.gd#L1209) expõe `"llm": llm_host.diagnostics()`,
 que por sua vez ([`src/ai/llm_server_host.gd:159`](../../src/ai/llm_server_host.gd#L159)) devolve
 `state`, `pid`, `boot_ms`, `loading_503`, `retries`, `requests`, `kills`, `spawned`, `detail` e `url` —
 dez chaves, todas de **ciclo de vida de processo**, nenhuma de **trabalho do modelo**. A outra metade

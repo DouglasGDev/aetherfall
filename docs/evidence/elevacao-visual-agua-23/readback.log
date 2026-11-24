@@ -1,0 +1,58 @@
+sonda de pixel do dossie 23 §5.2 — duas arvores, o mesmo instrumento, o mesmo enquadramento
+arvore_teste  = C:/Aetherfall/.qoder/worktrees/elevacao-visual-23  HEAD 2903ea0 (merge de c05f1df)
+arvore_controle = C:/Aetherfall/.qoder/base-check-23                HEAD b0ed929 (a base da branch, sem a perna)
+probe = water_pixel_probe.gd.txt, cena res://.tools/water_pixel_probe.tscn, Godot 4.7.2-stable, janela real
+device (as duas corridas, segunda linha do stdout) = Vulkan 1.4.359 - Forward+ - Device #0: AMD Radeon RX 9060 XT
+moldura 1920x1080  seed 20261116
+o que entra como artifact nao e o frame de 1 920x1 080 e sim a caixa recortada (caixa-*.png): a
+regua sao os 9 216 pixels amostrados em torno do centro, e guardar exatamente eles deixa o numero
+conferivel a partir deste diretario. os frames completos ficam em .tools/water_px/, gitignored.
+
+PERGUNTA 1 — o shader compila? (headless nao responde, §5.1)
+  sonda-23.log             SHADER ERROR=0   "ERROR: "=0   WARNING=0   1 782 B
+  sonda-23.err             0 B  (stderr vazio)
+  sonda-base-b0ed929.log   SHADER ERROR=0   "ERROR: "=0   WARNING=0   1 733 B
+  sonda-base-b0ed929.err   447 B = 6 linhas, 3 delas "ERROR: " e NENHUMA de shader:
+    ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+    ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+    ERROR: Error loading extension: 'res://native/af_mind/af_mind.gdextension'.
+  o controle e um clone da base, que nao tem o pack nativo da perna 22; esta perna nao toca
+  native/ nem .tools/llama/. os dois stderr sao diferentes por isso e a diferenca nao e da agua.
+
+PERGUNTA 2 — a agua muda de quadro? (a regua e a caixa, nao o quadro)
+enquadramento identico nas duas arvores, e isso que autoriza comparar os numeros:
+  coluna=(100,52)  blocos=12  topo=26  plano=27.00            (a coluna mais funda da seed)
+  mirante coluna=(101,39) chao=27 dist=14 olho=(101.50, 29.62, 39.50) pitch=-0.198
+  centro_agua=(960.0,540.0)  dentro=1  camera_deslocou=0.0000 m  lobos_na_caixa=0
+caixa de 192 px em torno do centro, passo 2 → 9 216 amostras:
+  23    dt=1519 ms  ge1=8867  ge3=7807  fracao_ge3=0.8471  media r=0.032264 g=0.031319 b=0.026414  veredito=true
+  base  dt=1503 ms  ge1=0     ge3=0     fracao_ge3=0.0000  media r=0.000000 g=0.000000 b=0.000000  veredito=false
+o corte e 0,01 da caixa e nao e adjetivo: no controle o chao do instrumento dentro da regua e
+zero exato — nenhum pixel dos 9 216 mudou em 1 503 ms — entao os 7 807 da arvore desta perna nao
+tem outro candidato alem do shader.
+testemunha de que particula nenhuma credita a diferenca (linha do proprio probe):
+  23    fx_presente vivas_pool=0/0/0  salpicos_disparados=0  picos=0     → nenhum slot vivo, nenhum disparo
+  base  fx=ausente                                                        → o WaterFx nem existe na base
+quadro inteiro (518 400 amostras), impresso so para contar a historia, e nao e a regua:
+  23    ge1=249276  ge3=207324  fracao_ge3=0.3999
+  base  ge1=25176   ge3=24255   fracao_ge3=0.0468
+fora da caixa o quadro do controle tambem se move (0,0468): corpo, matilha e ceu animam na base
+de igual modo. medir o quadro daria verde ao controle e e por isso que o corte mora na caixa.
+
+RE-DERIVACAO INDEPENDENTE (confere_caixa.log, sem Godot e sem GPU, sobre os PNGs arquivados)
+os quatro recortes de 192x192 acima reproduzem as duas linhas da corrida, na arvore desta perna e
+no controle:
+  caixa-23-t1 vs caixa-23-t2     amostras=9216  ge1=8867  ge3=7807  fracao_ge3=0.8471  medias identicas
+  caixa-base-t1 vs caixa-base-t2 amostras=9216  ge1=0     ge3=0     fracao_ge3=0.0000  medias zero
+e mais: caixa-base-t1.png e caixa-base-t2.png tem o MESMO SHA-256
+  ae3d7dc4199b997b52008ec316d4a5f7a6f738277af9792d6b54e2efe073a0b0
+ou seja, os dois quadros do controle sao byte a byte identicos dentro da regua.
+a precisao do compara e parte do numero, e por isso o verificador refaz a aritmetica do probe e nao
+a de inteiros: em byte puro a mesma caixa daria ge1=9141 ge3=8402. o float32 mais proximo de 1/255
+vale 0,0039215689 e a subtracao de dois bytes vizinhos vale 0,0039215686, entao a amostra com
+diferenca de exatamente um byte nao passa no ">=". o 0,8471 publicado e o que o instrumento imprimiu
+e e um piso; o motivo esta escrito no confere_caixa.py.txt.
+
+veredito da §5.2: `SHADER ERROR` zero com a GPU real ligada e `agua_muda_de_quadro=true` com o
+chao do controle em zero exato. nenhuma linha desta secao vira gate de fase — §5.2 e sonda, e o
+gate de fase continua aberto (mandato 4).
