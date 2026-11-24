@@ -95,6 +95,18 @@ int64_t af_pack_slots(int imprimir);
 int64_t af_pack_meta_count(void);
 const char * af_pack_meta_key0(void);
 
+// --- os ponteiros do runtime, para o consumidor da fila de prompts (Passo 3) -----------------
+// O corpo da fila (`mind_prompt.cpp`) e quem decide o que fazer com eles; este arquivo so
+// entrega o que o runtime devolveu e nada mais: nullptr = "a rota nao chegou aqui", e a recusa
+// do chamador nomeia o estado lido (`af_pack_state`), nao um palpite sobre o motivo.
+void * af_pack_model(void);
+void * af_pack_ctx(void);
+void * af_pack_vocab(void);
+// VRAM RE-mediida agora. O `af_pack_vram_used` de cima devolve a leitura do momento do
+// load/`ctx_probe` (a grandeza de S5.2, que e um instante); a metrica viva da fila
+// (`vram_bytes`) re-mede o dispositivo antes de responder, porque o numero dela e corrente.
+int64_t af_pack_vram_usado_agora(void);
+
 // --- diagnostico ----------------------------------------------------------------------------
 int32_t af_pack_err_stage(void);
 int64_t af_pack_err_code(void);

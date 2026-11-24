@@ -229,16 +229,26 @@ rem
 rem O modelo vem de %2; sem argumento cai no caminho que o fetch script da perna 15 baixa.
 rem Sem modelo no disco o build recusa (codigo 10): a recusa e a regua de imports do dll sao
 rem validas sem ele, mas os tres numeros de S5.2 nao, e corrida pulada nao pode virar verde.
+rem
+rem Passo 3 (S5.3): o corpo da fila e do decode (mind_prompt.cpp) compila na mesma regua do
+rem corpo do pack (1b) e entra no probe e no dll; a rota de prompt roda DE PE na sonda antes
+rem do dll nascer (exit 12 = recusa mapeada em 14). A regua de imports do dll comeca lendo so
+rem o corpo do pack -- o corpo da fila entra nela quando a ponte passar a referencia-lo, porque
+rem sem consumo o /OPT:REF o retira e a tabela nao tem os nomes (medido na primeira corrida).
 rem ================================================================================
 
 set "PACK=%ROOT%src\mind_pack.cpp"
 set "HDRP=%ROOT%src\mind_pack.h"
+set "PROMPT=%ROOT%src\mind_prompt.cpp"
+set "HDRPT=%ROOT%src\mind_prompt.h"
 set "PROBE=%ROOT%src\pack_probe_main.cpp"
 set "PROBE_EXE=%OUTDIR%\af_pack_probe.exe"
 set "MODEL=%~2"
 if not exist "%PACK%" goto :sem_pack
 if not exist "%HDRP%" goto :sem_pack
 if not exist "%PROBE%" goto :sem_pack
+if not exist "%PROMPT%" goto :sem_prompt
+if not exist "%HDRPT%" goto :sem_prompt
 if not defined MODEL set "MODEL=C:\Aetherfall\models\qwen3.5-4b-q4_k_m.gguf"
 if not exist "%MODEL%" goto :sem_model
 
@@ -248,12 +258,20 @@ set "RC=%ERRORLEVEL%"
 echo [pack] cl_codigo=%RC%
 if not "%RC%"=="0" goto :compilou_errado
 
-rem --- 2: a sonda de pe, linkada contra o mesmo objeto ----------------------------------
+rem --- 1b (Passo 3): a fila e o decode, compilados UMA vez para os dois binarios --------
+rem O mesmo padrao do corpo do pack: o `mind_prompt.cpp` e o MESMO codigo que a sonda roda de pe
+rem e que o dll roda dentro da engine -- nenhuma sequencia copiada entre os dois (S15.1).
+cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /I "%ROOT%src" /c "%PROMPT%" /Fo"%OUTDIR%\mind_prompt.obj"
+set "RC=%ERRORLEVEL%"
+echo [prompt] cl_codigo=%RC%
+if not "%RC%"=="0" goto :compilou_errado
+
+rem --- 2: a sonda de pe, linkada contra os mesmos objetos -------------------------------
 cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /I "%ROOT%src" /c "%PROBE%" /Fo"%OUTDIR%\pack_probe_main.obj"
 set "RC=%ERRORLEVEL%"
 echo [probe] cl_codigo=%RC%
 if not "%RC%"=="0" goto :compilou_errado
-link /nologo /OUT:"%PROBE_EXE%" "%OUTDIR%\pack_probe_main.obj" "%OUTDIR%\mind_pack.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS%
+link /nologo /OUT:"%PROBE_EXE%" "%OUTDIR%\pack_probe_main.obj" "%OUTDIR%\mind_pack.obj" "%OUTDIR%\mind_prompt.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS%
 set "RC=%ERRORLEVEL%"
 echo [probe] link_codigo=%RC%
 if not "%RC%"=="0" goto :linkou_errado
@@ -271,10 +289,15 @@ echo [corrida] probe_rota
 "%PROBE_EXE%" "%RUNTIME%" "%MODEL%"
 set "RC=%ERRORLEVEL%"
 echo [corrida] probe_rota_codigo=%RC%
+rem --- Passo 3: exit 12 e a rota de prompt recusada (S5.3), com veredito impresso --------
+rem A recusa e o achado, nao uma falha de plano: leia as linhas [prompt] acima -- cada veredito
+rem RECUSADO nomeia o codigo que o produziu, e seguir para o dll sem a rota de prompt de pe e o
+rem "0 backends" silencioso de S1.3 com outra voz.
+if "%RC%"=="12" goto :probe_prompt_recusada
 if not "%RC%"=="0" goto :probe_rota_recusada
 
 rem --- 5: o dll, so depois de a sonda sair zero -----------------------------------------
-link /nologo /DLL /OUT:"%DLL%" /IMPLIB:"%OUTDIR%\af_mind.lib" "%OUTDIR%\register_types.obj" "%OUTDIR%\mind_pack.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS%
+link /nologo /DLL /OUT:"%DLL%" /IMPLIB:"%OUTDIR%\af_mind.lib" "%OUTDIR%\register_types.obj" "%OUTDIR%\mind_pack.obj" "%OUTDIR%\mind_prompt.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS%
 set "RC=%ERRORLEVEL%"
 echo [ponte] link_codigo=%RC%
 if not "%RC%"=="0" goto :linkou_errado
@@ -289,6 +312,11 @@ if not defined EXPORT_LINE goto :sem_export
 echo [regua] export=%EXPORT_LINE%
 
 rem --- 6: a regua de imports do DLL -- a segunda corrida que o check_imports documenta --
+rem A regua le aqui SO o corpo do pack: a ponte ainda nao referencia af_prompt_*, e sem consumo
+rem o /OPT:REF retira o corpo inteiro da fila -- medido na primeira corrida do Passo 3, a tabela
+rem do dll ficou com os 29 nomes do pack e ZERO dos 15 do prompt (faltam batch_ext/...). Quando a
+rem ponte passar a chamar a rota (commit seguinte), esta linha ganha `--gate "%PROMPT%"` e a regua
+rem passa a conferir os DOIS corpos contra a MESMA tabela.
 dumpbin /imports "%DLL%" > "%OUTDIR%\af_mind-imports.txt" 2>&1
 set "RC=%ERRORLEVEL%"
 echo [dumpbin] dll_imports_codigo=%RC%
@@ -427,6 +455,7 @@ echo [falha] Passo 2 (a): o link recusou sem nomear %~1 em gate-absent-link.txt 
 exit /b 9
 
 rem --- codigos 10..12 sao do Passo 2 (b); 2..6 do Passo 1 e 7..9 do Passo 2 (a) ---------
+rem --- 13..14 sao do Passo 3: sem corpo de prompt, e rota de prompt recusada ------------
 :sem_pack
 echo [falha] Passo 2 (b): sem src\mind_pack.cpp, src\mind_pack.h ou src\pack_probe_main.cpp -- o corpo do pack nao existe
 exit /b 10
@@ -446,3 +475,11 @@ exit /b 11
 :imports_dll_recusou
 echo [falha] Passo 2 (b): a regua de imports do DLL recusou -- nome referenciado sem dono medido, dono duplo, ou importado do modulo errado
 exit /b 12
+
+rem --- codigos 13..14 sao do Passo 3; 2..6 do Passo 1, 7..9 do 2 (a) e 10..12 do 2 (b) ---
+:sem_prompt
+echo [falha] Passo 3: sem src\mind_prompt.cpp ou src\mind_prompt.h -- a fila de prompts e o decode nao existem
+exit /b 13
+:probe_prompt_recusada
+echo [falha] Passo 3: a rota de prompt da sonda saiu 12 -- leia as linhas [prompt] acima: cada veredito RECUSADO nomeia o codigo que o produziu (-1 sem contexto do pack, -2 pedido invalido, -4 papel fora do template, probes de recusa errados) e o veredito final diz ROTA_DE_PROMPT_CONFIRMADA ou RECUSADA
+exit /b 14

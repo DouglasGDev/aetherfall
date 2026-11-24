@@ -10,10 +10,14 @@ do exe construido e comparada com o dono medido no export-set.
 
 De onde vem cada lista, e por que nenhuma e escrita aqui:
 
- * os NOMES REFERENCIADOS saem da propria fonte passada em `--gate`, das linhas `AF_SLOT(nome)`
-   (o gate do Passo 2 (a), que imprime os enderecos ao rodar) e `AF_REF(nome)` (o corpo do pack do
-   Passo 2 (b), cujo `af_pack_slots` mistura os enderecos num checksum). Mesma regua para os dois
-   binarios: copia nenhuma; se a fonte referencia, esta aqui.
+ * os NOMES REFERENCIADOS saem das proprias fontes passadas em `--gate` (uma ou mais), das
+   linhas `AF_SLOT(nome)` (o gate do Passo 2 (a), que imprime os enderecos ao rodar),
+   `AF_REF(nome)` (o corpo do pack do Passo 2 (b), cujo `af_pack_slots` mistura os enderecos
+   num checksum) e `AF_PROMPT_REF(nome)` (o corpo da fila do Passo 3, com a mesma mistura no
+   `af_prompt_slots`). Mesma regua para os tres: copia nenhuma; se a fonte referencia, esta
+   aqui. Multi-fonte porque o dll linka DOIS corpos (pack e prompt) contra a MESMA tabela --
+   ler so um deixaria metade dos nomes fora da regua exatamente como o linker nao sabe em
+   qual `.def` o nome mora.
  * o DONO de cada nome sai dos `.def` gerados do dumpbin arquivado (`gen_import_libs.py`), e um
    nome referenciado que apareca em dois `.def` e recusa: o linker pegaria o primeiro da linha e
    a tabela mentiria sobre quem exporta.
@@ -33,9 +37,17 @@ Uso (dentro da casca do vcvars, chamado pelo build.bat):
         --absent native\\af_mind\\src\\symbol_gate_absent.cpp ^
         --defs native\\af_mind\\bin --imports native\\af_mind\\bin\\af_mind-imports.txt
 
+    python native\\af_mind\\check_imports.py --gate native\\af_mind\\src\\mind_pack.cpp ^
+        --gate native\\af_mind\\src\\mind_prompt.cpp ^
+        --absent native\\af_mind\\src\\symbol_gate_absent.cpp ^
+        --defs native\\af_mind\\bin --imports native\\af_mind\\bin\\af_mind-imports.txt
+
 A segunda corrida e a do Passo 2 (b): a fonte agora e o corpo do pack e a tabela e a do
 `af_mind.dll` (que so toca o runtime por delay-load), porque e ESSE binario que o Godot carrega --
 um gate verde no exe e um `.dll` sem regua seria a mesma mentira de sempre, so que com outra voz.
+A terceira e a do Passo 3 (S5.3): o dll linka TAMBEM o corpo da fila (`mind_prompt.cpp`), e a
+regua passa a ler os DOIS corpos de uma vez -- 15 nomes de decode que sem isso ficariam fora da
+comparacao entre o que a fonte referencia e o que o binario importa.
 
 Saida: linhas `[referencia]`, `[dono]`, `[import]` e uma linha de veredito. 0 = confere; 1 =
 recusa com `[recusa]` impresso.
@@ -49,7 +61,7 @@ import os
 import re
 import sys
 
-SLOT_RE = re.compile(r"^\s*AF_(?:SLOT|REF)\((\w+)\)\s*;\s*$")
+SLOT_RE = re.compile(r"^\s*AF_(?:SLOT|PROMPT_REF|REF)\((\w+)\)\s*;\s*$")
 DATA_RE = re.compile(r'^extern void \* (\w+);\s*$')
 # O `.def` do Passo 2 (a) traz nomes SEM ordinal (ver gen_import_libs.py); o ` @n` continua
 # aceito aqui para que a regua nao dependa de qual das duas formas o .def nasceu.
@@ -79,24 +91,29 @@ def recusa(msg: str) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--gate", required=True)
+    # `action="append"` e obrigatoria: com nargs="+" sozinho, um segundo `--gate` SUBSTITUIRIA
+    # o primeiro (argparse default) e a regua ler so o ultimo corpo -- medido na primeira
+    # corrida do Passo 3: `[referencia] gate AF_SLOT/AF_REF=15 nomes` com o corpo do pack fora.
+    ap.add_argument("--gate", required=True, action="append", nargs="+",
+                    help="fonte(s) cujas linhas AF_SLOT/AF_REF/AF_PROMPT_REF nomeiam os simbolos "
+                         "referenciados; multi-fonte porque o dll do Passo 3 linka dois corpos")
     ap.add_argument("--absent", required=True)
     ap.add_argument("--defs", required=True, help="pasta com os .def e os .lib de importacao")
     ap.add_argument("--imports", required=True, help="texto de `dumpbin /imports` do exe")
     args = ap.parse_args()
 
-    with open(args.gate, encoding="utf-8", errors="replace") as fh:
-        gate_text = fh.read()
+    referenciados: list[str] = []
+    for gate_path in [p for grupo in args.gate for p in grupo]:
+        with open(gate_path, encoding="utf-8", errors="replace") as fh:
+            gate_text = fh.read()
+        for line in gate_text.splitlines():
+            m = SLOT_RE.match(line)
+            if m and m.group(1) not in referenciados:
+                referenciados.append(m.group(1))
     with open(args.absent, encoding="utf-8", errors="replace") as fh:
         absent_text = fh.read()
     with open(args.imports, encoding="utf-8", errors="replace") as fh:
         imports_text = fh.read()
-
-    referenciados: list[str] = []
-    for line in gate_text.splitlines():
-        m = SLOT_RE.match(line)
-        if m and m.group(1) not in referenciados:
-            referenciados.append(m.group(1))
     if len(referenciados) < 10:
         return recusa(f"o gate referencia {len(referenciados)} nomes por AF_SLOT; a regua nao tem")
 
