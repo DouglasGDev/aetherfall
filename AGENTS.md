@@ -244,7 +244,7 @@ perto ou longe ([wolf.gd:906-911](src/entities/wolf.gd#L906-L911)). A peça do d
 
 **Anti-bloat, com o estado real:**
 
-- `main.gd` é o "objeto deus" conhecido — 1246 linhas nesta revisão (`wc -l`), 510 na `main` de `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
+- `main.gd` é o "objeto deus" conhecido — 1268 linhas nesta revisão (`wc -l`), 510 na `main` de `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
   oráculo, visualização, instância do journal, o nó de áudio e o hospedeiro do modelo ([main.gd:43-62](src/main.gd#L43-L62)), com as tocas da perna 16 dentro do bloco da matilha (`var _dens` em [:116](src/main.gd#L116)). Isso está registrado como
   débito, não como licença: mudança que precisa de estado novo pergunta primeiro **quem é o
   dono** daquele estado.
@@ -732,35 +732,43 @@ uma **re-rome o gate** na árvore resultante (item 5 de "Branches"). O choque li
 [main.gd:227-260](src/main.gd#L227-L260)); esta perna escreve **três linhas** nele — instantiate do nó de
 FX e a linha de diagnóstico.
 
-Quatro afirmações do prompt a leitura do código devolve diferente, e nenhuma é cosmética. (1) "A água é
-um bloco transparente simples" é **menos** do que a árvore faz hoje: `_mat_water` é um
+Quatro afirmações do prompt a leitura da base (`b0ed929`) devolveu diferente, e nenhuma é cosmética. É
+a leitura daquele ponto, com o número daquele ponto — as três primeiras já não descrevem a árvore de
+hoje, e onde cada uma caiu está no registro do pouso em [`docs/melhorias-status.md`](docs/melhorias-status.md).
+(1) "A água é um bloco transparente simples" era **menos** do que a árvore fazia: `_mat_water` era um
 `StandardMaterial3D` com `TRANSPARENCY_ALPHA`, sem tempo, sem normal e sem leitura de cena
-([voxel_world.gd:92-97](src/world/voxel_world.gd#L92-L97)), e o único "movimento" do tile é a faixa fixa
-por linha (`y % 4 == 0` clareia, `y % 4 == 2` escurece) com **alfa 0,72 escrito no pixel** do atlas
-([voxel_atlas.gd:162-171](src/world/voxel_atlas.gd#L162-L171)). (2) Não há **um shader nenhum** no
-repositório: `grep -rn "ShaderMaterial\|Shader.new\|gdshader" src tests` devolve **vazio** — e não há
+(`b0ed929:src/world/voxel_world.gd:92-97`), e o único "movimento" do tile era a faixa fixa por linha
+(`y % 4 == 0` clareia, `y % 4 == 2` escurece) com **alfa 0,72 escrito no pixel** do atlas
+(`b0ed929:src/world/voxel_atlas.gd:162-171`). (2) Não havia **um shader nenhum** no repositório:
+`grep -rn "ShaderMaterial\|Shader.new\|gdshader" src tests` devolvia **vazio** na base — e não havia
 **uma partícula nenhuma**: o mesmo grep de `GPUParticles3D\|CPUParticles3D\|ParticleProcessMaterial`
-devolve **vazio**. A página 23 é a primeira vez que o projeto tem um e outra, e o gate nasce vermelho por
-isso, não por descrever peça inexistente. (3) "Refração" já tem onde cair sem mexer no mesher: o
-`COLOR` dos vértices do surface de água é **escrito e nunca lido** — a malharia o preenche com o
-`FACE_TINT` da face ([voxel_world.gd:528-530](src/world/voxel_world.gd#L528-L530),
-[:627-628](src/world/voxel_world.gd#L627-L628)) e `_mat_water` não liga
-`vertex_color_use_as_albedo` (ligam o opaco [:93](src/world/voxel_world.gd#L93) e o vidro
-[:104](src/world/voxel_world.gd#L104)); isso é o **furo #43**, com a face lateral da água incluindo o
-tint descartado, e é o canal que a página escolhe como portador da máscara (§3.3). (4) "Caústicas quando
-o sol está alto" não tem variável: `_build_environment` escreve um sol **parado** em
-`rotation_degrees (-42, 55, 0)` com elevação fixa de ~48° e uma `fog_density` de `0,006`
+devolvia **vazio**. A página 23 é a primeira vez que o projeto tem um e outra, e o gate nasceu vermelho
+por isso, não por descrever peça inexistente. (3) "Refração" já tinha onde cair sem mexer no mesher: o
+`COLOR` dos vértices do surface de água era **escrito e nunca lido** — a malharia o preenchia com o
+`FACE_TINT` da face (`b0ed929:src/world/voxel_world.gd:528-530`, `:627-628`) e `_mat_water` não ligava
+`vertex_color_use_as_albedo` (ligavam o opaco `b0ed929:...:88` e o vidro `:104`); isso era o **furo #43** —
+a face lateral da água com o tint descartado — e a página escolheu esse canal como portador da máscara
+(§3.3). Hoje o shader lê esse canal — [`water_surface.gd:116`](src/world/water_surface.gd#L116) e
+[`:136-138`](src/world/water_surface.gd#L136-L138) — e o material que o carrega nasce em
+[`voxel_world.gd:97`](src/world/voxel_world.gd#L97), com a asserção de que ele é lido na própria
+suíte (§5.1). (4) "Caústicas quando o sol está alto" não tem variável: `_build_environment` escreve um sol
+**parado** em `rotation_degrees (-42, 55, 0)` com elevação fixa de ~48° e uma `fog_density` de `0,006`
 ([main.gd:1215-1251](src/main.gd#L1215-L1251)); não existe clima no projeto, e isso é o que segura a
-Fase 2 como pauta e não como código desta perna (§3.9).
+Fase 2 como pauta e não como código desta perna (§3.9). O que a perna fez com essa afirmação foi
+**expor** o sol à água — `_sun_dir` lido do `basis` da luz ([main.gd:1226](src/main.gd#L1226), entregue em
+[:139](src/main.gd#L139)) — sem tocar no `Environment`, que é da Fase 4.
 
 Uma consequência de instrumento, escrita antes do código porque é ela que divide o gate: **headless não
 exercita o `RenderingDevice`, então nenhuma corrida da suíte pode afirmar que o shader compila.** O
 mandato 1 não permite publicar "shader ok" com o número de uma corrida que não compila nada, e por isso a
-página separa as duas provas — oito checagens estruturais em `tests/smoke_test.gd` (§5.1) e uma **sonda
+página separa as duas provas — **nove** checagens estruturais em `tests/smoke_test.gd` (§5.1) e uma **sonda
 com janela** em `.tools/` (§5.2) que é a única que grepa `SHADER ERROR` do stdout e compara dois PNGs do
-mesmo enquadramento em instantes diferentes de `TIME`. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e
-a projeção do `TickJournal` não mudam com esta perna; o que a cláusula `fx_nao_escreve_o_mundo` paga é o
-estado, porque a não-determinismo da simulação ao vivo já está registrado no mandato 3.
+mesmo enquadramento em instantes diferentes de `TIME`. A sonda rodou, nos dois braços, e o que ela devolve
+é o par que dá sentido ao número: `SHADER ERROR` **0** com a GPU real ligada, e `fracao_ge3` **0,8471** dos
+9 216 pixels da caixa nesta árvore contra **0,0000** no controle em `b0ed929`, onde os dois PNGs têm o
+mesmo SHA-256. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não mudam com
+esta perna; o que a cláusula `fx_nao_escreve_o_mundo` paga é o estado, porque a não-determinismo da
+simulação ao vivo já está registrado no mandato 3.
 
 ## Ciclo de trabalho
 
