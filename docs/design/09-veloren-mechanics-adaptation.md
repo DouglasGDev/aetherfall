@@ -101,7 +101,7 @@ bloco, sem ferramenta e sem XP:
   [documento 11](11-inventory-crafting.md).
 
 Cada bloco lavrado injeta **0,42 no canal de trabalho** do Éter e cada colocação `0,20`
-[main.gd:904-909](../../src/main.gd#L904-L909) — nada disso existe no Veloren; é a nossa trilha
+[main.gd:920-925](../../src/main.gd#L920-L925) — nada disso existe no Veloren; é a nossa trilha
 auditável (§8).
 
 ## 5. Respiração e afogamento
@@ -236,7 +236,7 @@ Nada aqui está em código — menos as linhas que o
 | Arcos, lanças arremessadas, cetros e magia de projétil | `[TARGET]` P6; magia existe como **Tecelagem** editando o Éter (§02), não como cast bar |
 | 6 espécies, personagens, opção *hardcore* | fora de escopo — solo humano + mentes locais (premissa 3 do README) |
 | Multiplayer | `[TARGET]` P5 |
-| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1184-1191](../../src/main.gd#L1184-L1191). `[TARGET]` P7 |
+| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1200-1210](../../src/main.gd#L1200-L1210). `[TARGET]` P7 |
 | Agricultura/plantação | **não existe no código**: só `_plant_tree` no gerador. `[TARGET]` P7 |
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de
@@ -268,7 +268,7 @@ Os passos que cobrem este documento, por nome na suíte: `minerar e colocar`,
 `respiracao e afogamento`, `regeneracao fora de combate`, `lobo nada e busca margem`,
 `corpo encaixado se solta` (resgate do integrador) e `relogio real`, onde mora o
 gate `steering e colisao movem o lobo`, `memoria muda comportamento`
-[smoke_test.gd:67-103](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
+[smoke_test.gd:67-124](../../tests/smoke_test.gd). A contagem de checagens e o tempo são
 publicados no [`README.md`](../../README.md) da raiz, derivados da corrida — não deste
 documento.
 

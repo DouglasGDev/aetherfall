@@ -15,10 +15,10 @@ que ordem e com que comando. Gate de fase fecha o dono do repositório, não est
 ## 2. Estado real do instrumento
 
 Existe e roda: `godot --headless --path . tests/smoke_test.tscn` (saída `N checagens M falhas T s`
-em `tests/smoke_test.gd:187-190`, exit 1 se `M > 0`), os runners `extends SceneTree`
+em `tests/smoke_test.gd:221-224`, exit 1 se `M > 0`), os runners `extends SceneTree`
 `tests/simulation_rng_test.gd:1`, `tests/tick_journal_test.gd:1`, `tests/aether_reactions_test.gd:1`,
 o primitivo de hash `src/persistence/tick_journal.gd:16-44`, o CLI `--tick-journal=`
-`src/main.gd:1235-1242` e `diagnostics()` `src/main.gd:1159-1191` (já expõe `gen_ms`, `mesh_ms`,
+`src/main.gd:1257-1264` e `diagnostics()` `src/main.gd:1175-1210` (já expõe `gen_ms`, `mesh_ms`,
 `triangles`, `tick`, `worst_sim_ms`, `dropped_ticks`, `journal`). Logs abertos por mim:
 `.tools/af-clean-suite2.log:12` geração 939.3 ms / malharia 4.677,9 ms, `:292` `tick=359`,
 `dropped_ticks=0`, `triangles=214480`, `:294` `219 checagens 0 falhas 35,4 s`;
@@ -36,15 +36,15 @@ Não existia quando a pauta foi escrita: `af-bench` (só como intenção em
 ritmo de parede sustentado pela suíte (359 ticks em 35,4 s, `.tools/af-clean-suite2.log:292,294`)
 isso é ordem de 20 min de corrida × 3; derivado do código e do log, **não medido**.
 
-API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:1231-1232` →
+API que o cenário usaria, sem inventar nada: `main.state_hash()` (`src/main.gd:1253-1254` →
 `TickJournal.state_hash` `:16-44`), `clock.step_duration()` (`src/core/sim_clock.gd:42-43`),
 `player.update_local(dt)` chamado pelo próprio runner em `dt` fixo (precedente real:
-`tests/smoke_test.gd:107-113` e o porquê em `:245-254`), e `tick_journal.record()` com recusa de
+`tests/smoke_test.gd:128-134` e o porquê em `:245-254`), e `tick_journal.record()` com recusa de
 arquivo existente (`src/persistence/tick_journal.gd:47-62`) e monotonicidade `last_tick + 1`
 (`:69-73`) — o "sem buraco" vem de graça. Forma: runner `extends SceneTree` sob `tests/`, como os
 três já existentes; `src/tools/` não existe.
 
-Hoje o passo vem do `_physics_process` com `delta` real (`src/main.gd:255-261`) e o teto de 5
+Hoje o passo vem do `_physics_process` com `delta` real (`src/main.gd:271-277`) e o teto de 5
 passos por frame zera o acumulador ao estourar (`src/core/sim_clock.gd:19-29`), ou seja: em modo
 vivo o número de ticks e a sequência de estados dependem do relógio de parede — é exatamente isso
 que o driver de `dt` fixo precisa remover. Por isso a checagem é o hash e não fps: fps é função da
@@ -60,7 +60,7 @@ com `--import` (`AGENTS.md:381-383`).
 O mesher de hoje é um `ArrayMesh` por chunk, face-culling + AO por vértice (`src/world/voxel_world.gd:2-4`),
 vizinho respondido por cópia linear do mundo inteiro reconstruída uma vez por `generate()`
 (`:132`, `:139-152`), fila com orçamento de 2 chunks por frame (`src/main.gd:28` → `:309-310`,
-consumido em `src/world/voxel_world.gd:192-200`) e geometria só de cubo unitário (`:14-21`).
+consumido em `src/world/voxel_world.gd:204-212`) e geometria só de cubo unitário (`:14-21`).
 O precedente medido está no comentário de `:135-138` (dicionário de chunks ≈ 250 ms/chunk, boot
 congelado ≈ 16 s) e no README: `~0,9 s de geração + ~4,3 s de malharia` dos 64 chunks, 214.480
 triângulos, e a queda de ~16 s para ~7,5 s quando as consultas de vizinhança passaram a ler a
@@ -75,8 +75,8 @@ cópia linear (`README.md:642-647`; os logs locais dão 4.640–4.886 ms de malh
 | D — Voxel Tools (Zylann) por GDExtension | `[CLAIMED — medição pendente]`, nada vendorizado aqui (`docs/design/06:76-79`) | boot, disco, build multiplataforma | não corrido nesta mesa — continua `[CLAIMED — medição pendente]` |
 
 O critério com pesos (`docs/design/06:81-89`) tinha uma coluna sem instrumento; hoje ela tem número: o custo
-de edição local é carimbo aberto em `_mark` (`src/world/voxel_world.gd:294-306`), fechado no fim da malha
-(`:312-319`) e lido por `edit_mesh_cost()` (`:326-335`) → `diagnostics()["edit_mesh"]` (`src/main.gd:1176`).
+de edição local é carimbo aberto em `_mark` (`src/world/voxel_world.gd:306-318`), fechado no fim da malha
+(`:312-319`) e lido por `edit_mesh_cost()` (`:326-335`) → `diagnostics()["edit_mesh"]` (`src/main.gd:1192`).
 O agregado cobra chunks carimbados: `apply_edits` (`:178-189`) no boot cai em `mesh_ms`, e `last_mesh_ms()`
 (`:207-208`) é lote do frame. Sem instrumento seguem "FPS com 50 mentes HOT" e "shapes não-cúbicos".
 
@@ -87,8 +87,8 @@ com teto de 5 passos/frame e `dropped_ticks += 1` com corte do acumulador, "nunc
 silencioso" (`:17-29`); (c) cronômetro `begin_step`/`end_step` em µs com `worst_step_ms`
 monotônico por reset (`:32-39`, `:46-47`); (d) cadências por subsistema montadas em cima do tick,
 em `src/main.gd:27-31` (`AETHER_PERIOD 0,25`, `MESH_BUDGET 2`, `VIZ_PERIOD 0,25`, `RESPAWN_DELAY 45`, `CORPSE_CHECK_PERIOD 1,0`) e no corpo de
-`_sim_tick` (`src/main.gd:264-306`); (e) o que **não** é autoridade: locomoção do jogador e do
-lobo andam por frame (`src/main.gd:255-261`). Regra da casa: o `EntityStore` SoA que o design
+`_sim_tick` (`src/main.gd:280-322`); (e) o que **não** é autoridade: locomoção do jogador e do
+lobo andam por frame (`src/main.gd:271-277`). Regra da casa: o `EntityStore` SoA que o design
 descreve (`docs/design/06:46-63`) não existe — no doc entra marcado como `[TARGET]`, nunca no
 indicativo; legenda em `docs/design/README.md:12-16`.
 
@@ -105,7 +105,7 @@ bench introduz. Um hash estável em 3 execuções é condição do bake-off, nã
 
 ## 7. Custo nas quatro perguntas
 
-Roda por frame (o `advance` com `delta` real, `src/main.gd:255-261`, o `advance` em `:257`) ou por
+Roda por frame (o `advance` com `delta` real, `src/main.gd:271-277`, o `advance` em `:257`) ou por
 tick (o corpo do `_sim_tick`, 12 000 vezes por corrida de bench); alcança 5 lobos (`src/main.gd:9`),
 64 chunks
 (`src/world/voxel_config.gd:10-11`), 1 jogador. Aloca no caminho quente: `state_bytes()` devolve
@@ -153,7 +153,7 @@ Citações que não conferem (verificadas abrindo os arquivos):
 - `docs/design/06:33` aponta `src/core/sim/tick_clock.gd` (caminho inexistente — o arquivo real é
   `src/core/sim_clock.gd`) e `:200` aponta `src/tools/` (diretório inexistente).
 - `docs/design/08:56` lista `EntityStore SoA` como entrega de P0 sem código correspondente.
-- O comentário-modelo que `AGENTS.md` item 7 cita (`tests/smoke_test.gd:247-255`) está certo: o
+- O comentário-modelo que `AGENTS.md` item 7 cita (`tests/smoke_test.gd:281-289`) está certo: o
   bloco real vai de `:213` a `:223`, e a proibição do passo em série — que trava este censo — está
   em `:220-223`, dentro da faixa citada. O que falta ao contrato é citar `:220-223` pelo nome.
 - As citações de `AGENTS.md` às constantes de `src/main.gd` estão certas (`:12` difusão, `:13`
