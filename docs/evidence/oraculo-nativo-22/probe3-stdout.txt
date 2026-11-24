@@ -1,0 +1,15 @@
+LoadLibrary: ggml-base=OK ggml=OK ggml-vulkan=OK llama=OK
+ponteiros (ggml): load_all=00007FFC5EBB2310 reg_count=00007FFC5EBB1690 reg_get=00007FFC5EBB1720 dev_count=00007FFC5EBB19B0 dev_get=00007FFC5EBB1A40
+ponteiros (base): reg_name=00007FFC461E3270 dev_name=00007FFC461E3030 dev_desc=00007FFC461E3060 dev_type=00007FFC461E30E0
+ggml_backend_load_all_from_path(runtime) devolve: 0 (ve o rodape do stderr; nao e contagem de backends)
+ggml_backend_reg_count(): 3
+  reg[0] RPC
+  reg[1] Vulkan
+  reg[2] CPU
+ggml_backend_dev_count(): 2
+  dev[0] type=1 nome=Vulkan0
+           desc=AMD Radeon RX 9060 XT
+  dev[1] type=0 nome=CPU
+           desc=AMD Ryzen 7 5700X3D 8-Core Processor           
+ggml_backend_vk_get_device_count(): 1
+SONDA=OK

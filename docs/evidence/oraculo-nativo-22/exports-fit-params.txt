@@ -1,0 +1,81 @@
+Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Aetherfall\.tools\llama\runtime\llama-fit-params-impl.dll
+
+File Type: DLL
+
+  Section contains the following exports for llama-fit-params-impl.dll
+
+    00000000 characteristics
+           0 time date stamp
+        0.00 version
+           1 ordinal base
+          53 number of functions
+          53 number of names
+
+    ordinal hint RVA      name
+
+          1    0 00006510 ??$_Construct_n@PEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBV12@@?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@AEAAX_K$$QEAPEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@1@1@Z
+          2    1 00006B90 ??$_Emplace_reallocate@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@AEAAPEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@1@QEAV21@AEBV21@@Z
+          3    2 00006B30 ??$_Erase_tree@V?$allocator@U?$_Tree_node@HPEAX@std@@@std@@@?$_Tree_val@U?$_Tree_simple_types@H@std@@@std@@QEAAXAEAV?$allocator@U?$_Tree_node@HPEAX@std@@@1@PEAU?$_Tree_node@HPEAX@1@@Z
+          4    3 00006860 ??$_Erase_tree@V?$allocator@U?$_Tree_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@PEAX@std@@@std@@@?$_Tree_val@U?$_Tree_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@@std@@@std@@QEAAXAEAV?$allocator@U?$_Tree_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@PEAX@std@@@1@PEAU?$_Tree_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@PEAX@1@@Z
+          5    4 00006A80 ??$_Erase_tree@V?$allocator@U?$_Tree_node@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAX@std@@@std@@@?$_Tree_val@U?$_Tree_simple_types@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@std@@QEAAXAEAV?$allocator@U?$_Tree_node@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAX@std@@@1@PEAU?$_Tree_node@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAX@1@@Z
+          6    5 000068C0 ??$_Freenode@V?$allocator@U?$_Tree_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@PEAX@std@@@std@@@?$_Tree_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@PEAX@std@@SAXAEAV?$allocator@U?$_Tree_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@PEAX@std@@@1@PEAU01@@Z
+          7    6 00004DF0 ??$_Getvals@_W@?$time_get@DV?$istreambuf_iterator@DU?$char_traits@D@std@@@std@@@std@@IEAAX_WAEBV_Locinfo@1@@Z
+          8    7 00004DF0 ??$_Getvals@_W@?$time_get@_WV?$istreambuf_iterator@_WU?$char_traits@_W@std@@@std@@@std@@IEAAX_WAEBV_Locinfo@1@@Z
+          9    8 000061E0 ??0bad_alloc@std@@QEAA@AEBV01@@Z
+         10    9 00006170 ??0bad_array_new_length@std@@QEAA@AEBV01@@Z
+         11    A 000015F0 ??0common_params@@QEAA@XZ
+         12    B 00004F50 ??0common_params_sampling@@QEAA@XZ
+         13    C 00006250 ??0exception@std@@QEAA@AEBV01@@Z
+         14    D 00006700 ??1?$_Tidy_guard@V?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@@std@@QEAA@XZ
+         15    E 000054D0 ??1?$_Tree@V?$_Tmap_traits@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@U?$less@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V12@@std@@@2@$0A@@std@@@std@@QEAA@XZ
+         16    F 00005920 ??1?$_Tree@V?$_Tset_traits@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$less@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@$0A@@std@@@std@@QEAA@XZ
+         17   10 000067F0 ??1?$_Uninitialized_backout_al@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@std@@QEAA@XZ
+         18   11 00005410 ??1?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAA@XZ
+         19   12 00005470 ??1?$vector@HV?$allocator@H@std@@@std@@QEAA@XZ
+         20   13 00005470 ??1?$vector@PEAUggml_backend_device@@V?$allocator@PEAUggml_backend_device@@@std@@@std@@QEAA@XZ
+         21   14 000058A0 ??1?$vector@Ucommon_adapter_lora_info@@V?$allocator@Ucommon_adapter_lora_info@@@std@@@std@@QEAA@XZ
+         22   15 000057B0 ??1?$vector@Ucommon_control_vector_load_info@@V?$allocator@Ucommon_control_vector_load_info@@@std@@@std@@QEAA@XZ
+         23   16 000063A0 ??1?$vector@Ucommon_grammar_trigger@@V?$allocator@Ucommon_grammar_trigger@@@std@@@std@@QEAA@XZ
+         24   17 00005470 ??1?$vector@Ullama_model_kv_override@@V?$allocator@Ullama_model_kv_override@@@std@@@std@@QEAA@XZ
+         25   18 00005470 ??1?$vector@Ullama_model_tensor_buft_override@@V?$allocator@Ullama_model_tensor_buft_override@@@std@@@std@@QEAA@XZ
+         26   19 00003150 ??1?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@QEAA@XZ
+         27   1A 00005470 ??1?$vector@W4common_sampler_type@@V?$allocator@W4common_sampler_type@@@std@@@std@@QEAA@XZ
+         28   1B 00005470 ??1?$vector@_KV?$allocator@_K@std@@@std@@QEAA@XZ
+         29   1C 00006FA0 ??1_Reallocation_guard2@?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@QEAA@XZ
+         30   1D 00006980 ??1common_adapter_lora_info@@QEAA@XZ
+         31   1E 00006490 ??1common_grammar@@QEAA@XZ
+         32   1F 000032A0 ??1common_params@@QEAA@XZ
+         33   20 00005500 ??1common_params_model@@QEAA@XZ
+         34   21 00005B70 ??1common_params_sampling@@QEAA@XZ
+         35   22 00005950 ??1common_params_speculative@@QEAA@XZ
+         36   23 000062C0 ??1exception@std@@UEAA@XZ
+         37   24 00009278 ??_7bad_alloc@std@@6B@
+         38   25 00009178 ??_7bad_array_new_length@std@@6B@
+         39   26 000092B8 ??_7exception@std@@6B@
+         40   27 0000D030 ??_R0?AVbad_alloc@std@@@8
+         41   28 0000D000 ??_R0?AVbad_array_new_length@std@@@8
+         42   29 0000D060 ??_R0?AVexception@std@@@8
+         43   2A 0000D160 ?_OptionsStorage@?1??__local_stdio_printf_options@@9@4_KA
+         44   2B 00006130 ?_Throw_bad_array_new_length@std@@YAXXZ
+         45   2C 000064F0 ?_Xlen_string@std@@YAXXZ
+         46   2D 00006110 ?_Xlength@?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@CAXXZ
+         47   2E 00006110 ?_Xlength@?$vector@_KV?$allocator@_K@std@@@std@@CAXXZ
+         48   2F 00002DD0 ?get_paths@common_params_model@@QEBA?AV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@XZ
+         49   30 00001000 ?llama_fit_params@@YAHHPEAPEAD@Z
+         50   31 00006380 ?what@exception@std@@UEBAPEBDXZ
+         51   32 0000D158 _Avx2WmemEnabledWeakValue
+         52   33 00007080 __local_stdio_printf_options
+         53   34 00003240 printf
+
+  Summary
+
+        1000 .data
+        1000 .pdata
+        4000 .rdata
+        1000 .reloc
+        1000 .rsrc
+        8000 .text

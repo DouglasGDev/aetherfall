@@ -272,11 +272,11 @@ Dentro, na ordem da fila do status: primitivo de hash por tick + journal apêndi
 do lobo multi-semente em cima dele; canais morte/som/fogo no `AetherField` (são 3 hoje —
 [aether_field.gd:9-15](src/world/aether_field.gd#L9-L15)); observabilidade de mente (inspector e
 colheita headless do budget de BT); redução de acoplamento **quando** ela serve a uma dessas;
-robustez do oráculo **atual**, que é HTTP ([mind_oracle.gd:11-13](src/ai/mind_oracle.gd#L11-L13)).
+robustez do oráculo **atual**, que é HTTP ([src/ai/mind_oracle.gd](src/ai/mind_oracle.gd)).
 
-Fora, sem autorização explícita do dono do repositório: P2 (facções / `SlowSim`), oráculo nativo
-em GDExtension, co-op, progressão e chefes, e qualquer "melhoria" de sistema que já passou no
-gate dele. Idéia boa de fase futura vira linha de backlog no status, não código agora.
+Fora, sem autorização explícita do dono do repositório: P2 (facções / `SlowSim`), co-op, progressão
+e chefes, e qualquer "melhoria" de sistema que já passou no gate dele. Idéia boa de fase futura vira
+linha de backlog no status, não código agora.
 
 **Extensão de 2026-11-20, autorizada pelo dono na própria conversa.** Quatro linhas entram no
 "dentro", na ordem dos dossiês ([`docs/planos/README.md`](docs/planos/README.md)): **bioma como
@@ -646,6 +646,44 @@ censo multi-semente sem corrida seguem sendo exatamente os elos que a 12 não to
 `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram tocados por esta perna. A seção
 `O pouso da 12` de [docs/melhorias-status.md](docs/melhorias-status.md) traz as dez corridas, o par de
 testemunhas do vermelho e as três réguas com as linhas literais.
+
+**Extensão de 2026-11-23, autorizada pelo dono na própria conversa — oráculo nativo em GDExtension.**
+O pedido chega como um prompt de cinco fases ("Aetherfall: Elevação da IA Local para Outro Nível") e
+entra no "dentro" como
+[`docs/planos/22-oraculo-nativo-gdextension.md`](docs/planos/22-oraculo-nativo-gdextension.md), branch
+`feat/oraculo-nativo-gdextension-22`, dono o agente `oraculo-nativo-22`. A regra de ouro dele, escrita
+no topo da página como cláusula verificável: nenhuma camada de linguagem move pé, aplica dano ou
+escreve diretamente no ledger — a mente propõe, as regras determinísticas dispõem. O escopo autorizado
+é a **Fase 1** (o transporte do oráculo sai do HTTP e passa a ser uma extensão C++ com llama.cpp
+embutido no processo, em `native/af_mind/`); as Fases 2–5 — memória de qualidade, adaptação por
+bandit, LOD e orçamento, ferramentas e observabilidade — ficam autorizadas **como pauta dentro dessa
+mesma perna**, cada uma com gate próprio e nenhuma linha escrita antes de a anterior fechar o dela.
+O que o prompt nomeia e este registro **não** autoriza: P2, facções, co-op, progressão, chefes e o
+"Sistema Operacional (Obragem)", que o próprio dono adiou. `Channel.COUNT`
+([aether_field.gd:9](src/world/aether_field.gd#L9)), `FORMAT_VERSION`
+([tick_journal.gd:4](src/persistence/tick_journal.gd#L4)) e `GEN_VERSION` continuam intocados.
+
+A posição na fila serializada é exceção de ordem registrada **antes** de qualquer linha (mandato 4): a
+fila passa a **17 → 18 → 22 → 20 → 13**. A 22 vem **depois da 18** porque a 18 gasta `src/main.gd`
+inteiro em mecânica de mundo e é o elo mais curto da fila; abrir a 22 antes obrigaria a 18 a re-rodar
+o gate com um `HTTPRequest` a menos na árvore. Vem **antes da 20** porque as duas escrevem a mesma
+frase de contrato sobre o oráculo e a 22 é a que tem a palavra autoritativa — se a 20 nascer depois,
+ela nasce sabendo que o modelo é nativo e pode tratar a saúde do oráculo como entrada. A 13 continua
+última pelo motivo já registrado: nenhuma mudança de `Channel.COUNT` no meio da fila.
+
+O que a Fase 0 desta perna mediu, e o que isso mudou no plano (§1 e §8 da página): o MSVC **existe**
+(VS 2022 Community, `cl.exe` 19.44.35207) e a leitura anterior — "nenhum VS instalado" — estava errada
+porque o `.bat` da sonda fazia `call vcvars64.bat >nul` e media `%ERRORLEVEL%` **depois** do redirect;
+o instrumento imprimiu o código da própria casca. Isso é o **furo #32**, e a régua dele é "um redirect
+entre o `call` e o `echo %ERRORLEVEL%` lê o redirect, não o compilador". Medido também: as DLLs do
+runtime carregam dentro de um processo comum e veem a GPU (`reg_count` 3 — RPC, Vulkan, CPU; `dev[0]`
+Vulkan0 = RX 9060 XT), o cabeçalho de interface do GDExtension 4.7.2 é **gerado** pelo SCons do próprio
+Godot (143 170 B, não baixável como arquivo) e o export-set pinado não contém
+`ggml_backend_buffer_type_get_base_buffer` nem `llama_params_get_fit_params` — os dois nomes com que o
+prompt descrevia a memória fina (`model_oversave`) e o ajuste automático de parâmetros. Consequência
+escrita antes do código: nenhuma linha de `native/` compila contra documentação; o gate de **link** da
+Fase 1 (§1.3, §5.1) é quem decide a escolha de símbolo. Nada disto é código da Fase 1 — a branch desta
+passada é documento puro.
 
 ## Ciclo de trabalho
 
