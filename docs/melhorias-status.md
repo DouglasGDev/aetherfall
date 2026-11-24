@@ -89,6 +89,34 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 
 ## Feito nesta sessão
 
+- **A água tem o primeiro shader e a primeira partícula do projeto: a onda desloca o vértice do topo,
+  o que a malharia sabe viaja no `COLOR`, e o salpico cai onde o corpo cai (dossiê 23, branch
+  `feat/elevacao-visual-agua-23`, base `b0ed929`, ponta de código `3c7aae9`, merge `05e8917` —
+  **pousada** na `main`).** O pedido é o prompt "Aetherfall: Elevação Visual (Texturas + Água +
+  Atmosfera)" com uma cláusula dura — *"Não tocar na IA ou na lógica de gameplay neste prompt — só
+  visual"* — e o corte dele: Fase 1 escrita, Fases 2→5 só pauta.
+  [src/world/water_surface.gd](../src/world/water_surface.gd) (237 linhas) monta em runtime um
+  `ShaderMaterial` cujo GLSL vive numa constante de GDScript (nada importado, por causa do `#25`):
+  `vertex()` desloca `VERTEX.y` pela soma de três harmônicas onde `COLOR.r` manda, `fragment()` lê a
+  cena por `hint_screen_texture` (refração de uma amostra + reflexão de um passo, Schlick com
+  `f0 = 0,02`) e por `hint_depth_texture` a espessura que decide a absorção, com espuma de margem e
+  caustica quando o sol está alto. [src/rendering/water_fx.gd](../src/rendering/water_fx.gd) (352
+  linhas) põe os dois pools de `GPUParticles3D` (8 salpicos de 24 + 4 bolhas de 40) e os 12 anéis de
+  ondulação, com o teto aritmético `8×24 + 12 + 4×40 = 364` impresso e conferido: `soma=364
+  teto=364 vivas=41`. **O mesher não se moveu** — `agua nao muda a malha` devolve `base=214448
+  espelho=214448 sessao=214448`, e é por isso que a cláusula "só visual" é checagem e não frase:
+  `git diff --name-only c05f1df 05e8917 -- src tests` devolve sete arquivos e nada em `src/ai/`,
+  `src/entities/` ou `native/`, com `fx_nao_escreve_o_mundo` a fechar a porta do Éter
+  (`canais=3  edits_globais=0->0`). Nove checagens novas, censo **255 → 264**, e o pin medido no
+  clone limpo com `--import` frio dá **264 / 0 / 53,6 s** (amostrado) e **264 / 0 / 53,8 s**
+  (silencioso); a compilação do shader **não** é da suíte — headless não exercita o
+  `RenderingDevice` — e o §5.2 é a sonda com janela: `SHADER ERROR` **0** na RX 9060 XT e a fração de
+  água na caixa **0,8471** contra **0,0000** no controle da base, com os dois PNGs de controle de
+  byte-idênticos. **O que isso NÃO fecha:** nenhum gate de fase (mandato 4); o `SSR`/`ReflectionProbe`
+  continuam o braço rejeitado do §3.4; e o vermelho único da régua de 25 ms ficou **com atribuição
+  aberta, escrita assim** — as dez corridas, o amostrador do `#31` e o furo `#44` que ele abriu estão
+  na seção "O pouso da perna 23 na `main`" abaixo.
+
 - **af-bench re-medido na árvore do pin: a mesma semente devolve o mesmo hash nas 3 execuções, agora
   contra o mundo das pernas 16 e 19 (dossiê 07b, branch `bench/af-bench-boot-walk-07b`, merge
   `35959e0`).** A peça já existia, medida na base `99d1167` (hash `a6addd…`); o AGENTS.md manda
@@ -607,6 +635,18 @@ existem**; `died` **não** é sinal órfão — tem dois consumidores em `src/`,
 leito `amb_birds` tocando sem ave nenhuma no mundo é ambiência de campo aberto correta, não defeito do
 tipo da 19.
 
+**Pauta autorizada em 2026-11-24 e já pousada: o prompt "Elevação Visual (Texturas + Água +
+Atmosfera)", cinco fases com a Fase 1 escrita.** A página é
+[`docs/planos/23-elevacao-visual-agua.md`](planos/23-elevacao-visual-agua.md), o código está no merge
+`05e8917` e a rodada "O pouso da perna 23" abaixo traz as corridas. O que **continua em andamento**
+depois do pouso são três coisas, e nenhuma delas é código desta passada: (1) as **Fases 2→5** —
+clima/vento (`Weather`), superfícies molhadas, vegetação viva, `Environment` de névoa/Glow e os
+materiais dos blocos — autorizadas **como pauta dentro da mesma perna**, cada uma com gate próprio e
+na dependência da anterior (§3.9); (2) a **atribuição do vermelho de 25,76 ms**, que ficou aberta
+escrita assim, com o dono de pagar a dívida sendo a próxima perna que rodar a suíte nesta árvore com
+o amostrador ligado; (3) a fila serializada, que volta a **22 → 17 → 18 → 20 → 13** — a 23 entrou na
+frente de todas por decisão do dono e sai dela agora, e a 22 ainda está em voo na árvore primária.
+
 ## Falta
 
 Por dependência, não por preferência (cada item aberto tem um dossiê de leitura em [`docs/planos/`](planos/README.md): premissa nomeada, estado do código com `arquivo:linha`, gate headless e custo pelas quatro perguntas — nenhum dossiê rodou a engine e nenhum fecha gate):
@@ -809,6 +849,22 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     antes: folha nova na `Selector`, classe `Blackboard`, canal novo no Éter (é débito do dossiê 03) e
     `SpeciesDef` como `.tres` — o predado de espécie entra como dados construídos uma vez, no padrão de
     [`block_defs.gd:123-137`](../src/world/block_defs.gd#L123-L137).
+15. **As Fases 2→5 do prompt visual** (dossiê 23; **autorizadas como pauta dentro da mesma perna**, com
+    a Fase 1 pousada em `05e8917` e nenhuma linha escrita delas). O que cada uma exige, lido no §3.9 da
+    página: a **Fase 2** (chuva e superfícies molhadas) não tem o que ligar — não existe variável de
+    clima (o sol é constante) e o material opaco é um `StandardMaterial3D` único por mundo
+    ([voxel_world.gd:91-96](../src/world/voxel_world.gd#L91-L96)), então a fase é `Weather` como dono de
+    um estado lido pelo FX **e** pelo material, e é o primeiro comprador de `shader` no opaco; a
+    **Fase 3** (vegetação viva) precisa decidir primeiro **qual canal do `COLOR` opaco** fica livre,
+    porque grama e folha entram no mesmo surface com o jitter `0,012` de
+    [voxel_world.gd:575](../src/world/voxel_world.gd#L575); a **Fase 4** (atmosfera) tem hoje
+    `fog_enabled` e `fog_density = 0,006` escritos à mão dentro de `_build_environment`
+    ([main.gd:1242-1246](../src/main.gd#L1242-L1246)) — height fog pede `Environment` em recurso
+    versionado, e god rays em `forward_plus` é volumetria cujo custo **ninguém mediu nesta máquina**: a
+    fase começa pela colheita (mandato 5); a **Fase 5** (materiais dos blocos) tem um atlas 8×8 de
+    16 px com `seed` fixa ([voxel_atlas.gd:5-14](../src/world/voxel_atlas.gd#L5-L14)) servindo os 23
+    ids por **um** material, e o corte manda esgotar a variação pelo canal que já existe antes de
+    qualquer atlas novo.
 
 ## Backlog priorizado (P0 → P1)
 
@@ -909,6 +965,14 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
 - **O gate do oráculo depende de um servidor local de fora**: `live_oracle_probe.tscn` exige o
   `llama-server` de pé; a degradação é testada sem rede ([smoke_test.gd:2495-2500](../tests/smoke_test.gd#L2495-L2500),
   sonda apontada para a porta 1), o caminho feliz não é testável em CI.
+- **A suíte rodou uma vez com a régua de 25 ms estourada e a janela não foi amostrada** (dossiê 23,
+  árvore do merge `05e8917`): `264 checagens 1 falhas 57,8 s` com `pior passo=25,76 ms`
+  ([suite_main_vermelho.log](evidence/elevacao-visual-agua-23/suite_main_vermelho.log)), e as outras
+  nove corridas da mesma árvore deram 11,40–16,49 ms. O débito é de instrumento, não de código:
+  quem rodar a suíte nesta árvore roda com `.tools/carga_23.ps1` ligado desde antes do `--import` e
+  arquiva o par (log da corrida + log de carga com o PID nomeado), porque sem essa testemunha a
+  frase "carga na máquina" continua sendo o **furo #31** de sempre — e o amostrador que a casa
+  exigiu para pagar o #31 abriu o **#44** (a coluna de PID lia uma chave inexistente).
 
 ## Furos descobertos
 
@@ -7641,3 +7705,234 @@ nenhuma rodada anterior tem número invalidado por este merge. Dos furos, **#38*
 colheita que nomeia a folha, e a **alocação** do caminho quente (dicionário por lobo por tick, `keys()`
 do cache de rastros) segue sem colheita própria — o que este passo mediu é **custo de memória e
 contexto**, não custo de alocação. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+
+## O pouso da perna 23 na `main` — a água tem o primeiro shader e a primeira partícula do projeto, a malha não se moveu, e a régua de 25 ms deu um vermelho que voltou a não ter dono (2026-11-24, `feat/elevacao-visual-agua-23`, base `b0ed929`, ponta `3c7aae9`, merge `05e8917`)
+
+A cláusula do dono era **só visual**: "Não tocar na IA ou na lógica de gameplay neste prompt". Lida
+contra o que o merge escreve, ela fechou: `git diff --name-only c05f1df 05e8917 -- src tests` devolve
+sete arquivos — [src/main.gd](../src/main.gd) (+22), [src/world/voxel_world.gd](../src/world/voxel_world.gd)
+(+71/−10), os dois novos ([src/world/water_surface.gd](../src/world/water_surface.gd) 237 linhas,
+[src/rendering/water_fx.gd](../src/rendering/water_fx.gd) 352) com os `.uid`, e
+[tests/smoke_test.gd](../tests/smoke_test.gd) (+372) — e nada em `src/ai/`, `src/entities/`,
+`native/` ou `block_defs.gd`. `Channel.COUNT`, `FORMAT_VERSION` e `GEN_VERSION` não foram tocados.
+
+### As nove checagens da água, lidas da corrida da árvore mergida
+
+Censo: **264 checagens / 0 falhas / 57,6 s** ([suite23-merged.log:378](evidence/elevacao-visual-agua-23/suite23-merged.log#L378)),
+sobre a base de **255** do pin da 22 — as nove novas são estas, com a linha literal:
+
+| :40 | `agua nao muda a malha` | `base=214448  espelho=214448  sessao=214448` |
+| :53 | `material_da_agua_e_shader` | `shader=true  surface=1  declarados=16  gravados=14  sem_fonte=0` |
+| :54 | `mascara_de_onda_do_bloco_isolado` | `verts=24  tri=12  mascarados=12  fora_do_plano=0  verticais=16  g_max=0.000` |
+| :55 | `coluna_de_agua_ondula_so_no_topo` | `verts=40  tri=20  mascarados=12  fora_do_plano=0  g_max=0.247 (1 bloco embaixo = 0,25)` |
+| :61 | `corpo_seco_nao_dispara` | `salpicos_jogador=0->0  molhado_na_janela=false  andado=9.36 m` |
+| :64 | `coluna_de_queda_funda` | `coluna=(100,52)  blocos=12  plano=26.880` |
+| :67 | `orcamento_de_particulas` | `emissores=12  anis=12  soma=364  teto=364  vivas=41  picos=1` |
+| :68 | `queda_na_agua_dispara_salpico` | `disparados=0->1  jogador=0->1  vy=-12.40  col=(100, 52)  plano_fx=26.880 plano_mundo=26.880  blocos=6` |
+| :69 | `fx_nao_escreve_o_mundo` | `assinatura_ok=true  edits_globais=0->0  eter_seco=0.000000  eter_salpico=0.000000  canais=3  fx_sem_eter=true` |
+
+A linha :70 imprime o custo do FX como leitura, não como gate: `custo do FX: quadros=295  us_total=5452
+media=18.48 us/quadro  pico=124 us`. O `plano_fx=26.880` do salpico e o `plano_mundo=26.880` da
+consulta do mundo são o mesmo número vindo de dois caminhos — é o §3.7 do dossiê pago por igualdade
+de float, e a premissa da janela (`coluna_de_queda_funda`, 12 blocos acima de `BUBBLE_MIN_BLOCKS`)
+está na mesa justamente para o verde de :68 não ser sorte.
+
+**O furo #43 fecha aqui, com a checagem que o paga**, e o que ele era está escrito na seção própria
+abaixo: o `COLOR` que a malharia já preenchia com o `FACE_TINT` da face não era lido por ninguém; hoje
+o vértice do shader desloca `VERTEX.y` por `COLOR.r`
+([src/world/water_surface.gd:116](../src/world/water_surface.gd#L116),
+[:119](../src/world/water_surface.gd#L119)) e o fragment lê `COLOR.b`/`COLOR.g` como parede e altura
+de coluna ([:136-138](../src/world/water_surface.gd#L136-L138)); quem liga o material é
+[src/world/voxel_world.gd:97](../src/world/voxel_world.gd#L97). O que decide a cláusula não é a
+frase: é `material_da_agua_e_shader` (:53) e `mascara_de_onda_do_bloco_isolado` (:54).
+
+### A prova com janela, e o chão de controle que a tornava falsa sem ele
+
+O par do §5.2, nas duas árvores: `SHADER ERROR` **0 / 0**; a caixa de água sobre a superfície da
+coluna `(100,52)` dá **0,8471** de fração `ge3` na perna e **0,0000** na base; o quadro inteiro dá
+**0,3999** contra **0,0468** ([sonda-23.log](evidence/elevacao-visual-agua-23/sonda-23.log),
+[sonda-base-b0ed929.log](evidence/elevacao-visual-agua-23/sonda-base-b0ed929.log)). As quatro
+salvaguardas estão arquivadas: os dois enquadramentos são byte a byte o mesmo
+(`coluna=(100,52)`, `olho=(101.50, 29.62, 39.50)`, `pitch=-0.198`, `camera_deslocou=0.0000 m`);
+nenhum slot de FX vivo na cena da sonda (`vivas_pool=0/0/0`, `salpicos_disparados=0`, `picos=0`);
+os dois PNGs de controle da base têm o **mesmo** SHA-256 `ae3d7dc4…` — t1 e t2 da água parada não se
+movem, enquanto t1/t2 da perna são `520c3d5f…` / `551455ad…`; e a caixa foi re-derivada **sem Godot
+nem GPU** a partir dos próprios PNGs e devolve 0,8471 e 0,0000
+([confere_caixa.log](evidence/elevacao-visual-agua-23/confere_caixa.log)).
+
+Os `.err` das duas corridas **não** são iguais, e a diferença não é da água: a base imprime **3**
+linhas `ERROR:` ([sonda-base-b0ed929.err](evidence/elevacao-visual-agua-23/sonda-base-b0ed929.err#L1))
+e a perna imprime **0** ([sonda-23.err](evidence/elevacao-visual-agua-23/sonda-23.err)) — as três da
+base são `!FileAccess::exists`, `GDExtension dynamic library not found: 'res://native/af_mind/…'` e
+`Error loading extension`, todas da extensão da perna 22, que no worktree da 23 estava presente e na
+árvore de controle não. **Zero** erros de shader dos dois lados, e é isso que a cláusula "compila"
+exige.
+
+### A régua de 25 ms: um vermelho, dez corridas, e o instrumento que faltava para falar dele
+
+`espalhamento_nao_estoura_o_passo` ([tests/smoke_test.gd:2894-2910](../tests/smoke_test.gd#L2894-L2910))
+deu **vermelho uma vez** na árvore mergida: `264 checagens 1 falhas 57,8 s`, com
+`pior passo=25,76 ms (regua 25)`
+([suite_main_vermelho.log](evidence/elevacao-visual-agua-23/suite_main_vermelho.log)). Não foi
+silenciado e a régua não foi abaixada. As nove outras corridas, na mesma árvore:
+
+| corrida | pior passo | rodapé |
+|---|---|---|
+| mergida, logo após o merge (a vermelha) | 25,76 ms | 264 / **1** / 57,8 s |
+| mergida, verde a / b / c | 15,69 / 16,25 / 16,49 ms | 264 / 0 / 54,5 · 56,7 · 60,4 s |
+| mergida, churn do palco reproduzido | 16,32 ms | 264 / 0 / 53,9 s |
+| mergida, com o amostrador ligado | 13,87 ms | 264 / 0 / 54,4 s |
+| clone limpo do pin `05e8917`, `--import` frio | 12,99 ms | 264 / 0 / 54,3 s |
+| clone limpo da base `c05f1df`, `--import` frio (controle) | 12,61 ms | **255** / 0 / 50,3 s |
+| clone do pin, amostrado / silencioso | 12,75 / 11,40 ms | 264 / 0 / 53,6 · 53,8 s |
+
+Três coisas se podem dizer com log na mesa:
+
+1. **Nada que a 23 acrescentou está dentro da região cronometrada.** `worst_sim_ms` vem de
+   `clock.begin_step()`/`end_step()` dentro de `_physics_process`
+   ([src/main.gd:271-277](../src/main.gd#L271-L277), [:325-326](../src/main.gd#L325-L326)); a
+   malharia (`world.process(MESH_BUDGET)`) e o FX rodam em `_process`, **fora** dela. A 23 também não
+   mudou `triangle_count()` — é a checagem :40, e o número da base é o mesmo.
+2. **O vermelho tem a assinatura do furo #31**, que a perna 12 já tinha medido na mesma árvore e no
+   mesmo tick (`dens=3 componentes=2 separacao=55.9 m`): lá, 96,48 ms contra 15,81 ms; aqui, 25,76 ms
+   contra 13,87 e 11,40 ms. Palco, código e régua idênticos dos dois lados em ambas as pernas.
+3. **O que a casa exigia e não existia era o instrumento.** O `#31` cobrava "filtrar por
+   `ExecutablePath` dentro do projeto, não por nome de processo"; o amostrador que obedece está
+   arquivado ([carga_23.ps1.txt](evidence/elevacao-visual-agua-23/carga_23.ps1.txt)) e abriu um furo
+   próprio — ver **#44**. Nos 40 samples ligados durante a corrida verde da mergida: `load` do
+   sistema **0 / 10 / 37 %** (mín / med / máx), `QuantumEngine` (o app de áudio da JBL, PID 14228)
+   entre **45 % e 78 % em toda amostra**, `MsMpEng` (Defender) entre 11 % e 61 %, e o processo Godot
+   desta corrida visto pelo amostrador em até **109 % de um núcleo**. O runner concorrente da perna
+   22 (PID 26828) estava vivo desde 16:26:34 com **7 MB e 1 thread**, `cpu=0%` — parado, não
+   competindo.
+
+Então: **a atribuição continua aberta, escrita assim.** O vermelho aconteceu uma vez em dez corridas
+na árvore mergida, a régua não se moveu, nada foi calado, e nenhuma porcentagem medida nesta passada
+cai sobre a janela da corrida vermelha — ela não foi amostrada. Dizer "carga na máquina" sem o número
+daquela janela é exatamente a frase que o `#31` já retirou. Fica como débito com dono: a próxima
+perna que rodar a suíte nesta árvore roda com `carga_23.ps1` ligado e arquiva o par.
+
+### Clone limpo, censo, e os seis vermelhos que não são desta perna
+
+O pin é o merge medido, `05e8917` (pais `c05f1df` e `3c7aae9`); as árvores são `3c436fb6d6f3…`
+(`src`) e `8decf7d42e3c…` (`tests`), **iguais** às da ponta `3c7aae9` —
+`git diff --name-only 3c7aae9 05e8917 -- src tests docs` devolve vazio, o merge não acrescenta nada
+sobre o que foi medido. No clone limpo com `--import` frio: suíte **264 / 0 / 53,6 s** (amostrado) e
+**264 / 0 / 53,8 s** (silencioso); runner de reações **289 checagens / 6 falhas / 34,988 s** com
+`FALHA censo de checagens | 289/296`; RNG **27 / 0 / 2,675 s** (`27/27`); journal **128 / 0 / 5,983 s**
+(`7/7 testes concluidos`).
+
+Os seis vermelhos do runner **não são da água**, e isso tem controle, não adjetivo: as cinco linhas
+são `extensao_carrega_classe` ×4 e `extensao_pack_no_processo` — checagens da perna 22, que falham
+num clone limpo porque `native/` é gitignored e o `.dll` não vem com o `git clone` (é o **furo #38**,
+decisão do dono). A corrida de controle na árvore **anterior** a esta perna (`c05f1df`, clone limpo)
+devolve **o mesmo rodapé 289 / 6 / 34,831 s e as mesmas cinco linhas**
+([base-runner_pre23_frio.log](evidence/elevacao-visual-agua-23/base-runner_pre23_frio.log) contra
+[clone_amostrado_runner.log](evidence/elevacao-visual-agua-23/clone_amostrado_runner.log)).
+
+### As três réguas, e o que a de âncoras viu que a minha varredura não viu
+
+- `python tools/check_doc_anchors.py`
+  ([regua_anchors_final.log](evidence/elevacao-visual-agua-23/regua_anchors_final.log)):
+  **40 arquivos · 3 163 ponteiros conferidos · 209 rótulos ·
+  3 531 links relativos**, com **5** casos objetivos — os cinco `../.tools/...` gitignored que a base
+  já tinha, conferidos na árvore de controle
+  ([regua_anchors_base_c05f1df.log](evidence/elevacao-visual-agua-23/regua_anchors_base_c05f1df.log):
+  **39 arquivos · 3 079 ponteiros · 209 rótulos · 3 417 links**, também **5** casos). **Na árvore desta perna, antes do conserto, eram 22.** Os 17 novos eram todos
+  `src/main.gd` e `tests/smoke_test.gd` depois do shift: **11** ROTULO FORA DO CORPO (o rótulo nomeia
+  `_home_columns`, `SPAWN_BANDS`, `PACK_LEASH`, `_spawn_point_ok`, `_spawn_home_point`,
+  `_den_counts`, `_emptiest_den`, `_den_gate_ok`, `den_min_dist`, `DEN_COUNT`, `DEN_MIN_DIST` e o
+  corpo está 16 linhas adiante), **4** BRANCO nos dossiês 01, 02, 08 e 16 e **2** BRANCO no próprio
+  status. Cada um foi conferido contra o corpo que o rótulo nomeia, não contra o deslocamento médio.
+  **E a régua apanhou mais um depois de aquilo estar escrito**: a página 15 apontava para as linhas
+  502 e 3059 deste arquivo — a 3059 caiu em linha branca, que é o caso que ela
+  vê, e a 502 tinha caído em prosa de *outra* exceção de ordem, que é o caso que ela não vê
+  (face do **#28**). Os três ponteiros foram re-lidos pela frase para as linhas 553, 3169 e
+  566-567,
+  e a passada que os corrigiu é esta; a página 15 conta o caso no §11 dela.
+- `verify_plan_cites.py` com os **51** arquivos versionados de `docs/` + `AGENTS.md` + `README.md` e
+  `AETHER_ROOT` apontando para a árvore auditada
+  ([regua_cites_final.log](evidence/elevacao-visual-agua-23/regua_cites_final.log)): **3 012**
+  citações com número conferidas, **76**
+  arquivos citados que não existem, **0** números fora do arquivo. A base (`c05f1df`, 50 arquivos —
+  falta a página 23), medida no clone de controle com o log próprio
+  ([regua_cites_base_c05f1df.log](evidence/elevacao-visual-agua-23/regua_cites_base_c05f1df.log)), dava
+  **2 930 / 75 / 0**: o conjunto de ausências não mudou de espécie, e os 76
+  são as peças que os dossiê declaram como alvo (as 32 fora de `.tools/` incluem
+  `src/core/sim/tick_clock.gd`, `src/ai/reach.gd`, `src/entities/falling_block.gd`,
+  `tests/wolf_multiseed_census_test.gd` e as dezesseis linhas de arquitetura de `docs/design/07`).
+  **O septuagésimo sexto é desta página**: a frase que lista as ausências cita
+  `src/entities/falling_block.gd`, e para a régua uma citação é uma citação mesmo quando o que ela
+  faz é nomear o que não existe — ela contou a si mesma. Registramos o número em vez de reescrever a
+  frase, porque baixá-lo exigiria apagar o nome da peça que a perna 17 declara inexistente.
+- `verify_plan_ids.py docs/planos/23-elevacao-visual-agua.md`
+  ([regua_ids_23_final.log](evidence/elevacao-visual-agua-23/regua_ids_23_final.log)): **97** identificadores em backticks,
+  **10** ausentes em `src/` e `tests/`, conferidos um a um: `ARRAY_DATA`, `LINEAR_WITH_MIPMAPS`,
+  `forward_plus`, `ReflectionProbe` e `gdshader` são API do engine citada como escolha;
+  `CPUParticles3D` é citada na sonda que prova a **ausência** de partícula na base (§2), e o que
+  pousou é `GPUParticles3D`; `Weather` é a Fase 2 `[TARGET]`; `entered_water` é o **braço rejeitado**
+  do §3.6; `grep` é
+  comando; e `ae3d7dc4…` é o SHA do PNG de controle. **Nenhum é identificador de código escrito em
+  vão.** Dois estavam, e saíram: a tabela do §5.1 prometia `surfaces_com_shader`,
+  `uniformes_sem_fonte` e `salpicos_vivos` quando a corrida imprime `surface=1`, `sem_fonte=0` e
+  `vivas=41` — reescrita com a linha literal e com a aritmética do teto à vista (8×24 + 12 + 4×40 =
+  364).
+
+### Furo #43 — fechado por este pouso: o `COLOR` que a malharia escrevia e ninguém lia
+
+O §2 do dossiê prometeu a checagem antes da linha, e ela veio: `material_da_agua_e_shader` (:53)
+prova que a superfície é uma `ShaderMaterial` com `shader` carregado e que nenhum uniforme gravado
+está sem declaração (`sem_fonte=0`; `declarados=16` contra `gravados=14` porque `screen_tex` e
+`depth_tex` liga o engine, não o código), com `surface=1` — o índice da água dentro da malha do
+chunk. `mascara_de_onda_do_bloco_isolado` (:54) conta os vértices com `COLOR.r > 0,5` dentro daquela
+superfície e exige `verts=24  tri=12  mascarados=12  fora_do_plano=0  verticais=16  g_max=0.000`: os
+24/12 são derivados de `FACE_CORNERS` e do culling contra `AIR` (seis faces de uma célula no ar), o
+`fora_do_plano=0` diz que todo vértice mascarado está exatamente no plano do topo, e `g_max=0,000`
+que nenhuma coluna foi fingida — números conferidos por conteúdo, não lembrados
+([tests/smoke_test.gd:546-572](../tests/smoke_test.gd#L546-L572),
+[:610-627](../tests/smoke_test.gd#L610-L627)). O resto é a linha do parágrafo acima: `VERTEX.y`
+deslocado por `COLOR.r`
+([src/world/water_surface.gd:116](../src/world/water_surface.gd#L116),
+[:119](../src/world/water_surface.gd#L119)) e `COLOR.b`/`COLOR.g` lidos como parede e altura de
+coluna ([:136-138](../src/world/water_surface.gd#L136-L138)).
+
+### Furo #44 — novo: a coluna do amostrador estava presente no stdout e não media nada
+
+A regra que ele quebra é a mesma do **#31**. O amostrador escrito para dar ao `#31` a coluna que
+faltava imprimiu `cpu=-1` e PID vazio em **todas as 143 linhas de processo das duas primeiras
+corridas**
+([carga_coluna_pid_morta.log](evidence/elevacao-visual-agua-23/carga_coluna_pid_morta.log),
+[carga_clone_a.log](evidence/elevacao-visual-agua-23/carga_clone_a.log)): em
+`Win32_PerfFormattedData_PerfProc_Process` a chave é **`IDProcess`**, não `ProcessId`, e o join
+`{ $_.ProcessId -eq $p.ProcessId }` compara `$null` com o PID e nunca casa — o que era para ser a
+testemunha da carga virou uma constante. É o padrão que esta casa já contou no `#31` (filtrar por
+nome em vez de `ExecutablePath`), no `#32` (o `ERRORLEVEL` lido depois do redirect) e no `#35` (o
+`link` do Git). Dono: quem rodar a próxima janela amostrada nesta árvore; o instrumento consertado
+está versionado como evidência, e a corrida verde de `13,87 ms` foi feita com ele já consertado.
+
+### O mais que esta passada abre, e o que deixa onde estava
+
+- **Nova face do #28**, medida e não inferida: a varredura numérica da casa **mexe em ponteiro, não
+  em frase**, e por isso não vê um rótulo cujo corpo se moveu 16 linhas para frente, nem um número de
+  linha que hoje é branco. As duas faces só aparecem quando a régua compara o **conteúdo** do alvo —
+  quem contou os 17 foi o `check_doc_anchors.py`, não a minha leitura.
+- **Nova face do #28**, medida e não inferida: a varredura numérica da casa **mexe em ponteiro, não
+  em frase**, e por isso não vê um rótulo cujo corpo se moveu 16 linhas para frente, nem um número de
+  linha que hoje é branco. As duas faces só aparecem quando a régua compara o **conteúdo** do alvo —
+  quem contou os 17 foi o `check_doc_anchors.py`, não a minha leitura.
+- Continuam abertos, sem dono novo: **#31** (a atribuição do vermelho intermitente), **#38** e
+  **#39** (clone sem build, réguas cegas a `native/`), **#20** (colheita do budget por folha) e a
+  **alocação do caminho quente**.
+
+### O que nada disso fecha
+
+Nenhum gate de fase. A fila P0/P1 continua exatamente como estava: budget HOT sem medição, censo
+multi-semente sem corrida, bake-off de AF sem número. Das cinco fases do prompt visual, **só a Fase 1
+foi pedida e só ela foi escrita**; clima/vento (`Weather`), `Environment` versionado, superfícies
+molhadas e o atlas novo esperam o gate um do outro, na ordem do §3.9 do dossiê. A refração de uma
+amostra e a reflexão espelhada de um passo estão escritas e rodam (§3.4); o que continua **de fora** é
+o `SSR` do `Environment` e a `ReflectionProbe` por bioma — o braço rejeitado da mesma página, cujo
+número que o reabre (a reflexão de tela mostrando o **chão** no lugar do céu em mais de um quadro da
+sonda) **não** foi medido por esta passada: a sonda contou a fração de água na caixa, não o conteúdo
+do raio espelhado. `block_changed` segue sem consumidor em `src/` (débito da 17). A fila serializada
+volta a **22 → 17 → 18 → 20 → 13**, com a 23 fora da frente e a 22 ainda em voo na árvore primária.
