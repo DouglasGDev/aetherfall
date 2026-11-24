@@ -1,0 +1,8 @@
+load_backend: loaded RPC backend from C:/Aetherfall/.tools/_clone_passo2b_22/.tools/llama/runtime\ggml-rpc.dll
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = AMD Radeon RX 9060 XT (AMD proprietary driver) | uma: 0 | rebar: 0 | fp16: 1 | bf16: 1 | fp4: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+load_backend: loaded Vulkan backend from C:/Aetherfall/.tools/_clone_passo2b_22/.tools/llama/runtime\ggml-vulkan.dll
+load_backend: loaded CPU backend from C:/Aetherfall/.tools/_clone_passo2b_22/.tools/llama/runtime\ggml-cpu-haswell.dll
+gguf_init_from_file: failed to open GGUF file 'C:/Aetherfall/.tools/_clone_passo2b_22/models/qwen3.5-4b-q4_k_m.gguf' (No such file or directory)
+llama_model_load: error loading model: llama_model_loader: failed to load model from C:/Aetherfall/.tools/_clone_passo2b_22/models/qwen3.5-4b-q4_k_m.gguf
+llama_model_load_from_file_impl: failed to load model
