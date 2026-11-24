@@ -6993,3 +6993,398 @@ arquivos citados inexistentes — os dez de sempre, os três scratch `.tools/_he
 elas têm uma classe a mais desde o Passo 1 (c): os nomes de `native/` que a régua não varre, porque ela
 monta o corpus com `src/**/*.gd` e `tests/**/*.gd` (furo **#39**). A fila
 serializada não muda: **22 → 17 → 18 → 20 → 13**, e a 22 segue na frente.
+
+*(Estado re-derivado pelo pouso abaixo: as quatro corridas e as três réguas deste bloco valem para a
+ponta `007a32b`; a `main` mergida é `8a53b56` e foi re-medida, com o `build.bat` re-executado dentro do
+clone limpo. O **Passo 2 (b)** continua por rodar, e a rodada (6) logo abaixo abre os **furos #41 e #42**
+— nenhum deles é da perna.)*
+
+## O pouso do Passo 2 (a) na `main` — o `src` e o `tests` provados por hash de árvore, as quatro corridas da mergida e o `build.bat` re-executado dentro do clone limpo (2026-11-24, `docs/registro-pouso-passo2a-22`, base `fa5ea79`, ponta `007a32b`, merge `8a53b56`)
+
+### O que o merge toca, com o número em cada régua
+
+`git merge --no-ff feat/oraculo-nativo-passo2-22` devolve **`8a53b56`** sobre **`fa5ea79`** (pais da
+ponta: `007a32b`), **26 arquivos, +3 408/−2**, em `native/af_mind/` (quatro arquivos: `build.bat`,
+`gen_import_libs.py`, `check_imports.py`, dois `.cpp` do gate), `docs/evidence/oraculo-nativo-22/`
+(17 artefatos + o manifesto re-gerado), `docs/melhorias-status.md`, a página 22 e três linhas de
+`.gitignore`. A régua que a perna escreveu como `git diff --name-only main...HEAD -- src` vazio sai mais
+forte que o diff, e desta vez cobre duas raízes:
+
+| Árvore | `fa5ea79` | `007a32b` | `8a53b56` |
+| --- | --- | --- | --- |
+| `src` | `f77c1961bb8065ea5a78b24677a36c5840891c75` | idem | **idem** |
+| `tests` | `0faee7ff5b26d6ef978c9aa20b91dab3254d4491` | idem | **idem** |
+| `native` | `babfad2a6de4fb0c8de8c27af4aa74e92c3e2b88` | `bec0fc7ac4089c40da10c2e25bddaa538b270fc8` | **`bec0fc7a…`** |
+
+É a primeira perna desta casa em que o `tests` também não se move: o Passo 2 (a) escreve instrumento de
+`native/`, não checagem de `src/`. Disso segue, sem re-corrida e sem adjetivo, que `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` e a projeção do journal continuam intocados **e** que os hashes de journal
+publicados nas rodadas anteriores valem para a árvore resultante. As quatro corridas abaixo são re-medição
+de contrato, não herança — número publicado é número medido na revisão.
+
+Publicação conferida com `git ls-remote --heads origin`: `refs/heads/main` =
+**`8a53b56bd7d905758173f2ce597361dbb8023d2d`**, `refs/heads/feat/oraculo-nativo-passo2-22` =
+`007a32b38e1474cb152f508ec68270a5fd8d4603`. É a única prova de que saiu; o exit 0 do `push` não prova.
+
+### As quatro corridas da árvore mergida, com a máquina livre
+
+Antes delas, `--import` na árvore mergida ([`main_mergida_import.log`](evidence/registro-pouso-passo2a-22/main_mergida_import.log),
+18 linhas, exit 0, stderr **0 bytes**) e o `.godot/extension_list.cfg` com a única linha
+`res://native/af_mind/af_mind.gdextension`. Nenhum processo `Godot*` na máquina antes da primeira
+invocação; as quatro rodaram serial.
+
+- Suíte: [`main_mergida_suite.log`](evidence/registro-pouso-passo2a-22/main_mergida_suite.log) — linha
+  **359** `== 255 checagens  0 falhas  51.2 s de teste ==`, exit 0, zero `SCRIPT ERROR`;
+  [`main_mergida_suite.err`](evidence/registro-pouso-passo2a-22/main_mergida_suite.err) com **249 bytes**
+  = o par de vazamento do quit (`4 ObjectDB instances were leaked at exit`,
+  `2 resources still in use at exit`), a intermitência já registrada, nenhuma das duas linhas menciona
+  `af_mind`.
+- Runner de reações: [`main_mergida_runner.log`](evidence/registro-pouso-passo2a-22/main_mergida_runner.log)
+  — as cinco `OK extensao_carrega_classe` nas linhas **537-541** (descritor no disco,
+  `ja_vinha_do_boot=true agora=true total_registradas=1`, `is_library_open=true`,
+  `class_exists(AfMindOracle)=true`, `instantiate_valido=true get_class=AfMindOracle`), **543** `66/66`,
+  **545** `288/288`, **546** cenário estreito com **10 568** passos (`sim_step total=2 423 290 µs`, pico
+  `4 120 µs`, `trips=0`), **547** matilha com **1 341** passos (`sim_tick total=3 367 492 µs`, pico
+  `15 010 µs`, `trips=0`) e **548** `288 checagens 0 falhas 36,531 s`. Exit 0, stderr **0 bytes**.
+- RNG da sessão: [`main_mergida_rng.log`](evidence/registro-pouso-passo2a-22/main_mergida_rng.log) — **79**
+  `27/27`, **80** `27 checagens 0 falhas 2,713 s`.
+- Journal por tick: [`main_mergida_journal.log`](evidence/registro-pouso-passo2a-22/main_mergida_journal.log)
+  — **144** `128/128`, **145** `128 checagens 0 falhas 7/7 testes concluidos 6,143 s`.
+
+Os dois `trips=0` não fecham o **furo #20**, pelo motivo já escrito na (c): o guard mede parede de relógio
+e a colheita que nomearia a folha que estoura continua por escrever.
+
+### O pin: clone limpo de `8a53b56`, com o `build.bat` rodando dentro dele
+
+`git clone` do repositório local, HEAD `8a53b56…`. O `git status --short` do clone devolve **exatamente
+duas** linhas: `?? tests/audio_live_probe.gd.uid` e `?? tests/audio_test.gd.uid` — é o **furo #25**
+impresso, na forma esperada, e é o que separa um clone sujo de um clone honesto. O `bin/` não vem
+([`.gitignore:8`](../.gitignore#L8)), então o build faz parte do pin.
+
+- `cmd //c '…\afclean22d\native\af_mind\build.bat'` no clone
+  ([`clone_limpo_build.log`](evidence/registro-pouso-passo2a-22/clone_limpo_build.log), 187 linhas,
+  `== codigo=0 ==` no rodapé): `header_sha256=4c0aac8d… forma=aceita`, `toolset=14.44.35207`,
+  `cl_banner=… 19.44.35228 for x64`, `dll_bytes=105472`, `export= 1 00001120 af_mind_entry`. Os cinco
+  `[def]` com `remedio=sim` e `entradas=` **3 / 687 / 9 / 16 / 240**, os quatro import libs
+  (`llama 58 326 B`, `ggml 5 288 B`, `ggml-base 154 094 B`, `ggml-vulkan 3 926 B`), o
+  `gate_exe_bytes=157696` e — o número que é o gate da (a) — `[referencia] gate AF_SLOT=37 nomes` com as
+  quatro linhas `[import] modulo=… referenciado=N na_tabela=N` (**10/10, 4/4, 5/5, 18/18**, somando os 37).
+  A premissa do diretório do processo sai impressa como **FALSA**: `[premissa] veredito=FALSA o diretorio
+  do processo nao ve o runtime por nome nu`, cinco `handle=0000000000000000 erro=126` e
+  `[corrida] nu_codigo=5` contra `[corrida] preload_codigo=0`, com o `confronto_s1.2` em `veredito=IGUAL`
+  (`reg_count=3`, `dev_count=2`, `vk=1`). O controle negativo falsificável roda no clone também:
+  `[controle] link_codigo=1120`, as quatro `recusa_lida=0` e `OK: o gate e falsificavel`.
+- O stderr do build no clone tem **507 bytes** e nenhuma linha de erro: é o `af_symbol_gate.exe` falando
+  no stdout de terceiro — `load_backend: loaded RPC/Vulkan/CPU backend from C:\Aetherfall\.tools\llama\runtime\…`
+  e `ggml_vulkan: 0 = AMD Radeon RX 9060 XT (AMD proprietary driver)`. Consequência de onboarding que vale
+  escrever: o **runtime não está no clone** (`.gitignore:17 models/` e `.tools/` na linha 5), então o
+  `preload` do gate aponta para a árvore de trabalho de quem rodou o pin. Um clone em outra máquina chega
+  ao `[ok] build.bat` e não chega ao `preload_codigo=0`.
+- `--import` frio ([`clone_limpo_import.log`](evidence/registro-pouso-passo2a-22/clone_limpo_import.log),
+  exit 0) escreve o mesmo `extension_list.cfg` com o descritor. O `.err` desta corrida tem **602 bytes**
+  — quatro `ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'`,
+  duas passadas do escaneamento. É o **furo #38** se repetindo no clone, antes do build existir: na (c) o
+  import do clone saiu com stderr 0 porque a pasta `bin/` já tinha sido preenchida na ordem errada da
+  medição. A ordem honesta é import → build → re-import, e é por isso que o runner do clone passa.
+- Runner: [`clone_limpo_runner.log`](evidence/registro-pouso-passo2a-22/clone_limpo_runner.log) — as cinco
+  `OK extensao_carrega_classe` nas **mesmas** linhas **537-541**, `66/66` em 543, `288/288` em 545,
+  **546** `sim_step total=2 256 913 µs` pico `4 855 µs`, **547** `sim_tick total=3 219 023 µs` pico
+  `13 420 µs`, ambos `trips=0`, e **548** `288 checagens 0 falhas 34,330 s`; exit 0, stderr 0 bytes.
+- Suíte: [`clone_limpo_suite.log`](evidence/registro-pouso-passo2a-22/clone_limpo_suite.log) linha **359**
+  `== 255 checagens  0 falhas  49.8 s de teste ==`, exit 0, zero `SCRIPT ERROR`, `.err` com os mesmos
+  **249 bytes** do par de vazamento.
+- RNG **27 / 0 / 2,750 s** e journal **128 / 0 / 7 de 7 / 5,829 s**, exit 0 e stderr 0 bytes nas duas.
+
+O `af_mind.dll` do clone tem **105 472 B** e md5 `25df3f33b301705ea6a603d3b46062ee`; o da árvore de
+trabalho, **105 472 B** e md5 `e60bb78e6f7cd12d9f3bf5d445c5e63e`. Os dois têm o mesmo tamanho e o mesmo
+offset `00001120` do Passo 1 (c), e os md5 **não** batem — o PE embute caminho e timestamp do link. A
+régua que compara é tamanho + offset + export nomeado, não hash: é o que a casa pode afirmar entre clones.
+
+O número pineado para `8a53b56` é, na ordem das quatro corridas: suíte **255 / 0**, runner **288 / 0** com
+as cinco premissas da extensão, RNG **27 / 0**, journal **128 / 0**.
+
+### As três réguas no ponto fixo desta passada
+
+Elas rodam **depois** da prosa existir, não antes — item 7 do ciclo de trabalho. As três primeiras
+capturas desta branch foram descartadas: duas saíram sem corpus (a ferramenta recebe os arquivos em
+`sys.argv[1:]`; sem argumento ela varre um conjunto que não é o da perna) e uma sem as duas linhas de
+cabeçalho que todo log daqui carrega. O que está arquivado é a re-execução.
+
+- [`pouso_ruler_doc_anchors.log`](evidence/registro-pouso-passo2a-22/pouso_ruler_doc_anchors.log):
+  **39 arquivos · 3 077 ponteiros conferidos · 209 rótulos · 3 343 links relativos · 0 casos objetivos**,
+  exit 0. Contra os **3 062 / 3 307** que a ponta `007a32b` media
+  ([`passo2a_ruler_doc_anchors.log`](evidence/oraculo-nativo-22/passo2a_ruler_doc_anchors.log)), o acréscimo
+  de **15** ponteiros e **36** links é desta passada — a página do pouso, a Rodada (6) e a linha da Malha
+  no AGENTS.md — e não abriu caso nenhum. Um caso **abriu** no primeiro re-run e foi corrigido antes deste:
+  um ponteiro meu escreveu `src/main.gd` onde o arquivo-pedido é `../src/main.gd` (a régua resolve
+  relativo ao `docs/`), e a régua devolveu `LINK QUEBRADO` com exit 1. O único caso tolerado continua
+  sendo o ponteiro `../.tools/...`, gitignored.
+- [`pouso_ruler_plan_cites.log`](evidence/registro-pouso-passo2a-22/pouso_ruler_plan_cites.log):
+  **1 039** citações com número de linha conferidas, **10** arquivos citados que não existem, **0** números
+  fora do arquivo, exit 0. Os dez são os de sempre — os três rascunhos `.tools/_head_*.md` e as peças
+  `[TARGET]` que as próprias páginas declaram inexistentes (`src/ai/reach.gd`,
+  `src/core/sim/entity_store.gd`, `src/core/sim/tick_clock.gd`, `tests/wolf_multiseed_census_test.gd`) — e
+  nenhum deles é afirmação de que o arquivo está lá. A régua passou de **1 024** para **1 039** com a
+  prosa desta escrita: ponteiro acrescentado, nenhum número fora do arquivo.
+- [`pouso_ruler_plan_ids.log`](evidence/registro-pouso-passo2a-22/pouso_ruler_plan_ids.log): exit 0 com as
+  ausências de sempre, e nelas continua **uma** classe a mais desde o Passo 1 (c): os nomes de `native/`,
+  porque a régua monta o corpus com `src/**/*.gd` e `tests/**/*.gd` e nunca abriu um `.cpp` — é o
+  **furo #39**, e é por ele que
+  `GDExtensionClassCreationInfo6`, `llama_model_load_from_file` e os outros símbolos da Fase 1 aparecem
+  aqui sem serem defeito. E há uma leitura que esta régua **não** faz: o corpus de ids é de três arquivos —
+  este documento fica fora dele — então nenhuma linha da Rodada (6) foi conferida por ela; conferiu-a a de
+  ponteiros, acima. O que se confere aqui é `MESH_BUDGET` existir em código ([main.gd:28](../src/main.gd#L28));
+  o furo **#41** é justamente o que não existe: um teto de **contagem** sem teto de **tempo**. Nada nesta
+  linha autoriza o código do #41.
+
+As duas pastas de evidência desta passada fecham com manifesto: [`artifacts.sha256`](evidence/registro-pouso-passo2a-22/artifacts.sha256)
+com **25** entradas e [`artifacts.sha256`](evidence/microtravadas-20261124/artifacts.sha256) com **12**,
+ambos gerados com `sha256sum -b` (o `-b` importa: sem ele o `git add` avisa de CR, e o `.gitattributes:9`
+marca `docs/evidence/**` como `-text` justamente para o log sair byte a byte). `sha256sum -c artifacts.sha256`
+rodado dentro de cada pasta devolve **25 OK** e **12 OK**, nenhuma falha, e o manifesto tem **0** bytes de
+CR — conferido com `tr -cd '\r' | wc -c`, não com `head`.
+
+### O que o pouso deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna faltam o **Passo 2 (b)** (os três números de §5.2 —
+`af_vram_gb`, `af_load_ms`, `af_ctx_cells` — lidos do modelo, não do `--ctx-size`), o **Passo 3**
+(testemunha da regra de ouro) e o **Passo 4** (`transporte_http_zerado`). Dos furos, **#38** e **#39**
+continuam abertos e são decisão do dono, e o **#20** continua sem a colheita que nomeia a folha. A fila
+serializada não muda: **22 → 17 → 18 → 20 → 13**.
+
+O dono, lida a (a), pediu duas coisas que não eram código da perna: achar o porquê das microtravadas e
+analisar se o oráculo está fazendo o que ele quer. As duas foram medidas na árvore deste pouso, e estão na
+rodada abaixo.
+
+## Rodada 2026-11-24 (6) — as microtravadas atribuídas no jogo em execução, e o oráculo lido pela frase que ele escreve (árvore `8a53b56`, dez corridas, máquina livre)
+
+O pedido do dono foi em duas partes: *"ficou dando umas microtravadas, tem que ver o pq disso"* e
+*"analisar realmente o llm se ta do jeito que estamso querendo"*. As duas saíram com número, na mesma
+árvore do pouso acima, serial, com a máquina livre (nenhum processo `Godot*` antes da primeira
+invocação). **Nenhuma linha de `src/` foi escrita nesta rodada** — o instrumento é a sonda gitignored
+`.tools/hitch_probe.gd`, e os dez logs arquivados têm vínculo de revisão em
+[`leitura.log`](evidence/microtravadas-20261124/leitura.log): `HEAD` = `8a53b56`, `src` =
+`f77c1961…`, `tests` = `0faee7ff…`, `git diff --name-only HEAD -- src tests` = **0 arquivos**, e o `.gd`
+mais novo da árvore tem mtime **2026-11-24 03:53** contra a primeira corrida às **09:12**.
+
+### 1. Por que sonda em janela e não headless
+
+A suíte é headless: não existe `RenderingServer`, então ela **não pode ver** um custo de desenho. A
+primeira calibração foi a do instrumento, não a do jogo — braço `floor`, a sonda sozinha (`main=false`),
+20 s, **3 282** amostras, **p50 = 6,06 ms**, p99 = 6,29, **max = 6,73**, `>=2×p50 = 0 (0,00 %)`,
+`>=33,3 ms = 0`, 165,0 Hz. Dois números seguem daí e mudam a régua da casa:
+
+- **O piso do quadro nesta máquina é 6,0 ms, não 16,7.** O motor está em janela 1 280 × 720 com vsync do
+  próprio motor e a tela do dono bate ~165 Hz. Um corte absoluto em 33,3 ms é **cinco** quadros perdidos;
+  o corte relevante é **múltiplo do p50 medido**. As pontas de jogo deram p50 entre **6,01 e 6,04**.
+- **O instrumento não trava nada.** `floor` com zero travadas é o que autoriza chamar de travada o que
+  aparece nos outros braços.
+
+### 2. A matriz: oito braços, uma variável por processo
+
+Cada braço liga/desliga **uma** coisa pela API pública, sem tocar arquivo de gameplay: `idle` é o jogo
+parado; `walk` anda com `Input.action_press` (input de engine, não sintético de SO); `mine` segura a
+lavra; `viz` liga a visualização do Éter; `f3` liga o overlay; `llm` deixa o hospedeiro do modelo vivo;
+`all` é tudo junto. Como o boot acontece uma vez por processo, são **oito processos**.
+
+| braço | p50 | ≥2×p50 | ≥3×p50 | ≥33,3 ms | ≥100 ms | chunks remalhados | quadros com malha | malha total |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| floor | 6,06 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| idle | 6,03 | 146 (2,33 %) | 19 | 19 (0,30 %) | 6 | 25 | 19 | 1 949,5 ms |
+| walk | 6,04 | 140 (2,16 %) | 8 | 8 (0,12 %) | 1 | 9 | 8 | 619,2 ms |
+| mine | 6,03 | 149 (2,42 %) | 30 | 30 (0,49 %) | 15 | 50 | 30 | 2 629,4 ms |
+| viz | 6,03 | 138 (2,13 %) | 8 | 8 (0,12 %) | 1 | 9 | 8 | 605,0 ms |
+| f3 | 6,03 | 139 (2,15 %) | 8 | 8 (0,12 %) | 1 | 9 | 8 | 610,7 ms |
+| llm | 6,01 | 139 (2,15 %) | 10 | 10 (0,15 %) | 1 | 11 | 10 | 751,1 ms |
+| all | 6,02 | 151 (2,42 %) | 26 | 25 (0,40 %) | 12 | 41 | 25 | 2 258,1 ms |
+| all (re-corrida) | 6,02 | 155 (2,51 %) | 30 | 29 (0,47 %) | 15 | 48 | 29 | 2 586,6 ms |
+
+O cruzamento é a linha que decide, e é a mesma forma em nove braços — o par `{com_remalha, sem_origem}`
+não muda de leitura entre configuracoes, e a re-corrida com stderr separado reproduz o veredito
+([`hitch_all_rerun.log`](evidence/microtravadas-20261124/hitch_all_rerun.log), `.err` de **0 bytes**):
+
+```
+idle  travadas=146 | com_remalha=19 com_compilacao=0 com_tick=127 sem_origem=0 | remalharam_sem_travar=0
+mine  travadas=149 | com_remalha=30 com_compilacao=0 com_tick=119 sem_origem=0 | remalharam_sem_travar=0
+llm   travadas=139 | com_remalha=10 com_compilacao=0 com_tick=129 sem_origem=0 | remalharam_sem_travar=0
+all   travadas=151 | com_remalha=25 com_compilacao=0 com_tick=126 sem_origem=0 | remalharam_sem_travar=0
+```
+
+`com_remalha + com_tick = travadas` em todos os braços, `sem_origem = 0` em todos, e
+`remalharam_sem_travar = 0` em todos: **não existe quadro que remalhe sem travar e não existe travada sem
+origem nomeada**. A tabela `PIORES_SEM_MESH` — os piores quadros que **não** tinham malha naquele frame —
+sai com **0 linhas de corpo** nos dez logs.
+
+### 3. Causa 1: `VoxelWorld.process()` remalha até `MESH_BUDGET` chunks **no mesmo frame**
+
+[`voxel_world.gd:191-200`](../src/world/voxel_world.gd#L191-L200) faz
+`var count := mini(p_frame_budget, _dirty.size())` e **roda `build_chunk_mesh(c)` `count` vezes seguidas**,
+sem olhar o relógio entre um chunk e o próximo. [`main.gd:28`](../src/main.gd#L28) dá `MESH_BUDGET := 2` e
+[`main.gd:310`](../src/main.gd#L310) chama `world.process(MESH_BUDGET)` dentro de `_process`. O orçamento é
+**de contagem, não de tempo**. Os quadros piores medidos:
+
+| braço | idx | período do quadro | malha no quadro | chunks no quadro | `req` do oráculo |
+| --- | --- | --- | --- | --- | --- |
+| idle | #4607 | **192,20 ms** | 177,37 ms | 2 | 0 |
+| mine | #1182 | 152,85 ms | 144,85 ms | 2 | 0 |
+| llm | #582 | 158,24 ms | 151,32 ms | 2 | 0 |
+| all | #502 | 153,55 ms | 147,63 ms | 2 | 0 |
+| all (re) | #5099 | 170,58 ms | 156,19 ms | 2 | 0 |
+
+`QUADRO_US max process=178 654 / mesh=177 368` no idle: a malha é **99 %** do quadro. Por chunk, a conta
+sai **52,6–78 ms** (`mesh_total_ms / chunks_remalhados`: 1 949,5/25 = 78,0 no idle; 2 629,4/50 = 52,6 no
+mine; 2 586,6/48 = 53,9 na re-corrida) — e isso bate, por caminhos independentes, o número publicado do
+boot no clone limpo (**4 668 ms / 64 chunks ≈ 73 ms/chunk**). Dois braços mostram o **frame seguinte**
+daquele par (`#1251 93,75 ms built=1`, `#583 92,56 ms built=1`): a fila suja é consumida em lotes de dois,
+e o segundo chunk do lote ainda custa 70–80 ms sozinho.
+
+O que torna isso "microtravada" e não "travão": a malha só roda quando há `world.edits` ou chunk novo.
+`mine` é o braço que mais remalha (**50** chunks em 40 s, 3,6× o `idle`) porque cada bloco quebrado suja a
+malha vizinha — e é o braço com mais `≥100 ms` (**15**). O `PREMISSA_MINE` do braço prova que a lavra
+aconteceu de verdade, não que o botão foi apertado no vazio: `quadros_alvo_valido=3835 de 6169`,
+`quadros_botao_press=4115`, `progresso_max=0.96`, `pitch=-0.60`, `terceira_pessoa=false`,
+`edits_finais=29`.
+
+### 4. Causa 2: a banda "micro" é o passo de 20 Hz caindo num quadro de 6 ms
+
+`com_tick` é **119–131** de ~146 travadas em cada braço, e é a única origem dos `≥2×p50` que não são
+malha: um passo de simulação de **9,2–11,4 ms** (coluna `step` dos piores quadros; `physics` 7,9–12,8 ms)
+dentro de um quadro cujo piso é **6,0 ms** estoura o período para 12,1–18 ms. É a faixa 2–3×p50 da
+distribuição — `HIST_P50 2-3x=119…132` contra `>15x=2…21`. `dropped_ticks = 0` em **todos** os braços: o
+`SimClock` está absorvendo, e o que o olho pega é o ritmo de desenho ficando irregular, não a simulação
+atrasando. A coluna `ticks` diz `~0,1/quadro` (802–885 ticks em ~6 200 quadros), que é o esperado de
+20 Hz sobre 165 Hz.
+
+Isso não é defeito novo nem conserto pedido: é a consequência de o quadro correr a ~165 Hz enquanto a
+simulação foi calibrada para 60 Hz. Onde ela dói está no **furo #41**, não aqui.
+
+### 5. O que a medição exime, com o número
+
+- **O oráculo e o hospedeiro do modelo.** `llm` é estatisticamente igual a `viz`/`f3`: 139 vs 138/139
+  travadas, 10 vs 8/8 quadros com malha, **p50 6,01** (o menor da mesa). Os quatro braços sem `llm`
+  imprimem `pedidos=0 narracoes=0 estado_final=ocioso`; `llm` e `all` imprimem `pedidos=12 narracoes=12
+  estado_final=pronto` — e `req=0` em **todas** as linhas de pior quadro. `HTTPClient` num
+  `HTTPRequest` não bloqueia o quadro; o custo do modelo é no processo filho.
+- **A visualização do Éter a 4 Hz** (`viz`: 138 travadas, 8 com malha — os mesmos 9 chunks do `idle`,
+  porque a cena é a mesma) e **o overlay F3** (`f3`: 139/8, `mesh_total_ms` 610,7 contra 605,0 do `viz` —
+  bit a bit o mesmo trabalho).
+- **Compilação de pipelines.** `com_compilacao = 0` nos braços com 19–22 compilações no log; o único
+  caso é `walk` com **1**. Os monitores `PIPELINE_COMPILATIONS_*` foram lidos como delta por quadro, e a
+  coluna `pipe` dos piores quadros é **0** em todas as linhas.
+- **O instrumento.** `floor`: 3 282 amostras, 0 travadas.
+- **O próprio engine, no agregado:** os 10 braços têm `pend_final=0` (a fila de malha esvazia) e
+  `dropped=0`.
+
+Fica declarado no `FORA` de cada log: a sonda **não** separa o custo do compositor do Windows nem de outro
+app, roda em janela 1 280 × 720 com o vsync do motor — a tela cheia do dono tem outro custo de draw — e
+nada aqui mede alocação. É o limite do instrumento, não uma ressalva de cortesia.
+
+### Furo #41 — o orçamento de malha é contagem, não tempo: 2 chunks = 52–177 ms no mesmo quadro
+
+Aberto e **atribuído** por esta rodada, **sem conserto escrito** porque a perna da vez é a 22 e o
+mandato de escopo não autoriza tocar `src/` agora. A afirmação que a casa vinha tratando como segura —
+"Malha: 2 chunks por frame", a linha da tabela de orçamentos do AGENTS.md — é verdadeira no código
+([`main.gd:28`](../src/main.gd#L28)) e **falsa como orçamento**: o teto é de **itens**, o loop de
+[`voxel_world.gd:196-199`](../src/world/voxel_world.gd#L196-L199) não consulta `Time.get_ticks_usec()`
+entre um chunk e o próximo, então o que entra no quadro é `2 × chunk_us`, e `chunk_us` é medido entre
+**52,6 e 78 ms**. Contra um piso de quadro de **6,0 ms** isso é **8,8× a 13×** o budget de frame, e é a
+origem dos 19–30 quadros ≥33,3 ms por 40 s dos braços parados e dos 29–30 do `mine`. O corte tem forma
+conhecida e é pequeno: orçar **tempo** no `process()` — o loop para quando a soma das malhas passou de
+um teto (o `_last_mesh_ms` que a própria função já calcula em
+[`voxel_world.gd:200`](../src/world/voxel_world.gd#L200) é a grandeza), e a fila continua no próximo
+frame. Dono proposto: perna `perf/malha-orcamento-de-tempo`, atrás da fila viva. O que **não** se resolve
+assim: o chunk isolado continua custando ~50–80 ms, então um quadro ainda vai estourar — a banda
+"micro" do §4 é outra conversa, de cadência de tela, e ela não tem `dropped_ticks`.
+
+A régua que fecha o furo já existe na forma: o runner de reações colhe `sim_step` e `trips`, e a sonda
+desta rodada cruza `quadro` com `mesh` por índice. O que falta é uma checagem que **nasça vermelha** com
+o teto de tempo escrito, no estilo das outras pernas.
+
+### 6. O oráculo: o transporte faz exatamente o que foi pedido
+
+Lido no braço `llm` com a testemunha do ciclo de vida inteiro
+([`hitch_llm_narr.log`](evidence/microtravadas-20261124/hitch_llm_narr.log)):
+
+```
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m … -c 4096 -ngl 99
+                          --alias mind-small --reasoning off --api-key <chave>  (sem servidor na porta 8741)
+llm_host  carregando  pid 9520  boot do modelo iniciado  (1/1 spawn)
+llm_host  pronto  boot 2539 ms  503=10  pid 9520
+llm_estado=pronto  boot_ms=2539  aguardado=9.5 s  pid=9520
+…
+ORACULO pedidos=12 narracoes=12 estado_final=pronto
+OBSERVACAO pid_do_filho=9520 (o `_exit_tree` do hospedeiro mata)
+llm_host  encerrando pid 9520  OK
+```
+
+Os cinco pontos do pedido do dono estão verdes por medição: **levanta sozinho** no boot (o `create_process`
+vem sem ninguém ter aberto nada), **não pede** ao dono (`aguardado=9,5 s` antes da primeira requisição, com
+os dez `503` tratados como "carregando" e não como falha — o `LOADING_COOLDOWN` de 2 s do
+[`mind_oracle.gd:34`](../src/ai/mind_oracle.gd#L34)), **12 pedidos → 12 narrativas** (zero perda),
+**termina o filho** (`encerrando pid 9520 OK`, nenhum processo órfão depois das corridas — as três
+pontas com `llm` mostram `pid_do_filho` morto), e **a chave não sai no log** (`--api-key <chave>`
+redigido na própria linha). A **regra de ouro** continua valendo por construção e foi re-conferida nesta
+árvore: a única saída do oráculo é `_narrations` lida por `narration_of()` e entregue ao HUD; o único
+chamador de `adjust_trust` em `src/` é `take_damage` ([`wolf.gd:1303`](../src/entities/wolf.gd#L1303)),
+e `AfMindOracle` **não é usado por nada em `src/`** — aparece só no runner
+([`aether_reactions_test.gd:5519`](../tests/aether_reactions_test.gd#L5519)). `hp=100 %` nas 12 narrativas
+prova que nenhum caminho de dano rodou, então nenhuma escrita de estado veio do modelo.
+
+### Furo #42 — a frase narrada não é fiel ao estado lido: seis defeitos nas 12 linhas literais
+
+O outro lado do "está do jeito que a gente quer". Aqui o veredito é **não**, e a testemunha é o texto: a
+sonda imprime, junto de cada narrativa, os mesmos campos que o prompt mandou
+(`intent`, `hp`, `fome`, `confianca`, `episodios`, nº de `crencas`). As 12 linhas estão em
+[`leitura.log`](evidence/microtravadas-20261124/leitura.log). Seis classes, com a linha que as mostra:
+
+1. **`confianca=0,00` narrado como desconfiança.** `Mind.trust()` devolve `0.0` quando **não há registro**
+   ([`mind.gd:126-127`](../src/ai/mind.gd#L126-L127)) e o único caminho que o torna negativo é mordida
+   (`adjust_trust(-0.35)`), que não aconteceu em nenhum dos 12 quadros (`hp=100 %`). Mesmo assim: **#7**
+   *"o seu zero absoluto de confiança no jogador"*, **#8** *"impede de confiar em nenhum som novo"*,
+   **#10** *"a desconfiança em relação ao jogador se intensifica"*. É o **mandato 2** ao contrário na
+   saída: o jogador lê hostilidade onde o estado diz "nunca se viram".
+2. **Memória inventada.** **#2** *"sua mente recruta memórias de caças fer..."* e **#3** *"o eco de seus
+   passos preenche a floresta"* com `episodios=[]`. **7 das 12** linhas têm `episodios=[]` — o prompt
+   manda a string vazia e o modelo preenche.
+3. **Grandeza que o prompt não envia.** **#1** *"o jogador ainda está longe"* e **#3** *"calculando a
+   distância até o jogador"*: `_prompt_for` ([`mind_oracle.gd:131-148`](../src/ai/mind_oracle.gd#L131-L148))
+   manda identidade, intenção, vida, fome, confiança, memórias e crenças — **distância não está lá**.
+4. **Nomear o sistema em vez de narrar o interior**, contra a instrução explícita
+   ([`:110-112`](../src/ai/mind_oracle.gd#L110-L112) "sem nomes de sistemas"): **#7** *"a sua intenção de
+   patrulhar"* é o valor de `intent`; **#4** *"um padrão de varredura"* e **#2** *"uma vigilância apática"*
+   são rótulos de mecanismo, não de estado.
+5. **Truncamento pelo corte de 140 caracteres** (`_clean`,
+   [`:216-219`](../src/ai/mind_oracle.gd#L216-L219)): **4 das 12** terminam em `...` (143 caracteres
+   = 140 + corte) e uma para exatamente em 140. A frase prometida é "UMA frase curta"; o que chega ao
+   HUD às vezes é meio período dela.
+6. **Cadência em rajada.** Os 12 pedidos saem em duas rajadas de 6 — t=**0,9 / 1,7 / 2,4 / 3,1 / 3,6 /
+   4,2 s** e t=**31,7 / 32,4 / 33,1 / 33,7 / 34,3 / 35,0 s** — porque `RETRY_COOLDOWN = 30 s` por
+   identidade é alinhado: o lobo 0 responde em 0,9 s e o próximo pedido dele cai em 31,7 s
+   (30,8 s depois). A matilha fala em bloco, cala em bloco. Não é defeito de rede, é desenho do recuo.
+
+Duas linhas são **fiéis**, e elas mostram que o modelo está lendo o que chega: **#9**
+(`intent=investigate`, `episodios=[scent_work/0.02]`) → *"varre o chão buscando rastros"*; **#11**
+(`intent=hunt`, `episodios=[saw_player/0.40, hit_land/0.30, saw_player/0.40]`) → *"filtrando a visão do
+jogador como uma ameaça iminente enquanto calcula a melhor rota para o ataque"*. E **#6**
+(*"as memórias que nunca foram registradas"*) é honesta sobre o `episodios=[]`. O problema não é o modelo
+recusar o estado — é o prompt deixar ambíguo o que `0,00`, `[]` e a ausência de distância **querem dizer**,
+e o `max_tokens=64`/corte de 140 competir com "uma frase curta".
+
+Dono e recorte: isto é **Fase 1 da perna 22** (o transporte) e o §9 do dossiê 15, não uma nova perna — a
+correção é de prompt e de exibição (dizer "sem histórico" em vez de mandar vazio, explicitar que
+confiança 0 é ausência, levar a distância no prompt se ela deve aparecer, e escolher se o teto é
+`max_tokens` ou os 140 caracteres), com a checagem de fidelidade nascendo vermelha no mesmo estilo das
+outras. Escrita como débito abaixo, não como feito.
+
+### O que esta passada não fecha
+
+- **Nenhum código de `src/` mudou** — os dois furos ficam por consertar, e o #41 tem dono proposto mas não
+  tem branch aberta (a fila serializada manda: **22 → 17 → 18 → 20 → 13**).
+- **A banda de 12,1–18 ms não foi cortada**: ela é a simulação de 20 Hz num quadro de ~6 ms, e mexer nela
+  é mexer em cadência — decisão de gate, não de sonda.
+- **Os três números de §5.2 não existem** (Passo 2 (b)); nenhuma VRAM foi medida aqui.
+- **#38, #39, #20 e #25** continuam onde estavam; o #25 foi visto de novo, impresso no `git status` do
+  clone limpo do pouso acima.
+- A régua de tempo desta rodada **não mede alocação** e não substitui a colheita do budget HOT (regras 3
+  e 5 do AGENTS.md): o que ela mede é período de quadro e o que estava ligado nele.

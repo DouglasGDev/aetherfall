@@ -1,0 +1,43 @@
+== Rodada 2026-11-24 (6): microtravadas no jogo em execucao, braco f3, fim 2026-11-24T09:27:07-04:00, arvore 8a53b56 (src f77c1961, tests 0faee7ff) ==
+== comando: .tools/Godot_v4.7.2-stable_win64_console.exe --path . .tools/hitch_probe.tscn -- --config=f3 ==
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+== hitch_probe config=f3 main=true walk=true mine=false viz=false f3=true llm=false segundos=40 warmup=20 ==
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+amostra_aberta  porque=boot da sessao (geracao + 64 chunks do mesher)  ms_do_boot=5430
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+CONFIG f3  amostras=6476  janela=40.0 s  hz_efetivo=162.6
+PERIODO_MS p50=6.03 p90=7.31 p95=8.22 p99=14.18 p999=61.43 max=156.76 media=6.15
+TRAVADAS >=2xp50=139 (2.15%)  >=3xp50=8  >=5xp50=8  >=33,3ms=8 (0.12%)  >=100ms=1
+HIST_P50 <2x=6337 2-3x=131 3-5x=0 5-8x=0 8-15x=6 >15x=2  (limite 2x=12.1 ms)
+QUADRO_US max process=147787 physics=11370 step=10947 mesh=146396
+QUADRO max draw_calls=227 primitivos=309508  vram_med=197 MB  compilacoes_pipeline=19
+CONTA ticks=803 (0.1/quadro) chunks_remalhados=9 quadros_com_mesh=8 mesh_total_ms=610.7 mined=0 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=0 de 6476  quadros_botao_press=0  progresso_max=0.00  pitch=0.00  terceira_pessoa=false  mouse_mode=2  edits_finais=7
+ORACULO pedidos=0 narracoes=0 estado_final=ocioso
+CRUZAMENTO travadas=139 | com_remalha=8 com_compilacao=0 com_tick=131 sem_origem=0 | remalharam_sem_travar=0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 1251  156.76    6.41    9.58  140.78    1.44  146.40    1   2    2  0   0    207
+  # 1252   97.16    6.41    9.58   81.18    7.72   79.84    0   1    2  0   0    207
+  # 1822   87.03    6.43    8.91   71.68    7.53   76.81    0   1    1  0   0    219
+  # 5555   74.39    6.45    9.52   58.42    0.81   70.70    0   1    1  0   0    212
+  # 2110   68.97    6.67   10.30   51.99    7.42   58.81    0   1    1  0   0    182
+  # 5701   62.77   71.89    9.01  -18.14    0.00   59.52    0   1    0  0   0    219
+  # 1550   61.69    6.48    8.74   46.47    0.00   59.20    0   1    0  0   0    196
+  # 6460   61.43    6.58    8.13   46.71    0.00   59.47    0   1    0  0   0    158
+  # 3987   17.59    6.53   10.08    0.99   10.95    0.00    0   0    1  0   0    183
+  # 3393   17.07    6.58    8.56    1.93    8.98    0.00    0   0    1  0   0    206
+PIORES_SEM_MESH (ate 5)
+  # 3987   17.59    6.53   10.08    0.99   10.95    0.00    0   0    1  0   0    183
+  # 3393   17.07    6.58    8.56    1.93    8.98    0.00    0   0    1  0   0    206
+FORA: a sonda nao separa o custo do composer do Windows nem de outro app; roda em janela 1280x720 (o padrao do projeto) com o vsync do motor -- tela cheia do dono tem outro custo de draw; nada aqui mede alocacoes.
+HITCH_PROBE fim config=f3 codigo=0

@@ -1,0 +1,195 @@
+== Rodada 2026-11-24 (6): leitura da sonda de microtravadas, 2026-11-24T09:53:04-04:00 ==
+== o que este arquivo e: o vinculo de revisao das dez corridas e as linhas que a prosa do status cita. ==
+
+-- vinculo de revisao --
+8a53b56bd7d905758173f2ce597361dbb8023d2d
+src   = f77c1961bb8065ea5a78b24677a36c5840891c75
+tests = 0faee7ff5b26d6ef978c9aa20b91dab3254d4491
+native= bec0fc7ac4089c40da10c2e25bddaa538b270fc8
+git status --short (nada em src/ nem tests/; .tools/ e gitignored):
+?? .qoder/
+?? docs/evidence/microtravadas-20261124/
+?? docs/evidence/registro-pouso-passo2a-22/
+?? tests/audio_live_probe.gd.uid
+?? tests/audio_test.gd.uid
+mtime dos arquivos que a sonda mede (a primeira corrida comecou 09:12, a ultima acabou 09:51):
+  2026-11-23 03:25  src/world/voxel_world.gd
+  2026-11-23 03:25  src/main.gd
+  2026-11-23 14:10  src/entities/wolf.gd
+  2026-11-24 09:30  .tools/hitch_probe.gd (sonda, gitignored)
+git diff --name-only HEAD -- src tests = 0 arquivos (zero = as corridas mediram a arvore de 8a53b56)
+
+-- erro de engine em cada log da pasta (contagem) --
+hitch_all.log            SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_all_rerun.log      SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_f3.log             SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_floor.log          SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_idle.log           SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_llm.log            SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_llm_narr.log       SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_mine.log           SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_viz.log            SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_walk.log           SCRIPT ERROR=0 ERROR:=0 WARNING=0
+hitch_all_rerun.err = 0 bytes
+
+-- as linhas de cada braco que a prosa cita --
+[hitch_floor]
+CONFIG floor  amostras=3282  janela=20.0 s  hz_efetivo=165.0
+PERIODO_MS p50=6.06 p90=6.13 p95=6.16 p99=6.29 p999=6.48 max=6.73 media=6.06
+TRAVADAS >=2xp50=0 (0.00%)  >=33,3ms=0 (0.00%)  >=50ms=0  >=100ms=0
+[hitch_idle]
+CONFIG idle  amostras=6276  janela=40.0 s  hz_efetivo=157.6
+PERIODO_MS p50=6.03 p90=7.41 p95=8.37 p99=14.43 p999=90.00 max=192.20 media=6.35
+TRAVADAS >=2xp50=146 (2.33%)  >=3xp50=19  >=5xp50=19  >=33,3ms=19 (0.30%)  >=100ms=6
+HIST_P50 <2x=6130 2-3x=127 3-5x=0 5-8x=0 8-15x=12 >15x=7  (limite 2x=12.1 ms)
+QUADRO_US max process=178654 physics=10981 step=9159 mesh=177368
+CONTA ticks=802 (0.1/quadro) chunks_remalhados=25 quadros_com_mesh=19 mesh_total_ms=1949.5 mined=0 pend_final=0 dropped=0
+ORACULO pedidos=0 narracoes=0 estado_final=ocioso
+CRUZAMENTO travadas=146 | com_remalha=19 com_compilacao=0 com_tick=127 sem_origem=0 | remalharam_sem_travar=0
+[hitch_walk]
+CONFIG walk  amostras=6479  janela=40.0 s  hz_efetivo=162.7
+PERIODO_MS p50=6.04 p90=7.30 p95=8.16 p99=14.17 p999=62.97 max=156.13 media=6.15
+TRAVADAS >=2xp50=140 (2.16%)  >=3xp50=8  >=5xp50=8  >=33,3ms=8 (0.12%)  >=100ms=1
+HIST_P50 <2x=6339 2-3x=132 3-5x=0 5-8x=0 8-15x=6 >15x=2  (limite 2x=12.1 ms)
+QUADRO_US max process=149696 physics=11255 step=10821 mesh=148495
+CONTA ticks=803 (0.1/quadro) chunks_remalhados=9 quadros_com_mesh=8 mesh_total_ms=619.2 mined=0 pend_final=0 dropped=0
+ORACULO pedidos=0 narracoes=0 estado_final=ocioso
+CRUZAMENTO travadas=140 | com_remalha=8 com_compilacao=1 com_tick=131 sem_origem=0 | remalharam_sem_travar=0
+[hitch_mine]
+CONFIG mine  amostras=6169  janela=40.0 s  hz_efetivo=154.9
+PERIODO_MS p50=6.03 p90=7.40 p95=8.56 p99=15.48 p999=106.23 max=152.85 media=6.45
+TRAVADAS >=2xp50=149 (2.42%)  >=3xp50=30  >=5xp50=30  >=33,3ms=30 (0.49%)  >=100ms=15
+HIST_P50 <2x=6020 2-3x=119 3-5x=0 5-8x=0 8-15x=9 >15x=21  (limite 2x=12.1 ms)
+QUADRO_US max process=146295 physics=11067 step=10662 mesh=144850
+CONTA ticks=802 (0.1/quadro) chunks_remalhados=50 quadros_com_mesh=30 mesh_total_ms=2629.4 mined=10 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=3835 de 6169  quadros_botao_press=4115  progresso_max=0.96  pitch=-0.60  terceira_pessoa=false  mouse_mode=2  edits_finais=29
+ORACULO pedidos=0 narracoes=0 estado_final=ocioso
+CRUZAMENTO travadas=149 | com_remalha=30 com_compilacao=0 com_tick=119 sem_origem=0 | remalharam_sem_travar=0
+[hitch_viz]
+CONFIG viz  amostras=6481  janela=40.0 s  hz_efetivo=162.7
+PERIODO_MS p50=6.03 p90=7.32 p95=8.28 p99=14.06 p999=60.11 max=154.61 media=6.15
+TRAVADAS >=2xp50=138 (2.13%)  >=3xp50=8  >=5xp50=8  >=33,3ms=8 (0.12%)  >=100ms=1
+HIST_P50 <2x=6343 2-3x=130 3-5x=0 5-8x=0 8-15x=6 >15x=2  (limite 2x=12.1 ms)
+QUADRO_US max process=147712 physics=11353 step=10522 mesh=146496
+CONTA ticks=803 (0.1/quadro) chunks_remalhados=9 quadros_com_mesh=8 mesh_total_ms=605.0 mined=0 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=0 de 6481  quadros_botao_press=0  progresso_max=0.00  pitch=0.00  terceira_pessoa=false  mouse_mode=2  edits_finais=7
+ORACULO pedidos=0 narracoes=0 estado_final=ocioso
+CRUZAMENTO travadas=138 | com_remalha=8 com_compilacao=0 com_tick=130 sem_origem=0 | remalharam_sem_travar=0
+[hitch_f3]
+CONFIG f3  amostras=6476  janela=40.0 s  hz_efetivo=162.6
+PERIODO_MS p50=6.03 p90=7.31 p95=8.22 p99=14.18 p999=61.43 max=156.76 media=6.15
+TRAVADAS >=2xp50=139 (2.15%)  >=3xp50=8  >=5xp50=8  >=33,3ms=8 (0.12%)  >=100ms=1
+HIST_P50 <2x=6337 2-3x=131 3-5x=0 5-8x=0 8-15x=6 >15x=2  (limite 2x=12.1 ms)
+QUADRO_US max process=147787 physics=11370 step=10947 mesh=146396
+CONTA ticks=803 (0.1/quadro) chunks_remalhados=9 quadros_com_mesh=8 mesh_total_ms=610.7 mined=0 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=0 de 6476  quadros_botao_press=0  progresso_max=0.00  pitch=0.00  terceira_pessoa=false  mouse_mode=2  edits_finais=7
+ORACULO pedidos=0 narracoes=0 estado_final=ocioso
+CRUZAMENTO travadas=139 | com_remalha=8 com_compilacao=0 com_tick=131 sem_origem=0 | remalharam_sem_travar=0
+[hitch_llm]
+CONFIG llm  amostras=6469  janela=40.0 s  hz_efetivo=162.2
+PERIODO_MS p50=6.01 p90=7.40 p95=8.37 p99=14.14 p999=62.04 max=158.24 media=6.17
+TRAVADAS >=2xp50=139 (2.15%)  >=3xp50=10  >=5xp50=10  >=33,3ms=10 (0.15%)  >=100ms=1
+HIST_P50 <2x=6330 2-3x=129 3-5x=0 5-8x=0 8-15x=8 >15x=2  (limite 2x=12.0 ms)
+QUADRO_US max process=152881 physics=11585 step=10966 mesh=151315
+CONTA ticks=885 (0.1/quadro) chunks_remalhados=11 quadros_com_mesh=10 mesh_total_ms=751.1 mined=0 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=0 de 6469  quadros_botao_press=0  progresso_max=0.00  pitch=0.00  terceira_pessoa=false  mouse_mode=2  edits_finais=9
+ORACULO pedidos=12 narracoes=12 estado_final=pronto
+CRUZAMENTO travadas=139 | com_remalha=10 com_compilacao=0 com_tick=129 sem_origem=0 | remalharam_sem_travar=0
+OBSERVACAO pid_do_filho=28812 (o `_exit_tree` do hospedeiro mata)
+[hitch_all]
+CONFIG all  amostras=6232  janela=40.0 s  hz_efetivo=156.3
+PERIODO_MS p50=6.02 p90=7.47 p95=8.54 p99=15.11 p999=105.41 max=153.55 media=6.40
+TRAVADAS >=2xp50=151 (2.42%)  >=3xp50=26  >=5xp50=25  >=33,3ms=25 (0.40%)  >=100ms=12
+HIST_P50 <2x=6081 2-3x=125 3-5x=1 5-8x=0 8-15x=8 >15x=17  (limite 2x=12.0 ms)
+QUADRO_US max process=148996 physics=12775 step=10825 mesh=147634
+CONTA ticks=885 (0.1/quadro) chunks_remalhados=41 quadros_com_mesh=25 mesh_total_ms=2258.1 mined=13 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=3952 de 6232  quadros_botao_press=4169  progresso_max=0.96  pitch=-0.60  terceira_pessoa=false  mouse_mode=2  edits_finais=24
+ORACULO pedidos=12 narracoes=12 estado_final=pronto
+CRUZAMENTO travadas=151 | com_remalha=25 com_compilacao=0 com_tick=126 sem_origem=0 | remalharam_sem_travar=0
+OBSERVACAO pid_do_filho=24620 (o `_exit_tree` do hospedeiro mata)
+[hitch_all_rerun]
+CONFIG all  amostras=6186  janela=40.0 s  hz_efetivo=155.1
+PERIODO_MS p50=6.02 p90=7.44 p95=8.59 p99=15.46 p999=102.77 max=170.58 media=6.45
+TRAVADAS >=2xp50=155 (2.51%)  >=3xp50=30  >=5xp50=29  >=33,3ms=29 (0.47%)  >=100ms=15
+HIST_P50 <2x=6031 2-3x=125 3-5x=1 5-8x=0 8-15x=9 >15x=20  (limite 2x=12.0 ms)
+QUADRO_US max process=158233 physics=11836 step=11329 mesh=156189
+CONTA ticks=885 (0.1/quadro) chunks_remalhados=48 quadros_com_mesh=29 mesh_total_ms=2586.6 mined=10 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=3953 de 6186  quadros_botao_press=4113  progresso_max=0.96  pitch=-0.60  terceira_pessoa=false  mouse_mode=2  edits_finais=28
+ORACULO pedidos=12 narracoes=12 estado_final=pronto
+CRUZAMENTO travadas=155 | com_remalha=29 com_compilacao=0 com_tick=126 sem_origem=0 | remalharam_sem_travar=0
+OBSERVACAO pid_do_filho=29676 (o `_exit_tree` do hospedeiro mata)
+
+-- os piores quadros de cada braco, e quantos deles nao tem remalha --
+[floor] linhas em PIORES_SEM_MESH = 0
+[idle] linhas em PIORES_SEM_MESH = 0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 4607  192.20    6.36    9.39  176.45    7.27  177.37    0   2    2  0   0    169
+  # 5969  183.53    6.33    9.60  167.60    1.52  176.69    0   2    2  0   0    169
+  # 6151  183.47  177.88    9.31   -3.72    1.34  176.48    0   2    2  0   0    169
+  # 2192  162.27  150.72    9.28    2.27    0.79  155.92    0   2    2  0   0    169
+[walk] linhas em PIORES_SEM_MESH = 2
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 1252  156.13    6.53    9.48  140.11    0.69  148.50    1   2    2  0   0    202
+  # 1253   94.43    6.53    9.48   78.42    7.75   80.38    0   1    2  0   0    204
+  # 1827   88.18    6.65    9.26   72.27    7.19   78.14    0   1    1  0   0    217
+  # 5559   76.23    6.55    9.67   60.01    0.91   71.92    0   1    1  0   0    212
+[mine] linhas em PIORES_SEM_MESH = 0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 1182  152.85    6.66    9.29  136.91    0.74  144.85    1   2    2  0   0    284
+  # 6160  125.44   55.96    9.76   59.72    0.83  119.78    1   2    2  0   0    251
+  # 2843  113.35   96.31    8.03    9.01   10.66   96.25    0   2    2  0   0    277
+  # 3812  110.82   95.95   10.09    4.77    0.77  102.67    0   2    2  0   0    310
+[viz] linhas em PIORES_SEM_MESH = 2
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 1253  154.61    6.46    9.18  138.96    1.00  146.50    1   2    2  0   0    207
+  # 1254   95.26    6.46    9.18   79.62    0.71   79.00    0   1    3  0   1    207
+  # 1825   85.41    6.66    8.94   69.80    7.16   75.69    0   1    1  0   0    220
+  # 5560   74.09    6.37    7.85   59.87    0.76   70.75    0   1    1  0   0    213
+[f3] linhas em PIORES_SEM_MESH = 2
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 1251  156.76    6.41    9.58  140.78    1.44  146.40    1   2    2  0   0    207
+  # 1252   97.16    6.41    9.58   81.18    7.72   79.84    0   1    2  0   0    207
+  # 1822   87.03    6.43    8.91   71.68    7.53   76.81    0   1    1  0   0    219
+  # 5555   74.39    6.45    9.52   58.42    0.81   70.70    0   1    1  0   0    212
+[llm] linhas em PIORES_SEM_MESH = 0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  #  582  158.24    7.63    7.87  142.73    1.04  151.32    1   2    2  0   0    169
+  #  583   92.56    7.63    7.87   77.05    7.49   78.99    0   1    2  0   0    169
+  # 1152   86.06    6.33   11.30   68.43    7.34   75.83    0   1    1  0   0    180
+  # 6121   80.97    6.33    9.30   65.34    0.95   77.21    0   1    1  0   0    174
+[all] linhas em PIORES_SEM_MESH = 0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  #  502  153.55   97.76    9.14   46.64    0.62  147.63    1   2    2  0   0    254
+  # 5324  141.22    7.72   10.46  123.04    0.69  126.41    0   2    2  0   0    273
+  # 5459  127.32    7.72   10.46  109.14    0.67  121.99    0   2    2  0   0    304
+  #   66  120.25    7.10    8.16  104.99    1.09  104.93    0   2    2  0   0    242
+[all_rerun] linhas em PIORES_SEM_MESH = 0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 5099  170.58   98.56   11.06   60.96    8.50  156.19    0   2    2  0   0    294
+  #  502  154.04  101.57    8.27   44.19    0.66  147.18    1   2    2  0   0    254
+  # 3468  112.76   96.39    9.69    6.67    7.75  100.80    0   2    1  0   0    318
+  #  330  107.68   97.83   10.02   -0.17    1.14   99.60    0   2    2  0   0    255
+
+-- as doze linhas NARRACAO (testemunha do conteo narrado) --
+NARRACAO #1 t=0.9s lobo=0 vivo=true intent=patrol hp=100% fome=38% confianca=0.00 episodios=[] crencas=2 :: O lobo observa o vazio ao seu redor, processando a frieza do ambiente como um aviso de que o jogador ainda está longe, enquanto sua fome ape...
+NARRACAO #2 t=1.7s lobo=1 vivo=true intent=patrol hp=100% fome=39% confianca=0.00 episodios=[] crencas=2 :: O lobo varre o território com uma vigilância apática, sem reconhecer a presença do jogador, enquanto sua mente recruta memórias de caças fer...
+NARRACAO #3 t=2.4s lobo=2 vivo=true intent=patrol hp=100% fome=39% confianca=0.00 episodios=[] crencas=2 :: A mente do lobo processa o vazio, calculando a distância até o jogador enquanto o eco de seus passos preenche a floresta, impedido pela falt...
+NARRACAO #4 t=3.1s lobo=3 vivo=true intent=patrol hp=100% fome=39% confianca=0.00 episodios=[] crencas=2 :: A mente vazia do lobo processa um padrão de varredura, ignorando a fome e a desconfiança para manter a vigilância automática.
+NARRACAO #5 t=3.6s lobo=4 vivo=true intent=patrol hp=100% fome=40% confianca=0.00 episodios=[] crencas=2 :: Eu olho para o céu, cheiro o vento e escaneo o terreno em busca de movimentos que possam indicar um perigo.
+NARRACAO #6 t=4.2s lobo=5 vivo=true intent=investigate hp=100% fome=40% confianca=0.00 episodios=[] crencas=2 :: Sua mente está vazia enquanto varre o território, ignorando o silêncio do jogador e as memórias que nunca foram registradas.
+NARRACAO #7 t=31.7s lobo=0 vivo=true intent=patrol hp=100% fome=57% confianca=0.00 episodios=[scent_work/0.01] crencas=2 :: A cabeça do lobo está vazia, pois a sua intenção de patrulhar e o seu zero absoluto de confiança no jogador não geraram nenhuma memória rece...
+NARRACAO #8 t=32.4s lobo=1 vivo=true intent=patrol hp=100% fome=57% confianca=0.00 episodios=[scent_work/0.02] crencas=2 :: O lobo observa o cenário com cautela, buscando o cheiro do jogador enquanto seu instinto de patrulha o impede de confiar em nenhum som novo.
+NARRACAO #9 t=33.1s lobo=2 vivo=true intent=investigate hp=100% fome=57% confianca=0.00 episodios=[scent_work/0.02] crencas=2 :: O lobo varre o chão buscando rastros, ignorando sua presença como se fosse apenas mais uma nuvem de poeira na mente de quem nunca o viu.
+NARRACAO #10 t=33.7s lobo=3 vivo=true intent=patrol hp=100% fome=58% confianca=0.00 episodios=[] crencas=2 :: Os olhos de lobo escaneiam o ambiente com cautela enquanto minha fome aumenta e a desconfiança em relação ao jogador se intensifica.
+NARRACAO #11 t=34.3s lobo=4 vivo=true intent=hunt hp=100% fome=58% confianca=0.00 episodios=[saw_player/0.40, hit_land/0.30, saw_player/0.40] crencas=2 :: O lobo escaneia o ar, filtrando a visão do jogador como uma ameaça iminente enquanto calcula a melhor rota para o ataque.
+NARRACAO #12 t=35.0s lobo=5 vivo=true intent=patrol hp=100% fome=58% confianca=0.00 episodios=[scent_work/0.01] crencas=2 :: O lobo cruza a floresta em vigilância, ignorando o silêncio do jogador enquanto seu instinto de caça permanece adormecido.
+
+-- ciclo de vida do hospedeiro no braco llm --
+llm_aguardando pronto  deadline=120 s
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key <chave>  (sem servidor na porta 8741)
+llm_host  carregando  pid 9520  boot do modelo iniciado  (1/1 spawn)
+llm_host  pronto  boot 2539 ms  503=10  pid 9520
+llm_estado=pronto  boot_ms=2539  aguardado=9.5 s  pid=9520
+amostra_aberta  porque=modelo no ar  ms_do_boot=9518
+llm_host  encerrando pid 9520  OK
