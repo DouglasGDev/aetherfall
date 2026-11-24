@@ -1,0 +1,5 @@
+== Passo 2 (a): regua 1 de 3 - doc anchors, 2026-11-24T08:39:38-04:00, base dd976f3 (dd976f3 = codigo do passo), branch feat/oraculo-nativo-passo2-22, arvore final da rodada ==
+== comando: python tools/check_doc_anchors.py ==
+corpus na arvore de trabalho  arquivos: 39  ponteiros conferidos: 3062  rotulos conferidos: 209  links relativos conferidos: 3307
+casos objetivos: 0
+[exit do python]=0

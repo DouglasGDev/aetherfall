@@ -6393,6 +6393,10 @@ um arquivo com o nome do output) por **presença errada**. Dentro da casca os qu
 **Dono:** Passo 1 (c) — o `build.bat` não aceita um `link.exe` fora de `VCToolsInstallDir`. Testemunha:
 [`passo1_fora_da_casca.log`](evidence/oraculo-nativo-22/passo1_fora_da_casca.log) com o
 `.bat` do mesmo nome. É a mesma classe do furo #32: o instrumento leu uma coisa e a página escreveu outra.
+**Reincidente duas vezes no Passo 2 (a)**, em 2026-11-24, pela borda inversa: dentro da casca do
+`vcvars64.bat` foi o `find` que resolveu no `usr\bin` do Git e saiu percorrendo `C:\`, e o `cmd` do Git
+Bash comeu a contra-barra do caminho do `build.bat`. As duas instâncias e o corte estão em
+"Furo #35 reincidente" adiante, na rodada do passo.
 
 ### Furo #36 — manifesto de evidência com hash da forma errada do arquivo: 3 FAILED em 31 entradas
 
@@ -6772,3 +6776,220 @@ do export-set medido e `/DELAYLOAD`, §1.3 e §5.1), o **Passo 3** (testemunha d
 **Passo 4** (`transporte_http_zerado`). Dos furos, **#38** e **#39** continuam abertos e são decisão do
 dono, e o **#20** continua sem a colheita que nomeia a folha. A fila serializada não muda:
 **22 → 17 → 18 → 20 → 13**, e a 22 segue na frente porque a perna não fechou.
+
+*(Estado re-derivado em 2026-11-24, rodada (5) abaixo: deste parágrafo o **Passo 2** partiu-se em duas
+metades e a **(a)** rodou — faltam a **(b)** (os três números de §5.2), o Passo 3 e o Passo 4. O resto da
+frase continua válido, e o **#40** é novo.)*
+
+## Rodada 2026-11-24 (5) — Passo 2 (a) do dossiê 22: o gate de símbolos executado, os import libs do export-set medido, e a premissa do diretório do processo medida **FALSA** (branch `feat/oraculo-nativo-passo2-22`, base `fa5ea79`)
+
+**O que o §5.1 cobrava e o que este lote executa.** A página 22 tirou duas frases do Passo 1 e as escreveu
+como débito do Passo 2: o gate de **símbolos** do §1.3, "com import libs gerados do export-set medido e
+`/DELAYLOAD`", e a premissa de que "o `.dll` resolve as DLLs do runtime no diretório do processo". As duas
+foram executadas. O bloco tem seis etapas, na ordem, dentro do [`native/af_mind/build.bat`](../native/af_mind/build.bat#L113)
+(355 linhas, 17 371 B, CRLF; **+188** sobre a base): `.def` do export-set medido, os quatro import libs, o
+link do gate com `/DELAYLOAD`, a régua de posse de módulo, as duas corridas (`nu` e `preload <runtime>`) e o
+controle negativo. O veredito é `BUILD_RC=0` sobre **190 linhas** de stdout+stderr mesclados
+([`passo2a_build.log`](evidence/oraculo-nativo-22/passo2a_build.log)), `grep -c -i warning` **0**
+([`passo2a_build_split_stderr.log`](evidence/oraculo-nativo-22/passo2a_build_split_stderr.log) tem a mesma
+varredura: **0** linhas com `warning` ou `error`). Nada do que o gate faz chega a `src/`: o fruto é um
+**exe de gate**, não um binding — `AfMindOracle` continua com construtor, destruidor e o marker
+`0x41464D31`.
+
+**A forma do log foi medida separada, e o que o stderr tem é informação do runtime.** Uma re-corrida com as
+duas correntes em arquivos distintos devolve **185 linhas / 10 557 B** de stdout
+([`passo2a_build_split_stdout.log`](evidence/oraculo-nativo-22/passo2a_build_split_stdout.log)) e
+**5 linhas / 507 B** de stderr — e as cinco linhas são o `load_backend: loaded RPC/Vulkan/CPU backend` e o
+`ggml_vulkan: Found 1 Vulkan devices` que o próprio llama.cpp escreve na hora do load, não aviso do build.
+Por isso o log arquivado mesclado tem 190 linhas e o separado tem 185: a diferença é exatamente esse bloco,
+e as duas formas estão no repositório para que o número de linhas de uma não se leia como o da outra.
+
+**O endereço impresso do slot não é estável entre corridas — e é por isso que a régua não é endereço.** Na
+re-corrida, os 37 slots saem com a base `00007FF70A9E…` contra `00007FF761BD…` do log arquivado: é o
+*image base* do exe mudando a cada processo (ASLR). A cauda — o deslocamento dentro da imagem, `…1D28`,
+`…1DB3`, `…1C08` — é idêntica nas duas. O que o gate checa são códigos de saída e contagens, nunca endereço,
+e a testemunha que importa é `[exe] diretorio_do_processo=` e a existência do slot, não o valor.
+
+**Os `.def` nascem do dump arquivado e a re-medida contra o runtime vivo recusa divergência.**
+`gen_import_libs.py` (217 linhas, 10 604 B, LF) lê os dumps do pin `b12499` e, havendo runtime em
+`.tools\llama\runtime`, compara nome a nome: as cinco `[remedio]` do log dizem `iguais` nos cinco módulos
+(53, 689, 9, 16, 266 nomes). As linhas `[def]` (13-21) dão o par export-total × entradas — `llama.dll`
+**266 / 240** (240 C puro, 26 C++ decorado), `ggml-base.dll` **689 / 687**, `ggml.dll` **16 / 16**,
+`ggml-vulkan.dll` **9 / 9**, `llama-fit-params-impl.dll` **53 / 3** — e a diferença é medida, não descuido:
+o `.def` desta etapa só traz os nomes C puro, que é a forma com que o gate os referencia. Os quatro import
+libs saem com bytes testemunhados — `llama 58 326`, `ggml 5 288`, `ggml-base 154 094`, `ggml-vulkan 3 926`
+— e `lib` não imprime nada em sucesso, então o arquivo com bytes **é** a testemunha.
+
+**A régua de posse não copia lista nenhuma, e os 37 nomes fecham.** [`check_imports.py`](../native/af_mind/check_imports.py)
+(192 linhas, 8 852 B, LF) cruza três listas geradas — os **referenciados** saem das linhas `AF_SLOT(nome)`
+do próprio [`symbol_gate.cpp`](../native/af_mind/src/symbol_gate.cpp) (311 linhas, 13 725 B), o **dono** sai
+dos `.def`, o **importado** sai de `dumpbin /imports` do binário
+([`passo2a_gate_imports.txt`](evidence/oraculo-nativo-22/passo2a_gate_imports.txt), 185 linhas) — e recusa
+nome que apareça em dois `.def`. Com o exe em `gate_exe_bytes=157696`:
+
+```
+[referencia] gate AF_SLOT=37 nomes
+[import] modulo=ggml-base.dll referenciado=10 na_tabela=10
+[import] modulo=ggml-vulkan.dll referenciado=4 na_tabela=4
+[import] modulo=ggml.dll referenciado=5 na_tabela=5
+[import] modulo=llama.dll referenciado=18 na_tabela=18
+[import] OK referenciados=37 modulos=4 nomes_na_tabela=37
+```
+
+**A premissa do diretório do processo é FALSA nesta máquina, medida, e o gate recusou em vez de morrer.**
+As cinco linhas `[premissa] nome_nu … handle=0000000000000000 erro=126`
+([`passo2a_build.log:105-110`](evidence/oraculo-nativo-22/passo2a_build.log)) são as quatro DLLs do
+export-set mais o `libomp.dll` que elas pedem; o veredito impresso é
+`[premissa] veredito=FALSA o diretorio do processo nao ve o runtime por nome nu` e a saída é
+`[corrida] nu_codigo=5`. O `[exe] diretorio_do_processo=C:\Aetherfall\native\af_mind\bin` da linha **66** é
+a frase do §5.1 lida do processo, não da minha prosa — o exe mora em `bin\`, o runtime em
+`.tools\llama\runtime\`. A corrida `preload <runtime>` abre os mesmos nomes **por caminho absoluto** (cinco
+`[branco] LoadLibraryExA(…)=… erro=0`, linhas 160-164) e os números da Fase 0 §1.2 saem na mesma ordem e
+fecham iguais: `load_all_from_path=0`, `reg_count=3` (RPC, Vulkan, CPU), `dev_count=2` com
+`dev[0] type=1 nome=Vulkan0 desc=AMD Radeon RX 9060 XT`, `vk_get_device_count=1` e
+`confronto_s1.2 … veredito=IGUAL` com `preload_codigo=0`. Duas consequências, ambas escritas antes da (b):
+o `build.bat` aceita exit **0 ou 5** na corrida `nu` — 0 é a premissa verdadeira, 5 é a falsa **com recusa**;
+código de crash do loader não é nenhum dos dois e derruba o build — e **a extensão não pode depender do
+diretório do processo**: em `Rodar.bat` o processo é o `Godot.exe`, então o Passo 2 (b) pré-carrega o
+runtime por caminho absoluto ou co-localiza as DLLs com a engine. A segunda é a que decide como os três
+números de §5.2 serão alcançados.
+
+**O controle negativo é falsificável, e tem contraprova.** [`symbol_gate_absent.cpp`](../native/af_mind/src/symbol_gate_absent.cpp)
+(43 linhas) declara como dado os quatro nomes que a documentação do prompt usava e não existem no export-set
+pinado (`ggml_backend_buffer_type_get_base_buffer`, `llama_model_n_ctx`,
+`llama_new_context_with_model`, `ggml_backend_buffer_type_get_alloc_size`) e os usa num `main` real, para
+que **só** o linker possa recusá-los: `[controle] cl_codigo=0`, `[controle] link_codigo=1120`, as quatro
+`recusa_lida=0` e `OK: o gate e falsificavel` (linhas 182-188). O código é lido **e** o nome é conferido no
+texto da recusa ([`passo2a_gate_absent_link.txt`](evidence/oraculo-nativo-22/passo2a_gate_absent_link.txt),
+9 linhas) — um LNK1561 ou LNK1181 daria não-zero pelo motivo errado e o controle pareceria ter funcionado.
+As quatro `LNK4199 /DELAYLOAD:… ignored; no imports found` do topo daquele arquivo não são aviso perdido:
+são a contraprova de que o controle não resolve nada de módulo nenhum. O `af_symbol_gate_absent.exe` não
+existe no disco.
+
+**O ordinal deixou de ser comentário e virou A/B medido.** A alegação — um `.def` com `nome @37` faz o
+`lib /def:` produzir import **por ordinal**, e aí o `dumpbin /imports` imprime `Ordinal 167` sem nome,
+apagando a régua de posse — vivia escrita no cabeçalho do gerador.
+[`passo2a_ordinal_ab.bat`](evidence/oraculo-nativo-22/passo2a_ordinal_ab.bat) (136 linhas) a mede com
+**uma** variável: o MESMO `bin\symbol_gate.obj`, os MESMOS quatro módulos, nomes e linha de `/DELAYLOAD`, a
+MESMA régua chamada duas vezes. [`passo2a_ordinal_ab.log`](evidence/oraculo-nativo-22/passo2a_ordinal_ab.log)
+(47 linhas) devolve `linhas_com_palavra_ordinal A=37 B=0`, `regua_A_codigo=1`, `regua_B_codigo=0` e
+`OK: com \`@n\` a regua recusa (codigo 1); sem \`@n\` ela passa (codigo 0)`; as quatro `[recusa]` de
+[`:29-32`](evidence/oraculo-nativo-22/passo2a_ordinal_ab.log) dizem o motivo por módulo inteiro — "a tabela
+nao mostrou NENHUM nome deste modulo; provavel import por ordinal". O `--ordinal` do gerador existe **só**
+para essa corrida e o `build.bat` nunca o passa, e é por isso que a linha `[def]` do build traz
+`remedio=sim` enquanto o A/B, que roda sem `--runtime`, traz `remedio=nao`
+([`:3-7`](evidence/oraculo-nativo-22/passo2a_ordinal_ab.log)). Uma assimetria de instrumento fica
+registrada, não alisada: as mesmas cinco linhas `[def]`, com um campo diferente porque uma ponta re-mede e a
+outra não.
+
+**O Passo 1 continua verde, re-medido nesta árvore depois de o código do gate ter mudado.** O critério do
+§5.2 inclui "o passo 1 continua verde", e número publicado é número medido na revisão (mandato 3, item 6):
+suíte **255 checagens / 0 falhas / 49,3 s** ([`passo2a_suite.log:357`](evidence/oraculo-nativo-22/passo2a_suite.log)),
+runner de reações **288 / 0 / 34,032 s** ([`passo2a_runner.log:546`](evidence/oraculo-nativo-22/passo2a_runner.log))
+com as cinco `OK extensao_carrega_classe` nas linhas **535-539** — descritor no disco, `is_library_open=true`,
+`class_exists(AfMindOracle)=true`, `instantiate_valido=true get_class=AfMindOracle` — os dois censo
+(`66/66` em 541, `288/288` em 543), o cenário estreito com **10 568** passos
+(`sim_step total=2 226 037 µs`, pico `4 341 µs`) e a matilha com **1 341** passos
+(`sim_tick total=3 208 778 µs`, pico `16 569 µs`), ambos `trips=0`; RNG **27 / 0 / 2,698 s**
+([`passo2a_rng.log:78`](evidence/oraculo-nativo-22/passo2a_rng.log)) e journal **128 / 0 / 7 de 7 / 5,823 s**
+([`passo2a_journal.log:143`](evidence/oraculo-nativo-22/passo2a_journal.log)). Exit 0 nos quatro. O stderr da
+suíte é **249 bytes** — o par de vazamento do quit (`4 ObjectDB instances were leaked at exit` /
+`2 resources still in use at exit`), intermitente por medição e alheio à extensão; o do runner é **0 bytes**.
+
+**Três `warning C4996` consertados na causa, não silenciados.** A primeira corrida do gate imprimiu
+`strncpy`, `_snprintf` e `strcpy` marcados como inseguros. A casa não usa
+`_CRT_SECURE_NO_WARNINGS` — a flag é um silenciar, e warning dentro de log verde é o instrumento pedindo
+para não ser lido. As três chamadas viraram `strcpy_s` e `snprintf` no
+[`symbol_gate.cpp:166-168`](../native/af_mind/src/symbol_gate.cpp#L166-L168) e
+[`:185`](../native/af_mind/src/symbol_gate.cpp#L185), com o mesmo comportamento e o mesmo
+`gate_exe_bytes=157696`; as quatro corridas acima e o A/B foram re-rodidos **depois** da mudança, e o log
+arquivado tem **0** warnings.
+
+### Furo #40 — a régua de imports lia `dumpbin` como se fosse CSV, e os 37 nomes sumiram da tabela
+
+Descoberto e **fechado** nesta perna. A primeira execução do `check_imports.py` devolveu
+`na_tabela=0` nos **quatro** módulos — com o binário linkando e os 37 slots presentes — e o `build.bat`
+saiu com o código de recusa **7**. O defeito era da régua: o `NAME_RE` exigia **um** espaço entre o RVA, o
+hint e o nome, e o `dumpbin` **preenche a largura da coluna**. As duas formas medidas no binário são
+`                          E6 CreateFileW` (import comum) e
+`                                    0000000140001B7F    8C llama_print_system_info` (delay-load). Corrigido
+o [`check_imports.py:59`](../native/af_mind/check_imports.py#L59) para `\s+` entre os tokens, os 37 apareceram.
+O discriminador entre nome e rótulo de tabela continua sendo a **forma** — o token colado antes do nome é hex
+de no máximo quatro dígitos, então `00000001 Characteristics` (8) e `0000000140025D68 Address of HMODULE` (16)
+não passam — e não uma lista de rótulos em inglês, que é o erro já pago duas vezes nesta casa em Windows
+pt-BR. A régua que fica: **formatar saída de ferramenta é hipótese sobre o layout, e a hipótese se confere
+com o texto cru no disco antes de qualquer contagem** — aqui,
+[`passo2a_gate_imports.txt`](evidence/oraculo-nativo-22/passo2a_gate_imports.txt).
+
+### Furo #35 reincidente — agora foi o `find`, e o `cmd` do Git Bash comeu a contra-barra
+
+Dois casos novos na mesma classe, ambos de instrumento e ambos arquivados. **(1)** A primeira versão do A/B
+contava linhas com `find /c /v ""` e, dentro da casca do `vcvars64.bat`, o `find.exe` que resolve é o **GNU
+find** do Git — o MSVC não tem `find`, e o vcvars **prepõe** as pastas dele sem tirar `usr\bin` do PATH. O
+resultado não é um erro: é uma varredura do `C:` inteiro (`find: '/c/Config.Msi': Permission denied`, dez
+minutos sem fim). A contagem passou a ser python e o motivo está escrito no próprio `.bat`
+([`passo2a_ordinal_ab.bat`](evidence/oraculo-nativo-22/passo2a_ordinal_ab.bat), bloco antes das corridas A e
+B). **(2)** A invocação `cmd //c native\\af_mind\\build.bat` a partir do Git Bash **não** é a mesma
+invocação de dentro do `cmd`: com `MSYS_NO_PATHCONV=1` o `//c` virou caminho e o `cmd` abriu interativo
+(log de quatro linhas com um `BUILD_RC=0` falso); sem aspas, `native\af_mind\build.bat` foi reescrito para
+`nativeaf_mindbuild.bat`. A forma que funciona é `cmd //c 'C:\Aetherfall\native\af_mind\build.bat'` —
+caminho absoluto entre aspas simples. Os dois logs afetados eram de `/tmp` e nenhum deles foi commitado; a
+build log arquivada é a da forma correta, com `BUILD_RC=0` e as 190 linhas. É a mesma lição do #32 e do #35
+em outra camada: **o nome que você digita não é o programa que executa**, e agora vale também para o shell
+que interpreta o nome.
+
+### Furo #36 reincidente — o `.bat` novo saiu LF do editor, e quem pegou foi o aviso do `git add`
+
+O A/B do ordinal foi escrito com final de linha **LF**: `wc -l` **136** e `tr -cd '\r' | wc -c` **0**. A
+pasta de evidência é `-text` ([`.gitattributes:9`](../.gitattributes#L9)) para que o log saia do clone byte
+a byte, mas a regra de [`:22`](../.gitattributes#L22) — `*.bat text eol=crlf` — **vence** sobre ela, e
+`git check-attr text eol` no arquivo devolve `text: set` / `eol: crlf`. Como o manifesto se computa
+`sha256sum -b` sobre os bytes **do disco** (§12.4 da página 22), o hash daquele `.bat` seria o da forma que
+nenhum clone produz — exatamente a shape dos **3 FAILED em 31** que o #36 registrou. Quem avisou foi o
+próprio `git add`: *"in the working copy of 'docs/evidence/oraculo-nativo-22/passo2a_ordinal_ab.bat', LF
+will be replaced by CRLF the next time Git touches it"* — a única linha desta casa que imprime a
+dissociação antes do commit. O arquivo foi reescrito em CRLF (**136** CR) e a A/B **re-executada a partir
+da forma arquivada**: [`passo2a_ordinal_ab_rerun.log`](evidence/oraculo-nativo-22/passo2a_ordinal_ab_rerun.log)
+tem **47 linhas / 47 CR**, exit 0, e o `diff` contra o log original — com os CRs tirados dos dois — devolve
+**vazio**, o que também responde uma pergunta que o #36 não respondia: `cmd.exe` leu as duas formas e o
+veredito do ordinal não dependeu do final de linha. O que fica aberto é o alcance do instrumento: nenhuma
+das três réguas vê forma de bytes — ponteiro, rótulo e identificador são texto — então quem pega isso é o
+`sha256sum -c` dentro do clone limpo (mandato 3, item 6), e o manifesto re-gerado com as
+**109** entradas é o que paga.
+
+### O que esta passada não fecha
+
+- **Os três números de §5.2 não existem.** `af_vram_gb`, `af_load_ms` e `af_ctx_cells` são o **Passo 2 (b)**,
+  e ela já nasce com a rota decidida pelo §15.5 acima: pre-load por caminho absoluto ou DLLs
+  co-localizadas. Nenhuma medida de VRAM foi feita aqui.
+- **A extensão não encosta no runtime.** O fruto deste lote é o exe do gate, o `.def` e os import libs; o
+  `af_mind.dll` continua os mesmos **105 472 B** e o mesmo offset `00001120` do Passo 1 (c).
+- **`src/` intocado**: `git diff --name-only main...HEAD -- src` devolve **vazio**, então
+  `Channel.COUNT`, `FORMAT_VERSION` e `GEN_VERSION` seguem parados e os hashes de journal das rodadas
+  publicadas valem para a árvore resultante sem re-corrida.
+- **Nenhum gate de fase** (mandato 4), e **#38, #39 e #20** continuam onde estavam — o primeiro é decisão do
+  dono, o segundo é o limite das réguas, o terceiro é a colheita que nomeia a folha.
+
+A página 22 cresceu **252 linhas** (1 252 → **1 504**) com o §15 inteiro e a re-derivação de três frases que
+este passo tornou velhas — o manifesto da evidência (92 → **109** entradas, conta re-rodada na árvore do
+commit com `sha256sum -c` **109/109 OK** e `tr -cd '\r' | wc -c` **0**), a afirmação de "nenhum `.lib` no
+clone" do §12.3 (o `.gitignore:8:bin/` foi conferido arquivo por arquivo; a árvore construída tem **9**
+`.lib`: os quatro import libs, `af_mind.lib` e os quatro do `bin\ab-ordinal`) e a premissa do §5.1, que agora
+aponta para o §15.5. A linha `__pycache__/` no `.gitignore` (**:13**) existe porque a árvore de fato ganhou
+um `native/af_mind/__pycache__/gen_import_libs.cpython-310.pyc`: o `build.bat` chama os dois instrumentos
+como **script** (`python …\gen_import_libs.py`), o que não grava `.pyc` de `__main__`, então o arquivo vem de
+um import feito por sonda durante a construção da régua — e sem a linha, todo clone mostraria um `??` depois
+de mexer nos instrumentos. As três réguas, rodadas com esta rodada escrita e arquivadas em
+[passo2a_ruler_doc_anchors.log](evidence/oraculo-nativo-22/passo2a_ruler_doc_anchors.log),
+[passo2a_ruler_plan_cites.log](evidence/oraculo-nativo-22/passo2a_ruler_plan_cites.log) e
+[passo2a_ruler_plan_ids.log](evidence/oraculo-nativo-22/passo2a_ruler_plan_ids.log):
+`python tools/check_doc_anchors.py` deu **39 arquivos · 3 062 ponteiros · 209 rótulos · 3 307 links
+relativos · 0 casos objetivos** (exit 0);
+`python .tools/verify_plan_cites.py AGENTS.md README.md docs/melhorias-status.md docs/planos/README.md
+docs/planos/22-oraculo-nativo-gdextension.md` deu **1 024** citações com número conferidas, **10**
+arquivos citados inexistentes — os dez de sempre, os três scratch `.tools/_head_*.md` e as peças
+`[TARGET]` que as páginas declaram não existirem — e **0** números fora do arquivo (exit 0);
+`python .tools/verify_plan_ids.py` no corpus da perna saiu **exit 0** com as ausências de sempre, e aqui
+elas têm uma classe a mais desde o Passo 1 (c): os nomes de `native/` que a régua não varre, porque ela
+monta o corpus com `src/**/*.gd` e `tests/**/*.gd` (furo **#39**). A fila
+serializada não muda: **22 → 17 → 18 → 20 → 13**, e a 22 segue na frente.
