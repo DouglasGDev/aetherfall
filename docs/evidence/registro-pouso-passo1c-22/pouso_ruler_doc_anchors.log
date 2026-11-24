@@ -1,0 +1,4 @@
+== Pouso do Passo 1 (c) do dossier 22: regua 1 de 3 - doc anchors na arvore do registro, 2026-11-24T04:13:11-03:00, arvore 6b817a5, branch docs/registro-pouso-passo1c-22 ==
+== comando: python tools/check_doc_anchors.py ==
+corpus na arvore de trabalho  arquivos: 39  ponteiros conferidos: 3062  rotulos conferidos: 209  links relativos conferidos: 3254
+casos objetivos: 0
