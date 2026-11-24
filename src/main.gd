@@ -54,6 +54,9 @@ var oracle: MindOracle = null
 ## prova, que o constroi com `attach_llm_host`.
 var llm_host: LlmServerHost = null
 var audio: AudioDirector = null
+## O FX da agua (dossie 23 §3.6): leitura de corpo, pool fixo, nenhuma escrita no
+## mundo — `fx_nao_escreve_o_mundo` e a checagem que paga a frase.
+var water_fx: WaterFx = null
 var wolves: Array = []
 var elapsed: float = 0.0
 var stats := {"mined": 0, "placed": 0, "wolves_felled": 0, "deaths": 0}
@@ -197,6 +200,14 @@ func _ready() -> void:
 	audio.wolves_provider = Callable(self, "wolves_roster")
 	add_child(audio)
 	audio.setup(world, player)
+
+	# O FX entra na mesma janela do audio porque le os mesmos corpos: pool criado
+	# aqui, no boot, e nunca dentro de frame (dossie 23 §3.6).
+	water_fx = WaterFx.new()
+	water_fx.name = "WaterFx"
+	water_fx.wolves_provider = Callable(self, "wolves_roster")
+	add_child(water_fx)
+	water_fx.setup(world, player)
 
 	_spawn_wolves(WOLF_COUNT)
 	_start_journal_from_args()
@@ -1190,6 +1201,9 @@ func diagnostics() -> Dictionary:
 		"dropped_ticks": clock.dropped_ticks, "hp": player.hp,
 		"on_ground": player.body.on_ground, "feet": player.body.feet_pos,
 		"journal": tick_journal.diagnostics(),
+		# Dossie 23 §3.6: o teto do FX e aritmética dos `amount` declarados e os
+		# vivos da janela sao lidos aqui — sem esta linha o orcamento seria adjetivo.
+		"water_fx": water_fx.diagnostics() if water_fx != null else {},
 		# O host so existe fora de headless (dossie 15 §4.6): na suíte a linha e
 		# vazia, e e exatamente esse o numero que a checagem 8 espera.
 		"llm": llm_host.diagnostics() if llm_host != null else {},
