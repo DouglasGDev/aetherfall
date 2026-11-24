@@ -1,0 +1,11 @@
+LoadLibrary ggml-base.dll: OK (err=0)
+LoadLibrary ggml.dll: OK (err=0)
+LoadLibrary ggml-vulkan.dll: OK (err=0)
+LoadLibrary llama.dll: OK (err=0)
+ggml_backend_load_all_from_path exportada: sim
+ggml_backend_load_all_from_path(): 0 backends registrados
+ggml_backend_reg_count(): 0
+ggml_backend_dev_count(): 0
+ggml_backend_vk_get_device_count exportada: sim -> 1
+llama_print_system_info exportada: sim
+SONDA=OK

@@ -1,0 +1,18 @@
+LoadLibrary: ggml-base=OK ggml=OK ggml-vulkan=OK llama=OK
+  GetProcAddress(ggml_backend_load_all_from_path) de ggml.dll: ACHOU
+  GetProcAddress(ggml_backend_reg_count) de ggml.dll: ACHOU
+  GetProcAddress(ggml_backend_dev_count) de ggml.dll: ACHOU
+  GetProcAddress(ggml_backend_load_all_from_path) de ggml-base.dll: NAO
+  GetProcAddress(ggml_backend_reg_count) de ggml-base.dll: NAO
+  GetProcAddress(ggml_backend_dev_count) de ggml-base.dll: NAO
+ggml_backend_load_all_from_path(runtime): 0
+ggml_backend_reg_count(): 3
+  reg[0] ?
+  reg[1] ?
+  reg[2] ?
+ggml_backend_dev_count(): 2
+  dev[0] type=-999 nome=?
+  dev[1] type=-999 nome=?
+ggml_backend_vk_get_device_count(): 1
+llama_print_system_info exportada: sim
+SONDA=OK

@@ -1,0 +1,37 @@
+Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Aetherfall\.tools\llama\runtime\ggml-vulkan.dll
+
+File Type: DLL
+
+  Section contains the following exports for ggml-vulkan.dll
+
+    00000000 characteristics
+    FFFFFFFF time date stamp
+        0.00 version
+           1 ordinal base
+           9 number of functions
+           9 number of names
+
+    ordinal hint RVA      name
+
+          1    0 000F6A30 ggml_backend_init
+          2    1 000F6A40 ggml_backend_is_vk
+          3    2 000F6A70 ggml_backend_vk_buffer_type
+          4    3 000F6B00 ggml_backend_vk_get_device_count
+          5    4 000F6B20 ggml_backend_vk_get_device_description
+          6    5 000F6B70 ggml_backend_vk_get_device_memory
+          7    6 000F7050 ggml_backend_vk_host_buffer_type
+          8    7 000F7160 ggml_backend_vk_init
+          9    8 000F7270 ggml_backend_vk_reg
+
+  Summary
+
+        6000 .data
+        8000 .pdata
+     2755000 .rdata
+        1000 .reloc
+        1000 .rsrc
+      110000 .text

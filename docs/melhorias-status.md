@@ -2481,7 +2481,7 @@ no §RNG, `:94` → `:95`), as variáveis de colheita `:31` → `:32`, `_advance
 colhido `:736-737` → `:938-939` e a linha de contrato `:740` → `:942`. Corrigidos pelo conteúdo em
 `AGENTS.md:82-83`, `docs/design/08:78-79`, `docs/design/09:266`, `:268-269`, `:274-275`,
 `docs/planos/02:6`, `docs/planos/03:95-96`, `:119`, `:121`, `docs/planos/04:32`, `:54` e
-`docs/planos/README.md:15`, `:81`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
+`docs/planos/README.md:15`, `:90`. Os `103` do dossiê 03 §"Como medir" são o número de hoje, não o
 do plano original: o item que ele numera (canais MORTE/SOM/FOGO) continua não feito. Pin de revisão
 trocado de `9f3622b` para `520c3b4` no README (§"Como rodar a suíte", com o manifesto de 79 arquivos
 agora em `docs/evidence/passo-lobo-plano/sources.sha256`) e em `docs/planos/04:32`.
@@ -6064,3 +6064,147 @@ deletada** — nem a local da perna, nem a remota, nem a de registro, nem a `mai
 árvore mergida **não** mede continua sendo o que a perna deixou: `block_changed` sem consumidor nenhum em
 `src/`, o `96.48 ms` sem atribuição depois do furo #31, o par de vazamento do quit, e nenhum gate de fase
 fechado.
+
+## Rodada Oráculo Nativo 22 — a pauta dos cinco níveis de IA local, com a Fase 0 medida antes de qualquer linha (2026-11-23, `docs/pauta-oraculo-nativo-22`, base `e7c9f64`)
+
+### A extensão de escopo, registrada antes de qualquer linha de código
+
+O dono manda elevar a IA local — o prompt "Aetherfall: Elevação da IA Local para Outro Nível", cinco
+fases, 100 % na máquina dele, com a regra de ouro escrita por ele mesmo: nenhuma camada de linguagem
+move um pé, aplica dano ou escreve diretamente no ledger; a mente propõe, as regras determinísticas
+dispõem. A pauta vira
+[`docs/planos/22-oraculo-nativo-gdextension.md`](planos/22-oraculo-nativo-gdextension.md), a fila
+serializada passa a **17 → 18 → 22 → 20 → 13** e o "fora" do contrato perde uma linha: `oráculo nativo
+em GDExtension` deixa de estar proibido. O que ele **não** autoriza, e está escrito na página: P2,
+facções, co-op, progressão, chefes e o Sistema Operacional (Ob-ragem), que ele mesmo adiou. A Fase 1 é
+o escopo autorizado; as Fases 2–5 entram autorizadas **como pauta dentro da mesma perna**, cada uma com
+gate próprio e nenhuma linha escrita antes de a anterior fechar o dela. Nada deste lote encosta em
+`Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` nem na projeção do `TickJournal`, e **nenhuma linha de
+`native/` foi escrita** — a branch é documento puro.
+
+Esta seção fecha no fim do arquivo, e não dentro do "Em andamento" onde o fato também caberia, por um
+motivo medido e não por gosto: um parágrafo de 17 linhas inserido na linha 610 empurra para baixo cada
+número-alvo abaixo dele, e este status é o arquivo mais citado por linha do repositório — **64**
+ponteiros vivos de outras páginas caem entre as linhas 610 e 4420. É exatamente o mecanismo do furo
+**#28** (trinta e três números envelheceram em três páginas que a varredura não abriu, e as duas réguas
+ficaram verdes). As duas inserções de [`AGENTS.md`](../AGENTS.md) foram desenhadas pela mesma régua: a
+linha do "fora" reescrita com o mesmo número de linhas, e o bloco da extensão colocado depois da linha
+650, ou seja, depois do maior número de `AGENTS.md` que qualquer página cita hoje (**475**). Assim o
+lote não abre trabalho de re-ancoragem para si mesmo nem para as pernas seguintes.
+
+### O que a Fase 0 mede, porque a Fase 1 depende disso e o prompt assume do contrário
+
+- O compilador existe e compila C++17: `cl.exe` **19.44.35207** (MSVC), lido em
+  `docs/evidence/oraculo-nativo-22/probe-run-stdout.txt` — não por "tem Visual Studio instalado".
+- As cinco DLLs do runtime carregam **dentro de um processo comum** e veem a placa: as linhas 1 a 5 de
+  `docs/evidence/oraculo-nativo-22/probe3-stderr.txt` mostram RPC, Vulkan e CPU carregados do
+  `.tools/llama/runtime/`, e a linha 5 de `docs/evidence/oraculo-nativo-22/probe3-stdout.txt` devolve
+  `ggml_backend_reg_count(): 3`, com `ggml_backend_dev_count(): 2` (linha 9), `dev[0] type=1
+  nome=Vulkan0` (linha 10) e `desc=AMD Radeon RX 9060 XT` (linha 11) — a 9060 XT, não a 4060, e o
+  `dev[1]` da linha 12 é o Ryzen 7 5700X3D. O rodapé que já confundiu uma leitura vem anotado na própria
+  sonda: `ggml_backend_load_all_from_path(runtime) devolve: 0` (linha 4) é código de sucesso, **não**
+  contagem de backends.
+- O cabeçalho de interface do 4.7.2 é **gerado**, não baixável:
+  `docs/evidence/oraculo-nativo-22/gdextension_interface_472.h`, **143 170 B**, com o
+  `GDExtensionInitializationFunction` conferido dentro dele (§1.4 da página).
+- Os export-sets contados um a um: `llama.dll` **266**, `ggml-base.dll` **689**, `ggml.dll` **16**,
+  `ggml-vulkan.dll` **9**, `llama-fit-params-impl.dll` **53** — os cinco dumps em
+  `docs/evidence/oraculo-nativo-22/exports-*.txt`. Duas ausências saem dessa contagem e viram
+  consequência escrita: `ggml_backend_buffer_type_get_base_buffer` e `llama_params_get_fit_params`
+  **não** estão no set pinado, então o `model_oversave` do §8 da página fica `[OPEN]` em vez de virar
+  código, e a família `buft_*` mora no `ggml-base.dll`, não no `ggml.dll`.
+
+### Furo #32 — o instrumento leu o próprio redirect e declarou o compilador ausente
+
+**Furo #32 — a sonda de toolchain media o código do `>nul`, não o do `cl.exe`.** A primeira leitura
+desta rodada foi "nenhum Visual Studio instalado na máquina", e ela é falsa. O `.bat` da sonda fazia
+`call vcvars64.bat >nul` e imprimia `%ERRORLEVEL%` na linha seguinte: o valor lido é o do **redirect**,
+nunca o do compilador. A régua que fecha o furo, escrita antes de qualquer sonda nova: nenhum
+`echo %ERRORLEVEL%` depois de um redirect na mesma cadeia — ou o teste é `where cl.exe` mais a
+compilação de um `.cpp` real com a saída inteira no log, ou o `%ERRORLEVEL%` é lido na mesma instrução
+que o chama. Não é detalhe de instrumentação: é a diferença entre "a Fase 1 depende de uma instalação
+que não existe" e "a Fase 1 roda hoje nesta máquina", e a primeira frase ia virar premissa de dossiê. O
+mesmo mecanismo do `[PASS]` que imprimia `%.3f` sem medir nada e do `grep -c` que conta linhas, não
+ocorrências.
+
+### A contagem conferida nesta ponta
+
+Duas corridas na árvore deste lote — `src/` e `tests/` intactos, então o contrato não se move, e ele é
+re-medido em vez de declarado:
+
+- suíte: `docs/evidence/oraculo-nativo-22/pauta_22_suite.log:357` devolve
+  `== 255 checagens  0 falhas  48.1 s de teste ==`, exit **0**, com **0** `[FAIL]` e **0** `SCRIPT
+  ERROR` contados no arquivo, e o par de vazamento do quit na assinatura de sempre — linha 358
+  `4 ObjectDB instances were leaked at exit` e linha 360 `2 resources still in use at exit`.
+- runner de reações: `docs/evidence/oraculo-nativo-22/pauta_22_runner.log:541` devolve
+  `283 checagens 0 falhas 32.901 s`, com o censo `283/283` da linha 538, `65/65` de testes completos na
+  536 e `trips_solo=0 trips_matilha=0` na 537. Os dois rodapés de cadência, linhas 539 e 540, são a
+  prova de que esta árvore roda **10 568** passos no cenário estreito (`sim_step total=2226134 us`,
+  pico `3154 us`) e **1 341** na sessão de matilha (`sim_tick total=3024384 us`, pico `13095 us`) — e é
+  por isso que a matriz de ablação de 2026-11-22, feita com **2 768** passos, não se compara a estes
+  números.
+
+As três réguas na leitura feita antes de esta seção existir, com o stdout arquivado na mesma pasta:
+
+- âncoras: `docs/evidence/oraculo-nativo-22/pauta_22_ruler_doc_anchors.log:1` e a linha 2 — **39**
+  arquivos, **3 039** ponteiros, **209** rótulos, **3 144** links relativos e **0** casos objetivos. O
+  zero não é sorte: a leitura que a própria inserção provocou devolvia **2**, e os dois casos são
+  deste arquivo — `docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:136` cita a linha 626
+  desta página e `docs/planos/README.md:308` cita a 3231, e um bloco de **17** linhas posto acima das
+  duas deixa as duas em branco. O número não é memória: a inserção foi refeita sob encomenda e o
+  stdout está em `docs/evidence/oraculo-nativo-22/pauta_22_ruler_deriva_reproduzida.log`, os dois
+  casos nas linhas 2 e 3, `casos objetivos: 2` na 4 e os mesmos **3 050** ponteiros na 1; desfeita a
+  inserção, os dois somem e a única âncora que continua sem resolver é a gitignored, que o corpus do
+  instrumento exclui. É o furo **#28** medido duas vezes na mesma semana.
+- citações: `docs/evidence/oraculo-nativo-22/pauta_22_ruler_plan_cites.log:1` e as linhas 2 e 13 —
+  **996** citações com número de linha conferidas, **10** arquivos citados que não existem e **0**
+  números fora do arquivo. As dez ausências não são defeito novo: sete são peças que as próprias páginas
+  declaram inexistentes (`src/ai/reach.gd`, `src/core/sim/entity_store.gd`, `src/core/sim/tick_clock.gd`,
+  `tests/wolf_multiseed_census_test.gd` e as repetições do índice sobre as mesmas) e três são os
+  `.tools/_head_*.md` gitignored. Rodar a régua **sem argv** devolve 0/0/0 vazio — a linha de comando
+  com os arquivos explícitos está no §11 da página 22.
+- identificadores: `docs/evidence/oraculo-nativo-22/pauta_22_ruler_plan_ids.log` nas linhas 1, 3 e 5 —
+  **127 · 260 · 141** nomes em backticks conferidos em `AGENTS.md`, no índice e na página 22. As
+  ausências de `AfMind`, `mind_oracle.cpp`, `extensao_carrega_classe` e `transporte_http_zerado` são a
+  lista do que **ainda não existe**: é o que uma pauta antes do código devolve, e é por isso que a página
+  22 não pode ser lida como se o gate dela já estivesse verde.
+
+Uma re-ancoragem este lote exige e paga: a tabela de branches do índice ganhou a linha da 22 e o intro
+ganhou a frase da 22, **9** linhas acima da frase da fila; quem lia `docs/planos/README.md:81` lê hoje
+`docs/planos/README.md:90`, conferido pelo conteúdo (a frase "A ordem 09 → 10 → … não é preferência") e
+não por translação. Os dois lugares que citavam o número velho estão corrigidos: `docs/melhorias-status.md:2484`
+e a frase do índice que re-deriva os próprios ponteiros, em `docs/planos/README.md:313`.
+
+As três réguas voltaram a rodar com toda a prosa desta seção escrita, cada uma com o comando
+arquivado dentro do próprio log. Âncoras
+`docs/evidence/oraculo-nativo-22/pauta_22_ruler_final_doc_anchors.log`: a linha 2 é o stdout de
+`python tools/check_doc_anchors.py` nesta árvore — **39** arquivos, **3 052** ponteiros, **209**
+rótulos, **3 153** links relativos — e a linha 3, `casos objetivos: 0`; a linha 5 é o mesmo
+instrumento com `--ref HEAD`, devolvendo a `main` publicada com **38** arquivos, **2 927** ponteiros,
+os mesmos **209** rótulos e **3 046** links, com **0** casos na linha 6. A diferença entre as duas
+linhas é o que este lote acrescentou ao corpus: **+1** arquivo (a página 22), **+125** ponteiros e
+**+107** links, e nenhum caso novo nos dois lados. Citações
+`docs/evidence/oraculo-nativo-22/pauta_22_ruler_final_plan_cites.log` — o comando na linha 1, as
+**1 013** conferidas na 2, as **10** arquivos que não existem na 3 (as mesmas peças declaradas
+ausentes e os três `.tools/_head_*.md`) e o **0** fora do arquivo na 14, tudo com os cinco documentos
+que esta perna toca no comando.
+Contra as duas leituras intermediárias do mesmo comando — **996** antes desta seção, **1 011** com
+ela escrita — os **+2** de agora são exatamente as duas âncoras do parágrafo da deriva acima.
+Identificadores `docs/evidence/oraculo-nativo-22/pauta_22_ruler_final_plan_ids.log` nas linhas 2, 4
+e 6, com o comando na 1: **127 · 260 · 141**, os três números inalterados contra a leitura
+intermediária, porque esta seção não apresentou nome novo em backticks que a régua tivesse de
+procurar. O ponto fixo do lote é este: depois destas três leituras a única escrita foi a dos próprios
+dígitos, e dígitos não acrescentam nem removem citação — a régua rodou de novo depois deles e
+devolve os mesmos números.
+
+### O que nada disso fecha
+
+Nenhum gate de fase, e a Fase 1 não começou: `HTTPRequest` continua em `src/ai/mind_oracle.gd`
+([:42](../src/ai/mind_oracle.gd#L42), [:62](../src/ai/mind_oracle.gd#L62),
+[:67](../src/ai/mind_oracle.gd#L67), [:189](../src/ai/mind_oracle.gd#L189)) e em
+`src/ai/llm_server_host.gd` ([:87](../src/ai/llm_server_host.gd#L87),
+[:99](../src/ai/llm_server_host.gd#L99), [:184](../src/ai/llm_server_host.gd#L184)); nenhuma linha de
+`native/` existe; `model_oversave` está `[OPEN]` pela contagem de exports; a VRAM e a latência que o
+prompt pede medidas ainda não têm número, porque ainda não há o que medir; e o `MindsInspector`
+continua não existindo. A fila continua **17 → 18 → 22 → 20 → 13** com a 17 na frente, e a perna 22 não
+abre a branch de código antes de a 18 pousar.

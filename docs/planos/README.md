@@ -1,6 +1,6 @@
 # Dossiês por item da fila
 
-Vinte arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
+Vinte e um arquivos, um por linha aberta da fila de [`docs/melhorias-status.md`](../melhorias-status.md)
 ("Falta", `:610-812`, e os checklists P0/P1, `:813-837`). Cada dossiê é **leitura de código, não
 corrida**: nenhuma engine foi rodada aqui, nenhum número publicado foi re-medido por estes arquivos
 e **nenhum gate de fase se fecha por eles** — quem abre e fecha gate é o dono
@@ -23,7 +23,14 @@ exceção e o motivo escritos no §7 da própria página e no contrato antes de 
 o dono manda abrir a **20**, e ela é a mais larga já registrada: sete entregas — alcance calculado, memória
 de falha, tabela de espécie, três grupos de criaturas, drops, troféu colocável e os testes disso — sobre seis
 arquivos que a fila já escreve. Por isso a página 20 entrega o **corte**, não a lista: cada §3 nomeia a
-decisão, o braço rejeitado e o número que reabre o braço. Nenhuma das
+decisão, o braço rejeitado e o número que reabre o braço. No dia 23 o dono amplia de novo, agora só de IA —
+o prompt "Aetherfall: Elevação da IA Local para Outro Nível", cinco fases — e a **22**
+([22-oraculo-nativo-gdextension.md](22-oraculo-nativo-gdextension.md)) é a pauta dessa ampliação: o transporte
+do oráculo sai do HTTP e passa a ser uma extensão C++ com llama.cpp dentro do processo, com a regra de ouro
+dele escrita como cláusula verificável (nenhuma camada de linguagem move pé, aplica dano ou escreve no
+ledger). É a primeira página do índice que **mede** alguma coisa antes de existir código: o §1 dela é a Fase 0
+rodada — toolchain, as DLLs do runtime carregando in-process e vendo a RX 9060 XT, os export-sets contados e
+o cabeçalho de interface gerado. Nenhuma das
 páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do código.
 
 | # | Dossiê | Linha da fila | Premissa nomeada | O que decide, em headless |
@@ -48,6 +55,7 @@ páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do c
 | 18 | [Mundo vivo: grama que cresce e o mato decorativo](18-mundo-vivo-grama-e-mato.md) | autorização do dono em 2026-11-21, prompt "Física de Blocos + Mundo Vivo" itens B e C; **sem** especificação no doc 10 — esta página é a primeira vez que a regra é escrita | `DIRT` com ar acima e `GRASS` ao lado vira `GRASS` em tempo finito **sem varrer nada** — e sem vizinha não muda em 10 000 ticks | `grama_precisa_de_vizinha` (o par vermelho), `crescimento_nao_varre_nada`, `crescimento_sobrevive_ao_save`, `grama_nao_cresce_onde_nao_ha_grama`, `crescimento_nao_estoura_a_malha`, `mato_e_nao_solidez_nem_pedra`, `mato_nao_engole_o_clique` (o campo `substituivel` lido pelo `_try_place`), `crescimento_nao_consome_rng_da_sessao` |
 | 19 | [Pulo de bloco: o degrau de 1 m que ninguém sobe](19-auto-pulo-de-bloco.md) | **defeito** pedido pelo dono em 2026-11-21 como urgente, fora da lista `Falta` — não é mecânica nova; a fila serializada ganha a exceção de ordem no §7 | um corpo que anda contra um degrau de **exatamente um bloco** sobe o degrau (o jogador sem tecla nenhuma), e um corpo que anda contra parede mais alta que um bloco **não** gasta salto | `degrau_de_um_bloco_lobo_sobe` e `degrau_de_um_bloco_jogador_sobe_sem_tecla` (nascem **vermelhas**: ápice 0,563 m e `step_up` 0,62 contra uma célula de 1,00 m), `penhasico_nao_gasta_salto` (a asserção que o dossiê lia em `aether_reactions_test.gd:1063`, re-derivada hoje em `:1132`, lida do outro lado), `agachado_nao_e_arremessado`, `predicado_degrau_recusa_teto_baixo`, `pulo_nao_custou_passo_de_ninguem` |
 | 20 | [Mentes autônomas de mobs e o mundo que respira sem input](20-mente-autonoma-de-mobs-e-ecossistema.md) | autorização nova do dono em 2026-11-22, prompt "Inteligência Autônoma de Mobs + Ecossistema Vivo"; item 14 de `Falta` | um corpo que persegue sabe, **por número**, se a coluna à frente cabe no ápice que o próprio corpo alcança — e espécie só existe se muda um número observável por criatura; matar devolve item por **tabela**, não por sorteio escondido | 18 checagens nomeadas no §5, e **todas nascem vermelhas** porque nenhuma das peças existe: `alcance_calcula_altura` (a sonda de hoje testa `+1.0` fixo), `desistencia_vira_crenca`, `estrategia_muda_por_numero`, `especie_decide_numero`, `arvore_por_arquetype` (paga o furo **#24**), `passaro_pousa_em_copa`, `bando_tem_teto_e_o_passo_caibo`, `lobo_morto_dropa_carne` (vermelho contra a árvore de hoje: **zero** drop em `src/`), `trofeu_e_colocavel_e_nao_e_ancora`, `aves_nao_movem_o_censo_da_matilha`, `decisao_nao_vem_do_oraculo`, `journal_hash_inalterado_sem_especies_vivas` — **nenhuma linha de código escrita** |
+| 22 | [Oráculo nativo em GDExtension: llama.cpp dentro do processo](22-oraculo-nativo-gdextension.md) | autorização nova do dono em 2026-11-23, prompt "Aetherfall: Elevação da IA Local para Outro Nível" (cinco fases); na fila serializada ela entra **depois da 18 e antes da 20** | o transporte do oráculo hoje é `HTTPRequest` em GDScript para um `llama-server` levantado como processo à parte — e a regra de ouro do dono é que nenhuma camada de linguagem move pé, aplica dano ou escreve no ledger | `extensao_carrega_classe` (nasce **vermelha**: `native/af_mind/` não existe), os três números do load (`af_vram_gb`, `af_load_ms`, `af_ctx_cells`), `transporte_http_zerado` (`grep -rn HTTPRequest src` devolve vazio), `af_cache_determina_replay`, `budget_do_oraculo_nao_estoura_a_arvore` e `af_sem_rede_no_tick`. A **Fase 0 está medida**, não prometida: MSVC 19.44.35207 compila C++17, as cinco DLLs do runtime carregam in-process e veem a RX 9060 XT (`reg_count` 3), e os export-sets contados são 266 · 689 · 16 · 9 · 53 — de onde sai a cláusula de *link* do §1.3 e o motivo pelo qual `model_oversave` vira `[OPEN]` |
 
 ## Uma branch por dossiê
 
@@ -77,9 +85,10 @@ carrega o número do dossiê para o histórico responder sozinho o que foi feito
 | 18 | `feat/mundo-vivo-grama-e-mato-18` | `main`, **depois de 17**: é o segundo comprador do `BlockUpdateQueue` que a 17 escreve (regra da casa — generalizar no segundo chamador, não no primeiro), e o `PLANT` gasta o id 17 da reserva que a 17 não toca |
 | 19 | `feat/auto-pulo-de-bloco-19` | `main`, **fura a fila e entra logo depois de 11** (exceção do §7 do dossiê, registrada antes do código): é o único item da lista que é defeito do jogo em execução, não mecânica nova. Encosta em `src/entities/wolf.gd` e em `tests/aether_reactions_test.gd`, os dois arquivos que a 11 também escreve — por isso a 11 re-rome o gate depois do merge desta, **e já o re-romeu** (merge `010ab25` dentro da branch, gate re-rodado na árvore resultante). **Pousada**: ponta de código `f843fa6`, `main` publicada `ab9ffa1` (clone limpo medido) — a 11 re-rome o gate a partir de `ab9ffa1` |
 | 20 | `feat/mobs-autonomos-e-ecossistema-20` | `main`, **depois de 18 e antes de 13** (exceção de ordem registrada em 2026-11-22 antes de qualquer linha): as duas escrevem [`src/world/block_defs.gd`](../../src/world/block_defs.gd), a 17 gasta o id 18 e a 18 gasta o 17, e drop de criatura não pode encostar na reserva 9–18 — entra a partir de 23, na tabela que as duas acabaram de renumberar. Antes da 13 porque genealogia sobre **uma única** espécie escreveria o que já existe; a 13 continua última porque nenhuma mudança de `Channel.COUNT` cai no meio da fila. Escreve em `src/entities/wolf.gd`, `src/main.gd`, `src/items/inventory.gd`, `src/ui/hud.gd` e, se a metade sonora entrar, `src/audio/audio_director.gd`. **Dossiê escrito antes da branch** — a página existe e nenhuma linha de código dela foi escrita. **Re-derivada contra a `main` do pouso da 16** (`bb13752`): as árvores de `9b2c65a` não são as do pin `5b519f8`, o contrato de referência passa a **255 / 0** com **240 / 0** de reações, e a toca da matilha (`_dens`, `den_components`, `Wolf.den`) entra na página como fato que a 16 criou |
+| 22 | `docs/pauta-oraculo-nativo-22` (esta página + o arquivo de índice + o status) → `feat/oraculo-nativo-gdextension-22` (os cinco passos de código do §5) | `main`, **depois de 18 e antes da 20** (exceção de ordem registrada em 2026-11-23 antes de qualquer linha): a 22 é transversal — escreve `src/ai/`, `native/`, `tests/` e três linhas de injeção em `src/main.gd`, e **não** escreve `src/world/block_defs.gd`, que é por onde a 17 e a 18 se empurram. Vem antes da 20 porque as duas escrevem a mesma frase de contrato sobre o oráculo e a 22 é a que tem a palavra autoritativa. **Dossiê escrito antes da branch de código** — esta branch é documento puro e nenhuma linha de `native/` existe |
 
-A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 ✅ → 17 → 18 → 20 → 13 — a 16 cumprida em `9b2c65a` e
-`bb13752`, a 12 em `fa94cb5`, e a fila viva de hoje ser **17 → 18 → 20 → 13** não é preferência: é a exceção de
+A ordem 09 → 10 → 15 → 14 → 11 → 19 → 16 ✅ → 12 ✅ → 17 → 18 → 22 → 20 → 13 — a 16 cumprida em `9b2c65a` e
+`bb13752`, a 12 em `fa94cb5`, e a fila viva de hoje ser **17 → 18 → 22 → 20 → 13** não é preferência: é a exceção de
 serialização registrada **antes** do código em [`AGENTS.md`](../../AGENTS.md), "Escopo autorizado agora",
 e reafirmada em
 [`docs/melhorias-status.md`](../melhorias-status.md#em-andamento). O encadeamento é de dados, não de
@@ -91,7 +100,8 @@ cavar entra depois da 16 porque as duas escrevem `src/main.gd` e é a 16 quem de
 e a pauta da 12, re-escrita em 2026-11-22 contra a árvore da 19, diz que cavar **não** abre folha nova na
 `Selector` nem assina `block_changed`: é o terceiro ramo do mesmo `if` de bloqueio, então a gravidade de
 blocos continua sendo a **primeira** consumidora do sinal, não a segunda, o crescimento é o segundo
-comprador da fila que a gravidade escreveu, a mente autônoma e o ecossistema entram depois da 18 porque
+comprador da fila que a gravidade escreveu, o oráculo nativo entra no meio porque é transversal — escreve
+`src/ai/` e `native/`, não `block_defs.gd` — e a mente autônoma e o ecossistema entram depois dele e da 18 porque
 as três escrevem [`src/world/block_defs.gd`](../../src/world/block_defs.gd) e os ids baixos já foram gastos
 — a 17 gasta o 18, a 18 gasta o 17, e drop de criatura só entra a partir do 23, na tabela que as duas
 acabaram de renumberar — e antes da 13 porque genealogia sobre **uma única** espécie escreveria o que a 20
@@ -112,7 +122,7 @@ com `arquivo:linha` → o que a peça exige → gate em headless com comando que
 pelas quatro perguntas do contrato → o que NÃO fazer → commits atômicos (um assunto, uma corrida) →
 citações que não conferem.
 
-## Verificação destas vinte páginas
+## Verificação destas vinte e uma páginas
 
 ```sh
 python .tools/verify_plan_cites.py docs/planos/01-estado-inicial-e-ordem-autoritativa.md
@@ -300,11 +310,11 @@ linha **3138** — os **84** de diferença são as linhas que este lote acrescen
 arquivo, e o registro ficou com o número da corrida que sustenta. Duas coisas do instrumento valem escritas
 aqui: ele deriva a raiz do **próprio arquivo**, não do diretório atual, então medir uma árvore exige rodar a
 cópia daquela árvore; e o registro do passe de docs do status (`docs/melhorias-status.md:2431`) nomeia
-`docs/planos/README.md:15, :81` — a linha 15 continua na linha, e o **:81** é re-derivação desta ponta:
+`docs/planos/README.md:15, :90` — a linha 15 continua na linha, e o **:90** é re-derivação desta ponta:
 lido pelo conteúdo, o registro da base (`bb13752:docs/melhorias-status.md:2338`) escrevia **80** numa árvore
-onde a frase já estava em **75**, e a linha nova da tabela de branches (a da 20) com o parágrafo acima
-empurraram-na para **81**, onde o ponteiro corrigido aponta agora. Nenhum número deste parágrafo foi escrito
-antes de o instrumento devolvê-lo nesta árvore.
+onde a frase já estava em **75**, a linha nova da tabela de branches (a da 20) com o parágrafo acima
+empurraram-na para **81**, e a linha da 22 com a frase nova do intro fazem **90** — **9** linhas, conferidas
+entre as duas pontas, não transladadas. Nenhum número deste parágrafo foi escrito antes de medido.
 
 **O que esta rodada não fecha, dito pelo índice:** nenhuma linha de `src/` nem de `tests/` foi escrita, a
 branch `feat/mobs-autonomos-e-ecossistema-20` **não** abriu, e nenhuma das dezoito checagens do §5 da
