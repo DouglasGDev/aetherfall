@@ -27,12 +27,13 @@
 // `dicto[chave]` sai do getter por ponteiro do TIPO Dictionary com a chave como Variant cru, a
 // existencia da chave da checker por chave (que le VARIANTS) e a montagem usa o construtor por
 // ponteiro + o setter por ponteiro -- nenhum layout de Variant ou de Dictionary e suposto. Cada
-// Variant cru temporario e fechado com `variant_new_nil` e cada String temporaria com o
-// destrutor por ponteiro do tipo, porque o header vendorado nao expoe destrutor de Variant e o
-// vazamento de ref e o defeito silencioso que ninguem conta.
+// Variant cru temporario e fechado com destrutor + nil (variante_destroy e variant_new_nil) e
+// cada String temporaria com o destrutor por ponteiro do tipo, porque o header vendorado nao
+// expoe destrutor de Variant e o vazamento de ref e o defeito silencioso que ninguem conta.
 //
-// A EMISSAO dos sinais e [ABERTA] e vai escrita: o registro existe (a conexao ainda nao tem
-// medicao -- o gate `contrato_igal_ao_http`, no commit seguinte, e quem a exerce), mas o header
+// A EMISSAO dos sinais e [ABERTA] e vai escrita: o registro existe e a CONEXAO e exercida pelo
+// gate `contrato_igal_ao_http` do passo 3 (o runner conecta `inference_completed` antes dos dois
+// decodes e conta ZERO emissoes atraves deles), mas o header
 // vendorado 4.7.2 nao traz `object_emit_signal` nem `object_callp`, e
 // `classdb_get_method_bind` exige hashes que so o extension_api.json da engine teria (S12.2) --
 // quem emite e o Passo 4/5, pela rota que essa perna medir.
@@ -79,6 +80,7 @@ GDExtensionInterfaceVariantGetPtrConstructor variant_ptr_constructor = nullptr;
 GDExtensionInterfaceVariantGetPtrDestructor variant_ptr_destructor = nullptr;
 GDExtensionInterfaceVariantGetIndexed variant_get_indexed = nullptr;
 GDExtensionInterfaceVariantNewNil variant_new_nil = nullptr;
+GDExtensionInterfaceVariantDestroy variant_destroy = nullptr;
 GDExtensionInterfaceClassdbRegisterExtensionClassSignal register_extension_class_signal = nullptr;
 
 GDExtensionClassLibraryPtr library = nullptr;
@@ -364,9 +366,15 @@ bool le_string(const unsigned char * str_storage, char * dst, size_t cap) {
 //
 // Cada chave e um Variant cru de String construido UMA vez no registro e vivido pelo processo --
 // o mesmo contrato de vida das storages de StringName (a interface nao expoe destrutor para
-// eles). O getter/setter por chave do tipo Dictionary pede a chave como Variant; a checker por
-// chave le VARIANTS dos dois lados. As storages de 32 bytes tem folga sobre o tamanho real dos
-// tipos (Variant 24, String 16), nao um palpite de layout.
+// eles). O getter/setter por chave do tipo Dictionary pedem a chave (e, no setter, o valor) como
+// Variant. A checker e a armadilha do cabecalho: o prototipo nomeia a base
+// `GDExtensionConstVariantPtr`, mas a engine faz reinterpret_cast<const Dictionary*> na base
+// (a `ptr_has` de core/variant/variant_setget.cpp) -- a base dela e o Dictionary CRU, o MESMO
+// ponteiro que o getter le, e so a chave e Variant. O primeiro gate de S5.3 nasceu com o Variant
+// do req na base da checker e morreu com signal 11 na primeira chamada (af_mind.dll+1eb9, a
+// `call rsi` da checker para a chave "role"); com o Dictionary cru na base, a mesma roda ficou
+// de pe. As storages de 32 bytes tem folga sobre o tamanho real dos tipos (Variant 24, String
+// 16), nao um palpite de layout.
 // ==============================================================================================
 struct ChaveDicto {
 	const char * nome;
@@ -407,10 +415,24 @@ const unsigned char * chave(const char * nome) {
 	return nullptr;
 }
 
-// Fecha um Variant cru temporario: `variant_new_nil` escreve nil NO LUGAR, soltando a referencia
-// que o valor tinha -- sem isso, cada leitura de campo de String vaza uma ref (o defeito que
-// ninguem conta, porque o proceso continua de pe).
-void nil_varianto(unsigned char * v) {
+// Fecha um Variant cru temporario: PRIMEIRO o destrutor real da interface (solta a referencia
+// que o valor tinha), DEPOIS `variant_new_nil` para deixar a storage como NIL valido. O nil
+// sozinho e placement-new, e o contrato dele e storage NAO inicializada -- sobre uma Variante
+// viva ele nunca roda destrutor e vaza a ref a cada leitura de campo.
+void destroi_varianto(unsigned char * v) {
+	if (variant_destroy != nullptr) {
+		variant_destroy(reinterpret_cast<GDExtensionVariantPtr>(v));
+	}
+	if (variant_new_nil != nullptr) {
+		variant_new_nil(reinterpret_cast<GDExtensionUninitializedVariantPtr>(v));
+	}
+}
+
+// Inicia uma storage crua como NIL valido: o getter por chave e o get por indice da engine
+// ATRIBUEM no destino (encode e operator=, que le o tipo ANTES de copiar), entao a primeira
+// escrita precisa de uma Variante valida no lugar -- lixo de stack com tipo apontando para um
+// tipo que carrega ponteiro e o wild clear que virou signal 11 no gate.
+void inicia_varianto(unsigned char * v) {
 	if (variant_new_nil != nullptr) {
 		variant_new_nil(reinterpret_cast<GDExtensionUninitializedVariantPtr>(v));
 	}
@@ -494,50 +516,51 @@ bool valor_como_texto(unsigned char * valor, char * dst, size_t cap) {
 //                           maior que isso e erro do chamador, nao um contexto.
 // Tipo errado num campo PRESENTE e recusa -2 da ponte com o texto nomeado na superficie do
 // prompt (`af_prompt_err_define`), para o GDScript ler um motivo so.
-int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr dicto_variante) {
-	if (dicto_cru == nullptr || dicto_variante == nullptr) {
-		af_prompt_err_define("enqueue: o req chegou sem Dictionary legivel nas duas rotas");
+int64_t monta_req_de_dicto(const void * dicto_cru) {
+	if (dicto_cru == nullptr) {
+		af_prompt_err_define("enqueue: o req chegou sem Dictionary legivel na rota");
 		return -2;
 	}
 	GDExtensionPtrKeyedChecker check_fn = keyed_checker(GDEXTENSION_VARIANT_TYPE_DICTIONARY);
 	GDExtensionPtrKeyedGetter get_fn = keyed_getter(GDEXTENSION_VARIANT_TYPE_DICTIONARY);
 	if (check_fn == nullptr || get_fn == nullptr || variant_get_indexed == nullptr ||
-			variant_new_nil == nullptr || variant_ptr_destructor == nullptr) {
+			variant_new_nil == nullptr || variant_destroy == nullptr || variant_ptr_destructor == nullptr) {
 		af_prompt_err_define("enqueue: a interface nao tem getter/checker/indice do Dictionary");
 		return -2;
 	}
 	AfPromptReq req;
 	memset(&req, 0, sizeof(req));
 	alignas(8) unsigned char valor[32];
+	inicia_varianto(valor);
 	bool ok = true;
 
 	// Campos String: presente-errado recusa; ausente deixa o zero-init (que o corpo recusa
 	// nomeado na porta).
 	const unsigned char * k = chave("role");
-	if (k != nullptr && check_fn(dicto_variante, k) != 0) {
+	if (k != nullptr && check_fn(dicto_cru, k) != 0) {
 		get_fn(dicto_cru, k, valor);
 		ok = valor_como_texto(valor, req.role, sizeof(req.role));
-		nil_varianto(valor);
+		destroi_varianto(valor);
 		if (!ok) {
 			af_prompt_err_define("enqueue: campo role tem de ser String");
 			return -2;
 		}
 	}
 	k = chave("prompt");
-	if (k != nullptr && check_fn(dicto_variante, k) != 0) {
+	if (k != nullptr && check_fn(dicto_cru, k) != 0) {
 		get_fn(dicto_cru, k, valor);
 		ok = valor_como_texto(valor, req.prompt, sizeof(req.prompt));
-		nil_varianto(valor);
+		destroi_varianto(valor);
 		if (!ok) {
 			af_prompt_err_define("enqueue: campo prompt tem de ser String");
 			return -2;
 		}
 	}
 	k = chave("schema");
-	if (k != nullptr && check_fn(dicto_variante, k) != 0) {
+	if (k != nullptr && check_fn(dicto_cru, k) != 0) {
 		get_fn(dicto_cru, k, valor);
 		ok = valor_como_texto(valor, req.schema, sizeof(req.schema));
-		nil_varianto(valor);
+		destroi_varianto(valor);
 		if (!ok) {
 			af_prompt_err_define("enqueue: campo schema tem de ser String");
 			return -2;
@@ -545,11 +568,11 @@ int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr di
 	}
 	// Campos numericos.
 	k = chave("max_tokens");
-	if (k != nullptr && check_fn(dicto_variante, k) != 0) {
+	if (k != nullptr && check_fn(dicto_cru, k) != 0) {
 		get_fn(dicto_cru, k, valor);
 		int64_t v = 0;
 		ok = valor_como_int64(valor, &v);
-		nil_varianto(valor);
+		destroi_varianto(valor);
 		if (!ok) {
 			af_prompt_err_define("enqueue: campo max_tokens tem de ser int");
 			return -2;
@@ -557,11 +580,11 @@ int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr di
 		req.max_tokens = (int32_t) v;
 	}
 	k = chave("temperature");
-	if (k != nullptr && check_fn(dicto_variante, k) != 0) {
+	if (k != nullptr && check_fn(dicto_cru, k) != 0) {
 		get_fn(dicto_cru, k, valor);
 		double v = 0.0;
 		ok = valor_como_double(valor, &v);
-		nil_varianto(valor);
+		destroi_varianto(valor);
 		if (!ok) {
 			af_prompt_err_define("enqueue: campo temperature tem de ser float");
 			return -2;
@@ -569,11 +592,11 @@ int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr di
 		req.temperature = v;
 	}
 	k = chave("priority");
-	if (k != nullptr && check_fn(dicto_variante, k) != 0) {
+	if (k != nullptr && check_fn(dicto_cru, k) != 0) {
 		get_fn(dicto_cru, k, valor);
 		int64_t v = 0;
 		ok = valor_como_int64(valor, &v);
-		nil_varianto(valor);
+		destroi_varianto(valor);
 		if (!ok) {
 			af_prompt_err_define("enqueue: campo priority tem de ser int");
 			return -2;
@@ -583,16 +606,17 @@ int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr di
 	// context_ids: Array de int. A contagem completa e registrada (o AfPromptReq guarda os 8
 	// primeiros e a contagem, contrato do mind_prompt.h); acima do teto de varredura, recusa.
 	k = chave("context_ids");
-	if (k != nullptr && check_fn(dicto_variante, k) != 0) {
+	if (k != nullptr && check_fn(dicto_cru, k) != 0) {
 		get_fn(dicto_cru, k, valor);
 		if (variant_get_type(reinterpret_cast<GDExtensionConstVariantPtr>(valor)) !=
 				GDEXTENSION_VARIANT_TYPE_ARRAY) {
-			nil_varianto(valor);
+			destroi_varianto(valor);
 			af_prompt_err_define("enqueue: campo context_ids tem de ser Array de int");
 			return -2;
 		}
 		const int TETO_VARREDURA_IDS = 64;
 		alignas(8) unsigned char elemento[32];
+		inicia_varianto(elemento);
 		for (int i = 0; i < TETO_VARREDURA_IDS; ++i) {
 			GDExtensionBool valido = 0;
 			GDExtensionBool oob = 0;
@@ -605,8 +629,8 @@ int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr di
 			if (valido) {
 				ok = valor_como_int64(elemento, &v);
 				if (!ok) {
-					nil_varianto(elemento);
-					nil_varianto(valor);
+					destroi_varianto(elemento);
+					destroi_varianto(valor);
 					char msg[96];
 					snprintf(msg, sizeof(msg), "enqueue: context_ids so aceita int (indice %d)", i);
 					af_prompt_err_define(msg);
@@ -617,9 +641,9 @@ int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr di
 				}
 				++req.context_count;
 			}
-			nil_varianto(elemento);
+			destroi_varianto(elemento);
 		}
-		nil_varianto(valor);
+		destroi_varianto(valor);
 		if (req.context_count > TETO_VARREDURA_IDS) {
 			af_prompt_err_define("enqueue: context_ids passa do teto de 64 ids");
 			return -2;
@@ -633,7 +657,7 @@ int64_t monta_req_de_dicto(const void * dicto_cru, GDExtensionConstVariantPtr di
 // e os setters por chave preenchem -- na rota Variant o chamador converte o Dictionary para o
 // Variant de retorno e destrói o cru (a ref fica so do Variant), e na rota ptrcall o destino e
 // o proprio retorno da engine, que passa a ser o dono. Os valores sao Variant cru temporario,
-// fechado com nil apos o set.
+// fechado com destrutor + nil apos o set.
 bool monta_saida(void * destino, int64_t id, int64_t status, const char * motivo, const char * texto,
 		int64_t decode_us, int32_t tokens_out) {
 	GDExtensionPtrConstructor ctor = variant_ptr_constructor(GDEXTENSION_VARIANT_TYPE_DICTIONARY, 0);
@@ -657,35 +681,39 @@ bool monta_saida(void * destino, int64_t id, int64_t status, const char * motivo
 		refuse("af_mind: sem construtor Variant de int/String na interface", "monta_saida");
 		return false;
 	}
+	// O construtor Variant de INT le um int64 INTEIRO do ponteiro de origem: um int32 passado
+	// direto deixa lixo de stack na metade alta (o v3 mediu tokens_out=3066606649375 com o
+	// decode certo). Cada grandeza entra como int64 de largura nomeada.
+	int64_t tokens_out64 = tokens_out;
 	ctor(reinterpret_cast<GDExtensionUninitializedTypePtr>(destino), nullptr);
 	const unsigned char * k = nullptr;
 	k = chave("request_id");
 	vint(reinterpret_cast<GDExtensionUninitializedVariantPtr>(vv), &id);
 	set_fn(destino, k, vv);
-	nil_varianto(vv);
+	destroi_varianto(vv);
 	k = chave("status");
 	vint(reinterpret_cast<GDExtensionUninitializedVariantPtr>(vv), &status);
 	set_fn(destino, k, vv);
-	nil_varianto(vv);
+	destroi_varianto(vv);
 	k = chave("decode_us");
 	vint(reinterpret_cast<GDExtensionUninitializedVariantPtr>(vv), &decode_us);
 	set_fn(destino, k, vv);
-	nil_varianto(vv);
+	destroi_varianto(vv);
 	k = chave("tokens_out");
-	vint(reinterpret_cast<GDExtensionUninitializedVariantPtr>(vv), &tokens_out);
+	vint(reinterpret_cast<GDExtensionUninitializedVariantPtr>(vv), &tokens_out64);
 	set_fn(destino, k, vv);
-	nil_varianto(vv);
+	destroi_varianto(vv);
 	k = chave("reason");
 	string_new_utf8(reinterpret_cast<GDExtensionUninitializedStringPtr>(vstr_local), motivo);
 	vstr(reinterpret_cast<GDExtensionUninitializedVariantPtr>(vv), vstr_local);
 	set_fn(destino, k, vv);
-	nil_varianto(vv);
+	destroi_varianto(vv);
 	destroi_stringo(vstr_local);
 	k = chave("text");
 	string_new_utf8(reinterpret_cast<GDExtensionUninitializedStringPtr>(vstr_local), texto);
 	vstr(reinterpret_cast<GDExtensionUninitializedVariantPtr>(vv), vstr_local);
 	set_fn(destino, k, vv);
-	nil_varianto(vv);
+	destroi_varianto(vv);
 	destroi_stringo(vstr_local);
 	return true;
 }
@@ -769,9 +797,9 @@ void executa(int32_t idx, const void * const * args, Resultado * r, bool * e_tex
 			break;
 		// --- Passo 3 (S5.3): a API do prompt ------------------------------------------------
 		case M_ENQUEUE:
-			// args[0] = o Dictionary cru (base do getter por chave); args[1] = o Variant do
-			// Dictionary (base da checker, que le VARIANTS). As duas rotas preenchem os dois.
-			r->numero = monta_req_de_dicto(args[0], reinterpret_cast<GDExtensionConstVariantPtr>(args[1]));
+			// args[0] = o Dictionary cru: base do getter por chave E base da checker (a checker
+			// le a crua na base, apesar do nome VariantPtr do prototipo -- ver a nota nas chaves).
+			r->numero = monta_req_de_dicto(args[0]);
 			break;
 		case M_WAIT: {
 			// A FORMA de saida: request_id, status, reason, text, decode_us, tokens_out -- as
@@ -826,6 +854,7 @@ void call_variant(void *method_userdata, GDExtensionClassInstancePtr p_instance,
 		return;
 	}
 	const void * args[2] = { nullptr, nullptr };
+	bool dicto_criado = false;
 	for (uint8_t i = 0; i < m.n_args; ++i) {
 		if (variant_get_type(p_args[i]) != m.args[i].tipo) {
 			r_error->error = GDEXTENSION_CALL_ERROR_INVALID_ARGUMENT;
@@ -842,9 +871,13 @@ void call_variant(void *method_userdata, GDExtensionClassInstancePtr p_instance,
 			}
 			// O construtor da interface recebe `GDExtensionVariantPtr` nao-const embora so leia:
 			// e o que o proprio cabecalho declara, e a leitura do argumento Original fica sob
-			// contrato da engine. O cast e o custo de chamar a via aceita.
+			// contrato da engine. O cast e o custo de chamar a via aceita. A String crua morre
+			// AQUI (o texto vive na copia NUL-terminada): sem o destrutor, a proxima chamada
+			// com String constroi por cima de uma viva e vaza a alocacao de cada chamada.
 			conv(arg_str_storage[i], (GDExtensionVariantPtr) p_args[i]);
-			if (!le_string(arg_str_storage[i], arg_str_texto[i], ARG_CAP)) {
+			const bool leu = le_string(arg_str_storage[i], arg_str_texto[i], ARG_CAP);
+			destroi_stringo(arg_str_storage[i]);
+			if (!leu) {
 				r_error->error = GDEXTENSION_CALL_ERROR_INVALID_ARGUMENT;
 				r_error->argument = i;
 				r_error->expected = (int32_t) GDEXTENSION_VARIANT_TYPE_STRING;
@@ -861,10 +894,12 @@ void call_variant(void *method_userdata, GDExtensionClassInstancePtr p_instance,
 			conv(&arg_int_storage[i], (GDExtensionVariantPtr) p_args[i]);
 			args[i] = &arg_int_storage[i];
 		} else if (m.args[i].tipo == GDEXTENSION_VARIANT_TYPE_DICTIONARY) {
-			// Passo 3: o Dictionary cru vai para a storage (base do getter por chave) e o Variant
-			// ORIGINAL segue para o slot vizinho, que e o que a checker por chave le -- nenhum
-			// metodo daqui tem dois Dictionary, e o slot vizinho de um metodo de 1 argumento nao
-			// e lido pelo executa.
+			// Passo 3: o construtor tipo->Dictionary aceito COPIA o Dictionary para a storage, e a
+			// crua e o que o getter E a checker por chave leem na base (a checker, apesar do nome
+			// VariantPtr do prototipo, e a reinterpret_cast<Dictionary*> da engine). Nenhum metodo
+			// daqui tem dois Dictionary, e a storage unica nao colide. A copia e fechada pelo
+			// destrutor por ponteiro apos o executa: sem isso cada enqueue vazava uma referencia
+			// do req, com o prompt inteiro dentro.
 			GDExtensionTypeFromVariantConstructorFunc conv = variant_to_type(GDEXTENSION_VARIANT_TYPE_DICTIONARY);
 			if (conv == nullptr) {
 				refuse("af_mind: sem conversor Variant->Dictionary na interface", "call_variant");
@@ -873,12 +908,22 @@ void call_variant(void *method_userdata, GDExtensionClassInstancePtr p_instance,
 			}
 			conv(arg_dict_storage, (GDExtensionVariantPtr) p_args[i]);
 			args[i] = arg_dict_storage;
-			args[i == 0 ? 1 : 0] = (const void *) p_args[i];
+			dicto_criado = true;
 		}
 	}
 	Resultado res = {};
 	bool e_texto = false;
 	executa(idx, args, &res, &e_texto, dicto_saida_storage);
+	if (dicto_criado) {
+		// A copia crua do req fecha aqui, depois de o corpo ler: o destrutor por ponteiro solta a
+		// referencia que o construtor tipo->Dictionary abriu (o mesmo contrato das Variants
+		// temporarias fechadas com nil).
+		GDExtensionPtrDestructor d = variant_ptr_destructor != nullptr
+				? variant_ptr_destructor(GDEXTENSION_VARIANT_TYPE_DICTIONARY) : nullptr;
+		if (d != nullptr) {
+			d(arg_dict_storage);
+		}
+	}
 	if (res.e_dicto) {
 		// O Dictionary cru montado no executa vira Variant pelo construtor tipo->Variant e o cru
 		// e destruido pelo destrutor por ponteiro: a referencia fica so do Variant de retorno.
@@ -896,16 +941,19 @@ void call_variant(void *method_userdata, GDExtensionClassInstancePtr p_instance,
 		}
 	} else if (e_texto) {
 		// String crua na storage de retorno, e o construtor tipo->Variant a copia para dentro do
-		// Variant de retorno. O construtor e a via aceita da interface; montar a Variant a mao
-		// seria palpite de layout da engine.
+		// Variant de retorno; o cru e destruido na sequencia (mesmo contrato das Variants
+		// temporarias fechadas com destrutor + nil). O construtor e a via aceita da interface;
+		// montar a Variant a mao seria palpite de layout da engine.
 		string_new_utf8(reinterpret_cast<GDExtensionUninitializedStringPtr>(ret_str_storage), res.texto);
 		GDExtensionVariantFromTypeConstructorFunc conv = variant_from_type(GDEXTENSION_VARIANT_TYPE_STRING);
 		if (conv == nullptr) {
+			destroi_stringo(ret_str_storage);
 			refuse("af_mind: sem construtor Variant de String na interface", "call_variant");
 			r_error->error = GDEXTENSION_CALL_ERROR_INVALID_METHOD;
 			return;
 		}
 		conv(r_return, ret_str_storage);
+		destroi_stringo(ret_str_storage);
 	} else {
 		int64_t num = res.numero;
 		GDExtensionVariantFromTypeConstructorFunc conv = variant_from_type(GDEXTENSION_VARIANT_TYPE_INT);
@@ -933,10 +981,6 @@ void ptrcall(void *method_userdata, GDExtensionClassInstancePtr p_instance,
 	const void * args[2] = { nullptr, nullptr };
 	char texto_local[2][ARG_CAP];
 	int64_t numero_local[2] = { 0, 0 };
-	// Passo 3: o Variant cru construido sobre o Dictionary cru do argumento (o que a checker por
-	// chave le). Storage local, inicializada a cada chamada, fechada com nil depois do executa.
-	alignas(8) unsigned char dicto_variante_local[2][32];
-	bool dicto_no_slot[2] = { false, false };
 	for (uint8_t i = 0; i < m.n_args; ++i) {
 		if (m.args[i].tipo == GDEXTENSION_VARIANT_TYPE_STRING) {
 			if (le_string(reinterpret_cast<const unsigned char *>(p_args[i]), texto_local[i], ARG_CAP)) {
@@ -950,33 +994,16 @@ void ptrcall(void *method_userdata, GDExtensionClassInstancePtr p_instance,
 			}
 			args[i] = &numero_local[i];
 		} else if (m.args[i].tipo == GDEXTENSION_VARIANT_TYPE_DICTIONARY) {
-			// Na rota ptrcall o argumento JA e o Dictionary cru: ele e o proprio base do getter,
-			// e o Variant que a checker le nasce do construtor tipo->Variant aceito.
-			GDExtensionVariantFromTypeConstructorFunc conv = variant_from_type(GDEXTENSION_VARIANT_TYPE_DICTIONARY);
-			if (conv == nullptr) {
-				// Sem canal de erro aqui: a recusa fica impressa e o executa le os ponteiros
-				// nulos, que e a recusa -2 nomeada do monta_req.
-				refuse("af_mind: sem construtor Variant de Dictionary na interface", "ptrcall");
-				args[i] = nullptr;
-				continue;
-			}
-			conv(reinterpret_cast<GDExtensionUninitializedVariantPtr>(dicto_variante_local[i]),
-					const_cast<GDExtensionTypePtr>(p_args[i]));
+			// Na rota ptrcall o argumento JA e o Dictionary cru: e o proprio base do getter E da
+			// checker (a checker le a crua na base, apesar do nome VariantPtr do prototipo).
 			args[i] = p_args[i];
-			args[i == 0 ? 1 : 0] = dicto_variante_local[i];
-			dicto_no_slot[i] = true;
 		}
 	}
 	Resultado res = {};
 	bool e_texto = false;
+	executa(idx, args, &res, &e_texto, r_ret);
 	// O Dictionary de saida do wait e montado DIRETO no espaco do retorno: na rota ptrcall o
 	// destino e o proprio r_ret da engine, que passa a ser o dono dele.
-	executa(idx, args, &res, &e_texto, r_ret);
-	for (uint8_t i = 0; i < m.n_args; ++i) {
-		if (dicto_no_slot[i]) {
-			nil_varianto(dicto_variante_local[i]);
-		}
-	}
 	if (res.e_dicto) {
 		// O executa ja montou o Dictionary de saida DENTRO do r_ret: nada a converter aqui.
 	} else if (e_texto) {
@@ -1043,8 +1070,10 @@ void register_methods() {
 }
 
 // --- Passo 3: o registro dos tres sinais de S5.3 ----------------------------------------------
-// Os sinais EXISTEM na superficie da classe (conectar e medido no runner), mas a EMISSAO e
-// [ABERTA]: o header vendorado 4.7.2 nao traz `object_emit_signal` nem `object_callp`, e o bind
+// Os sinais EXISTEM na superficie da classe e a CONEXAO e medida pelo gate `contrato_igal_ao_http`
+// (o runner conecta `inference_completed` antes dos decodes e conta ZERO emissoes atraves deles --
+// a EMISSAO segue [ABERTA]): o header vendorado 4.7.2 nao traz `object_emit_signal` nem
+// `object_callp`, e o bind
 // que emitiria exige hashes que so o extension_api.json da engine teria (S12.2). O registro vai
 // aqui para o contrato de S5.3 existir inteiro na ClassDB e para a rota de emissao do Passo 4/5
 // encontrar a classe pronta.
@@ -1172,6 +1201,7 @@ AF_MIND_EXPORT GDExtensionBool af_mind_entry(GDExtensionInterfaceGetProcAddress 
 	variant_ptr_destructor = load_proc<GDExtensionInterfaceVariantGetPtrDestructor>(p_get_proc_address, "variant_get_ptr_destructor");
 	variant_get_indexed = load_proc<GDExtensionInterfaceVariantGetIndexed>(p_get_proc_address, "variant_get_indexed");
 	variant_new_nil = load_proc<GDExtensionInterfaceVariantNewNil>(p_get_proc_address, "variant_new_nil");
+	variant_destroy = load_proc<GDExtensionInterfaceVariantDestroy>(p_get_proc_address, "variant_destroy");
 	register_extension_class_signal = load_proc<GDExtensionInterfaceClassdbRegisterExtensionClassSignal>(p_get_proc_address, "classdb_register_extension_class_signal");
 
 	// S12.2: a versao da interface nao e um `#define` do cabecalho -- e o que a engine devolve
@@ -1184,7 +1214,7 @@ AF_MIND_EXPORT GDExtensionBool af_mind_entry(GDExtensionInterfaceGetProcAddress 
 			string_to_utf8_chars == nullptr || variant_from_type == nullptr || variant_to_type == nullptr ||
 			variant_get_type == nullptr || keyed_getter == nullptr || keyed_setter == nullptr ||
 			keyed_checker == nullptr || variant_ptr_constructor == nullptr || variant_ptr_destructor == nullptr ||
-			variant_get_indexed == nullptr || variant_new_nil == nullptr ||
+			variant_get_indexed == nullptr || variant_new_nil == nullptr || variant_destroy == nullptr ||
 			register_extension_class_signal == nullptr) {
 		refuse("af_mind: a engine nao e a ABI 4.7.2 cuja interface esta em include/", "af_mind_entry");
 		return 0;
