@@ -312,17 +312,17 @@ if not defined EXPORT_LINE goto :sem_export
 echo [regua] export=%EXPORT_LINE%
 
 rem --- 6: a regua de imports do DLL -- a segunda corrida que o check_imports documenta --
-rem A regua le aqui SO o corpo do pack: a ponte ainda nao referencia af_prompt_*, e sem consumo
-rem o /OPT:REF retira o corpo inteiro da fila -- medido na primeira corrida do Passo 3, a tabela
-rem do dll ficou com os 29 nomes do pack e ZERO dos 15 do prompt (faltam batch_ext/...). Quando a
-rem ponte passar a chamar a rota (commit seguinte), esta linha ganha `--gate "%PROMPT%"` e a regua
-rem passa a conferir os DOIS corpos contra a MESMA tabela.
+rem Passo 3: a ponte agora CHAMA a rota do prompt (enqueue/wait/metricas), entao o corpo da fila
+rem vive no dll e os 15 nomes AF_PROMPT_REF precisam estar na tabela: a regua le os DOIS corpos
+rem contra a MESMA tabela -- nome sem dono, dono duplo ou modulo errado recusam como antes
+rem (a corrida anterior mediu o contrario: ponte sem chamar a rota, /OPT:REF retira o corpo,
+rem 29 nomes do pack e ZERO do prompt).
 dumpbin /imports "%DLL%" > "%OUTDIR%\af_mind-imports.txt" 2>&1
 set "RC=%ERRORLEVEL%"
 echo [dumpbin] dll_imports_codigo=%RC%
 if not "%RC%"=="0" goto :dumpbin_recusou
 pushd "%ROOT%..\.."
-python "%CHK%" --gate "%PACK%" --absent "%ABSENT%" --defs "%OUTDIR%" --imports "%OUTDIR%\af_mind-imports.txt"
+python "%CHK%" --gate "%PACK%" --gate "%PROMPT%" --absent "%ABSENT%" --defs "%OUTDIR%" --imports "%OUTDIR%\af_mind-imports.txt"
 set "RC=%ERRORLEVEL%"
 echo [imports] dll_codigo=%RC%
 if not "%RC%"=="0" goto :imports_dll_recusou

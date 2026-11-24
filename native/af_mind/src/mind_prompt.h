@@ -81,6 +81,11 @@ int64_t af_prompt_worst_decode_us(void);
 // imprime, no mesmo padrao do `err_text` do pack -- o native nao imprime, devolve dado.
 const char * af_prompt_err_text(void);
 
+// Define o texto lido por `af_prompt_err_text` de fora do modulo: as recusas de TIPO errado
+// num campo do Dictionary acontecem na ponte (register_types.cpp, quem le o Variant), e para
+// o GDScript existir UM motivo so, o texto delas entra nesta mesma superficie.
+void af_prompt_err_define(const char * texto);
+
 // A mesma funcao que o `af_pack_slots` e para o pack, agora para os simbolos de decodificacao:
 // FORCA cada import a existir no binario (o /OPT:REF arranca funcao sem endereco tomado) e
 // devolve o checksum dos enderecos, que a sonda compara entre exe e DLL.

@@ -654,6 +654,13 @@ extern "C" const char * af_prompt_err_text(void) {
 	return copia;
 }
 
+extern "C" void af_prompt_err_define(const char * msg) {
+	// A recusa de TIPO errado num campo do Dictionary acontece na ponte, que e quem le o
+	// Variant; para o GDScript existir um motivo so, o texto dela entra na mesma superficie
+	// que as recusas daqui de dentro.
+	erro(msg);
+}
+
 #define AF_PROMPT_REF(nome) acc = (acc ^ (uint64_t) (uintptr_t) & (nome)) * 0x100000001b3ull
 
 extern "C" int64_t af_prompt_slots(int imprimir) {
