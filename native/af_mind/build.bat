@@ -109,6 +109,125 @@ for /f "usebackq delims=" %%L in (`dumpbin /exports "%DLL%" 2^>^&1 ^| findstr /c
 if not defined EXPORT_LINE goto :sem_export
 echo [regua] export=%EXPORT_LINE%
 
+rem ================================================================================
+rem Passo 2 (a) do dossie 22 (S1.3, S5.1): o gate de simbolos, executado.
+rem
+rem O criterio esta escrito ANTES das linhas abaixo, no S5.1 da pagina: o gate de
+rem simbolos do S1.3 passa a ser gate do Passo 2, com import libs gerados do
+rem export-set MEDIDO e /DELAYLOAD; e "o `.dll` resolve as DLLs do runtime no
+rem diretorio de processo" e premissa do Passo 2, e e aqui que ela deixa de ser
+rem frase. O que cada passo prova, na ordem em que roda:
+rem
+rem  1. os `.def` saem dos dumps ARQUIVADOS em docs/evidence (S1.3) e, se houver
+rem     runtime no disco, sao re-medidos contra eles -- divergencia e recusa;
+rem  2. quatro import libs por `lib /def:`; o `.lib` existir e a testemunha;
+rem  3. o exe do gate linka contra os quatro libs com `/DELAYLOAD` em cada um: um
+rem     nome que nao esteja no export-set medido e LNK2019 AQUI, nao um crash
+rem     dentro do jogo (mandato 1);
+rem  4. `check_imports.py` compara a tabela de imports do binario com o DONO medido
+rem     de cada nome no export-set -- a metade que o linker nao sabe, e que custou o
+rem     "0 backends" silencioso da segunda sonda (S1.3);
+rem  5. as duas corridas: `nu` mede a premissa do diretorio do processo,
+rem     `preload <runtime>` reproduz os numeros de S1.2. Cada codigo de saida e
+rem     lido na linha imediatamente seguinte ao proprio comando e impresso
+rem     (furo #32: nunca se le um codigo atraves de outra linha);
+rem  6. o controle negativo: se `symbol_gate_absent.cpp` LINKAR, o gate nao e
+rem     falsificavel e o build recusa. A recusa esperada e LNK2019 nomeando cada um
+rem     dos quatro nomes, e o texto e conferido, nao presumido.
+rem
+rem O caminho do runtime vem de %1; sem argumento cai no caminho que a Fase 0
+rem mede e que esta escrito nas sondas arquivadas. Sem runtime no disco o build
+rem recusa (codigo 7): a regua de imports e o controle negativo continuam validos
+rem sem ele, mas as corridas nao, e uma corrida pulada nao pode virar verde.
+rem ================================================================================
+
+set "GATE=%ROOT%src\symbol_gate.cpp"
+set "ABSENT=%ROOT%src\symbol_gate_absent.cpp"
+set "GEN=%ROOT%gen_import_libs.py"
+set "CHK=%ROOT%check_imports.py"
+set "GATE_EXE=%OUTDIR%\af_symbol_gate.exe"
+set "IMPORT_LIBS=%OUTDIR%\llama_import.lib %OUTDIR%\ggml_import.lib %OUTDIR%\ggml-base_import.lib %OUTDIR%\ggml-vulkan_import.lib"
+set "DELAYFLAGS=/DELAYLOAD:llama.dll /DELAYLOAD:ggml.dll /DELAYLOAD:ggml-base.dll /DELAYLOAD:ggml-vulkan.dll"
+set "RUNTIME=%~1"
+if not defined RUNTIME set "RUNTIME=C:\Aetherfall\.tools\llama\runtime"
+if not exist "%GATE%" goto :sem_gate
+if not exist "%ABSENT%" goto :sem_gate
+if not exist "%GEN%" goto :sem_gen
+if not exist "%CHK%" goto :sem_gen
+if not exist "%RUNTIME%\llama.dll" goto :sem_runtime
+echo [regua] runtime=%RUNTIME%
+
+rem --- 1 e 2: os `.def` do export-set medido, e as quatro bibliotecas de importacao -----
+pushd "%ROOT%..\.."
+echo [regua] cwd_gerador=%CD%
+python "%GEN%" --out "%OUTDIR%" --runtime "%RUNTIME%"
+set "RC=%ERRORLEVEL%"
+echo [gen] codigo=%RC%
+if not "%RC%"=="0" goto :gen_recusou
+popd
+for %%L in (llama ggml ggml-base ggml-vulkan) do call :importlib %%L
+
+rem --- 3: o exe do gate -----------------------------------------------------------------
+cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /c "%GATE%" /Fo"%OUTDIR%\symbol_gate.obj"
+set "RC=%ERRORLEVEL%"
+echo [gate] cl_codigo=%RC%
+if not "%RC%"=="0" goto :compilou_errado
+link /nologo /OUT:"%GATE_EXE%" "%OUTDIR%\symbol_gate.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS%
+set "RC=%ERRORLEVEL%"
+echo [gate] link_codigo=%RC%
+if not "%RC%"=="0" goto :linkou_errado
+if not exist "%GATE_EXE%" goto :sem_gate_exe
+for %%F in ("%GATE_EXE%") do echo [regua] gate_exe_bytes=%%~zF
+
+rem --- 4: a regua de imports, lida do binario, nao da minha prosa -----------------------
+dumpbin /imports "%GATE_EXE%" > "%OUTDIR%\gate-imports.txt" 2>&1
+set "RC=%ERRORLEVEL%"
+echo [dumpbin] imports_codigo=%RC%
+if not "%RC%"=="0" goto :dumpbin_recusou
+pushd "%ROOT%..\.."
+python "%CHK%" --gate "%GATE%" --absent "%ABSENT%" --defs "%OUTDIR%" --imports "%OUTDIR%\gate-imports.txt"
+set "RC=%ERRORLEVEL%"
+echo [imports] codigo=%RC%
+if not "%RC%"=="0" goto :imports_recusou
+popd
+
+rem --- 5: as duas corridas, com o codigo lido na linha seguinte -------------------------
+rem `nu` mede a premissa do diretorio do processo. Os dois codigos aceitos sao 0 (a
+rem premissa e verdadeira e os numeros de S1.2 sairam por nome nu) e 5 (a premissa e
+rem falsa e o gate RECUSOU em vez de morrer de STATUS_DLL_NOT_FOUND -- recusar e o
+rem resultado medido, morrer nao e). Qualquer outro codigo, inclusive um codigo de
+rem crash do loader, derruba o build.
+echo [corrida] nu
+"%GATE_EXE%" nu
+set "RC=%ERRORLEVEL%"
+echo [corrida] nu_codigo=%RC%
+if "%RC%"=="0" goto :nu_ok
+if "%RC%"=="5" goto :nu_ok
+goto :corrida_recusada
+:nu_ok
+
+echo [corrida] preload
+"%GATE_EXE%" preload "%RUNTIME%"
+set "RC=%ERRORLEVEL%"
+echo [corrida] preload_codigo=%RC%
+if not "%RC%"=="0" goto :corrida_recusada
+
+rem --- 6: o controle negativo, que NAO pode linkar --------------------------------------
+cl /nologo /std:c++17 /O2 /MT /W3 /EHsc /c "%ABSENT%" /Fo"%OUTDIR%\symbol_gate_absent.obj"
+set "RC=%ERRORLEVEL%"
+echo [controle] cl_codigo=%RC%
+if not "%RC%"=="0" goto :controle_compilou_errado
+rem O exe do controle nao deve nascer; se sobrar de uma corrida anterior, ele invalidaria a
+rem testemunha de baixo, entao sai antes do link.
+if exist "%OUTDIR%\af_symbol_gate_absent.exe" del "%OUTDIR%\af_symbol_gate_absent.exe"
+link /nologo /OUT:"%OUTDIR%\af_symbol_gate_absent.exe" "%OUTDIR%\symbol_gate_absent.obj" %IMPORT_LIBS% delayimp.lib %DELAYFLAGS% > "%OUTDIR%\gate-absent-link.txt" 2>&1
+set "RC=%ERRORLEVEL%"
+echo [controle] link_codigo=%RC%
+if "%RC%"=="0" goto :controle_linkou
+for %%N in (ggml_backend_buffer_type_get_base_buffer llama_model_n_ctx llama_new_context_with_model ggml_backend_buffer_type_get_alloc_size) do call :exige_lnk2019 %%N
+if exist "%OUTDIR%\af_symbol_gate_absent.exe" goto :controle_exe_existe
+echo [controle] OK: o gate e falsificavel -- os quatro nomes foram recusados pelo linker
+
 echo [ok] build.bat: %DLL%
 exit /b 0
 
@@ -118,6 +237,27 @@ rem --- sub-rotinas e diagnosticos ---------------------------------------------
 rem Aceita uma instalacao so se ela TIVER o toolset nomeado; o 2019 (14.29.30133) cai
 rem aqui e a recusa e impressa, nao silenciosa.
 if exist "%~1\VC\Tools\MSVC\%TOOLSET%" if not defined VSROOT set "VSROOT=%~1"
+exit /b 0
+
+:importlib
+rem `lib /def:` nao tem saida em sucesso; a testemunha e o arquivo existir com bytes.
+if not exist "%OUTDIR%\%~1.def" goto :sem_def
+lib /def:"%OUTDIR%\%~1.def" /machine:x64 /out:"%OUTDIR%\%~1_import.lib"
+set "RC=%ERRORLEVEL%"
+echo [importlib] %~1 codigo=%RC%
+if not "%RC%"=="0" goto :lib_recusou
+if not exist "%OUTDIR%\%~1_import.lib" goto :sem_lib
+for %%F in ("%OUTDIR%\%~1_import.lib") do echo [importlib] %~1_bytes=%%~zF
+exit /b 0
+
+:exige_lnk2019
+rem A recusa so vale se for pelo motivo certo: LNK2019 nomeando o simbolo. Um LNK1561
+rem (sem ponto de entrada) ou um LNK1181 (arquivo errado) daria nao-zero pelo motivo
+rem errado e o controle pareceria ter funcionado.
+findstr /c:"%~1" "%OUTDIR%\gate-absent-link.txt" >nul
+set "RC=%ERRORLEVEL%"
+echo [controle] %~1 recusa_lida=%RC%
+if not "%RC%"=="0" goto :controle_silencioso
 exit /b 0
 
 :sem_header
@@ -165,3 +305,51 @@ exit /b 5
 :sem_export
 echo [falha] dumpbin nao viu af_mind_entry na tabela de exports: o entry_symbol do .gdextension mentiria
 exit /b 6
+
+rem --- codigos 7..9 sao do Passo 2 (a); 2..6 continuam sendo os do Passo 1 --------------
+:sem_gate
+echo [falha] Passo 2 (a): sem src\symbol_gate.cpp ou src\symbol_gate_absent.cpp -- o gate nao existe
+exit /b 7
+:sem_gen
+echo [falha] Passo 2 (a): sem gen_import_libs.py ou check_imports.py -- nao ha de onde tirar os .def
+exit /b 7
+:sem_runtime
+echo [falha] Passo 2 (a): sem llama.dll em %RUNTIME% -- as corridas nao rodam e corrida pulada nao e verde
+echo [falha] passe o caminho como primeiro argumento: build.bat "C:\caminho\do\runtime"
+exit /b 7
+:gen_recusou
+echo [falha] Passo 2 (a): gen_import_libs.py recusou -- ou nao ha dump arquivado, ou o runtime vivo diverge do pin b12499
+exit /b 7
+:sem_def
+echo [falha] Passo 2 (a): sem %OUTDIR%\%~1.def -- o gerador nao escreveu o que o export-set medido tem
+exit /b 7
+:lib_recusou
+echo [falha] Passo 2 (a): lib saiu com %RC% criando %~1_import.lib -- o .def do export-set medido foi recusado
+exit /b 7
+:sem_lib
+echo [falha] Passo 2 (a): lib saiu zero mas %~1_import.lib nao existe
+exit /b 7
+:sem_gate_exe
+echo [falha] Passo 2 (a): o link do gate saiu zero mas af_symbol_gate.exe nao existe
+exit /b 7
+:dumpbin_recusou
+echo [falha] Passo 2 (a): dumpbin /imports do gate saiu com %RC% -- sem a tabela nao ha regua de modulos
+exit /b 7
+:imports_recusou
+echo [falha] Passo 2 (a): a regua de imports recusou -- nome referenciado sem dono medido, dono duplo, ou importado do modulo errado
+exit /b 7
+:corrida_recusada
+echo [falha] Passo 2 (a): o gate saiu com %RC%; aceitos 0 e 5 em nu, 0 em preload -- os numeros de S1.2 nao sairam
+exit /b 8
+:controle_compilou_errado
+echo [falha] Passo 2 (a): symbol_gate_absent.cpp nem compilou -- o controle nao chegou ao linker
+exit /b 9
+:controle_linkou
+echo [falha] Passo 2 (a): o controle negativo LINKOU -- os quatro nomes existem no que foi linkado, entao a lista do gate nao veio do export-set medido
+exit /b 9
+:controle_exe_existe
+echo [falha] Passo 2 (a): o link recusou mas af_symbol_gate_absent.exe existe -- a testemunha nao e do que esta no disco
+exit /b 9
+:controle_silencioso
+echo [falha] Passo 2 (a): o link recusou sem nomear %~1 em gate-absent-link.txt -- recusou pelo motivo errado e o controle nao vale
+exit /b 9

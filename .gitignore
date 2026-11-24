@@ -9,6 +9,9 @@ bin/
 saves/
 *.tmp
 
+# Cache de import do python para os instrumentos nativos (native/af_mind/*.py)
+__pycache__/
+
 # Modelos de IA local nunca entram no repositorio (licenca por modelo, ver docs/design/08)
 models/
 
