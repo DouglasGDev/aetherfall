@@ -6206,8 +6206,8 @@ Nenhum gate de fase, e a Fase 1 não começou: `HTTPRequest` continua em `src/ai
 [:99](../src/ai/llm_server_host.gd#L99), [:184](../src/ai/llm_server_host.gd#L184)); nenhuma linha de
 `native/` existe; `model_oversave` está `[OPEN]` pela contagem de exports; a VRAM e a latência que o
 prompt pede medidas ainda não têm número, porque ainda não há o que medir; e o `MindsInspector`
-continua não existindo. A fila continua **17 → 18 → 22 → 20 → 13** com a 17 na frente, e a perna 22 não
-abre a branch de código antes de a 18 pousar.
+continua não existindo. A fila era **17 → 18 → 22 → 20 → 13** com a 17 na frente e a perna 22 sem
+abrir a branch de código antes de a 18 pousar; o dono liberou essa espera, e o registro está no fim.
 
 
 ## O pouso da pauta 22 na `main` — as quatro corridas da árvore mergida, as três réguas no ponto fixo e o furo #33 do `--script` (2026-11-23, `docs/registro-da-main-mergida-22`, base `8e0fc3b`)
@@ -6272,5 +6272,42 @@ antes deste parágrafo. **Dono:** este registro, com a forma correta escrita aqu
 Nenhum gate de fase, e nenhuma linha de `native/` existe. A pauta 22 pousa como o documento que a
 Fase 1 tem de cumprir: `HTTPRequest` continua em `src/ai/mind_oracle.gd`, o par de vazamento do quit
 continuava aberto, o furo **#31** (a atribuição de carga do espalhamento sem testemunha) continua sem
-dono, e `block_changed` continua sem assinante nenhum — quem o assina é a 17, ponta da fila
-**17 → 18 → 22 → 20 → 13**, com a 22 agora atrás de si.
+dono, e `block_changed` continua sem assinante nenhum — quem o assina é a 17, elo logo atrás da
+**22 → 17 → 18 → 20 → 13**, a fila com a 22 na frente desde a liberação do dono registrada no fim.
+
+
+## Rodada 2026-11-24 — a espera da perna 22 liberada pelo dono, a fila movida para `22 → 17 → 18 → 20 → 13` e o que isso custa às pernas 17 e 18 (branch `docs/excecao-de-ordem-fila-22`, base `f387034`)
+
+Nenhuma linha de `native/`, `src/` ou `tests/` foi escrita por esta passada, e ela não é código: é a
+**exceção de ordem escrita antes do código**, que o mandato 4 de [`AGENTS.md`](../AGENTS.md) exige. O
+que aconteceu, na ordem em que aconteceu:
+
+1. A pauta 22 pousou em `e0902ef` (merge `8e0fc3b`) com a fila **17 → 18 → 22 → 20 → 13** — a 22 atrás
+   da 18 pelo motivo então vigente: abrir o oráculo nativo antes obrigaria a 18 a re-rodar o gate dela
+   com um `HTTPRequest` a menos na árvore.
+2. Na entrega do pouso eu escrevi, como item 3, que o esqueleto de `C++` não vinha porque nenhuma
+   linha da Fase 1 podia ser escrita antes de a perna abrir a branch. O dono respondeu
+   `pode continuar`, e a frase anterior dele no mesmo prompt já mandava `ajuste pra essas prioridades`.
+3. Isso é a palavra dele **liberando a espera** — não a minha. Registada aqui e no §4 e §10 da
+   [`página 22`](planos/22-oraculo-nativo-gdextension.md) antes de qualquer commit de código, e a
+   branch de código abre da `main` já com este registro dentro.
+
+A fila serializada passa a **22 → 17 → 18 → 20 → 13**. O que muda para quem vem atrás, e é preço real,
+não burocracia:
+
+- A **17** (física de blocos que caem) e a **18** (mundo vivo: grama e mato) rebasam numa árvore onde
+  o transporte do oráculo pode já ter saído do HTTP. O argumento que as punha na frente deixa de
+  evitar o problema e passa a **aceitá-lo**: pelo item 5 de "Branches", cada uma re-rome o gate na
+  árvore resultante, e o número publicado volta a ser número medido naquela revisão.
+- A **20** continua atrás da 22 pelo motivo original: as duas escrevem a mesma frase de contrato sobre
+  o oráculo, e a 22 é a que tem a palavra autoritativa — com a 22 na frente, ela nasce sabendo que o
+  modelo é nativo e pode tratar a saúde do oráculo como entrada.
+- A **13** continua última: nenhuma mudança de `Channel.COUNT` cai no meio da fila.
+
+O que **não** muda com este registro: nenhum gate de fase se fechou, nenhuma checagem nova nasceu,
+nenhum número de corrida foi re-medido aqui (a passada é documento puro — `git diff --name-only
+f387034..HEAD -- src tests` devolve vazio), e o contrato publicado continua **255 / 0** na suíte com
+**283 / 0** de reações. O que a Fase 1 tem de provar no primeiro commit continua sendo o gate do §5.1
+da página: `extensao_carrega_classe` — existe um `.dll` de extensão que o Godot abre, e a classe
+registra — com o vermelho de "nenhuma extensão existe" já pago pela Fase 0 e o de "o símbolo não está
+no export-set" ainda em aberto.
