@@ -663,13 +663,13 @@ O que o prompt nomeia e este registro **não** autoriza: P2, facções, co-op, p
 ([aether_field.gd:9](src/world/aether_field.gd#L9)), `FORMAT_VERSION`
 ([tick_journal.gd:4](src/persistence/tick_journal.gd#L4)) e `GEN_VERSION` continuam intocados.
 
-A posição na fila serializada é exceção de ordem registrada **antes** de qualquer linha (mandato 4): a
-fila passa a **17 → 18 → 22 → 20 → 13**. A 22 vem **depois da 18** porque a 18 gasta `src/main.gd`
-inteiro em mecânica de mundo e é o elo mais curto da fila; abrir a 22 antes obrigaria a 18 a re-rodar
-o gate com um `HTTPRequest` a menos na árvore. Vem **antes da 20** porque as duas escrevem a mesma
-frase de contrato sobre o oráculo e a 22 é a que tem a palavra autoritativa — se a 20 nascer depois,
-ela nasce sabendo que o modelo é nativo e pode tratar a saúde do oráculo como entrada. A 13 continua
-última pelo motivo já registrado: nenhuma mudança de `Channel.COUNT` no meio da fila.
+A posição na fila serializada era exceção de ordem registrada **antes** de qualquer linha (mandato 4)
+e **foi movida pelo dono em 2026-11-23**, com a palavra dele — "pode continuar", depois de eu explicar
+que o esqueleto não vinha porque a perna não abria antes da 18. A fila passa a **22 → 17 → 18 → 20 → 13**.
+A razão que punha a 22 atrás da 18 — obrigar a 18 a re-rodar o gate com um `HTTPRequest` a menos na
+árvore — não sumiu; passa a **aceita**, e o preço é que 17 e 18 rebaseiam numa árvore onde o transporte
+do oráculo já mudou (item 5 de "Branches": re-rome o gate). Antes da 20 porque as duas escrevem a mesma
+frase de contrato sobre o oráculo; a 13 continua última: nenhuma mudança de `Channel.COUNT` na fila.
 
 O que a Fase 0 desta perna mediu, e o que isso mudou no plano (§1 e §8 da página): o MSVC **existe**
 (VS 2022 Community, `cl.exe` 19.44.35207) e a leitura anterior — "nenhum VS instalado" — estava errada

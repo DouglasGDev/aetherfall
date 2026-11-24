@@ -312,17 +312,22 @@ O dono nomeou cinco fases e um "Sistema Operacional". As fronteiras:
 
 ## 4. Fila serializada: onde a 22 entra, e com qual elo
 
-Fila viva hoje: **17 → 18 → 20 → 13** (a 12 pousou em `fa94cb5`; 09→10→15→14→11→19→16→12 cumpridas).
-A 22 é **transversal**: ela escreve `src/ai/`, `native/`, `tests/`, e **não** escreve
-`src/entities/wolf.gd` nem `src/main.gd` além de três linhas de injeção de provider. A regra é um
-escritor por arquivo por branch ([`AGENTS.md`](../../AGENTS.md), "Branches" item 6), e a regra da
-ordem é que a exceção se registra **antes**.
+Fila viva na escrita desta página: **17 → 18 → 20 → 13** (a 12 pousou em `fa94cb5`;
+09→10→15→14→11→19→16→12 cumpridas). A 22 é **transversal**: ela escreve `src/ai/`, `native/`,
+`tests/`, e **não** escreve `src/entities/wolf.gd` nem `src/main.gd` além de três linhas de injeção de
+provider. A regra é um escritor por arquivo por branch ([`AGENTS.md`](../../AGENTS.md), "Branches"
+item 6), e a regra da ordem é que a exceção se registra **antes**.
 
-Posição escolhida: **22 entra depois da 18 e antes da 20.**
+Posição escolhida na pauta, e depois **movida pelo dono**: 22 no frente da fila.
 
-- **Depois da 18** porque a 18 gasta `src/main.gd` inteiro em mecânica de mundo e é o elo mais curto
-  da fila; abrir a 22 antes obrigaria a 18 a re-rodar o gate com um `HTTPRequest` a menos na árvore
-  — o mesmo motivo pelo qual a fila pôs a 17 depois da 12.
+- **Como estava escrita** — depois da 18: a 18 gasta `src/main.gd` inteiro em mecânica de mundo e é o
+  elo mais curto da fila; abrir a 22 antes obrigaria a 18 a re-rodar o gate com um `HTTPRequest` a
+  menos na árvore — o mesmo motivo pelo qual a fila pôs a 17 depois da 12.
+- **Como está desde 2026-11-23** — a frente da fila: eu expliquei ao dono que o esqueleto de `C++`
+  não vinha porque a perna não abria antes da 18, e ele respondeu "pode continuar". Isso é a palavra
+  dele liberando a espera, e o §10 registra a data dela antes da primeira linha de código. A razão
+  antiga **não** é negada, é **aceita com preço**: 17 e 18 passam a rebaser numa árvore onde o
+  transporte do oráculo mudou, e pelo item 5 de "Branches" cada uma re-rome o gate próprio.
 - **Antes da 20** porque a 20 (§3.5 dela, "BT por arquétipo") e a 22 (§7.1 daqui) escrevem a mesma
   frase de contrato sobre o oráculo, e a 22 é a que tem a palavra autoritativa: se a 20 nascer
   depois, ela nasce sabendo que o modelo é nativo e pode tratar `oracle_health` como entrada.
@@ -330,9 +335,9 @@ Posição escolhida: **22 entra depois da 18 e antes da 20.**
   verificada da Fase 2; a 13 continua última pelo motivo já registrado (nenhuma mudança de
   `Channel.COUNT` no meio da fila).
 
-Fila resultante: **17 → 18 → 22 → 20 → 13**, com a 22 ocupando a posição e as cinco fases dela
-morando dentro de uma branch só — o que a Fase 1 fecha, a Fase 2 abre depois, e assim por diante.
-Cada fase é um fecho separado com gate próprio; a branch não leva cinco fases.
+Fila resultante: **22 → 17 → 18 → 20 → 13**, com a 22 na frente e as cinco fases dela morando dentro
+de uma branch só — o que a Fase 1 fecha, a Fase 2 abre depois, e assim por diante. Cada fase é um
+fecho separado com gate próprio; a branch não leva cinco fases.
 
 ---
 
@@ -584,6 +589,14 @@ Registrado antes do código porque é isto que o §0 de uma próxima re-derivaç
 **`oraculo-nativo-22`**. Ordem interna: §5.1 → §5.2 → §5.3 → §5.4 → §5.5, uma branch de docs **antes**
 dos commits de código — esta página. A Fase 0 está nela; os passos 1–5 de código entram na branch
 feat, cada um com o número do commit dele.
+
+Duas datas, porque a segunda não é a primeira: a pauta é de **2026-11-23** e nenhuma linha de código
+foi escrita por ela; a espera de fila caiu no mesmo dia, pela palavra do dono, e a exceção de ordem
+que a move para a frente foi registrada em **2026-11-24** na branch `docs/excecao-de-ordem-fila-22`,
+aberta antes do primeiro commit de `native/` — que é o que o mandato 4 cobra, a ordem escrita antes
+do código, não depois do número. O que muda com ela está no §4: a fila passa a
+**22 → 17 → 18 → 20 → 13** e o preço assumido é 17 e 18 rebaserem com o transporte do oráculo já
+trocado.
 
 
 ## 11. As três réguas desta página, com o comando que as mede
