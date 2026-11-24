@@ -48,8 +48,9 @@ const TESTS: Array[StringName] = [
 	&"_test_colheita_de_malha_sem_cavar",
 	&"_test_cavar_sobrevive_ao_save", &"_test_extensao_carrega_classe",
 	&"_test_extensao_pack_no_processo", &"_test_contrato_igal_ao_http",
+	&"_test_transporte_http_zerado",
 ]
-# 318 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
+# 320 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
 # §5.1), o gate do esqueleto nativo: descritor no disco, extensao listada pela
 # engine, biblioteca aberta no processo, classe na ClassDB e objeto vivo devolvido
 # por ela -- mais as oito de `extensao_pack_no_processo` (dossie 22 §5.2), a rota do
@@ -60,8 +61,12 @@ const TESTS: Array[StringName] = [
 # roster de um cenario fixo passa DUAS vezes, uma pela transporta HTTP (o `MindOracle`
 # real contra um llama-server que o proprio gate levanta e derruba pelo pid exato) e
 # uma pela extensao (`AfMindOracle.enqueue`/`wait` pela rota ClassDB), e a comparacao
-# e de FORMA -- as chaves e os tipos do Dictionary, o motivo nomeado, nunca a frase.
-# As trinta e cinco contam tambem no
+# e de FORMA -- as chaves e os tipos do Dictionary, o motivo nomeado, nunca a frase --
+# mais as DUAS de `transporte_http_zerado` (dossie 22 §5.4), o gate do Passo 4 que e
+# a frase do dono feita checagem: a varredura recursiva de `res://src` por
+# "HTTPRequest" devolve VAZIO (nasce VERMELHO com as 9 ocorrencias impressas enquanto
+# o wrapper nao existir) e os lancadores Rodar.bat/run_game.ps1 nao citam "llama"
+# (nenhum processo de IA fora da engine). As trinta e sete contam tambem no
 # vermelho -- o gate nasce vermelho de proposito (o runtime e o `.gguf` sao
 # gitignored: num clone sem eles as oito e as de fila saem vermelhas com o caminho
 # impresso, e sem o dll o censo inteiro e o vermelho, contrato do passo 1), e um
@@ -69,7 +74,7 @@ const TESTS: Array[StringName] = [
 # cada checagem nova porque a linha `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 318
+const EXPECTED_CHECKS: int = 320
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -6092,6 +6097,69 @@ func _test_contrato_igal_ao_http() -> bool:
 	oraculo.roster_provider = Callable()
 	oraculo.queue_free()
 	http.queue_free()
+	return true
+
+
+## Passo 4 do dossie 22 (§5.4) -- o gate `transporte_http_zerado`, que e a frase do
+## dono virada checagem: `grep -rn HTTPRequest src` devolve VAZIO quando o
+## `mind_oracle.gd` ja fala com a extensao (`AfMindOracle.enqueue`/`wait`) e o host
+## HTTP saiu da cena pelo braco do §6.3. Nasce VERMELHO de proposito: enquanto o
+## wrapper nao existir, a varredura imprime ARQUIVO:LINHA de cada ocorrencia, e o
+## vermelho aponta o que sobra em vez de so contar. A segunda premissa do §5.4/§6.3
+## (o `Rodar.bat` nao levanta processo nenhum de IA) e checada pelos dois
+## lancadores sem a palavra "llama" -- fechamento da perna 15, sem tocar neles.
+## A varredura e feita aqui com DirAccess/FileAccess e NAO com um subprocesso de
+## grep: o instrumento roda em qualquer clone Windows sem shell externo.
+func _test_transporte_http_zerado() -> bool:
+	# (i) a frase do dono, literal: nenhuma ocorrencia de "HTTPRequest" em nenhum
+	# .gd sob res://src (arvore recursiva, arquivos ocultos excluidos).
+	var ocorrencias: PackedStringArray = []
+	var arquivos_lidos: PackedStringArray = []
+	var fila: Array[String] = ["res://src"]
+	while not fila.is_empty():
+		var caminho_dir: String = fila.pop_back()
+		var dir := DirAccess.open(caminho_dir)
+		if dir == null:
+			continue
+		dir.list_dir_begin()
+		var nome := dir.get_next()
+		while nome != "":
+			var caminho := caminho_dir.path_join(nome)
+			if dir.current_is_dir():
+				if not nome.begins_with("."):
+					fila.append(caminho)
+			elif nome.ends_with(".gd"):
+				arquivos_lidos.append(caminho)
+				var f := FileAccess.open(caminho, FileAccess.READ)
+				if f != null:
+					var num := 0
+					while not f.eof_reached():
+						num += 1
+						var linha := f.get_line()
+						if linha.contains("HTTPRequest"):
+							ocorrencias.append("%s:%d" % [caminho, num])
+					f.close()
+			nome = dir.get_next()
+		dir.list_dir_end()
+	var detalhe := "arquivos_lidos=%d ocorrencias=%d %s" % [arquivos_lidos.size(),
+			ocorrencias.size(), " ".join(ocorrencias) if not ocorrencias.is_empty()
+			else "(vazio)"]
+	_check(ocorrencias.is_empty(),
+			"transporte_http_zerado: grep -rn HTTPRequest src devolve vazio",
+			detalhe)
+	# (ii) nenhuma IA fora da engine: os dois lancadores sobem o jogo e NADA de
+	# llama -- o host HTTP aposentado pelo §6.3 nao pode deixar rastro no boot.
+	var lancadores := {"Rodar.bat": false, "tools/run_game.ps1": false}
+	for lancador in lancadores.keys():
+		var f := FileAccess.open(String(lancador), FileAccess.READ)
+		var conteudo := f.get_as_text() if f != null else ""
+		lancadores[lancador] = f != null and not conteudo.to_lower().contains("llama")
+	var sem_ia := true
+	for lancador in lancadores.keys():
+		sem_ia = sem_ia and bool(lancadores[lancador])
+	_check(sem_ia,
+			"transporte_http_zerado: os lancadores nao citam llama (nenhum processo de IA)",
+			str(lancadores))
 	return true
 
 
