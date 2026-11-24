@@ -87,6 +87,7 @@ func _ready() -> void:
 		["boot do mundo", 2, _check_boot],
 		["relogio real", 150, _check_live],
 		["malha e face-culling", 0, _check_meshing],
+		["agua: material, mascara e malha", 0, _check_water_surface],
 		["corpo encaixado se solta", 0, _check_embedded_body],
 		["edicoes no mundo", 0, _check_edits],
 		["sistema de coordenadas", 0, _check_coords],
@@ -369,6 +370,13 @@ func _check_meshing() -> void:
 			same = false
 	_check("geracao deterministica (16 colunas)", same, "ms=%.1f" % ms)
 	_check("malha identica entre mundos", tri_a == tri_b, "espelho=%d  sessao=%d" % [tri_a, tri_b])
+	# O numero e a base medida ANTES da perna 23 (clone limpo de b0ed929, seed
+	# 20261116, nenhuma edicao). A agua ganhou shader e deslocamento de vertice, e
+	# deslocamento nao acrescenta triangulo nenhum: se este numero se mover, a perna
+	# mexeu na malharia — que e justamente o terreno que o re-rome das pernas 17 e 18
+	# espera encontrar no mesmo lugar (dossie 23 §5.1, `agua_nao_muda_a_malha`).
+	_check("agua nao muda a malha", tri_a == 214448 and tri_b == 214448,
+		"base=214448  espelho=%d  sessao=%d" % [tri_a, tri_b])
 	_check_biome_nao_altera_terreno(_scratch)
 
 	var cx := 20
@@ -467,6 +475,124 @@ func _check_meshing() -> void:
 	_check("winding = face frontal do Godot", wn == 0, "triangulos contra=%d" % wn)
 	_scratch_root.queue_free()
 	_scratch = null
+
+
+# --------------------------------------------------------------------- agua
+
+## O gate visual do dossie 23 §5.1. Headless nao tem `RenderingDevice`, entao nada
+## aqui pode afirmar que o shader compila nem que a agua mudou de quadro — as duas
+## perguntas sao da sonda com janela (§5.2), e escrever "compila" num verde headless
+## seria o furo que a casa ja contou duas vezes. O que esta funcão decide e
+## estrutura: qual material pousa no surface de água e o que os três canais do
+## `COLOR` dizem vértice por vértice. Os rótulos são os identificadores da página,
+## para a régua de ids achar cada um no código que os imprime.
+func _check_water_surface() -> void:
+	_scratch_root = Node3D.new()
+	add_child(_scratch_root)
+	_scratch = VoxelWorld.new()
+	_scratch.setup_world(_scratch_root)
+	_scratch.generate(SEED)
+
+	var mat := _scratch.water_material()
+	# Os dois lados da testemunha de uniforme: a lista que o GDScript grava e a que a
+	# SOURCE declara. Nome gravado sem declaracao correspondente e um no-op
+	# silencioso — e headless nao compila shader nenhum para avisar. A regex le a
+	# constante em vez de repetir a lista, senao a checagem conferiria um numero
+	# contra ele mesmo.
+	var declarados := WaterSurface.declared_uniforms()
+	var gravados := WaterSurface.written_uniforms()
+	var sem_fonte := 0
+	for k: String in gravados:
+		if not declarados.has(k):
+			sem_fonte += 1
+	# `declarados` e maior que `gravados` por dois: `screen_tex` e `depth_tex` sao
+	# ligados pelo engine, nao por `set_shader_parameter`, e estao fora da lista que o
+	# codigo grava de proposito. O que morde e `sem_fonte`: nome gravado sem
+	# declaracao.
+
+	# Uma celula de agua no ar, longe das bordas do chunk: o `LIQUID` so culling
+	# contra AIR, entao saem as 6 faces — 24 vertices, 12 triangulos. Os numeros sao
+	# derivados de FACE_CORNERS e do culling, nao lembrados (§5.1).
+	var x := 21
+	var z := 21
+	var y := VoxelConfig.CHUNK_SIZE_Y - 6
+	var cell := Vector3i(x, y, z)
+	# `record = false`: o teste nao pode deixar edicao no mundo (a clausula "so
+	# visual" e checagem, nao declaracao), e o mesh se reconstrói aqui, uma vez, sem
+	# esperar o orcamento de 2 chunks por frame.
+	_scratch.set_block(cell, BlockDefs.Block.WATER, false)
+	_scratch.build_chunk_mesh(_scratch.chunk_at(cell))
+	var mesh: Mesh = _scratch.chunk_at(cell).mesh_instance.mesh
+	var wi := _water_surface_index(mesh, mat)
+	_check("material_da_agua_e_shader",
+		mat != null and mat is ShaderMaterial and mat.shader != null
+			and wi >= 0 and sem_fonte == 0,
+		"shader=%s  surface=%d  declarados=%d  gravados=%d  sem_fonte=%d" % [
+			mat != null and mat is ShaderMaterial, wi, declarados.size(), gravados.size(), sem_fonte])
+
+	var topo := float(y) + 1.0 - VoxelWorld.WATER_TOP_DROP
+	var a := _water_attrs(mesh, wi, topo)
+	_check("mascara_de_onda_do_bloco_isolado",
+		a["verts"] == 24 and a["tri"] == 12 and a["masc"] == 12 and a["fora"] == 0
+			and a["wall"] == 16 and a["gmax"] < 0.01,
+		"verts=%d  tri=%d  mascarados=%d  fora_do_plano=%d  verticais=%d  g_max=%.3f"
+			% [a["verts"], a["tri"], a["masc"], a["fora"], a["wall"], a["gmax"]])
+
+	# O segundo bloco em cima do primeiro: o de baixo passa a ter agua no vizinho de
+	# cima, entao a mascara dele e zero e a onda so existe no topo da coluna. Faces:
+	# 5 do de cima (fundo culling contra agua) + 5 do de baixo (topo idem) = 40
+	# vertices, 20 triangulos.
+	var topo2 := float(y + 1) + 1.0 - VoxelWorld.WATER_TOP_DROP
+	_scratch.set_block(Vector3i(x, y + 1, z), BlockDefs.Block.WATER, false)
+	_scratch.build_chunk_mesh(_scratch.chunk_at(cell))
+	var malha2: Mesh = _scratch.chunk_at(cell).mesh_instance.mesh
+	var b := _water_attrs(malha2, _water_surface_index(malha2, mat), topo2)
+	_check("coluna_de_agua_ondula_so_no_topo",
+		b["verts"] == 40 and b["tri"] == 20 and b["masc"] == 12 and b["fora"] == 0
+			and b["gmax"] > 0.15 and b["gmax"] < 0.35,
+		"verts=%d  tri=%d  mascarados=%d  fora_do_plano=%d  g_max=%.3f (1 bloco embaixo = 0,25)"
+			% [b["verts"], b["tri"], b["masc"], b["fora"], b["gmax"]])
+	_scratch_root.queue_free()
+	_scratch = null
+
+
+## O surface que carrega a instancia exata do material da agua; -1 quando o chunk nao
+## tem agua malhada. O indice nunca e fixo: os tres grupos sao acrescentados
+## condicionalmente, e e o proprio indice 2 hardcoded que a checagem de material da
+## malharia ja guarda.
+func _water_surface_index(mesh: Mesh, mat: Material) -> int:
+	if mesh == null:
+		return -1
+	for i in mesh.get_surface_count():
+		if mesh.surface_get_material(i) == mat:
+			return i
+	return -1
+
+
+## Census do que a malharia escreveu nos tres canais do `COLOR` de um surface de agua.
+## `topo` e o plano de topo esperado: todo vertice mascarado tem de estar exatamente
+## nele, porque e o mesmo XZ que o quad de topo divide com as laterais (§3.2). O G e
+## lido com tolerancia: o canal e um byte por componente, entao 1/4 chega como
+## 64/255 = 0,25098.
+func _water_attrs(mesh: Mesh, wi: int, topo: float) -> Dictionary:
+	var out := {"verts": 0, "tri": 0, "masc": 0, "fora": 0, "wall": 0, "gmax": 0.0}
+	if mesh == null or wi < 0:
+		return out
+	var arr := mesh.surface_get_arrays(wi)
+	var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var cols: PackedColorArray = arr[Mesh.ARRAY_COLOR]
+	out["verts"] = verts.size()
+	out["tri"] = int(arr[Mesh.ARRAY_INDEX].size()) / 3
+	for k in verts.size():
+		if cols[k].r > 0.5:
+			out["masc"] = int(out["masc"]) + 1
+			if absf(verts[k].y - topo) > 0.001:
+				out["fora"] = int(out["fora"]) + 1
+		if cols[k].b > 0.5:
+			out["wall"] = int(out["wall"]) + 1
+		out["gmax"] = maxf(float(out["gmax"]), cols[k].g)
+	return out
+
 
 
 static func _sha_hex(s: String) -> String:
