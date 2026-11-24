@@ -7835,10 +7835,13 @@ devolve **o mesmo rodapé 289 / 6 / 34,831 s e as mesmas cinco linhas**
 - `python tools/check_doc_anchors.py`
   ([regua_anchors_final.log](evidence/elevacao-visual-agua-23/regua_anchors_final.log)):
   **40 arquivos · 3 163 ponteiros conferidos · 209 rótulos ·
-  3 531 links relativos**, com **5** casos objetivos — os cinco `../.tools/...` gitignored que a base
+  3 534 links relativos**, com **5** casos objetivos — os cinco `../.tools/...` gitignored que a base
   já tinha, conferidos na árvore de controle
   ([regua_anchors_base_c05f1df.log](evidence/elevacao-visual-agua-23/regua_anchors_base_c05f1df.log):
-  **39 arquivos · 3 079 ponteiros · 209 rótulos · 3 417 links**, também **5** casos). **Na árvore desta perna, antes do conserto, eram 22.** Os 17 novos eram todos
+  **39 arquivos · 3 079 ponteiros · 209 rótulos · 3 417 links**, também **5** casos). Os **3** links a
+  mais que esta árvore tem contra a medição da passada anterior, nesta mesma ponta, são os três que o
+  registro do pouso
+  no `AGENTS.md` abriu: os dois arquivos novos da água e este arquivo. **Na árvore desta perna, antes do conserto, eram 22.** Os 17 novos eram todos
   `src/main.gd` e `tests/smoke_test.gd` depois do shift: **11** ROTULO FORA DO CORPO (o rótulo nomeia
   `_home_columns`, `SPAWN_BANDS`, `PACK_LEASH`, `_spawn_point_ok`, `_spawn_home_point`,
   `_den_counts`, `_emptiest_den`, `_den_gate_ok`, `den_min_dist`, `DEN_COUNT`, `DEN_MIN_DIST` e o
@@ -7912,10 +7915,6 @@ está versionado como evidência, e a corrida verde de `13,87 ms` foi feita com 
 
 ### O mais que esta passada abre, e o que deixa onde estava
 
-- **Nova face do #28**, medida e não inferida: a varredura numérica da casa **mexe em ponteiro, não
-  em frase**, e por isso não vê um rótulo cujo corpo se moveu 16 linhas para frente, nem um número de
-  linha que hoje é branco. As duas faces só aparecem quando a régua compara o **conteúdo** do alvo —
-  quem contou os 17 foi o `check_doc_anchors.py`, não a minha leitura.
 - **Nova face do #28**, medida e não inferida: a varredura numérica da casa **mexe em ponteiro, não
   em frase**, e por isso não vê um rótulo cujo corpo se moveu 16 linhas para frente, nem um número de
   linha que hoje é branco. As duas faces só aparecem quando a régua compara o **conteúdo** do alvo —
