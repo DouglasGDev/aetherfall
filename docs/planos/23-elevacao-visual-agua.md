@@ -4,7 +4,11 @@ Dossiê de **leitura de código**, escrito a pedido do dono em 2026-11-24, na pr
 prompt "Aetherfall: Elevação Visual (Texturas + Água + Atmosfera)" com cinco fases e a instrução
 de começar pela Fase 1 e entregar o plano técnico + abordagem de shader e partículas. O registro
 vem **antes** de qualquer linha de código, como exige o mandato 4 de
-[`AGENTS.md`](../../AGENTS.md). Números de `arquivo:linha` desta página são da `main` em `b0ed929`.
+[`AGENTS.md`](../../AGENTS.md). **Depois do pouso**, a base dos números mudou de propósito: os
+`arquivo:linha` desta página são da árvore em que a perna fecha, e as leituras da árvore de abertura
+— o material que não existia, o `COLOR` que ninguém lia, o sol que não tinha variável — ficam pinadas
+em `b0ed929:` onde o contraste entre o que o prompt dizia e o que o código passou a fazer é a
+afirmação. Sem isso, "hoje não há um shader nenhum" viraria mentira dentro da própria página.
 
 A autorização do dono cobre **a Fase 1 como código** (água) e **as Fases 2→5 como pauta dentro da
 mesma perna**, cada uma com gate próprio e nenhuma linha escrita antes de a anterior fechar o dela
@@ -37,37 +41,45 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 
 ## 2. Estado real do código (lido, não medido)
 
-**A água de hoje é um `StandardMaterial3D` com o tile do atlas.** `_build_materials` cria
+**A água de hoje era um `StandardMaterial3D` com o tile do atlas.** `_build_materials` criava
 `_mat_water` com `TRANSPARENCY_ALPHA`, `albedo_texture = _atlas`, `CULL_DISABLED`, `roughness = 0,3`
-e filtro `LINEAR_WITH_MIPMAPS` ([voxel_world.gd:92-97](../../src/world/voxel_world.gd#L92-L97)) —
+e filtro `LINEAR_WITH_MIPMAPS` (`b0ed929:src/world/voxel_world.gd:92-97`, a árvore desta leitura) —
 nada de tempo, nada de normal, nada de cena. O tile é 16×16 com **faixa fixa por linha**
 (`y % 4 == 0` clareia, `y % 4 == 2` escurece) e alfa **0,72 escrito no pixel**
 ([voxel_atlas.gd:162-171](../../src/world/voxel_atlas.gd#L162-L171)). Isso é o que o prompt chama
-de "bloco transparente simples", e é exato.
+de "bloco transparente simples", e é exato. **O que a perna pôs no lugar:** `_mat_water` agora vem de
+`WaterSurface.build_material(_atlas, _water_sun)`
+([voxel_world.gd:97](../../src/world/voxel_world.gd#L97)); `StandardMaterial3D` sobrou só para o
+opaco ([:91-96](../../src/world/voxel_world.gd#L91-L96)) e para o vidro
+([:101-107](../../src/world/voxel_world.gd#L101-L107)), e `voxel_atlas.gd` não foi tocado.
 
 **Quem desenha a água é o mesmo culling dos demais blocos, e ele só cede face contra AR.** Na
 malharia, `Draw.LIQUID` descarta a face quando o vizinho **não é** `AIR`
-([voxel_world.gd:517-519](../../src/world/voxel_world.gd#L517-L519)); o vizinho sólido **do outro
+([voxel_world.gd:551-553](../../src/world/voxel_world.gd#L551-L553)); o vizinho sólido **do outro
 lado** desenha a face contra a água, porque a água não é opaca
 (`is_opaque` 0 — [block_defs.gd:100](../../src/world/block_defs.gd#L100), teste em
-[voxel_world.gd:525](../../src/world/voxel_world.gd#L525)). Consequência que o plano aproveita: a
+[voxel_world.gd:559](../../src/world/voxel_world.gd#L559)). Consequência que o plano aproveita: a
 geometria de água visível é **a superfície mais as faces laterais expostas ao ar** — o leito já é
 desenhado pelo material opaco, então refração tem o que refratar. O topo afunda
-`WATER_TOP_DROP = 0,12` ([`:34`](../../src/world/voxel_world.gd#L34), aplicado em
-[`:528-530`](../../src/world/voxel_world.gd#L528-L530) e em
-[`_emit_face:620-621`](../../src/world/voxel_world.gd#L620-L621)).
+`WATER_TOP_DROP = 0,12` ([`:34`](../../src/world/voxel_world.gd#L34), aplicado na chamada da água em
+[`:567-569`](../../src/world/voxel_world.gd#L567-L569) e no vértice de topo dentro de
+[`_emit_face:670-671`](../../src/world/voxel_world.gd#L670-L671)).
 
-**Cada face é um quad de quatro vértices próprios, e o `COLOR` do surface de água está livre.**
-`_emit_face` acrescenta 4 vértices por face ([`:617-628`](../../src/world/voxel_world.gd#L617-L628))
-e o vertex color da água **não é lido por ninguém**: `_mat_water` não liga
-`vertex_color_use_as_albedo` (o ligador é só o do opaco `:88` e o do vidro `:104`), e a água entra
-com o `ao` forçado em `[1,1,1,1]` ([`:530`](../../src/world/voxel_world.gd#L530)). É o canal que a
-malharia já escreve e o jogo já descarta — §3.3. E é um achado, não uma conveniência: a face escreve
+**Cada face é um quad de quatro vértices próprios, e o `COLOR` do surface de água estava livre.**
+`_emit_face` acrescenta 4 vértices por face ([`:667-689`](../../src/world/voxel_world.gd#L667-L689))
+e o vertex color da água **não era lido por ninguém**: `_mat_water` não ligava
+`vertex_color_use_as_albedo` (o ligador era só o do opaco `b0ed929:src/world/voxel_world.gd:88` e o do
+vidro, hoje [`:104`](../../src/world/voxel_world.gd#L104)), e a água entrava com o `ao` forçado em
+`[1,1,1,1]` ([`:568`](../../src/world/voxel_world.gd#L568) na chamada de hoje,
+`b0ed929:529-530` na leitura de abertura). É o canal que a malharia já escrevia e o jogo já
+descartava — §3.3. E é um achado, não uma conveniência: a face escreve
 `bright = clampf(tint * ao[k], 0.05, 1.2)` com o `tint` sendo o `FACE_TINT[f]` da face
-([`:627-628`](../../src/world/voxel_world.gd#L627-L628)) — as laterais 0,88/0,82 e o fundo 0,60 — e
-ninguém lê o resultado, então a água de hoje é desenhada com a **mesma** cor em topo, lado e fundo, e o
-trabalho de calcular a sombra de face vai embora. Isso é o **furo #43**, dono esta perna, e o conserto é
-exatamente o canal virar lido.
+([`:677`](../../src/world/voxel_world.gd#L677); `b0ed929:627-628` onde esta leitura o achou) — as
+laterais 0,88/0,82 e o fundo 0,60 — e na árvore de abertura ninguém lia o resultado, então a água era
+desenhada com a **mesma** cor em topo, lado e fundo, e o
+trabalho de calcular a sombra de face ia embora. Isso é o **furo #43**, dono esta perna, e o conserto é
+exatamente o canal virar lido: hoje o `COLOR` dos quatro cantos da face de água é a máscara que o
+shader lê ([`:678-687`](../../src/world/voxel_world.gd#L678-L687)).
 
 **Não há shader nenhum no repositório, e o atlas é gerado em runtime de propósito.** A regra está
 escrita no cabeçalho do próprio atlas: "sem binarios no repositorio, deterministico"
@@ -82,7 +94,7 @@ como código (§3.6, §4).
 **Quem sabe que um corpo está na água é o próprio corpo, a cada frame de física.**
 `VoxelBody.move_and_collide` grava `in_water = world.box_in_water(aabb())`
 ([voxel_body.gd:55](../../src/entities/voxel_body.gd#L55)), e `box_in_water` varre as células cobertas
-pela caixa ([voxel_world.gd:363-372](../../src/world/voxel_world.gd#L363-L372)). O jogador lê o campo
+pela caixa ([voxel_world.gd:375-384](../../src/world/voxel_world.gd#L375-L384)). O jogador lê o campo
 para nadar e para a respiração ([player.gd:486](../../src/entities/player.gd#L486),
 [:537](../../src/entities/player.gd#L537), [:593](../../src/entities/player.gd#L593)) e o lobo para
 empuxo, velocidade e o cronômetro de nado ([wolf.gd:1211-1212](../../src/entities/wolf.gd#L1211-L1212),
@@ -93,7 +105,7 @@ um estado por corpo e age na **borda** da mudança: `if in_water != bool(st["in_
 ([audio_director.gd:439-441](../../src/audio/audio_director.gd#L439-L441)), alimentado por leitura do
 `body` do jogador ([`:462`](../../src/audio/audio_director.gd#L462)) e de cada lobo
 ([`:503`](../../src/audio/audio_director.gd#L503)), com a lista entregue por
-`wolves_provider` ([`main.gd:192`](../../src/main.gd#L192)). É a mesma fiação, sem sinal novo, que o
+`wolves_provider` ([`main.gd:200`](../../src/main.gd#L200)). É a mesma fiação, sem sinal novo, que o
 FX de água usa (§3.7). O áudio é o **primeiro** consumidor dessa leitura; este é o segundo — e é por
 isso que a regra da casa (generalizar no segundo chamador, não no primeiro) permite a peça nova sem
 pedir um mecanismo novo.
@@ -102,12 +114,17 @@ pedir um mecanismo novo.
 `DirectionalLight3D` com `rotation_degrees = (-42, 55, 0)`, `light_energy = 1,60`, sombra a 80 m,
 `ProceduralSkyMaterial`, `ambient_light_energy = 0,85`, `TONE_MAPPER_FILMIC`, `fog_enabled` com
 `fog_light_color = (0,55, 0,65, 0,78)` e `fog_density = 0,006`
-([main.gd:1196-1229](../../src/main.gd#L1196-L1229)). Não há ciclo de dia/noite, então "caústicas
+([main.gd:1215-1251](../../src/main.gd#L1215-L1251)). Não há ciclo de dia/noite, então "caústicas
 quando o sol está alto" (§ Fase 1) é hoje uma **constante**, não uma variável: a elevação do sol é
-fixa em ~48°. Registrar isso é o que impõe §3.9.
+fixa em ~48°. Registrar isso é o que impõe §3.9. **O que a perna mudou aqui:** a direção parada
+deixou de ser invisível ao material — `world.set_water_sun_direction(_sun_dir)` no boot
+([`main.gd:139`](../../src/main.gd#L139)) grava o vetor no uniform `sun_dir`
+([`voxel_world.gd:124-126`](../../src/world/voxel_world.gd#L124-L126)), e o shader decide o ganho de
+caústica por ele ([`water_surface.gd:184`](../../src/world/water_surface.gd#L184)). O que continua
+parado é o sol, não o canal — e é isso que deixa a Fase 2 como pauta.
 
 **Headless não exercita o renderer, e isso é premissa do gate, não detalhe.** A suíte roda com
-`DisplayServer.get_name()` impresso em [smoke_test.gd:215](../../tests/smoke_test.gd#L215) e nenhuma
+`DisplayServer.get_name()` impresso em [smoke_test.gd:249](../../tests/smoke_test.gd#L249) e nenhuma
 checagem sua depende de pixel. Um `Shader` quebrado **não** faz a suíte vermelha: a compilação é do
 `RenderingDevice`, que em headless não existe. §5 separa as duas provas por causa disso, e o mandato
 1 não permite publicar "shader ok" com o número de uma corrida que não compila nada.
@@ -143,7 +160,7 @@ o "continua lendo como bloco" que o princípio 1 do prompt pede.
 índices no mesmo lugar que já é o furo **#41** (malharia medida em 52–177 ms no pior quadro, com
 orçamento de 2 chunks por frame — [`AGENTS.md`](../../AGENTS.md), tabela de orçamentos) e moveria o
 `triangle_count()` que a suíte hoje compara entre dois mundos gerados
-([smoke_test.gd:363-371](../../tests/smoke_test.gd#L363-L371), a checagem `malha identica entre mundos`).
+([smoke_test.gd:397-405](../../tests/smoke_test.gd#L397-L405), a checagem `malha identica entre mundos`).
 
 **Número que reabre o braço:** se a onda de 4 cantos por célula precisar de mais de **uma** harmônica
 a mais para não virar rampa plana, o caminho passa por subdivisão do **topo da água** com formato
@@ -165,7 +182,7 @@ momento da face:
 
 **Braço rejeitado (a):** atributo custom do `ArrayMesh` (`ARRAY_DATA`). Não há precedente nenhum no
 repositório e a suíte teria de aprender um caminho de leitura novo; o `COLOR` já é enviado por
-`_surface_arrays` ([voxel_world.gd:591-601](../../src/world/voxel_world.gd#L591-L601)) para os três
+`_surface_arrays` ([voxel_world.gd:640-650](../../src/world/voxel_world.gd#L640-L650)) para os três
 grupos.
 **Braço rejeitado (b):** deduzir tudo no shader a partir de `NORMAL` e da posição. Isso **não**
 distingue o canto de topo da face lateral do canto de baixo — e é justamente a costura que abre.
@@ -226,7 +243,7 @@ não pool dinâmico.
 dispara na **transição** `fora → dentro` com `velocity.y` negativo acima de um limiar; a posição do
 salpico é o plano de topo da coluna de água sob o corpo, obtido por uma consulta nova ao mundo
 (`water_surface_y(x, z)` — a mesma família de `surface_height`,
-[voxel_world.gd:451-457](../../src/world/voxel_world.gd#L451-L457)).
+[voxel_world.gd:463-469](../../src/world/voxel_world.gd#L463-L469)).
 
 **Braço rejeitado:** um sinal `entered_water` no `VoxelBody`. Seria o **primeiro** chamador de um
 mecanismo de transição que o áudio já resolve por leitura (`audio_director.gd:439`), e a regra da
@@ -249,18 +266,18 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
 
 - **Fase 2 — chuva e superfícies molhadas.** Exige o que ainda não existe: um **clima**. Não há
   variável de clima no projeto (o sol é constante §2) nem uniformes de molhamento no material
-  opaco, que é um `StandardMaterial3D` único por mundo ([voxel_world.gd:86-91](../../src/world/voxel_world.gd#L86-L91)).
+  opaco, que é um `StandardMaterial3D` único por mundo ([voxel_world.gd:91-96](../../src/world/voxel_world.gd#L91-L96)).
   O corte da fase é esse: `Weather` como dono de um estado lido pelo FX **e** pelo material — e é o
   primeiro comprador de um `shader` também para o opaco, o que reabre a discussão do §3.1 com número
   na mesa. A água já tem, desta perna, o gancho honesto: o mesmo plano de superfície que decide a
   espuma decide onde uma gota cria anel.
 - **Fase 3 — vegetação viva.** Vento em folhas/grama é deslocamento de vértice com a mesma forma do
   §3.2, e aqui a malharia **não** distingue a face: grama e folha entram no mesmo surface opaco, com
-  um `ao` real ([`:535-538`](../../src/world/voxel_world.gd#L535-L538)) — então o que a fase precisa
+  um `ao` real ([`:574-577`](../../src/world/voxel_world.gd#L574-L577)) — então o que a fase precisa
   decidir primeiro é **qual canal do `COLOR` opaco** fica livre, e isso é conversa com o face-culling
   que a suíte trava hoje.
 - **Fase 4 — atmosfera.** `fog_enabled` e `fog_density = 0,006` existem com **uma** curva
-  ([main.gd:1220-1224](../../src/main.gd#L1220-L1224)); height fog é outra função e precisa do
+  ([main.gd:1242-1246](../../src/main.gd#L1242-L1246)); height fog é outra função e precisa do
   `Environment` em recurso versionado, não em código — hoje a neblina é escrita à mão dentro de
   `_build_environment`. God rays em `forward_plus` é volumetria do engine, e ninguém mediu o custo
   dela nesta máquina: a fase **começa pela colheita**, como manda o mandato 5.
@@ -268,7 +285,7 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
   material por id; o atlas é 8×8 de 16 px gerado com `seed` fixa
   ([voxel_atlas.gd:5-14](../../src/world/voxel_atlas.gd#L5-L14)) e **um** `StandardMaterial3D` serve
   os 23 ids. O corte é: variação por material único (canal já existe — o `COLOR` opaco com jitter
-  `0,012` em [`:536`](../../src/world/voxel_world.gd#L536)) antes de qualquer atlas novo.
+  `0,012` em [`:575`](../../src/world/voxel_world.gd#L575)) antes de qualquer atlas novo.
 
 ## 4. Custo — as quatro perguntas
 
@@ -277,7 +294,10 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
    (`_physics_process`), com o mesmo custo de leitura do `box_in_water` que o corpo já faz — ele não
    adiciona varredura de mundo: lê `body.in_water` que já foi calculado. A colocação de anel e o
    disparo de salpico são **por evento** (transição), e a busca do plano de topo percorre **uma
-   coluna** (até `CHUNK_SIZE_Y = 64` voxels, com saída no primeiro não-água), não o mapa.
+   coluna**: `water_surface_y` ([voxel_world.gd:477-483](../../src/world/voxel_world.gd#L477-L483))
+   desce de `CHUNK_SIZE_Y - 1` e **sai no primeiro voxel de água** — que já é o topo da coluna, por
+   construção — então são no máximo 64 leituras e a coluna seca paga as 64 inteiras para devolver
+   `-1,0`. Não é varredura de mapa.
 2. **Quantas entidades são alcançadas?** Corpos: **1 jogador + até 5 lobos** (`WOLF_COUNT = 5`,
    [main.gd:9](../../src/main.gd#L9); censo até `CENSUS_CAP = 12`, [`:18`](../../src/main.gd#L18));
    o FX itera sobre a lista que o `wolves_provider` já devolve. Superfície de água: a área dos surfaces de água dos 64
@@ -287,7 +307,7 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
    por identidade (padrão `audio_director.gd:468`), sem `new()` por frame e sem `Array` novo por
    tick. O que esta perna **acrescenta** ao caminho quente é uma `ShaderMaterial` única, construída
    em `_build_materials`, que já roda no boot (os ~4,7 s de malharia medida,
-   [main.gd:129-135](../../src/main.gd#L129-L135)) — custo de boot, não de tick.
+   [main.gd:136-143](../../src/main.gd#L136-L143)) — custo de boot, não de tick.
 4. **Como sei que ficou melhor?** Dois instrumentos, cada um respondendo o que pode: as checagens
    novas da suíte (headless: material, máscara, triângulos, orçamento, transição, não-escrita) e a
    **sonda com janela** (§5.2), que é a única que compila o shader e salva PNG do quadro. Headless
@@ -309,6 +329,7 @@ e do culling `LIQUID` (`nb != AIR` → descarta), não lembrados:
 | `orcamento_de_particulas` | o teto do FX é aritmética dos `amount` declarados, e nenhum disparo passa dele | `teto_particulas` == `pool × amount` (impresso) e `salpicos_vivos` ≤ teto na janela de teste |
 | `queda_na_agua_dispara_salpico` | o **jogo** derruba o corpo na coluna (nada de campo escrito à mão — §"O que não fazer" do contrato) | `salpicos` ≥ 1 com o `vy` da entrada impresso, e o anel pousado no plano `y` que `water_surface_y` devolve |
 | `corpo_seco_nao_dispara` (braço de indiferença) | o mesmo corpo andando em terra seca, mesma janela | `salpicos` == 0 **e** `in_water` false na janela inteira |
+| `coluna_de_queda_funda` (premissa da janela de queda) | a coluna mais funda lida no mapa, não fixa em banco, tem mais blocos que `BUBBLE_MIN_BLOCKS` e plano > 0 | `coluna=(x,z) blocos=N plano=P` impresso — sem esta linha a checagem de salpico poderia estar caindo sobre rocha e dando verde pelo motivo errado |
 | `fx_nao_escreve_o_mundo` | a janela com salpico não toca estado autoritativo | `world.edits` inalterado, `aether_energy` dentro da banda da corrida de referência, `Channel.COUNT` == 3 |
 
 A suíte **não** pode afirmar "o shader compila", e é por isso que §5.2 existe. Escrever a asserção
@@ -325,6 +346,45 @@ quadros PNG em instantes diferentes e sai. Ela responde as duas perguntas que he
 - a água **muda de quadro** (prova: dois PNGs do mesmo enquadramento em dois instantes de `TIME`
   têm pixels diferentes; e a diferença média por canal é impressa). O `mascara`/`triangulos` da
   suíte garante a estrutura; isto garante o pixel.
+
+**Medido nesta perna** (2026-11-24, dois braços na mesma máquina, mesma seed `20261116`, moldura
+1920×1080 com a GPU real ligada — RX 9060 XT, Vulkan 1.4.359 Forward+ nos dois stdout). As dezessete
+peças estão em [`docs/evidence/elevacao-visual-agua-23/`](../evidence/elevacao-visual-agua-23/), e o
+[`readback.log`](../evidence/elevacao-visual-agua-23/readback.log) é o índice delas:
+
+| | `SHADER ERROR` / `ERROR:` | caixa de 192 px com passo 2 → **9 216 amostras** | quadro inteiro (518 400) — testemunho, não régua |
+|---|---|---|---|
+| esta perna (`2903ea0`), `dt = 1 519 ms` | **0 / 0** | `ge1=8867  ge3=7807` → **`fracao_ge3 = 0,8471`**, média por canal r 0,032264 · g 0,031319 · b 0,026414 | `fracao_ge3 = 0,3999` |
+| controle (`b0ed929`, sem a perna), `dt = 1 503 ms` | **0 / 0** no stdout; no stderr há 3 `ERROR: `, nenhum de shader — é o `af_mind.gdextension` que não existe no clone da base, e esta perna não toca `native/` | `ge1=0  ge3=0` → **`fracao_ge3 = 0,0000`**, média 0,000000 nos três canais | `fracao_ge3 = 0,0468` |
+
+Quatro frases sustentam o número, e cada uma fecha uma rota para o verde errado:
+
+- **o enquadramento é idêntico nos dois braços**, e é isso que autoriza comparar: `coluna=(100,52)
+  blocos=12 topo=26 plano=27.00` (a coluna mais funda da seed), mirante `coluna=(101,39) chao=27
+  dist=14 olho=(101.50, 29.62, 39.50) pitch=-0,198`, `centro_agua=(960.0,540.0) dentro=1`,
+  `camera_deslocou=0,0000 m`, `lobos_na_caixa=0`. São os mesmos nove números impressos nas duas
+  corridas;
+- **nenhuma partícula credita a diferença**: a linha do próprio probe imprime, no braço desta perna,
+  `fx_presente vivas_pool=0/0/0 salpicos_disparados=0 picos=0` — nenhum slot vivo na janela entre os
+  dois quadros — e `fx=ausente` no controle. O que mudou de quadro foi a superfície, não o FX;
+- **o chão do instrumento dentro da régua é zero exato**: `caixa-base-t1.png` e `caixa-base-t2.png`
+  têm o mesmo SHA-256 (`ae3d7dc4199b997b52008ec316d4a5f7a6f738277af9792d6b54e2efe073a0b0`), então
+  nenhum byte dos dois quadros do controle difere dentro da caixa. Os 7 807 pixels desta perna não
+  têm outro candidato além do shader;
+- **a régua é re-derivada sem Godot e sem GPU**: [`confere_caixa.py.txt`](../evidence/elevacao-visual-agua-23/confere_caixa.py.txt),
+  rodado sobre os quatro recortes arquivados, devolve as duas linhas na ordem — `0,8471` e `0,0000`
+  (`confere_caixa.log`). O número não mora só no log do motor.
+
+Duas precisões que mentiriam se fossem puladas. O `0,0468` do controle **fora** da caixa é o corpo,
+a matilha e o céu animando na base de igual modo — medir o quadro inteiro daria verde ao controle, e
+é por isso que o corte mora na caixa. E a comparação é em float, não em byte: o float32 mais próximo
+de `1/255` vale `0,0039215689` e a subtração de dois bytes vizinhos vale `0,0039215686`, então uma
+diferença de exatamente um byte não passa no `>=`, e a mesma caixa em byte puro daria `ge1=9141
+ge3=8402`. O `0,8471` publicado é o que o instrumento imprimiu — piso, não teto.
+
+Nada da §5.2 é gate de fase: é sonda, e o mandato 4 continua aberto. O que fecha a perna é o número
+headless — **264 checagens / 0 falhas / 57,6 s** com as nove linhas de água da tabela acima, arquivado
+em `suite23-merged.log`.
 
 ## 6. O que NÃO fazer
 
@@ -359,7 +419,7 @@ cerimônia — o incidente do dossiê 03 apagou uma versão já conferida.
   e os documentos.
 - **Choque real:** `src/main.gd` é de escritor único e a 22 também o toca (o hospedeiro do modelo,
   `attach_llm_host` / `_wire_llm_host` em
-  [main.gd:211-244](../../src/main.gd#L211-L244)); `src/world/voxel_world.gd` e `block_defs.gd` são os
+  [main.gd:227-260](../../src/main.gd#L227-L260)); `src/world/voxel_world.gd` e `block_defs.gd` são os
   terrenos da 17 e da 18. Esta perna **não** toca `block_defs.gd` nem `src/ai/` nem `native/`.
 - **Consequência aceita e escrita agora** (item 5 de "Branches"): quem pousar depois re-rome o gate
   na árvore resultante. A 23 muda `triangle_count()`? **Não** — e é checagem (§5.1), justamente para
