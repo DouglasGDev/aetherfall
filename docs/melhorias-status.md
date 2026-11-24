@@ -6208,3 +6208,69 @@ Nenhum gate de fase, e a Fase 1 não começou: `HTTPRequest` continua em `src/ai
 prompt pede medidas ainda não têm número, porque ainda não há o que medir; e o `MindsInspector`
 continua não existindo. A fila continua **17 → 18 → 22 → 20 → 13** com a 17 na frente, e a perna 22 não
 abre a branch de código antes de a 18 pousar.
+
+
+## O pouso da pauta 22 na `main` — as quatro corridas da árvore mergida, as três réguas no ponto fixo e o furo #33 do `--script` (2026-11-23, `docs/registro-da-main-mergida-22`, base `8e0fc3b`)
+
+### O que o merge toca, e por que o número pinado da ponta vale aqui
+
+`git merge --no-ff docs/pauta-oraculo-nativo-22` devolve **`8e0fc3b`** sobre **`e7c9f64`**, e
+`git diff --name-only e0902ef 8e0fc3b -- src tests` devolve **vazio**: a perna escreve documento, não
+engine, então as árvores de `src/` e `tests/` da ponta medida são as da main mergida por identidade.
+Mesmo assim as quatro corridas rodaram nela, com a máquina livre — nenhuma linha em `Get-Process`
+com `Path` dentro de `C:\Aetherfall` antes da primeira invocação, e medição de tempo serial.
+
+### As quatro corridas da árvore mergida, com o stdout arquivado
+
+- Suíte: `docs/evidence/registro-main-mergida-22/main_mergida_suite.log` — a linha 357 é o contrato
+  `== 255 checagens  0 falhas  48.2 s de teste ==`, **exit 0**, zero `[FAIL]` e zero `SCRIPT ERROR`
+  nas 361 linhas, e o par de vazamento do quit continua aberto: linha 358
+  `WARNING: 4 ObjectDB instances were leaked at exit` e linha 360
+  `ERROR: 2 resources still in use at exit`.
+- Runner de reações: `docs/evidence/registro-main-mergida-22/main_mergida_runner.log` — linha 536
+  `65/65` de testes completos, linha 537 `trips_solo=0 trips_matilha=0`, linha 538 `283/283`, linha
+  539 o cenário estreito com **10 568** passos (`sim_step total=2247621 us`, pico `3282 us`), linha
+  540 a sessão de matilha com **1 341** passos (`sim_tick total=3120235 us`, pico `14399 us`) e linha
+  541 `283 checagens 0 falhas 33.269 s`.
+- Journal: `docs/evidence/registro-main-mergida-22/main_mergida_tick_journal_test.log` — linha 142
+  `128/128` e linha 143 `128 checagens 0 falhas 7/7 testes concluidos 5.775 s`.
+- RNG da sessão: `docs/evidence/registro-main-mergida-22/main_mergida_rng.log` — linha 76 `5/5`,
+  linha 77 `27/27` e linha 78 `27 checagens 0 falhas 2.785 s`.
+
+O **48,2 s** e o **33,269 s** de agora contra o **48,1 s** e o **32,901 s** da ponta não são dois
+contratos: são a mesma contagem corrida duas vezes, e o gate lê a contagem, não o tempo. Os dois
+tempos ficam publicados porque cada um responde a um stdout.
+
+### As três réguas, no ponto fixo, re-derivadas depois do merge
+
+`python tools/check_doc_anchors.py` nesta árvore: **39** arquivos, **3 052** ponteiros, **209**
+rótulos, **3 153** links relativos e **0** casos objetivos — os mesmos números da leitura final da
+seção anterior, porque este registro é acréscimo no fim do arquivo e não empurra linha nenhuma para
+baixo. `--ref HEAD` continua devolvendo a `main` publicada com **38** arquivos, **2 927** ponteiros,
+os mesmos **209** rótulos, **3 046** links e **0** casos.
+`python .tools/verify_plan_cites.py` com os cinco documentos da perna: **1 013** citações conferidas,
+**10** arquivos que não existem, **0** fora do arquivo. `python .tools/verify_plan_ids.py` com os três:
+**127 · 260 · 141**. O stdout das três, com o comando escrito dentro do arquivo, está em
+`docs/evidence/oraculo-nativo-22/pauta_22_ruler_final_doc_anchors.log`,
+`pauta_22_ruler_final_plan_cites.log` e `pauta_22_ruler_final_plan_ids.log` na mesma pasta.
+
+### Furo #33 — o runner chamado sem `--script` não roda teste nenhum: sobe o jogo headless e nunca sai
+
+A primeira tentativa desta rodada foi `godot --headless --path . tests/aether_reactions_test.gd` — o
+`.gd` como posicional, sem a flag. O processo não imprimiu rodapé nem encerrou: em **11 minutos** de
+wall clock tinha **204 s** de CPU consumidos e um stdout de **14** linhas que era gameplay puro
+(`spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador`, `toca 0 fundada`,
+`nascimento: filhote 6 dos adultos 1+4 na toca 1`). É o projeto rodando a própria cena principal em
+headless, não o teste — a forma correta é `--headless --path . --script tests/aether_reactions_test.gd`,
+e foi só com ela que as linhas 536 a 541 do log acima existiram. O órfão foi morto por quem o abriu,
+na mesma sessão e no mesmo dono, e o log de 14 linhas não virou evidência de nada: foi descartado
+antes deste parágrafo. **Dono:** este registro, com a forma correta escrita aqui e no §11 da página
+22 — é defeito de instrumento, não de execução, e nada foi silenciado para a corrida ficar verde.
+
+### O que este pouso não fecha
+
+Nenhum gate de fase, e nenhuma linha de `native/` existe. A pauta 22 pousa como o documento que a
+Fase 1 tem de cumprir: `HTTPRequest` continua em `src/ai/mind_oracle.gd`, o par de vazamento do quit
+continuava aberto, o furo **#31** (a atribuição de carga do espalhamento sem testemunha) continua sem
+dono, e `block_changed` continua sem assinante nenhum — quem o assina é a 17, ponta da fila
+**17 → 18 → 22 → 20 → 13**, com a 22 agora atrás de si.

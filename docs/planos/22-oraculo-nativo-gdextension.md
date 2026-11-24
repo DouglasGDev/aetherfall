@@ -599,3 +599,16 @@ As duas primeiras aceitam argv opcional e sem argv varrem o corpus inteiro (38 a
 **39** aqui); a terceira e a quarta não têm default — rodá-las sem arquivos explícitos devolve um
 stdout que não decide nada, e é por isso que o comando vem escrito aqui, não na memória de quem
 leu o log.
+
+As três corridas que o gate da Fase 1 lê, com a flag que as faz existir:
+
+```sh
+godot --headless --path . tests/smoke_test.tscn
+godot --headless --path . --script tests/aether_reactions_test.gd
+godot --headless --path . --script tests/tick_journal_test.gd
+```
+
+O `.gd` sem `--script` não roda o teste: o motor entende o posicional como cena e sobe o projeto em
+headless, imprimindo gameplay para sempre sem rodapé e sem `quit()` — é o furo **#33** do status,
+aberto numa corrida de 11 minutos e 204 s de CPU que não mediu nada. A cena de smoke aceita o
+posicional porque é `.tscn`.

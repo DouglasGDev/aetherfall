@@ -1,0 +1,6 @@
+cmd: python tools/check_doc_anchors.py
+corpus na arvore de trabalho  arquivos: 39  ponteiros conferidos: 3052  rotulos conferidos: 209  links relativos conferidos: 3153
+casos objetivos: 0
+cmd: python tools/check_doc_anchors.py --ref HEAD
+corpus em HEAD  arquivos: 39  ponteiros conferidos: 3052  rotulos conferidos: 209  links relativos conferidos: 3153
+casos objetivos: 0
