@@ -1,0 +1,185 @@
+Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Aetherfall\native\af_mind\bin\af_symbol_gate.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Section contains the following imports:
+
+    KERNEL32.dll
+             140019000 Import Address Table
+             140024700 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                         239 GetCurrentDirectoryA
+                         28D GetLastError
+                         2A0 GetModuleFileNameA
+                         3F5 LoadLibraryExA
+                         498 RaiseException
+                         314 GetSystemInfo
+                         61A VirtualProtect
+                         61C VirtualQuery
+                         1D4 FreeLibrary
+                         2A5 GetModuleHandleW
+                         2DD GetProcAddress
+                         509 RtlCaptureContext
+                         511 RtlLookupFunctionEntry
+                         518 RtlVirtualUnwind
+                         5FB UnhandledExceptionFilter
+                         5B8 SetUnhandledExceptionFilter
+                         241 GetCurrentProcess
+                         5D8 TerminateProcess
+                         3B8 IsProcessorFeaturePresent
+                         481 QueryPerformanceCounter
+                         242 GetCurrentProcessId
+                         246 GetCurrentThreadId
+                         31A GetSystemTimeAsFileTime
+                         39A InitializeSListHead
+                         3B0 IsDebuggerPresent
+                         301 GetStartupInfoW
+                         65F WriteConsoleW
+                         517 RtlUnwindEx
+                         578 SetLastError
+                         157 EnterCriticalSection
+                         3F0 LeaveCriticalSection
+                         12F DeleteCriticalSection
+                         396 InitializeCriticalSectionAndSpinCount
+                         5EA TlsAlloc
+                         5EC TlsGetValue
+                         5EE TlsSetValue
+                         5EB TlsFree
+                         3F6 LoadLibraryExW
+                         153 EncodePointer
+                         513 RtlPcToFileHeader
+                         303 GetStdHandle
+                         660 WriteFile
+                         2A1 GetModuleFileNameW
+                         186 ExitProcess
+                         2A4 GetModuleHandleExW
+                         1FF GetCommandLineA
+                         200 GetCommandLineW
+                         37C HeapAlloc
+                         380 HeapFree
+                         1C2 FlsAlloc
+                         1C4 FlsGetValue
+                         1C6 FlsSetValue
+                         1C3 FlsFree
+                         397 InitializeCriticalSectionEx
+                          B3 CompareStringW
+                         3E4 LCMapStringW
+                         27A GetFileType
+                         1C8 FlushFileBuffers
+                         229 GetConsoleOutputCP
+                         225 GetConsoleMode
+                         19D FindClose
+                         1A3 FindFirstFileExW
+                         1B4 FindNextFileW
+                         3BE IsValidCodePage
+                         1DB GetACP
+                         2C6 GetOEMCP
+                         1EA GetCPInfo
+                         423 MultiByteToWideChar
+                         64C WideCharToMultiByte
+                         262 GetEnvironmentStringsW
+                         1D3 FreeEnvironmentStringsW
+                         55A SetEnvironmentVariableW
+                         593 SetStdHandle
+                         308 GetStringTypeW
+                         2E4 GetProcessHeap
+                         569 SetFilePointerEx
+                         278 GetFileSizeEx
+                         385 HeapSize
+                         383 HeapReAlloc
+                          9D CloseHandle
+                          E6 CreateFileW
+
+  Section contains the following delay load imports:
+
+    llama.dll
+              00000001 Characteristics
+      0000000140025D68 Address of HMODULE
+      0000000140025BB0 Import Address Table
+      0000000140023FF0 Import Name Table
+      0000000140024470 Bound Import Name Table
+      0000000000000000 Unload Import Name Table
+                     0 time date stamp
+
+                                    0000000140001D0A    8C llama_print_system_info
+                                    0000000140001CF8    20 llama_decode
+                                    0000000140001CE6    1D llama_chat_apply_template
+                                    0000000140001CD4    D6 llama_tokenize
+                                    0000000140001CC2    1A llama_batch_free
+                                    0000000140001CB0    1C llama_batch_init
+                                    0000000140001C9E    EB llama_vocab_n_tokens
+                                    0000000140001C8C    7A llama_n_ctx
+                                    0000000140001C7A    67 llama_model_n_ctx_train
+                                    0000000140001C68    64 llama_model_meta_val_str
+                                    0000000140001C56    61 llama_model_meta_count
+                                    0000000140001C44    3B llama_init_from_model
+                                    0000000140001C32    1F llama_context_default_params
+                                    0000000140001C20    5C llama_model_load_from_file
+                                    0000000140001C0E    4F llama_model_default_params
+                                    0000000140001D1C    CF llama_supports_gpu_offload
+                                    0000000140001BFC     A llama_backend_free
+                                    0000000140001BEA     B llama_backend_init
+
+    ggml.dll
+              00000001 Characteristics
+      0000000140025D70 Address of HMODULE
+      0000000140025B00 Import Address Table
+      0000000140023F40 Import Name Table
+      0000000140024508 Bound Import Name Table
+      0000000000000000 Unload Import Name Table
+                     0 time date stamp
+
+                                    0000000140001DB9     C ggml_backend_reg_count
+                                    0000000140001DCB     D ggml_backend_reg_get
+                                    0000000140001DDD     2 ggml_backend_dev_count
+                                    0000000140001DEF     3 ggml_backend_dev_get
+                                    0000000140001DA7     A ggml_backend_load_all_from_path
+
+    ggml-base.dll
+              00000001 Characteristics
+      0000000140025D78 Address of HMODULE
+      0000000140025B30 Import Address Table
+      0000000140023F70 Import Name Table
+      0000000140024538 Bound Import Name Table
+      0000000000000000 Unload Import Name Table
+                     0 time date stamp
+
+                                    0000000140001EF8    36 ggml_backend_buffer_get_alloc_size
+                                    0000000140001EE6    3A ggml_backend_buffer_get_type
+                                    0000000140001ED4    58 ggml_backend_dev_memory
+                                    0000000140001EC2    63 ggml_backend_free
+                                    0000000140001F0A    4D ggml_backend_buft_name
+                                    0000000140001E9E    54 ggml_backend_dev_description
+                                    0000000140001E8C    59 ggml_backend_dev_name
+                                    0000000140001EB0    5D ggml_backend_dev_type
+                                    0000000140001E7A    7D ggml_backend_reg_name
+                                    0000000140001F1C    47 ggml_backend_buft_get_alloc_size
+
+    ggml-vulkan.dll
+              00000001 Characteristics
+      0000000140025D80 Address of HMODULE
+      0000000140025B88 Import Address Table
+      0000000140023FC8 Import Name Table
+      0000000140024590 Bound Import Name Table
+      0000000000000000 Unload Import Name Table
+                     0 time date stamp
+
+                                    0000000140001FCB     4 ggml_backend_vk_get_device_description
+                                    0000000140001FB9     2 ggml_backend_vk_buffer_type
+                                    0000000140001FA7     3 ggml_backend_vk_get_device_count
+                                    0000000140001FDD     5 ggml_backend_vk_get_device_memory
+
+  Summary
+
+        2000 .data
+        1000 .fptable
+        2000 .pdata
+        C000 .rdata
+        1000 .reloc
+       18000 .text

@@ -1,0 +1,190 @@
+[regua] header_sha256=4c0aac8da3dfedc14d0e049205aeaaa11f32802bee56d4a275a466ac231fa916 forma=aceita
+[regua] vcvars=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat toolset=14.44.35207
+[regua] VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\
+[regua] cl_banner=Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+[regua] link_primeiro=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe
+register_types.cpp
+   Creating library C:\Aetherfall\native\af_mind\bin\af_mind.lib and object C:\Aetherfall\native\af_mind\bin\af_mind.exp
+[regua] dll_bytes=105472
+[regua] export=          1    0 00001120 af_mind_entry
+[regua] runtime=C:\Aetherfall\.tools\llama\runtime
+[regua] cwd_gerador=C:\Aetherfall
+[remedio] llama-fit-params-impl.dll: iguais (53 nomes)
+[def] llama-fit-params-impl.dll: arquivo=llama-fit-params-impl.def entradas=3 export_total=53 c_puro=3 cpp_decorado=50 remedio=sim
+[remedio] ggml-base.dll: iguais (689 nomes)
+[def] ggml-base.dll: arquivo=ggml-base.def entradas=687 export_total=689 c_puro=687 cpp_decorado=2 remedio=sim
+[remedio] ggml-vulkan.dll: iguais (9 nomes)
+[def] ggml-vulkan.dll: arquivo=ggml-vulkan.def entradas=9 export_total=9 c_puro=9 cpp_decorado=0 remedio=sim
+[remedio] ggml.dll: iguais (16 nomes)
+[def] ggml.dll: arquivo=ggml.def entradas=16 export_total=16 c_puro=16 cpp_decorado=0 remedio=sim
+[remedio] llama.dll: iguais (266 nomes)
+[def] llama.dll: arquivo=llama.def entradas=240 export_total=266 c_puro=240 cpp_decorado=26 remedio=sim
+[gen] codigo=0
+Microsoft (R) Library Manager Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+   Creating library C:\Aetherfall\native\af_mind\bin\llama_import.lib and object C:\Aetherfall\native\af_mind\bin\llama_import.exp
+[importlib] llama codigo=0
+[importlib] llama_bytes=58326
+Microsoft (R) Library Manager Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+   Creating library C:\Aetherfall\native\af_mind\bin\ggml_import.lib and object C:\Aetherfall\native\af_mind\bin\ggml_import.exp
+[importlib] ggml codigo=0
+[importlib] ggml_bytes=5288
+Microsoft (R) Library Manager Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+   Creating library C:\Aetherfall\native\af_mind\bin\ggml-base_import.lib and object C:\Aetherfall\native\af_mind\bin\ggml-base_import.exp
+[importlib] ggml-base codigo=0
+[importlib] ggml-base_bytes=154094
+Microsoft (R) Library Manager Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+   Creating library C:\Aetherfall\native\af_mind\bin\ggml-vulkan_import.lib and object C:\Aetherfall\native\af_mind\bin\ggml-vulkan_import.exp
+[importlib] ggml-vulkan codigo=0
+[importlib] ggml-vulkan_bytes=3926
+symbol_gate.cpp
+[gate] cl_codigo=0
+[gate] link_codigo=0
+[regua] gate_exe_bytes=157696
+[dumpbin] imports_codigo=0
+[referencia] gate AF_SLOT=37 nomes
+[referencia] controle_negativo=4 nomes
+[import] modulo=ggml-base.dll referenciado=10 na_tabela=10
+[import] modulo=ggml-vulkan.dll referenciado=4 na_tabela=4
+[import] modulo=ggml.dll referenciado=5 na_tabela=5
+[import] modulo=llama.dll referenciado=18 na_tabela=18
+[controle] ggml_backend_buffer_type_get_base_buffer nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_model_n_ctx nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_new_context_with_model nao esta na tabela de imports (como o export-set medido diz)
+[controle] ggml_backend_buffer_type_get_alloc_size nao esta na tabela de imports (como o export-set medido diz)
+[import] OK referenciados=37 modulos=4 nomes_na_tabela=37
+[imports] codigo=0
+[corrida] nu
+[exe] caminho=C:\Aetherfall\native\af_mind\bin\af_symbol_gate.exe
+[exe] diretorio_do_processo=C:\Aetherfall\native\af_mind\bin
+[exe] cwd=C:\Aetherfall
+[simbolo] slot ggml_backend_load_all_from_path=00007FF761BD1D28
+[simbolo] slot ggml_backend_reg_count=00007FF761BD1DB3
+[simbolo] slot ggml_backend_reg_get=00007FF761BD1DC5
+[simbolo] slot ggml_backend_reg_name=00007FF761BD1DFB
+[simbolo] slot ggml_backend_dev_count=00007FF761BD1DD7
+[simbolo] slot ggml_backend_dev_get=00007FF761BD1DE9
+[simbolo] slot ggml_backend_dev_name=00007FF761BD1E86
+[simbolo] slot ggml_backend_dev_description=00007FF761BD1E98
+[simbolo] slot ggml_backend_dev_type=00007FF761BD1EAA
+[simbolo] slot ggml_backend_vk_get_device_count=00007FF761BD1F28
+[simbolo] slot ggml_backend_free=00007FF761BD1EBC
+[simbolo] slot ggml_backend_dev_memory=00007FF761BD1ECE
+[simbolo] slot ggml_backend_buffer_get_type=00007FF761BD1EE0
+[simbolo] slot ggml_backend_buffer_get_alloc_size=00007FF761BD1EF2
+[simbolo] slot ggml_backend_buft_name=00007FF761BD1F04
+[simbolo] slot ggml_backend_buft_get_alloc_size=00007FF761BD1F16
+[simbolo] slot ggml_backend_vk_buffer_type=00007FF761BD1FB3
+[simbolo] slot ggml_backend_vk_get_device_description=00007FF761BD1FC5
+[simbolo] slot ggml_backend_vk_get_device_memory=00007FF761BD1FD7
+[simbolo] slot llama_backend_free=00007FF761BD1BF6
+[simbolo] slot llama_backend_init=00007FF761BD1B6B
+[simbolo] slot llama_model_default_params=00007FF761BD1C08
+[simbolo] slot llama_model_load_from_file=00007FF761BD1C1A
+[simbolo] slot llama_context_default_params=00007FF761BD1C2C
+[simbolo] slot llama_init_from_model=00007FF761BD1C3E
+[simbolo] slot llama_model_meta_count=00007FF761BD1C50
+[simbolo] slot llama_model_meta_val_str=00007FF761BD1C62
+[simbolo] slot llama_model_n_ctx_train=00007FF761BD1C74
+[simbolo] slot llama_n_ctx=00007FF761BD1C86
+[simbolo] slot llama_vocab_n_tokens=00007FF761BD1C98
+[simbolo] slot llama_batch_init=00007FF761BD1CAA
+[simbolo] slot llama_batch_free=00007FF761BD1CBC
+[simbolo] slot llama_tokenize=00007FF761BD1CCE
+[simbolo] slot llama_chat_apply_template=00007FF761BD1CE0
+[simbolo] slot llama_decode=00007FF761BD1CF2
+[simbolo] slot llama_print_system_info=00007FF761BD1D04
+[simbolo] slot llama_supports_gpu_offload=00007FF761BD1D16
+[premissa] nome_nu libomp.dll handle=0000000000000000 erro=126
+[premissa] nome_nu ggml-base.dll handle=0000000000000000 erro=126
+[premissa] nome_nu ggml.dll handle=0000000000000000 erro=126
+[premissa] nome_nu ggml-vulkan.dll handle=0000000000000000 erro=126
+[premissa] nome_nu llama.dll handle=0000000000000000 erro=126
+[premissa] veredito=FALSA o diretorio do processo nao ve o runtime por nome nu
+[recusa] nu: sem nome nu resolvido nao ha o que chamar; rode `preload <runtime>`
+[corrida] nu_codigo=5
+[corrida] preload
+[exe] caminho=C:\Aetherfall\native\af_mind\bin\af_symbol_gate.exe
+[exe] diretorio_do_processo=C:\Aetherfall\native\af_mind\bin
+[exe] cwd=C:\Aetherfall
+[simbolo] slot ggml_backend_load_all_from_path=00007FF761BD1D28
+[simbolo] slot ggml_backend_reg_count=00007FF761BD1DB3
+[simbolo] slot ggml_backend_reg_get=00007FF761BD1DC5
+[simbolo] slot ggml_backend_reg_name=00007FF761BD1DFB
+[simbolo] slot ggml_backend_dev_count=00007FF761BD1DD7
+[simbolo] slot ggml_backend_dev_get=00007FF761BD1DE9
+[simbolo] slot ggml_backend_dev_name=00007FF761BD1E86
+[simbolo] slot ggml_backend_dev_description=00007FF761BD1E98
+[simbolo] slot ggml_backend_dev_type=00007FF761BD1EAA
+[simbolo] slot ggml_backend_vk_get_device_count=00007FF761BD1F28
+[simbolo] slot ggml_backend_free=00007FF761BD1EBC
+[simbolo] slot ggml_backend_dev_memory=00007FF761BD1ECE
+[simbolo] slot ggml_backend_buffer_get_type=00007FF761BD1EE0
+[simbolo] slot ggml_backend_buffer_get_alloc_size=00007FF761BD1EF2
+[simbolo] slot ggml_backend_buft_name=00007FF761BD1F04
+[simbolo] slot ggml_backend_buft_get_alloc_size=00007FF761BD1F16
+[simbolo] slot ggml_backend_vk_buffer_type=00007FF761BD1FB3
+[simbolo] slot ggml_backend_vk_get_device_description=00007FF761BD1FC5
+[simbolo] slot ggml_backend_vk_get_device_memory=00007FF761BD1FD7
+[simbolo] slot llama_backend_free=00007FF761BD1BF6
+[simbolo] slot llama_backend_init=00007FF761BD1B6B
+[simbolo] slot llama_model_default_params=00007FF761BD1C08
+[simbolo] slot llama_model_load_from_file=00007FF761BD1C1A
+[simbolo] slot llama_context_default_params=00007FF761BD1C2C
+[simbolo] slot llama_init_from_model=00007FF761BD1C3E
+[simbolo] slot llama_model_meta_count=00007FF761BD1C50
+[simbolo] slot llama_model_meta_val_str=00007FF761BD1C62
+[simbolo] slot llama_model_n_ctx_train=00007FF761BD1C74
+[simbolo] slot llama_n_ctx=00007FF761BD1C86
+[simbolo] slot llama_vocab_n_tokens=00007FF761BD1C98
+[simbolo] slot llama_batch_init=00007FF761BD1CAA
+[simbolo] slot llama_batch_free=00007FF761BD1CBC
+[simbolo] slot llama_tokenize=00007FF761BD1CCE
+[simbolo] slot llama_chat_apply_template=00007FF761BD1CE0
+[simbolo] slot llama_decode=00007FF761BD1CF2
+[simbolo] slot llama_print_system_info=00007FF761BD1D04
+[simbolo] slot llama_supports_gpu_offload=00007FF761BD1D16
+[premissa] nome_nu libomp.dll handle=0000000000000000 erro=126
+[premissa] nome_nu ggml-base.dll handle=0000000000000000 erro=126
+[premissa] nome_nu ggml.dll handle=0000000000000000 erro=126
+[premissa] nome_nu ggml-vulkan.dll handle=0000000000000000 erro=126
+[premissa] nome_nu llama.dll handle=0000000000000000 erro=126
+[branco] preload do runtime=C:\Aetherfall\.tools\llama\runtime
+[branco] LoadLibraryExA(libomp.dll)=00007FFC16420000 erro=0
+[branco] LoadLibraryExA(ggml-base.dll)=00007FFC13F90000 erro=0
+[branco] LoadLibraryExA(ggml.dll)=00007FFC6B310000 erro=0
+[branco] LoadLibraryExA(ggml-vulkan.dll)=00007FFBA4040000 erro=0
+[branco] LoadLibraryExA(llama.dll)=00007FFBE7AD0000 erro=0
+load_backend: loaded RPC backend from C:\Aetherfall\.tools\llama\runtime\ggml-rpc.dll
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = AMD Radeon RX 9060 XT (AMD proprietary driver) | uma: 0 | rebar: 0 | fp16: 1 | bf16: 1 | fp4: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+load_backend: loaded Vulkan backend from C:\Aetherfall\.tools\llama\runtime\ggml-vulkan.dll
+load_backend: loaded CPU backend from C:\Aetherfall\.tools\llama\runtime\ggml-cpu-haswell.dll
+[gate] load_all_from_path=0
+[gate] reg_count=3
+[gate]   reg[0] nome=RPC
+[gate]   reg[1] nome=Vulkan
+[gate]   reg[2] nome=CPU
+[gate] dev_count=2
+[gate]   dev[0] type=1 nome=Vulkan0 desc=AMD Radeon RX 9060 XT
+[gate]   dev[1] type=0 nome=CPU desc=AMD Ryzen 7 5700X3D 8-Core Processor           
+[gate] vk_get_device_count=1
+[gate] confronto_s1.2 reg_count=3 esperado=3 dev_count=2 esperado=2 vk=1 esperado=1 veredito=IGUAL
+[corrida] preload_codigo=0
+symbol_gate_absent.cpp
+[controle] cl_codigo=0
+[controle] link_codigo=1120
+[controle] ggml_backend_buffer_type_get_base_buffer recusa_lida=0
+[controle] llama_model_n_ctx recusa_lida=0
+[controle] llama_new_context_with_model recusa_lida=0
+[controle] ggml_backend_buffer_type_get_alloc_size recusa_lida=0
+[controle] OK: o gate e falsificavel -- os quatro nomes foram recusados pelo linker
+[ok] build.bat: C:\Aetherfall\native\af_mind\bin\af_mind.dll
+BUILD_RC=0

@@ -1,0 +1,47 @@
+[ab] link_primeiro=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe
+[ab] obj=C:\Aetherfall\native\af_mind\bin\symbol_gate.obj (o MESMO nas duas pontas)
+[def] llama-fit-params-impl.dll: arquivo=llama-fit-params-impl.def entradas=3 export_total=53 c_puro=3 cpp_decorado=50 remedio=nao
+[def] ggml-base.dll: arquivo=ggml-base.def entradas=687 export_total=689 c_puro=687 cpp_decorado=2 remedio=nao
+[def] ggml-vulkan.dll: arquivo=ggml-vulkan.def entradas=9 export_total=9 c_puro=9 cpp_decorado=0 remedio=nao
+[def] ggml.dll: arquivo=ggml.def entradas=16 export_total=16 c_puro=16 cpp_decorado=0 remedio=nao
+[def] llama.dll: arquivo=llama.def entradas=240 export_total=266 c_puro=240 cpp_decorado=26 remedio=nao
+[ab] gen_ordinal_codigo=0
+[ab] lib llama codigo=0
+[ab] lib ggml codigo=0
+[ab] lib ggml-base codigo=0
+[ab] lib ggml-vulkan codigo=0
+[ab] link_A_codigo=0
+[ab] dumpbin_A_codigo=0
+[ab] link_B_codigo=0
+[ab] dumpbin_B_codigo=0
+[ab] linhas_com_palavra_ordinal A=37 B=0
+[ab] --- regua contra A (import por ordinal) ---
+[referencia] gate AF_SLOT=37 nomes
+[referencia] controle_negativo=4 nomes
+[import] modulo=ggml-base.dll referenciado=10 na_tabela=0
+[import] modulo=ggml-vulkan.dll referenciado=4 na_tabela=0
+[import] modulo=ggml.dll referenciado=5 na_tabela=0
+[import] modulo=llama.dll referenciado=18 na_tabela=0
+[controle] ggml_backend_buffer_type_get_base_buffer nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_model_n_ctx nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_new_context_with_model nao esta na tabela de imports (como o export-set medido diz)
+[controle] ggml_backend_buffer_type_get_alloc_size nao esta na tabela de imports (como o export-set medido diz)
+[recusa] ggml-base.dll: faltam ['ggml_backend_buffer_get_alloc_size', 'ggml_backend_buffer_get_type', 'ggml_backend_buft_get_alloc_size', 'ggml_backend_buft_name'] e sobram [] -- a tabela nao mostrou NENHUM nome deste modulo; provavel import por ordinal (`.def` com ` @n`), que apaga o nome do binario
+[recusa] ggml-vulkan.dll: faltam ['ggml_backend_vk_buffer_type', 'ggml_backend_vk_get_device_count', 'ggml_backend_vk_get_device_description', 'ggml_backend_vk_get_device_memory'] e sobram [] -- a tabela nao mostrou NENHUM nome deste modulo; provavel import por ordinal (`.def` com ` @n`), que apaga o nome do binario
+[recusa] ggml.dll: faltam ['ggml_backend_dev_count', 'ggml_backend_dev_get', 'ggml_backend_load_all_from_path', 'ggml_backend_reg_count'] e sobram [] -- a tabela nao mostrou NENHUM nome deste modulo; provavel import por ordinal (`.def` com ` @n`), que apaga o nome do binario
+[recusa] llama.dll: faltam ['llama_backend_free', 'llama_backend_init', 'llama_batch_free', 'llama_batch_init'] e sobram [] -- a tabela nao mostrou NENHUM nome deste modulo; provavel import por ordinal (`.def` com ` @n`), que apaga o nome do binario
+[ab] regua_A_codigo=1
+[ab] --- regua contra B (import por nome) ---
+[referencia] gate AF_SLOT=37 nomes
+[referencia] controle_negativo=4 nomes
+[import] modulo=ggml-base.dll referenciado=10 na_tabela=10
+[import] modulo=ggml-vulkan.dll referenciado=4 na_tabela=4
+[import] modulo=ggml.dll referenciado=5 na_tabela=5
+[import] modulo=llama.dll referenciado=18 na_tabela=18
+[controle] ggml_backend_buffer_type_get_base_buffer nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_model_n_ctx nao esta na tabela de imports (como o export-set medido diz)
+[controle] llama_new_context_with_model nao esta na tabela de imports (como o export-set medido diz)
+[controle] ggml_backend_buffer_type_get_alloc_size nao esta na tabela de imports (como o export-set medido diz)
+[import] OK referenciados=37 modulos=4 nomes_na_tabela=37
+[ab] regua_B_codigo=0
+[ab] OK: com `@n` a regua recusa (codigo 1); sem `@n` ela passa (codigo 0)

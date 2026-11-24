@@ -1,0 +1,9 @@
+LINK : warning LNK4199: /DELAYLOAD:llama.dll ignored; no imports found from llama.dll
+LINK : warning LNK4199: /DELAYLOAD:ggml.dll ignored; no imports found from ggml.dll
+LINK : warning LNK4199: /DELAYLOAD:ggml-base.dll ignored; no imports found from ggml-base.dll
+LINK : warning LNK4199: /DELAYLOAD:ggml-vulkan.dll ignored; no imports found from ggml-vulkan.dll
+symbol_gate_absent.obj : error LNK2019: unresolved external symbol ggml_backend_buffer_type_get_base_buffer referenced in function main
+symbol_gate_absent.obj : error LNK2019: unresolved external symbol llama_model_n_ctx referenced in function main
+symbol_gate_absent.obj : error LNK2019: unresolved external symbol llama_new_context_with_model referenced in function main
+symbol_gate_absent.obj : error LNK2019: unresolved external symbol ggml_backend_buffer_type_get_alloc_size referenced in function main
+C:\Aetherfall\native\af_mind\bin\af_symbol_gate_absent.exe : fatal error LNK1120: 4 unresolved externals
