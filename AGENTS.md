@@ -152,7 +152,7 @@ explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 | --- | --- | --- |
 | Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-L29) |
 | Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs); só BT, não percepção/utilidade | [bt_tree.gd:117-137](src/ai/behavior/bt_tree.gd#L117-L137), [wolf.gd:448-449](src/entities/wolf.gd#L448-L449) |
-| Malha | 2 chunks por frame | [main.gd:28](src/main.gd#L28), usado em [:309-310](src/main.gd#L309-L310) |
+| Malha | 2 chunks por frame — **contagem, não tempo**: medido 52–177 ms no pior quadro, contra um piso de instrumento de 6,0 ms; é o furo #41 | [main.gd:28](src/main.gd#L28), usado em [:310](src/main.gd#L310), [voxel_world.gd:191-200](src/world/voxel_world.gd#L191-L200) |
 | Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:27](src/main.gd#L27), [:267-269](src/main.gd#L267-L269) |
 | Recolha de cadáver, visão do Éter | 1 s e 0,25 s | [main.gd:31](src/main.gd#L31), [:29](src/main.gd#L29) |
 

@@ -1,0 +1,61 @@
+== Rodada 2026-11-24 (6): microtravadas no jogo em execucao, braco hitch_llm_narr, fim 2026-11-24T09:51:52-04:00, arvore 8a53b56 (src f77c1961, tests 0faee7ff) ==
+== comando: .tools/Godot_v4.7.2-stable_win64_console.exe --path . .tools/hitch_probe.tscn -- --config=llm  (stdout e stderr separados) ==
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+== hitch_probe config=llm main=true walk=true mine=false viz=false f3=false llm=true segundos=40 warmup=20 ==
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+llm_aguardando pronto  deadline=120 s
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key <chave>  (sem servidor na porta 8741)
+llm_host  carregando  pid 9520  boot do modelo iniciado  (1/1 spawn)
+llm_host  pronto  boot 2539 ms  503=10  pid 9520
+llm_estado=pronto  boot_ms=2539  aguardado=9.5 s  pid=9520
+amostra_aberta  porque=modelo no ar  ms_do_boot=9518
+NARRACAO #1 t=0.9s lobo=0 vivo=true intent=patrol hp=100% fome=38% confianca=0.00 episodios=[] crencas=2 :: O lobo observa o vazio ao seu redor, processando a frieza do ambiente como um aviso de que o jogador ainda está longe, enquanto sua fome ape...
+NARRACAO #2 t=1.7s lobo=1 vivo=true intent=patrol hp=100% fome=39% confianca=0.00 episodios=[] crencas=2 :: O lobo varre o território com uma vigilância apática, sem reconhecer a presença do jogador, enquanto sua mente recruta memórias de caças fer...
+NARRACAO #3 t=2.4s lobo=2 vivo=true intent=patrol hp=100% fome=39% confianca=0.00 episodios=[] crencas=2 :: A mente do lobo processa o vazio, calculando a distância até o jogador enquanto o eco de seus passos preenche a floresta, impedido pela falt...
+NARRACAO #4 t=3.1s lobo=3 vivo=true intent=patrol hp=100% fome=39% confianca=0.00 episodios=[] crencas=2 :: A mente vazia do lobo processa um padrão de varredura, ignorando a fome e a desconfiança para manter a vigilância automática.
+NARRACAO #5 t=3.6s lobo=4 vivo=true intent=patrol hp=100% fome=40% confianca=0.00 episodios=[] crencas=2 :: Eu olho para o céu, cheiro o vento e escaneo o terreno em busca de movimentos que possam indicar um perigo.
+NARRACAO #6 t=4.2s lobo=5 vivo=true intent=investigate hp=100% fome=40% confianca=0.00 episodios=[] crencas=2 :: Sua mente está vazia enquanto varre o território, ignorando o silêncio do jogador e as memórias que nunca foram registradas.
+NARRACAO #7 t=31.7s lobo=0 vivo=true intent=patrol hp=100% fome=57% confianca=0.00 episodios=[scent_work/0.01] crencas=2 :: A cabeça do lobo está vazia, pois a sua intenção de patrulhar e o seu zero absoluto de confiança no jogador não geraram nenhuma memória rece...
+NARRACAO #8 t=32.4s lobo=1 vivo=true intent=patrol hp=100% fome=57% confianca=0.00 episodios=[scent_work/0.02] crencas=2 :: O lobo observa o cenário com cautela, buscando o cheiro do jogador enquanto seu instinto de patrulha o impede de confiar em nenhum som novo.
+NARRACAO #9 t=33.1s lobo=2 vivo=true intent=investigate hp=100% fome=57% confianca=0.00 episodios=[scent_work/0.02] crencas=2 :: O lobo varre o chão buscando rastros, ignorando sua presença como se fosse apenas mais uma nuvem de poeira na mente de quem nunca o viu.
+NARRACAO #10 t=33.7s lobo=3 vivo=true intent=patrol hp=100% fome=58% confianca=0.00 episodios=[] crencas=2 :: Os olhos de lobo escaneiam o ambiente com cautela enquanto minha fome aumenta e a desconfiança em relação ao jogador se intensifica.
+NARRACAO #11 t=34.3s lobo=4 vivo=true intent=hunt hp=100% fome=58% confianca=0.00 episodios=[saw_player/0.40, hit_land/0.30, saw_player/0.40] crencas=2 :: O lobo escaneia o ar, filtrando a visão do jogador como uma ameaça iminente enquanto calcula a melhor rota para o ataque.
+NARRACAO #12 t=35.0s lobo=5 vivo=true intent=patrol hp=100% fome=58% confianca=0.00 episodios=[scent_work/0.01] crencas=2 :: O lobo cruza a floresta em vigilância, ignorando o silêncio do jogador enquanto seu instinto de caça permanece adormecido.
+CONFIG llm  amostras=6444  janela=40.0 s  hz_efetivo=161.6
+PERIODO_MS p50=6.02 p90=7.40 p95=8.31 p99=14.17 p999=68.88 max=169.34 media=6.19
+TRAVADAS >=2xp50=141 (2.19%)  >=3xp50=11  >=5xp50=11  >=33,3ms=11 (0.17%)  >=100ms=2
+HIST_P50 <2x=6303 2-3x=130 3-5x=0 5-8x=0 8-15x=8 >15x=3  (limite 2x=12.0 ms)
+QUADRO_US max process=157653 physics=11328 step=9587 mesh=156359
+QUADRO max draw_calls=225 primitivos=306912  vram_med=191 MB  compilacoes_pipeline=19
+CONTA ticks=885 (0.1/quadro) chunks_remalhados=13 quadros_com_mesh=11 mesh_total_ms=902.3 mined=0 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=0 de 6444  quadros_botao_press=0  progresso_max=0.00  pitch=0.00  terceira_pessoa=false  mouse_mode=2  edits_finais=10
+ORACULO pedidos=12 narracoes=12 estado_final=pronto
+CRUZAMENTO travadas=141 | com_remalha=11 com_compilacao=0 com_tick=130 sem_origem=0 | remalharam_sem_travar=0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 5352  169.34    7.56    9.80  151.98    7.57  156.36    0   2    2  0   0    195
+  #  579  159.84    8.06    8.04  143.74    0.71  153.40    1   2    2  0   0    169
+  #  580   99.89    8.06    8.04   83.78    0.69   84.00    0   1    3  0   0    169
+  # 1149   87.09    6.33    9.09   71.67    7.34   76.74    0   1    1  0   0    180
+  # 4873   73.23   67.22    8.44   -2.43    0.83   69.89    0   1    1  0   0    159
+  # 5020   72.03   70.96    9.18   -8.12    7.94   61.15    0   1    1  0   0    162
+  # 4719   69.38    6.18    9.50   53.69    0.84   66.00    0   1    1  0   0    164
+  # 1438   68.88    6.43    9.05   53.40    7.27   59.17    0   1    1  0   0    179
+  # 5758   64.16    7.29    8.57   48.30    2.55   58.75    0   1    1  0   0    205
+  # 6237   62.07    6.37    8.22   47.47    0.82   58.76    0   1    1  0   0    170
+PIORES_SEM_MESH (ate 5)
+FORA: a sonda nao separa o custo do composer do Windows nem de outro app; roda em janela 1280x720 (o padrao do projeto) com o vsync do motor -- tela cheia do dono tem outro custo de draw; nada aqui mede alocacoes.
+OBSERVACAO pid_do_filho=9520 (o `_exit_tree` do hospedeiro mata)
+HITCH_PROBE fim config=llm codigo=0
+llm_host  encerrando pid 9520  OK

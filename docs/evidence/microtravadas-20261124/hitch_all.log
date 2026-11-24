@@ -1,0 +1,49 @@
+== Rodada 2026-11-24 (6): microtravadas no jogo em execucao, braco all, fim 2026-11-24T09:29:17-04:00, arvore 8a53b56 (src f77c1961, tests 0faee7ff) ==
+== comando: .tools/Godot_v4.7.2-stable_win64_console.exe --path . .tools/hitch_probe.tscn -- --config=all ==
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+== hitch_probe config=all main=true walk=true mine=true viz=true f3=false llm=true segundos=40 warmup=20 ==
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+llm_aguardando pronto  deadline=120 s
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+llm_host  sondando  sonda /v1/models em http://127.0.0.1:8741
+llm_host  create_process  C:/Aetherfall/.tools/llama/runtime/llama-server.exe -m C:/Aetherfall/models/qwen3.5-4b-q4_k_m.gguf --host 127.0.0.1 --port 8741 -c 4096 -ngl 99 --alias mind-small --reasoning off --api-key <chave>  (sem servidor na porta 8741)
+llm_host  carregando  pid 24620  boot do modelo iniciado  (1/1 spawn)
+llm_host  pronto  boot 2521 ms  503=10  pid 24620
+llm_estado=pronto  boot_ms=2521  aguardado=9.5 s  pid=24620
+amostra_aberta  porque=modelo no ar  ms_do_boot=9502
+CONFIG all  amostras=6232  janela=40.0 s  hz_efetivo=156.3
+PERIODO_MS p50=6.02 p90=7.47 p95=8.54 p99=15.11 p999=105.41 max=153.55 media=6.40
+TRAVADAS >=2xp50=151 (2.42%)  >=3xp50=26  >=5xp50=25  >=33,3ms=25 (0.40%)  >=100ms=12
+HIST_P50 <2x=6081 2-3x=125 3-5x=1 5-8x=0 8-15x=8 >15x=17  (limite 2x=12.0 ms)
+QUADRO_US max process=148996 physics=12775 step=10825 mesh=147634
+QUADRO max draw_calls=344 primitivos=551246  vram_med=191 MB  compilacoes_pipeline=22
+CONTA ticks=885 (0.1/quadro) chunks_remalhados=41 quadros_com_mesh=25 mesh_total_ms=2258.1 mined=13 pend_final=0 dropped=0
+PREMISSA_MINE quadros_alvo_valido=3952 de 6232  quadros_botao_press=4169  progresso_max=0.96  pitch=-0.60  terceira_pessoa=false  mouse_mode=2  edits_finais=24
+ORACULO pedidos=12 narracoes=12 estado_final=pronto
+CRUZAMENTO travadas=151 | com_remalha=25 com_compilacao=0 com_tick=126 sem_origem=0 | remalharam_sem_travar=0
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  #  502  153.55   97.76    9.14   46.64    0.62  147.63    1   2    2  0   0    254
+  # 5324  141.22    7.72   10.46  123.04    0.69  126.41    0   2    2  0   0    273
+  # 5459  127.32    7.72   10.46  109.14    0.67  121.99    0   2    2  0   0    304
+  #   66  120.25    7.10    8.16  104.99    1.09  104.93    0   2    2  0   0    242
+  #  114  114.41    7.10    8.16   99.15    0.66  104.99    0   2    2  0   0    250
+  # 4800  109.96   97.09   10.82    2.05    8.16   95.59    0   2    2  0   0    252
+  #  240  108.38  107.03   10.35   -9.00    1.06   97.48    0   2    2  0   0    255
+  # 4621  105.41   96.86   10.23   -1.68    1.14   95.64    0   2    2  0   0    257
+  #  324  103.10  100.30   10.76   -7.96    2.50   95.59    0   2    2  0   0    255
+  #  280  100.69  100.30   10.76  -10.36    0.65   95.80    0   2    2  0   0    255
+PIORES_SEM_MESH (ate 5)
+FORA: a sonda nao separa o custo do composer do Windows nem de outro app; roda em janela 1280x720 (o padrao do projeto) com o vsync do motor -- tela cheia do dono tem outro custo de draw; nada aqui mede alocacoes.
+OBSERVACAO pid_do_filho=24620 (o `_exit_tree` do hospedeiro mata)
+HITCH_PROBE fim config=all codigo=0
+llm_host  encerrando pid 24620  OK
