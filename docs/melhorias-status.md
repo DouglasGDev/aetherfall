@@ -9480,8 +9480,10 @@ casa passa a ser: **depois de merge com conflito em documento, rodar a comparaç
 os dois pais antes de declarar a resolução** — contagem de ponteiros não é testemunha de prosa.
 Dono: este passe o instrumentou; quem o transforma em régua da casa (com as outras três) é o dono do
 instrumento, o mesmo do **furo #51** e do **#52**. Seguem abertos, sem mudança: **#28**, **#31**,
-**#38**, **#39**, **#41**, **#44**, **#45**, **#46**, **#48**, **#50**, **#51**, **#52**, **#53**, o
+**#38**, **#39**, **#41**, **#44**, **#46**, **#48**, **#50**, **#51**, **#52**, **#53**, o
 par de vazamento do quit (agora com o número **4** também na árvore integrada) e `block_changed` sem
-consumidor em `src/` — débito da perna 17. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a
-projeção do `TickJournal` não são tocados por este commit, e a fila serializada continua
-**22 → 17 → 18 → 20 → 13**.
+consumidor em `src/` — débito da perna 17. O **#45** fecha fora desta branch, pelo pouso `9dad808` da
+`fix/sidecars-de-evidencia-45` (`423423d`), que traz os quatro `.png.import` da água para a mesma
+árvore deste reparo; a árvore pousada abaixo é os dois juntos. `Channel.COUNT`, `FORMAT_VERSION`,
+`GEN_VERSION` e a projeção do `TickJournal` não são tocados por nenhum dos dois commits, e a fila
+serializada continua **22 → 17 → 18 → 20 → 13**.
