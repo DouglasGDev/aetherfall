@@ -1,0 +1,126 @@
+clone limpo da ponta 5492aaa — o pin da Fase 2 (dossie 23) antes do pouso
+================================================================================================
+
+arvore  = 5492aaa8a5bbc8ea0bc4b1ad859d175d190bd604 (ponta de feat/elevacao-visual-chuva-23f2)
+          clone limpo em C:/tmp/aetherfall-pin-23f2 (`git clone C:/Aetherfall -b <branch>`)
+          src   = 9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2
+          tests = d534212a0061b368ee41b4dd8c222886ef0915fe
+          `git status --porcelain` do clone, depois do --import e dos links: VAZIO.
+          Os tres hash de src/tests sao os MESMOS da pasta `rederivacao-23f2-merge2` (o re-rome na
+          arvore do segundo merge) — esta passada nao mede codigo novo, mede o mesmo codigo vindo
+          de um disco limpo, que e o que o mandato 3 item 6 exige antes de publicar um numero.
+engine  = Godot Engine v4.7.2.stable.official.ed1daf0bf (primeira linha de cada log aqui)
+seed    = 20261116   malha = 2 chunks/frame   regua do passo = 25 ms
+
+Os tres artefatos que a perna 22 deixa fora do git foram ligados com `cp -l` (hardlink, nao copia):
+`native/af_mind/bin/af_mind.dll` (184 320 B), `.tools/llama/runtime/` inteiro (llama.dll 3 928 064 B,
+ggml.dll 78 848 B, 47 arquivos) e `models/qwen3.5-4b-q4_k_m.gguf` (2 740 937 888 B, links=5). Sem eles
+o clone e a arvore do furo #38, onde cinco checagens da 22 caem por ausencia de extensao — nao e o
+caso desta corrida, e por isso os rodapes abaixo batem com os do merge2.
+
+
+1. O IMPORT FRIO, E OS QUATRO RODAPES
+------------------------------------------------------------------------------------------------
+godot --headless --path . --import              pin_import.log    exit 0 em 15 s
+    321 linhas, 169 passos de import, `[ DONE ] loading_editor_layout`, `.godot` = 8,3 MB,
+    SCRIPT ERROR = 0, SHADER ERROR = 0.
+godot --headless --path . tests/smoke_test.tscn pin_suite.log     exit 0  == 277 checagens  0 falhas  63.0 s ==
+                                              pin_suite2.log    exit 0  == 277 checagens  0 falhas  66.9 s ==
+godot --headless --path . --script tests/aether_reactions_test.gd
+                                              pin_runner.log    exit 0  355 checagens 0 falhas 58.661 s
+                                              pin_runner2.log   exit 0  355 checagens 0 falhas 52.516 s
+godot --headless --path . --script tests/simulation_rng_test.gd  pin_rng.log      exit 0  27 checagens 0 falhas 2.766 s
+godot --headless --path . --script tests/tick_journal_test.gd    pin_journal.log  exit 0  128 checagens 0 falhas 7/7 testes concluidos 6.159 s
+
+Duas corridas de suíte e de runner, nao uma, porque o numero de tempo e do concorrente e a casa
+publica o par: o censo (277 / 355) e identico nas duas, o tempo nao (63,0 / 66,9 s e 58,7 / 52,5 s).
+Contagem de erro nos sete stdout: `SCRIPT ERROR` = 0, `SHADER ERROR` = 0, `[FAIL]` = 0, `FALHA` = 0,
+conferido por `grep -c` em cada arquivo. A suíte encerra com `WARNING: 8 ObjectDB instances were
+leaked at exit` e `ERROR: 4 resources still in use at exit` (pin_suite.log:413-415) — o par de
+vazamento do quit ja registrado como debito, com o mesmo tamanho da Fase 1, e nada aqui o calou.
+
+As linhas que decidem o gate, literais:
+  pin_suite2.log:365-366   [PASS] nenhum tick perdido no teste inteiro  perdidos=0  pior passo=15.29 ms  tick=450
+                           [PASS] espalhamento_nao_estoura_o_passo      perdidos=0  pior passo=15.29 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m
+  pin_suite.log:365-366    as duas mesmas checagens com 15.95 ms
+  pin_runner2.log:125      OK nenhum passo de simulacao acima da regua de 25 ms e nenhum tick perdido, nos dois bracos | plano worst_sim=11.30 ms dropped=0 | face worst_sim=10.49 ms dropped=0
+  pin_runner2.log:487      OK espalhamento_nao_estoura_o_passo | worst_sim_ms=13.60 ms  pico_do_passo=13596 us  media=2255.0 us/passo  total=3156973 us em 1400 passos
+  pin_runner2.log:3917     OK budget_do_oraculo_nao_estoura_a_arvore | narradas=5/5 pedidos=7 worst_decode_us=791607 | worst_sim_ms=14.78 ms pico_do_passo=14781 us media=2582.0 us/passo total=3614846 us em 1400 passos
+  pin_runner2.log:3918     OK budget_do_oraculo: o SubtreeGuard de 400 us nao estoura com o decode em voo | trips_antes=0 trips_depois=0 narradas=5
+  pin_runner2.log:3939-3941 OK censo de testes completos | 75/75 ; OK nenhum estouro de subtree no budget | trips_solo=0 trips_matilha=0 ; OK censo de checagens | 355/355
+  pin_runner2.log:3942     CENARIO ESTREITO, NAO GATE P1: passos=10568 sim_step total=2616001 us pico=5269 us; BT last_us soma=65459 pico=299 trips=0
+  pin_runner2.log:3943     PASSOS DE MATILHA (sessao real, difusao incluida), NAO GATE P1: passos=1341 sim_tick total=3516134 us pico=16441 us; BT last_us soma=62573 pico=170 trips=0
+  pin_runner.log:3891      OK contrato: metricas honestas da fila (cache nao existe no Passo 3) | depth=0 hits=0 misses=2 worst_decode_us=659816 vram_bytes=7016231056
+Nenhum `pior passo` desta arvore encosta na regua de 25 ms, e `dropped=0`/`perdidos=0` nas duas pontas.
+
+
+2. AS JANELAS DE CARGA, E O FURO #53 QUE ELAS ACHARAM
+------------------------------------------------------------------------------------------------
+Quatro arquivos: `carga_suite.txt` e `carga_runner.txt` (primeira tentativa) e `carga_suite2.txt` /
+`carga_runner2.txt` (a re-corrida). O instrumento e o `carga_23f2.ps1` arquivado aqui, que obedece os
+dois eixos ja pagos: junta por `IDProcess` (furo #44) e filtra por `ExecutablePath` (furo #31).
+
+  carga_suite.txt    110 amostras, load 0 / 6 / 38 %   — 110 vezes `sem-godot-no-projeto`
+  carga_runner.txt   110 amostras, load 0 / 8 / 34 %   — 110 vezes `sem-godot-no-projeto`
+  carga_suite2.txt   110 amostras, load 0 / 8 / 43 %   — o pid da corrida em 38 amostras (29996, 8436), ram_livre minimo 18 030 MB
+  carga_runner2.txt  105 amostras, load 0 / 8 / 31 %   — o pid da corrida em 30 amostras (25168, 27596), ram_livre minimo 14 229 MB
+
+**Furo #53 — novo, medido nesta passada:** o `--proj` do amostrador filtra o **ExecutablePath do
+binario**, nao o projeto que esta sendo rodado. O Godot mora em `C:\Aetherfall\.tools`, entao apontar
+`-proj C:\tmp\aetherfall-pin-23f2` — que e o caminho certo para "qual projeto eu estou medindo" —
+devolve 220 amostras sem nenhum processo da corrida. O instrumento se comportou bem na ausencia (escreveu
+`sem-godot-no-projeto` em vez de um `cpu=-1` que parece leitura, a lies do #44), mas o parâmetro engana:
+num clone fora da raiz, a janela nao testemunha o proprio processo. O conserto aplicado aqui e correr o
+mesmo script com `-proj C:\Aetherfall` e conferir que o `pid=` visto e o da corrida — o que a re-corrida
+fez, e por isso as duas primeiras corridas ficam arquivadas com o log inteiro em vez de descartadas.
+O que fecha o furo de verdade e o amostrador ganhar um filtro por `--path` do projeto (ou por linha de
+comando), nao por pasta do executavel. Dono: o dono do instrumento, como no #31, #44, #51 e #52. Nada
+disto e codigo de jogo: nenhuma linha de `src/` ou `tests/` muda com o #53.
+
+Concorrentes nomeados nas duas janelas, sem que nenhum fosse fechado: `CrossDeviceService` ate 261 %,
+`Qoder#5` 99 %, `QuantumEngine` (app de audio da JBL) 83 %. A maquina estava sem nenhum processo Godot
+ou python vivo antes da primeira corrida (consulta `Get-Process` as 10:12, saida vazia).
+
+
+3. AS TRES REGUAS NA PONTA, E A IDENTIDADE QUE ANCORA O POUSO
+------------------------------------------------------------------------------------------------
+`python tools/check_doc_anchors.py`  →  exit 1 pelo desenho: **40 arquivos · 3 315 ponteiros conferidos ·
+212 rótulos · 3 804 links relativos · casos objetivos: 5** — os cinco sao o `../.tools/...` gitignored
+(`_chk_labels.py`, `_p12_load_sampler.ps1` x2, `_carga_por_janela.py` x2), a unica classe tolerada desde
+a Fase 1. Saidas em `ancora.txt`.
+`AETHER_ROOT=<a branch worktree> python .tools/verify_plan_cites.py AGENTS.md README.md docs/melhorias-status.md docs/planos/*.md`
+→ exit 0: **2 841 citacoes com numero conferidas · 60 arquivos citados inexistentes (a lista dos proprios
+dossies, de pecas que eles declaram comprar) · 0 numeros de linha fora do arquivo**. Saida em `cites.txt`.
+`python .tools/verify_plan_ids.py docs/planos/23-elevacao-visual-agua.md` → exit 0: **97 identificadores
+citados, 9 ausentes**, todos da classe declarada pela pagina (`Weather`, `ReflectionProbe`,
+`entered_water`, `ARRAY_DATA`, `LINEAR_WITH_MIPMAPS`, `CPUParticles3D`, `forward_plus`, `gdshader`, e o
+SHA de 64 hex que a pagina cita como evidencia). Saida em `ids23.txt`.
+
+A identidade que ancora o pouso, medida sem tocar indice, ref ou arvore de trabalho — `git merge-tree
+--write-tree` so escreve no banco de objetos duas arvores inalcancaives por ref (nada aponta para elas,
+nenhum estado de outra perna muda), e nao cria commit. A fusao de `8073135` (a main local de hoje) com
+`5492aaa` da arvore **`8ead8475…`**, cujo
+`src` = `9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2` e `tests` = `d534212a0061b368ee41b4dd8c222886ef0915fe`
+— **byte a byte a arvore que as sete corridas acima mediram**. O merge confita em **um** arquivo
+(`docs/melhorias-status.md`) e nao acrescenta nenhuma linha de codigo sobre a ponta. Entao o numero
+desta pagina vale para a arvore do pouso por identidade de arvore, conferida antes do merge, nao
+declarada depois.
+
+
+4. O QUE ESTA PASSADA NAO FECHA
+------------------------------------------------------------------------------------------------
+- **O pouso em si esta bloqueado por estado de outra perna, e nao fui eu que o abri.** `main` esta
+  checkada em `C:/tmp/aetherfall-pouso-23f2` com `MERGE_HEAD = e0a558c` ("Merge remote-tracking branch
+  'origin/main'"), iniciado 09:41:33 logo depois do pouso da Fase 2 da perna 22 (09:40:01 → `8073135`),
+  com **32 arquivos de documento em conflito** e os conflitos marcados como resolvidos no indice
+  (indice escrito 09:43:35) mas **sem commit**. `git merge-tree` da mesma dupla (read-only) confirma os
+  32 conflitos. Enquanto aquele indice existir, `main` nao e minha para tocar: nem commit, nem abort,
+  nem `git -C` por cima. Quem abriu que feche, ou o dono do repositorio diga.
+- `origin/main` e `e0a558c` = **Merge pull request #1**, que ja pousou o CODIGO da Fase 2 no ponto
+  `2f46368`. O que ainda nao esta em `origin/main` sao os cinco commits depois dele nesta branch
+  (`e4c5b31`, `b4c57a7`, `822a6ea`, `128e236`, `5492aaa`): re-derivados de ponteiro e esta evidencia.
+- Ficam em aberto, nomeados: a corrida pareada `--tick-journal=` nesta arvore (debito da Fase 2 desde o
+  fechamento), `block_changed` sem consumidor em `src/` (debito da 17), o par de vazamento do quit, e o
+  #53 acima. Nenhum gate de fase se fecha com esta passada; a fila continua 22 → 17 → 18 → 20 → 13.
+- `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projecao do `TickJournal` seguem intocados por
+  esta perna — o que correu aqui e a mesma arvore que o re-rome do segundo merge mediu.

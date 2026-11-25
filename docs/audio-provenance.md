@@ -158,13 +158,13 @@ avança e um SFX não-looping termina sozinho.
 [audio_director.gd:149-154](../src/audio/audio_director.gd#L149-L154)) e três de
 cada lobo (`bit_player`, `wounded`, `died`, conectados em
 [audio_director.gd:159-161](../src/audio/audio_director.gd#L159-L161), chamada por
-[main.gd:444-445](../src/main.gd#L444-L445)); não escreve voxel, não imprime no Éter e
+[main.gd:445-446](../src/main.gd#L445-L446)); não escreve voxel, não imprime no Éter e
 sorteja variante numa RNG própria, semente 20261118. Medido em headless
 ([tests/audio_test.gd](../tests/audio_test.gd)): nove eventos disparados não mexem no
 hash autoritativo do tick (`98313688c61a → 98313688c61a`), nem no `_rng.state` de cada
 lobo, nem no `_population_rng.state`. O transitório por corpo (posição anterior,
 acumulador de passo, água, cooldown) é chaveado por `wolf.identity` e limpo no load
-([main.gd:1144](../src/main.gd#L1144)) — nunca vira save.
+([main.gd:1145](../src/main.gd#L1145)) — nunca vira save.
 
 **Custo.** 743 µs uma vez no boot (montagem das vozes e leitura dos níveis), ~3 µs por
 frame de física em `update_audio`, ~100 µs por avaliação de ambiência (1×/s) e ~0,66 ms

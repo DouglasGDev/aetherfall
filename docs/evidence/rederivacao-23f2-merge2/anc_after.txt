@@ -1,0 +1,5 @@
+docs/melhorias-status.md:3414  ../.tools/_chk_labels.py  LINK QUEBRADO
+docs/melhorias-status.md:5990  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:5995  ../.tools/_carga_por_janela.py  LINK QUEBRADO
+docs/melhorias-status.md:6025  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:6027  ../.tools/_carga_por_janela.py  LINK QUEBRADO

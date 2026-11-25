@@ -1,0 +1,310 @@
+"""Re-derivacao de ponteiros na arvore mergida, com PROVENCIA da linha do documento.
+
+Por que dois pais e nao um: a arvore tem duas familias de numero envelhecido. A
+linha que o merge tomou da main carrega o numero da main (`4ceb1a5`) e envelheceu
+pelo que a 23 acrescentou; a linha que a 23 escreveu carrega o numero da branch
+(`2f46368`) e envelheceu pelo que a 22 acrescentou. Um mapa so de um dos pais
+trata o numero da outra familia como se fosse o dele e desloca duas vezes.
+
+A provincia e lida por TEXTO EXATO: a linha do documento de trabalho igual byte a
+byte a uma linha do documento do pai veio daquele pai. Linha que so casa depois
+de colapsar os digitos NAO e reclamada — ela ja foi re-escrita por uma das duas
+pernas, e o numero dela nao e mais o do pai. Esses casos vao para a lista
+`AMBIGUO`, que e lida a mao.
+
+Tres saidas por ponteiro: IDENTICO (o bloco citado continua igual no lugar novo),
+EDITADA (a perna mexeu dentro da faixa) e SEM ALVO (FORA/APAGADA). `--escreve`
+aplica IDENTICO e EDITADA; SEM ALVO e AMBIGUO sao leitura humana.
+
+    PYTHONIOENCODING=utf-8 python /c/tmp/bk23f2/mapa_cites3.py            # relatorio
+    PYTHONIOENCODING=utf-8 python /c/tmp/bk23f2/mapa_cites3.py --escreve  # aplica
+"""
+import io
+import os
+import re
+import subprocess
+import sys
+
+DIG = re.compile(r"\d+")
+CONT = re.compile(r"(?<![\w./-]):(\d+)(?:-(\d+))?")
+LINK = re.compile(r"\]\((?:\.\./)*((?:src|tests|docs)/[\w./-]+\.(?:gd|md))#L(\d+)(?:-L(\d+))?\)")
+BARE = re.compile(r"((?:\.\./)*/?(?:src|tests|docs)/[\w./-]+\.(?:gd|md)):(\d+)(?:-(\d+))?")
+REV = re.compile(r"(?:^|[\s`(>])[0-9a-f]{7,40}`?:$")
+HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+# a provencia ignora SO o parentese que o commit 822a6ea devolveu: uma linha da main
+# com o `)` restaurado e a mesma linha da main, e o numero dela e da main.
+PAR = re.compile(r"(#L\d+(?:-L\d+)?)\)")
+
+
+def assina(t):
+    return PAR.sub(r"\1", t)
+
+MAIN = "4ceb1a5"     # a main que o merge trouxe
+BRANCH = "2f46368"   # a ponta da 23 antes do segundo merge
+PAIS = (MAIN, BRANCH)
+
+# arquivos que uma das duas pernas escreveu: so neles um numero pode ter envelhecido
+CADOS = {"src/main.gd", "src/world/voxel_world.gd", "tests/smoke_test.gd",
+         "tests/aether_reactions_test.gd", "src/rendering/water_fx.gd",
+         "src/world/water_surface.gd", "src/rendering/weather.gd",
+         "src/rendering/rain_fx.gd", "src/world/opaque_surface.gd",
+         "src/ai/mind_oracle.gd", "src/ai/mind.gd", "src/ai/belief_verifier.gd",
+         "src/ai/af_mind_runtime.gd", "docs/melhorias-status.md"}
+
+
+def sh(args):
+    return subprocess.run(args, cwd=os.getcwd(), capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
+
+
+_lines = {}
+
+
+def lines(base, path):
+    """memoizado: cada arquivo alvo e lido do git uma vez por pai, nao por ponteiro."""
+    if (base, path) in _lines:
+        return _lines[(base, path)]
+    if base is None:
+        r = io.open(path, encoding="utf-8").read().split("\n") if os.path.exists(path) else None
+    else:
+        s = sh(["git", "show", "%s:%s" % (base, path)])
+        r = s.stdout.split("\n") if s.returncode == 0 else None
+    _lines[(base, path)] = r
+    return r
+
+
+def docs():
+    out = [p for p in ("AGENTS.md", "README.md") if os.path.exists(p)]
+    for dirpath, dirnames, filenames in os.walk("docs"):
+        dirnames[:] = [d for d in dirnames if d != "evidence"]
+        for fn in sorted(filenames):
+            if fn.endswith(".md"):
+                out.append(os.path.join(dirpath, fn).replace("\\", "/"))
+    return out
+
+
+_maps = {}
+
+
+def mapa(base, path):
+    """(linha_base -> linha_nova, removidas, hunks) do diff base->arvore de trabalho."""
+    if (base, path) in _maps:
+        return _maps[(base, path)]
+    d = sh(["git", "diff", "-U0", "--no-color", base, "--", path]).stdout
+    hunks = []
+    cur = None
+    for line in d.split("\n"):
+        h = HUNK.match(line)
+        if h:
+            cur = {"b0": int(h.group(1)), "bc": int(h.group(2) or 1),
+                   "n0": int(h.group(3)), "nc": int(h.group(4) or 1), "body": []}
+            hunks.append(cur)
+            continue
+        if cur is not None and line[:1] in (" ", "+", "-"):
+            cur["body"].append(line)
+    m, rem = {}, set()
+    for hk in hunks:
+        bn, nn = hk["b0"], hk["n0"]
+        for l in hk["body"]:
+            if l[0] == " ":
+                m[bn] = nn
+                bn += 1
+                nn += 1
+            elif l[0] == "-":
+                rem.add(bn)
+                bn += 1
+            else:
+                nn += 1
+    _maps[(base, path)] = (m, rem, hunks)
+    return _maps[(base, path)]
+
+
+def novo_numero(base, path, x):
+    m, rem, hunks = mapa(base, path)
+    if x in m:
+        return m[x]
+    if x in rem:
+        return None
+    if not hunks:
+        return x
+    delta = 0
+    for hk in hunks:
+        if hk["b0"] + hk["bc"] - 1 < x:
+            delta += hk["nc"] - hk["bc"]
+        else:
+            break
+    return x + delta
+
+
+def main():
+    escreve = "--escreve" in sys.argv
+    marca = os.environ.get("MAPA_MARCA", "/tmp/mapa_cites3.aplicado")
+    if escreve and os.path.exists(marca):
+        sys.exit("ja aplicado (%s) — apague a marca so se os documentos voltarem ao estado pre-sweep" % marca)
+    fix, editada, apagada, ambiguo = [], [], [], []
+    vistos = set()
+    pendentes = []
+    for doc in docs():
+        src = lines(None, doc)
+        exatas = {}
+        colapsadas = {}
+        for base in PAIS:
+            bl = lines(base, doc)
+            if bl is None:
+                exatas[base] = set()
+                colapsadas[base] = set()
+                continue
+            exatas[base] = set(assina(x) for x in bl)
+            colapsadas[base] = set(DIG.sub("#", assina(x)) for x in bl)
+        alvo_linha = {}
+        for n, line in enumerate(src, 1):
+            t = line.strip()
+            if not t:
+                continue
+            pai = next((b for b in PAIS if assina(line) in exatas[b]), None)
+            if pai is None:
+                if any(DIG.sub("#", assina(line)) in colapsadas[b] for b in PAIS):
+                    if LINK.search(line) or BARE.search(line):
+                        ambiguo.append("AMBIGUO %s:%d %s" % (doc, n, t[:150]))
+                continue
+            eventos = [(m.group(1), int(m.group(2)), int(m.group(3) or m.group(2)), "link",
+                        m.start(), m.end())
+                       for m in LINK.finditer(line)]
+            cob = [(m.start(), m.end()) for m in LINK.finditer(line)]
+            revs = []
+            vistos_bare = []
+            for m in BARE.finditer(line):
+                if REV.search(line[:m.start()]) or any(s <= m.start() < e for s, e in cob):
+                    revs.append((m.start(), m.end()))
+                    continue
+                vistos_bare.append((m.start(), m.end(), m.group(1)))
+                eventos.append((m.group(1).split("../")[-1].lstrip("/"),
+                                int(m.group(2)), int(m.group(3) or m.group(2)), "bare",
+                                m.start(), m.end()))
+            âncoras = sorted([(x[4], x[0]) for x in eventos] +
+                             [(st, path) for st, _, path in vistos_bare])
+            for m in CONT.finditer(line):
+                if any(s <= m.start() < e for s, e in cob + revs):
+                    continue
+                if line[m.end():m.end() + 2] == "](":
+                    continue
+                herdado = [path for st, path in âncoras if st < m.start()]
+                if not herdado:
+                    continue
+                eventos.append((herdado[-1].split("../")[-1].lstrip("/"),
+                                int(m.group(1)), int(m.group(2) or m.group(1)), "cont",
+                                m.start(), m.end()))
+            for path, a, b, kind, _, _ in eventos:
+                if path not in CADOS or (doc, n, path, a, b) in vistos:
+                    continue
+                vistos.add((doc, n, path, a, b))
+                bl, wl = lines(pai, path), lines(None, path)
+                if wl is None or bl is None or a > len(bl) or b > len(bl):
+                    apagada.append("FORA[%s] %s:%d %s:%d-%d" % (pai, doc, n, path, a, b))
+                    continue
+                if [x.strip() for x in wl[a - 1:b]] == [x.strip() for x in bl[a - 1:b]]:
+                    continue
+                if not any(x.strip() for x in bl[a - 1:b]):
+                    continue
+                na, nb = novo_numero(pai, path, a), novo_numero(pai, path, b)
+                if na is None or nb is None:
+                    apagada.append("APAGADA[%s] %s:%d %s:%d-%d" % (pai, doc, n, path, a, b))
+                    continue
+                mesmo = [x.strip() for x in wl[na - 1:nb]] == [x.strip() for x in bl[a - 1:b]]
+                tag = "FIX %s\t%d\t%s\t%d\t%d\t%d\t%d\t%s\t%s" % (
+                    doc, n, path, a, b, na, nb, "IDENTICO" if mesmo else "EDITADA", pai[:7])
+                (fix if mesmo else editada).append(tag)
+                alvo_linha.setdefault(n, {})[(path, a, b)] = (na, nb)
+        if alvo_linha:
+            pendentes.append((doc, src, alvo_linha))
+    if escreve:
+        for doc, src, alvo_linha in pendentes:
+            aplica(doc, src, alvo_linha)
+        io.open(marca, "w", encoding="utf-8").write(
+            "aplicado em %s de %s (main) + %s (branch)\n" % (__import__("datetime").datetime.utcnow().isoformat(), MAIN, BRANCH))
+    print("\n".join(fix))
+    print("---- EDITADAS ----")
+    print("\n".join(editada))
+    print("---- SEM ALVO ----")
+    print("\n".join(apagada))
+    print("---- AMBIGUO (so casa apos colapsar digitos: leitura a mao) ----")
+    print("\n".join(ambiguo))
+    print("total identico=%d editada=%d sem_alvo=%d ambiguo=%d  (%s)" %
+          (len(fix), len(editada), len(apagada), len(ambiguo), "APLICADO" if escreve else "dry-run"))
+
+
+def aplica(doc, src, alvo_linha):
+    for n, targets in alvo_linha.items():
+        src[n - 1] = reescreve(src[n - 1], targets)
+    io.open(doc, "w", encoding="utf-8", newline="\n").write("\n".join(src))
+
+
+def reescreve(line, targets):
+    hits = []
+    for m in LINK.finditer(line):
+        key = (m.group(1), int(m.group(2)), int(m.group(3) or m.group(2)))
+        if key in targets:
+            hits.append((m.start(), m.end(), m.group(0), "link", targets[key]))
+    cob = [(h[0], h[1]) for h in hits]
+    for m in BARE.finditer(line):
+        if REV.search(line[:m.start()]) or any(s <= m.start() < e for s, e in cob):
+            continue
+        key = (m.group(1).split("../")[-1].lstrip("/"),
+               int(m.group(2)), int(m.group(3) or m.group(2)))
+        if key in targets:
+            hits.append((m.start(), m.end(), m.group(0), "bare", targets[key]))
+    cob2 = [(m.start(), m.end()) for m in LINK.finditer(line)]
+    âncoras = sorted([(m.start(), m.group(1)) for m in LINK.finditer(line)] +
+                     [(m.start(), m.group(1)) for m in BARE.finditer(line)
+                      if not (REV.search(line[:m.start()])
+                              or any(s <= m.start() < e for s, e in cob2))])
+    revs2 = [(m.start(), m.end()) for m in BARE.finditer(line)
+             if REV.search(line[:m.start()])]
+    for m in CONT.finditer(line):
+        if any(s <= m.start() < e for s, e in cob2 + revs2):
+            continue
+        if line[m.end():m.end() + 2] == "](":
+            continue
+        herdado = [pth for st, pth in âncoras if st < m.start()]
+        if not herdado:
+            continue
+        key = (herdado[-1].split("../")[-1].lstrip("/"),
+               int(m.group(1)), int(m.group(2) or m.group(1)))
+        if key in targets:
+            hits.append((m.start(), m.end(), m.group(0), "cont", targets[key]))
+    edits = []
+    for s, e, texto, kind, (na, nb) in hits:
+        if kind == "link":
+            head = texto[:texto.index("#L")]
+            velho = int(re.search(r"#L(\d+)", texto).group(1))
+            edits.append((s + len(head), e, "#L%d" % na + ("" if nb == na else "-L%d" % nb) + ")"))
+        else:
+            head = texto[:texto.rindex(":")]
+            velho = int(texto[texto.rindex(":") + 1:].split("-")[0])
+            edits.append((s + len(head), e, ":%d" % na + ("" if nb == na else "-%d" % nb)))
+        k = line.rfind("[", 0, s)
+        if kind != "cont" and k >= 0 and s - 1 > k:
+            _rotulo(line, k, s, velho, na, nb, edits)
+    edits.sort(key=lambda x: x[0])
+    out, pos = [], 0
+    for s, e, txt in edits:
+        if s < pos:
+            continue
+        out.append(line[pos:s])
+        out.append(txt)
+        pos = e
+    out.append(line[pos:])
+    return "".join(out)
+
+
+def _rotulo(line, k, s, velho, na, nb, edits):
+    mn = re.search(r"(\d+)(?:-(\d+))?`?$", line[k + 1:s])
+    if not mn or int(mn.group(1)) != velho:
+        return
+    edits.append((k + 1 + mn.start(1),
+                  k + 1 + (mn.end(2) if mn.group(2) else mn.end(1)),
+                  "%d" % na + ("" if nb == na else "-%d" % nb)))
+
+
+if __name__ == "__main__":
+    main()

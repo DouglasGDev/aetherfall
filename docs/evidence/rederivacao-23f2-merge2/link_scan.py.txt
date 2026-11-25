@@ -1,0 +1,44 @@
+import io, os, re, subprocess, sys
+
+ROOT = sys.argv[1] if len(sys.argv) > 1 else "C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2"
+REV = sys.argv[2] if len(sys.argv) > 2 else None
+
+def files_of():
+    if REV:
+        out = subprocess.run(["git", "-C", "C:/Aetherfall", "ls-tree", "-r", "--name-only", REV],
+                             capture_output=True, text=True, encoding="utf-8", errors="replace").stdout.split("\n")
+        return [f for f in out if f.endswith(".md") and (f.startswith("docs/") or f in ("AGENTS.md", "README.md"))]
+    fs = []
+    for base, dirs, names in os.walk(os.path.join(ROOT, "docs")):
+        for n in names:
+            if n.endswith(".md"):
+                fs.append(os.path.relpath(os.path.join(base, n), ROOT).replace("\\", "/"))
+    for n in ("AGENTS.md", "README.md"):
+        if os.path.exists(os.path.join(ROOT, n)):
+            fs.append(n)
+    return fs
+
+tot = 0
+per = {}
+for f in files_of():
+    if REV:
+        txt = subprocess.run(["git", "-C", "C:/Aetherfall", "show", "%s:%s" % (REV, f)],
+                             capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+    else:
+        txt = io.open(os.path.join(ROOT, f.replace("/", os.sep)), encoding="utf-8").read()
+    bad = []
+    for ln, line in enumerate(txt.split("\n"), 1):
+        for m in re.finditer(r"\]\(", line):
+            rest = line[m.end():]
+            close = rest.find(")")
+            url = rest if close < 0 else rest[:close]
+            if "#L" in url and close < 0:
+                bad.append((ln, line[:150]))
+                break
+    if bad:
+        per[f] = len(bad)
+        tot += len(bad)
+        for (ln, s) in bad[:6]:
+            print("%s:%d: %s" % (f, ln, s))
+print("TOTAL links sem parentese:", tot, "arquivos:", len(per))
+print(per)

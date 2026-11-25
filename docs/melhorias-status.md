@@ -9057,6 +9057,33 @@ paga o de lá, e a que abrir o runner paga o `:301 → :339`. Dono: o dono do in
 esta perna. Nada disto é código de jogo: os consertos que esta passada fez nos dois arquivos próprios
 são comentário, e o par de pins acima cobre a árvore.
 
+### Furo #52 — novo, medido nesta passada: a deriva de número é invisível à régua em 572 dos 659 ponteiros
+
+Um merge que traz duas famílias de linhas para a mesma árvore envelhece ponteiro para uma linha
+**cheia**, e é aí que a régua não olha: [`tools/check_doc_anchors.py`](../tools/check_doc_anchors.py)
+confere o rótulo contra o **conteúdo** da linha-alvo e o URL contra o **arquivo**, e só acusa quando o
+alvo cai em branco, quando o rótulo nomeia um símbolo fora da faixa, ou quando o arquivo não existe.
+Medido na árvore do segundo merge: com os documentos de `822a6ea` (antes desta re-derivação) contra o
+código da árvore, a régua imprime **92** casos objetivos; com os documentos desta passada, **5** — os
+cinco `../.tools/...` gitignored da classe já tolerada. A régua via, portanto, **87** casos; o mapa
+linha-a-linha moveu **659** ponteiros (627 derivados de `4ceb1a5`, 32 de `2f46368`) em **32**
+documentos. A diferença — **572** — não é subtração de conjuntos (os 87 incluem os onze consertos
+lidos à mão), é a ordem de grandeza que passa verde: um ponteiro que se moveu 26 linhas e caiu em
+linha cheia é indistinguível, para a casa, de um ponteiro certo.
+
+A classe não é teórica, e o exemplo é desta passada: a página 13 citava `EXPECTED_CHECKS` na linha 60
+de [tests/aether_reactions_test.gd](../tests/aether_reactions_test.gd) e o mapa, que desloca **posição**
+e não **símbolo**, a teria movido para 64 — onde mora um comentário de cabeçalho. A constante vive hoje
+em [`:126`](../tests/aether_reactions_test.gd#L126) com o valor **355**, e nem `check_doc_anchors.py`
+nem `verify_plan_cites.py` (que lê o número do rótulo e ignora o do URL) diriam uma palavra sobre as
+duas versões.
+
+**O que fecha o furo:** uma classe nova no `check_doc_anchors.py` que resolva o **símbolo** citado pelo
+rótulo e exija que a linha-alvo caia dentro da faixa dele — o que `verify_plan_ids.py` já faz com
+identificadores, mas em `src/`/`tests/` e não em ponteiro de prosa. Dono: o dono do instrumento de
+réguas, como no #51. Esta perna não escreve em `tools/`: a cláusula do prompt dela é visual, e o
+`check_doc_anchors.py` é compartilhado com as pernas que estão em voo.
+
 ### O que esta passada abre e não fecha
 
 - **A expectativa de hash da abertura precisava de uma leitura melhor, e ela é publicada corrigida.** A

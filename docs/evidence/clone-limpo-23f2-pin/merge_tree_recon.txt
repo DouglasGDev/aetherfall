@@ -1,0 +1,99 @@
+ea00db4969e3575fc3ecc362fb54bf6f34aeba54
+AGENTS.md
+docs/audio-provenance.md
+docs/design/07-project-structure.md
+docs/design/08-roadmap-risks-licensing.md
+docs/design/09-veloren-mechanics-adaptation.md
+docs/design/10-world-layers-and-block-physics.md
+docs/design/11-inventory-crafting.md
+docs/engine/simclock.md
+docs/melhorias-status.md
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md
+docs/planos/02-censo-multi-semente.md
+docs/planos/03-canais-morte-som-fogo.md
+docs/planos/04-budget-hot-medido.md
+docs/planos/05-difusao-fora-do-tick.md
+docs/planos/06-decompor-main-gd.md
+docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md
+docs/planos/08-mindstore-e-mindsinspector.md
+docs/planos/09-bioma-cor-de-pelo-e-ether.md
+docs/planos/10-alcateia-rutinas.md
+docs/planos/11-acasalamento-filhote-e-censo.md
+docs/planos/12-bicho-cavando-voxel.md
+docs/planos/13-arvore-genealogica-e-ether.md
+docs/planos/14-convivio-da-alcateia.md
+docs/planos/15-oraculo-embutido-no-boot.md
+docs/planos/16-tocas-da-alcateia.md
+docs/planos/17-fisica-de-blocos-que-caem.md
+docs/planos/18-mundo-vivo-grama-e-mato.md
+docs/planos/19-auto-pulo-de-bloco.md
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md
+docs/planos/22-oraculo-nativo-gdextension.md
+docs/planos/23-elevacao-visual-agua.md
+docs/planos/README.md
+
+Auto-merging AGENTS.md
+CONFLICT (content): Merge conflict in AGENTS.md
+Auto-merging docs/audio-provenance.md
+CONFLICT (content): Merge conflict in docs/audio-provenance.md
+Auto-merging docs/design/07-project-structure.md
+CONFLICT (content): Merge conflict in docs/design/07-project-structure.md
+Auto-merging docs/design/08-roadmap-risks-licensing.md
+CONFLICT (content): Merge conflict in docs/design/08-roadmap-risks-licensing.md
+Auto-merging docs/design/09-veloren-mechanics-adaptation.md
+CONFLICT (content): Merge conflict in docs/design/09-veloren-mechanics-adaptation.md
+Auto-merging docs/design/10-world-layers-and-block-physics.md
+CONFLICT (content): Merge conflict in docs/design/10-world-layers-and-block-physics.md
+Auto-merging docs/design/11-inventory-crafting.md
+CONFLICT (content): Merge conflict in docs/design/11-inventory-crafting.md
+Auto-merging docs/engine/simclock.md
+CONFLICT (content): Merge conflict in docs/engine/simclock.md
+Auto-merging docs/melhorias-status.md
+CONFLICT (content): Merge conflict in docs/melhorias-status.md
+Auto-merging docs/planos/01-estado-inicial-e-ordem-autoritativa.md
+CONFLICT (content): Merge conflict in docs/planos/01-estado-inicial-e-ordem-autoritativa.md
+Auto-merging docs/planos/02-censo-multi-semente.md
+CONFLICT (content): Merge conflict in docs/planos/02-censo-multi-semente.md
+Auto-merging docs/planos/03-canais-morte-som-fogo.md
+CONFLICT (content): Merge conflict in docs/planos/03-canais-morte-som-fogo.md
+Auto-merging docs/planos/04-budget-hot-medido.md
+CONFLICT (content): Merge conflict in docs/planos/04-budget-hot-medido.md
+Auto-merging docs/planos/05-difusao-fora-do-tick.md
+CONFLICT (content): Merge conflict in docs/planos/05-difusao-fora-do-tick.md
+Auto-merging docs/planos/06-decompor-main-gd.md
+CONFLICT (content): Merge conflict in docs/planos/06-decompor-main-gd.md
+Auto-merging docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md
+CONFLICT (content): Merge conflict in docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md
+Auto-merging docs/planos/08-mindstore-e-mindsinspector.md
+CONFLICT (content): Merge conflict in docs/planos/08-mindstore-e-mindsinspector.md
+Auto-merging docs/planos/09-bioma-cor-de-pelo-e-ether.md
+CONFLICT (content): Merge conflict in docs/planos/09-bioma-cor-de-pelo-e-ether.md
+Auto-merging docs/planos/10-alcateia-rutinas.md
+CONFLICT (content): Merge conflict in docs/planos/10-alcateia-rutinas.md
+Auto-merging docs/planos/11-acasalamento-filhote-e-censo.md
+CONFLICT (content): Merge conflict in docs/planos/11-acasalamento-filhote-e-censo.md
+Auto-merging docs/planos/12-bicho-cavando-voxel.md
+CONFLICT (content): Merge conflict in docs/planos/12-bicho-cavando-voxel.md
+Auto-merging docs/planos/13-arvore-genealogica-e-ether.md
+CONFLICT (content): Merge conflict in docs/planos/13-arvore-genealogica-e-ether.md
+Auto-merging docs/planos/14-convivio-da-alcateia.md
+CONFLICT (content): Merge conflict in docs/planos/14-convivio-da-alcateia.md
+Auto-merging docs/planos/15-oraculo-embutido-no-boot.md
+CONFLICT (content): Merge conflict in docs/planos/15-oraculo-embutido-no-boot.md
+Auto-merging docs/planos/16-tocas-da-alcateia.md
+CONFLICT (content): Merge conflict in docs/planos/16-tocas-da-alcateia.md
+Auto-merging docs/planos/17-fisica-de-blocos-que-caem.md
+CONFLICT (content): Merge conflict in docs/planos/17-fisica-de-blocos-que-caem.md
+Auto-merging docs/planos/18-mundo-vivo-grama-e-mato.md
+CONFLICT (content): Merge conflict in docs/planos/18-mundo-vivo-grama-e-mato.md
+Auto-merging docs/planos/19-auto-pulo-de-bloco.md
+CONFLICT (content): Merge conflict in docs/planos/19-auto-pulo-de-bloco.md
+Auto-merging docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md
+CONFLICT (content): Merge conflict in docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md
+Auto-merging docs/planos/22-oraculo-nativo-gdextension.md
+CONFLICT (content): Merge conflict in docs/planos/22-oraculo-nativo-gdextension.md
+Auto-merging docs/planos/23-elevacao-visual-agua.md
+CONFLICT (content): Merge conflict in docs/planos/23-elevacao-visual-agua.md
+Auto-merging docs/planos/README.md
+CONFLICT (content): Merge conflict in docs/planos/README.md
+Auto-merging src/main.gd
