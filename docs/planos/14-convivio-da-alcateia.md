@@ -30,9 +30,9 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
    livre do olho até o ponto não o coloca ali, e a recusa é impressa — nunca revertida em silêncio ao
    centro. **Nasce vermelha por construção**: na ponta do dossiê, `_random_ground_point`
    (`main.gd:322-336` de `eb6ec8d`) não menciona o jogador em nenhuma linha.
-   *(Entregue: quem sorteia é [`_spawn_home_point`](../../src/main.gd#L756-L828) sobre as
-   [`SPAWN_BANDS`](../../src/main.gd#L518), e cada candidata passa antes por
-   [`_spawn_point_ok`](../../src/main.gd#L730-L735) — distância e visada contra o olho do jogador;
+   *(Entregue: quem sorteia é [`_spawn_home_point`](../../src/main.gd#L757-L829) sobre as
+   [`SPAWN_BANDS`](../../src/main.gd#L519), e cada candidata passa antes por
+   [`_spawn_point_ok`](../../src/main.gd#L731-L736) — distância e visada contra o olho do jogador;
    a recusa conta os motivos e imprime "spawn RECUSADO:" em
    [:808-810](../../src/main.gd#L813-L815), sem fallback para o centro.)*
 

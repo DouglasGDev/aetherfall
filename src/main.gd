@@ -213,6 +213,7 @@ func _ready() -> void:
 
 	_spawn_wolves(WOLF_COUNT)
 	_start_journal_from_args()
+	_start_oracle_cache_from_args()
 
 
 ## Decisao 4.6 do dossie 15, ajustada pelo §6.3 do dossie 22: em headless o dono
@@ -1266,6 +1267,19 @@ func _start_journal_from_args() -> void:
 			if err != OK:
 				push_error("abrir journal: %s" % error_string(err))
 				get_tree().quit(1)
+			return
+
+
+## Cache do oraculo (dossie 22 §6.5), opt-in pelo mesmo padrao do
+## `--tick-journal=`: sem a flag o jogo narra com decode a cada recuo e a cache
+## nao existe. Com a flag, o arquivo — SEPARADO do save, cache nao e memoria —
+## e lido antes de inferir e o replay de CI nem precisa do modelo no processo.
+func _start_oracle_cache_from_args() -> void:
+	if oracle == null:
+		return
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--oracle-cache="):
+			oracle.set_cache_path(arg.trim_prefix("--oracle-cache="))
 			return
 
 

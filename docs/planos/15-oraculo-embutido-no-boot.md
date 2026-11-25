@@ -501,20 +501,20 @@ delas muda mandato: é deriva de linha e nome de API.
   com os passos registrados em [`:129-130`](../../tests/smoke_test.gd#L129-L130).
 - As citações de `main.gd` no contrato estão defasadas **+9** a partir do bloco de diagnóstico —
   conferidas só onde este dossiê encosta: `diagnostics()` é
-  [`main.gd:954-965`](../../src/main.gd#L954-L965) (o contrato diz `435-446`), o journal em
-  [`:958`](../../src/main.gd#L963) (diz `445`), `state_hash()` em
-  [`:1003`](../../src/main.gd#L1008) (diz `486-487`), a CLI do journal em
-  [`:1006-1019`](../../src/main.gd#L1011-L1024) (diz `490-498`) e `_exit_tree` em
-  [`:1006-1007`](../../src/main.gd#L1011-L1012) (diz `500-501`). As demais do contrato não foram
+  `954-965` (o contrato diz `435-446`), o journal em
+  `958` (diz `445`), `state_hash()` em
+  `1003` (diz `486-487`), a CLI do journal em
+  `1006-1019` (diz `490-498`) e `_exit_tree` em
+  `1006-1007` (diz `500-501`). As demais do contrato não foram
   relidas por mim, e é a perna de re-derivação por conteúdo que as alcança.
 - **Estes números são os de `4ac5838` e ficam como foram escritos**: a seção é registro do que
   estava em pé naquela árvore, e transladá-la apagaria a medição — inclusive o `+9` do parágrafo
   acima, que é a diferença *daquela* base. Na ponta desta branch, lidos por conteúdo (a fatia de
   linha confere linha a linha, sem offset adivinhado), os alvos são `diagnostics()`
-  [`:1159-1184`](../../src/main.gd#L1164-L1189), a linha do journal dentro dela
-  [`:1187`](../../src/main.gd#L1192), `state_hash()`
-  [`:1231-1232`](../../src/main.gd#L1236-L1237), a CLI [`:1235-1242`](../../src/main.gd#L1240-L1247) e
-  `_exit_tree` [`:1245-1246`](../../src/main.gd#L1250-L1251); na suíte o passo de planar é
+  [`:1181-1216`](../../src/main.gd#L1181-L1216), a linha do journal dentro dela
+  [`:1209`](../../src/main.gd#L1209), `state_hash()`
+  [`:1259-1260`](../../src/main.gd#L1259-L1260), a CLI [`:1263-1270`](../../src/main.gd#L1263-L1270) e
+  `_exit_tree` [`:1286-1287`](../../src/main.gd#L1286-L1287); na suíte o passo de planar é
   [`:2043-2049`](../../tests/smoke_test.gd#L2043-L2049) (+34), o bloco do oráculo
   [`:2121-2148`](../../tests/smoke_test.gd#L2121-L2148) com a porta 1 armada em
   [`:2128`](../../tests/smoke_test.gd#L2128), e os dois passos em

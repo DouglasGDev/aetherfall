@@ -88,9 +88,9 @@ não descreve mais o estado daquele dia.
   compartilhado**, e a mensagem de respawn dizia "uma nova matilha entrou no vale"
   (`main.gd:263` naquela ponta) sem que nada no código chame aquilo de matilha.
   *(Relida nesta ponta: a perna 14 trocou o sorteio único por
-  [`_spawn_home_point`](../../src/main.gd#L756), chamado por
-  [`_place_request`](../../src/main.gd#L672) a partir de
-  [:362](../../src/main.gd#L367) sobre as [`SPAWN_BANDS`](../../src/main.gd#L518), e removeu o
+  [`_spawn_home_point`](../../src/main.gd#L757), chamado por
+  [`_place_request`](../../src/main.gd#L673) a partir de
+  [`:368`](../../src/main.gd#L368) sobre as [`SPAWN_BANDS`](../../src/main.gd#L519), e removeu o
   letreiro — o dossiê 14 §1.3 manda nenhum aviso de criatura na tela. A área e a coordenação são
   desta perna: a folha conta o censo em
   [:653](../../src/entities/wolf.gd#L653), corta o círculo em

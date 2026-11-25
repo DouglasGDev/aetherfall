@@ -214,8 +214,8 @@ derivados do que já existe, nenhum no caminho quente: `dens` (toca fundada), `d
 (componentes conexos do grafo lido) e `den_min_dist` (menor distância centro-a-centro). O F3 não
 chama `diagnostics()` por frame — ele lê `clock.*` direto
 ([`hud.gd:258`](../../src/ui/hud.gd#L258)) e a linha por lobo vem do roster
-([`main.gd:842`](../../src/main.gd#L842)) — então a conta roda quando o diagnóstico é pedido, e o
-`stats_line()` ([`main.gd:1173-1178`](../../src/main.gd#L1173-L1178)) ganha a toca de cada lobo na
+([`main.gd:843`](../../src/main.gd#L843)) — então a conta roda quando o diagnóstico é pedido, e o
+`stats_line()` ([`main.gd:1174-1177`](../../src/main.gd#L1174-L1177)) ganha a toca de cada lobo na
 linha que já imprime por bicho.
 
 ## 4. Custo — as quatro perguntas

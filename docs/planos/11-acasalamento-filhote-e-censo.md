@@ -161,7 +161,7 @@ linha, com o ponteiro vivo. Os números de linha desta seção são ponteiros pa
   ([:911](../../src/entities/wolf.gd#L911)), uma avaliação de BT por tick
   ([:875-904](../../src/entities/wolf.gd#L875-L904), budget 400 µs em
   [:448-449](../../src/entities/wolf.gd#L448-L449)) e um corpo no F3 (`wolves_roster` em
-  [main.gd:842](../../src/main.gd#L842)). Teto sugerido e escrito com o motivo: **12**, porque
+  [main.gd:843](../../src/main.gd#L843)). Teto sugerido e escrito com o motivo: **12**, porque
   12 × 400 µs = 4,8 ms dos 50 ms do passo, e o teto que o gate de P1 ainda escreve como `[TARGET]`
   é 2,5 ms para as árvores — ou seja, **12 é teto de censo, não orçamento de BT liberado**: o
   escalonamento por fase (filhote com árvore mais barata) é o que mantém a soma dentro do número.
@@ -212,7 +212,7 @@ Checagens:
    real, com o corpo reescalado), o hash **diferente** quando muda o que está na projeção (mesma
    chave de crença, confiança diferente), as três chaves presentes no `state_dict` com
    `FORMAT_VERSION == 1`, e o caminho do disco reidratando fase, idade e cooldown no bicho certo
-   ([`_test_journal_hash_inalterado_sem_escolha`](../../tests/aether_reactions_test.gd#L3775-L3829)).
+   ([`_test_journal_hash_inalterado_sem_escolha`](../../tests/aether_reactions_test.gd#L3836-L3903)).
 
 `EXPECTED_CHECKS` ([aether_reactions_test.gd:61](../../tests/aether_reactions_test.gd#L61), **119**
 na leitura desta página) e as contagens de suíte (**237 / 0 falhas** na mesma leitura, pin

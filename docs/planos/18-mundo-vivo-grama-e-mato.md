@@ -86,7 +86,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **O que uma célula que muda custa.** Cada conversão é um `set_block` → `edits[p] = b`
   ([voxel_world.gd:286](../../src/world/voxel_world.gd#L286)) + chunk sujo
   ([`:292-303`](../../src/world/voxel_world.gd#L292-L303)) remalhado a **2 chunks por frame**
-  ([main.gd:28](../../src/main.gd#L28), [`:325`](../../src/main.gd#L330)) ≈ 67 ms de
+  ([main.gd:28](../../src/main.gd#L28), [`:332`](../../src/main.gd#L332)) ≈ 67 ms de
   boot por chunk nas medidas do contrato ([README.md:148-149](../../README.md#L148-L149)).
   O `edits` **não tem teto** ([`:42`](../../src/world/voxel_world.gd#L42) é um `Dictionary`
   puro, serializado inteiro em [main.gd:1012](../../src/main.gd#L1012)); hoje cresce
@@ -162,7 +162,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **Roda por frame, por tick ou às vezes?** A fila de crescimento: **dentro do tick de 20 Hz**,
   mas com reavaliação a cada `GROW_PERIOD` segundos de simulação; a conversão: no máximo
   1 por tick. A malha resultante: `_process`, fora do budget do passo
-  ([main.gd:330](../../src/main.gd#L330)).
+  ([main.gd:332](../../src/main.gd#L332)).
 - **Quantas entidades são alcançadas?** Nenhum bicho. Células: 1 evento de bloco candidata
   **5** (ela + 4 vizinhas), e cada reavaliação custa 6 `get_block` (1 própria + 1 acima + 1
   abaixo + 4 vizinhas, menos as sobrepostas). Com `GROW_MAX_PER_TICK = 1`, o teto por segundo
