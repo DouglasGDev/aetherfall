@@ -1,0 +1,17 @@
+--- A cache com carimbo do mesmo motor ---
+   import  : fresco (ultimo em 2026-11-25 19:22; 0 arquivo(s) mais novo(s))
+--- B um .gd mais novo que o carimbo ---
+   import  : necessario - 1 arquivo(s) importavel(is) mais novo(s) que o ultimo import
+             ultimo import em 2026-11-25 19:22
+             o mais recente: C:\Aetherfall\.qoder\worktrees\rodar-frescos\src\main.gd
+--- C carimbo gravado por outro motor ---
+   import  : necessario - o cache veio do motor 4.3.1 e esta rodada usa 4.7.2
+             ultimo import em 2026-11-25 19:22
+--- D sem carimbo (le a data do cfg) ---
+   import  : necessario - 1 arquivo(s) importavel(is) mais novo(s) que o ultimo import
+             ultimo import em 2026-11-25 19:22, sem carimbo (li a data do cfg)
+             o mais recente: C:\Aetherfall\.qoder\worktrees\rodar-frescos\src\main.gd
+--- E sem .godot ---
+--- E falta o registro de classes ---
+   import  : necessario - falta o registro de classes (.godot\global_script_class_cache.cfg)
+existe .godot depois da limpeza: False

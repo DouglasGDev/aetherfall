@@ -1,0 +1,23 @@
+backup: 58575633CE36F139A567DFFC64CF4730
+no lugar do antigo: F0507B70A3B08FACAEE39B733F9390C0
+carimbo gravado: 4.7.2
+--- CheckOnly na arvore real, cache fresco ---
+== motor ==
+   4.7.2  (-Engine)
+   exe : C:\Aetherfall\.tools\Godot_v4.7.2-stable_win64.exe
+== plano ==
+   projeto : C:\Aetherfall
+   modo    : jogo
+   import  : fresco (ultimo em 2026-11-25 19:23; 0 arquivo(s) mais novo(s))
+   comando : "C:\Aetherfall\.tools\Godot_v4.7.2-stable_win64.exe" --path C:\Aetherfall
+
+diagnostico apenas (-CheckOnly): nada foi aberto.
+--- agora com um importavel tocado depois do carimbo ---
+Get-Item : NÆo ‚ poss¡vel associar o argumento ao parƒmetro 'LiteralPath' porque ele ‚ nulo.
+No C:\Aetherfall\.tools\_valida_arvoreal.ps1:27 caractere:24
++ (Get-Item -LiteralPath $ogg[0].FullName).LastWriteTime = Get-Date
++                        ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Get-Item], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : ParameterArgumentValidationErrorNullNotAllowed,Microsoft.PowerShell.Commands.GetItemComm 
+   and
+ 

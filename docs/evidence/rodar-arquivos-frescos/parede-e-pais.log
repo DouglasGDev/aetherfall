@@ -1,0 +1,40 @@
+Launcher rodado num worktree limpo (C:\Aetherfall\.qoder\worktrees\rodar-frescos), maquina
+livre: "nenhum processo do engine vivo" conferido antes de cada janela de tempo, e a medição
+de tempo e serial (nada rodando junto).
+
+== 1. O custo de forçar frescor, no caminho de 1 clique ==
+parede-com-import.log  parede=67 s   import: necessario - 1 arquivo(s) importavel(is) mais novo(s) que o ultimo import
+                       rodape: == 278 checagens  2 falhas  61.5 s de teste ==
+parede-fresco.log      parede=67 s   import: fresco (ultimo em 2026-11-25 19:33; 0 arquivo(s) mais novo(s))
+                       rodape: == 278 checagens  2 falhas  65.2 s de teste ==
+chkonly-fresco.log     parede=589 ms (com o cold start do proprio PowerShell) - CheckOnly sai
+                       antes de qualquer import ou lancamento.
+
+Derivacao: 67 s de parede menos o que a suite declara (61,5 s com re-import, 65,2 s fresco)
+da 5,5 s e 1,8 s de launcher. Os dois bracos fecham na mesma parede de 67 s, entao o
+re-import incremental nao passa do ruido de uma corrida para outra da mesma arvore. O
+re-import direto medido sozinho (reimport-direto-3arquivos.log) custa 4 069 ms, exit 0,
+0 linhas de ERROR/WARNING no stderr. Os dois vermelhos sao o furo #38, com a linha
+literal: motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore.
+
+== 2. O modo que morria antes do conserto ==
+O launcher chama o motor pelo build de console e roda com $ErrorActionPreference = "Stop"
+no topo. No PowerShell 5.1 cada linha de stderr de um programa nativo vira ErrorRecord, e
+com Stop a primeira "ERROR: ..." cai no trap. Medido chamando o script por "& tools\run_game.ps1"
+de dentro de outra sessao PowerShell, com o cache velho:
+
+pais-powershell-antes.log  39 linhas, parede=0,4 s por passada, nenhuma linha da suite:
+    == reimportando o projeto (1 arquivo(s) importavel(is) mais novo(s) que o ultimo import; ...) ==
+    ERRO: ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+
+Depois de envolver a chamada nativa em Continue (Invoke-EngineConsole), o mesmo modo:
+
+pais-powershell-depois.log  parede=70,4 s, exit_do_launcher=1, 470 linhas:
+    import  : necessario - 1 arquivo(s) importavel(is) mais novo(s) que o ultimo import
+    == reimportando o projeto (...) ==
+    ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+    == 278 checagens  2 falhas  64.6 s de teste ==
+    codigo 1 (0 = tudo passou)
+
+O codigo de saida continua sendo o contrato (1 = a suite vermelho), e as ERROR do motor
+atravessam para a janela em vez de derrubar o launcher.
