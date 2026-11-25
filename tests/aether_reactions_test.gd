@@ -54,6 +54,7 @@ const TESTS: Array[StringName] = [
 	&"_test_selecao_de_beliefs_e_pura_no_estado",
 	&"_test_qualidade_nao_aparece_na_projecao_do_journal",
 	&"_test_crenca_falsa_nao_vira_fato",
+	&"_test_bandit_une_numero_observavel",
 ]
 # 320 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
 # §5.1), o gate do esqueleto nativo: descritor no disco, extensao listada pela
@@ -123,7 +124,29 @@ const TESTS: Array[StringName] = [
 # abaixo da soleira de `believes` e o controle (narracao pura, ids reais) passa
 # sem escrever. As dezenove contam no vermelho -- cada premissa nasce vermelha
 # nomeada, no padrao do passo 5, e o censo converge aborto em falha.
-const EXPECTED_CHECKS: int = 355
+#
+# Fase 3 (dossie 22 §5.6) acrescenta NOVE, todas de `bandit_une_numero_observavel`
+# -- o gate que fecha o §8 item 3: "o que falta e exatamente a curva de resultado
+# por opcao", e a superficie apontada pelo dossie e o `breakdown()` do escorredor.
+# As tres contagens do duelo (dois bracos desligados idênticos e um ligado, mesmo
+# seed, mesmo relogio, golpes na mesma cadencia) produzem tres numeros: off1, off2
+# e on. O controle e (7): bracos identicos conservam a contagem -- o espalhamento
+# medido e o piso que o delta tem de superar, e nao uma tolerancia chutada. O
+# portao e (8): `|on - off1| > |off1 - off2|`, com os cinco numeros impressos --
+# no vermelho a curva nao existe, os tres bracos sao o mesmo lobo e o delta vale
+# 0, `0 > 0` falso: o numero que decide fica impresso, no padrao
+# `crenca_falsa_nao_vira_fato`. As demais seis nomeam as premissas da rota: a rota
+# `bandit_bonus` existe no Mind (1), o desligado aplica bonus ZERO com a curva
+# cheia (2 -- a curva e sempre medida; a ligacao so decide se ela mexe na escolha),
+# a curva UCB1 imprime numero maior que zero com historia de vitorias (3), a
+# variancia da curva e rastreada de verdade via soma2 (4), o estilo (EWMA de
+# selecao, StyleFingerprint por arquétipo) existe, soma 1 e olha para a tatica que
+# a janela premiou (5), o disco conserva curva e estilo na volta to_dict/from_dict
+# (6) e a regra de ouro: a opcao VETADA recebe contribuicao zero do bandit mesmo
+# com vitorias na tatica (9) -- bonus nunca atravessa portao. As nove contam no
+# vermelho; cada chamada a API ausente entra por `has_method` + `.call()`, porque
+# o parse recusa chamada direta a rota que ainda nao existe.
+const EXPECTED_CHECKS: int = 364
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -6919,6 +6942,227 @@ func _test_crenca_falsa_nao_vira_fato() -> bool:
 				str(controle), o.narration_of(11).length(), antes,
 				_lobo_ledger.mind.beliefs.size()])
 	o.free()
+	return true
+
+
+## Vitorias da especie colhidas pelo fio real de main.gd: mordida -> dano no
+## jogador -> morte -> `on_kill`. O contador e instancia, nao captura de lambda,
+## porque o fio sobrevive a tres bracos em sequencia.
+var _gate_vitorias: int = 0
+# Para onde a presa renasce depois de morrer: ~11 m do laro do lobo, dentro do
+# alcance de vista (30 m, wolf.gd `_los_player`). A primeira versao deste duelo
+# renascia a presa a 32,6 m, FORA de vista — e o rastro mediu o defeito: mordida
+# em t<300, `flee` nos 2400 ticks seguintes e hunt vetado para sempre (a
+# memoria de vista dura 6 s, `SIGHT_MEMORY_SECONDS`), de modo que nenhum bonus
+# pos-veto podia produzir a segunda vitoria — o portao era indecidivel por
+# construcao, para qualquer ganho. A renascenca dentro de vista devolve a
+# discussao ao lugar onde o bandit decide: entre golpes, flee e hunt disputam a
+# vez a ~10 m, e o bonus da curva e o que desempata.
+var _gate_pos_renascenca := Vector3(68.0, 51.001, 68.0)
+
+
+## As duas linhas do `_on_wolf_bit` de main.gd (:1035): dano no jogador e, morto
+## ele, `on_kill` no lobo. Nenhuma segunda estrutura de combate: o mesmo fio da
+## partida real, aqui sem o boot, e a renascenca devolve a presa ao roteiro.
+func _gate_mordida(w: Wolf, amount: float) -> void:
+	_player.take_damage(amount, w.center())
+	if not _player.alive:
+		w.on_kill(Wolf.ACTOR_PLAYER)
+		_gate_vitorias += 1
+		_player.respawn_at(_gate_pos_renascenca)
+
+
+## Uma janela de duelo: `ticks` de simulacao com golpes do jogador na cadencia
+## fixa, pelo mesmo `take_damage` que main.gd:1020 chama no ataque real. O
+## reabastecimento do lobo apos cada golpe e higiene do instrumento, nao mecânica
+## de jogo: sem ele o terceiro golpe de 20 mata o sujeito (42 hp) e o duelo
+## acaba antes do numero — a coragem (hp_ratio < 0.62) trancaria o hunt por
+## desconfianca, e o que se mede aqui e a escolha de tatica com todos os
+## portoes ABERTOS, nao a tranca. Simetrico nos tres bracos por construcao:
+## mesmo seed (`_arm`), mesmo relogio, mesmo campo, golpes nos mesmos ticks.
+## O rastro de trajetoria (a cada 300 ticks) e instrumento de calibracao: o
+## gate decide por contagem de vitorias, e o rastro nomeia ONDE o braco gastou
+## a janela — sem ele um delta=0 nao diz se a curva nao puxa ou se puxa para
+## onde nao mata.
+func _gate_janela(ticks: int, cadencia: int, dano: float, rotulo: String) -> int:
+	_gate_vitorias = 0
+	for i: int in ticks:
+		_advance(1)
+		if (i + 1) % 300 == 0:
+			print("RASTRO %s t=%d intent=%s dist_jog=%.1f vitorias=%d" % [rotulo,
+					i + 1, _wolf.intent, _wolf.center().distance_to(_player.position3()),
+					_gate_vitorias])
+		if (i + 1) % cadencia == 0 and _wolf.alive:
+			_wolf.take_damage(dano, Wolf.ACTOR_PLAYER, _player.position3())
+			if _wolf.alive:
+				_wolf.hp = Wolf.MAX_HP
+	print("RASTRO %s fim pos=%s dist_jog=%.1f vitorias=%d curva=%s estilo=%s" % [rotulo,
+			_wolf.body.feet_pos, _wolf.center().distance_to(_player.position3()),
+			_gate_vitorias,
+			str(_wolf.mind.leitura_bandit()) if _wolf.mind.has_method("leitura_bandit") else "ausente",
+			str(_wolf.mind.estilo()) if _wolf.mind.has_method("estilo") else "ausente"])
+	return _gate_vitorias
+
+
+## Fase 3 do dossie 22 (§5.6) -- o gate `bandit_une_numero_observavel`. O §8
+## item 3 nomeia o furo: "o que falta e exatamente a curva de resultado por
+## opcao" — o lobo vence (mata) e nada no estado une a vitoria a tatica que a
+## produziu, entao nenhuma escolha futura aprende com ela. A superficie e a que
+## o dossie aponta (o `breakdown()` do escorredor): um UCB1 por (arquétipo,
+## tatica) lido da curva de resultado ajusta o SCORE de selecao — nunca os
+## portoes (braco vetado recebe zero, regra de ouro), nunca a saida do LLM. O
+## par anti-farsa e o da Fase 2: DOIS bracos idênticos com o bandit DESLIGADO
+## medem primeiro o espalhamento do instrumento, e o portao so passa quando o
+## braco LIGADO move a taxa de vitoria da especie (mordidas que matam o jogador
+## por janela) MAIS que esse espalhamento. No vermelho a rota nao existe: os
+## tres bracos correm o MESMO duelo e o delta vale 0 — `0 > 0` e falso, e o
+## numero que decide fica impresso. Todas as chamadas a API ausente entram por
+## `has_method` + `.call()`; `.set()`/`.get()` de propriedades ausentes sao
+## no-op seguros no vermelho e ligam de verdade no verde.
+func _test_bandit_une_numero_observavel() -> bool:
+	var spawn_proximo := Vector3(58.0, 51.001, 62.0)
+	var pos_player := Vector3(60.5, 51.001, 62.0)
+	var dano_golpe := 20.0
+	var cadencia := 90
+	var janela := 2400
+	# Os tres bracos. off1 e off2 sao o MESMO braco duas vezes — o espalhamento
+	# medido do instrumento, e nao uma tolerancia chutada; on e o mesmo braco
+	# com a ligacao padrao (verdade do jogo). No vermelho `bandit_ligado` ainda
+	# nao existe e o `.set()` e no-op: os tres bracos sao o mesmo lobo.
+	var contagens: Array[int] = []
+	var rotulos: Array[String] = ["off1", "off2", "on"]
+	for braco: int in 3:
+		_arm(spawn_proximo, pos_player)
+		_player.respawn_at(pos_player)
+		if braco < 2:
+			_wolf.mind.set("bandit_ligado", false)
+		if not _wolf.bit_player.is_connected(_gate_mordida):
+			_wolf.bit_player.connect(_gate_mordida)
+		contagens.append(_gate_janela(janela, cadencia, dano_golpe, rotulos[braco]))
+		_wolf.bit_player.disconnect(_gate_mordida)
+	# (1) A premissa nomeada primeiro: a rota da curva existe no Mind.
+	var m: Mind = _wolf.mind
+	var tem_rota: bool = m.has_method("bandit_bonus")
+	_check(tem_rota,
+			"bandit_une_numero: a rota da curva existe no Mind",
+			"bandit_bonus=%s -- premissa do §8: a curva de resultado por opcao" % str(tem_rota))
+	# Historia sintetica sobre a mente do braco on (que ja saiu do duelo com a
+	# propria historia real): mais tentativas e vitorias para os numeros da
+	# curva ficarem de pe mesmo se a janela real tiver sido seca.
+	if m.has_method("bandit_abrir"):
+		for i: int in 4:
+			m.call("bandit_abrir", "hunt")
+		for i: int in 3:
+			m.call("bandit_vitoria", "hunt")
+	# (2) O desligado nao aplica: com a curva cheia de vitorias, o bonus do
+	# braco desligado e EXATAMENTE zero. A curva e sempre medida; a ligacao so
+	# decide se ela mexe na escolha.
+	m.set("bandit_ligado", false)
+	var bonus_off: float = -1.0
+	if m.has_method("bandit_bonus"):
+		bonus_off = float(m.call("bandit_bonus", "hunt"))
+	_check(bonus_off == 0.0,
+			"bandit_une_numero: o braco desligado aplica bonus zero com a curva cheia",
+			"bonus_off=%.4f" % bonus_off)
+	# (3) A curva UCB1 imprime numero: com a ligacao de volta e historia de
+	# vitorias, o bonus da tatica campea e maior que zero — este e o numero que
+	# o `breakdown()` do escorredor vai somar ao score.
+	m.set("bandit_ligado", true)
+	var bonus_on: float = -1.0
+	if m.has_method("bandit_bonus"):
+		bonus_on = float(m.call("bandit_bonus", "hunt"))
+	_check(bonus_on > 0.0,
+			"bandit_une_numero: a curva UCB1 imprime numero maior que zero",
+			"bonus_on=%.4f" % bonus_on)
+	# (4) Variancia rastreada de verdade: `soma2` supera a media ao quadrado com
+	# historia mista — curva com variancia, nao um contador de vitorias disfarcado.
+	var variancia_ok := false
+	var variancia_txt := "leitura=ausente"
+	if m.has_method("bandit_abrir"):
+		for i: int in 2:
+			m.call("bandit_abrir", "hunt")
+	if m.has_method("leitura_bandit"):
+		var leitura: Dictionary = m.call("leitura_bandit")
+		var h: Dictionary = leitura.get("hunt", {})
+		var n: int = int(h.get("n", 0))
+		var soma: float = float(h.get("soma", 0.0))
+		var soma2: float = float(h.get("soma2", 0.0))
+		var variancia: float = soma2 / float(n) - (soma * soma) / float(n * n) if n > 0 else -1.0
+		variancia_ok = n >= 6 and variancia > 0.01
+		variancia_txt = "n=%d soma=%.1f soma2=%.1f variancia=%.3f" % [n, soma, soma2, variancia]
+	_check(variancia_ok,
+			"bandit_une_numero: a variancia da curva e rastreada via soma2",
+			variancia_txt)
+	# (5) StyleFingerprint por arquétipo: o EWMA da distribuicao de selecao
+	# existe, soma ~1 e olha para a tatica que a janela premiou.
+	var estilo_ok := false
+	var estilo_txt := "estilo=ausente"
+	if m.has_method("estilo"):
+		var est: Dictionary = m.call("estilo")
+		var total: float = 0.0
+		for k in est:
+			total += float(est[k])
+		estilo_ok = est.size() > 0 and absf(total - 1.0) < 0.05 \
+				and float(est.get("hunt", 0.0)) > float(est.get("patrol", 0.0))
+		estilo_txt = "soma=%.3f hunt=%.3f patrol=%.3f" % [total,
+				float(est.get("hunt", 0.0)), float(est.get("patrol", 0.0))]
+	_check(estilo_ok,
+			"bandit_une_numero: o estilo (EWMA de selecao) soma 1 e olha para a campea",
+			estilo_txt)
+	# (6) O disco conserva o que o lobo aprendeu: to_dict/from_dict fazem a
+	# volta com curva, estilo e ligacao intactos.
+	var d: Dictionary = m.to_dict()
+	var persiste_ok := false
+	var persiste_txt := "bandit=ausente no to_dict"
+	if d.has("bandit"):
+		var m2 := Mind.new("wolf", 99, 1099)
+		m2.from_dict(d)
+		var volta: Dictionary = m2.to_dict()
+		persiste_ok = volta.has("bandit") and str(volta.get("bandit")) == str(d.get("bandit")) \
+				and str(volta.get("estilo")) == str(d.get("estilo")) \
+				and bool(m2.get("bandit_ligado")) == bool(m.get("bandit_ligado"))
+		persiste_txt = "ida+volta iguais=%s ligado_ida=%s ligado_volta=%s" % [
+			str(str(volta.get("bandit")) == str(d.get("bandit"))),
+			str(bool(m.get("bandit_ligado"))), str(bool(m2.get("bandit_ligado")))]
+	_check(persiste_ok,
+			"bandit_une_numero: to_dict/from_dict conserva curva, estilo e ligacao",
+			persiste_txt)
+	# (7) Controle do instrumento ANTES da exigencia: dois bracos identicos com
+	# o bandit desligado, mesmo seed, produzem a MESMA contagem. O espalhamento
+	# medido aqui e o piso que o delta do portao tem de superar.
+	var off1: int = contagens[0]
+	var off2: int = contagens[1]
+	var espalhamento: int = absi(off1 - off2)
+	_check(espalhamento == 0,
+			"bandit_une_numero: dois bracos identicos desligados conservam a contagem",
+			"off1=%d off2=%d espalhamento=%d" % [off1, off2, espalhamento])
+	# (8) O PORTAO: o braco ligado move a taxa de vitoria da especie MAIS que o
+	# espalhamento medido. No vermelho os tres bracos sao o mesmo lobo sem
+	# curva: delta=0 e `0 > 0` e falso — o numero que decide fica impresso.
+	var on_n: int = contagens[2]
+	var delta: int = absi(on_n - off1)
+	_check(delta > espalhamento,
+			"bandit_une_numero: o braco ligado move a taxa de vitoria mais que o espalhamento",
+			"off1=%d off2=%d on=%d espalhamento=%d delta=%d" % [
+				off1, off2, on_n, espalhamento, delta])
+	# (9) Regra de ouro: o bandit nunca atravessa portao. Com vitorias na tatica
+	# e o hunt VETADO (presa percebida — jogador fora de vista, sem memoria), a
+	# contribuicao "bandit" no breakdown dele e zero mesmo com bonus disponivel.
+	_arm(SPAWN, FAR_PLAYER)
+	if _wolf.mind.has_method("bandit_abrir"):
+		for i: int in 3:
+			_wolf.mind.call("bandit_abrir", "hunt")
+			_wolf.mind.call("bandit_vitoria", "hunt")
+	_advance(1)
+	var bd: Dictionary = _wolf._scorer.breakdown()
+	var hunt_bd: Dictionary = bd.get("hunt", {})
+	var veto_ok: bool = not hunt_bd.is_empty() and bool(hunt_bd.get("vetoed", false)) \
+			and float(hunt_bd.get("bandit", 1.0)) == 0.0
+	_check(veto_ok,
+			"bandit_une_numero: a opcao vetada recebe contribuicao zero do bandit",
+			"vetoed=%s bandit=%.4f" % [
+				str(hunt_bd.get("vetoed", "ausente")),
+				float(hunt_bd.get("bandit", 1.0))])
 	return true
 
 

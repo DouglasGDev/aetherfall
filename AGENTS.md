@@ -81,7 +81,7 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    [hud.gd:245-281](src/ui/hud.gd#L245-L281)) mostra tick, `worst_step_ms`, ticks perdidos,
    total por canal do Éter e uma linha por lobo com a narrativa do oráculo. *Falta para P1:*
    `MindsInspector` não existe. O custo de BT sai no F3 (`tree_stats()`,
-   [wolf.gd:1356-1357](src/entities/wolf.gd#L1356-L1357)); agora há também colheita headless
+   [wolf.gd:1372-1373](src/entities/wolf.gd#L1372-L1373)); agora há também colheita headless
    estreita de `sim_step` integral e `_guard.last_us`/`trips`, um lobo por cenário
    ([aether_reactions_test.gd:405-407](tests/aether_reactions_test.gd#L405-L407),
    [:1949-1950](tests/aether_reactions_test.gd#L1949-L1950)). O guard mede só BT, sem
@@ -582,8 +582,8 @@ e o **estado** mudou, não a projeção.
 
 Quatro afirmações do prompt a leitura devolve diferente, e duas metades dele a árvore já pagou. (1)
 "Drops são fracos" não: **não existem**. O `die()` do lobo escreve BLOOD e FEAR
-([src/entities/wolf.gd:1319-1320](src/entities/wolf.gd#L1319-L1320)), arma o timer de cadáver
-([:1321](src/entities/wolf.gd#L1321)) e só então emite `died` ([:1322](src/entities/wolf.gd#L1322)).
+([src/entities/wolf.gd:1331-1332](src/entities/wolf.gd#L1331-L1332)), arma o timer de cadáver
+([:1333](src/entities/wolf.gd#L1333)) e só então emite `died` ([:1334](src/entities/wolf.gd#L1334)).
 (2) O sinal **não** é órfão — tem **dois** consumidores em `src/`, e nenhum deles é um item:
 `_on_wolf_died` ([src/main.gd:441](src/main.gd#L441) conecta, corpo em [`:1041`](src/main.gd#L1041)) só
 soma `stats["wolves_felled"]`, e o diretor de áudio toca `wolf_died`
@@ -607,9 +607,9 @@ compartilhada por 1000 lobos e o estado no `Blackboard` — e na árvore não h�
 classe `Blackboard` — a palavra só aparece num comentário de `src/`,
 [src/ai/behavior/bt_tree.gd:3](src/ai/behavior/bt_tree.gd#L3), que é justamente a promessa, não o
 mecanismo; o estado chega como `Dictionary` literal inline no tick,
-[src/entities/wolf.gd:911](src/entities/wolf.gd#L911) — e cada `Wolf` constrói a própria árvore: `setup()`
-([:299](src/entities/wolf.gd#L299)) chama `_build_tree()` ([:318](src/entities/wolf.gd#L318)), corpo em
-([:422](src/entities/wolf.gd#L422)) — e o comentário de [src/ai/behavior/bt_tree.gd:2](src/ai/behavior/bt_tree.gd#L2)
+[src/entities/wolf.gd:923](src/entities/wolf.gd#L923) — e cada `Wolf` constrói a própria árvore: `setup()`
+([:303](src/entities/wolf.gd#L303)) chama `_build_tree()` ([:322](src/entities/wolf.gd#L322)), corpo em
+([:426](src/entities/wolf.gd#L426)) — e o comentário de [src/ai/behavior/bt_tree.gd:2](src/ai/behavior/bt_tree.gd#L2)
 repete a promessa. Dono: perna 20 §3.5, com a checagem `arvore_por_arquetype` pagando o número. **#25**:
 `tests/audio_test.gd.uid` e `tests/audio_live_probe.gd.uid` estão fora do git enquanto todos os outros
 scripts estão (`src` 30/30, `tests` 7 de 9), então todo clone limpo mostra duas linhas `??` depois do

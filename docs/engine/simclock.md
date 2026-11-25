@@ -35,15 +35,15 @@ terminando, e o hash do journal entra gravado com o número seguinte. O contador
 processo anterior não existe mais.
 
 A proporção entre os dois relógios tem checagem na suíte, e ela pode falhar: 600 chamadas de
-`advance(1.0 / 60.0)` somam 200 passos [tests/smoke_test.gd:2397-2400](../../tests/smoke_test.gd#L2397-L2400),
-e `step_duration()` é checado igual a 0,05 [tests/smoke_test.gd:2404](../../tests/smoke_test.gd#L2404).
+`advance(1.0 / 60.0)` somam 200 passos [tests/smoke_test.gd:1903-1906](../../tests/smoke_test.gd#L1903-L1906),
+e `step_duration()` é checado igual a 0,05 [tests/smoke_test.gd:1910](../../tests/smoke_test.gd#L1910).
 Dela sai a conta do bench que o dossiê pede: 600 s ÷ 0,05 s = 12 000 ticks, derivado de
 [sim_clock.gd:6](../../src/core/sim_clock.gd#L6) e do texto do §3
 [docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:35](../planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md)
 — não é medição desta página.
 
 Fora da classe, `HZ` tem um único leitor em `src/`: a memória de avistamento do lobo converte
-segundos em passos com `SimClock.HZ` [src/entities/wolf.gd:464](../../src/entities/wolf.gd#L464) sobre
+segundos em passos com `SimClock.HZ` [src/entities/wolf.gd:468](../../src/entities/wolf.gd#L468) sobre
 `SIGHT_MEMORY_SECONDS = 6.0` [wolf.gd:35](../../src/entities/wolf.gd#L35), ou 120 ticks, derivado das
 duas linhas. [`step_duration()`](../../src/core/sim_clock.gd#L42-L43) tem um chamador em `src/`: o corpo
 do tick pega `dt` dele [src/main.gd:343](../../src/main.gd#L343) e nunca lê relógio de parede. É essa a
@@ -134,7 +134,7 @@ usa.
 | Difusão + decaimento do Éter | 4 passadas por segundo | `AETHER_PERIOD = 0.25` [main.gd:27](../../src/main.gd#L27) | contador [main.gd:111](../../src/main.gd#L111), porta e reset [main.gd:345-348](../../src/main.gd#L345-L348) |
 | Decisão de cada lobo vivo | todo tick, com budget de 400 µs | [wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449) | laço [main.gd:350-351](../../src/main.gd#L350-L351), corpo [wolf.gd:875](../../src/entities/wolf.gd#L875) |
 | Grafos de coesão da matilha | todo tick | — | chamada [main.gd:349](../../src/main.gd#L349), corpo [main.gd:935](../../src/main.gd#L935) |
-| Leitor de rastros do lobo | 4 varreduras por segundo | `SCENT_PERIOD = 0.25` [wolf.gd:30](../../src/entities/wolf.gd#L30) | decai [wolf.gd:884](../../src/entities/wolf.gd#L884), porta [:927](../../src/entities/wolf.gd#L927), rearma [:961](../../src/entities/wolf.gd#L961) |
+| Leitor de rastros do lobo | 4 varreduras por segundo | `SCENT_PERIOD = 0.25` [wolf.gd:30](../../src/entities/wolf.gd#L30) | decai [wolf.gd:896](../../src/entities/wolf.gd#L896), porta [:939](../../src/entities/wolf.gd#L939), rearma [:973](../../src/entities/wolf.gd#L973) |
 | Recolha de cadáveres | 1 por segundo | `CORPSE_CHECK_PERIOD = 1.0` [main.gd:31](../../src/main.gd#L31) | contador [main.gd:113](../../src/main.gd#L113), porta [main.gd:352-355](../../src/main.gd#L352-L355) |
 | Fila de respawn | contagem regressiva por tick | `RESPAWN_DELAY = 45.0` [main.gd:30](../../src/main.gd#L30) | entradas, cada uma o par `[segundos, toca]` desde a 16, [main.gd:430](../../src/main.gd#L430) e [:915](../../src/main.gd#L996), decaimento sobre `vaga[0]` [main.gd:356-360](../../src/main.gd#L356-L360) |
 | Roda de acasalamento | 1 varredura por segundo | `MATE_PERIOD = 1.0` [main.gd:610](../../src/main.gd#L610) | contador [main.gd:110](../../src/main.gd#L110), porta [main.gd:374-377](../../src/main.gd#L374-L377) |
@@ -167,7 +167,7 @@ tick escala com o censo do momento, não com o número do boot. Com doze mentes 
 budget é por lobo e cobre só a árvore de comportamento: o `SubtreeGuard` cronometra o filho e conta o
 estouro [src/ai/behavior/bt_tree.gd:130-137](../../src/ai/behavior/bt_tree.gd#L130-L137), com default de
 classe de 250 µs [:120](../../src/ai/behavior/bt_tree.gd#L120) que o lobo sobe para 400; percepção e
-utilidade ficam fora dele, como o `tree_stats()` declara [wolf.gd:1356-1357](../../src/entities/wolf.gd#L1356-L1357).
+utilidade ficam fora dele, como o `tree_stats()` declara [wolf.gd:1372-1373](../../src/entities/wolf.gd#L1372-L1373).
 
 ## 5. (e) O que o relógio **não** é: autoridade única
 

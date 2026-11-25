@@ -1,0 +1,34 @@
+---- PERDA-REAL docs/design/10-world-layers-and-block-physics.md  ours=1 theirs=1
+   [-ours ] `Main.diagnostics()` (main.gd:#-# ganha `"block_updates": updates.stats()` junto de `"dropped_ticks"` — os dois são a mesma categoria de medida (quantos ticks de simulação o orçame
+   [-theirs] `Main.diagnostics()` (main.gd:#-# ganha `"block_updates": updates.stats()` junto de `"dropped_ticks"` — os dois são a mesma categoria de medida (quantos ticks de simulação o orçame
+---- PERDA-REAL docs/design/11-inventory-crafting.md  ours=1 theirs=1
+   [-ours ] `save_game` escreve `"inv": player.inv.to_dict()` (main.gd:#; o formato é `{slots: [[i,b,n]…], pins: […], sel: n, hand: [id,n]}` — só os slots com quantidade, então um inventário v
+   [-theirs] `save_game` escreve `"inv": player.inv.to_dict()` (main.gd:#; o formato é `{slots: [[i,b,n]…], pins: […], sel: n, hand: [id,n]}` — só os slots com quantidade, então um inventário v
+---- PERDA-REAL docs/engine/simclock.md  ours=0 theirs=1
+   [-theirs] **O difusor recebe o período, não o `dt`.** main.gd:#`: a passada é quantizada em #,# s de lógica por design, e o próprio campo declara a convenção no comentário do método src/worl
+---- PERDA-REAL docs/planos/09-bioma-cor-de-pelo-e-ether.md  ours=0 theirs=1
+   [-theirs] `EXPECTED_CHECKS` (aether_reactions_test.gd:# e a contagem da suíte (hoje **# / # falhas**, pin `README.md`) sobem com o lote e são re-medidos no clone limpo antes de qualquer núme
+---- PERDA-REAL docs/planos/11-acasalamento-filhote-e-censo.md  ours=0 theirs=1
+   [-theirs] `EXPECTED_CHECKS` (aether_reactions_test.gd:# e as contagens de suíte (**# / # falhas** na mesma leitura, pin `README.md`) sobem com o lote e são re-medidos no clone limpo com `--i
+---- PERDA-REAL docs/planos/16-tocas-da-alcateia.md  ours=3 theirs=3
+   [-ours ] - `PACK_COHESION_RADIUS = #.#` (`main.gd:#` é o que faz dois lobos se lerem, e `_rebuild_packs()` (`main.gd:#-#` já monta um grafo **por distância**, uma passada por passo, sem alo
+   [-ours ] - **Sorteio** (`main.gd:#-#`: a primeira `DEN_COUNT` crias fundam; o resto entra. - **Fila** (`main.gd:#-#`, `:#`, `:#`): o elemento da fila passa a carregar a **toca de quem morre
+   [-ours ] `diagnostics()` (`main.gd:#-#` ganha três números, todos derivados do que já existe, nenhum no caminho quente: `dens` (toca fundada), `den_components` (componentes conexos do grafo
+   [-theirs] - `PACK_COHESION_RADIUS = #.#` (`main.gd:#` é o que faz dois lobos se lerem, e `_rebuild_packs()` (`main.gd:#-#` já monta um grafo **por distância**, uma passada por passo, sem alo
+   [-theirs] - **Sorteio** (`main.gd:#-#`: a primeira `DEN_COUNT` crias fundam; o resto entra. - **Fila** (`main.gd:#-#`: o elemento da fila passa a carregar a **toca de quem morreu**, e a repo
+   [-theirs] `diagnostics()` (`main.gd:#-#` ganha três números, todos derivados do que já existe, nenhum no caminho quente: `dens` (toca fundada), `den_components` (componentes conexos do grafo
+---- PERDA-REAL docs/planos/22-oraculo-nativo-gdextension.md  ours=14 theirs=14
+   [-ours ] ## #. A Fase #: a memória de qualidade — `visto_em` e `vezes` no `Mind`, a janela top-k pura no estado da mente, e o portão lendo o ledger
+   [-ours ] Fase executada em `feat/oraculo-nativo-fase#-#` (base `#cd#ff#`, a pauta do §#), no padrão do Passo # (§#): corrida de abertura vermelha com as premissas impressas, commits fechand
+   [-ours ] ### #.# O vermelho: as três premissas nascem nomeadas na mesma corrida
+   [-ours ] O commit **`#dbe#`** só acrescenta checagens: as dezenove do censo novo (`tests/aether_reactions_test.gd:#`, `EXPECTED_CHECKS` de # para #; os três cenários na lista em :#-#, corpo
+   [-ours ] ### #.# A metadata de qualidade: o carimbo segue o que confirma, e a projeção não vê nada
+   [-ours ] Commit **`#e#a#`** — o `reinforce` ganha o quarto argumento `p_tick: int = -#` e passa a contar todo toque em `vezes`, carimbando `visto_em` **só quando o delta confirma** (`src/ai
+   [-theirs] ## #. A Fase #: a memória de qualidade — `visto_em` e `vezes` no `Mind`, a janela top-k pura no estado da mente, e o portão lendo o ledger
+   [-theirs] Fase executada em `feat/oraculo-nativo-fase#-#` (base `#cd#ff#`, a pauta do §#), no padrão do Passo # (§#): corrida de abertura vermelha com as premissas impressas, commits fechand
+   [-theirs] ### #.# O vermelho: as três premissas nascem nomeadas na mesma corrida
+   [-theirs] O commit **`#dbe#`** só acrescenta checagens: as dezenove do censo novo (`tests/aether_reactions_test.gd:#`, `EXPECTED_CHECKS` de # para #; os três cenários na lista em :#-#, corpo
+   [-theirs] ### #.# A metadata de qualidade: o carimbo segue o que confirma, e a projeção não vê nada
+   [-theirs] Commit **`#e#a#`** — o `reinforce` ganha o quarto argumento `p_tick: int = -#` e passa a contar todo toque em `vezes`, carimbando `visto_em` **só quando o delta confirma** (`src/ai
+
+perda real: ours=19 theirs=22 | cosmetico (rabo re-ancorado): ours=125 theirs=4

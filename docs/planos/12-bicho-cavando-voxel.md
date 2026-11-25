@@ -91,7 +91,7 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   o item (f) passou `record = true` ([wolf.gd:1192](../../src/entities/wolf.gd#L1192)). Então
   `not world.edits.has(pos)` é a cláusula que diz "cavar não desmonta a obra de outro" sem perguntar a
   ninguém de quem é o bloco — é o fechamento do furo #22 (§3.2), custa uma comparação e está escrita
-  em [`_dig_ok`](../../src/entities/wolf.gd#L1065-L1066).
+  em [`_dig_ok`](../../src/entities/wolf.gd#L1077-L1078).
 - **O caminho do WORK era do jogador, e este lote abriu um segundo.** O sinal `acted` do `Player`
   imprime WORK 0,42 (quebra) e 0,20 (coloca) em
   [main.gd:1010-1015](../../src/main.gd#L1010-L1015), e os cenários `_test_work_approach`
@@ -271,7 +271,7 @@ nomeadas abaixo eram alvo e hoje são código.
 ### 3.5 WORK do bicho pelo mesmo número da lavra do jogador
 
 O imprint acontece **no lobo**, pelo caminho que já existe
-([`_imprint`](../../src/entities/wolf.gd#L415-L417) → `aether.imprint` com o viés de bioma), com o
+([`_imprint`](../../src/entities/wolf.gd#L419-L421) → `aether.imprint` com o viés de bioma), com o
 mesmo valor da lavra do jogador: `DIG_WORK := 0,42` ([wolf.gd:138](../../src/entities/wolf.gd#L138)),
 lido do `_on_acted("break")` ([main.gd:987](../../src/main.gd#L987)). A checagem A/B do §5.3 **existe** e
 foi escrita antes de a folha de cavar ficar verde, como este § exigia: as duas origens deixam

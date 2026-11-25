@@ -104,7 +104,7 @@ como código (§3.6, §4).
 pela caixa ([voxel_world.gd:423-432](../../src/world/voxel_world.gd#L423-L432)). O jogador lê o campo
 para nadar e para a respiração ([player.gd:486](../../src/entities/player.gd#L486),
 [:537](../../src/entities/player.gd#L537), [:593](../../src/entities/player.gd#L593)) e o lobo para
-empuxo, velocidade e o cronômetro de nado ([wolf.gd:1211-1212](../../src/entities/wolf.gd#L1211-L1212),
+empuxo, velocidade e o cronômetro de nado ([wolf.gd:1223-1224](../../src/entities/wolf.gd#L1223-L1224),
 [:1230](../../src/entities/wolf.gd#L1230), [:1265](../../src/entities/wolf.gd#L1265)).
 
 **Já existe o padrão de quem reage à transição sem escrever no mundo.** O diretor de áudio guarda

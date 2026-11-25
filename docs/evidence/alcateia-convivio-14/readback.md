@@ -56,8 +56,8 @@ passo dentro d'água mesmo com terra a 10,5 m. Verde em `a_green_reactions.log`,
 também impressa — `o nado so acontece onde nao ha saida (o filtro nao mente) |
 alvos_molhados_sem_saida=123 com_saida=0/200 terra_real=10.5 m` e, no cenário forçado sem saída,
 `sem saida o corpo avanca nadando | deslocamento=4.79 m (> 1,2 m)`. O filtro está **depois** da
-árvore (`_resolve_dry_target()`, [src/entities/wolf.gd:566-570](../../../src/entities/wolf.gd#L566-L570),
-chamado em [:697](../../../src/entities/wolf.gd#L697), fora dos 400 µs do `SubtreeGuard`), então o
+árvore (`_resolve_dry_target()`, [src/entities/wolf.gd:570-574](../../../src/entities/wolf.gd#L570-574),
+chamado em [:701](../../../src/entities/wolf.gd#L701), fora dos 400 µs do `SubtreeGuard`), então o
 cado não copiou o teste de solo para dentro de cada folha, e o nado continua alcançável quando não há
 saída.
 
@@ -68,9 +68,9 @@ saída da água era re-escolhido **todo passo**. As outras duas do lote (`:172-1
 — e `censo de checagens | 165/164`, o teto que ainda não tinha sido declarado em código. Verde em
 `b_green_reactions.log`: `reescolhas=33 … = 0.17 por passo (3.3/s, teto declarado 5/s)` e
 `trips_solo=0`. O compromisso mora em `_demand_shore()`
-([:545-556](../../../src/entities/wolf.gd#L545-L556)) na cadência do nariz, e o resgate por tempo de
+([:549-560](../../../src/entities/wolf.gd#L549-560)) na cadência do nariz, e o resgate por tempo de
 nado (`SHORE_AFTER` [:79](../../../src/entities/wolf.gd#L79), aplicado em
-[:686](../../../src/entities/wolf.gd#L686)) continua como última linha.
+[:690](../../../src/entities/wolf.gd#L690)) continua como última linha.
 
 **(c) `b65066f` — "organizado" é número.** `c_red_reactions.log:171-172` →
 `pior=4 lobos na celula (16, 12, 15) (teto 1) … alvos_fora_da_celula=0` e `pior_cluster=4 alvos a

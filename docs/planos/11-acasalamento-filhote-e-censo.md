@@ -60,22 +60,22 @@ linha, com o ponteiro vivo. Os números de linha desta seção são ponteiros pa
   ([:96](../../src/entities/wolf.gd#L96), `body.setup(world, p_spawn, dims)`); `MAX_HP = 42.0`
   idem ([:19](../../src/entities/wolf.gd#L19)); as caixas do visual eram medidas fixas em
   [`_build_visual`](../../src/entities/wolf.gd#L1448-L1477) e a animação das quatro patas em
-  [`_animate`](../../src/entities/wolf.gd#L1262). Um "filhote" seria um lobo adulto com nome
+  [`_animate`](../../src/entities/wolf.gd#L1274). Um "filhote" seria um lobo adulto com nome
   diferente. **Hoje existem os três:** `enum Phase { CUB, JUVENILE, ADULT }`
   ([wolf.gd:78](../../src/entities/wolf.gd#L78)), `age_ticks` como estado do animal
   ([:193](../../src/entities/wolf.gd#L193)) e o corpo escalado pela fase
   ([`set_phase`](../../src/entities/wolf.gd#L390-L398), escala em
   [`PHASE_SCALE`](../../src/entities/wolf.gd#L89)); vida e dano de mordida saem da mesma escala
-  ([`max_hp`](../../src/entities/wolf.gd#L329-L331),
-  [`bite_damage`](../../src/entities/wolf.gd#L338-L340)), e a fase entra na linha de debug
-  ([`debug_line`](../../src/entities/wolf.gd#L1346-L1352)).
+  ([`max_hp`](../../src/entities/wolf.gd#L333-L335),
+  [`bite_damage`](../../src/entities/wolf.gd#L342-L344)), e a fase entra na linha de debug
+  ([`debug_line`](../../src/entities/wolf.gd#L1362-L1368)).
 - **A mente já nasce por semente composta** — `Mind.new("wolf", p_identity, 1000 + p_identity)` e
   `_rng.seed = ("wolf:%d:%d" % [world.gen.world_seed, identity]).hash()`
   ([wolf.gd:311-313](../../src/entities/wolf.gd#L311-L313), o `_rng` declarado em
   [:215](../../src/entities/wolf.gd#L215)). Isso é o que permite um filhote determinístico: a
   identidade nova sorteia temperamento do mesmo jeito.
 - **Persistência por lobo existe, e é uma lista fechada de chaves** —
-  [`state_dict`](../../src/entities/wolf.gd#L1360-L1373) e
+  [`state_dict`](../../src/entities/wolf.gd#L1376-L1389) e
   [`load_state`](../../src/entities/wolf.gd#L1376-L1443). Naquela leitura idade, fase e cooldown de
   acasalamento **não** estavam lá; `load_state` limpa o cache transitório de rastros
   ([:1408](../../src/entities/wolf.gd#L1408), o cache é do lobo e morre no load) —
@@ -86,7 +86,7 @@ linha, com o ponteiro vivo. Os números de linha desta seção são ponteiros pa
   o teto novo, não contra o corpo sorteado nesta sessão
   ([wolf.gd:1390-1392](../../src/entities/wolf.gd#L1390-L1392)). Um save anterior ao lote carrega o
   animal como `ADULT`, com `age_ticks` no valor de um adulto
-  ([wolf.gd:1390](../../src/entities/wolf.gd#L1390)) e `mate_cd` em 0,0 — "sem chave" não pode
+  ([wolf.gd:1406](../../src/entities/wolf.gd#L1406)) e `mate_cd` em 0,0 — "sem chave" não pode
   significar "casado há 300 s" ([wolf.gd:1398](../../src/entities/wolf.gd#L1398)).
 - **O journal já enumera lobos** — `record()` recebe `wolves` e a projeção mínima traz os vivos
   ordenados por `wolf.identity` com `mind.identity`, `mind.kind`, `intent` e crenças
@@ -117,12 +117,12 @@ linha, com o ponteiro vivo. Os números de linha desta seção são ponteiros pa
 2. **Corpo que muda de verdade**: `DIMS` sai de `const` para `var` derivada da fase, com
    `body.setup` re-avaliando o colisor e `_build_visual` escalando as caixas ([:1448-1477](../../src/entities/wolf.gd#L1448-L1477))
    pela mesma razão. `MAX_HP` e dano de mordida por fase, com o número impresso no `debug_line`
-   ([:1346](../../src/entities/wolf.gd#L1346)).
+   ([:1362](../../src/entities/wolf.gd#L1362)).
 3. **Filhote não decide como adulto**: ou fica fora do `Selector` de caça, ou tem uma árvore própria
    (segue a matilha, brinca, não morde). O assento angular da alcateia (dossiê 10) **não** conta
    filhote. Propriedade testável: filhote nunca emite `bit_player`.
 4. **Acasalamento**: dois `ADULT` a menos de um raio, ambos acima de um limiar de `hunger`/HP
-   (já existem: `hunger` cresce `dt * 0,006` em [wolf.gd:886](../../src/entities/wolf.gd#L886),
+   (já existem: `hunger` cresce `dt * 0,006` em [wolf.gd:898](../../src/entities/wolf.gd#L898),
    `hp`/`MAX_HP` em [:918](../../src/entities/wolf.gd#L918)), com cooldown **por lobo** e **teto de
    censo**. Quem cria o filhote é a sessão (dono de `wolves` e do `_next_identity` em
    [main.gd:370-386](../../src/main.gd#L370-L386)), nunca o próprio lobo — senão o spawn deixa de
@@ -140,11 +140,11 @@ linha, com o ponteiro vivo. Os números de linha desta seção são ponteiros pa
    A checagem 7 do §5 é o que fecha isso por igualdade de hash, e não uma afirmação.
    **Um desvio do texto acima, com o motivo:** o default de `age_ticks` no load é
    `JUVENILE_STEPS` (4 800), não 0 — `age_ticks = 0` devolveria o animal como filhote
-   ([wolf.gd:1390](../../src/entities/wolf.gd#L1390)), e o save gravado antes do lote é de um animal
+   ([wolf.gd:1406](../../src/entities/wolf.gd#L1406)), e o save gravado antes do lote é de um animal
    que existiu adulto. `phase_of_age(4 800)` devolve `ADULT` pela mesma tabela de limiares
    ([wolf.gd:351-357](../../src/entities/wolf.gd#L351-L357)), e uma fase fora do enum é recusada
    com mensagem em vez de indexar `PHASE_SCALE` fora da tabela
-   ([`phase_of_save`](../../src/entities/wolf.gd#L362-L367)).
+   ([`phase_of_save`](../../src/entities/wolf.gd#L366-L371)).
 6. **Load que respeita o censo**: reconstruir a lista a partir do save (spawn → `load_state` por
    identidade, ou limpar e re-criar), com `identidade` como chave de pareamento em lugar de índice.
    O teto de censo tem de valer no load também: save maior que o teto é recusado com mensagem, não
@@ -197,7 +197,7 @@ Checagens:
    e cada `identity` do disco confere com a mente carregada. **Esta checagem nasce vermelha** no
    código da leitura desta página — é o vermelho reproduzido antes do conserto, como o contrato
    pede ([`AGENTS.md`](../../AGENTS.md), ciclo 3). **Onde ela mora hoje:**
-   [`_check_censo_disk`](../../tests/smoke_test.gd#L3502-L3558) na suíte, com a premissa montada
+   [`_check_censo_disk`](../../tests/smoke_test.gd#L3607-L3736) na suíte, com a premissa montada
    por transições reais — o passo "salvar e carregar" abre o sexto bicho pela porta de povoamento
    da sessão e grava seis no disco. O conserto é o load que pareia por identidade
    ([`main.gd:1162-1198`](../../src/main.gd#L1162-L1198)), e o teto do censo no load é recusado com
@@ -237,7 +237,7 @@ hipótese — por isso o fecho espera o clone. O pin publicado é `5b519f8` e os
   e ele abre com comprador fora de `main.gd`, não com um argumento de elegância.
 - Não calcular idade com `Time.get_ticks_msec()`, `elapsed` de parede nem `delta` de frame.
 - Não deixar filhote no anel de ataque nem no censo de "lobos vivos" do F3 sem rotular a fase — o
-  `debug_line` ([:1346](../../src/entities/wolf.gd#L1346)) é onde a fase aparece.
+  `debug_line` ([:1362](../../src/entities/wolf.gd#L1362)) é onde a fase aparece.
 - Não gravar idade nova no hash do journal por conveniência. O journal é apêndice-only e recusa
   caminho existente ([tick_journal.gd:47-62](../../src/persistence/tick_journal.gd#L47-L62),
   [:69-87](../../src/persistence/tick_journal.gd#L69-L87)): mudar a projeção é mudar o registro

@@ -39,6 +39,14 @@ var _until := 0
 var _checks := 0
 var _fails := 0
 var _t0 := 0
+## Pasta de dados onde esta corrida escreve (`user://` resolvido), impressa no log no topo e
+## na checagem do slot: e ela que um clone limpo lee para saber onde o disco da corrida fica.
+var _dados_dir := ""
+## Bytes do slot real no instante em que a suíte começou, antes de qualquer escrita da suíte.
+## E o que devolve o save do dono no fim — ver `_preservar_slot_do_dono()`.
+var _slot_antes := PackedByteArray()
+var _slot_havia := false
+var _slot_devolvido := false
 var _scratch: VoxelWorld = null
 var _scratch_root: Node3D = null
 var _spawn := Vector3.ZERO
@@ -115,8 +123,70 @@ var _ch_rings0 := -1
 var _ch_refus0 := -1
 
 
+## Guarda o slot real ANTES de qualquer escrita da suíte — o debito "o smoke usa o slot real
+## `alpha` e nao o preserva". O override de `user://` que o debito aponta como rota honesta nao
+## existe para o script nesta engine, medido em 2026-11-25 no binario do contrato: o `--help` do
+## 4.7.2-stable nao lista `--user-data-dir`, e passingo a flag de um processo filho nas duas
+## formas (`--user-data-dir X` e `--user-data-dir=X`) o filho continua resolvendo
+## `OS.get_user_data_dir()` em `app_userdata/Aetherfall`; `OS` so expoe `get_user_data_dir`,
+## `get_data_dir`, `get_cache_dir`, `get_config_dir`, `get_temp_dir` e `get_system_dir` — nenhum
+## setter. Entao, sem tocar em `src/` e sem depender de quem executa, o que o teste pode fazer e
+## nao deixar rastro: o slot e lido cru na primeira linha do `_ready` e devolvido byte a byte no
+## fim (`_devolver_slot_do_dono`), ou removido se a corrida o criou onde nao havia. A pasta de
+## dados e impressa porque, sem override, ela e a do proprio motor, e e ela que o log de um clone
+## limpo precisa nomear para dizer onde a corrida escreveu.
+func _preservar_slot_do_dono() -> void:
+	_dados_dir = OS.get_user_data_dir()
+	var caminho := SaveManager.slot_path(SLOT)
+	_slot_havia = FileAccess.file_exists(caminho)
+	if _slot_havia:
+		_slot_antes = FileAccess.get_file_as_bytes(caminho)
+	print("== dados desta corrida: %s" % _dados_dir)
+	print("   slot preservado: %s  %d B  existia=%s" % [
+			ProjectSettings.globalize_path(caminho), _slot_antes.size(), _slot_havia])
+
+
+## Indice do primeiro byte diferente, ou -1 quando os dois blocos sao iguais tamanho a tamanho.
+func _primeira_diferenca(a: PackedByteArray, b: PackedByteArray) -> int:
+	var n := mini(a.size(), b.size())
+	for i in n:
+		if a[i] != b[i]:
+			return i
+	return -1 if a.size() == b.size() else n
+
+
+## Devolve o slot do dono e paga a checagem com o numero que a decide: os bytes lidos depois do
+## restauro contra os guardados, e o indice do primeiro que difere (-1 = nenhum). Idempotente —
+## `_finish` e o fim do ultimo passo podem cham-la, e a segunda chamada nao reescreve nada.
+func _devolver_slot_do_dono() -> void:
+	if _slot_devolvido:
+		return
+	_slot_devolvido = true
+	var caminho := SaveManager.slot_path(SLOT)
+	var agora := _bytes_do_slot()
+	if _primeira_diferenca(agora, _slot_antes) != -1:
+		if _slot_havia:
+			var f := FileAccess.open(caminho, FileAccess.WRITE)
+			if f != null:
+				f.store_buffer(_slot_antes)
+				f.close()
+		else:
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(caminho))
+		agora = _bytes_do_slot()
+	var dif := _primeira_diferenca(agora, _slot_antes)
+	_check("slot do dono devolvido byte a byte", dif == -1,
+			"dados=%s  guardado=%d B  devolvido=%d B  primeiro_diferente=%d" % [
+			ProjectSettings.globalize_path(caminho), _slot_antes.size(), agora.size(), dif])
+
+
+func _bytes_do_slot() -> PackedByteArray:
+	var caminho := SaveManager.slot_path(SLOT)
+	return FileAccess.get_file_as_bytes(caminho) if FileAccess.file_exists(caminho) else PackedByteArray()
+
+
 func _ready() -> void:
 	_t0 = Time.get_ticks_msec()
+	_preservar_slot_do_dono()
 	main = load("res://src/main.tscn").instantiate()
 	add_child(main)
 	_spawn = main.spawn_point()
@@ -187,6 +257,14 @@ func _ready() -> void:
 	]
 	_until = int(_steps[0][1])
 	print("== aetherfall smoke test  seed %d ==" % SEED)
+
+
+func _exit_tree() -> void:
+	# Segunda rede para o mesmo servico: se a suíte cair por um caminho que nao passa pelo
+	# `_finish` (erro de script no meio dos passos, quit pedido fora dele), o slot do dono
+	# ainda assim volta aos bytes guardados. `_devolver_slot_do_dono` e idempotente, entao na
+	# corrida verde normal esta linha nao reescreve nada nem conta duas vezes.
+	_devolver_slot_do_dono()
 
 
 func _physics_process(_delta: float) -> void:
@@ -261,6 +339,13 @@ func _check(label: String, ok: bool, detail := "") -> void:
 
 
 func _finish() -> void:
+	# O ultimo servico da corrida e ao disco de onde ela saiu: o slot volta aos bytes que
+	# estavam la antes do primeiro `save_game`, ou deixa de existir se a corrida o criou onde
+	# nao havia. A checagem mora aqui, e nao dentro do passo "censo do disco", porque o
+	# `_finish` e o ponto que a suíte sempre alcanca (um SCRIPT ERROR no meio de um passo nao
+	# impede os seguintes) e `_exit_tree` e a rede final — e o retorno antecipado por
+	# `_slot_devolvido` faz a conta ser paga uma unica vez.
+	_devolver_slot_do_dono()
 	var secs := float(Time.get_ticks_msec() - _t0) / 1000.0
 	print("\n== %d checagens  %d falhas  %.1f s de teste ==" % [_checks, _fails, secs])
 	get_tree().quit(1 if _fails > 0 else 0)
@@ -3362,7 +3447,12 @@ func _check_save() -> void:
 	}
 	var before_feet: Vector3 = before["feet"]
 	main.save_game()
-	_check("slot escrito", SaveManager.has_slot(SLOT), "caminho=%s" % SaveManager.slot_path(SLOT))
+	# O caminho absoluto vai na testemunha porque o `user://` desta corrida e o do proprio
+	# motor: nada aqui redireciona a pasta (a engine nao da esse override ao script — ver
+	# `_preservar_slot_do_dono`), entao o que prova o acordado e o byte a byte do restauro.
+	_check("slot escrito", SaveManager.has_slot(SLOT),
+			"caminho=%s  dados=%s  guardados=%d B" % [
+			SaveManager.slot_path(SLOT), _dados_dir, _slot_antes.size()])
 	_check("sem .tmp sobrando", not FileAccess.file_exists(SaveManager.tmp_path(SLOT)))
 	var rd := SaveManager.read_slot(SLOT)
 	_check("leitura do slot", bool(rd["ok"]), "%.1f ms" % rd["ms"])
@@ -3636,8 +3726,11 @@ func _check_censo_disk() -> void:
 	# O slot volta ao formato que o proprio jogo escreve. Nao re-load: esta e a
 	# ultima checagem do ultimo passo, nada le a sessao depois dela, e recarregar
 	# custaria os ~5,2 s de geracao + malharia medidos no boot por nenhum numero
-	# novo. A restauracao e impressa porque um slot podre aqui envenena a proxima
-	# sessao do dono.
+	# novo. A restauracao e impressa com o caminho absoluto porque o disco deste passo ainda e
+	# o do dono — a engine nao da ao script override de `user://` (ver `_preservar_slot_do_dono`):
+	# um slot podre aqui e o save real dele, e e por isso que o fim da suíte devolve os bytes
+	# que estavam la antes do primeiro `save_game`.
 	var restaurada := SaveManager.write_slot(SLOT, data_disco)
-	print("       disco restaurado no formato atual: %s %d bytes" % [
-			"ok" if restaurada["ok"] else String(restaurada["error"]), restaurada["bytes"]])
+	print("       disco restaurado no formato atual: %s %d bytes  %s" % [
+			"ok" if restaurada["ok"] else String(restaurada["error"]), restaurada["bytes"],
+			ProjectSettings.globalize_path(SaveManager.slot_path(SLOT))])

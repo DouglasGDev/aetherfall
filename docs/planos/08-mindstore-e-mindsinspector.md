@@ -5,20 +5,20 @@ Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:732-735), de
 ## 1. Premissa nomeada por peça
 
 - `MindStore`: muda de dono a **posse das coleções** — hoje `mind` é campo do lobo (src/entities/wolf.gd:169) e nasce em `setup()` (:313). Só vale se `episodic`/`beliefs`/`relations` (src/ai/mind.gd:24-26) passarem a ser indexados por `Mind.identity` (:18) fora da entidade, com o contrato de save (`to_dict`/`from_dict`, :162-222) e a soleira que o BT obedece, `believes() >= 0,35` (:119-120, consultada em src/entities/wolf.gd:944) intactos.
-- `MindsInspector`: torna visível a **composição da pontuação**, não o resultado. O `UtilityScorer` já calcula por consideração e guarda em `_breakdown` (src/ai/utility_scorer.gd:44, preenchido em :76), mas o F3 só imprime `top_line()`, cortado em 3 partes (:123-129), via `_top_line` (src/entities/wolf.gd:250, gravado em :863 e impresso em :1350).
+- `MindsInspector`: torna visível a **composição da pontuação**, não o resultado. O `UtilityScorer` já calcula por consideração e guarda em `_breakdown` (src/ai/utility_scorer.gd:44, preenchido em :76), mas o F3 só imprime `top_line()`, cortado em 3 partes (:123-129), via `_top_line` (src/entities/wolf.gd:250, gravado em :868 e impresso em :1366).
 
 ## 2. Estado real (lido, não medido)
 
 - `Mind`: `EPISODIC_CAP = 24` (src/ai/mind.gd:7), FIFO com consolidação do átomo mais velho (:50-51). `_consolidate` converte só `hurt` e `saw_player` (:67-74); `hit_land`, `win` e `fed` (src/entities/wolf.gd:782, :1329, :1334) nunca viram crença. Decaimento `exp(-0,14 × min)` com corte em `0,02` (src/ai/mind.gd:8, :133-147). O save leva a qualidade (Fase 2 §20.5): `to_dict` grava os quatro campos (:170-179) e o load reconstrói com `"loaded"` (:212, :219) — a origem da percepção continua sem ir ao disco.
 - Transitório por lobo, e fora da projeção do hash (mandato 3 do AGENTS.md): cache de rastros `_checked_scents` (src/entities/wolf.gd:242) com teto de 32 células, 30 s e renovação 0,06 (:32-34), limpo no load (:1408), além de episódios e relações. Mover posse não muda isso sem re-medição.
-- Quem lê hoje: o lobo (`last_atom` src/entities/wolf.gd:462, :470, :487, :555; `temperament` nas curvas :809, :821, :847; `decay` por tick :893), o oráculo via `w.mind.to_dict()` (src/ai/mind_oracle.gd:146), o HUD via `debug_line()` (src/entities/wolf.gd:1346-1351) e o save (src/main.gd:1064-1066, src/entities/wolf.gd:1360). Nenhuma outra classe segura uma `Mind`.
+- Quem lê hoje: o lobo (`last_atom` src/entities/wolf.gd:466, :474, :491, :559; `temperament` nas curvas :813, :825, :851; `decay` por tick :905), o oráculo via `w.mind.to_dict()` (src/ai/mind_oracle.gd:146), o HUD via `debug_line()` (src/entities/wolf.gd:1362-1367) e o save (src/main.gd:1064-1066, src/entities/wolf.gd:1376). Nenhuma outra classe segura uma `Mind`.
 - Caminho exato do F3: src/main.gd:192-193 injeta `stats_provider` e `wolf_provider` = `targets_under_crosshair` (:844-849, os vivos dos 5 de :9) → src/ui/hud.gd:273-281 imprime um `w.debug_line()` por mente e anexa `ia: ` + `narration_provider(w.identity)` → src/main.gd:208 → `narration_of()` (src/ai/mind_oracle.gd:110-111). Corpo do overlay: src/ui/hud.gd:245-281 (37 linhas); flag :45, liga/desliga :164-169.
 
 ## 3. Por que os vereditos estão corretos hoje
 
-- `MindStore` = "metade feito": a consolidação existe e é persistida (src/ai/mind.gd:50-51, :67-74, contador :183 e :192), mas vive dentro da entidade; `MindStore`/`mind_store` não ocorre em `src/` — só como intenção de design (docs/design/07-project-structure.md:124, docs/design/06-godot-architecture.md:60, docs/design/08-roadmap-risks-licensing.md:67).
+- `MindStore` = "metade feito": a consolidação existe e é persistida (src/ai/mind.gd:81-82, :98-105, contador :305 e :318), mas vive dentro da entidade; `MindStore`/`mind_store` não ocorre em `src/` — só como intenção de design (docs/design/07-project-structure.md:124, docs/design/06-godot-architecture.md:60, docs/design/08-roadmap-risks-licensing.md:67).
 - `MindsInspector` = "não existe": nenhum `.gd`/`.tscn` com esse nome; o arquivo planejado está em docs/design/07-project-structure.md:155. O que cobre é texto do F3, não inspector.
-- O que tornaria os vereditos falsos: (a) coleções vivas fora do `Wolf`, com round-trip de save preservado; (b) linha por consideração (cru→moldado→peso→veto) e trilha do BT — hoje o guard só devolve `last_us`/`trips` (src/entities/wolf.gd:1356-1357) e a trilha por nó prometida em docs/design/04-local-ai-architecture.md:50-52 não existe.
+- O que tornaria os vereditos falsos: (a) coleções vivas fora do `Wolf`, com round-trip de save preservado; (b) linha por consideração (cru→moldado→peso→veto) e trilha do BT — hoje o guard só devolve `last_us`/`trips` (src/entities/wolf.gd:1372-1373) e a trilha por nó prometida em docs/design/04-local-ai-architecture.md:50-52 não existe.
 
 ## 4. As duas formas de inspector, com custo
 
@@ -28,7 +28,7 @@ Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:732-735), de
 
 ## 5. Constraint do mandato 2
 
-A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:86), escrita em :196 e lida só por `narration_of()` (:164-165) → HUD (src/main.gd:208 → src/ui/hud.gd:276-277). É verdade por fiação, não por verifier (docs/melhorias-status.md:68-68). O inspector **mostra, não decide**: pode ler `narration_of()` e as coleções; não pode chamar `reinforce()`/`remember()` (src/ai/mind.gd:98, :45) nem tocar `intent`. A escrita continua só nas transições do lobo (src/entities/wolf.gd:637, :782-783, :948-953, :1302-1304, :1329, :1334).
+A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:86), escrita em :196 e lida só por `narration_of()` (:164-165) → HUD (src/main.gd:208 → src/ui/hud.gd:276-277). É verdade por fiação, não por verifier (docs/melhorias-status.md:68-68). O inspector **mostra, não decide**: pode ler `narration_of()` e as coleções; não pode chamar `reinforce()`/`remember()` (src/ai/mind.gd:129, :76) nem tocar `intent`. A escrita continua só nas transições do lobo (src/entities/wolf.gd:641, :786-787, :960-965, :1314-1316, :1341, :1350).
 
 ## 6. Gate em headless
 

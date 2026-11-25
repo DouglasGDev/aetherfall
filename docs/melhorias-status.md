@@ -44,7 +44,7 @@ Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 | O que o prompt afirma | O que está em `src/` hoje | Veredicto |
 |---|---|---|
 | "AetherField de **6 canais** (trabalho, sangue, medo, morte, som, fogo)" | 3 canais: `enum Channel { WORK, BLOOD, FEAR, COUNT }` com `HALF_LIFE = [90, 55, 120]` e `DIFFUSE_RATE = [0.06, 0.16, 0.10]` — [aether_field.gd:9-15](../src/world/aether_field.gd#L9-L15). A `CHANNEL_COLOR` da visualização também tem 3 entradas — [aether_viz.gd:12-16](../src/rendering/aether_viz.gd#L12-L16) | **falso hoje**; é meta de P1 (§08 linha "falta") |
-| "`MindStore` + consolidação" | A **consolidação já existe** dentro de `Mind`: ao estourar `EPISODIC_CAP = 24` o átomo mais velho sai da fila e vira reforço de crença, com contador persistido — [mind.gd:7](../src/ai/mind.gd#L7), [:50-51](../src/ai/mind.gd#L50-L51), `:_consolidate` em [:67-74](../src/ai/mind.gd#L67-L74), save/load em [:183](../src/ai/mind.gd#L183) e [:192](../src/ai/mind.gd#L192). Não há tipo `MindStore` (grep em `src/`: zero ocorrências) | **metade feito**; o nome `MindStore` aponta para um store fora da entidade, que não existe |
+| "`MindStore` + consolidação" | A **consolidação já existe** dentro de `Mind`: ao estourar `EPISODIC_CAP = 24` o átomo mais velho sai da fila e vira reforço de crença, com contador persistido — [mind.gd:7](../src/ai/mind.gd#L7), [:81-82](../src/ai/mind.gd#L81-L82), `:_consolidate` em [:98-105](../src/ai/mind.gd#L98-L105), save/load em [:305](../src/ai/mind.gd#L305) e [:318](../src/ai/mind.gd#L318). Não há tipo `MindStore` (grep em `src/`: zero ocorrências) | **metade feito**; o nome `MindStore` aponta para um store fora da entidade, que não existe |
 | "`MindsInspector`" | Não existe. O que existe é o overlay de debug em texto: fps/processo/física, chunks e fila de malha, tick/`worst_step_ms`/ticks perdidos, totais por canal do Éter, posição e mira, e uma linha por lobo com a narrativa do oráculo — [hud.gd:245-281](../src/ui/hud.gd#L245-L281), tecla em [input_actions.gd:33](../src/input/input_actions.gd#L33) | **não existe**; a observabilidade mínima exigida por P1 está coberta em texto, não em inspector |
 | "**hash de estado** e journal de tick são sagrados" | Agora há `TickJournal.state_hash()` e gravação JSONL de `[tick, hash]`, sob demanda ([tick_journal.gd](../src/persistence/tick_journal.gd)). A projeção mínima cobre semente/versão/dimensões, tick, edições, bytes completos do Éter e identidades/intenções/crenças das mentes vivas. `main._sim_tick` registra após incrementar o tick e dentro do cronômetro ([main.gd:378-384](../src/main.gd#L378-L384), cronometrado em [:280-282](../src/main.gd#L342-L344)) | **primitivo implementado, validação abaixo**; não cobre todo o estado da simulação nem registra comandos: replay permanece item 2 |
 | "testes de determinismo: 20 sementes × 1000 ticks no cenário do lobo" | A suíte roda **uma** semente (`const SEED := 20261116` — [smoke_test.gd:10](../tests/smoke_test.gd#L10)) e a checagem determinística é uma só: 16 colunas de altura geradas duas vezes e comparadas — [smoke_test.gd:478-488](../tests/smoke_test.gd#L478-L488). Não há harness multi-semente em `tests/` | **falso hoje**; só faz sentido depois do hash |
@@ -295,7 +295,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   no fim de `sim_step` ([`:912`](../src/entities/wolf.gd#L912)), depois do `_tree.tick`, cobre com
   uma pergunta `_dry_ground` ([:717-724](../src/entities/wolf.gd#L717-L724)) por lobo por passo de
   20 Hz as **quatro** folhas que escreviam alvo sem consultar o solo — `_leaf_flee`
-  ([:480](../src/entities/wolf.gd#L480)), `_leaf_chase` ([:503](../src/entities/wolf.gd#L503)),
+  ([:484](../src/entities/wolf.gd#L484)), `_leaf_chase` ([:507](../src/entities/wolf.gd#L507)),
   `_leaf_stalk` ([:554](../src/entities/wolf.gd#L554)), `_leaf_investigate`
   ([:567](../src/entities/wolf.gd#L567)) — em vez de copiar o teste para dentro de cada uma. Sem
   saída seca no anel o alvo molhado **fica onde está** e o nado segue o caminho que já existe: não
@@ -323,7 +323,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   nasce — deixou de ser fallback silencioso. Vermelho do sorteio velho: `dentro=1 visiveis=3 de 5`
   (lobo1 a 16,8 m com `los=true`) e reposto a 25,9 m visível; verde: `dentro=0 visiveis=0 de 5`,
   reposto a 39,3 m com `los=false`. O censo passou de premissa a invariante
-  (`lobos + fila == teto`, [smoke_test.gd:322](../tests/smoke_test.gd#L322)) e os sítios que
+  (`lobos + fila == teto`, [smoke_test.gd:365](../tests/smoke_test.gd#L365)) e os sítios que
   indexavam `wolves[i]` a mão ganharam guarda com nome — índice caído é checagem vermelha, não
   `SCRIPT ERROR`. **(e) Política de aviso:** saem as duas únicas frases de criatura que existiam
   ("uma nova matilha entrou no vale", "o lobo caiu o sangue fica no eter"); fica
@@ -358,7 +358,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   [[:548-551](../src/entities/wolf.gd#L548-L551)] a 1,50 m da presa por `ENCIRCLE_RING`
   [[:39](../src/entities/wolf.gd#L39)]); **mordida escalonada** por `clock.tick % n == rank`
   (`_bite_turn` [[:793-797](../src/entities/wolf.gd#L793-L797)], chamada em
-  [:774](../src/entities/wolf.gd#L774)); **contágio do medo** — vizinho em `flee` soma `0,55` no
+  [:778](../src/entities/wolf.gd#L778)); **contágio do medo** — vizinho em `flee` soma `0,55` no
   `_fear_level` do observador ([`_sense` 862-871](../src/entities/wolf.gd#L932-L941),
   `PACK_PANIC_FEAR` [[:53](../src/entities/wolf.gd#L53)]); e **amortecimento por confiança** —
   vizinho com `trust ≥ 0,35` corta `0,9` do `_courage` e fecha a porta de `hunt`
@@ -873,7 +873,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     §3 nomeia a decisão, o braço rejeitado e o número que reabre o braço. O estado lido, pelo que faz o
     gate nascer vermelho: **nenhum item nasce de nenhuma morte** — o `die()` do lobo escreve BLOOD e FEAR
     ([wolf.gd:1319-1320](../src/entities/wolf.gd#L1319-L1320)), arma o timer de cadáver
-    ([:1321](../src/entities/wolf.gd#L1321)) e só então emite `died` ([:1322](../src/entities/wolf.gd#L1322)),
+    ([:1333](../src/entities/wolf.gd#L1333)) e só então emite `died` ([:1334](../src/entities/wolf.gd#L1334)),
     cujos **dois** consumidores somam um contador de abate ([main.gd:1046](../src/main.gd#L1046)) e tocam um
     som ([audio_director.gd:412](../src/audio/audio_director.gd#L412)); a sonda de alcance do pulo é
     **fixa de uma célula** — `can_step_over` testa `feet + (x, 1.0, z)` em
@@ -1538,7 +1538,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     isso que a frase do dossiê 12 de 2026-11-20 — "WORK + BLOOD difundem com menos barreira" como
     consequência observável de um bicho abrir a entrada de um rastro — **não é falsificável**, e a
     página re-escrita em 2026-11-22 re-baseou o item (b) em outra grandeza: o `y` que
-    [`_scent_ground_y`](../src/entities/wolf.gd#L1025-L1029) devolve para a célula do achado, que é código
+    [`_scent_ground_y`](../src/entities/wolf.gd#L1037-L1041) devolve para a célula do achado, que é código
     que existe e lê cada voxel da coluna. **Nada aqui pede mudança de formato nem de canal:**
     `Channel.COUNT` ([aether_field.gd:9](../src/world/aether_field.gd#L9)) e
     `FORMAT_VERSION` ([tick_journal.gd:4](../src/persistence/tick_journal.gd#L4)) ficam intactos, então
@@ -1559,7 +1559,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     `Dictionary` literal inline no tick,
     [src/entities/wolf.gd:911](../src/entities/wolf.gd#L911)) e cada lobo constrói a própria árvore:
     `setup()` ([:299](../src/entities/wolf.gd#L299)) chama `_build_tree()` ([:318](../src/entities/wolf.gd#L318)),
-    corpo em ([:422](../src/entities/wolf.gd#L422)). O comentário de topo do runtime repete a promessa
+    corpo em ([:426](../src/entities/wolf.gd#L426)). O comentário de topo do runtime repete a promessa
     ([src/ai/behavior/bt_tree.gd:2](../src/ai/behavior/bt_tree.gd#L2)), e é ela — não a linha do doc — que
     a pauta 20 §3.5 declara como **primeira compradora**: `SpeciesDef` existe para que a árvore deixe de
     ser por entidade. **Por que isto não é cosmético:** o custo da casa hoje é censo × orçamento, e a
@@ -3291,7 +3291,7 @@ onde "matilha" existia era o `WOLF_COUNT := 5` do spawn e a frase do HUD.
   (`_seat_point` [:548-551](../src/entities/wolf.gd#L548-L551), `ENCIRCLE_RING`
   [:39](../src/entities/wolf.gd#L39)).
 - `89df566` — **mordida escalonada**: `_bite_turn` [:793-797](../src/entities/wolf.gd#L793-L797)
-  devolve `clock.tick % n == rank`, chamada em [:774](../src/entities/wolf.gd#L774) — dois lobos não
+  devolve `clock.tick % n == rank`, chamada em [:778](../src/entities/wolf.gd#L778) — dois lobos não
   mordem o mesmo tick.
 - `4888818` — a leitura da matilha ganha **quinta chave conferida**: `trust` vem de
   `_pack_put` ([main.gd:980](../src/main.gd#L980), `e["trust"] = other.trust_toward_player`), o
@@ -3398,7 +3398,7 @@ número saído de uma prova que não confere.
   re-conferido: as quatro folhas que "escolhem alvo sem nenhum teste de solo" continuam sendo as
   quatro ([`_leaf_flee`](../src/entities/wolf.gd#L494),
   [`_leaf_chase`](../src/entities/wolf.gd#L510)/[`_leaf_chase`](../src/entities/wolf.gd#L514),
-  [`_leaf_stalk`](../src/entities/wolf.gd#L556),
+  [`_leaf_stalk`](../src/entities/wolf.gd#L560),
   [`_leaf_investigate`](../src/entities/wolf.gd#L574)) — a perna 14 fechou o buraco **depois** do
   tick, com `_resolve_dry_target()`
   ([wolf.gd:764-768](../src/entities/wolf.gd#L764-L768)), e não copiando o teste para dentro delas.
@@ -3835,16 +3835,16 @@ arquivo, nunca somando um deslocamento:
 - **prova vazia não se desloca.** As 11 faixas devolvidas em `cb09015` e os oito alvos do furo #17,
   cada um re-ancorado pela frase que o cita.
 - **rótulo caindo fora da própria definição.** [`_temp`](../src/world/world_gen.gd#L57) estava
-  apontado para a linha 34, que hoje é comentário; [`_build_visual()`](../src/entities/wolf.gd#L1448)
+  apontado para a linha 34, que hoje é comentário; [`_build_visual()`](../src/entities/wolf.gd#L1464)
   para 885; [`_spawn_wolves`](../src/main.gd#L388-L428) para 259-275;
-  [`load_state`](../src/entities/wolf.gd#L1376) para 701-736; [`take_damage`](../src/entities/wolf.gd#L1288)
+  [`load_state`](../src/entities/wolf.gd#L1392) para 701-736; [`take_damage`](../src/entities/wolf.gd#L1300)
   para 817. Nenhum desses dava "fora do arquivo" nem "em branco": linha com texto, número dentro, e
   a frase mentindo.
 - **ponteiro de dossiê que descreve o estado lido ANTES da perna 10.** Em `a6b83d7` os dossiês 10 a
   14 tinham **39** ponteiros `wolf.gd` caindo na faixa 400–599, onde a perna escreveu as funções
   novas; hoje são **26**, e a faixa perdeu o valor de sinal justamente porque é ali que moram
   `_remember_scent` (`src/entities/wolf.gd:635`), `_leaf_wander` (`src/entities/wolf.gd:652`),
-  `_shore_point` (`src/entities/wolf.gd:725`) e `_build_scorer` (`src/entities/wolf.gd:802`). Cada um dos que a passada abriu saiu com o número de hoje — a lista da matilha no
+  `_shore_point` (`src/entities/wolf.gd:729`) e `_build_scorer` (`src/entities/wolf.gd:806`). Cada um dos que a passada abriu saiu com o número de hoje — a lista da matilha no
   blackboard e no contexto do escorredor (10), o `sim_step`, o `hunger` por `dt` e a razão
   `hp/MAX_HP` (11), a varredura de rastro de `7×7` citada duas vezes como se fosse o território
   (12), o débito do `Dictionary` por tick (13) e a escolha de solo seco (14). Os **26** restantes
@@ -4052,7 +4052,7 @@ irmão vivo. Os dois letreiros de criatura saíram; o contador de abate fica.
 
 ### A corrida que sustenta os números
 
-Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L126)
+Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L149)
 **150 → 183** com **oito cenários novos** nomeados em
 [:28-32](../tests/aether_reactions_test.gd#L28-L32). A suíte ficou em **246 checagens** do primeiro
 ao último degrau — o degrau (f) mudou uma asserção
@@ -4638,7 +4638,7 @@ descreve onde uma peça se encaixa vale o que valia no dia em que foi lida. Nada
      `if fase == ADULTO`.
   E o item (b) da página antiga foi re-baseado: "WORK + BLOOD difundem com menos barreira" não é
   falsificável, então o observável passou a ser o `y` que
-  [`_scent_ground_y`](../src/entities/wolf.gd#L1025-L1029) devolve para a célula do achado.
+  [`_scent_ground_y`](../src/entities/wolf.gd#L1037-L1041) devolve para a célula do achado.
 - duas armadilhas de palco nomeadas no §2 e no §4, as duas lidas do runner de hoje: `_wall`
   ([tests/aether_reactions_test.gd:401-404](../tests/aether_reactions_test.gd#L401-L404)) e `_cave_carve`
   ([`:1484-1491`](../tests/aether_reactions_test.gd#L1521-L1528)) escrevem com `record` default — parede
@@ -5639,14 +5639,14 @@ exatamente o que o mandato 3 proíbe, e por isso cada linha acima tem a corrida 
 **O que o código faz hoje, com os ponteiros re-derivados nesta árvore.**
 
 - O alvo tem **dois ramos** e um só acumulador. O do empurrao é re-derivado pela geometria do corpo em
-  [`_dig_cell`](../src/entities/wolf.gd#L1090), armado pelo terceiro ramo do `if` de bloqueio
+  [`_dig_cell`](../src/entities/wolf.gd#L1102), armado pelo terceiro ramo do `if` de bloqueio
   ([`:1239-1254`](../src/entities/wolf.gd#L1239-L1254), o `_dig_arm()` em `:1254`); o do nariz é **entregue**
   no fim da inspeção ([`:599-600`](../src/entities/wolf.gd#L599-L600)) e vive em `_dig_scent`
   ([`:274`](../src/entities/wolf.gd#L274)) separado de `_dig_pos`
   ([`:262`](../src/entities/wolf.gd#L262)) porque no tick da entrega o `want` está zerado e re-derivá-lo
   pela faixa do corpo descartaria o compromisso no passo em que ele nasce.
 - A validade é **lista de material + procedência**:
-  [`_dig_ok`](../src/entities/wolf.gd#L1065-L1066) exige `DIG_MATERIALS`
+  [`_dig_ok`](../src/entities/wolf.gd#L1077-L1078) exige `DIG_MATERIALS`
   ([`:110-115`](../src/entities/wolf.gd#L110-L115): neve, areia, terra, grama) **e**
   `not world.edits.has(p)`. É por essa segunda cláusula que o **furo #22** (a lista de bancadas tem um
   único comprador, e um bicho que removesse uma `BENCH` deixaria `bench_positions()` apontando para o ar)
@@ -5665,7 +5665,7 @@ exatamente o que o mandato 3 proíbe, e por isso cada linha acima tem a corrida 
   `_resolve_dry_target()` e **fora** dos 400 µs do `SubtreeGuard`: o orçamento é da árvore, não do corpo, e
   escrever no mundo dentro dele mudaria o número que `tree_stats()` publica.
 - A obra é transitória, o mundo não: os quatro campos voltam ao nada pelo
-  [`_dig_reset()`](../src/entities/wolf.gd#L1132-L1136) chamado no `load_state`
+  [`_dig_reset()`](../src/entities/wolf.gd#L1144-L1148) chamado no `load_state`
   ([`:1416`](../src/entities/wolf.gd#L1416)) — o disco grava a cova, não a intenção de cavá-la.
 - Quem cava é **quem alcança**: o predicado vem de `step_reach()`
   ([voxel_body.gd:161-162](../src/entities/voxel_body.gd#L161-L162)), derivado de `dims`, então filhote e
@@ -9377,3 +9377,216 @@ quarentena no inspector) e **Fase 5**. Dos furos, **#38**, **#39**, **#20**, **#
 observado também nesta árvore com o número **4**. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e
 a projeção do `TickJournal` não foram tocados por nenhum dos dois merges. A fila serializada não
 muda: **22 → 17 → 18 → 20 → 13**.
+
+## O reparo da prosa depois dos dois merges — as 32 resoluções conferidas bloco a bloco, e os 14 blocos que só a comparação de pontas vê (2026-11-25, `fix/prosa-dossie-22-pos-merge`, base `8bddcab`)
+
+A cobrança do dono foi "valide e resolva os conflitos, deu muitos". Os dois merges deram **32**
+arquivos em conflito no `3919bbb` e **30** no `aea325a` (as listas, extraídas das linhas
+`CONFLICT (content)` arquivadas, estão em
+[`blobs.txt`](evidence/reparo-conflitos-pos-merge/blobs.txt) e nos instrumentos). Concluir isso por
+régua é o erro que a **regra 7** já nomeia: as três réguas da casa leram **só ponteiros** na árvore
+integrada e devolveram verde — **40 arquivos · 3 280 ponteiros · 212 rótulos · 3 779 links** com
+**casos objetivos: 0**, e **2 812 citações conferidas / 0 fora do arquivo / 26 FALTA**, exit 0. Com
+esse verde, `docs/planos/22-oraculo-nativo-gdextension.md` estava **147 linhas mais curto** que a
+ponta da perna 22.
+
+### A escada de cinco passes, com o que cada um viu
+
+1. **Marca commitada:** `git grep -nE "^(<<<<<<< |>>>>>>> )" 8bddcab -- .` fora de `docs/evidence` →
+   **zero** ocorrências, e zero em cada um dos 32 arquivos resolvidos
+   ([`marcas.txt`](evidence/reparo-conflitos-pos-merge/marcas.txt)). Não havia conflito aberto —
+   havia conflito *resolvido*, que é outra pergunta.
+2. **Union por linha, dígitos colapsados** ([`linhas_union.txt`](evidence/reparo-conflitos-pos-merge/linhas_union.txt),
+   instrumento em [`instrumento_linhas.txt`](evidence/reparo-conflitos-pos-merge/instrumento_linhas.txt)):
+   `ours=403` / `theirs=283` linhas ausentes em **23 de 32** arquivos. Esse número é o **mesmo**
+   que a seção acima tem de comparar: um ponteiro re-ancorado troca a linha sem trocar a frase, e
+   a re-quebra de linha troca onde a frase se parte. O passe **acusa**, não decide.
+3. **Cabeçalhos** ([`headings_merge1.txt`](evidence/reparo-conflitos-pos-merge/headings_merge1.txt),
+   [`headings_merge2.txt`](evidence/reparo-conflitos-pos-merge/headings_merge2.txt)): um arquivo de
+   32 com heading perdido, `ours=7` / `theirs=0` no primeiro merge e o espelho (`ours=0` /
+   `theirs=7`) no segundo — os sete são `## 21. A Fase 2: a memória de qualidade…` e as seis
+   subseções dele. Re-ancoragem não apaga uma seção; isto não é ruído de ponteiro.
+4. **Bloco por prefixo** (parágrafo normalizado, dígitos → `#`, alvo de link removido;
+   [`blocos_perda.txt`](evidence/reparo-conflitos-pos-merge/blocos_perda.txt)): cai de 122/95 para
+   **perda real ours=19 / theirs=22**, e **cosmético ours=125 / theirs=4** — os 125 são exatamente o
+   rabo re-ancorado, a face do **furo #28** contada em outra unidade
+   ([`instrumento_blocos.txt`](evidence/reparo-conflitos-pos-merge/instrumento_blocos.txt)).
+5. **Janela de miolo** ([`miolo_confirmacao.txt`](evidence/reparo-conflitos-pos-merge/miolo_confirmacao.txt)):
+   para cada bloco marcado, buscar os caracteres 80–150 no resultado. Sobram **dois** arquivos.
+   `docs/planos/16-tocas-da-alcateia.md` perde por janela e não perde de fato: a árvore integrada é
+   a **mais nova** ali — `- **Sorteio**` está `main.gd:387-410` com os parênteses fechados em `8bddcab`
+   contra `main.gd:356-379 → #L361-L384` (descasado) em `610ba00` e `main.gd:356-379 → #L387-L410`
+   (rótulo velho, URL nova) em `955dc47`. Fica como está, e o mesmo passe confere o resto: os quatro
+   `EXISTE` em `design/10`, `design/11`, `engine/simclock`, `planos/09` e `planos/11` são corpo vivo
+   com cabeça movida.
+
+### O que sumiu, e por que a régua não viu
+
+`docs/planos/22-oraculo-nativo-gdextension.md`: **2 097 linhas / 1 770 não-vasias** na árvore
+integrada contra **2 244 / 1 903** nas duas pontas (`610ba00` e `955dc47`) — o §21 inteiro, com as
+seis subseções e o registro commit a commit (`094dbe9`, `2e946a2`, `8cc3351`, `f9c5cbe`) e as quatro
+corridas da ponta. O mecanismo é de ascendência, não de mão: a tabela de blobs
+([`blobs.txt`](evidence/reparo-conflitos-pos-merge/blobs.txt)) dá `7cd3ff2 → 57bc284`,
+`2f46368 = e0a558c → d8ca97a` (sem o §21), `610ba00 = 8073135 → e06c210` (**com** o §21),
+`955dc47 → 69d4093` (com o §21 re-ancorado) e `3919bbb = aea325a = 8bddcab → d06a8dc` — um **quinto**
+blob que não é igual a nenhum pai. No primeiro merge o §21 era acréscimo de um lado e modificação do
+outro no mesmo arquivo; ficou o lado modificado. No segundo, o ponto de união é `2f46368`
+(`d8ca97a`, sem §21), `ours=3919bbb` também sem, e `theirs=955dc47` com — a resolução recortou o
+lado sem, de novo. As réguas ficaram verdes nas duas vezes porque cada ponteiro sobrevivente aponta
+para uma linha que existe.
+
+### O reparo, e a prova de que ele não desfaz nada
+
+`git checkout 955dc47 -- docs/planos/22-oraculo-nativo-gdextension.md` na branch
+`fix/prosa-dossie-22-pos-merge`, aberta de `8bddcab`. A decisão é por conjuntos, não por confiança:
+[`superset.txt`](evidence/reparo-conflitos-pos-merge/superset.txt) dá **307** blocos no arquivo em
+main, **321** na ponta da branch e **321** na ponta da perna 22, com **0** blocos exclusivos de main,
+**0** blocos da perna 22 ausentes na branch, **14** blocos devolvidos e **0** removidos. Os
+ponteiros do §21 valem nesta árvore por identidade, medida: `128e236` — o commit que re-ancorou esta
+página — tem `src = 9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2` e `tests = d534212a0061b368ee41b4dd8c222886ef0915fe`,
+**iguais** aos de `955dc47` e aos de `8bddcab`.
+
+Relido no árvore reparada: âncoras **40 · 3 323 ponteiros (+43) · 212 rótulos · 3 848 links** com
+**casos objetivos: 0** ([`ancoras.txt`](evidence/reparo-conflitos-pos-merge/ancoras.txt)); citações do
+corpus **2 855 conferidas (+43) / 0 fora do arquivo / 26 FALTA** e do par com o dossiê **1 212 / 0**
+([`cites_corpus.txt`](evidence/reparo-conflitos-pos-merge/cites_corpus.txt),
+[`cites_cinco.txt`](evidence/reparo-conflitos-pos-merge/cites_cinco.txt)); identificadores da página exit **0** com o veredito igual ao do pin (mesma lista de ausências com os números a parte); o scan
+de rótulo-×-URL dá **8** casos nas duas árvores — o reparo não acrescenta derivação
+([`rotulo_vs_url.txt`](evidence/reparo-conflitos-pos-merge/rotulo_vs_url.txt)) — e o de citação nua
+**0** ([`citacao_nua.txt`](evidence/reparo-conflitos-pos-merge/citacao_nua.txt)).
+
+**Código: zero byte.** `src` e `tests` da árvore reparada são os mesmos `9b5dc8ec…` / `d534212a…`,
+então os quatro números pineados da árvore integrada valem aqui **por identidade de árvore** e não
+por re-corrida: suíte **277 / 0 / 60,2 s**, runner **355 / 0 / 49,089 s**, RNG **27 / 0 / 2,704 s**,
+journal **128 / 0 / 6,079 s**. Um commit que troca prose não re-me nada — escrever 60 s de suíte sem
+pergunta seria inventar testemunha.
+
+### O que este passe emenda e o que deixa aberto
+
+A frase da seção acima — "os 30 conflitos de documentação foram resolvidos ficando com a
+re-derivação conferida linha a linha no conteúdo" — **não foi verdade para este arquivo**, e fica
+emendada aqui em vez de apagada (registro não se reescreve). Daí um furo novo, com dono e com a
+regra que ele cobra:
+
+**Furo #54 — as três réguas são cegas a conteúdo que um merge descarta.** Verde nelas significa
+"todo ponteiro que sobrou aponta para linha que existe"; não significa "sobrou tudo". Medido: na
+árvore com 3 280 ponteiros verdes e 0 casos, uma das 32 resoluções tinha **147 linhas** e **14
+parágrafos** a menos que ambas as pontas, e nenhuma das três réguas podia ver isso — o §21 inteiro
+faltou e o arquivo continuou auto-consistente. A régua que pega é comparação de **blocos por
+prefixo + janela de miolo contra as duas pontas e contra a base**
+([`instrumento_blocos.txt`](evidence/reparo-conflitos-pos-merge/instrumento_blocos.txt),
+[`instrumento_miolo.txt`](evidence/reparo-conflitos-pos-merge/instrumento_miolo.txt)), e a regra da
+casa passa a ser: **depois de merge com conflito em documento, rodar a comparação de blocos contra
+os dois pais antes de declarar a resolução** — contagem de ponteiros não é testemunha de prosa.
+Dono: este passe o instrumentou; quem o transforma em régua da casa (com as outras três) é o dono do
+instrumento, o mesmo do **furo #51** e do **#52**. Seguem abertos, sem mudança: **#28**, **#31**,
+**#38**, **#39**, **#41**, **#44**, **#46**, **#48**, **#50**, **#51**, **#52**, **#53**, o
+par de vazamento do quit (agora com o número **4** também na árvore integrada) e `block_changed` sem
+consumidor em `src/` — débito da perna 17. O **#45** fecha fora desta branch, pelo pouso `9dad808` da
+`fix/sidecars-de-evidencia-45` (`423423d`), que traz os quatro `.png.import` da água para a mesma
+árvore deste reparo; a árvore pousada abaixo é os dois juntos. `Channel.COUNT`, `FORMAT_VERSION`,
+`GEN_VERSION` e a projeção do `TickJournal` não são tocados por nenhum dos dois commits, e a fila
+serializada continua **22 → 17 → 18 → 20 → 13**.
+
+## Rodada 2026-11-25 (12) — Fase 3 do dossiê 22: a curva de resultado por tática chega ao `Mind`, o bônus UCB1 entra depois do veto, e o portão mede a espécie subindo de 1 para 8 vitórias por janela (branch `feat/oraculo-nativo-fase3-22`, base `8bddcab`, vermelho `dde32e5`, pontas de código `f803243`, `cd906e7`, `2389955`, evidência `e4818a3`)
+
+A perna foi retomada de um agente delegado que chegou ao teto de turnos com a implementação
+coerente e o gate vermelho já arquivado. Dele são o baseline
+([`fase3_baseline_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_baseline_runner.log) e os três
+irmãos no mesmo diretório: suíte **277/0/60,6 s**, runner **355/0/55,335 s**, RNG **27/0/2,724 s**,
+journal **128/0/6,115 s**) e o (a) vermelho (`dde32e5`): nove checagens novas no runner
+(censo 355 → **364**), o duelo de três braços (dois desligados idênticos, um ligado) rodando o fio
+real de [`main.gd`](../src/main.gd) — mordida → dano → morte → `on_kill` → renascimento — com o
+rodapé **`364 checagens 8 falhas 51.601 s`** e o número decisivo **off1=1 off2=1 on=1
+espalhamento=0 delta=0** ("0 > 0 falso"). O único controle que passava sem a curva era o dos braços
+idênticos (`OK ... dois bracos identicos desligados conservam a contagem | off1=1 off2=1
+espalhamento=0`) — o que prova que o instrumento media, e que ninguém unia a vitória à tática
+([`fase3_vermelho_bandit_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_vermelho_bandit_runner.log)
+**3938–3946**).
+
+**`f803243` — a curva no `Mind`.** O §8 item 3 do dossiê nomeia a falta ("nada guarda vitorias,
+tentativas, variância por tática") e o termo de exploração `sqrt(2 ln N / n_i)` precisa de N e de
+n_i por par arquétipo × tática. O dono é o [`Mind`](../src/ai/mind.gd) — dono do estado de quem
+aprende, como já é de `personality`, `episodic` e `beliefs` — e não o escorredor, que só lê.
+Entram `bandit_abrir` (a **troca** de tática abre a tentativa), `bandit_vitoria` (o crédito na
+tática em pé, contando múltiplas vitórias na mesma tentativa), `bandit_bonus` (UCB1: média +
+`sqrt(2 ln N / n)`, escalado por `BANDIT_GAIN = 0.12`, teto 2.0) e o estilo EWMA de seleção
+(`ESTILO_ALPHA = 0.25`), as duas no `to_dict`/`from_dict` (ida+volta `iguais=true`). Duas cláusulas
+nasceram com número na mesa. **`BANDIT_MIN_N` saiu de 2 para 1**: uma vitória já é média real, e
+exigir duas tentativas congelaria a curva exatamente no momento que importa — a primeira mordida,
+quando o braço vencedor tem n=1 e é o UCB1 que decide se hunt volta a disputar; o braço **sem
+vitória nenhuma** continua com bônus zero (média ≤ 0 não puxa exploração para braço perdedor — a
+cláusula que impede o bandit de reforçar fuga). E a variância é **exata**, não aproximada: `soma2
++= 2·v_atual + 1` por vitória devolve Σv² sobre as tentativas (v_atual reseta em `abrir` e volta no
+`from_dict`); a versão que somava 1 por vitória mediu **`variancia=-0.898`** (n=7 soma=11.0
+soma2=11.0 — E[x²] quebrado quando várias vitórias caem na mesma tentativa,
+[`fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log`](evidence/oraculo-nativo-fase3-22/fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log)
+**3968**) antes do conserto, que mediu **7.959** com o mesmo estado.
+
+**`cd906e7` — o bônus entra depois do veto.** A superfície é a que o §8 aponta: o
+[`utility_scorer.gd`](../src/ai/utility_scorer.gd). `scored()` lê `ctx["bandit"]` e soma o UCB1 da
+tática ao score de cada opção **só onde o veto deixou** (`not vetoed`), escrevendo o próprio bônus
+no rastro da opção ("bandit"). A checagem 9 paga a cláusula com número: **`OK bandit_une_numero: a
+opcao vetada recebe contribuicao zero do bandit | vetoed=true bandit=0.0000`** — vetos continuam
+sendo portão, não componente. Contexto sem "bandit" é bônus zero: quem monta escorredor à mão (os
+testes do scorer) não ganha comportamento novo por decreto, e o caminho desligado é a árvore de
+antes da Fase 3 — o braço desligado aplica **`bonus_off=0.0000`** com a curva cheia
+([`fase3_verde_bandit_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_verde_bandit_runner.log)
+**3966**).
+
+**`2389955` — o instrumento fica decidível, e o rastro nomeou o defeito antes do conserto.** O
+`_gate_janela` ganhou rótulo por braço e rastro (a cada 300 ticks: intent, distância ao
+jogador, vitorias; a linha final com a curva e o estilo) — e o rastro do duelo **original** devolveu
+a causa do delta=0, que não era a curva: o jogador renascia a `(83, 51.001, 83)`, **32,6 m** do
+local da mordida, FORA do alcance de vista de 30 m, e com memória de vista de 6 s o hunt ficava
+vetado para sempre. O braço ligado rodou `intent=flee` nos 2400 ticks seguintes à mordida,
+`dist_jog=40.9 → 81.0 m`, vitorias presas em 1 com a curva hunt `{n:1, wins:1}`
+([`fase3_duelo_original_portao_indecidivel_rastro.log`](evidence/oraculo-nativo-fase3-22/fase3_duelo_original_portao_indecidivel_rastro.log)
+**3938–3946**) — o portão era **indecidível por construção, para qualquer ganho**. O renascimento
+sai para `(68.0, 51.001, 68.0)`, ~11 m dentro de vista, e flee/hunt voltam a disputar a vez entre
+golpes — exatamente o intervalo onde o bandit decide. Nenhuma premissa e nenhum teto se moveram; o
+critério (`delta > espalhamento`, dois braços desligados idênticos como par anti-farsa) continua o
+que nasceu no (a).
+
+O portão fechando verde, as nove linhas
+([`fase3_verde_bandit_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_verde_bandit_runner.log)
+**3965–3973**): a rota existe (`bandit_bonus=true`), o desligado aplica zero
+(`bonus_off=0.0000`), o ligado imprime número maior que zero (**`bonus_on=0.2400`** = 0.12 ×
+clamp(1.0 + 1.177, 0, 2)), a variância é rastreada (**`variancia=7.959`** com n=7 soma=11.0
+soma2=73.0), o estilo soma 1 e olha para a campeã (`hunt=1.000`), o `to_dict`/`from_dict` conserva
+as duas (`iguais=true`), o controle de braços idênticos passa (`off1=1 off2=1 espalhamento=0`), o
+braço ligado move a taxa **mais que o espalhamento** (**`off1=1 off2=1 on=8 espalhamento=0
+delta=7`**) e o vetado recebe zero. O rastro do braço ligado no duelo recalibrado conta o mesmo em
+comportamento: `intent=hunt` desde t=300, `dist_jog=0.5 m`, vitorias 1→8
+([`fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log`](evidence/oraculo-nativo-fase3-22/fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log)
+**3956–3963**). Censo fecha **364/364** e **76/76** — o portão da paridade teste↔checagem não foi
+levantado.
+
+O par marginal do guard fica arquivado inteiro, com a regra de reprodução decidindo: uma corrida
+devolveu **`FALHA budget_do_oraculo ... trips_antes=0 trips_depois=1 narradas=5`** e rodapé
+**`364 checagens 1 falhas 58.924 s`**
+([`fase3_vermelho_budget_par.log`](evidence/oraculo-nativo-fase3-22/fase3_vermelho_budget_par.log)
+**3918, 3980**); re-corrida com código idêntico devolve **trips 0→0** e rodapé
+**`364 checagens 0 falhas 57.476 s`** (pin **3918, 3980**). Vermelho não-reprodutível = sensibilidade
+do instrumento — o decode em voo (`worst_decode_us=744806`) caindo dentro da janela de 400 µs do
+`SubtreeGuard` num único tick — não defeito de árvore; nada silenciado, nenhum teto movido, e a
+janela de 400 µs contra um decode de ~745 µs continua exatamente o material que a **Fase 5** vai
+re-ler.
+
+As quatro corridas da ponta, todas com zero `SCRIPT ERROR`: runner **364/0/57.476 s** (pin, exit 0),
+suíte **277/0/68.0 s** com pior passo **15.83 ms** na régua de 25
+([`fase3_final_suite.log`](evidence/oraculo-nativo-fase3-22/fase3_final_suite.log) **365–366, 412**)
+— e o par de vazamento do quit segue sem dono, observado com o número **4** —, RNG
+**27/0/2.979 s**, journal **128/0/7.974 s** com **7/7 testes concluidos**.
+
+Evidência em [`docs/evidence/oraculo-nativo-fase3-22/`](evidence/oraculo-nativo-fase3-22/) — os
+**treze** logs (cinco do baseline e de provisionamento, o vermelho do (a), os quatro das pontas
+(b)–(d), o par do guard e as três corridas de contrato da ponta) mais o manifesto. `Channel.COUNT`
+([`aether_field.gd:9`](../src/world/aether_field.gd#L9)), `FORMAT_VERSION`
+([`tick_journal.gd:4`](../src/persistence/tick_journal.gd#L4)) e `GEN_VERSION`
+([`world_gen.gd:6`](../src/world/world_gen.gd#L6)) não são tocados, e a projeção do
+`TickJournal` também não: ela lê `identity`, `kind`, `intent` e as beliefs ordenadas
+([`tick_journal.gd:27-35`](../src/persistence/tick_journal.gd#L27-L35)) e não lê as tabelas novas
+do `Mind` — o save da mente ganha as duas aditivamente, pela checagem ida+volta. Nenhum gate de fase
+fecha; **Fase 4** (dona do furo #46 e do consumidor da quarentena no inspector) e **Fase 5** seguem
+pauta, cada uma com gate próprio. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.

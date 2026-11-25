@@ -1,0 +1,37 @@
+"""Perda estrutural: cabecalhos de markdown (e linhas de bloco) por arquivo.
+
+Um re-derivado de ponteiro re-escreve a linha mas nao apaga uma SECAO. Aqui compara o
+conjunto de headings de OURS e THEIRS contra RES; heading ausente e perda real.
+"""
+import re, subprocess, sys, io, collections
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+OURS, THEIRS, RES, LISTA = sys.argv[1:5]
+
+
+def blob(rev, path):
+    r = subprocess.run(["git", "show", "%s:%s" % (rev, path)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    return r.stdout if r.returncode == 0 else ""
+
+
+def heads(t):
+    return [re.sub(r"\s+", " ", l.strip()) for l in t.split("\n") if re.match(r"^#{2,4} ", l)]
+
+
+files = [l.strip() for l in io.open(LISTA, encoding="utf-8") if l.strip()]
+tot_o = tot_t = 0
+for f in files:
+    ho, ht, hr = set(heads(blob(OURS, f))), set(heads(blob(THEIRS, f))), set(heads(blob(RES, f)))
+    mo, mt = sorted(ho - hr), sorted(ht - hr)
+    tot_o += len(mo); tot_t += len(mt)
+    nl = len([l for l in blob(RES, f).split("\n") if l.strip()])
+    nlo = len([l for l in blob(OURS, f).split("\n") if l.strip()])
+    nlt = len([l for l in blob(THEIRS, f).split("\n") if l.strip()])
+    flag = "PERDA" if (mo or mt) else "ok   "
+    menor = "RES-MENOR" if nl < max(nlo, nlt) - 4 else ""
+    print("%s %-58s res=%d ours=%d theirs=%d  ours_sem=%d theirs_sem=%d %s" % (flag, f, nl, nlo, nlt, len(mo), len(mt), menor))
+    for h in mo[:3]:
+        print("      [-ours ] %s" % h[:120])
+    for h in mt[:3]:
+        print("      [-theirs] %s" % h[:120])
+print("\nTOTAL headings perdidos: ours=%d theirs=%d" % (tot_o, tot_t))

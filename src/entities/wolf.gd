@@ -248,6 +248,10 @@ var _hp_ratio: float = 1.0
 var _threat: float = 0.0
 var _courage: float = 1.0
 var _top_line: String = "-"
+# A tatica de pe na decisao anterior (Fase 3 §5.6): a TROCA e o evento que abre
+# tentativa na curva de resultado — sem comparar com o valor de antes, cada
+# `_think` viraria tentativa nova e a media da curva seria ruido de 20 Hz.
+var _tatica_anterior: String = ""
 
 # execucao
 var _move_target: Vector3 = Vector3.ZERO
@@ -859,8 +863,16 @@ func _build_scorer() -> void:
 
 
 func _think(elapsed: float) -> void:
-	intent = _scorer.choose(elapsed, {"wolf": self, "elapsed": elapsed, "pack": _pack}, intent)
+	intent = _scorer.choose(elapsed, {"wolf": self, "elapsed": elapsed, "pack": _pack,
+			"bandit": mind}, intent)
 	_top_line = _scorer.top_line()
+	# Fase 3 §5.6: a curva de resultado se alimenta da TROCA de tatica — a
+	# entrada num papel abre tentativa (com resultado provisorio 0), e a
+	# vitoria (`on_kill`) sobe a resposta da tatica que estava de pe. O Mind
+	# recusa vitoria sem tentativa aberta: dado solto nao entra na curva.
+	if intent != _tatica_anterior:
+		mind.bandit_abrir(intent)
+		_tatica_anterior = intent
 
 
 ## A leitura da matilha e uma chamada por tick de 20 Hz, nunca por frame: o Array
@@ -1327,6 +1339,10 @@ func on_kill(p_actor: int) -> void:
 	kills += 1
 	feed(_player.position3())
 	mind.remember(_sim_clock.tick, "win", _player.position3(), p_actor, 0.6)
+	# Fase 3 §5.6: a vitoria entra na curva da tatica que a produziu — o intent
+	# de pe quando o alvo caiu. `mind.remember` registra o episodio; a curva e
+	# a outra ponta da mesma palavra "win", agora com dono.
+	mind.bandit_vitoria(intent)
 
 
 func feed(p_pos: Vector3) -> void:

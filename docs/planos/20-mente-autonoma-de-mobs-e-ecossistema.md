@@ -30,7 +30,7 @@ devolve diferente (§9), e duas já foram pagas por pernas que pousaram.
 não são fracos — **não existem**. O `die()` do lobo ([wolf.gd:1312](../../src/entities/wolf.gd#L1312))
 escreve BLOOD e FEAR no Éter ([`:1319-1320`](../../src/entities/wolf.gd#L1319-L1320)), arma o timer
 de cadáver ([`:1321`](../../src/entities/wolf.gd#L1321), `const CORPSE_SECONDS: float = 6.0` em
-[`:40`](../../src/entities/wolf.gd#L40)) e só **então** emite `died` ([`:1322`](../../src/entities/wolf.gd#L1322)).
+[`:40`](../../src/entities/wolf.gd#L40)) e só **então** emite `died` ([`:1334`](../../src/entities/wolf.gd#L1334)).
 O sinal tem **dois** consumidores em `src/`, e nenhum deles é um item: `_on_wolf_died`
 ([main.gd:441](../../src/main.gd#L441) conecta, corpo em [`:1041`](../../src/main.gd#L1041)) faz
 **uma** coisa — `stats["wolves_felled"] += 1` — e o diretor de áudio toca `wolf_died`
@@ -103,7 +103,7 @@ nunca consultado devolve a **mesma** sequência de `intent`, e isso já é cobra
   integrador é 0,62 ([`:19`](../../src/entities/voxel_body.gd#L19)). Ou seja: hoje o lobo **acerta
   o degrau de um bloco e recusa parede de duas** — o que falta é a conta que generalize para
   qualquer corpo, mais a contagem de tentativas, mais a memória, mais a troca de estratégia.
-- **Contador de tentativas: não existe.** `_unstick` ([wolf.gd:255](../../src/entities/wolf.gd#L255),
+- **Contador de tentativas: não existe.** `_unstick` ([wolf.gd:259](../../src/entities/wolf.gd#L259),
   decrementado por frame em [`:1227-1229`](../../src/entities/wolf.gd#L1227-L1229)) é um atraso
   anti-ritmo sorteado em [`:1240`](../../src/entities/wolf.gd#L1240), não uma memória de falha: não
   soma, não expira, não é lido por ninguém além do próprio ramo.
@@ -407,7 +407,7 @@ vira mentira.
   drop: um `Dictionary` por morte, fora do caminho quente.
 - **Como sei que ficou melhor — e o log existe?** Não existe log dessa régua ainda, então o
   primeiro passo da perna é **colheita**: contar por espécie decisões/tick, µs de árvore por
-  arquétipo (o `tree_stats()` [wolf.gd:1356](../../src/entities/wolf.gd#L1356) já imprime µs e
+  arquétipo (o `tree_stats()` [wolf.gd:1372](../../src/entities/wolf.gd#L1372) já imprime µs e
   estouros, hoje só para o lobo), tentativas de alcance e drops por corrida, em headless. Só
   depois disso o corte de quem voa é discutível. Pedir "otimizar o voo" sem esse número é o que o
   terceiro mandato recusa.
