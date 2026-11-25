@@ -1,0 +1,20 @@
+citacoes com numero de linha conferidas: 1061
+arquivos citados que nao existem: 17
+   FALTA README.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/melhorias-status.md -> .tools/_head_agents.md
+   FALTA docs/melhorias-status.md -> .tools/_head_readme.md
+   FALTA docs/melhorias-status.md -> .tools/_head_status.md
+   FALTA docs/melhorias-status.md -> src/ai/llm_server_host.gd
+   FALTA docs/melhorias-status.md -> src/ai/reach.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/entity_store.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/tick_clock.gd
+   FALTA docs/melhorias-status.md -> src/entities/falling_block.gd
+   FALTA docs/melhorias-status.md -> tests/llm_server_boot_probe.gd
+   FALTA docs/melhorias-status.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/melhorias-status.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/README.md -> src/ai/llm_server_host.gd
+   FALTA docs/planos/README.md -> src/ai/reach.gd
+   FALTA docs/planos/README.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/README.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/planos/README.md -> tests/wolf_multiseed_census_test.gd
+numeros de linha fora do arquivo: 0

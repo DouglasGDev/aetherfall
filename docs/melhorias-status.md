@@ -8224,3 +8224,106 @@ atribuição; o **#41** como furo da contagem de malha; o **#44** fica onde a 23
 é arrumação do dono; o **#46** é novo e não tem conserto nesta perna. A fila serializada não muda:
 **22 → 17 → 18 → 20 → 13**.
 
+
+## O pouso do Passo 4 na `main` — o primeiro pouso da perna que move `src`, o `llama-server` sobrevive só como cliente de referência do runner, e as quatro corridas da mergida saem limpas desde o primeiro import (2026-11-24, `docs/registro-pouso-passo4-22`, base `74820e7`, ponta `96e4abe`, merge `d71385f`)
+
+### O que o merge toca — `src` se move pela primeira vez num pouso desta perna
+
+O merge `--no-ff` tem pais **`74820e7`** (a `main` com o pouso do Passo 3) e **`96e4abe`** (a ponta da
+branch do Passo 4) e fecha em **`d71385f`** — **62 arquivos, +9 920/−1 737**. Os pousos do 2 (b) e do 3
+provaram `src` parado por diff; este é o primeiro que move: `git diff --name-only 74820e7 d71385f -- src`
+devolve **exatamente seis** entradas —
+[`src/ai/af_mind_runtime.gd`](../src/ai/af_mind_runtime.gd) (novo, com o `.uid`),
+`src/ai/llm_server_host.gd` (apagado, com o `.uid` — o hospedeiro de
+processo da perna 15 sai da árvore),
+[`src/ai/mind_oracle.gd`](../src/ai/mind_oracle.gd) (reescrito como wrapper da ponte) e
+[`src/main.gd`](../src/main.gd) (anexa o `AfMindRuntime`, liga `ready_provider` e publica `llm` no
+`diagnostics()`). As árvores do pin: `git rev-parse d71385f:src` =
+`65b5d3904b81fcf377a01d66a5f5d48fda5f5b03`, `:tests` =
+`f25ed2f1e6b0a49ff0e6fee31c0fcbcb2faed032`.
+
+### As quatro corridas da árvore mergida — a regra do import aplicada antes da primeira
+
+A lição do pouso do Passo 3 virou procedimento: o merge traz `class_name` novo
+(`AfMindRuntime`), então `--import` correu **antes** de qualquer runner — e desta vez o
+`.err` saiu **0 bytes**, sem nenhuma queixa de cache
+([`main_mergida_import.log`](evidence/registro-pouso-passo4-22/main_mergida_import.log), exit 0).
+
+- Suíte:
+  [`main_mergida_suite.log`](evidence/registro-pouso-passo4-22/main_mergida_suite.log) linha
+  **378** `== 264 checagens  0 falhas  52.6 s de teste ==`, exit 0; o `.err` de **249 bytes** é o
+  par de vazamento benigno do quit, o mesmo tamanho das corridas anteriores.
+- Runner:
+  [`main_mergida_runner.log`](evidence/registro-pouso-passo4-22/main_mergida_runner.log) — o gate novo
+  fecha em **570** (`grep -rn HTTPRequest src devolve vazio | arquivos_lidos=32 ocorrencias=0 (vazio)`)
+  e **571** (`os lancadores nao citam llama` com os dois `true`). O gate de contrato segue exercendo
+  **as duas transportas dentro do runner**: o `llama-server` continua existindo em `tests/` — mas só
+  como **cliente de referência** levantado pelo próprio runner (`pid=25508` em **550**,
+  `/health 200` em **551**, desmanche pelo pid exato em **566** com `derrubado=true reuso=false`) —
+  porque é ele que dá a forma contra a qual a extensão é comparada (`GATE do sucesso` em **565**,
+  `textos=142/143 chars`); do lado da extensão, o wait de sucesso com as 6 chaves tipadas em **561**
+  e o timeout com slot preservado em **562**. `trips_solo=0 trips_matilha=0` em **574**; matilha em
+  **577** (`passos=1341 sim_tick total=3 215 934 µs pico=18 175 µs; BT last_us soma=56 681 pico=194
+  trips=0`); e **578** `320 checagens 0 falhas 42.891 s`; exit 0, zero `SCRIPT ERROR`.
+- RNG:
+  [`main_mergida_rng.log`](evidence/registro-pouso-passo4-22/main_mergida_rng.log) linha **78**
+  `27 checagens 0 falhas 2.689 s`.
+- Journal:
+  [`main_mergida_journal.log`](evidence/registro-pouso-passo4-22/main_mergida_journal.log) linha
+  **143** `128 checagens 0 falhas 7/7 testes concluidos 5.808 s`.
+
+### O pin: clone limpo de `d71385f`, com o `build.bat` rodando dentro dele
+
+`git clone` do repositório local, HEAD `d71385f…`. O `--import` frio sai exit 0 com o **furo #38**
+impresso na mesma forma de sempre — `.err` de **602 bytes**, byte a byte o mesmo tamanho do `.err`
+do pin do Passo 3, com os dois pares `FileAccess::exists` +
+`GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'`
+([`pin_import.err`](evidence/registro-pouso-passo4-22/pin_import.err); a ordem honesta é
+import → build → runner). O `git status --short` do clone **depois** do import devolve **seis** linhas
+`??` — as duas do furo #25 (`tests/audio_test.gd.uid`, `tests/audio_live_probe.gd.uid`) e as quatro do
+furo #45 (os `.png.import` da água) — e este pouso **não as comita**.
+
+`build.bat` no clone
+([`pin_build.log`](evidence/registro-pouso-passo4-22/pin_build.log), exit 0): a régua do cabeçalho
+nomeia vcvars e toolset na linha **2** (`toolset=14.44.35207`, `cl_banner` **19.44.35228** na linha
+**4** — o conserto do furo #34 rodando dentro do clone), o probe da rota de prompt fecha
+`ROTA_DE_PROMPT_CONFIRMADA` em **2293** com `probe_rota_codigo=0` em **2294**, a ponte linka
+(`[ponte] link_codigo=0` em **2296**), o dll sai com **184 320 B** em **2297** e
+`af_mind_entry` em **2298**, e a régua de imports lê **55/55** em **2310**
+(`[import] OK referenciados=55 modulos=4 nomes_na_tabela=55`) antes do `[ok]` em **2312**. Mesmo
+tamanho de dll e mesma tabela do pin do Passo 3 — a branch do Passo 4 não tocou `native/`, e a régua
+do build prova por bytes, não por frase.
+
+Os dois recursos que a checagem resolve pelo diretório do projeto são gitignored e o clone nasce sem
+eles **por design**; o provisionamento desta medição é **junção** (`.tools\llama` apontando para a
+árvore de trabalho) mais **hardlink** do `.gguf` de 2 740 937 888 B (2 links) — ambiente de máquina,
+não mudança de árvore.
+
+- Runner no clone:
+  [`pin_runner.log`](evidence/registro-pouso-passo4-22/pin_runner.log) — o gate novo fecha nas mesmas
+  linhas **570/571**, as duas transportas correm inteiras **dentro do clone** (`pid=17624` em **550**,
+  desmanche em **566** com `derrubado=true reuso=false`), `trips_solo=0 trips_matilha=0` em **574**,
+  matilha em **577** (`passos=1341 sim_tick total=3 267 124 µs pico=14 950 µs; BT last_us soma=58 102
+  pico=270 trips=0`), e **578** `320 checagens 0 falhas 49.107 s`; exit 0, zero `SCRIPT ERROR`.
+- Suíte no clone:
+  [`pin_suite.log`](evidence/registro-pouso-passo4-22/pin_suite.log) linha **378**
+  `== 264 checagens  0 falhas  52.3 s de teste ==`, exit 0, zero `SCRIPT ERROR`.
+- RNG e journal ficam nas quatro corridas da mergida: o que o clone renova aqui é o par que exerce o
+  jogo real e o gate novo — suíte + runner.
+
+O número pineado para `d71385f` é: runner **320 / 0** (42,891 s na mergida; **49,107 s** no clone),
+suíte **264 / 0** (52,6 s; **52,3 s**), RNG **27 / 0 / 2,689 s** e journal **128 / 0 / 5,808 s** — as
+duas últimas só na mergida.
+
+### O que o pouso deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna 22 a fila viva é o **Passo 5** (cache §5.5,
+validador de crença, régua do budget), que é também o dono do **furo #46** — o `load_pack` é uma
+chamada síncrona da extensão e o frame que o roda trava o tempo do load, sem mais o overlap que o
+processo filho dava com a geração. O `llama-server` do jogo morreu com o transporte: o que sobrou
+dele em `tests/` é o cliente de referência do contrato, o único lugar onde o nome dele ainda sobe em
+processo vivo. Dos furos, **#38** (o import continua reclamando antes do build) e **#39** (réguas
+cegas a `native/`) seguem como decisão do dono; o **#20** sem a colheita que nomeia a folha; o **#31**
+sem atribuição; o **#41** como furo da contagem de malha; o **#44** fica onde a 23 o deixou; o **#45**
+é arrumação do dono. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal`
+não foram tocados por este pouso. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
