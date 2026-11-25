@@ -86,15 +86,15 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **O que uma célula que muda custa.** Cada conversão é um `set_block` → `edits[p] = b`
   ([voxel_world.gd:286](../../src/world/voxel_world.gd#L286)) + chunk sujo
   ([`:292-303`](../../src/world/voxel_world.gd#L292-L303)) remalhado a **2 chunks por frame**
-  ([main.gd:28](../../src/main.gd#L28), [`:325`](../../src/main.gd#L325)) ≈ 67 ms de
+  ([main.gd:28](../../src/main.gd#L28), [`:325`](../../src/main.gd#L330)) ≈ 67 ms de
   boot por chunk nas medidas do contrato ([README.md:148-149](../../README.md#L148-L149)).
   O `edits` **não tem teto** ([`:42`](../../src/world/voxel_world.gd#L42) é um `Dictionary`
-  puro, serializado inteiro em [main.gd:1007](../../src/main.gd#L1007)); hoje cresce
+  puro, serializado inteiro em [main.gd:1012](../../src/main.gd#L1012)); hoje cresce
   1 chave por ação do jogador, e um ecossistema que cresce sozinho o faria crescer por tempo de
   sessão, não por trabalho do jogador. Isso é o débito real desta linha, declarado antes.
 - **RNG: há um riacho por dono e a suíte bate nele.** A sessão tem
   `_population_rng` ([main.gd:71](../../src/main.gd#L71), semeado por
-  `("population:%d" % world_seed).hash()` em [`:353`](../../src/main.gd#L353) na perna 11) e
+  `("population:%d" % world_seed).hash()` em [`:353`](../../src/main.gd#L358) na perna 11) e
   cada lobo tem o `_rng` próprio. Uma propagação que sortear célula **comendo o riacho da
   população** muda a ordem de spawns e derruba a suíte de RNG isolada
   (`tests/simulation_rng_test.gd`) sem mudar uma linha de comportamento. O lote abre riacho
@@ -153,7 +153,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
    **um campo, um comprador**, e o comprador é a colocação do jogador. Não é refatoração
    opcional: sem isso o mato é um obstáculo invisível que come o clique do jogador.
 6. **Observabilidade antes de orgulho**: `diagnostics()`
-   ([main.gd:1175-1210](../../src/main.gd#L1175-L1210)) ganha `growth_queued`, `growth_converted`
+   ([main.gd:1180-1215](../../src/main.gd#L1180-L1215)) ganha `growth_queued`, `growth_converted`
    e `edits.size()` já está lá (`:721`) — o par `edits` × tempo de sessão é o que mede se a
    linha é ecologia ou vazamento de disco.
 
@@ -162,7 +162,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **Roda por frame, por tick ou às vezes?** A fila de crescimento: **dentro do tick de 20 Hz**,
   mas com reavaliação a cada `GROW_PERIOD` segundos de simulação; a conversão: no máximo
   1 por tick. A malha resultante: `_process`, fora do budget do passo
-  ([main.gd:325](../../src/main.gd#L325)).
+  ([main.gd:330](../../src/main.gd#L330)).
 - **Quantas entidades são alcançadas?** Nenhum bicho. Células: 1 evento de bloco candidata
   **5** (ela + 4 vizinhas), e cada reavaliação custa 6 `get_block` (1 própria + 1 acima + 1
   abaixo + 4 vizinhas, menos as sobrepostas). Com `GROW_MAX_PER_TICK = 1`, o teto por segundo

@@ -215,7 +215,7 @@ Nada disso é hipótese; os números abaixo são `grep -rn` desta árvore em `HE
 
 | Papel | Onde |
 |---|---|
-| o nó de transporte | [`:42`](../../src/ai/mind_oracle.gd#L42) `var _http: HTTPRequest = null`, criado em [`:62`](../../src/ai/mind_oracle.gd#L62), timeout em [`:64`](../../src/ai/mind_oracle.gd#L64), conectado em [`:66`](../../src/ai/mind_oracle.gd#L66) |
+| o nó de transporte | `mind_oracle.gd:42` `var _http: HTTPRequest = null`, criado em `mind_oracle.gd:62`, timeout em `mind_oracle.gd:64`, conectado em `mind_oracle.gd:66` |
 | a chamada | [`:122`](../../src/ai/mind_oracle.gd#L122) `_http.request(server_url + "/v1/chat/completions", auth_headers(), HTTPClient.METHOD_POST, JSON.stringify(payload))` |
 | a resposta | [`:151`](../../src/ai/mind_oracle.gd#L151) `_on_response`, com o `_clean` de 140 caracteres em [`:199`](../../src/ai/mind_oracle.gd#L199) |
 | o que **não** é transporte | o agendamento (`_process` [`:71`](../../src/ai/mind_oracle.gd#L71)), o roster round-robin ([`:85-91`](../../src/ai/mind_oracle.gd#L85-L91)), o recuo (`RETRY_COOLDOWN` [`:13`](../../src/ai/mind_oracle.gd#L13), `LOADING_COOLDOWN` [`:28`](../../src/ai/mind_oracle.gd#L28)), a chave do servidor ([`:19-20`](../../src/ai/mind_oracle.gd#L19-L20), [`:219`](../../src/ai/mind_oracle.gd#L219)), o prompt ([`:131`](../../src/ai/mind_oracle.gd#L131)), a narrativa pública ([`:96`](../../src/ai/mind_oracle.gd#L96)) e o `narration_ready` ([`:9`](../../src/ai/mind_oracle.gd#L9)) |
@@ -237,36 +237,33 @@ de uma leitura anterior, quando o hospedeiro de processo ainda guardava parte do
    nomeiam a enum `HTTPRequest.Result`, lida do registro da classe em
    [`:67`](../../src/ai/mind_oracle.gd#L67)), [`:62`](../../src/ai/mind_oracle.gd#L62) (cria o nó),
    [`:189`](../../src/ai/mind_oracle.gd#L189) (`RESULT_SUCCESS` no `_reason_of`).
-2. [`src/ai/llm_server_host.gd:87`](../../src/ai/llm_server_host.gd#L87) e
-   [`:99`](../../src/ai/llm_server_host.gd#L99) — o **hospedeiro** que levanta o `llama-server` no boot
-   (perna 15). Ele é dono de `OS.create_process`
-   ([`:311`](../../src/ai/llm_server_host.gd#L311)), do health-check de porta
-   ([`:216`](../../src/ai/llm_server_host.gd#L216) `_probe()`, cujo GET usa o mesmo nó criado em
-   [`:99`](../../src/ai/llm_server_host.gd#L99) contra a URL lida do oráculo em
-   [`:189`](../../src/ai/llm_server_host.gd#L189)) e do encerramento do filho: **um** sítio de
-   `OS.kill` ([`:414`](../../src/ai/llm_server_host.gd#L414), com `kills_issued += 1` em
-   [`:413`](../../src/ai/llm_server_host.gd#L413)) alcançado por **dois** caminhos de saída —
-   `_exit_tree` ([`:395`](../../src/ai/llm_server_host.gd#L395)) e `NOTIFICATION_PREDELETE`
-   ([`:400`](../../src/ai/llm_server_host.gd#L400)) — ambos dentro de `_stop_child()`
-   ([`:406`](../../src/ai/llm_server_host.gd#L406)) e ambos protegidos por `_owns_child`.
+2. `llm_server_host.gd:87` e `llm_server_host.gd:99` (aposentado no Passo 4 do dossiê 22, commit
+   5138549) — o **hospedeiro** que levanta o `llama-server` no boot (perna 15). Ele é dono de
+   `OS.create_process` (`llm_server_host.gd:311`), do health-check de porta (`llm_server_host.gd:216`
+   `_probe()`, cujo GET usa o mesmo nó criado em `llm_server_host.gd:99` contra a URL lida do oráculo
+   em `llm_server_host.gd:189`) e do encerramento do filho: **um** sítio de `OS.kill`
+   (`llm_server_host.gd:414`, com `kills_issued += 1` em `llm_server_host.gd:413`) alcançado por
+   **dois** caminhos de saída — `_exit_tree` (`llm_server_host.gd:395`) e `NOTIFICATION_PREDELETE`
+   (`llm_server_host.gd:400`) — ambos dentro de `_stop_child()` (`llm_server_host.gd:406`) e ambos
+   protegidos por `_owns_child`.
 
 A mesma varredura estendida a `tests/` acha a **décima** linha, em
-[`tests/llm_server_boot_probe.gd:266`](../../tests/llm_server_boot_probe.gd#L266) — a sonda da perna 15,
-que a Fase 1 também aposenta (§5.4).
+`llm_server_boot_probe.gd:266` (aposentado no Passo 4 do dossiê 22, commit 5138549) — a sonda da perna
+15, que a Fase 1 também aposenta (§5.4).
 
 Consequência que o prompt não prevê e que a Fase 1 tem de decidir **antes** do código: se o oráculo
 não fala mais HTTP, **o hospedeiro da Fase 15 perde a razão de existir** — o que ele resolve hoje é
 porta e processo, e a porta ele lê do próprio oráculo
-([`:189`](../../src/ai/llm_server_host.gd#L189) `_url()` devolve `oracle.server_url`; `_port()`
-[`:196`](../../src/ai/llm_server_host.gd#L196) extrai o número dela, nunca um literal repetido), e a
-linha de status do F3 ([`:133`](../../src/ai/llm_server_host.gd#L133) `status_line()`) é montada sobre
+(`llm_server_host.gd:189` `_url()` devolve `oracle.server_url`; `_port()` `llm_server_host.gd:196`
+extrai o número dela, nunca um literal repetido), e a linha de status do F3 (`llm_server_host.gd:133`
+`status_line()`) é montada sobre
 essa mesma porta. O braço escolhido está no §6.3; o rejeitado está no §8.4.
 
 ### 2.3 O contrato de quem lê o oráculo (e por isso a fronteira não pode mudar de tipo)
 
 A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de leitura:
 
-- [`src/main.gd:191`](../../src/main.gd#L191) — injeta o `narration_provider` no HUD chamando
+- [`src/main.gd:193`](../../src/main.gd#L193) — injeta o `narration_provider` no HUD chamando
   `oracle.narration_of(id)`;
 - [`src/ui/hud.gd:276-277`](../../src/ui/hud.gd#L276-L277) — imprime `ia:` no F3;
 - o `narration_ready` ([`src/ai/mind_oracle.gd:9`](../../src/ai/mind_oracle.gd#L9)) que o lobo não
@@ -274,29 +271,29 @@ A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de l
   futuro MindsInspector, e a Fase 5 da tabela do §5.6 é o comprador que faltava.
 
 E a única porta de **entrada** é o roster (`roster_provider`, [`:40`](../../src/ai/mind_oracle.gd#L40),
-ligado em [`src/main.gd:189`](../../src/main.gd#L189) com `Callable(self, "wolves_roster")`) mais os
+ligado em [`src/main.gd:191`](../../src/main.gd#L191) com `Callable(self, "wolves_roster")`) mais os
 campos injetáveis de `server_url`/`request_timeout`/`api_key`/`ready_provider`
 ([`:32-40`](../../src/ai/mind_oracle.gd#L32-L40)); o `ready_provider` é ligado pelo hospedeiro em
-[`src/main.gd:252`](../../src/main.gd#L252). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
+[`src/main.gd:257`](../../src/main.gd#L257). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
 A regra do dono — "a mente propõe, as regras dispõem" — hoje é verdadeira **por topologia**: não existe
 caminho do oráculo para a intenção. A Fase 1 tem de manter a topologia, e o §7.1 registra que topologia
 não é prova.
 
 ### 2.4 O que o F3 já diz sobre a IA, e o que ele não diz
 
-`diagnostics()` de [`src/main.gd:1209`](../../src/main.gd#L1209) expõe `"llm": llm_host.diagnostics()`,
-que por sua vez ([`src/ai/llm_server_host.gd:159`](../../src/ai/llm_server_host.gd#L159)) devolve
+`diagnostics()` de [`src/main.gd:1214`](../../src/main.gd#L1214) expõe `"llm": llm_host.diagnostics()`,
+que por sua vez (`llm_server_host.gd:159` — aposentado no Passo 4 do dossiê 22, commit 5138549)
+devolve
 `state`, `pid`, `boot_ms`, `loading_503`, `retries`, `requests`, `kills`, `spawned`, `detail` e `url` —
 dez chaves, todas de **ciclo de vida de processo**, nenhuma de **trabalho do modelo**. A outra metade
 do retrato é prosa: a linha do F3 é `status_line()`
-([`:133`](../../src/ai/llm_server_host.gd#L133)), e o único número do oráculo que chega a ela é
-`oracle.last_reason` (lido em [`:152-153`](../../src/ai/llm_server_host.gd#L152-L153)); o `server_url`
-que define a porta também é lido do oráculo ([`:189`](../../src/ai/llm_server_host.gd#L189)).
+(`llm_server_host.gd:133`), e o único número do oráculo que chega a ela é `oracle.last_reason` (lido
+em `llm_server_host.gd:152-153`); o `server_url` que define a porta também é lido do oráculo
+(`llm_server_host.gd:189`).
 
 **Não há** tokens/s, µs de decodificação, profundidade de fila, taxa de cache nem memória do contexto —
-e os contadores do próprio oráculo (`requests_issued`
-[`:56`](../../src/ai/mind_oracle.gd#L56), `last_status` [`:57`](../../src/ai/mind_oracle.gd#L57),
-`last_reason` [`:58`](../../src/ai/mind_oracle.gd#L58)) não aparecem em `diagnostics()` nem no HUD:
+e os contadores do próprio oráculo (`requests_issued` `mind_oracle.gd:56`, `last_status`
+`mind_oracle.gd:57`, `last_reason` `mind_oracle.gd:58`) não aparecem em `diagnostics()` nem no HUD:
 `grep -n "requests_issued\|last_status\|last_reason" src/main.gd src/ui/hud.gd` devolve **vazio**. O
 prompt pede isso e o mandato 5 do contrato exige — hoje a observabilidade do oráculo é uma string de
 erro. O §5.5 fecha isso antes de fechar qualquer mecânica nova.
@@ -550,7 +547,7 @@ põe `mind.kind`, `intent` e as crenças ordenadas é [`:35`](../../src/persiste
 Um modelo amostrado não é determinístico. A resposta é a §6.5: **CI lê cache**, e a checagem que
 garante que rodar sem modelo não move hash **já existe e está verde** —
 `journal_hash_inalterado_sem_escolha`
-([`tests/aether_reactions_test.gd:3774`](../../tests/aether_reactions_test.gd#L3774), registrada no
+([`tests/aether_reactions_test.gd:3780`](../../tests/aether_reactions_test.gd#L3780), registrada no
 runner em [`:36`](../../tests/aether_reactions_test.gd#L36)): ela prova os dois lados, o de que o
 que **não** está na projeção não move o hash e o de que uma confiança mexida na mesma chave move.
 O que a Fase 1 acrescenta a esse contrato é o terceiro lado: **com cache, o texto tem de ser o mesmo**
@@ -571,8 +568,8 @@ Registrado antes do código porque é isto que o §0 de uma próxima re-derivaç
    produção do `.gguf`, e não no jogo.
 2. **"Onde hoje existe um HTTPRequest para o servidor de llama.cpp."** Verdade, mas em **dois**
    arquivos de `src/`, não um (§2.2), e o segundo deles é a Fase 15 inteira — com
-   `OS.create_process` ([`llm_server_host.gd:311`](../../src/ai/llm_server_host.gd#L311)), o
-   `OS.kill` do filho ([`:414`](../../src/ai/llm_server_host.gd#L414)) e o launcher. O custo da troca
+   `OS.create_process` (`llm_server_host.gd:311` — aposentado no Passo 4 do dossiê 22, commit
+   5138549), o `OS.kill` do filho (`llm_server_host.gd:414`) e o launcher. O custo da troca
    é o dobro do que o prompt calculou.
 3. **"Bandit contextual por arquétipo (UCB1) aprendendo qual tática funciona."** Aqui o prompt erra
    o nome da peça **e** o sentido da falta. Não há bandit nenhum — `grep -rn "bandit\|ucb\|UCB" src/`
@@ -850,7 +847,7 @@ o hash tem de registrar é a do **checkout**, não a do editor.
 
 O §5.1 prometia uma checagem que **nasce vermelha**. Ela existe, roda, e o vermelho é número, não
 adjetivo. `_test_extensao_carrega_classe`
-([`tests/aether_reactions_test.gd:5534`](../../tests/aether_reactions_test.gd#L5534)) entrou no fim da
+([`tests/aether_reactions_test.gd:5540`](../../tests/aether_reactions_test.gd#L5540)) entrou no fim da
 lista de testes (`:49`) e imprime, nesta ordem, as cinco premissas de que o Passo 1 é dono:
 
 1. **descritor no disco** — `FileAccess.file_exists("res://native/af_mind/af_mind.gdextension")`;
@@ -872,7 +869,7 @@ roubada por um `SCRIPT ERROR` no meio, e os três `stderr` da rodada estão em *
 ([`passo1b_stderr_conta.log`](../evidence/oraculo-nativo-22/passo1b_stderr_conta.log)).
 
 O censo foi re-derivado na hora, não depois: `EXPECTED_CHECKS` passa de **283** a **288**
-([`:65`](../../tests/aether_reactions_test.gd#L65)), porque a linha `_checks + 1 == EXPECTED_CHECKS` de
+([`:65`](../../tests/aether_reactions_test.gd#L71)), porque a linha `_checks + 1 == EXPECTED_CHECKS` de
 `_finish` é justamente o instrumento que converte passo abortado em vermelho. As outras duas corridas não
 se moveram: suíte **255 checagens / 0 falhas / 48,7 s**
 ([`passo1b_suite.log`](../evidence/oraculo-nativo-22/passo1b_suite.log)) e journal **128 / 0 / 5,770 s**
@@ -1755,6 +1752,94 @@ emite `inference_completed` é o Passo 4/5, e o gate que fecha essa parte está 
 - **Nenhum gate de fase** (mandato 4); os furos **#38, #39 e #20** seguem onde estavam, e o desmanche
   do servidor de teste não é o desmanche do hospedeiro do jogo (o `llm_server_host.gd` continua dono do
   processo dele até o Passo 4).
+
+## 18. O Passo 4: o transporte HTTP sai de `src`, o pack ganha dono no processo, e o gate varre a árvore
+
+Branch `feat/oraculo-nativo-passo4-22`, base `74820e7`; dois commits: o gate vermelho `ba8ee22` e a
+mudança `5138549`. O que a seção §5.4 (`transporte_http_zerado`) promete aqui se paga com número:
+`grep -rn HTTPRequest src` devolve **vazio** no fim do passo, e o §6.3 do dossiê 15 — o hospedeiro do
+modelo como dono do ciclo de vida — é reescrito sobre disco e ClassDB, sem processo filho, sem porta,
+sem vigia e sem kill. Nada do jogo leu uma decisão do oráculo antes ou depois: a narrativa continua a
+única saída, e a mente propõe, as regras dispõem.
+
+### 18.1 O gate nasce vermelho com as 9 ocorrências impressas
+
+`transporte_http_zerado` são duas checagens no runner: a varredura recursiva de `src/` por
+`HTTPRequest` (32 arquivos lidos) e a dos lançadores (`Rodar.bat`, `tools/run_game.ps1` sem citação
+de llama). No commit (a), antes de qualquer linha de mudança, a primeira imprime as **9 ocorrências
+nos 2 arquivos** — `llm_server_host.gd:87/:99` e seis em `mind_oracle.gd` — e o runner fecha
+**320 checagens 1 falhas 43,384 s** ([passo4_runner_gate_vermelho.log:572](../evidence/oraculo-nativo-passo4-22/passo4_runner_gate_vermelho.log#L572),
+veredicto em [:580](../evidence/oraculo-nativo-passo4-22/passo4_runner_gate_vermelho.log#L580)). A
+checagem dos lançadores já passava **no vermelho**: eles nunca citaram llama — quem subia o processo
+era o `llm_server_host.gd` dentro do jogo, e é por isso que o §6.3 mora em `src/ai/`, não no
+launcher.
+
+### 18.2 O wrapper: `enqueue` + `wait(id, 0)` por frame, e o portão que ficou
+
+`mind_oracle.gd` perde o nó HTTP e fala com a ponte nativa: `_ext.enqueue`
+([mind_oracle.gd:121](../../src/ai/mind_oracle.gd#L121)) e o `wait(id, 0)` por frame
+([:139](../../src/ai/mind_oracle.gd#L139)) — timeout zero, consulta não bloqueante, status 1
+preserva o slot (contrato do `mind_prompt.h`), e nenhum `await` pendura os 50 ms do tick. O que
+fica do §2.1: agendamento por frame, round-robin pela matilha, prompt dobrado numa mensagem só,
+recusas nomeadas, recuo cheio de 30 s ([`RETRY_COOLDOWN` :24](../../src/ai/mind_oracle.gd#L24)) e a
+chave externa `KEY_ENV`/`KEY_FILE` ([:31](../../src/ai/mind_oracle.gd#L31)) — quem sobe um
+`llama-server` na mão lê as mesmas duas fontes. O que morre: o `LOADING_COOLDOWN` do `503`, porque a
+espera pelo modelo deixa de ser transporte e passa a ser o portão `ready_provider`, ligado ao
+`AfMindRuntime.ready()` ([af_mind_runtime.gd:68](../../src/ai/af_mind_runtime.gd#L68)) em
+[main.gd:257](../../src/main.gd#L257). Num clone sem o dll gitignored, `_ext` nasce null e cada
+pedido nomeia a ausência — o degradado continua checado pela suíte, agora com o motivo da fila:
+"runtime sem pack nao emite chamada na ponte"
+([smoke_test.gd:2539](../../tests/smoke_test.gd#L2539)) e as duas checagens da recusa que nomeia o
+motivo e arma o recuo cheio ([:2558-2562](../../tests/smoke_test.gd#L2558-L2562)).
+
+### 18.3 O `AfMindRuntime`: ciclo do pack sobre disco e ClassDB, sem processo filho, sem porta
+
+`src/ai/af_mind_runtime.gd` é o dono do ciclo de vida do pack dentro do processo: estados da matriz
+de falha nomeados sobre disco e ClassDB
+([af_mind_runtime.gd:21](../../src/ai/af_mind_runtime.gd#L21) em diante — ocioso, ausente
+(extensão/runtime/modelo), carregando, pronto, desligado), um passo por frame com
+`STEP_PERIOD = 1.0` ([:32](../../src/ai/af_mind_runtime.gd#L32), precedente do teto de 1 s do
+`CORPSE_CHECK`) para o F3 acompanhar o carregamento em vez de congelar em silêncio, e as métricas
+que a ponte mede lidas por ele. Com o transporte saem da árvore `llm_server_host.gd` (433 linhas),
+o processo filho, a sonda de porta, o vigia e os dois kills; a sonda da perna 15
+(`tests/llm_server_boot_probe`) aposenta junto, e a metade HTTP do gate `contrato_igal_ao_http`
+vira **cliente de referência dentro do runner** — as 17 ocorrências de `HTTPRequest` que sobram
+vivem em `tests/aether_reactions_test.gd`, e o grep do gate mira só `src/`. A fiação em `main.gd`:
+`llm_host` agora é `AfMindRuntime` ([main.gd:55](../../src/main.gd#L55)), o `diagnostics()` mantém
+a chave `"llm"` ([main.gd:1214](../../src/main.gd#L1214)) e o F3 lê a linha de status por
+`llm_status_provider` ([main.gd:259](../../src/main.gd#L259)), que junta estado, contexto,
+`load_ms`, VRAM e o `last_reason` do oráculo
+([af_mind_runtime.gd:85-87](../../src/ai/af_mind_runtime.gd#L85-L87)) — leitura, nenhuma escrita,
+mandato 2 intacto.
+
+O custo que o passo assume: o `load_pack` do gguf é chamada síncrona da extensão e o frame que a
+executa trava o tempo do load — o `open_ms` que a ponte mede
+([af_mind_runtime.gd:163](../../src/ai/af_mind_runtime.gd#L163)). O overlap que o processo filho
+dava com a geração acabou; o regresso é registrado como o **furo #46**, não escondido.
+
+### 18.4 Os quatro verdes na ponta
+
+Suíte **264 checagens / 0 falhas / 52,5 s**
+([passo4_suite.log:380](../evidence/oraculo-nativo-passo4-22/passo4_suite.log#L380)); runner
+**320 / 0 / 42,770 s** com as duas linhas `OK transporte_http_zerado` — grep vazio
+(`arquivos_lidos=32 ocorrencias=0`) e lançadores sem llama
+([passo4_runner_verde.log:572-573](../evidence/oraculo-nativo-passo4-22/passo4_runner_verde.log#L572-L573),
+veredicto em [:580](../evidence/oraculo-nativo-passo4-22/passo4_runner_verde.log#L580)); RNG
+**27 / 0 / 2,718 s** ([passo4_rng.log:80](../evidence/oraculo-nativo-passo4-22/passo4_rng.log#L80));
+journal **128 / 0 / 5,843 s**, "7/7 testes concluidos"
+([passo4_journal.log:145](../evidence/oraculo-nativo-passo4-22/passo4_journal.log#L145)).
+
+### 18.5 O que este passo não fecha
+
+- **O Passo 5** (§5.5) — cache, validador de crença e a régua do budget — continua pauta da perna,
+  cada peça com gate próprio; as métricas do gate contam fila, não cache.
+- **`src/` se move pela primeira vez na perna** — a árvore resultante é outra revisão; os números
+  desta seção valem para a ponta `5138549`, e o pouso re-mede na mergida e no clone limpo (mandato 3,
+  item 6). `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram
+  tocados, e a narrativa não entra na projeção.
+- **Furo #46** — a travada do frame que executa o `load_pack` síncrono — fica aberto, dono Passo 5.
+- **Nenhum gate de fase** (mandato 4); os furos **#38, #39, #20, #31, #41, #44 e #45** seguem onde
+  estavam.
 
 
 

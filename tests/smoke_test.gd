@@ -85,9 +85,9 @@ var _fx_seco_p0 := Vector3.ZERO
 var _fx_track := false
 var _fx_seco_molhado := false
 var _oracle_probe: MindOracle = null
-## Host de mentira da checagem do portao (dossie 15 §7.8): caminhos inexistentes,
-## entao nem processo nem porta sao tocados.
-var _gate_host: LlmServerHost = null
+## Runtime de mentira da checagem do portao (dossie 15 §7.8, semantica do §6.3
+## do dossie 22): caminhos inexistentes, entao nem pack nem disco sao tocados.
+var _gate_host: AfMindRuntime = null
 var _gate_oracle: MindOracle = null
 
 
@@ -2497,8 +2497,6 @@ func _check_regen() -> void:
 func _check_oracle_arm() -> void:
 	_oracle_probe = MindOracle.new()
 	_oracle_probe.name = "OracleProbe"
-	_oracle_probe.server_url = "http://127.0.0.1:1"
-	_oracle_probe.request_timeout = 1.0
 	_oracle_probe.roster_provider = Callable(main, "wolves_roster")
 	add_child(_oracle_probe)
 
@@ -2520,29 +2518,27 @@ func _check_oracle() -> void:
 	oracle.queue_free()
 
 
-## Premissa da decisao 4.4 (dossie 15): com um hospedeiro levantando o modelo
-## junto do jogo, a primeira requisicao cairia num 503 de "Loading model" e o
-## recuo de 30 s engoliria a meia-minuta seguinte. Os caminhos falsos garantem
-## que o host nunca chega a tocar a porta: nem processo, nem HTTP, nem rede.
+## Premissa da decisao 4.4 (dossie 15), ajustada ao §6.3 do dossie 22: com um
+## dono de pack no processo, o portao segura o pedido enquanto o pack nao chega
+## ao estado de fila. Os caminhos falsos garantem que o runtime nunca chega a
+## tocar a ponte: nem disco, nem pack, nem VRAM.
 func _check_llm_gate_arm() -> void:
-	_gate_host = LlmServerHost.new()
+	_gate_host = AfMindRuntime.new()
 	_gate_host.name = "GateHost"
-	_gate_host.server_path = "res://tests/sem-runtime-15.exe"
-	_gate_host.model_path = "res://models/sem-modelo-15.gguf"
+	_gate_host.runtime_path = "res://.tools/sem-runtime-22"
+	_gate_host.model_path = "res://models/sem-modelo-22.gguf"
 	add_child(_gate_host)
 	_gate_oracle = MindOracle.new()
 	_gate_oracle.name = "GateOracle"
-	_gate_oracle.server_url = "http://127.0.0.1:1"
-	_gate_oracle.request_timeout = 1.0
 	_gate_oracle.roster_provider = Callable(main, "wolves_roster")
 	_gate_oracle.ready_provider = Callable(_gate_host, "ready")
 	add_child(_gate_oracle)
 
 
 func _check_llm_gate_closed() -> void:
-	_check("hospedeiro sem pack nao sonda a porta",
+	_check("runtime sem pack nao emite chamada na ponte",
 			_gate_host.requests_issued == 0 and _gate_host.state == _gate_host.NO_RUNTIME,
-			"estado=%s  pedidos=%d" % [_gate_host.state, _gate_host.requests_issued])
+			"estado=%s  chamadas=%d" % [_gate_host.state, _gate_host.requests_issued])
 	_check("portao fechado: oraculo nao emite pedido", _gate_oracle.requests_issued == 0,
 			"pedidos=%d  recuo=%.1f s" % [_gate_oracle.requests_issued, _gate_oracle._server_cd])
 	# Sentido oposto no mesmo par de passos (regra 3 do ciclo): sem o portao aberto
@@ -2555,14 +2551,13 @@ func _check_llm_gate_open() -> void:
 			"pedidos=%d  motivo=%s" % [_gate_oracle.requests_issued, _gate_oracle.last_reason])
 
 
-## Contra-prova do `SCRIPT ERROR` que este ramo produzia: traduzir o `result` com
-## um metodo que o 4.7 nao tem aborta `_on_response` no meio, e a suíte segue com
-## "0 falhas" tendo perdido o motivo e o recuo. Os dois numeros abaixo sao o que
-## sobra quando o ramo chega ao fim: o nome do erro e o recuo cheio armado.
+## Contra-prova do ramo de recusa: a fila da ponte recusa com o motivo NOMEADO
+## ("fila recusou o pedido: ..."), e a suíte segue com o recuo cheio armado —
+## os dois numeros abaixo sao o que sobra quando o ramo chega ao fim.
 func _check_llm_backoff() -> void:
-	_check("recuo nomeia o erro da conexao", _gate_oracle.last_reason.contains("RESULT_"),
-			"motivo=%s  codigo_http=%d" % [_gate_oracle.last_reason, _gate_oracle.last_status])
-	_check("porta fechada arma o recuo cheio", _gate_oracle._server_cd > 20.0,
+	_check("recusa da fila nomeia o motivo", _gate_oracle.last_reason.contains("recusou"),
+			"motivo=%s  status=%d" % [_gate_oracle.last_reason, _gate_oracle.last_status])
+	_check("recusa da fila arma o recuo cheio", _gate_oracle._server_cd > 20.0,
 			"recuo=%.1f s  teto=%.0f s" % [_gate_oracle._server_cd, MindOracle.RETRY_COOLDOWN])
 	_gate_oracle.queue_free()
 	_gate_host.queue_free()

@@ -1,82 +1,92 @@
 class_name MindOracle
 extends Node
-## Oraculo de IA local: um llama-server (llama.cpp, MIT) rodando em localhost
-## narra em uma frase o estado interno de um mob. Contrato do docs/design/04
-## (camada 5): opcional por design e nunca decide — sem servidor, o pedido
-## falha, entra em recuo e a narrativa fica vazia; a utilidade e a arvore
-## seguem decidindo sozinhas. O oraculo da superficie a decisoes ja tomadas.
+## Oraculo de IA local: a AfMindOracle (llama.cpp compilado na extensao
+## GDExtension) narra em uma frase o estado interno de um mob. Contrato do
+## docs/design/04 (camada 5): opcional por design e nunca decide — sem pack no
+## processo, o pedido e recusado pela fila, entra em recuo e a narrativa fica
+## vazia; a utilidade e a arvore seguem decidindo sozinhas. O oraculo da
+## superficie a decisoes ja tomadas.
+##
+## Passo 4 do dossie 22 (§5.4): o transporte HTTP sai daqui. O que fica e o que
+## o §2.1 lista de nao-transporte — agendamento por frame, round-robin, recuo,
+## chave do servidor externo, prompt, `narration_of` e o `narration_ready` — e o
+## nodo de requisicao HTTP vira a ponte nativa (`AfMindOracle.enqueue`/`wait`).
+## O decode roda em thread do proprio processo; este wrapper polla `wait(id, 0)`
+## por frame — timeout zero e consulta nao bloqueante, status 1 preserva o slot
+## (contrato do mind_prompt.h) — e nenhum `await` pendura os 50 ms do tick.
 
 signal narration_ready(wolf_id: int, text: String)
 
-const SERVER_URL := "http://127.0.0.1:8741"
-const REQUEST_TIMEOUT: float = 8.0
+## Recuo cheio: conexao caida, fila recusada por motivo que nao se resolve no
+## proximo segundo. O recuo CURTO do 503 "carregando" morreu com o transporte:
+## a espera pelo modelo agora e o portao fechado do `AfMindRuntime` (§6.3), que
+## segura o pedido antes de o pack chegar ao estado de fila (4).
 const RETRY_COOLDOWN: float = 30.0
-## Chave do servidor local: o imprint que separa "o nosso servidor sobrou de um
-## crash" de "um llama-server de terceiro na porta" (dossie 15 §4.2), e nao
-## seguranca — o trafego continua 127.0.0.1. Ela nao mora no repositorio: vale o
-## ambiente `KEY_ENV`, depois o arquivo `KEY_FILE`, e sem os dois a primeira
-## execucao sorteia 32 hex e grava la. O lancador le as mesmas duas fontes.
+## Chave do servidor externo, mantida pelo §2.1 (nao e transporte): quem sobe um
+## llama-server na mao (tools/run_mind_server.ps1, perna 15) le as MESMAS duas
+## fontes que `resolve_api_key` — o ambiente `KEY_ENV` e o arquivo `KEY_FILE` —
+## e a suite confere a derivacao entre as linguagens. Ela nao mora no repositorio:
+## vale o ambiente, depois o arquivo, e sem os dois a primeira execucao sorteia
+## 32 hex e grava la.
 const KEY_ENV := "AETHERFALL_MIND_KEY"
 const KEY_FILE := "user://mind_key.txt"
-## Nome publicado pelo servidor (`--alias` no lancador e no `LlmServerHost`). Um
-## dono so para a string: pedido e servidor tem de dizer o mesmo nome, e o
-## `404 model not found` do b12499 nao aparece no F3 de outra forma.
+## Nome do pack publicado na ponte (`load_pack`) e do alias que o llama-server
+## de uma sonda publica (`--alias`): um dono so para a string, pedido e servidor
+## tem de dizer o mesmo nome.
 const MODEL_ALIAS := "mind-small"
-## 503 e "Loading model", nao falha: 30 s de recuo sobre um modelo que ainda esta
-## carregando engoliria a primeira narrativa da sessao inteira (dossie 15 §2). O
-## tempo real desta maquina e o numero da perna 15, nao um estimativo aqui.
-const LOADING_COOLDOWN: float = 2.0
 
-## Enderecos e prazos sao const para o jogo; a suite comprime os dois para
-## exercer a degradacao (porta fechada -> timeout -> recuo) sem esperar 8 s.
-var server_url: String = SERVER_URL
-var request_timeout: float = REQUEST_TIMEOUT
-var api_key: String = resolve_api_key()
-
-## Portao de prontidao (dossie 15 §4.4): quando existe um hospedeiro de processo,
-## ele diz quando o modelo esta no ar. Sem portao — o caso da suite e o de quem
-## sobe o servidor na mao — o ciclo de requisicao segue como sempre.
+## Portao de prontidao (dossie 15 §4.4): quando existe um dono de pack, ele diz
+## quando o modelo esta no estado de fila. Sem portao — o caso da suite e o de
+## quem sobe o servidor na mao — o ciclo de pedido segue como sempre.
 var ready_provider: Callable = Callable()
 var roster_provider: Callable = Callable()
 
-var _http: HTTPRequest = null
+## A ponte nativa, criada no `_ready` quando a ClassDB tem a classe. Num clone
+## sem o dll (gitignored) ela fica null e cada pedido nomeia a ausencia — o
+## degradado e checado pela suite com o motivo impresso.
+var _ext: Object = null
 var _busy := false
 var _cursor := 0
 var _server_cd := 0.0
+## Identidade do lobo do pedido em voo e o id que a fila devolveu: sao numeros
+## diferentes — o dicionario de narrativas e indexado pelo lobo, o `wait` pelo id.
 var _pending_id := -1
+var _ext_id := -1
 var _narrations := {}
 var _cooldowns := {}
-## Nomes da enum `HTTPRequest.Result`, lidos uma vez do registro da classe: a
-## traducao do `result` nao vem de tabela escrita a mao, vem do proprio engine.
-var _result_names: PackedStringArray = PackedStringArray()
 
 ## Numeros do caminho, para a checagem nomear a premissa em vez de adjetivar:
-## quantas requisicoes sairam, e qual foi o ultimo codigo ou erro que produziu
-## resposta vazia. Um 401 silencioso e o mandato 1 ao contrario.
+## quantos pedidos sairam para a fila, qual foi o ultimo status do `wait`
+## (0 pronto, 1 timeout, <0 recusa) e qual motivo produziu resposta vazia.
 var requests_issued := 0
 var last_status := -1
 var last_reason := ""
 
 
 func _ready() -> void:
-	_http = HTTPRequest.new()
-	_http.name = "Http"
-	_http.timeout = request_timeout
-	add_child(_http)
-	_http.request_completed.connect(_on_response)
-	for n in ClassDB.class_get_enum_constants("HTTPRequest", "Result"):
-		_result_names.append(String(n))
+	if ClassDB.class_exists(&"AfMindOracle"):
+		_ext = ClassDB.instantiate(&"AfMindOracle")
+
+
+## A ponte nativa que este oraculo usa. O AfMindRuntime (dossie 22 §6.3) dirige
+## nela o ciclo de vida do pack — set_runtime_dir, load_pack, ctx_probe — e le
+## as metricas: UM objeto so por processo, UM pack so, a VRAM do modelo uma vez.
+func ext() -> Object:
+	return _ext
 
 
 func _process(delta: float) -> void:
 	_server_cd = maxf(_server_cd - delta, 0.0)
 	for k in _cooldowns.keys():
 		_cooldowns[k] = maxf(float(_cooldowns[k]) - delta, 0.0)
-	if _busy or _server_cd > 0.0 or not roster_provider.is_valid():
+	if _busy:
+		_poll()
 		return
-	# O portao vem antes de qualquer pedido: com o hospedeiro levantando o modelo
-	# junto do jogo, a primeira requisicao cairia num 503 e o recuo de 30 s
-	# engoliria a meia-minuta seguinte (dossie 15 §2 e §4.4).
+	if _server_cd > 0.0 or not roster_provider.is_valid():
+		return
+	# O portao vem antes de qualquer pedido: com o dono do pack carregando o
+	# modelo no boot do processo, um pedido cairia na recusa "sem contexto" e o
+	# recuo de 30 s engoliria a meia-minuta seguinte (dossie 15 §2 e §4.4).
 	if ready_provider.is_valid() and not bool(ready_provider.call()):
 		return
 	var roster: Array = roster_provider.call()
@@ -97,38 +107,66 @@ func narration_of(wolf_id: int) -> String:
 	return String(_narrations.get(wolf_id, ""))
 
 
-## Cabecalhos do pedido. Um dono para a chave: quem levanta o servidor e quem o
-## procura leem a mesma resolucao, e a checagem da suite confere o launcher.
-func auth_headers() -> PackedStringArray:
-	return ["Content-Type: application/json", "Authorization: Bearer " + api_key]
-
-
+## Enfileira o pedido na ponte e devolve a palavra ao frame. A fila pode recusar
+## (-1 sem contexto, -2 campo, -3 fila cheia, -4 papel): cada recusa imprime o
+## motivo NOMEADO que a propria ponte escreveu, nunca um numero solto.
 func _request(w) -> void:
+	if _ext == null:
+		last_reason = "extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore"
+		_server_cd = RETRY_COOLDOWN
+		return
 	_busy = true
 	requests_issued += 1
 	_pending_id = int(w.identity)
-	var sys := "Voce narra o interior de um lobo de um jogo para uma linha de " \
-			+ "debug. Responda com UMA frase curta em portugues, sem nomes de " \
-			+ "sistemas, sem listas, sem pense em voz alta."
-	var payload := {
-		"model": MODEL_ALIAS,
-		"messages": [
-			{"role": "system", "content": sys},
-			{"role": "user", "content": _prompt_for(w)},
-		],
+	var id := int(_ext.enqueue({
+		"role": "user",
+		"prompt": _prompt_narracao(w),
 		"max_tokens": 64,
 		"temperature": 0.7,
-	}
-	var err := _http.request(server_url + "/v1/chat/completions",
-			auth_headers(), HTTPClient.METHOD_POST,
-			JSON.stringify(payload))
-	if err != OK:
+	}))
+	if id < 0:
 		_busy = false
-		last_reason = "abrir pedido: %s" % error_string(err)
+		last_reason = "fila recusou o pedido: %s" % String(_ext.prompt_err_text())
 		_server_cd = RETRY_COOLDOWN
+		return
+	_ext_id = id
 
 
-func _prompt_for(w) -> String:
+## Poll nao bloqueante do pedido em voo: `wait(id, 0)` devolve status 1 enquanto
+## o decode corre (slot preservado, proximo frame pergunta de novo), 0 quando o
+## texto chegou (e CONSOME o slot), <0 quando o slot nao existe mais.
+func _poll() -> void:
+	var out: Dictionary = _ext.wait(_ext_id, 0)
+	var status := int(out.get("status", -99))
+	if status == 1:
+		return
+	_busy = false
+	last_status = status
+	var text := _clean(String(out.get("text", "")))
+	if status == 0 and text != "":
+		last_reason = ""
+		_narrations[_pending_id] = text
+		_cooldowns[_pending_id] = RETRY_COOLDOWN
+		narration_ready.emit(_pending_id, text)
+		return
+	# Decode concluido sem texto ou slot perdido: recuo cheio com o motivo que a
+	# ponte escreveu — impresso, nao anonimizado (dossie 15 §9).
+	last_reason = "fila recusou o pedido: %s" % String(out.get("reason", ""))
+	_server_cd = RETRY_COOLDOWN
+
+
+## O prompt narrativo e o system + o estado interno, DOBRADOS numa mensagem so:
+## o formato de chat da ponte e de mensagem UNICA (qwen), entao nao existe
+## papel "system" para escrever — a instrucao de uma linha entra no mesmo texto.
+static func _prompt_narracao(w) -> String:
+	return "Voce narra o interior de um lobo de um jogo para uma linha de " \
+			+ "debug. Responda com UMA frase curta em portugues, sem nomes de " \
+			+ "sistemas, sem listas, sem pense em voz alta. " + _prompt_for(w)
+
+
+## Funcao PURA do lobo: nao le instancia nenhuma, por isso e static — o gate do
+## contrato monta o MESMO prompt que o wrapper envia, sem copiar o formato a mao.
+static func _prompt_for(w) -> String:
 	var d: Dictionary = w.mind.to_dict()
 	var eps: Array = d.get("episodic", [])
 	var recent: Array = []
@@ -146,52 +184,6 @@ func _prompt_for(w) -> String:
 		w.hunger * 100.0, float(w.mind.trust(0)),
 		", ".join(recent), bl.strip_edges(),
 	]
-
-
-func _on_response(result: int, code: int, _headers: PackedStringArray,
-		body: PackedByteArray) -> void:
-	_busy = false
-	last_status = code
-	var text := ""
-	if code == 200:
-		var data = JSON.parse_string(body.get_string_from_utf8())
-		if data is Dictionary:
-			var choices: Array = data.get("choices", [])
-			if not choices.is_empty() and choices[0] is Dictionary:
-				text = _clean(String(choices[0].get("message", {}).get("content", "")))
-	if text.is_empty():
-		# Sem narrativa o recuo muda de tamanho conforme a assinatura do erro, e
-		# cada ramo nomeia o codigo que o produziu: 503 e "carregando" (espera
-		# curta), conexao recusada e o caminho degradado ja checado pela suite
-		# (recuo cheio), e 401/400/`resposta inutil` tambem recuo cheio — so que
-		# impresso, nao anonimizado (dossie 15 §9).
-		if code == 503:
-			last_reason = "503 carregando o modelo"
-			_server_cd = LOADING_COOLDOWN
-			return
-		last_reason = "sem resposta (%s)" % _reason_of(result, code)
-		_server_cd = RETRY_COOLDOWN
-		return
-	last_reason = ""
-	_narrations[_pending_id] = text
-	_cooldowns[_pending_id] = RETRY_COOLDOWN
-	narration_ready.emit(_pending_id, text)
-
-
-## Nomeia o numero em vez de devolver a enum crua: `result` e o codigo de
-## `HTTPRequest.Result` (nao o `Error` do motor), entao o nome vem do registro da
-## classe. Nao e `get_result_string`: medido em headless nesta arvore,
-## `ClassDB.class_has_method("HTTPRequest", "get_result_string")` devolve false e
-## a chamada derrubava este ramo no meio — sem `last_reason` e sem o recuo de 30 s,
-## que e o mandato 1 ao contrario. Um 401 ou um timeout anonimizados num recuo
-## silencioso tambem seriam.
-func _reason_of(result: int, code: int) -> String:
-	if result == HTTPRequest.RESULT_SUCCESS:
-		return "codigo http %d" % code
-	var nome := "result %d" % result
-	if result >= 0 and result < _result_names.size():
-		nome = _result_names[result]
-	return "%s (codigo http %d)" % [nome, code]
 
 
 ## Modelos de raciocinio podem cuspir <think> antes da resposta; a narrativa
@@ -212,7 +204,7 @@ static func _clean(raw: String) -> String:
 	return s
 
 
-## Chave do servidor local, resolvida uma vez por processo. Ordem: ambiente
+## Chave do servidor externo, resolvida uma vez por processo. Ordem: ambiente
 ## `KEY_ENV`, arquivo `KEY_FILE`, e na falta dos dois 32 hex sorteados e gravados
 ## — quem roda o lancador por fora le as mesmas duas fontes, entao a divergencia
 ## que a suite confere e de fonte, nao de string.
@@ -231,12 +223,11 @@ static func resolve_api_key() -> String:
 		return _key
 	_key = Crypto.new().generate_random_bytes(16).hex_encode()
 	if _key == "":
-		# Sem entropia nao ha imprint, e imprint vazio e o mesmo que nenhum: o
-		# host passa a tratar o servidor da porta como estrangeiro.
+		# Sem entropia nao ha imprint, e imprint vazio e o mesmo que nenhum.
 		key_source = "sem-entropia"
 		return _key
 	# Gravar falha e estado nomeado, nao chave silenciosa: sem arquivo o lancador
-	# de fora nao tem como bater a mesma chave, e o `401` que vem depois e dele.
+	# de fora nao tem como bater a mesma chave.
 	key_source = "sorteada" if _write_key_file(_key) else "sorteada-sem-gravar"
 	return _key
 

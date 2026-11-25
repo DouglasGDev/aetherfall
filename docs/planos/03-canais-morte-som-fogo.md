@@ -27,8 +27,8 @@ logo o trabalho é ligar fonte a consumidora, não acrescentar linhas em tabelas
 | cor | `CHANNEL_COLOR` com 3 entradas | `src/rendering/aether_viz.gd:12-16` |
 | geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1646` |
 | porta de escrita | `imprint(world_pos, ch, amount)` — posição primeiro, canal segundo | `aether_field.gd:87-89` |
-| fontes reais | medo no spawn `main.gd:290`; lavra 0,42 / colocação 0,20 `main.gd:472-474`; sangue 0,22 `main.gd:383`; morte do jogador `main.gd:539-540`; lobo ferido `wolf.gd:1291-1292`; lobo morto `wolf.gd:1310-1311`; medo do lobo `wolf.gd:490`, sangue `wolf.gd:772` | as fontes dos 3 canais novos: **zero ocorrências** |
-| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:285`, constante `src/main.gd:27` |
+| fontes reais | medo no spawn `main.gd:295`; lavra 0,42 / colocação 0,20 `main.gd:477-479`; sangue 0,22 `main.gd:388`; morte do jogador `main.gd:544-545`; lobo ferido `wolf.gd:1291-1292`; lobo morto `wolf.gd:1310-1311`; medo do lobo `wolf.gd:490`, sangue `wolf.gd:772` | as fontes dos 3 canais novos: **zero ocorrências** |
+| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:290`, constante `src/main.gd:27` |
 | alocação | `var hot := PackedInt32Array()` **por canal por passada** (3/s de lógica → 12/s); o scratch `_nb_i`/`_nb_w` é reusado (`:38-39`, `:162-163`) | `aether_field.gd:122` |
 | rastreamento | `_find_scent()`: 7×7 = 49 células × 3 `sample_cell` = **147 leituras na camada própria**; se nenhuma passa de `0,06` ali, o mesmo 7×7 se repete em ±1 camada com 2 canais — **98 por camada vizinha aberta**, 196 se as duas abrem. Peso `blood + work*0,35`, camada Y vem de `cell_of_world(center())`; memória 32 células / 30 s / renovação 0,06 | `src/entities/wolf.gd:960-1000` (gate do escalonamento `:974-975`, loops `:976-977`, célula `:978`, peso `:980-981`, canal `:992`, `cell_of_world` `:965`), constantes `wolf.gd:27-34`; custo medido em `docs/evidence/rastro-duas-camadas/readback.log` |
 | consumidoras | `flee`: `_fear_level` peso 1,7; `investigate`: `_scent_strength` 1,6, `1-_fear_level` 0,8 e o veto `ha rastro`; `_fear_level = fear*0,85 + threat*0,9 + blood*0,35 + panic*0,55` (`PACK_PANIC_FEAR` `:53`); amostras locais por tick `wolf.gd:923-925` | `wolf.gd:802-858`, o `_fear_level` composto em `:940-941`; mecanismo e normalização por `weight_sum` em `src/ai/utility_scorer.gd:73-75`; `min_lead` default 0,06 em `:41` e **sobrescrito para 0,05** por `wolf.gd:803` |
@@ -52,7 +52,7 @@ impressos por `:692-702`. O parágrafo acima deixa de ser débito e passa a ser 
 ## 3. Por canal novo
 
 **MORTE.** Fonte: os caminhos de morte já existem e já imprimem sangue+medo
-(`wolf.gd:1310-1311`, `main.gd:539-540`); o canal MORTE seria um quarto registro no mesmo ponto,
+(`wolf.gd:1310-1311`, `main.gd:544-545`); o canal MORTE seria um quarto registro no mesmo ponto,
 com `amount` e meia-vida próprios. Leitor: `investigate` (carcaça vale mais que rastro) e uma
 nova consideração em `flee`. Curva que muda: `sniff` hoje soma 3,3 de peso e `flee` 5,3
 (`wolf.gd:802-858`); como a pontuação é normalizada por `weight_sum` (`utility_scorer.gd:75`),
@@ -61,7 +61,7 @@ põe no scorer, `wolf.gd:803`, não o default 0,06 da classe), isso decide
 intenção sem que ninguém queira. Custo: +16.384 células (65.536 B em `_cur` + 65.536 B em `_nxt`),
 +1 `PackedInt32Array` por passada, +49 leituras por scan de lobo e +1 leitura por `sim_step`
 (100 reads/s para 5 lobos).
-**SOM.** Fonte legítima é o evento de mundo (lavra `main.gd:347`, colocação `:457`, dano
+**SOM.** Fonte legítima é o evento de mundo (lavra `main.gd:352`, colocação `:457`, dano
 `wolf.gd:1291-1292`, morte `:1310-1311`), **nunca** o `AudioDirector`: imprimir do diretor acoplaria áudio ao
 hash por tick, e a invariância do hash com som ligado é medida (`audio_director.gd:3-5`). Passo do
 jogador como evento de mundo: não verifiquei `player.gd` aqui. Leitor: `investigate` (virar o
@@ -74,7 +74,7 @@ sem fonte, seria a tabela do §1 violada. Fica `[TARGET]` até existir bloco ou 
 
 ## 4. Custo — as quatro perguntas
 
-Roda **por passada de 0,25 s** (difusão, `main.gd:226`) e **por evento** (imprint), não por frame;
+Roda **por passada de 0,25 s** (difusão, `main.gd:229`) e **por evento** (imprint), não por frame;
 a leitura é **por tick de simulação** por lobo vivo (`wolf.gd:907`, corpo em `:916-925`) e **a cada 0,25 s** no scan
 (`wolf.gd:927-928`). Entidades alcançadas: 5 lobos (`main.gd:9`), 1 jogador, 16.384 células por canal
 — com 6 canais o laço de `src/world/aether_field.gd:123` e o de zeramento `:149` dobram (49.152 → 98.304 iterações por
@@ -120,7 +120,7 @@ tests/aether_reactions_test.gd`, hoje **109 checagens** (`EXPECTED_CHECKS`,
    ler `Channel.COUNT`.
 2. Runner dedicado: 109 → o número dos cenários acrescentados, exit 0, com um cenário por canal
    novo que nomeia a premissa (imprint → leitura → mudança de intenção) e imprime o `keep` e o
-   `_sim_worst_us` e o `_bt_worst_us` já colhidos (`aether_reactions_test.gd:313-315`, impressos em `:3058`).
+   `_sim_worst_us` e o `_bt_worst_us` já colhidos (`aether_reactions_test.gd:319-321`, impressos em `:3058`).
 3. Sonda curta apenas enquanto se edita: `godot --headless --path . --check-only --script
    src/world/aether_field.gd` (não substitui os dois acima).
 Gate de fase quem fecha é o dono; este item não fecha P1.
@@ -155,7 +155,7 @@ das curvas na mesma mudança do imprint, nada de ler o canal no `AudioDirector`.
 - `:276` lista "tiro/passo" e "lava/fogueira" como fontes. Não há projétil nem fogo: `Block`
   (`src/world/block_defs.gd:10-23`) tem 13 entradas, `COUNT = 23` (`:37`) e nenhum tile de fogo
   (`:40-53`); grep de `lava|burn|flame|fogueira` em `src/` devolve só comentários e o verbo lavar
-  (`recipes.gd:41`, `main.gd:553`, `voxel_atlas.gd:174`). "Passo" existe apenas como leitor de
+  (`recipes.gd:41`, `main.gd:558`, `voxel_atlas.gd:174`). "Passo" existe apenas como leitor de
   corpo no diretor (`audio_director.gd:435-457`), que o contrato proíbe de escrever.
 - `:277` ("leitura nas curvas de utilidade") não diz que a leitura é hoje fixa nos três canais
   (`wolf.gd:923-925`) nem que a escolha de canal do rastro descarta o medo (`wolf.gd:983`).
@@ -187,7 +187,7 @@ aqui porque a regra 1 do contrato não permite herdar número sem fonte.
   (`:30`), `SCENT_MEMORY_SECONDS 30,0` (`:32`), `SCENT_MEMORY_CAP 32` (`:33`) e `SCENT_RENEWAL
   0,06` (`:34`); "TTL de 3000 ms" erra nome, unidade e linha.
 - `DECAY_PER_SEC`, `SOURCE_RATE`, `SATURATION` e os "três dicionários paralelos em
-  `tests/aether_reactions_test.gd:78-94`" — assemblado do prompt que produziu este dossiê, e é
+  `tests/aether_reactions_test.gd:84-100`" — assemblado do prompt que produziu este dossiê, e é
   assim que ele fica registrado, com o número que o prompt escreveu: nenhum dos três nomes e
   nenhum dos três dicionários ocorre em `src/` ou `tests/`. Na árvore de hoje `:222` é `_check` e
   `:229` é `_test_fixture`.

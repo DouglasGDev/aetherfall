@@ -84,13 +84,13 @@ não descreve mais o estado daquele dia.
   5–22 m do `home` (com [`_dry_ground`](../../src/entities/wolf.gd#L717) e
   [`_shore_point`](../../src/entities/wolf.gd#L725) como portas). O `home` vinha de
   `_random_ground_point(16.0, 46.0)` — leitura da ponta deste dossiê —, sorteado um por lobo em
-  [`_spawn_wolves`](../../src/main.gd#L351-L374): cinco lares espalhados, **nenhum território
+  [`_spawn_wolves`](../../src/main.gd#L356-L379): cinco lares espalhados, **nenhum território
   compartilhado**, e a mensagem de respawn dizia "uma nova matilha entrou no vale"
-  (`main.gd:258` naquela ponta) sem que nada no código chame aquilo de matilha.
+  (`main.gd:263` naquela ponta) sem que nada no código chame aquilo de matilha.
   *(Relida nesta ponta: a perna 14 trocou o sorteio único por
-  [`_spawn_home_point`](../../src/main.gd#L751), chamado por
-  [`_place_request`](../../src/main.gd#L667) a partir de
-  [:362](../../src/main.gd#L362) sobre as [`SPAWN_BANDS`](../../src/main.gd#L513), e removeu o
+  [`_spawn_home_point`](../../src/main.gd#L756), chamado por
+  [`_place_request`](../../src/main.gd#L672) a partir de
+  [:362](../../src/main.gd#L367) sobre as [`SPAWN_BANDS`](../../src/main.gd#L518), e removeu o
   letreiro — o dossiê 14 §1.3 manda nenhum aviso de criatura na tela. A área e a coordenação são
   desta perna: a folha conta o censo em
   [:653](../../src/entities/wolf.gd#L653), corta o círculo em
@@ -123,7 +123,7 @@ não descreve mais o estado daquele dia.
   mesmos de antes, porque a perna não tocou o alcance nem o cooldown.)*
 - **O precedente de como se injeta visão de fora, sem acoplar:** o jogador recebe um
   `entity_provider: Callable` ([player.gd:91](../../src/entities/player.gd#L91)), montado pela
-  sessão ([main.gd:158](../../src/main.gd#L158)) e lido na mira
+  sessão ([main.gd:160](../../src/main.gd#L160)) e lido na mira
   ([player.gd:619-631](../../src/entities/player.gd#L619-L631)). A matilha entra pelo mesmo
   caminho — `pack_provider`, não um singleton novo.
 - **Memória: por ator, não por matilha.** `Mind` guarda `episodic` (cap 24), `beliefs`,
@@ -146,7 +146,7 @@ não descreve mais o estado daquele dia.
    `_leaf_wander` escolhe setor por `identity` (o assento angular §3.4) em vez de sortear qualquer
    ponto. O RNG por lobo ([:311](../../src/entities/wolf.gd#L311)) continua sendo o sorteio; o
    `_population_rng` da sessão ([main.gd:71](../../src/main.gd#L71), sorteado em
-   [:773-774](../../src/main.gd#L773-L774)) não pode ser consumido por decisão de lobo — é o que o
+   [:773-774](../../src/main.gd#L778-L779)) não pode ser consumido por decisão de lobo — é o que o
    dossiê de RNG isolou.
 3. **Procurar com o rastro dos outros.** Na leitura da abertura, quando a inspeção
    ([`_leaf_investigate`](../../src/entities/wolf.gd#L567-L605), RUNNING por `INSPECT_SECONDS`)
@@ -158,7 +158,7 @@ não descreve mais o estado daquele dia.
    alguém mexendo aqui") e os vizinhos chegam pelo `_find_scent` normal
    (`src/entities/wolf.gd:960-1000`), com a seleção `BLOOD + 0,35 × WORK`.
    Vantagem: nenhuma estrutura nova, nenhum dicionário compartilhado, e o leitor já é testado pelo
-   cenário `_test_scent_cave_layer` (`tests/aether_reactions_test.gd:1494`). Custo honesto: a partir
+   cenário `_test_scent_cave_layer` (`tests/aether_reactions_test.gd:1500`). Custo honesto: a partir
    daqui WORK deixa de ser assinatura exclusiva do jogador, e é a checagem 3 do dossiê 12 que decide
    isso — os dois arquivos têm de ser lidos juntos antes de escrever qualquer linha.
 4. **Cercar — assentos angulares com histerese.** A posição de ataque passa de "o alvo" para
@@ -167,7 +167,7 @@ não descreve mais o estado daquele dia.
    dos `:734-735`, aplicada a ângulo). O `BITE_RANGE` de 1,95 m
    ([:23](../../src/entities/wolf.gd#L23)) é o que decide o raio do anel: o assento tem de parar a
    alcance de mordida, não em cima do corpo — era isso que punha cinco corpos no mesmo voxel, o
-   mesmo problema que a nota de `_volume_clear` ([main.gd:824-826](../../src/main.gd#L824-L826))
+   mesmo problema que a nota de `_volume_clear` ([main.gd:829-831](../../src/main.gd#L829-L831))
    registrou no spawn.
    *(Escrito nesta ponta: o assento saiu por **posto de identidade**
    ([`_hunt_pack_rank`](../../src/entities/wolf.gd#L536-L541), contados em
@@ -190,7 +190,7 @@ não descreve mais o estado daquele dia.
    ([mind_oracle.gd:47](../../src/ai/mind_oracle.gd#L47), lida em
    [:96-97](../../src/ai/mind_oracle.gd#L96-L97) e entregue ao HUD).
    *(Escrita nesta ponta: a outra metade é o `trust` publicado pelo vizinho em
-   [`_pack_put`](../../src/main.gd#L885-L900) ([:899](../../src/main.gd#L899)), somado em
+   [`_pack_put`](../../src/main.gd#L890-L905) ([:899](../../src/main.gd#L904)), somado em
    [:934-939](../../src/entities/wolf.gd#L934-L939) e amortecendo o `_courage` em
    [:946](../../src/entities/wolf.gd#L946); a testemunha numérica é o cenário
    `_test_amortece_confianca` ([aether_reactions_test.gd:27](../../tests/aether_reactions_test.gd#L27)).
@@ -199,11 +199,11 @@ não descreve mais o estado daquele dia.
 ## 4. Custo — as quatro perguntas
 
 - **Roda por frame, por tick ou às vezes?** Tick de 20 Hz, dentro de `sim_step`, portanto dentro do
-  cronômetro `begin_step`/`end_step` ([main.gd:275-277](../../src/main.gd#L275-L277),
+  cronômetro `begin_step`/`end_step` ([main.gd:280-282](../../src/main.gd#L280-L282),
   [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e dos 50 ms divididos com a difusão e a
   recolha. A lista de vizinhos é construída **uma vez por passo** na sessão, não cinco.
 - **Quantas entidades são alcançadas?** `n(n-1)/2` = 10 comparações por passo com 5 lobos; hoje o
-  `for w in wolves` já roda 5 ([main.gd:288-289](../../src/main.gd#L288-L289)). Com o censo do
+  `for w in wolves` já roda 5 ([main.gd:293-294](../../src/main.gd#L293-L294)). Com o censo do
   dossiê 11 (até ~12), vira 66 — ainda uma fração do `sim_step`, mas o número tem de sair no
   rodapé, não na conversa.
 - **Aloco no caminho quente?** Era o débito registrado: o dicionário de blackboard por lobo por
@@ -211,15 +211,15 @@ não descreve mais o estado daquele dia.
   somar qualquer alocação nova, o lote **reaproveitou** um buffer por sessão (o mesmo array,
   reescrito a cada passo) — se a solução fosse alocar cinco arrays por tick, ela não entrava.
   *(Escrito nesta ponta: [`_read_pack`](../../src/entities/wolf.gd#L869-L870) só troca a referência
-  pelo [`pack_of`](../../src/main.gd#L845-L847) da sessão, e [`_pack_put`](../../src/main.gd#L885-L900)
+  pelo [`pack_of`](../../src/main.gd#L850-L852) da sessão, e [`_pack_put`](../../src/main.gd#L890-L905)
   reescreve a entrada no lugar, com o buffer cortado por `resize` em
-  [:873-874](../../src/main.gd#L873-L874); o dicionário do blackboard continua o mesmo débito do
+  [:873-874](../../src/main.gd#L878-L879); o dicionário do blackboard continua o mesmo débito do
   contrato, sem medição de alocação própria.)*
 - **Como sei que ficou melhor?** Pelo budget que já é código: `SubtreeGuard` de 400 µs por mente
   ([:448-449](../../src/entities/wolf.gd#L448-L449)) com `trips` colhido no runner
-  ([aether_reactions_test.gd:308-316](../../tests/aether_reactions_test.gd#L308-L316), o par da
-  matilha inteira em [:1849-1861](../../tests/aether_reactions_test.gd#L1849-L1861) e a checagem em
-  [:3155-3156](../../tests/aether_reactions_test.gd#L3155-L3156)). Critério
+  ([aether_reactions_test.gd:314-322](../../tests/aether_reactions_test.gd#L314-L322), o par da
+  matilha inteira em [:1849-1861](../../tests/aether_reactions_test.gd#L1855-L1867) e a checagem em
+  [:3155-3156](../../tests/aether_reactions_test.gd#L3161-L3162)). Critério
   numérico: **`trips` continua 0** e a soma de `last_us` não sai da banda medida
   (14 551 µs de pico 40 no rodapé pin de `ff347d2`). Se estourar, a alcateia entra com menos
   considerações, não com budget maior. O agregado dos cinco lobos continua sem medição (dossiê 04)
@@ -250,15 +250,15 @@ leitura desta página — hoje 56):
    0,35, [mind.gd:104-105](../../src/ai/mind.gd#L104-L105)); imprime os dois valores.
 5. **`alcateia_nao_consome_rng_da_sessao`** — `_population_rng` intacta depois de um passo com
    matilha completa (o contrato do RNG isolado, registrado no status).
-6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:60](../../tests/aether_reactions_test.gd#L60),
+6. `EXPECTED_CHECKS` ([aether_reactions_test.gd:61](../../tests/aether_reactions_test.gd#L61),
    **119** na leitura desta página) sobe com o lote, e a suíte (**237** na mesma leitura) idem — os
    dois re-medidos no clone limpo com `--import` frio antes de virar número publicado.
 
 ## 6. O que NÃO fazer
 
 - **Não criar `PackState`, `Alcateia` nem autoload novo.** O dono da matilha é `main.gd` hoje
-  ([`_spawn_wolves`](../../src/main.gd#L351-L374), [`wolves`](../../src/main.gd#L60),
-  [`_reap_corpses`](../../src/main.gd#L903-L915)); mover posse é o dossiê 06 (K3), e ele só abre
+  ([`_spawn_wolves`](../../src/main.gd#L356-L379), [`wolves`](../../src/main.gd#L60),
+  [`_reap_corpses`](../../src/main.gd#L908-L920)); mover posse é o dossiê 06 (K3), e ele só abre
   com comprador fora de `main.gd`.
 - **Não pôr a coordenação no oráculo** (mandato 2). Uma "estratégia de matilha" sugerida por LLM
   entra como crença em quarentena, nunca como intenção escrita no corpo.

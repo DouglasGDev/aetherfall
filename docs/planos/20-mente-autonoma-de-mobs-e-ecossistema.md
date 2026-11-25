@@ -32,7 +32,7 @@ escreve BLOOD e FEAR no Éter ([`:1319-1320`](../../src/entities/wolf.gd#L1319-L
 de cadáver ([`:1321`](../../src/entities/wolf.gd#L1321), `const CORPSE_SECONDS: float = 6.0` em
 [`:40`](../../src/entities/wolf.gd#L40)) e só **então** emite `died` ([`:1322`](../../src/entities/wolf.gd#L1322)).
 O sinal tem **dois** consumidores em `src/`, e nenhum deles é um item: `_on_wolf_died`
-([main.gd:404](../../src/main.gd#L404) conecta, corpo em [`:985`](../../src/main.gd#L985)) faz
+([main.gd:409](../../src/main.gd#L409) conecta, corpo em [`:985`](../../src/main.gd#L990)) faz
 **uma** coisa — `stats["wolves_felled"] += 1` — e o diretor de áudio toca `wolf_died`
 ([audio_director.gd:161](../../src/audio/audio_director.gd#L161), corpo em
 [` :412`](../../src/audio/audio_director.gd#L412)). É isso que o §3.8 cobra.
@@ -151,20 +151,20 @@ nunca consultado devolve a **mesma** sequência de `intent`, e isso já é cobra
   [`:10-17`](../../src/main.gd#L10-L17) — **12 × 400 µs = 4,8 ms dos 50 ms do passo** —, a fila de
   respawn `_respawn_queue` com `RESPAWN_DELAY := 45.0` ([`:30`](../../src/main.gd#L30)), o sorteio
   por `_population_rng` ([`:71`](../../src/main.gd#L71)), as bandas
-  `SPAWN_BANDS` ([`:513`](../../src/main.gd#L513)) e o predicado `_spawn_point_ok()`
-  ([`:725`](../../src/main.gd#L725)) com `SAFE_SPAWN_DIST := 32.0` ([`:24`](../../src/main.gd#L24)).
+  `SPAWN_BANDS` ([`:513`](../../src/main.gd#L518)) e o predicado `_spawn_point_ok()`
+  ([`:725`](../../src/main.gd#L730)) com `SAFE_SPAWN_DIST := 32.0` ([`:24`](../../src/main.gd#L24)).
 - **Desde a 16, a matilha tem toca — e isso muda o §3.9, não o resto.** O que não existia quando a
   página foi escrita e existe agora: `var _dens: Array = []` ([main.gd:116](../../src/main.gd#L116),
-  "criada uma vez e só cresce"), `den_components()` ([`:635`](../../src/main.gd#L635)) exposto em
-  `diagnostics()["den_components"]` ([`:1187`](../../src/main.gd#L1187)), o pedido de spawn carrying
-  a toca (`_place_request(for_den)` [`:667`](../../src/main.gd#L667), `_entrada()`
-  [`:704`](../../src/main.gd#L704)) e a pertença por entidade — `var den: int = -1`
+  "criada uma vez e só cresce"), `den_components()` ([`:635`](../../src/main.gd#L640)) exposto em
+  `diagnostics()["den_components"]` ([`:1187`](../../src/main.gd#L1192)), o pedido de spawn carrying
+  a toca (`_place_request(for_den)` [`:667`](../../src/main.gd#L672), `_entrada()`
+  [`:704`](../../src/main.gd#L709)) e a pertença por entidade — `var den: int = -1`
   ([wolf.gd:186](../../src/entities/wolf.gd#L186)), gravado e lido no disco
   ([`:1372`](../../src/entities/wolf.gd#L1372), [`:1405`](../../src/entities/wolf.gd#L1405)). Consequência
   para esta perna: **espécie nova não pode herdar o censo da matilha por cima das tocas** — o teto de
   aves nasce ao lado de `_dens`, não dentro dele, e a `BIRD_CAP` do §3.6 é checada contra
   `den_components()` e não contra um número de lobos. Consequência para a leitura antiga: a mordaca
-  `PACK_LEASH` de 18 m ([`:522`](../../src/main.gd#L522)) deixou de ter `_pack_leash()` como centro —
+  `PACK_LEASH` de 18 m ([`:522`](../../src/main.gd#L527)) deixou de ter `_pack_leash()` como centro —
   a função não existe mais em `src/`, e o centro lido hoje é a própria entrada da toca.
 - **Item é id de bloco, e o espaço livre do registro é conhecido.** `enum Block` cobre 0–8 e
   19–22 ([block_defs.gd:10-24](../../src/world/block_defs.gd#L10-L24)), `COUNT = 23`
@@ -188,8 +188,8 @@ nunca consultado devolve a **mesma** sequência de `intent`, e isso já é cobra
 - **O que muda sozinho hoje é o Éter e os corpos, não o mundo.** Difusão a 4 passadas/s
   (`AETHER_PERIOD := 0.25`, [main.gd:27](../../src/main.gd#L27)), recolha de cadáver 1×/s
   (`CORPSE_CHECK_PERIOD := 1.0`, [`:31`](../../src/main.gd#L31), corpo
-  [`:903`](../../src/main.gd#L903)) e malha com `MESH_BUDGET := 2`
-  ([`:28`](../../src/main.gd#L28), usado em [`:326`](../../src/main.gd#L326)). Nenhuma célula de
+  [`:903`](../../src/main.gd#L908)) e malha com `MESH_BUDGET := 2`
+  ([`:28`](../../src/main.gd#L28), usado em [`:326`](../../src/main.gd#L331)). Nenhuma célula de
   mundo é escrita por criatura: os dois `set_block` de gameplay são os do jogador
   ([player.gd:685](../../src/entities/player.gd#L685), [`:711`](../../src/entities/player.gd#L711)).
 - **O HotSet/LOD do doc 04 é alvo, não orçamento.** A escada HOT ≤48 / WARM ≤256 / AMBIENT ~2000
@@ -365,7 +365,7 @@ A fila de respawn, o teto e as bandas do §2 são da matilha. Se a ave entrar po
 checagens publicadas param de dizer o que dizem (censo, spawn seguro, convivência). Decisão:
 **as aves têm censo próprio** (`BIRD_CAP`, número do §4) e **não** tocam `_respawn_queue` nem
 `_population_rng`; o lobo continua as 5–12 mentes que o contrato já soma. Consequência honesta:
-o F3 e o `diagnostics()` ([main.gd:1175](../../src/main.gd#L1175)) passam a ter de dizer quantos
+o F3 e o `diagnostics()` ([main.gd:1180](../../src/main.gd#L1180)) passam a ter de dizer quantos
 lobos e quantas aves — separados, nunca um `animals` único, que é o jeito como um censo compartilhado
 vira mentira.
 
@@ -455,7 +455,7 @@ godot --headless --path . tests/smoke_test.tscn
     `dropped_ticks == 0` e a soma das árvores dentro do que o teto de 12 mentes já compromete
     ([main.gd:10-17](../../src/main.gd#L10-L17)).
 12. **`lobo_morto_dropa_carne`** — nasce **vermelho contra a árvore de hoje** (zero drop em
-    [`:985`](../../src/main.gd#L985)): N mortes produzem o ledger impresso, com a recusa de espaço
+    [`:985`](../../src/main.gd#L990)): N mortes produzem o ledger impresso, com a recusa de espaço
     contando junto (`space_for` [inventory.gd:132](../../src/items/inventory.gd#L132)).
 13. **`trofeu_e_colocavel_e_nao_e_ancora`** — a cabeça colocada vira célula no mundo
     ([player.gd:711](../../src/entities/player.gd#L711)), **não** é sólida, **não** entra em lista
@@ -466,17 +466,17 @@ godot --headless --path . tests/smoke_test.tscn
     conferida por `tests/simulation_rng_test.gd`.
 15. **`aves_nao_movem_o_censo_da_matilha`** — `WOLF_COUNT`, `CENSUS_CAP` e as contagens publicadas
     da matilha inalterados com aves vivas no mapa, e `diagnostics()`
-    ([main.gd:1175](../../src/main.gd#L1175)) dizendo lobos e aves **separados**.
+    ([main.gd:1180](../../src/main.gd#L1180)) dizendo lobos e aves **separados**.
 16. **`decisao_nao_vem_do_oraculo`** — o cenário de alcance rodado com o oráculo nunca consultado
     devolve a mesma sequência de `intent` (mandato 2; a cena de prova do oráculo é própria,
     `tests/live_oracle_probe.tscn`, e não entra aqui).
 17. **`journal_hash_inalterado_sem_especies_vivas`** — com aves fora do cenário e nenhuma crença
     de alcance, os hashes do lote anterior se reproduzem; com aves vivas, a checagem **declara** a
     divergência em vez de escondê-la (§3.10).
-18. `EXPECTED_CHECKS` ([aether_reactions_test.gd:60](../../tests/aether_reactions_test.gd#L60),
+18. `EXPECTED_CHECKS` ([aether_reactions_test.gd:61](../../tests/aether_reactions_test.gd#L61),
     **240** nesta leitura — a 16 subiu o censo de 225 para 240 e moveu a constante da linha 34 para a
     39) e o censo do runner
-    ([`:3124`](../../tests/aether_reactions_test.gd#L3124)) sobem com o lote, e o `EXPECTED_CHECKS`
+    ([`:3124`](../../tests/aether_reactions_test.gd#L3130)) sobem com o lote, e o `EXPECTED_CHECKS`
     do áudio ([audio_test.gd:25](../../tests/audio_test.gd#L25), **73**) só se a metade sonora for
     aprovada com asset novo.
 
@@ -553,7 +553,7 @@ vazio. O **252 / 0 / 42,4 s** do `5b519f8` que esta página citava é o contrato
   [voxel_body.gd:181](../../src/entities/voxel_body.gd#L181)), o contador de tentativas, a
   desistência e a memória — e é isso que a página cobra, não o pulo.
 - **"Drops são fracos"** — são **zero**: dos dois consumidores de `died`, um só incrementa contador
-  ([main.gd:985](../../src/main.gd#L985)) e o outro só toca um som
+  ([main.gd:990](../../src/main.gd#L990)) e o outro só toca um som
   ([audio_director.gd:412](../../src/audio/audio_director.gd#L412)); nenhum escreve no inventário.
 - **"Drops como carne, pena e troféu"** — não há item fora de id de bloco: `item == bloco`
   ([inventory.gd:29](../../src/items/inventory.gd#L29)) e os grep de `MEAT`, `FEATHER`, `feather`,
@@ -585,7 +585,7 @@ vazio. O **252 / 0 / 42,4 s** do `5b519f8` que esta página citava é o contrato
   escreve: [player.gd:685](../../src/entities/player.gd#L685),
   [`:711`](../../src/entities/player.gd#L711)), falsa sobre o Éter, que difunde 4×/s
   ([main.gd:27](../../src/main.gd#L27)) e sobre os corpos, que são recolhidos 1×/s
-  ([`:31`](../../src/main.gd#L31), [`:903`](../../src/main.gd#L903)). O que falta respirar é vida
+  ([`:31`](../../src/main.gd#L31), [`:903`](../../src/main.gd#L908)). O que falta respirar é vida
   com input zero, e é isso — e só isso — que a pauta compra.
 
 **Nenhuma linha de código desta perna foi escrita e a branch não abre agora:** a fila serializada

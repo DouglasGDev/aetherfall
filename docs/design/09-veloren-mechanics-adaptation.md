@@ -101,7 +101,7 @@ bloco, sem ferramenta e sem XP:
   [documento 11](11-inventory-crafting.md).
 
 Cada bloco lavrado injeta **0,42 no canal de trabalho** do Éter e cada colocação `0,20`
-[main.gd:920-925](../../src/main.gd#L920-L925) — nada disso existe no Veloren; é a nossa trilha
+[main.gd:925-930](../../src/main.gd#L925-L930) — nada disso existe no Veloren; é a nossa trilha
 auditável (§8).
 
 ## 5. Respiração e afogamento
@@ -236,7 +236,7 @@ Nada aqui está em código — menos as linhas que o
 | Arcos, lanças arremessadas, cetros e magia de projétil | `[TARGET]` P6; magia existe como **Tecelagem** editando o Éter (§02), não como cast bar |
 | 6 espécies, personagens, opção *hardcore* | fora de escopo — solo humano + mentes locais (premissa 3 do README) |
 | Multiplayer | `[TARGET]` P5 |
-| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1200-1210](../../src/main.gd#L1200-L1210). `[TARGET]` P7 |
+| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1205-1215](../../src/main.gd#L1205-L1215). `[TARGET]` P7 |
 | Agricultura/plantação | **não existe no código**: só `_plant_tree` no gerador. `[TARGET]` P7 |
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de
@@ -279,13 +279,13 @@ e diante de parede
 ([aether_reactions_test.gd:7-15](../../tests/aether_reactions_test.gd#L7-L15)). Ele usa
 uma semente e **um lobo por cenário**, com decisão a 20 Hz e corpo a 60 Hz controlados;
 o campo é estático por padrão, com difusão explícita no cenário dedicado
-([:282-311](../../tests/aether_reactions_test.gd#L282-L311),
-[:538-583](../../tests/aether_reactions_test.gd#L538-L583)).
+([:282-311](../../tests/aether_reactions_test.gd#L288-L317),
+[:538-583](../../tests/aether_reactions_test.gd#L544-L589)).
 
 A colheita cronometra `sim_step` integral e lê `_guard.last_us`/`trips`, imprimindo
 soma/pico de ambos e estouros do guard
-([:295-311](../../tests/aether_reactions_test.gd#L295-L311),
-[:1146-1147](../../tests/aether_reactions_test.gd#L1146-L1147)). O guard mede só BT, não
+([:295-311](../../tests/aether_reactions_test.gd#L301-L317),
+[:1146-1147](../../tests/aether_reactions_test.gd#L1152-L1153)). O guard mede só BT, não
 percepção/utilidade; `sim_step` não inclui a física executada depois pelo runner.
 Isso não é medição do HOT agregado de cinco lobos, teste multi-semente ou replay, nem
 fecha P1. O candidato local passou nas 89 checagens específicas e nas regressões de
