@@ -1,7 +1,7 @@
 extends SceneTree
 ## Sonda curta (gitignored): quais `render_mode` de specular o front-end do shader aceita
 ## NO CAMINHO QUE O JOGO USA. A primeira versao deste probe atribuia `sh.code` sem prender
-## o shader a um material e nao imprimia erro nenhum -- eixo do furo #46: no renderer dummy
+## o shader a um material e nao imprimia erro nenhum -- eixo do furo #50: no renderer dummy
 ## do headless a parse so acontece quando o `ShaderMaterial` toma o `Shader`, entao um
 ## `render_mode` invalido e visivel na suite (via stdout), mas so se o material existir.
 

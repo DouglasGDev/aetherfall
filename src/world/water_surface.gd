@@ -100,7 +100,7 @@ const float RAIN_GAIN = 0.30;
 // O nome do parametro e `gota` e nao `chuva` porque o GLSL nao admite que um parametro
 // esconda o global de mesmo nome: `float chuva` no contrato de `wave()` devolve
 // `SHADER ERROR: Redefinition of 'chuva'` na hora em que o material monta, impresso quatro
-// vezes na suíte e silencioso em qualquer documento — furo #46 com dentes.
+// vezes na suíte e silencioso em qualquer documento — furo #50 com dentes.
 vec3 wave(vec2 f, float t, float gota) {
 	float a1 = dot(K1, f) * wave_freq + t;
 	float a2 = dot(K2, f) * wave_freq - 1.3 * t;

@@ -24,10 +24,12 @@ PERGUNTA 1 — o que compila
   sonda-23f2-{B3,B5,B5fps,B6,B7,C6}.log 0 0 0 0 0 0   (dois shaders spatial + o do anel)
   rocha_fiel_tile.log                0   (a cena sintetica, com as 10 variantes no mesmo quadro)
 a testemunha de que o contador ve um erro de shader quando ele existe e o par ja arquivado do
-furo #46: chuva23-codigo-a.log e chuva23-codigo-c-sombra-4-erros.log dao `SHADER ERROR`=4 cada
+furo #50 (o numero era #46 na corrida e nos commits desta perna, e colidia com o #46 do
+`load_pack` sindrono da perna 22, ja publicado na main -- a re-numeracao e so de rotulo, os
+logs abaixo nao mudam): chuva23-codigo-a.log e chuva23-codigo-c-sombra-4-erros.log dao `SHADER ERROR`=4 cada
 um (um por mundo construido, o `specular_schlick_blurry` de Godot 3 recusado pelo front-end do
 4.7) e chuva23-rendermode-conserto.log devolve 0 depois da troca por `specular_schlick_ggx`.
-Isso e headless — e o furo #46 consertou a frase do dossie que dizia que headless era cego ao
+Isso e headless — e o furo #50 consertou a frase do dossie que dizia que headless era cego ao
 shader: ele nao desenha nem gera SPIR-V, mas roda o front-end GLSL e imprime. O que a janela
 continua sendo a unica testemunha e do pixel.
 

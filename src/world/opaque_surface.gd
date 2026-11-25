@@ -50,7 +50,7 @@ const SOURCE: String = """shader_type spatial;
 // o que impede a reproducao de virar outro tom se o default do engine mudar de endereco.
 // A primeira versao desta linha dizia `specular_schlick_blurry`, que e de Godot 3 e NAO
 // existe no 4.7: o front-end recusou com `SHADER ERROR: Invalid render mode` (o eixo do
-// furo #46). Nenhum outro `render_mode`: o passe continua opaco (sem `blend_*`, sem
+// furo #50). Nenhum outro `render_mode`: o passe continua opaco (sem `blend_*`, sem
 // `ALPHA`) e o `cull_back` e o do material velho.
 render_mode diffuse_burley, specular_schlick_ggx;
 

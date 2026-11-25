@@ -173,7 +173,7 @@ func _ready() -> void:
 		# `_phase` a cada passo do jogador, e a pose de medida em `minerar e colocar` nao
 		# azera a fase nos 20 `advance` proprios). Medido: base com 300 quadros a mais antes
 		# daquela linha deu `cubo=[752..938 x 357..546]` e o mesmo VERMELHO, com codigo
-		# identico em todo o resto. E o **furo #47**, dono a perna do viewmodel em 1a
+		# identico em todo o resto. E o **furo #49**, dono a perna do viewmodel em 1a
 		# pessoa; enquanto ele nao for pago, nenhuma linha nova com espera entra na frente.
 		["chuva: material opaco e fiel", 0, _check_opaque_surface],
 		["chuva: exposicao de ceu por coluna", 0, _check_weather_exposure],

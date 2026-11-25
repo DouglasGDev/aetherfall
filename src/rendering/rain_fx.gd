@@ -181,7 +181,7 @@ func _emissor(amount: int, life: float, fall_v: float, half: float, slab_y: floa
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
 	# O nome e `EMISSION_SHAPE_BOX`, medido por `ClassDB.class_get_enum_constants` em
 	# `.tools/probe_emission_shape.gd`; `EMISSION_BOX3D` e de Godot 3 e o `--check-only` devolve
-	# parse error — o mesmo chao do `specular_schlick_blurry` do furo #46, com o prenome trocado.
+	# parse error — o mesmo chao do `specular_schlick_blurry` do furo #50, com o prenome trocado.
 	pm.emission_box_extents = Vector3(half, 0.35, half)
 	node.process_material = pm
 	var mesh := BoxMesh.new()
