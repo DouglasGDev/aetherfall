@@ -23,14 +23,14 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
    observável no mundo.** Forma falsificável em headless: dois filhotes no **mesmo bioma** com pais
    diferentes têm de sair com hex de pelo diferente, e um lobo que encontra um rastro tem de poder
    dizer **de quem** é aquele rastro. Hoje nenhuma frase é pronunciável:
-   [`setup`](../../src/entities/wolf.gd#L299-L300) não recebe ascendência, e o
+   [`setup`](../../src/entities/wolf.gd#L303-L304) não recebe ascendência, e o
    [`imprint`](../../src/world/aether_field.gd#L87-L89) guarda um float por célula sem autor. Uma
    genealogia que não mexe em nada observável é decoração — é por isso que esta é a premissa que
    morde.
 2. **Herança não é memória.** A personalidade é sorteada da semente do **próprio** lobo
    ([`Mind.new("wolf", p_identity, 1000 + p_identity)`](../../src/entities/wolf.gd#L313), sorteio em
    [mind.gd:36-38](../../src/ai/mind.gd#L36-L38)) e depois **mutada por experiência**
-   ([`_drift`](../../src/ai/mind.gd#L56-L64)). Nenhum pai contribui com nada. Logo herda-se um
+   ([`_drift`](../../src/ai/mind.gd#L87-L95)). Nenhum pai contribui com nada. Logo herda-se um
    genoma-base imutável, nunca o valor vivo — senão o filhote nasceria com o trauma do pai.
 3. **Parentesco que o campo não registra não existe para o nariz.** É essa a decisão de versão do
    §3.3, e a única parte daqui que pode tocar
@@ -50,13 +50,13 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
 - **O pelo é ambiente, não herança**: `FUR_COLORS`
   ([:160-165](../../src/entities/wolf.gd#L160-L165)) indexada pelo bioma do `home`
   ([:309](../../src/entities/wolf.gd#L309)), aplicada em
-  [`_build_visual`](../../src/entities/wolf.gd#L1453) e **re-derivada no load**
+  [`_build_visual`](../../src/entities/wolf.gd#L1469) e **re-derivada no load**
   ([:1380-1382](../../src/entities/wolf.gd#L1380-L1382)). O par já tem gate da rodada 09 — dois lobos em
   biomas diferentes com cores diferentes, dois no mesmo bioma com a mesma
   ([aether_reactions_test.gd:1672-1690](../../tests/aether_reactions_test.gd#L1672-L1690)). Herança
   que mutar o pelo de **fundador** passa por cima de um gate fechado.
 - **Save e projeção.** O lobo persiste oito chaves fechadas
-  ([`state_dict`](../../src/entities/wolf.gd#L1360-L1365)), o `load_state` lê com default
+  ([`state_dict`](../../src/entities/wolf.gd#L1376-L1381)), o `load_state` lê com default
   ([`d.get`](../../src/entities/wolf.gd#L1393-L1406)), o precedente aditivo da casa é o `inv`
   ([main.gd:1163-1168](../../src/main.gd#L1163-L1168)) e [`SCHEMA = 1`](../../src/persistence/save_manager.gd#L8)
   recusa só schema **mais novo** ([:69-71](../../src/persistence/save_manager.gd#L69-L71)). Na
@@ -134,7 +134,7 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
      como **dado** dentro da projeção ([:29-35](../../src/persistence/tick_journal.gd#L29-L35)),
      então `FORMAT_VERSION` **não** sobe — mas o hash de um run com nascimento se move
      legitimamente, e é isso que a checagem 6 protege. Insuficiente porque crença **decai e é
-     apagada** ([`decay`](../../src/ai/mind.gd#L133-L147), `CONFIDENCE_MIN = 0,02` em
+     apagada** ([`decay`](../../src/ai/mind.gd#L164-L178), `CONFIDENCE_MIN = 0,02` em
      [:9](../../src/ai/mind.gd#L9), meia-vida de `BELIEF_DECAY_PER_MIN = 0,14` em
      [:8](../../src/ai/mind.gd#L8)): parentesco não some em cinco minutos de jogo. Serve como
      **leitura**, nunca como **verdade** — e sozinha é enfeite.
@@ -194,7 +194,7 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
   precedente do scratch reusado `_nb_i`/`_nb_w`
   ([aether_field.gd:37-39](../../src/world/aether_field.gd#L37-L39), alocado em
   [:42-54](../../src/world/aether_field.gd#L42-L54)); a crença reaproveita o `Dictionary` de
-  [`reinforce`](../../src/ai/mind.gd#L98-L104). O débito registrado do blackboard novo por lobo por
+  [`reinforce`](../../src/ai/mind.gd#L129-L135). O débito registrado do blackboard novo por lobo por
   tick ([wolf.gd:911](../../src/entities/wolf.gd#L911)) **não pode crescer**: se a leitura precisar de
   lista por lobo, usa o buffer único por passo que a 10 §4 mandou — se não couber aí, não entra.
 - **Como sei que ficou melhor, e o log existe em headless?** Não é "melhor", é "a ascendência existe
@@ -226,8 +226,8 @@ Cenários novos no runner dedicado (`TESTS`, hoje 24,
 3. **`load_preserva_ascendencia`** — nascimento real (exige 11), gravar, recarregar, conferir
    `parents`/`gen`/`genome` identidade por identidade; imprime `chaves_de_ascendencia_no_save=N/8`.
    **Nasce vermelha** no `state_dict` de hoje, que tem oito chaves e nenhuma é linhagem.
-4. **`heranca_nao_repete_deriva`** — um [`take_damage`](../../src/entities/wolf.gd#L1288) no pai antes
-   do acasalamento deriva a personalidade por [`_drift`](../../src/ai/mind.gd#L56-L64): o genoma do
+4. **`heranca_nao_repete_deriva`** — um [`take_damage`](../../src/entities/wolf.gd#L1300) no pai antes
+   do acasalamento deriva a personalidade por [`_drift`](../../src/ai/mind.gd#L87-L95): o genoma do
    filhote tem de igualar o **base** do pai, não o valor vivo. Imprime base, derivado e herdado.
 5. **`eter_devolve_quem_sangrou`** — mordida real, leitura pelo `_find_scent` do filho: a autoria da
    célula escolhida tem de ser a identidade do agressor, e a crença de parentesco cruza a soleira de
@@ -285,7 +285,7 @@ na `main` mergida**; até aqui este arquivo é plano, não fila.
 
 Nenhum gate de fase (mandato 4). Não fecha 03 (canais morte/som/fogo continuam 3), 04 (HOT agregado
 sem medição), 05 (difusão síncrona — os µs dela abrem este lote), 08 (`MindsInspector` não existe: o
-que a árvore usa é a linha de [`debug_line`](../../src/entities/wolf.gd#L1346-L1351) estendida, não uma
+que a árvore usa é a linha de [`debug_line`](../../src/entities/wolf.gd#L1362-L1367) estendida, não uma
 tela nova). Ecologia com presa, migração e espécies continua P2 `[TARGET]`; jogador com mente e NPC
 com casa são `[TARGET]` sem linha de código. O multi-semente (02) fica mais caro: censo variável (11)
 vezes árvore variável (13) é espaço de estados maior, e nenhum número daqui o cobre.
