@@ -23,18 +23,18 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
    criatura chega ao toast, e o feedback da ação do próprio jogador continua chegando. **Nasce
    vermelha**: `main.gd:263` e `:511` daquela ponta — os dois letreiros — existem.
    *(Entregue: os dois saíram da tela. A fila de respawn é hoje só o comentário em
-   [main.gd:304-312](../../src/main.gd#L309-L317) e a morte imprime apenas o contador em
-   [`_on_wolf_died`](../../src/main.gd#L1014-L1019).)*
-4. **Spawn não aparece na frente do jogador.** Criar lobo (boot [main.gd:214](../../src/main.gd#L219),
-   fila [:307](../../src/main.gd#L317) a menos de `SAFE_SPAWN_DIST` do jogador ou com LOS
+   [main.gd:304-312](../../src/main.gd#L335-L343) e a morte imprime apenas o contador em
+   [`_on_wolf_died`](../../src/main.gd#L1040-L1045).)*
+4. **Spawn não aparece na frente do jogador.** Criar lobo (boot [main.gd:214](../../src/main.gd#L244),
+   fila [:307](../../src/main.gd#L343) a menos de `SAFE_SPAWN_DIST` do jogador ou com LOS
    livre do olho até o ponto não o coloca ali, e a recusa é impressa — nunca revertida em silêncio ao
    centro. **Nasce vermelha por construção**: na ponta do dossiê, `_random_ground_point`
    (`main.gd:322-336` de `eb6ec8d`) não menciona o jogador em nenhuma linha.
-   *(Entregue: quem sorteia é [`_spawn_home_point`](../../src/main.gd#L762-L834) sobre as
-   [`SPAWN_BANDS`](../../src/main.gd#L524), e cada candidata passa antes por
-   [`_spawn_point_ok`](../../src/main.gd#L736-L741) — distância e visada contra o olho do jogador;
+   *(Entregue: quem sorteia é [`_spawn_home_point`](../../src/main.gd#L788-L860) sobre as
+   [`SPAWN_BANDS`](../../src/main.gd#L550), e cada candidata passa antes por
+   [`_spawn_point_ok`](../../src/main.gd#L762-L767) — distância e visada contra o olho do jogador;
    a recusa conta os motivos e imprime "spawn RECUSADO:" em
-   [:808-810](../../src/main.gd#L818-L820), sem fallback para o centro.)*
+   [:808-810](../../src/main.gd#L844-L846), sem fallback para o centro.)*
 
 ## 2. Estado real do código (lido, não medido)
 
@@ -57,21 +57,21 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   [:1230](../../src/entities/wolf.gd#L1230), flutuabilidade `:760-766`, remo `:815-826`, e o
   `feet_pos.y < -6,0` → `home` [:1255-1257](../../src/entities/wolf.gd#L1255-L1257).
 - **Spawn seco, desencaixado e indiferente ao jogador.** `spawn_point()` é a **coluna central**
-  ([`:263-266`](../../src/main.gd#L273-L276) — onde o próprio jogador é posto
-  ([`:157`](../../src/main.gd#L159) — e o anel 16–46 m gira em torno **dele**
-  ([`:346`](../../src/main.gd#L356), exigindo `y > SEA_LEVEL` (26,
+  ([`:263-266`](../../src/main.gd#L299-L302) — onde o próprio jogador é posto
+  ([`:157`](../../src/main.gd#L169) — e o anel 16–46 m gira em torno **dele**
+  ([`:346`](../../src/main.gd#L382), exigindo `y > SEA_LEVEL` (26,
   [voxel_config.gd:13](../../src/world/voxel_config.gd#L13)) e volume inteiro livre
-  ([`_volume_clear`](../../src/main.gd#L834-L836): encaixado, o corpo congela — diz o comentário);
-  após 24 tentativas cai **em silêncio** no centro ([`:404-405`](../../src/main.gd#L414-L415), o
+  ([`_volume_clear`](../../src/main.gd#L860-L862): encaixado, o corpo congela — diz o comentário);
+  após 24 tentativas cai **em silêncio** no centro ([`:404-405`](../../src/main.gd#L440-L441), o
   pior ponto possível num 128×128 ([`:10-11`](../../src/world/voxel_config.gd#L10-L11)) com margem
-  sobrando. O `load` põe o jogador onde estava ([`:1081`](../../src/main.gd#L1110) e a matilha segue
-  no centro fixo. [`line_of_sight`](../../src/world/voxel_world.gd#L454-L460) (DDA) só é lida pelo
+  sobrando. O `load` põe o jogador onde estava ([`:1081`](../../src/main.gd#L1136) e a matilha segue
+  no centro fixo. [`line_of_sight`](../../src/world/voxel_world.gd#L478-L484) (DDA) só é lida pelo
   portão de 30 m da percepção ([wolf.gd:922](../../src/entities/wolf.gd#L922)) — nunca no spawn.
 - **Dois tipos de aviso numa fila só**
   ([`show_message`](../../src/ui/hud.gd#L154-L157), fade `:212-214`): anúncio de criatura —
-  [main.gd:298](../../src/main.gd#L303) e `main.gd:853` (dispara para **qualquer** morte, vista ou não) — e
+  [main.gd:298](../../src/main.gd#L329) e `main.gd:853` (dispara para **qualquer** morte, vista ou não) — e
   feedback/diagnóstico: boot `:107`, morte do jogador `:194`, `player.notice` →
-  [`_on_notice`](../../src/main.gd#L983-L984) (emissores
+  [`_on_notice`](../../src/main.gd#L1009-L1010) (emissores
   [player.gd:309](../../src/entities/player.gd#L309)/[:682](../../src/entities/player.gd#L682)/[:700](../../src/entities/player.gd#L700)),
   save/load `:377`/`:379`/`:385`/`:389`/`:425`, craft [hud.gd:603](../../src/ui/hud.gd#L603)/`:605`.
 - **O que substitui o texto, lido e não assumido:** passos posicionais
@@ -81,7 +81,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   sfx espacializado de mordida/dano/morte (`:404-413`), BLOOD 1,1 + FEAR 0,55 do
   [`die()`](../../src/entities/wolf.gd#L1312-L1323) (lidos por qualquer nariz, vistos no F4) e o
   cadáver por 6 s ([wolf.gd:40](../../src/entities/wolf.gd#L40)) até a recolha de 1 s
-  ([`_reap_corpses`](../../src/main.gd#L932-L952). Roster e narrativa só com F3.
+  ([`_reap_corpses`](../../src/main.gd#L958-L978). Roster e narrativa só com F3.
 - **A 10 em curso é fronteira, não concorrente:** `pack_provider` no lobo,
   `PACK_COHESION_RADIUS` 24, `_rebuild_packs()` uma vez por passo e `pack` já no contexto do
   escorredor e do `_tree.tick`. Nenhum item do §3 reabre isso; o filtro de alvo entra **depois** do
@@ -140,13 +140,13 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
    antes de escrever.
 6. **Política de aviso como classificação.** Saem só as duas chamadas de anúncio de criatura; ficam
    notice de inventário/slot, craft, save/load, boot e respawn do jogador.
-   `stats["wolves_felled"]` ([`:990`](../../src/main.gd#L1019) continua contando: sai o texto, não o
+   `stats["wolves_felled"]` ([`:990`](../../src/main.gd#L1045) continua contando: sai o texto, não o
    fato.
 
 ## 4. Custo — as quatro perguntas
 
 - **Frame, tick ou às vezes?** Filtro: **tick de 20 Hz**, uma pergunta por lobo vivo (100/s), dentro
-  de `begin_step`/`end_step` ([main.gd:280-282](../../src/main.gd#L285-L287) e **fora** dos 400 µs
+  de `begin_step`/`end_step` ([main.gd:280-282](../../src/main.gd#L311-L313) e **fora** dos 400 µs
   do `SubtreeGuard` ([`:448-449`](../../src/entities/wolf.gd#L448-L449)) — o custo novo sai no
   `sim_step` do runner, não no `last_us`. Re-escolha de travessia: 4×/s. Offset de célula: só na
   folha de investigação. Higiene de spawn: **rara** — 5 no boot, 1 por fila de 45 s

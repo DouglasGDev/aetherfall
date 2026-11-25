@@ -73,7 +73,7 @@ desenhado pelo material opaco, então refração tem o que refratar. O topo afun
 [`_emit_face:827-828`](../../src/world/voxel_world.gd#L827-L828)).
 
 **Cada face é um quad de quatro vértices próprios, e o `COLOR` do surface de água estava livre.**
-`_emit_face` acrescenta 4 vértices por face ([`:667-689`](../../src/world/voxel_world.gd#L667-L689))
+`_emit_face` acrescenta 4 vértices por face ([`:740-782`](../../src/world/voxel_world.gd#L740-L782))
 e o vertex color da água **não era lido por ninguém**: `_mat_water` não ligava
 `vertex_color_use_as_albedo` (o ligador era só o do opaco `b0ed929:src/world/voxel_world.gd:88` e o do
 vidro, hoje [`:138`](../../src/world/voxel_world.gd#L138)), e a água entrava com o `ao` forçado em
@@ -112,7 +112,7 @@ um estado por corpo e age na **borda** da mudança: `if in_water != bool(st["in_
 ([audio_director.gd:439-441](../../src/audio/audio_director.gd#L439-L441)), alimentado por leitura do
 `body` do jogador ([`:462`](../../src/audio/audio_director.gd#L462)) e de cada lobo
 ([`:503`](../../src/audio/audio_director.gd#L503)), com a lista entregue por
-`wolves_provider` ([`main.gd:202`](../../src/main.gd#L207). É a mesma fiação, sem sinal novo, que o
+`wolves_provider` ([`main.gd:202`](../../src/main.gd#L217). É a mesma fiação, sem sinal novo, que o
 FX de água usa (§3.7). O áudio é o **primeiro** consumidor dessa leitura; este é o segundo — e é por
 isso que a regra da casa (generalizar no segundo chamador, não no primeiro) permite a peça nova sem
 pedir um mecanismo novo.
@@ -121,13 +121,13 @@ pedir um mecanismo novo.
 `DirectionalLight3D` com `rotation_degrees = (-42, 55, 0)`, `light_energy = 1,60`, sombra a 80 m,
 `ProceduralSkyMaterial`, `ambient_light_energy = 0,85`, `TONE_MAPPER_FILMIC`, `fog_enabled` com
 `fog_light_color = (0,55, 0,65, 0,78)` e `fog_density = 0,006`
-([main.gd:1220-1256](../../src/main.gd#L1244-L1280). Não há ciclo de dia/noite, então "caústicas
+([main.gd:1220-1256](../../src/main.gd#L1278-L1314). Não há ciclo de dia/noite, então "caústicas
 quando o sol está alto" (§ Fase 1) é hoje uma **constante**, não uma variável: a elevação do sol é
 fixa em ~48°. Registrar isso é o que impõe §3.9. **O que a perna mudou aqui:** a direção parada
 deixou de ser invisível ao material — `world.set_water_sun_direction(_sun_dir)` no boot
-([`main.gd:141`](../../src/main.gd#L141) grava o vetor no uniform `sun_dir`
-([`voxel_world.gd:124-126`](../../src/world/voxel_world.gd#L124-L126)), e o shader decide o ganho de
-caústica por ele ([`water_surface.gd:184`](../../src/world/water_surface.gd#L184)). O que continua
+([`main.gd:151`](../../src/main.gd#L151) grava o vetor no uniform `sun_dir`
+([`voxel_world.gd:148-150`](../../src/world/voxel_world.gd#L148-L150)), e o shader decide o ganho de
+caústica por ele ([`water_surface.gd:221`](../../src/world/water_surface.gd#L221)). O que continua
 parado é o sol, não o canal — e é isso que deixa a Fase 2 como pauta.
 
 **Headless não exercita o renderer, e isso é premissa do gate, não detalhe.** A suíte roda com
@@ -291,13 +291,13 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
   um segundo comprador para o anel — passou a ter dono, canal e custo lido.
 - **Fase 3 — vegetação viva.** Vento em folhas/grama é deslocamento de vértice com a mesma forma do
   §3.2, e aqui a malharia **não** distingue a face: grama e folha entram no mesmo surface opaco, com
-  um `ao` real ([`:574-577`](../../src/world/voxel_world.gd#L574-L577)) — então o que a fase precisa
+  um `ao` real ([`:597-600`](../../src/world/voxel_world.gd#L597-L600)) — então o que a fase precisa
   decidir primeiro é **qual canal do `COLOR` opaco** fica livre, e isso é conversa com o face-culling
   que a suíte trava hoje. **A Fase 2 gasta o último canal livre daquele grupo (§3.10c)** e a Fase 3
   herda a consequência escrita lá: o portador dela é o atributo custom do §3.3, cujo número que
   reabria o braço ("se um quarto canal for necessário") agora está satisfeito.
 - **Fase 4 — atmosfera.** `fog_enabled` e `fog_density = 0,006` existem com **uma** curva
-  ([main.gd:1247-1251](../../src/main.gd#L1271-L1275); height fog é outra função e precisa do
+  ([main.gd:1247-1251](../../src/main.gd#L1305-L1309); height fog é outra função e precisa do
   `Environment` em recurso versionado, não em código — hoje a neblina é escrita à mão dentro de
   `_build_environment`. God rays em `forward_plus` é volumetria do engine, e ninguém mediu o custo
   dela nesta máquina: a fase **começa pela colheita**, como manda o mandato 5.
@@ -322,7 +322,7 @@ números — `chuva` (alvo, 0…1) e `molhado` (0…1, integrado por `WEATHER_RI
 nomeados, com `DECAY < RISE`: o vale seca mais devagar do que molha) — e a única porta de entrada é
 `pedir_chuva(alvo)`, chamada no boot pelo CLI `--weather=<alvo>` e pela suíte pelo mesmo caminho. O
 estado sai por `apply_sink(Callable)` — o padrão da casa para "um lê, ninguém escreve", o mesmo de
-`llm_status_provider` ([main.gd:285](../../src/main.gd#L285)) e `narration_provider` — e por
+`llm_status_provider` ([main.gd:290](../../src/main.gd#L290)) e `narration_provider` — e por
 `diagnostics()`. Quem sorteia colunas de gota sorteia numa `RandomNumberGenerator` **sua**, com
 `WEATHER_SEED` nomeada.
 
@@ -384,7 +384,7 @@ tile amostrado com o filtro do material da base — `BaseMaterial3D.TEXTURE_FILT
 [:35](../../src/world/voxel_atlas.gd#L35) `srgb_to_linear()`, então **sem** `source_color`), `COLOR.rgb`
 multiplicando o albedo, `ROUGHNESS = 0.92`, `METALLIC = 0.0`, alfa 1 (o passe continua opaco), e as
 sombras da `DirectionalLight3D` (`sun.shadow_enabled = true`,
-[main.gd:1260](../../src/main.gd#L1260)) recebidas pelo próprio engine — um shader spatial sem
+[main.gd:1284](../../src/main.gd#L1284)) recebidas pelo próprio engine — um shader spatial sem
 `render_mode unshaded` entra no loop de luz normal. Sobre isso a fase acrescenta o molhamento:
 `molhado × COLOR.a` escurece o albedo para o `wet_tint` e baixa a rugosidade de `dry_roughness` para
 `wet_roughness`.
@@ -440,7 +440,7 @@ de longe.
 
 **(f) O que a Fase 2 não toca, e por nome.**
 
-`Environment`, `fog_*`, `sky` e `ProceduralSkyMaterial` ([main.gd:1267-1285](../../src/main.gd#L1267-L1285))
+`Environment`, `fog_*`, `sky` e `ProceduralSkyMaterial` ([main.gd:1291-1309](../../src/main.gd#L1291-L1309))
 são da **Fase 4** — o §3.9 já os tinha deixado lá e nada desta perna os move. **Som de chuva** não é
 desta perna: a cláusula do dono é "só visual", o `AudioDirector` tem dono próprio e a fila dele não é
 esta. `block_defs.gd` (reserva de ids 9–18), `src/ai/`, `native/`, `Channel.COUNT`, `FORMAT_VERSION`,
@@ -469,7 +469,7 @@ não tem comprador de molhamento nesta fase.
    por identidade (padrão `audio_director.gd:468`), sem `new()` por frame e sem `Array` novo por
    tick. O que esta perna **acrescenta** ao caminho quente é uma `ShaderMaterial` única, construída
    em `_build_materials`, que já roda no boot (os ~4,7 s de malharia medida,
-   [main.gd:138-145](../../src/main.gd#L138-L145) — custo de boot, não de tick.
+   [main.gd:148-155](../../src/main.gd#L148-L155) — custo de boot, não de tick.
 4. **Como sei que ficou melhor?** Dois instrumentos, cada um respondendo o que pode: as checagens
    novas da suíte (headless: material, máscara, triângulos, orçamento, transição, não-escrita) e a
    **sonda com janela** (§5.2), que é a única que compila o shader e salva PNG do quadro. Headless
@@ -753,7 +753,7 @@ cerimônia — o incidente do dossiê 03 apagou uma versão já conferida.
   e os documentos.
 - **Choque real:** `src/main.gd` é de escritor único e a 22 também o toca (o hospedeiro do modelo,
   `attach_llm_host` / `_wire_llm_host` em
-  [main.gd:230-265](../../src/main.gd#L235-L270); `src/world/voxel_world.gd` e `block_defs.gd` são os
+  [main.gd:230-265](../../src/main.gd#L261-L296); `src/world/voxel_world.gd` e `block_defs.gd` são os
   terrenos da 17 e da 18. Esta perna **não** toca `block_defs.gd` nem `src/ai/` nem `native/`.
 - **Consequência aceita e escrita agora** (item 5 de "Branches"): quem pousar depois re-rome o gate
   na árvore resultante. A 23 muda `triangle_count()`? **Não** — e é checagem (§5.1), justamente para
@@ -776,7 +776,7 @@ antes da primeira linha de `src/` (mandato 4):
   com nome: a árvore primária está em `feat/oraculo-nativo-passo5-22`, escrevendo `src/main.gd` neste
   momento (as métricas de fila/decode/cache da linha F3 e do `diagnostics()`).
 - **Choque real e medido, não previsto:** `src/main.gd` é de escritor único e a 22 **já** o escreveu
-  depois da base da Fase 1 — `diagnostics()` ([main.gd:1206-1249](../../src/main.gd#L1206-L1249)) é o
+  depois da base da Fase 1 — `diagnostics()` ([main.gd:1230-1273](../../src/main.gd#L1230-L1273)) é o
   mesmo bloco onde esta fase acrescenta a linha do `weather`/`rain_fx`. Esta Fase 2 escreve ali
   **quatro coisas**: o nó do `Weather`, o nó do `RainFx`, o `apply_sink` para o mundo e a linha de
   diagnóstico — nenhuma delas toca host de modelo, ponte ou journal. O merge resolve por posição (linhas

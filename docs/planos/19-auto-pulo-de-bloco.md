@@ -181,7 +181,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
   melhor e com intenção, e o auto-pulo tem de ser indiferente ao input manual, nunca somar os dois
   impulsos no mesmo frame.
 - **Não** mexer no riacho de `_rng` do lobo nem no `_population_rng` da sessão
-  ([`main.gd:71`](../../src/main.gd#L71): o conserto é regra geométrica, não sorteio novo, e um
+  ([`main.gd:81`](../../src/main.gd#L81): o conserto é regra geométrica, não sorteio novo, e um
   riacho novo derrubaria `tests/simulation_rng_test.gd` sem consertar nada.
 - **Não** tocar em `FORMAT_VERSION`, `Channel.COUNT` nem na projeção do `TickJournal`: nenhum bloco
   se move por esta perna, e o `state_hash` continua função do que já era.

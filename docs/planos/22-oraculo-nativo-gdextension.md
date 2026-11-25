@@ -268,7 +268,7 @@ essa mesma porta. O braço escolhido está no §6.3; o rejeitado está no §8.4.
 
 A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de leitura:
 
-- [`src/main.gd:198`](../../src/main.gd#L198) — injeta o `narration_provider` no HUD chamando
+- [`src/main.gd:208`](../../src/main.gd#L208) — injeta o `narration_provider` no HUD chamando
   `oracle.narration_of(id)`;
 - [`src/ui/hud.gd:276-277`](../../src/ui/hud.gd#L276-L277) — imprime `ia:` no F3;
 - o `narration_ready` ([`src/ai/mind_oracle.gd:9`](../../src/ai/mind_oracle.gd#L9)) que o lobo não
@@ -276,17 +276,17 @@ A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de l
   futuro MindsInspector, e a Fase 5 da tabela do §5.6 é o comprador que faltava.
 
 E a única porta de **entrada** é o roster (`roster_provider`, [`:40`](../../src/ai/mind_oracle.gd#L40),
-ligado em [`src/main.gd:211`](../../src/main.gd#L211) com `Callable(self, "wolves_roster")`) mais os
+ligado em [`src/main.gd:216`](../../src/main.gd#L216) com `Callable(self, "wolves_roster")`) mais os
 campos injetáveis de `server_url`/`request_timeout`/`api_key`/`ready_provider`
 ([`:32-40`](../../src/ai/mind_oracle.gd#L32-L40)); o `ready_provider` é ligado pelo hospedeiro em
-[`src/main.gd:262`](../../src/main.gd#L262). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
+[`src/main.gd:288`](../../src/main.gd#L288). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
 A regra do dono — "a mente propõe, as regras dispõem" — hoje é verdadeira **por topologia**: não existe
 caminho do oráculo para a intenção. A Fase 1 tem de manter a topologia, e o §7.1 registra que topologia
 não é prova.
 
 ### 2.4 O que o F3 já diz sobre a IA, e o que ele não diz
 
-`diagnostics()` de [`src/main.gd:1238`](../../src/main.gd#L1238) expõe `"llm": llm_host.diagnostics()`,
+`diagnostics()` de [`src/main.gd:1272`](../../src/main.gd#L1272) expõe `"llm": llm_host.diagnostics()`,
 que por sua vez (`llm_server_host.gd:159` — aposentado no Passo 4 do dossiê 22, commit 5138549)
 devolve
 `state`, `pid`, `boot_ms`, `loading_503`, `retries`, `requests`, `kills`, `spawned`, `detail` e `url` —
@@ -1791,7 +1791,7 @@ chave externa `KEY_ENV`/`KEY_FILE` (`5138549:src/ai/mind_oracle.gd:31`) — quem
 `llama-server` na mão lê as mesmas duas fontes. O que morre: o `LOADING_COOLDOWN` do `503`, porque a
 espera pelo modelo deixa de ser transporte e passa a ser o portão `ready_provider`, ligado ao
 `AfMindRuntime.ready()` ([af_mind_runtime.gd:68](../../src/ai/af_mind_runtime.gd#L68)) em
-[main.gd:262](../../src/main.gd#L262). Num clone sem o dll gitignored, `_ext` nasce null e cada
+[main.gd:288](../../src/main.gd#L288). Num clone sem o dll gitignored, `_ext` nasce null e cada
 pedido nomeia a ausência — o degradado continua checado pela suíte, agora com o motivo da fila:
 "runtime sem pack nao emite chamada na ponte"
 ([smoke_test.gd:3118](../../tests/smoke_test.gd#L3118)) e as duas checagens da recusa que nomeia o
@@ -1811,8 +1811,8 @@ o processo filho, a sonda de porta, o vigia e os dois kills; a sonda da perna 15
 vira **cliente de referência dentro do runner** — as 17 ocorrências de `HTTPRequest` que sobram
 vivem em `tests/aether_reactions_test.gd`, e o grep do gate mira só `src/`. A fiação em `main.gd`:
 `llm_host` agora é `AfMindRuntime` ([main.gd:55](../../src/main.gd#L55)), o `diagnostics()` mantém
-a chave `"llm"` ([main.gd:1238](../../src/main.gd#L1238)) e o F3 lê a linha de status por
-`llm_status_provider` ([main.gd:264](../../src/main.gd#L264)), que junta estado, contexto,
+a chave `"llm"` ([main.gd:1272](../../src/main.gd#L1272)) e o F3 lê a linha de status por
+`llm_status_provider` ([main.gd:290](../../src/main.gd#L290)), que junta estado, contexto,
 `load_ms`, VRAM e o `last_reason` do oráculo
 ([af_mind_runtime.gd:85-87](../../src/ai/af_mind_runtime.gd#L85-L87)) — leitura, nenhuma escrita,
 mandato 2 intacto.
@@ -2066,7 +2066,7 @@ cache vira máquina do tempo de memória velha.
 - **Premissa:** expandir o portão ([`src/ai/mind_oracle.gd:176-200`](../../src/ai/mind_oracle.gd#L176-L200))
   para ids do ledger exige que a rota que ele guarda **exista** — e hoje não existe nenhum
   escritor de belief com origem no oráculo: a narração sai só para o HUD
-  ([`src/main.gd:198`](../../src/main.gd#L198) →
+  ([`src/main.gd:208`](../../src/main.gd#L208) →
   [`src/ui/hud.gd:276-279`](../../src/ui/hud.gd#L276-L279)). O gate nasce **vermelho** porque o
   portão de ids de ledger e o escritor de quarentena não existem ainda.
 - **Cenário:** saída do oráculo afirmando fato que o ledger contradiz. O id forjado já é recusado
@@ -2195,8 +2195,8 @@ no `Mind` de quem narrou, por `Mind.quarentena`
 ([`src/ai/mind.gd:128-130`](../../src/ai/mind.gd#L128-L130)) — confiança `QUARENTENA_CONFIDENCE =
 0.10` e fonte `"oracle"` ([`src/ai/mind.gd:14-15`](../../src/ai/mind.gd#L14-L15)), abaixo da
 soleira de `believes`; a leitura do `mind` é por `w.get("mind")` porque o roster pode ter corpo de
-prova sem mente. O main liga o ledger no boot ([`src/main.gd:196`](../../src/main.gd#L196) →
-[`src/main.gd:860-876`](../../src/main.gd#L860-L876)): lobos e jogador no mesmo espaço de ids, com
+prova sem mente. O main liga o ledger no boot ([`src/main.gd:206`](../../src/main.gd#L206) →
+[`src/main.gd:886-902`](../../src/main.gd#L886-L902)): lobos e jogador no mesmo espaço de ids, com
 o id 1 **compartilhado** (`ACTOR_PLAYER = 1`,
 [`src/entities/wolf.gd:18`](../../src/entities/wolf.gd#L18)) e a escolha conservadora nomeada no
 comentário — falso positivo custa narrativa recusada com motivo impresso; falso negativo é o que a
