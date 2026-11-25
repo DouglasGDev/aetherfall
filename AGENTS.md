@@ -975,6 +975,68 @@ nesta mesma conversa, entra na frente dela em `docs/pauta-malha-orcamento-de-tem
 escrito antes de qualquer linha de `src/`. Nenhum gate de fase se fecha aqui (mandato 4), o `push` é palavra do dono, e a prova dele
 é `git ls-remote --heads origin`.
 
+**Registro de 2026-11-25 (2), autorizada pelo dono na própria conversa — o corte das microtravadas entra
+na frente da fila viva.** Ele pediu assim: *"orquestrar o agente responsavel o pq das travadas qeu esta
+dando, so falta isso por favor, otimizacao... microtravadas."* A causa já tinha nome e número (Rodada
+2026-11-24 (6), o **furo #41**); o que nunca existiu foi o corte, e é ele que esta perna escreve. Entra no
+"dentro" como [`docs/planos/24-malha-orcamento-de-tempo.md`](docs/planos/24-malha-orcamento-de-tempo.md),
+branch `docs/pauta-malha-orcamento-de-tempo-24` (pauta) → `perf/malha-orcamento-de-tempo-24` (código), dono
+o agente `perf-malha-24`. Nenhuma linha de `src/` foi escrita por esta leitura, e a exceção de ordem vem
+**antes** dela, como exige o mandato 4.
+
+A fila passa a **24 → 22 → 18 → 20 → 13**, e o elo que saiu dela é fato do dia: a **17 pousou** (`95d519a`,
+merge `--no-ff` da `feat/fisica-de-blocos-que-caem-17`). Isso **dissolve** o choque que a pauta deste
+registro previa — quando o pedido chegou, a colisão era `src/world/voxel_world.gd`, que a 17 escrevia em
+branch viva e obrigava ordem decidida antes da segunda abrir (item 6 de "Branches", o incidente do dossiê
+03). Co-escritor do mesher não há. O que a leitura de hoje acrescenta ao preço, e é escrito antes da
+primeira linha: a **18** é a segunda consumidora de `set_block` em massa (grama que cresce) e **re-rome o
+gate** na árvore resultante do pouso da 24 (item 5), e o teto de tempo dela passa a ser a régua contra a
+qual o crescimento é drenado; e a **22 Fase 4** está em worktree próprio
+(`feat/oraculo-nativo-fase4-22`) com **+389/−28 não commitados em sete arquivos de código** na ponta
+`114bcd2` — conferido por `git diff --numstat HEAD` às 19:15 UTC desta rodada (às 14:42 eram
+**+388/−28**), e o número se move porque a perna está em voo; os outros 31 arquivos do diff são
+documentos da própria perna —, das quais **+173 em
+[`tests/aether_reactions_test.gd`](tests/aether_reactions_test.gd)** — o mesmo runner cujo palco o §5.1 da
+página quer reusar — além de `src/tools/` e `tests/load_pack_fase4_test.gd` ainda soltos. Choque de **merge**, não de árvore de trabalho: nenhuma das duas escreve
+`voxel_world.gd`, o teto novo mora na classe do loop e não em [`src/main.gd`](src/main.gd), e se a 22 Fase
+4 pousar primeiro o censo soma-se re-medido na árvore resultante (página §7.5).
+
+Duas leituras desta passada mudam a forma do gate, e nenhuma é cosmética. (1) **A medição publicada é de
+outra árvore.** `8a53b56` → `95d519a` são **+182/−18** em `src/world/voxel_world.gd` e **+232/−25** em
+`src/main.gd` (`git diff --numstat`), e boa parte do mesher é a água da perna 23 pôr leitura de coluna por voxel dentro do mesher
+([voxel_world.gd:591](src/world/voxel_world.gd#L591), o `water_flags`). O `52–78 ms` por chunk e o
+`192,20 ms` de pior quadro são `[MEASURED]` de `8a53b56` e **hipótese** nesta revisão até a corrida nova
+existir — item 6 do ciclo de trabalho. (2) **Um teto de tempo compra quadro às custas de fila, e a casa já
+tem instrumento para cobrar isso.** `_mark()` carimba o chunk na primeira edição
+([:349-361](src/world/voxel_world.gd#L349-L361), com o comentário "o atraso ate o jogador ver o bloco
+trocado"), `_record_edit_cost()` fecha a conta no fim de `build_chunk_mesh`
+([:367-374](src/world/voxel_world.gd#L367-L374)) e `edit_mesh_cost()` publica `count`/`worst_us`/`mean_us`/
+`pending` ([`:381-390`](src/world/voxel_world.gd#L381-L390), no `diagnostics()` em
+[main.gd:1327](src/main.gd#L1327)). Somado à métrica composta do dossiê 07 — `mesh_ms + 52·mean_us`, com a
+referência A da mesa em **8 333,32 ms** — isso significa que o corte **não pode** ser aceito por um número
+só: baixar o pior quadro movendo a composta para cima é trocar de vítima, não otimizar. A página escreve o
+gate com três checagens (`malha_orca_tempo_e_nao_itens`, `corte_nao_cobra_latencia_maior_que_o_pico`,
+`orcamento_de_malha_tem_nome_e_origem`) e diz que a **saída idêntica do mesher não ganha checagem nova**
+porque o bake-off já confere `corpo do mundo == SHA de referencia` e os triângulos
+([tests/af_bakeoff.gd:169](tests/af_bakeoff.gd#L169)) — checagem que não pode falhar é remoção de código
+adiada.
+
+O fork está registrado com o número que reabre cada braço, não com adjetivo: **A** = teto de tempo no
+`process()` de [voxel_world.gd:228-236](src/world/voxel_world.gd#L228-L236), escolhido primeiro; **B** = A
+mais fatia reatável de um chunk, entra **só** se a medição de hoje der chunk único ≥ 33,3 ms, e custa um
+artefato visual novo (o chunk incompleto entre frames); **C** = geração fora da thread main, último,
+porque é o único que toca o contrato de concorrência (o chunk lido pode ser escrito no meio do read) e as
+15 linhas de `Packed*Array` por chunk que o §4 da página contabiliza por código e **nenhuma corrida
+mede**. O que esta perna **não** autoriza, escrito antes do código: a **causa 2** da rodada de ontem (passo
+de 9,2–11,4 ms caindo num quadro de piso 6,0 ms a ~165 Hz, com `dropped_ticks = 0` — cadência de tela, que
+a própria rodada diz não ser defeito novo nem conserto pedido), o **boot** (4 225–4 977 ms de malharia com
+a janela congelada; o `WARMUP_FRAMES := 20` da sonda existe para não culpar o tick pelo boot), subir
+`MESH_BUDGET` ([main.gd:28](src/main.gd#L28) — quatro dossiês já o proíbem), tocar `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` ou a projeção do journal, e P2/`HotSet`. Consequência de versão assumida
+agora: mudar **quando** a geometria aparece não muda **o que** o mundo contém, então a projeção do
+`TickJournal` não se move com este corte — e um hash que se mover com ele é defeito da perna, não
+consequência de versão. O **#41** deixa de estar oferecido a quem chega e passa a ter dono nomeado.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do
