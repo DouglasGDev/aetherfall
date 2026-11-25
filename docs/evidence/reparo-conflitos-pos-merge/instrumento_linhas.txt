@@ -1,0 +1,49 @@
+"""Auditoria de uniao parametrizada:  BASE OURS THEIRS RES  + arquivo de lista.
+
+Para cada arquivo: as linhas que OURS e THEIRS acrescentaram contra BASE, normalizadas
+(digits -> '#'), procuradas em RES. O que falta e perda aparente de prosa. Numerais
+normalizados quer dizer que ponteiro re-derivado (60 -> 126) NAO conta como perda.
+"""
+import re, subprocess, sys, collections, io
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+BASE, OURS, THEIRS, RES, LISTA = sys.argv[1:6]
+NUM = re.compile(r"\d+")
+
+
+def blob(rev, path):
+    r = subprocess.run(["git", "show", "%s:%s" % (rev, path)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    return r.stdout if r.returncode == 0 else ""
+
+
+def norm(t):
+    return NUM.sub("#", t.strip())
+
+
+def added(rev, path):
+    b = set(norm(l) for l in blob(BASE, path).split("\n") if l.strip())
+    s = collections.Counter(norm(l) for l in blob(rev, path).split("\n") if l.strip())
+    return collections.Counter({k: v for k, v in s.items() if k not in b})
+
+
+files = [l.strip() for l in io.open(LISTA, encoding="utf-8") if l.strip()]
+to = tt = 0
+rows = []
+for f in files:
+    ao, at = added(OURS, f), added(THEIRS, f)
+    res = collections.Counter(norm(l) for l in blob(RES, f).split("\n") if l.strip())
+    mo, mt = ao - res, at - res
+    no, nt = sum(mo.values()), sum(mt.values())
+    to += no; tt += nt
+    if no or nt:
+        rows.append((no, nt, f, mo, mt))
+print("revs: base=%s ours=%s theirs=%s res=%s" % (BASE, OURS, THEIRS, RES))
+print("arquivos com perda aparente: %d de %d" % (len(rows), len(files)))
+print("perdidas: ours=%d  theirs=%d" % (to, tt))
+for no, nt, f, mo, mt in sorted(rows, key=lambda x: -(x[0] + x[1])):
+    print("\n---- %s  ours=%d theirs=%d" % (f, no, nt))
+    for k in list(mo)[:3]:
+        print("   [-ours ] %s" % k[:160])
+    for k in list(mt)[:3]:
+        print("   [-theirs] %s" % k[:160])

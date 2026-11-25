@@ -1,0 +1,8 @@
+blocos: main=307  branch_tip=321  perna22_tip=321
+so em main (ausentes na branch): 0
+so na perna 22 (ausentes na branch): 0
+na branch mas nao em main (o que o reparo devolve): 14
+na main mas nao na branch (o que o reparo remove): 0
+128e236  src=9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2  tests=d534212a0061b368ee41b4dd8c222886ef0915fe
+955dc47  src=9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2  tests=d534212a0061b368ee41b4dd8c222886ef0915fe
+8bddcab  src=9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2  tests=d534212a0061b368ee41b4dd8c222886ef0915fe

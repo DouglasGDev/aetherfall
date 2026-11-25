@@ -1,0 +1,35 @@
+"""A prova de que trocar o arquivo nao descarta nada do lado de ca.
+
+(1) blocos do arquivo em main que nao existem na ponta da branch;
+(2) blocos da ponta da perna 22 que nao existem na ponta da branch;
+(3) identidade de arvore entre o commit que re-ancorou a prosa e a main.
+"""
+import re, subprocess, sys, io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+F = "docs/planos/22-oraculo-nativo-gdextension.md"
+NUM = re.compile(r"\d+")
+LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+
+
+def blob(rev, path):
+    r = subprocess.run(["git", "show", "%s:%s" % (rev, path)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    return r.stdout if r.returncode == 0 else ""
+
+
+def blocks(t):
+    return set(NUM.sub("#", LINK.sub(r"\1", re.sub(r"\s+", " ", b))).strip()[:70]
+               for b in re.split(r"\n\s*\n", t) if b.strip())
+
+
+mb, mt, ml = blocks(blob("8bddcab", F)), blocks(blob("955dc47", F)), blocks(blob("610ba00", F))
+print("blocos: main=%d  branch_tip=%d  perna22_tip=%d" % (len(mb), len(mt), len(ml)))
+print("so em main (ausentes na branch): %d" % len(mb - mt))
+print("so na perna 22 (ausentes na branch): %d" % len(ml - mt))
+print("na branch mas nao em main (o que o reparo devolve): %d" % len(mt - mb))
+print("na main mas nao na branch (o que o reparo remove): %d" % len(mb - mt))
+for r in ("128e236", "955dc47", "8bddcab"):
+    print("%s  src=%s  tests=%s" % (r, subprocess.run(
+        ["git", "rev-parse", "%s:src" % r], capture_output=True, text=True).stdout.strip(),
+        subprocess.run(["git", "rev-parse", "%s:tests" % r], capture_output=True,
+                       text=True).stdout.strip()))

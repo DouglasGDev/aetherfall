@@ -1,0 +1,41 @@
+"""Confirma cada PERDA-REAL por janela de miolo, nao por cabeca.
+
+Para todo bloco acrescentado por uma perna e ausente por prefixo, busca no RES uma janela do
+MEIO do bloco (caracteres 80-150). Se a janela existe, o corpo esta la e o que mudou foi a
+cabeca (re-ancoragem). Se nao existe, o conteudo sumiu.
+"""
+import re, subprocess, sys, io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+BASE, OURS, THEIRS, RES, LISTA = sys.argv[1:6]
+NUM = re.compile(r"\d+")
+LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+
+
+def blob(rev, path):
+    r = subprocess.run(["git", "show", "%s:%s" % (rev, path)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    return r.stdout if r.returncode == 0 else ""
+
+
+def blocks(t):
+    out = []
+    for b in re.split(r"\n\s*\n", t):
+        if b.strip():
+            out.append(NUM.sub("#", LINK.sub(r"\1", re.sub(r"\s+", " ", b)).strip()))
+    return out
+
+
+files = [l.strip() for l in io.open(LISTA, encoding="utf-8") if l.strip()]
+for f in files:
+    rt = " ".join(blocks(blob(RES, f)))
+    rpre = set(x[:70] for x in blocks(blob(RES, f)))
+    bpre = set(x[:70] for x in blocks(blob(BASE, f)))
+    for side, rev in (("ours", OURS), ("theirs", THEIRS)):
+        for x in blocks(blob(rev, f)):
+            if x[:70] in bpre or x[:70] in rpre:
+                continue
+            mid = x[80:150]
+            if len(mid) < 20:
+                mid = x[-40:]
+            print("%-8s %-52s MILO=%s  %s" % (
+                side, f, "EXISTE" if mid in rt else "AUSENTE", x[:60]))
