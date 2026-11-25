@@ -78,20 +78,22 @@ const TESTS: Array[StringName] = [
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
 #
-# Passo 5 (dossie 22 §5.5) acrescenta onze: as SEIS de `af_cache_determina_replay`
+# Passo 5 (dossie 22 §5.5) acrescenta onze: as SETE de `af_cache_determina_replay`
 # (§6.5) -- runtime e gguf no disco, o pack do wrapper no estado de fila pela rota
 # do passo 2 (b), a corrida A narrada pelo wrapper com o modelo no processo, a
 # chave de conteudo estavel entre as corridas, a cache escrita em ARQUIVO separado
-# do save (nasce VERMELHO: nada escreve o arquivo enquanto o oracle_cache nao
-# existir) e o replay da segunda corrida devolvendo a mesma frase SEM consultar a
-# fila (nasce VERMELHO com pedidos=1 impresso: sem cache, a segunda corrida paga o
-# decode de novo) -- mais a UM de `verifier_recusa_id_forjado` (§6.4/§7.1), que
+# do save (nasceu VERMELHO: nada escrevia o arquivo antes do oracle_cache), a
+# instancia FRESCA lendo a frase do arquivo pela chave de conteudo reconstruida de
+# fora (§6.5 -- "lida antes de inferir") e o replay da segunda corrida devolvendo a
+# mesma frase SEM consultar a fila com acertos_cache=1 (nasceu VERMELHO com
+# pedidos=1 impresso: sem cache, a segunda corrida paga o decode de novo) -- mais a
+# UM de `verifier_recusa_id_forjado` (§6.4/§7.1), que
 # nasce vermelha enquanto o verificador nomeado nao existir em src/ai -- mais as
 # QUATRO de `budget_do_oraculo_nao_estoura_a_arvore` (§5.5) -- a regua do passo de
 # 25 ms com o decode do oraculo EM VOO dentro da malha de 1 400 passos, estrutural-
 # mente vermelha num clone sem runtime/gguf e com o SubtreeGuard de 400 us sem
 # estouro nenhum.
-const EXPECTED_CHECKS: int = 331
+const EXPECTED_CHECKS: int = 332
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -6262,6 +6264,10 @@ func _test_af_cache_determina_replay() -> bool:
 	# pagar o load de novo e crescer memoria sem rota de volta.
 	var o1 := MindOracle.new()
 	o1._ready()
+	# A corrida A e a que ALIMENTA a cache: com o caminho ligado (§6.5), o `_poll`
+	# do wrapper grava a frase aceita sob a chave de conteudo no arquivo separado
+	# do save — narrativa recusada ou vazia nunca entra.
+	o1.set_cache_path(caminho_cache)
 	var ext_a := o1.ext()
 	var vivo_a := is_instance_valid(ext_a)
 	var estado_a := int(ext_a.pack_state()) if vivo_a else -1
@@ -6296,20 +6302,38 @@ func _test_af_cache_determina_replay() -> bool:
 			"af_cache_determina_replay: a chave de conteudo e estavel entre as corridas",
 			"prompt_a=%d chars prompt_b=%d chars iguais=%s" % [
 				prompt_a.length(), prompt_b.length(), str(prompt_a == prompt_b)])
-	# A cache em arquivo separado do save, escrita pela corrida A (§6.5). Nasce
-	# VERMELHO: nesta arvore nada escreve o arquivo -- o conserto e o `oracle_cache`
-	# que o `_poll` do wrapper passa a alimentar.
+	# A cache em arquivo separado do save, escrita pela corrida A (§6.5) pelo
+	# `_poll` do wrapper. Nasceu VERMELHO (commit do vermelho do passo 5): nesta
+	# arvore nada escrevia o arquivo antes do `oracle_cache`.
 	var cache_em_disco := FileAccess.file_exists(caminho_cache)
 	_check(cache_em_disco,
 			"af_cache_determina_replay: a cache ficou em arquivo separado do save",
 			"caminho=%s existe=%s -- premissa do §6.5: hash de conteudo -> resposta, em arquivo" % [
 				caminho_cache, str(cache_em_disco)])
+	# A LEITURA e a outra metade do §6.5 ("lida antes de inferir"): uma instancia
+	# FRESCA, que so conhece o arquivo, reconstrói a chave de conteudo do prompt da
+	# corrida A e devolve a MESMA frase — e o que o replay de CI consome sem o
+	# modelo no processo. A chave aqui e a MESMA formula do wrapper
+	# (prompt ⊕ pack ⊕ params), reconstruida de fora.
+	var cache_fresco := OracleCache.new(caminho_cache)
+	var chave_a := OracleCache.chave(prompt_a, MindOracle.MODEL_ALIAS,
+			MindOracle.PROMPT_MAX_TOKENS, MindOracle.PROMPT_TEMPERATURE)
+	var lida := cache_fresco.le(chave_a)
+	_check(lida == frase_a,
+			"af_cache_determina_replay: uma instancia fresca le a frase do ARQUIVO pela chave de conteudo",
+			"chave=%s lida=%d chars frase_a=%d chars entradas=%d err='%s'" % [
+				chave_a.substr(0, 16), lida.length(), frase_a.length(),
+				cache_fresco.tamanho(), cache_fresco.ultimo_erro])
 	# Corrida B -- a segunda semente, SEM consulta ao modelo: oraculo novo, ponte
 	# propria, roster do mesmo lobo. `pedidos == 0` decide: sem a cache lida antes
 	# de inferir, o wrapper so tem o caminho da fila (e o vermelho imprime a
 	# consulta que nao devia existir).
 	var o2 := MindOracle.new()
 	o2._ready()
+	# A corrida B e a que CONSOME a cache: com o caminho ligado, o `_process` le
+	# o arquivo ANTES dos portoes (§6.5 — "lida antes de inferir") e serve a frase
+	# sem tocar a fila.
+	o2.set_cache_path(caminho_cache)
 	o2.roster_provider = Callable(self, "_gate_roster_solo")
 	var prazo_b := Time.get_ticks_msec() + 30000
 	while Time.get_ticks_msec() < prazo_b and o2.requests_issued == 0 \
@@ -6319,11 +6343,11 @@ func _test_af_cache_determina_replay() -> bool:
 		o2._process(0.05)
 		await _gate_frame_sleep(50)
 	var narr_b := o2.narration_of(_wolf.identity)
-	_check(narr_b == frase_a and o2.requests_issued == 0,
+	_check(narr_b == frase_a and o2.requests_issued == 0 and o2.cache_hits == 1,
 			"af_cache_determina_replay: a segunda corrida devolve a MESMA frase sem consultar a fila",
-			"frase_a=%d chars narr_replay=%d chars igual=%s pedidos_b=%d motivo_b='%s'" % [
+			"frase_a=%d chars narr_replay=%d chars igual=%s pedidos_b=%d acertos_cache=%d motivo_b='%s'" % [
 				frase_a.length(), narr_b.length(), str(narr_b == frase_a),
-				o2.requests_issued, o2.last_reason])
+				o2.requests_issued, o2.cache_hits, o2.last_reason])
 	o1.free()
 	o2.free()
 	return true
