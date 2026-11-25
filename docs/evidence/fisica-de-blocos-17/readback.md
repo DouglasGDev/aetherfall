@@ -4,8 +4,9 @@ Tudo abaixo foi **lido dos logs desta pasta**, arquivo por arquivo. Nenhum núme
 memória ou de corrida anterior. Horários dos amostradores estão em **UTC**
 (`Get-Date).ToUniversalTime()` em [tools/carga_por_janela.ps1](../../../tools/carga_por_janela.ps1)).
 
-Árvore medida: `feat/fisica-de-blocos-que-caem-17` depois de `git merge main` → `0a061ea`
-(base da branch: `8bddcab`; `main` em `114bcd2` no momento do merge).
+Árvore medida nas seções 1–6: `feat/fisica-de-blocos-que-caem-17` depois de `git merge main` →
+`0a061ea` (base da branch: `8bddcab`; `main` em `114bcd2` no momento do merge). A seção 7 é o pouso:
+merge **`95d519a`** na `main` e o clone limpo dele — o número pineado.
 
 ## 1. As cinco corridas na árvore mergida
 
@@ -189,3 +190,65 @@ linha). A checagem `block_changed declarado e lido por este runner` imprime
 - `Channel.COUNT` (3), `FORMAT_VERSION` (1), `GEN_VERSION` e a projeção do `TickJournal` não
   foram tocados por nenhuma linha desta perna; uma corrida com areia caindo não reproduz os
   hashes publicados porque o **mundo** mudou, não a projeção.
+
+## 7. O pouso na `main` — as mesmas cinco corridas na árvore do merge e no clone limpo
+
+`git merge --no-ff feat/fisica-de-blocos-que-caem-17` → **`95d519a`** (pais `114bcd2` da `main` e
+`60150ce` da ponta de docs), **41 arquivos, +16 758/−19**. As árvores `src`/`tests` do merge são as
+da ponta medida (`2e3e3622fa89…` / `0dc616493ca4…`) — `git diff --name-only 60150ce 95d519a -- src
+tests` devolve vazio — e as da `main` antes do pouso eram `c0f7c9b0…` / `2f9224d0…`.
+
+Árvore do pouso, com `--import` na frente ([pouso_import.log](pouso_import.log), exit 0):
+
+| Corrida | Rodapé literal | Log |
+| --- | --- | --- |
+| gate | `16 checagens 0 falhas 9/9 testes concluidos 27.689 s` | [pouso_gate.log](pouso_gate.log) |
+| suíte | `== 278 checagens  0 falhas  67.2 s de teste ==` | [pouso_suite.log](pouso_suite.log) |
+| reações **sem** provisionamento | `364 checagens 29 falhas 107.683 s` | [pouso_reacoes.log](pouso_reacoes.log) |
+| reações **com** provisionamento | `364 checagens 0 falhas 57.913 s` | [pouso_reacoes_provisionado.log](pouso_reacoes_provisionado.log) |
+| RNG | `27 checagens 0 falhas 2.846 s` | [pouso_rng.log](pouso_rng.log) |
+| journal | `128 checagens 0 falhas 7/7 testes concluidos 6.604 s` | [pouso_journal.log](pouso_journal.log) |
+
+Clone limpo do pin com `--import` frio — **o número pineado**: gate `16 checagens 0 falhas 9/9 testes
+concluidos 25.487 s` ([clone_gate.log](clone_gate.log)), suíte `== 278 checagens  0 falhas  67.5 s de
+teste ==` ([clone_suite.log](clone_suite.log)), reações `364 checagens 0 falhas 68.303 s`
+([clone_reacoes.log](clone_reacoes.log)), RNG `27 checagens 0 falhas 2.955 s`
+([clone_rng.log](clone_rng.log)), journal `128 checagens 0 falhas 7/7 testes concluidos 7.002 s`
+([clone_journal.log](clone_journal.log)). `SCRIPT ERROR`: **0** em cada um dos 13 logs desta seção
+(`grep -c`, arquivo por arquivo).
+
+O par 29 ↔ 0 é ambiente, com os nomes lidos: `contrato` ×14, `extensao_pack_no_processo` ×7,
+`af_cache_determina_replay` ×5, `budget_do_oraculo` ×2, `budget_do_oraculo_nao_estoura_a_arvore` ×1,
+e `grep -c "FALHA.*queda\|FALHA.*bloco"` = **0** no mesmo log. É o **furo #38** reproduzido na árvore
+nova, não regressão desta perna.
+
+As três linhas de decisão do gate, na árvore do pouso:
+
+```
+OK block_changed declarado e lido por este runner conexoes=2  consumidores_antes_da_perna=1
+OK queda_sem_varredura_de_mundo puro: ticks=1000 leituras=0 queued=0 | mapa=1048576 celulas, varredura teria lido 20971520 por segundo | coluna: eventos=19 leituras=64 resolucoes=17 teto=72 ticks=13 conversions=6 queued_final=0 | sessao: eventos=0 leituras=0 resolucoes=0 teto=0 | SAND=true STONE=false
+OK queda_pousa_antes_do_save em_voo_no_gatilho=5 areias: durante=2 depois_do_quiesce=6 apos_load=6 no_disco=6 fantasma_no_disco=0 | flutuantes: depois=0 apos_load=0 | edits=10->10 slot_ok=true quiesce=sim tick=28->28 (no save: 28) at_rest=true
+```
+
+### 7.1 O furo #56: nenhum amostrador desta perna viu o Godot
+
+Os seis amostradores do pouso e os cinco do clone imprimiram `sem-godot-no-projeto` em **100 %** das
+linhas — 90, 140, 140, 60, 60 e 150 na árvore primária
+([carga_pouso_gate_prima.log](carga_pouso_gate_prima.log) e irmãs), 45, 95, 85, 15 e 20 no clone
+([clone_carga_gate.log](clone_carga_gate.log) e irmãs). A causa é o argumento, não a máquina:
+`-proj C:/Aetherfall` contra um `ExecutablePath` do `Win32_Process` que vem com barra **invertida**,
+então o `StartsWith` nunca casava e a testemunha virava constante — a mesma classe do **#44**.
+
+Depois do conserto em [tools/carga_por_janela.ps1](../../../tools/carga_por_janela.ps1) (normalizar a
+barra e `TrimEnd` na raiz), a mesma chamada achou **6** PIDs do projeto em **12 das 13** linhas
+([furo56_amostrador_com_barra_de_frente.log](furo56_amostrador_com_barra_de_frente.log)), às
+18:44:02 UTC: `13172`, `23400`, `28668`, `5220` presentes nas **12** amostras — vivos **antes** de
+qualquer corrida desta perna — e `20816`, `26256` em apenas **2**. A corrida re-medida nessa janela
+deu `27 checagens 0 falhas 2.882 s`
+([furo56_rng_na_janela_do_fix.log](furo56_rng_na_janela_do_fix.log)).
+
+Consequência: os números de `worst_sim_ms` das seções 3, 5 e 7 saem **sem testemunha de janela**, e
+ficam publicados como grandeza contra o teto (14,24–15,62 ms num teto de 25 ms, `perdidos=0` em todas
+as corridas), não como comparação entre árvores. O par vermelha↔verde da *mesma* árvore com o CPU do
+Godot nos dois lados fica como débito do elo que rodar este gate depois do conserto — que é exatamente
+o que o **#31** continua cobrando.

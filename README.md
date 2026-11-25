@@ -432,6 +432,51 @@ São resultados headless do candidato daquela revisão — o censo do smoke é s
 está no commit `a8967e0` e o clone limpo dele re-mediu a suíte completa, mas os runners dedicados
 de rastros e journal continuaram na árvore de trabalho. Falta a aprovação visual em janela.
 
+## Areia que cai
+
+Tirar o apoio de um grão faz o grão descer — e só ele. A única porta para a gravidade
+de bloco é o sinal `block_changed` do mundo
+([`voxel_world.gd:6`](src/world/voxel_world.gd#L6), emitido em
+[`voxel_world.gd:312`](src/world/voxel_world.gd#L312)), e a fila de gravidade
+([`block_update_queue.gd`](src/world/block_update_queue.gd)) é hoje o **único** inscrito em
+`src/`. Por isso a regra "atualize a física só nos vizinhos, nunca varra o mundo" é um número
+e não uma promessa: cada evento custa **2 leituras** do grid (a célula de cima, que perdeu o
+chão, e a própria, que ganhou um grão) e cada resolução custa mais **2**; mil ticks sem edição
+devolvem `leituras=0`, contra os **20.971.520** `get_block`/s que uma varredura das
+**1.048.576** células do mapa a 20 Hz custaria. O teto por tick é `MAX_PER_TICK = 256` e a fila
+aceita até `MAX_QUEUED = 8192` células; o que passa disso é contado em `overflow` e fica à vista
+no F3 (`blocos  fila … em voo … eventos … leituras … overflow`).
+
+Quem cai é o que o registro marca com gravidade (`BlockDefs.has_gravity()`, hoje só areia —
+[`block_defs.gd:169`](src/world/block_defs.gd#L169), com a tabela em
+[`block_defs.gd:156`](src/world/block_defs.gd#L156)), e o grão desce como corpo
+([`falling_block.gd`](src/entities/falling_block.gd), 109 linhas) com `step_up = 0,0`: ele pousa
+**ao lado** de uma parede, não em cima dela, e a célula de pouso vem do **apoio** lido no mundo,
+não da altura do próprio corpo. Uma pilha de N grãos leva N ticks para assentar, em ordem Y
+decrescente. Salvar no meio de uma cascata é seguro: `settle_block_updates()`
+([`main.gd:1298`](src/main.gd#L1298)) drena a fila e os grãos em voo antes de escrever o disco,
+e o load limpa o estado transitório ([`main.gd:1162`](src/main.gd#L1162)) — o save nunca grava um
+bloco fantasma.
+
+O gate é um runner próprio, do tamanho dos demais:
+
+```sh
+godot --headless --path . --script tests/block_physics_test.gd
+```
+
+**16 checagens, 0 falhas, 9/9 testes** medidos no clone limpo do pin `95d519a`
+([`clone_gate.log`](docs/evidence/fisica-de-blocos-17/clone_gate.log)); as oito checagens do gate
+decididas linha por linha, os três vermelhos que a perna pagou e as cinco corridas da árvore
+mergida estão em
+[`docs/evidence/fisica-de-blocos-17/readback.md`](docs/evidence/fisica-de-blocos-17/readback.md),
+e as seis peças com tamanho, na Rodada 2026-11-25 (13) do
+[status](docs/melhorias-status.md).
+O que a perna **não** entrega: fluidos, `SLAB` (id 18 continua reservado) e o `_shatter` com
+destino — não existe entidade de item no chão, e o grão que se estilhaça sem para onde cair é
+débito registrado, não recurso. Na sessão real do smoke a fila já ouviu 38 eventos e fez 56
+leituras com **zero** conversões: nenhum caminho da suíte tira apoio de uma areia *gerada*, e a
+testemunha disso é a perna 18.
+
 ## Hash por tick e journal mínimo
 
 A gravação é opcional e exige um arquivo **novo**, num diretório existente:
@@ -596,7 +641,9 @@ corpo animado (andar, agachar, pular, minerar, socar, planar, rolar, morrer) e
 degrau de um bloco que ele sobe sozinho quando está travado na horizontal — o
 auto-pulo escreve o mesmo buffer do `Espaço`, então os dois no mesmo quadro
 somam um salto, nunca dois; quebrar e colocar blocos com quantidade (o drop do
-bloco entra no inventário e colocar gasta um da pilha), inventário de 36 slots
+bloco entra no inventário e colocar gasta um da pilha), areia que cai quando perde o apoio — a
+fila de gravidade é a única leitora do sinal do mundo e o grão pousa pelo apoio, não pelo degrau
+(2 leituras por evento, `leituras=0` em mil ticks sem edição), inventário de 36 slots
 com pilha por bloco e hotbar de 10 pinos, painel de inventário e receitas com
 estação de craft (bancada),
 combate corpo a corpo com vigor, rolamento e

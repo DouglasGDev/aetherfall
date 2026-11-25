@@ -59,7 +59,7 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   [`_write_raw`](../../src/world/voxel_world.gd#L292-L299), guarda a edição em
   [`edits[p]`](../../src/world/voxel_world.gd#L310) quando `record` (o default é `true`), suja
   o chunk e os vizinhos de borda em
-  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L316-L327) e só então emite. Os dois
+  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L335-L348) e só então emite. Os dois
   únicos chamadores de gameplay hoje são do jogador:
   [`:685`](../../src/entities/player.gd#L685) (quebra → `AIR`) e
   [`:711`](../../src/entities/player.gd#L711) (colocação).
@@ -120,7 +120,7 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L228-L236) chamada no
   `_process`, **fora** do passo de simulação, com
   [`MESH_BUDGET := 2`](../../src/main.gd#L28) chunks por frame
-  (chamada em [main.gd:363](../../src/main.gd#L363)). As duas leituras que o contrato
+  (chamada em [main.gd:388](../../src/main.gd#L388)). As duas leituras que o contrato
   publica: **64 chunks em ~4,3 s no boot** ([README.md:148-149](../../README.md#L148-L149)) ≈
   67 ms/chunk, e o `_last_mesh_ms` do frame lido pelo F3. Uma pilha de N areias em cascata
   são N remoções **e** N fixações: até `2N` células sujas, e a malharia não sabe que a
@@ -128,9 +128,9 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   (doc [`:672`](../design/10-world-layers-and-block-physics.md#L672)) existir, não para
   aumentar `MESH_BUDGET`.
 - **Cada escrita de bloco entra no save e no hash.** `edits[p]` é gravado inteiro no
-  [`save_game()`](../../src/main.gd#L1060-L1080) (`:1041-1059`) e re-aplicado no
-  [`load_game()`](../../src/main.gd#L1098-L1125) (`:1102-1104`), e o `diagnostics()` já imprime
-  `edits.size()` ([`:1179`](../../src/main.gd#L1234)). A projeção do
+  [`save_game()`](../../src/main.gd#L1086-L1129) (`:1094-1095`, `:1112`) e re-aplicado no
+  [`load_game()`](../../src/main.gd#L1130-L1253) (`:1155-1157`), e o `diagnostics()` já imprime
+  `edits.size()` ([`:1314`](../../src/main.gd#L1314)). A projeção do
   [`TickJournal.state_hash`](../../src/persistence/tick_journal.gd#L16-L44) ordena e mistura as
   **edições** na conta ([`:17-21`](../../src/persistence/tick_journal.gd#L17-L21)).
   Consequência declarada antes do código: um corrida com areia caindo **não** reproduz os
@@ -175,14 +175,14 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
    posição do corpo (doc [`:549-553`](../design/10-world-layers-and-block-physics.md#L549-L553)):
    o integrador para em substep e a AABB pode parar um substep acima do solo.
 5. **Onde a roda roda**: `updates.flush(clock.tick)` e depois o `sim_step` das entidades,
-   dentro de [`_sim_tick`](../../src/main.gd#L317) — **antes** das mentes, para que uma
+   dentro de [`_sim_tick`](../../src/main.gd#L336) — **antes** das mentes, para que uma
    conversão só integre no tick seguinte (doc
    [`:757-759`](../design/10-world-layers-and-block-physics.md#L757-L759)). Nada em
    `_physics_process`: o passo de simulação é o que o `clock.begin_step`/`end_step` cronometra
-   ([main.gd:312-314](../../src/main.gd#L312-L314),
+   ([main.gd:331-333](../../src/main.gd#L331-L333),
    [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e é o que o hash lê.
 6. **`queued` e `overflow` visíveis**, no `diagnostics()` ao lado de `dropped_ticks`
-   ([main.gd:1230-1273](../../src/main.gd#L1230-L1273)) e no F3, como o doc exige em
+   ([main.gd:1310-1359](../../src/main.gd#L1310-L1359)) e no F3, como o doc exige em
    [`:746-749`](../design/10-world-layers-and-block-physics.md#L746-L749): estourar o teto
    adia grãos, não os perde, e sem o número a discussão sobre `MAX_PER_TICK` é opinião.
 7. **O estado de queda não vai para o save — e isso é decisão escrita, não esquecimento.**
@@ -250,9 +250,11 @@ godot --headless --path . tests/smoke_test.tscn
    edição, um com a cascata: o primeiro **reproduz** o hash da rodada sem a feature (nenhum
    bloco se move sozinho), o segundo diverge e a divergência é atribuída às duas chaves de
    `edits` novas. Sem o primeiro lado, a checagem aceita queda em qualquer lugar.
-8. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39),
-   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:265](../../tests/smoke_test.gd#L265))
-   sobem com o lote e são re-medidos no clone limpo com `--import` frio, com o SHA pinado.
+8. `EXPECTED_CHECKS` ([aether_reactions_test.gd:149](../../tests/aether_reactions_test.gd#L149),
+   **364** na árvore do pouso) e a última linha do smoke ([smoke_test.gd:350](../../tests/smoke_test.gd#L350))
+   sobem com o lote e são re-medidos no clone limpo com `--import` frio, com o SHA pinado —
+   foi o que aconteceu: `95d519a` dá **364 / 0** no runner e **278 / 0** no smoke, e nenhum dos
+   dois acréscimos é desta perna (§10, item 2).
 
 ## 6. O que NÃO fazer
 
@@ -306,7 +308,7 @@ que já existe.
   ligar, existem para serem escritas; o doc 10 as especifica em pseudocódigo e o próprio doc
   as lista como inexistentes em [`:652-659`](../design/10-world-layers-and-block-physics.md#L652-L659).
 - "processar no tick de 20 Hz com orçamento": correto e alinhado com
-  [`_sim_tick`](../../src/main.gd#L317)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
+  [`_sim_tick`](../../src/main.gd#L336)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
   prompt chama de "orçamento" o que **não** é o budget de malha; os dois tetos são diferentes
   e o do meio de campo (`MESH_BUDGET`) não pode ser tocado por esta perna.
 - "`Landing.SHATTER` vira item no chão": não há item no chão. Ver §6.
@@ -319,3 +321,59 @@ que já existe.
   ([`voxel_config.gd:6`](../../src/world/voxel_config.gd#L6),
   [`:13`](../../src/world/voxel_config.gd#L13)). Nada do prompt exige o rebase, e nada neste
   lote o faz.
+
+## 10. O pouso, com as corridas na mesa (2026-11-25, `95d519a`)
+
+A perna foi aberta da `main` em `8bddcab`, fechou em `60150ce` e pousou pelo merge `--no-ff`
+**`95d519a`** (pais `114bcd2` e `60150ce`): **41 arquivos, +16 758/−19** contra o primeiro pai, dos
+quais **443 linhas em sete arquivos de `src/`** e **944 em `tests/`**. O resto é evidência.
+
+1. **As peças do §3, com tamanho lido do diff, e o nome que o §5 exigia.**
+   [`block_update_queue.gd`](../../src/world/block_update_queue.gd) (129),
+   [`falling_block.gd`](../../src/entities/falling_block.gd) (109),
+   [`falling_block_spawner.gd`](../../src/entities/falling_block_spawner.gd) (77),
+   [`main.gd`](../../src/main.gd) +82 (`setup_block_physics` em
+   [:1274](../../src/main.gd#L1274), o flush em [:343](../../src/main.gd#L343), o quiesce do save em
+   [:1298](../../src/main.gd#L1298), o `clear()` do load em [:1162](../../src/main.gd#L1162)),
+   [`voxel_world.gd`](../../src/world/voxel_world.gd) +19 (`is_supported`, `place_falling_block`),
+   [`block_defs.gd`](../../src/world/block_defs.gd) +18 (`_gravity` em
+   [:75](../../src/world/block_defs.gd#L75), a tabela em [:156](../../src/world/block_defs.gd#L156),
+   `has_gravity()` em [:169](../../src/world/block_defs.gd#L169)) e
+   [`hud.gd`](../../src/ui/hud.gd) +9 (a linha `blocos …` em
+   [:265](../../src/ui/hud.gd#L265)). O gate é [`tests/block_physics_test.gd`](../../tests/block_physics_test.gd)
+   (936 linhas): **os oito nomes do §5 existem um a um** (`_test_queda_sem_varredura_de_mundo` em
+   [:385](../../tests/block_physics_test.gd#L385) até
+   `_test_journal_hash_muda_so_com_movimento` em [:824](../../tests/block_physics_test.gd#L824)), mais
+   o `_test_setup` que afirma as premissas — **9 testes, 16 checagens**.
+2. **O débito mais velho do repositório fecha com uma linha.** `block_changed` tinha declaração
+   ([voxel_world.gd:6](../../src/world/voxel_world.gd#L6)) e emissão
+   ([:312](../../src/world/voxel_world.gd#L312)) e **zero** `.connect(` em `src/`; hoje a conexão
+   única está em [block_update_queue.gd:35](../../src/world/block_update_queue.gd#L35). As outras
+   três menções à palavra em `src/` são comentário
+   ([main.gd:70](../../src/main.gd#L70), [:172](../../src/main.gd#L172),
+   [:1160](../../src/main.gd#L1160)).
+3. **Censo.** O gate escreve as 16 checagens no runner **próprio**: os quatro contratos não
+   ganharam uma linha desta perna. `277 → 278` no smoke é a perna 25
+   (`[PASS] slot do dono devolvido byte a byte`) e `355 → 364` no runner é a Fase 3 da perna 22
+   (`OK bandit_une_numero:`), lidos um a um no
+   [readback §2](../evidence/fisica-de-blocos-17/readback.md). O que a perna mexeu no smoke foi o
+   **tamanho do overlay**: 27 → 28 linhas, e as duas checagens que contam linhas são de presença.
+4. **As corridas, com a janela.** Na árvore mergida: gate `16 checagens 0 falhas 9/9 testes
+   concluidos 27.689 s`, smoke `== 278 checagens 0 falhas 67.2 s de teste ==`, runner
+   `364 checagens 0 falhas 57.913 s`, RNG `27 / 0 / 2.846 s`, journal `128 / 0 / 7/7 / 6.604 s`,
+   todos com exit 0 e `SCRIPT ERROR` **0**. O clone limpo do pin (`--import` frio, exit 0, 325
+   linhas, `git status` limpo) dá `16 / 0 / 25.487 s`, `278 / 0 / 67.5 s`, `364 / 0 / 68.303 s`,
+   `27 / 0 / 2.955 s`, `128 / 0 / 7.002 s`, e as árvores `src` = `2e3e3622fa89…` e
+   `tests` = `0dc616493ca4…` **iguais** às da `main` — o pin é o merge medido, não um documento em
+   cima dele. Régua do §5.6: **A** sem areia `worst=14.71 ms`, **B** cascata no tick 500
+   `worst=14.24 ms`, mergida `15,15`/`15,55 ms`, contra o teto de 25 ms dos 50 ms do passo.
+5. **Duas coisas que a escrita desta folha obriga a dizer.** O runner da `main` sem
+   provisionamento deu **`364 checagens 29 falhas 107.683 s`**, e o par com
+   `.tools/llama` + `models/` + `native/af_mind/bin` no mesmo commit deu **`364 / 0 / 57.913 s`**:
+   os 29 vermelhos são premissa de ambiente da perna 22 (furo **#38**), não desta perna. E a janela
+   do pin **não foi serial** — cinco pares de Godot do projeto estavam vivos às 18:44 UTC
+   (`tools/carga_por_janela.ps1` com o filtro consertado), o que é o **furo #55** e abre o
+   **#56** (o `-proj` com barra de frente deixava a testemunha muda em `sem-godot-no-projeto`).
+   Nada aqui fecha gate de fase: os **16/16** são o gate da **perna**, e o §8 continua em pé —
+   fluidos, `SLAB`, `_shatter` com destino e a coluna *gerada* que cai na sessão real seguem
+   sem linha escrita, este último como débito com número (`conversions=0` na sessão do smoke).

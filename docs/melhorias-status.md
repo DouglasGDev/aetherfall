@@ -9724,3 +9724,213 @@ multi-semente sem corrida, bake-off de AF — continua exatamente onde estava.
 tocados por nenhuma linha desta perna: o que se move é o **mundo** que entra na projeção, e uma corrida
 com areia caindo não reproduz os hashes publicados pelo mesmo motivo declarado em 2026-11-21 para as
 pernas 17 e 18. A fila serializada passa a **18 → 20 → 13** com o pouso abaixo.
+
+## O pouso da perna 17 na `main` — a fila ouve `block_changed` por uma única conexão, o gate fecha 16/16 no clone limpo, e a janela de timing sai sem testemunha porque o amostrador tinha um furo próprio (2026-11-25, `docs/pouso-blocos-17`, base `8bddcab`, ponta de código `67215ca`, docs `60150ce`, merge `95d519a`)
+
+### O que o merge toca, com o número em cada árvore
+
+`git merge --no-ff feat/fisica-de-blocos-que-caem-17` devolve **`95d519a`** sobre **`114bcd2`**
+(ponta da branch: `60150ce`, o commit de docs que re-ancora a própria página), **41 arquivos,
++16 758/−19**. Em `src/` e `tests/` são **13** arquivos — o resto do diff é prosa e log de
+evidência, lido em `git diff --numstat 114bcd2 95d519a -- src tests`:
+
+| Arquivo | Δ | O que é, com a linha |
+| --- | --- | --- |
+| [`src/world/block_update_queue.gd`](../src/world/block_update_queue.gd) | **129** (novo) | a fila: a única conexão do sinal no diretório ([`:35`](../src/world/block_update_queue.gd#L35)), `MAX_PER_TICK=256` ([`:13`](../src/world/block_update_queue.gd#L13)), `MAX_QUEUED=8192` ([`:14`](../src/world/block_update_queue.gd#L14)), `RECHECK_DELAY=1` ([`:15`](../src/world/block_update_queue.gd#L15)), `stats()` ([`:65`](../src/world/block_update_queue.gd#L65)) |
+| [`src/entities/falling_block.gd`](../src/entities/falling_block.gd) | **109** (novo) | o grão: `SIZE = 0.98` ([`:12`](../src/entities/falling_block.gd#L12)), `MAX_FALL_TICKS=400` ([`:13`](../src/entities/falling_block.gd#L13)), `body.step_up = 0.0` ([`:38`](../src/entities/falling_block.gd#L38)) |
+| [`src/entities/falling_block_spawner.gd`](../src/entities/falling_block_spawner.gd) | **77** (novo) | o corpo no stage irmão do Terrain, e os contadores `conversions`/`falling` que o `block_stats()` mescla |
+| [`src/main.gd`](../src/main.gd) | **+82** | `setup_block_physics()` ([`:1274`](../src/main.gd#L1274), chamado no `_ready` [`:174`](../src/main.gd#L174)), `block_updates.flush(clock.tick)` dentro do passo ([`:343`](../src/main.gd#L343)), `block_stats()` ([`:1287`](../src/main.gd#L1287)), quiesce `settle_block_updates()` ([`:1298`](../src/main.gd#L1298), chamado no save [`:1092`](../src/main.gd#L1092)), `clear()` no load ([`:1163-1164`](../src/main.gd#L1163-L1164)), `diagnostics()["block_updates"]` ([`:1339`](../src/main.gd#L1339)) |
+| [`src/world/voxel_world.gd`](../src/world/voxel_world.gd) | **+19** | `is_supported()` ([`:320`](../src/world/voxel_world.gd#L320)) e `place_falling_block()` ([`:328`](../src/world/voxel_world.gd#L328)) — suporte é a célula de baixo lida por `get_block_xyz`, então não há varredura nem tratamento de borda |
+| [`src/world/block_defs.gd`](../src/world/block_defs.gd) | **+18** | a flag `_gravity` ([`:75`](../src/world/block_defs.gd#L75), `SAND` em [`:156`](../src/world/block_defs.gd#L156)) e `has_gravity()` ([`:169`](../src/world/block_defs.gd#L169)) |
+| [`src/ui/hud.gd`](../src/ui/hud.gd) | **+9** | `block_provider` (Callable, não referência) e a linha `blocos fila … em voo … eventos … leituras … overflow` ([`:265`](../src/ui/hud.gd#L265)) |
+| [`tests/block_physics_test.gd`](../tests/block_physics_test.gd) | **936** (novo) | o gate da perna: **9 testes / 16 checagens**, as oito do §5 do dossiê mais as três premissas e o nó de malha |
+| [`tests/aether_reactions_test.gd`](../tests/aether_reactions_test.gd) | **+8** | `setup_block_physics()` nos três palcos montados campo a campo, onde o `_ready()` nunca roda |
+| 4× `.uid` | +1 cada | os três scripts novos e o runner |
+
+| Árvore | `114bcd2` (main antes) | `60150ce` (ponta medida) | `95d519a` (merge) |
+| --- | --- | --- | --- |
+| `src` | `c0f7c9b033d7d57e…` | **`2e3e3622fa89736d…`** | **`2e3e3622fa89736d…`** |
+| `tests` | `2f9224d038e63b3b…` | **`0dc616493ca499d2…`** | **`0dc616493ca499d2…`** |
+
+O merge não acrescenta nada sobre a ponta medida: `git diff --name-only 60150ce 95d519a -- src tests`
+devolve **vazio**, e por isso o número do clone limpo adiante é do pin, não herança de outra árvore.
+
+### As cinco corridas da árvore mergida, com o `--import` na frente
+
+O `--import` antecede tudo ([`pouso_import.log`](evidence/fisica-de-blocos-17/pouso_import.log),
+exit 0). Rodapés literais, um por log:
+
+- gate da perna ([`pouso_gate.log`](evidence/fisica-de-blocos-17/pouso_gate.log)):
+  `16 checagens 0 falhas 9/9 testes concluidos 27.689 s`
+- suíte ([`pouso_suite.log`](evidence/fisica-de-blocos-17/pouso_suite.log)):
+  `== 278 checagens  0 falhas  67.2 s de teste ==`
+- runner de reações **sem** o provisionamento da 22
+  ([`pouso_reacoes.log`](evidence/fisica-de-blocos-17/pouso_reacoes.log)):
+  `364 checagens 29 falhas 107.683 s` ↔ **com** ele
+  ([`pouso_reacoes_provisionado.log`](evidence/fisica-de-blocos-17/pouso_reacoes_provisionado.log)):
+  `364 checagens 0 falhas 57.913 s`
+- RNG ([`pouso_rng.log`](evidence/fisica-de-blocos-17/pouso_rng.log)): `27 checagens 0 falhas 2.846 s`
+- journal ([`pouso_journal.log`](evidence/fisica-de-blocos-17/pouso_journal.log)):
+  `128 checagens 0 falhas 7/7 testes concluidos 6.604 s`
+
+`SCRIPT ERROR` nos sete logs: **0** em cada (`grep -c` arquivo por arquivo).
+
+### Os 29 são o furo #38 com nome lido, não adjetivo
+
+A divisão por rótulo no mesmo log: `contrato` **14**, `extensao_pack_no_processo` **7**,
+`af_cache_determina_replay` **5**, `budget_do_oraculo` **2**, `budget_do_oraculo_nao_estoura_a_arvore`
+**1** — todos pré-condição de ambiente da perna 22 (`.tools/llama/runtime`, o gguf de
+2 740 937 888 B, `native/af_mind/bin/af_mind.dll`), que é gitignored. No mesmo arquivo,
+`grep -c "FALHA.*queda\|FALHA.*bloco"` devolve **0**: nenhuma falha é desta perna. O clone limpo,
+com o runtime junto, devolve `364 / 0` — a linha que decide é
+`OK budget_do_oraculo: runtime, gguf e pack no estado de fila (4) | runtime=true gguf=true
+estado=4 carregou=false err=''` ([`clone_reacoes.log:3915`](evidence/fisica-de-blocos-17/clone_reacoes.log#L3915)).
+
+### O número pineado: o clone limpo de `95d519a`, com `--import` frio
+
+[`clone_import.log`](evidence/fisica-de-blocos-17/clone_import.log) e as cinco corridas dentro dele:
+gate `16 checagens 0 falhas 9/9 testes concluidos 25.487 s`; suíte
+`== 278 checagens  0 falhas  67.5 s de teste ==`; reações `364 checagens 0 falhas 68.303 s`;
+RNG `27 checagens 0 falhas 2.955 s`; journal `128 checagens 0 falhas 7/7 testes concluidos 7.002 s`.
+Zero `SCRIPT ERROR` nos seis logs. As árvores do clone são as da `main` (`src`
+`2e3e3622…`, `tests` `0dc61649…`), então o contrato publicado desta revisão é **16/0 no gate novo**
+e **278 / 364 / 27 / 128 com 0 falhas** nos quatro anteriores.
+
+### O que a perna fecha, com a linha que paga
+
+- **O débito que o status carregava desde a perna 12: `block_changed` sem consumidor em `src/`.**
+  Hoje `grep -rn block_changed src` devolve **8** linhas, e uma só é escrita: a declaração
+  ([voxel_world.gd:6](../src/world/voxel_world.gd#L6)), o emit ([`:312`](../src/world/voxel_world.gd#L312)),
+  três comentários em `main.gd` ([`:70`](../src/main.gd#L70), [`:172`](../src/main.gd#L172),
+  [`:1160`](../src/main.gd#L1160)), um comentário no topo da própria fila
+  ([block_update_queue.gd:3](../src/world/block_update_queue.gd#L3)) e **uma** conexão
+  ([block_update_queue.gd:35](../src/world/block_update_queue.gd#L35)). A checagem paga com o número:
+  `OK block_changed declarado e lido por este runner conexoes=2 consumidores_antes_da_perna=1`,
+  contra `consumidores_antes_da_perna=0` no vermelho original `f338c91`.
+- **A fila não varre**, como número e não como frase:
+  `OK queda_sem_varredura_de_mundo puro: ticks=1000 leituras=0 queued=0 | mapa=1048576 celulas,
+  varredura teria lido 20971520 por segundo | coluna: eventos=19 leituras=64 resolucoes=17 teto=72
+  ticks=13 conversions=6 queued_final=0 | sessao: eventos=0 leituras=0 resolucoes=0 teto=0 |
+  SAND=true STONE=false` ([`pouso_gate.log:18`](evidence/fisica-de-blocos-17/pouso_gate.log#L18)).
+- **O disco nunca vê bloco em voo**: `OK queda_pousa_antes_do_save em_voo_no_gatilho=5 areias:
+  durante=2 depois_do_quiesce=6 apos_load=6 no_disco=6 fantasma_no_disco=0 | flutuantes: depois=0
+  apos_load=0 | edits=10->10 slot_ok=true quiesce=sim tick=28->28 (no save: 28) at_rest=true`
+  ([`pouso_gate.log:22`](evidence/fisica-de-blocos-17/pouso_gate.log#L22)).
+- As oito checagens do gate, linha por linha, estão em
+  [`readback.md`](evidence/fisica-de-blocos-17/readback.md) §4, com o §7 acrescentando as corridas
+  do pouso e o pin.
+
+### A régua de timing — e o motivo de ela sair **sem** testemunha de janela (furo **#56**)
+
+Os quatro números de `queda_nao_custou_tempo_de_ninguem` que esta perna tem, com `perdidos=0` e
+`overflow=0` em todos, contra o teto de 25 ms dos 50 ms do passo:
+
+| Corrida | A (sem areia) | B (cascata no tick 500) |
+| --- | --- | --- |
+| gate na branch mergida ([`gate_verde_run2.log:23`](evidence/fisica-de-blocos-17/gate_verde_run2.log#L23)) | 14.71 ms | 14.24 ms |
+| gate na árvore do merge ([`merge_gate.log:23`](evidence/fisica-de-blocos-17/merge_gate.log#L23)) | 15.15 ms | 15.55 ms |
+| gate na árvore do pouso ([`pouso_gate.log:23`](evidence/fisica-de-blocos-17/pouso_gate.log#L23)) | 15.62 ms | 15.54 ms |
+| gate no clone limpo ([`clone_gate.log:23`](evidence/fisica-de-blocos-17/clone_gate.log#L23)) | 15.25 ms | 14.91 ms |
+
+E o `espalhamento_nao_estoura_o_passo` do smoke: `pior passo=15.63 ms (regua 25)` na árvore do pouso,
+`16.62 ms` no clone limpo.
+
+O que **não** existe é a janela. Os seis amostradores desta rodada
+(`carga_pouso_{gate,suite,reacoes,rng,journal}_prima.log`, `carga_pouso_reacoes_provisionado.log`,
+`clone_carga_{gate,suite,reacoes,rng,journal}.log`) imprimiram **100 %** de `sem-godot-no-projeto`
+— **90, 140, 140, 60, 60** e **150** amostras na árvore primária, **45, 95, 85, 15, 20** no clone,
+`grep -c` conferido contra `wc -l` em cada arquivo (a única linha sem a marca é o cabeçalho
+`AMOSTRA t=- proj=...`) — e a causa é do instrumento, não da corrida: o `-proj` foi passado como `C:/Aetherfall` e o
+`ExecutablePath` do `Win32_Process` vem com barra **invertida**, então o `StartsWith` nunca casava.
+Isso é o **furo #56**, da mesma classe do #44 (a testemunha vira constante): um amostrador que não
+acha o processo do projeto escreve "nenhum Godot no projeto" com cinco Godots na mesa.
+
+Depois do conserto em [`tools/carga_por_janela.ps1`](../tools/carga_por_janela.ps1) (normalizar barra
+e `TrimEnd` na raiz, com o motivo escrito no arquivo), a **mesma** chamada com o **mesmo** argumento
+achou **6** PIDs do projeto em **12 das 13** amostras, às 18:44:02 UTC —
+[`furo56_amostrador_com_barra_de_frente.log`](evidence/fisica-de-blocos-17/furo56_amostrador_com_barra_de_frente.log):
+
+```
+AMOSTRA t=18:44:02 load=20% ram_livre=18848/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=23% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=23% ram=100MB pid=20816 cpu=0% ram=7MB pid=26256 cpu=104% ram=110MB alheias= [QuantumEngine:14228=75%]
+```
+
+Consequência publicada, escrita antes do número: **nenhum `worst_sim_ms` acima tem testemunha de
+janela**, e a regra da casa (emenda de 2026-11-25 do AGENTS.md) exige a janela junto. Por isso a
+tabela está como grandeza do gate — os quatro pares ficam a **9,4–10,8 ms** do teto de 25 ms, com
+`perdidos=0` — e **não** como comparação entre corridas. A testemunha de 18:44 nomeia **6** PIDs do
+projeto na janela: **quatro** deles (`13172`, `23400`, `28668`, `5220`) estão nas **12** amostras, ou
+seja estavam vivos **antes** de qualquer corrida desta perna, e **dois** (`20816`, `26256`) só em
+**2** — o processo da própria amostragem. A emenda do **#31** continua aberta, agora com instrumento
+funcionando, e o par vermelha↔verde da *mesma* árvore com o CPU do Godot nos dois lados segue sendo
+do elo que rodar o gate depois deste pouso. O rodapé do runner na janela do fix
+([`furo56_rng_na_janela_do_fix.log`](evidence/fisica-de-blocos-17/furo56_rng_na_janela_do_fix.log))
+foi re-medido com o amostrador ligado: `27 checagens 0 falhas 2.882 s`.
+
+### O que fica aberto, dito assim
+
+- **A sessão real ainda não faz grão cair.** `diagnostics()["block_updates"]` na suíte do pouso dá
+  `events=38 reads=56 conversions=0 queued=0 overflow=0 resolutions=0`: a fila ouve e conta, e nenhum
+  caminho de teste tira apoio de areia gerada. A testemunha de "cavei embaixo da praia e desceu" é o
+  harness do gate (`conversions=6` na pilha de 6), não uma coluna do mundo. Dono: perna 18, que é a
+  segunda consumidora do `set_block` em massa.
+- **Nenhum `SLAB` (id 18), nenhum `breaks_a_fall`**: o destino `SHATTER` do doc 10 §10.5 continua
+  `[TARGET]`, como o §6 do dossiê decide.
+- **Nenhum gate de fase se fecha aqui** (mandato 4). A fila P0/P1 — budget HOT sem medição, alocação
+  do caminho quente sem colheita, censo multi-semente sem corrida, bake-off de AF — segue onde estava.
+- `Channel.COUNT` (3), `FORMAT_VERSION` (1), `GEN_VERSION` e a projeção do `TickJournal` não foram
+  tocados por linha desta perna: `git diff --name-only 114bcd2 95d519a -- src/persistence
+  src/world/aether_field.gd` devolve **vazio**. O que se move é o **mundo** que entra na projeção.
+- **O censo não é desta perna.** 277 → 278: ela não escreve `tests/smoke_test.gd`
+  (`git diff --numstat 114bcd2 95d519a -- tests/smoke_test.gd` = vazio) e a 278ª é
+  `slot do dono devolvido byte a byte`, da perna 25. 355 → 364: as nove `bandit_une_numero:` da Fase 3
+  da perna 22. O que a 17 acrescenta é um runner **próprio** com 16 checagens, fora dos quatro
+  contratos.
+- **Furo #57, novo, com dono escrito antes de qualquer linha:** o README manda correr
+  `tests/llm_server_boot_probe.tscn` ([README.md:621](../README.md#L621) e a ficha de mapa em
+  [`:734`](../README.md#L734)) e a cena foi aposentada no Passo 4 da perna 22 (`5138549`, que tirou o
+  `.gd` junto) — `ls tests/*.tscn` devolve **3** arquivos (`audio_live_probe`, `live_oracle_probe`,
+  `smoke_test`) e nenhum com esse nome. Dono: perna 22, que é quem tem o substituto em voo
+  (`tests/load_pack_fase4_test.gd`, ainda solto na worktree da Fase 4). Esta perna **não** mexe nessas
+  duas linhas: quem aposenta a peça limpa a ficha dela.
+- Publicação: branch e merge são locais nesta passada. `push` é palavra do dono, e a prova dele é
+  `git ls-remote --heads origin` — nunca o exit 0 do `push`. A fila serializada passa a
+  **22 → 18 → 20 → 13** (a 22 continua em voo nas Fases 4–5), com a pauta **24** registrada no bloco
+  do dono logo abaixo.
+
+### As três réguas, na árvore do pouso
+
+- `python tools/check_doc_anchors.py` na árvore de trabalho (**41** arquivos):
+  **3 420 ponteiros · 215 rótulos · 4 081 links** conferidos, **93** casos objetivos. O 41º arquivo é
+  `docs/planos/24-malha-orcamento-de-tempo.md`, pauta do dono pedida nesta mesma conversa e ainda **não
+  commitada** nesta revisão — ela responde por **52** ponteiros, **3** rótulos, **62** links e **0**
+  casos, corrida sozinha pela mesma régua. A divisão por
+  arquivo é o número que o furo **#28** previa e a régua numérica não vê: status **24**, dossiê 12
+  **10**, `10-alcateia` **10**, 14 **9**, 13 **6**, `docs/engine/simclock` **6**, 16 **5**, 19 **4**,
+  09 **4**, 20 **3**, 18 **3**, AGENTS **3**, e **1** cada para 23, 15, 11, 07, 06 e 01 —
+  **zero** em `17-fisica-de-blocos-que-caem.md`, a página desta perna, que abriu a rodada com 5 e
+  fecha com 0, e zero em `design/10`, cujo único caso (`main.gd:1076`/`:1105` do `gen_version`) foi
+  pago aqui — sexta âncora consertada nesta passada. Os 93 são obra de três pousos (22 Fase 3, 25, 23 Fase 2) mais este: só
+  `8a53b56 → 95d519a` move **+182/−18** em `src/world/voxel_world.gd` e **+232/−25** em
+  `src/main.gd`. Dono de cada grupo fica nomeado na passada de re-derivação, não aqui.
+- `python tools/verify_plan_cites.py` no corpus de **39** arquivos (`AGENTS.md`, `README.md`, este
+  status, `docs/design/*.md`, `docs/planos/*.md`): **3 104** citações com número conferidas, **0**
+  números fora do arquivo, **43** arquivos citados que não existem. O glob de `docs/planos` apanha a
+  pauta 24, não commitada nesta revisão, que responde por **52** conferidas e **0** ausentes corrida
+  isolada. A divisão por documento é
+  **14** em `docs/design/07-project-structure.md` (a página de convenções, que usa os sufixos
+  `*_service.gd`/`*_store.gd`/`*_job.gd` como **exemplos de nome**, não como inventário do que
+  existe), **11** neste status, **5** em `docs/planos/README.md`, **2** cada nos dossiês 15 e 06, em
+  `docs/design/06` e no AGENTS, **1** cada nos dossiês 20, 07, 02, 01 e no README. Peça por peça: três
+  são `.tools/_head_*.md` (gitignored por decisão da perna que os criou), três são peças aposentadas
+  pelo Passo 4 da perna 22 (`src/ai/llm_server_host.gd` e as duas da sonda do boot — a família do
+  **#57**), um é o `tests/load_pack_fase4_test.gd` nomeado no **#57** como substituto em voo, e o
+  resto são alvos de dossiê que ainda não abriram branch (`src/ai/reach.gd`,
+  `src/core/sim/{tick_clock,entity_store}.gd`, `tests/wolf_multiseed_census_test.gd`, as pastas da
+  planta 07). Nenhum dos 43 é peça desta perna: os dois a mais contra a medição da abertura da rodada
+  (**41** com status **10** e AGENTS **1**) são justamente os nomes que o **#57** é obrigado a
+  escrever — a cena aposentada, citada no AGENTS e aqui, e o substituto solto na worktree da Fase 4.
+- `python tools/verify_plan_ids.py` na página 17: **104** identificadores em backticks, **14**
+  ausentes (`ANVIL`, `BEDROCK`, `DropItem`, `DropSpawner`, `FIX`, `GRAVEL`, `PLANT`, `POWDER_SNOW`,
+  `ROCK_LOOSE`, `TORCH`, `_landing_cell`, `_shatter`, `quebra_queda`, `sofre_gravidade`) — todos da
+  classe "peça que a página declara comprar ou rejeita", nenhum falso positivo: `sofre_gravidade` é o
+  nome do prompt, o código batizou a flag `_gravity`/`has_gravity`.
