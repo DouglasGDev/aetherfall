@@ -1,0 +1,52 @@
+"""Perda real por PREFIXO de bloco.
+
+audita_par2 conta como perda todo bloco acrescentado por uma perna que nao aparece igual no
+RES. Mas um re-ancorador muda o RABO do bloco (o ponteiro) e o corpo fica. Aqui o bloco e
+comparado por prefixo: se nenhum bloco do RES comeca com os mesmos 70 caracteres normalizados,
+o conteudo sumiu de verdade.
+"""
+import re, subprocess, sys, io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+BASE, OURS, THEIRS, RES, LISTA = sys.argv[1:6]
+NUM = re.compile(r"\d+")
+LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+
+
+def blob(rev, path):
+    r = subprocess.run(["git", "show", "%s:%s" % (rev, path)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    return r.stdout if r.returncode == 0 else ""
+
+
+def blocks(t):
+    out = []
+    for b in re.split(r"\n\s*\n", t):
+        if b.strip():
+            out.append(NUM.sub("#", LINK.sub(r"\1", re.sub(r"\s+", " ", b)).strip()))
+    return out
+
+
+def added(rev, path):
+    b = set(x[:70] for x in blocks(blob(BASE, path)))
+    return [x for x in blocks(blob(rev, path)) if x[:70] not in b]
+
+
+files = [l.strip() for l in io.open(LISTA, encoding="utf-8") if l.strip()]
+to = tt = co = ct = 0
+for f in files:
+    pre = set(x[:70] for x in blocks(blob(RES, f)))
+    ao, at = added(OURS, f), added(THEIRS, f)
+    ro = [x for x in ao if x[:70] not in pre]
+    rt = [x for x in at if x[:70] not in pre]
+    co += len(ao) - len(ro)
+    ct += len(at) - len(rt)
+    to += len(ro)
+    tt += len(rt)
+    if ro or rt:
+        print("---- PERDA-REAL %s  ours=%d theirs=%d" % (f, len(ro), len(rt)))
+        for k in ro[:6]:
+            print("   [-ours ] %s" % k[:180])
+        for k in rt[:6]:
+            print("   [-theirs] %s" % k[:180])
+print("\nperda real: ours=%d theirs=%d | cosmetico (rabo re-ancorado): ours=%d theirs=%d"
+      % (to, tt, co, ct))

@@ -9377,3 +9377,111 @@ quarentena no inspector) e **Fase 5**. Dos furos, **#38**, **#39**, **#20**, **#
 observado também nesta árvore com o número **4**. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e
 a projeção do `TickJournal` não foram tocados por nenhum dos dois merges. A fila serializada não
 muda: **22 → 17 → 18 → 20 → 13**.
+
+## O reparo da prosa depois dos dois merges — as 32 resoluções conferidas bloco a bloco, e os 14 blocos que só a comparação de pontas vê (2026-11-25, `fix/prosa-dossie-22-pos-merge`, base `8bddcab`)
+
+A cobrança do dono foi "valide e resolva os conflitos, deu muitos". Os dois merges deram **32**
+arquivos em conflito no `3919bbb` e **30** no `aea325a` (as listas, extraídas das linhas
+`CONFLICT (content)` arquivadas, estão em
+[`blobs.txt`](evidence/reparo-conflitos-pos-merge/blobs.txt) e nos instrumentos). Concluir isso por
+régua é o erro que a **regra 7** já nomeia: as três réguas da casa leram **só ponteiros** na árvore
+integrada e devolveram verde — **40 arquivos · 3 280 ponteiros · 212 rótulos · 3 779 links** com
+**casos objetivos: 0**, e **2 812 citações conferidas / 0 fora do arquivo / 26 FALTA**, exit 0. Com
+esse verde, `docs/planos/22-oraculo-nativo-gdextension.md` estava **147 linhas mais curto** que a
+ponta da perna 22.
+
+### A escada de cinco passes, com o que cada um viu
+
+1. **Marca commitada:** `git grep -nE "^(<<<<<<< |>>>>>>> )" 8bddcab -- .` fora de `docs/evidence` →
+   **zero** ocorrências, e zero em cada um dos 32 arquivos resolvidos
+   ([`marcas.txt`](evidence/reparo-conflitos-pos-merge/marcas.txt)). Não havia conflito aberto —
+   havia conflito *resolvido*, que é outra pergunta.
+2. **Union por linha, dígitos colapsados** ([`linhas_union.txt`](evidence/reparo-conflitos-pos-merge/linhas_union.txt),
+   instrumento em [`instrumento_linhas.txt`](evidence/reparo-conflitos-pos-merge/instrumento_linhas.txt)):
+   `ours=403` / `theirs=283` linhas ausentes em **23 de 32** arquivos. Esse número é o **mesmo**
+   que a seção acima tem de comparar: um ponteiro re-ancorado troca a linha sem trocar a frase, e
+   a re-quebra de linha troca onde a frase se parte. O passe **acusa**, não decide.
+3. **Cabeçalhos** ([`headings_merge1.txt`](evidence/reparo-conflitos-pos-merge/headings_merge1.txt),
+   [`headings_merge2.txt`](evidence/reparo-conflitos-pos-merge/headings_merge2.txt)): um arquivo de
+   32 com heading perdido, `ours=7` / `theirs=0` no primeiro merge e o espelho (`ours=0` /
+   `theirs=7`) no segundo — os sete são `## 21. A Fase 2: a memória de qualidade…` e as seis
+   subseções dele. Re-ancoragem não apaga uma seção; isto não é ruído de ponteiro.
+4. **Bloco por prefixo** (parágrafo normalizado, dígitos → `#`, alvo de link removido;
+   [`blocos_perda.txt`](evidence/reparo-conflitos-pos-merge/blocos_perda.txt)): cai de 122/95 para
+   **perda real ours=19 / theirs=22**, e **cosmético ours=125 / theirs=4** — os 125 são exatamente o
+   rabo re-ancorado, a face do **furo #28** contada em outra unidade
+   ([`instrumento_blocos.txt`](evidence/reparo-conflitos-pos-merge/instrumento_blocos.txt)).
+5. **Janela de miolo** ([`miolo_confirmacao.txt`](evidence/reparo-conflitos-pos-merge/miolo_confirmacao.txt)):
+   para cada bloco marcado, buscar os caracteres 80–150 no resultado. Sobram **dois** arquivos.
+   `docs/planos/16-tocas-da-alcateia.md` perde por janela e não perde de fato: a árvore integrada é
+   a **mais nova** ali — `- **Sorteio**` está `main.gd:387-410` com os parênteses fechados em `8bddcab`
+   contra `main.gd:356-379 → #L361-L384` (descasado) em `610ba00` e `main.gd:356-379 → #L387-L410`
+   (rótulo velho, URL nova) em `955dc47`. Fica como está, e o mesmo passe confere o resto: os quatro
+   `EXISTE` em `design/10`, `design/11`, `engine/simclock`, `planos/09` e `planos/11` são corpo vivo
+   com cabeça movida.
+
+### O que sumiu, e por que a régua não viu
+
+`docs/planos/22-oraculo-nativo-gdextension.md`: **2 097 linhas / 1 770 não-vasias** na árvore
+integrada contra **2 244 / 1 903** nas duas pontas (`610ba00` e `955dc47`) — o §21 inteiro, com as
+seis subseções e o registro commit a commit (`094dbe9`, `2e946a2`, `8cc3351`, `f9c5cbe`) e as quatro
+corridas da ponta. O mecanismo é de ascendência, não de mão: a tabela de blobs
+([`blobs.txt`](evidence/reparo-conflitos-pos-merge/blobs.txt)) dá `7cd3ff2 → 57bc284`,
+`2f46368 = e0a558c → d8ca97a` (sem o §21), `610ba00 = 8073135 → e06c210` (**com** o §21),
+`955dc47 → 69d4093` (com o §21 re-ancorado) e `3919bbb = aea325a = 8bddcab → d06a8dc` — um **quinto**
+blob que não é igual a nenhum pai. No primeiro merge o §21 era acréscimo de um lado e modificação do
+outro no mesmo arquivo; ficou o lado modificado. No segundo, o ponto de união é `2f46368`
+(`d8ca97a`, sem §21), `ours=3919bbb` também sem, e `theirs=955dc47` com — a resolução recortou o
+lado sem, de novo. As réguas ficaram verdes nas duas vezes porque cada ponteiro sobrevivente aponta
+para uma linha que existe.
+
+### O reparo, e a prova de que ele não desfaz nada
+
+`git checkout 955dc47 -- docs/planos/22-oraculo-nativo-gdextension.md` na branch
+`fix/prosa-dossie-22-pos-merge`, aberta de `8bddcab`. A decisão é por conjuntos, não por confiança:
+[`superset.txt`](evidence/reparo-conflitos-pos-merge/superset.txt) dá **307** blocos no arquivo em
+main, **321** na ponta da branch e **321** na ponta da perna 22, com **0** blocos exclusivos de main,
+**0** blocos da perna 22 ausentes na branch, **14** blocos devolvidos e **0** removidos. Os
+ponteiros do §21 valem nesta árvore por identidade, medida: `128e236` — o commit que re-ancorou esta
+página — tem `src = 9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2` e `tests = d534212a0061b368ee41b4dd8c222886ef0915fe`,
+**iguais** aos de `955dc47` e aos de `8bddcab`.
+
+Relido no árvore reparada: âncoras **40 · 3 323 ponteiros (+43) · 212 rótulos · 3 848 links** com
+**casos objetivos: 0** ([`ancoras.txt`](evidence/reparo-conflitos-pos-merge/ancoras.txt)); citações do
+corpus **2 855 conferidas (+43) / 0 fora do arquivo / 26 FALTA** e do par com o dossiê **1 212 / 0**
+([`cites_corpus.txt`](evidence/reparo-conflitos-pos-merge/cites_corpus.txt),
+[`cites_cinco.txt`](evidence/reparo-conflitos-pos-merge/cites_cinco.txt)); identificadores da página
+exit **0** com o veredito igual ao do pin (mesma lista de ausências com os números a parte); o scan
+de rótulo-×-URL dá **8** casos nas duas árvores — o reparo não acrescenta derivação — e o de citação
+nua **0**.
+
+**Código: zero byte.** `src` e `tests` da árvore reparada são os mesmos `9b5dc8ec…` / `d534212a…`,
+então os quatro números pineados da árvore integrada valem aqui **por identidade de árvore** e não
+por re-corrida: suíte **277 / 0 / 60,2 s**, runner **355 / 0 / 49,089 s**, RNG **27 / 0 / 2,704 s**,
+journal **128 / 0 / 6,079 s**. Um commit que troca prose não re-me nada — escrever 60 s de suíte sem
+pergunta seria inventar testemunha.
+
+### O que este passe emenda e o que deixa aberto
+
+A frase da seção acima — "os 30 conflitos de documentação foram resolvidos ficando com a
+re-derivação conferida linha a linha no conteúdo" — **não foi verdade para este arquivo**, e fica
+emendada aqui em vez de apagada (registro não se reescreve). Daí um furo novo, com dono e com a
+regra que ele cobra:
+
+**Furo #54 — as três réguas são cegas a conteúdo que um merge descarta.** Verde nelas significa
+"todo ponteiro que sobrou aponta para linha que existe"; não significa "sobrou tudo". Medido: na
+árvore com 3 280 ponteiros verdes e 0 casos, uma das 32 resoluções tinha **147 linhas** e **14
+parágrafos** a menos que ambas as pontas, e nenhuma das três réguas podia ver isso — o §21 inteiro
+faltou e o arquivo continuou auto-consistente. A régua que pega é comparação de **blocos por
+prefixo + janela de miolo contra as duas pontas e contra a base**
+([`instrumento_blocos.txt`](evidence/reparo-conflitos-pos-merge/instrumento_blocos.txt),
+[`instrumento_miolo.txt`](evidence/reparo-conflitos-pos-merge/instrumento_miolo.txt)), e a regra da
+casa passa a ser: **depois de merge com conflito em documento, rodar a comparação de blocos contra
+os dois pais antes de declarar a resolução** — contagem de ponteiros não é testemunha de prosa.
+Dono: este passe o instrumentou; quem o transforma em régua da casa (com as outras três) é o dono do
+instrumento, o mesmo do **furo #51** e do **#52**. Seguem abertos, sem mudança: **#28**, **#31**,
+**#38**, **#39**, **#41**, **#44**, **#45**, **#46**, **#48**, **#50**, **#51**, **#52**, **#53**, o
+par de vazamento do quit (agora com o número **4** também na árvore integrada) e `block_changed` sem
+consumidor em `src/` — débito da perna 17. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a
+projeção do `TickJournal` não são tocados por este commit, e a fila serializada continua
+**22 → 17 → 18 → 20 → 13**.

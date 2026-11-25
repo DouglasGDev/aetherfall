@@ -1,0 +1,30 @@
+citacoes com numero de linha conferidas: 2855
+arquivos citados que nao existem: 26
+   FALTA README.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/melhorias-status.md -> .tools/_head_agents.md
+   FALTA docs/melhorias-status.md -> .tools/_head_readme.md
+   FALTA docs/melhorias-status.md -> .tools/_head_status.md
+   FALTA docs/melhorias-status.md -> src/ai/llm_server_host.gd
+   FALTA docs/melhorias-status.md -> src/ai/reach.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/entity_store.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/tick_clock.gd
+   FALTA docs/melhorias-status.md -> src/entities/falling_block.gd
+   FALTA docs/melhorias-status.md -> tests/llm_server_boot_probe.gd
+   FALTA docs/melhorias-status.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/melhorias-status.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/01-estado-inicial-e-ordem-autoritativa.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/02-censo-multi-semente.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/06-decompor-main-gd.md -> src/ai/llm_server_host.gd
+   FALTA docs/planos/06-decompor-main-gd.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> .tools/clean_suite.log
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/15-oraculo-embutido-no-boot.md -> src/ai/llm_server_host.gd
+   FALTA docs/planos/15-oraculo-embutido-no-boot.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md -> src/ai/reach.gd
+   FALTA docs/planos/README.md -> src/ai/llm_server_host.gd
+   FALTA docs/planos/README.md -> src/ai/reach.gd
+   FALTA docs/planos/README.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/README.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/planos/README.md -> tests/wolf_multiseed_census_test.gd
+numeros de linha fora do arquivo: 0
+exit_cites=0
