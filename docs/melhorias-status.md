@@ -8365,3 +8365,107 @@ dentro do arquivo. O §2 do dossiê 22 foi tratado à mão por isso — pinado a
 `5138549` (Passo 4) porque `mind_oracle.gd` mudou de forma sob a prosa dele. `Channel.COUNT`,
 `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` intocados. Nenhum gate de fase fecha.
 A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+
+## O pouso do Passo 5 na `main` — a cache e o verificador chegam à Camada 5, as quatro corridas da mergida saem limpas desde o primeiro import e o build reproduz byte a byte dentro do clone (2026-11-25, `docs/registro-pouso-passo5-22`, base `eb218fe`, ponta `d14c066`, merge `1d3f36c`)
+
+### O que o merge toca — duas classes novas na fronteira da Camada 5
+
+O merge `--no-ff` tem pais **`eb218fe`** (a `main` com o registro do pouso do Passo 4) e
+**`d14c066`** (a ponta da branch do Passo 5, com os 41 casos de âncora re-derivados) e fecha em
+**`1d3f36c`** — **54 arquivos, +18 347/−122**. Em `src`, o diff toca **exatamente sete** entradas:
+[`src/ai/oracle_cache.gd`](../src/ai/oracle_cache.gd) (novo, com o `.uid` — a cache de conteúdo,
+dono do §6.5), [`src/ai/belief_verifier.gd`](../src/ai/belief_verifier.gd) (novo, com o `.uid` — o
+portão da Camada 5, §6.4), [`src/ai/mind_oracle.gd`](../src/ai/mind_oracle.gd) (o `aceitar_saida`
+como portão único e a escrita da cache), [`src/ai/af_mind_runtime.gd`](../src/ai/af_mind_runtime.gd)
+(as métricas do §2.4 lidas da ponte) e [`src/main.gd`](../src/main.gd) (a linha do F3 ganha
+`fila/decode/cache` e o `diagnostics()` publica as quatro chaves). As árvores do pin:
+`git rev-parse 1d3f36c:src` = `827c7eeb810cff462ed02d77cf45d7bdfc19f50f`, `:tests` =
+`c1efd81a19b2d8b7b6954124829c0bd41dbaeaed`.
+
+### As quatro corridas da árvore mergida — o import antes de qualquer runner, de novo
+
+O merge traz **duas** `class_name` novas (`OracleCache`, `BeliefVerifier`), então `--import` correu
+antes de qualquer runner e o `.err` saiu **0 bytes**, exit 0
+([`main_mergida_import.log`](evidence/registro-pouso-passo5-22/main_mergida_import.log)).
+
+- Suíte:
+  [`main_mergida_suite.log`](evidence/registro-pouso-passo5-22/main_mergida_suite.log) linha
+  **380** `== 266 checagens  0 falhas  52.8 s de teste ==`, exit 0; o `.err` de **249 bytes** é o
+  par de vazamento benigno do quit, o mesmo tamanho das corridas anteriores.
+- Runner:
+  [`main_mergida_runner.log`](evidence/registro-pouso-passo5-22/main_mergida_runner.log) — os dois
+  gates do Passo 5 fecham nas linhas **572–578** (`af_cache_determina_replay`: a corrida A narra
+  pelo wrapper com o modelo no processo `frase_a=143 chars pedidos=1`, chave de conteúdo estável
+  `315/315 chars iguais=true`, cache em `user://oracle_cache_passo5.json` **separado do save**,
+  instância fresca lendo do arquivo pela chave reconstruída de fora com
+  `chave=4b4158c18aef447d lida=143 chars`, segunda semente com `pedidos_b=0 acertos_cache=1`) e
+  **579–583** (`verifier_recusa_id_forjado`: o verificador nomeado existe em
+  `res://src/ai/belief_verifier.gd`, o controle passa com `id_forjado=-1`, o id 999 sai recusado
+  com o motivo nomeado, e o portão do wrapper recusa sem escrever narrativa — `narrativa=0 chars` —
+  mas aceita o controle e escreve `narrativa=41 chars`). Rodapé do cenário estreito em **600**
+  (`passos=10568 sim_step total=2 288 197 µs pico=4 202 µs`) e da matilha em **601**
+  (`passos=1341 sim_tick total=3 302 184 µs pico=17 955 µs; BT last_us soma=57 470 pico=64
+  trips=0`), e **602** `336 checagens 0 falhas 48.797 s`; exit 0, zero `SCRIPT ERROR`.
+- RNG:
+  [`main_mergida_rng.log`](evidence/registro-pouso-passo5-22/main_mergida_rng.log) linha **78**
+  `27 checagens 0 falhas 2.712 s`.
+- Journal:
+  [`main_mergida_journal.log`](evidence/registro-pouso-passo5-22/main_mergida_journal.log) linha
+  **143** `128 checagens 0 falhas 7/7 testes concluidos 5.903 s`.
+
+### O pin: clone limpo de `1d3f36c`, com o `build.bat` rodando dentro dele
+
+`git clone` do repositório local, HEAD `1d3f36c…`. O `--import` frio sai exit 0 com o **furo #38**
+impresso na mesma forma de sempre — `.err` de **602 bytes**, byte a byte o mesmo tamanho do `.err`
+do pin do Passo 4, com os dois pares `FileAccess::exists` +
+`GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'`
+([`pin_import.err`](evidence/registro-pouso-passo5-22/pin_import.err); a ordem honesta é
+import → build → runner). O `git status --short` do clone **depois** do import devolve **seis** linhas
+`??` — as duas do furo #25 (`tests/audio_test.gd.uid`, `tests/audio_live_probe.gd.uid`) e as quatro do
+furo #45 (os `.png.import` da água) — e este pouso **não as comita**.
+
+`build.bat` no clone
+([`pin_build.log`](evidence/registro-pouso-passo5-22/pin_build.log), exit 0, **2 312 linhas**): a
+régua do cabeçalho nomeia vcvars e toolset na linha **2** (`toolset=14.44.35207`, `cl_banner`
+**19.44.35228** na linha **4**), o probe da rota de prompt fecha `ROTA_DE_PROMPT_CONFIRMADA` em
+**2293** com `probe_rota_codigo=0` em **2294**, a ponte linka (`[ponte] link_codigo=0` em **2296**),
+o dll sai com **184 320 B** em **2297** (`[regua] dll_bytes=184320`) e `af_mind_entry` em **2298**,
+e a régua de imports lê **55/55** em **2310** antes do `[ok]` em **2312**. Mesmo tamanho de dll,
+mesma tabela e mesmo número de linhas do pin do Passo 4 — a branch do Passo 5 não tocou `native/`,
+e a régua do build prova por bytes, não por frase.
+
+Os dois recursos que a checagem resolve pelo diretório do projeto são gitignored e o clone nasce sem
+eles **por design**; o provisionamento desta medição é **junção** (`.tools\llama` apontando para a
+árvore de trabalho) mais **hardlink** do `.gguf` de 2 740 937 888 B (2 links confirmados dos dois
+lados) — ambiente de máquina, não mudança de árvore.
+
+- Runner no clone:
+  [`pin_runner.log`](evidence/registro-pouso-passo5-22/pin_runner.log) — os dois gates do Passo 5
+  fecham nas mesmas linhas **572–578** e **579–583**, com os caminhos do clone impressos dentro
+  (`runtime=C:/tmp/aetherfall-pin-passo5/.tools/llama/runtime
+  gguf=C:/tmp/aetherfall-pin-passo5/models/qwen3.5-4b-q4_k_m.gguf llama_dll=true`), rodapé do
+  cenário estreito em **600** (`passos=10568 sim_step total=2 383 801 µs pico=4 735 µs`) e da
+  matilha em **601** (`passos=1341 sim_tick total=3 253 750 µs pico=13 902 µs`), e **602**
+  `336 checagens 0 falhas 56.279 s`; exit 0, zero `SCRIPT ERROR`.
+- Suíte no clone:
+  [`pin_suite.log`](evidence/registro-pouso-passo5-22/pin_suite.log) linha **380**
+  `== 266 checagens  0 falhas  53.9 s de teste ==`, exit 0, zero `SCRIPT ERROR`.
+- RNG e journal ficam nas quatro corridas da mergida: o que o clone renova aqui é o par que exerce o
+  jogo real e os dois gates novos — suíte + runner.
+
+O número pineado para `1d3f36c` é: runner **336 / 0** (48,797 s na mergida; **56,279 s** no clone),
+suíte **266 / 0** (52,8 s; **53,9 s**), RNG **27 / 0 / 2,712 s** e journal **128 / 0 / 5,903 s** — as
+duas últimas só na mergida.
+
+### O que o pouso deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna 22, o **Passo 5 fechou o dele**: cache de conteúdo,
+verificador de crença e a régua do budget medindo antes de cortar. A fila viva da perna é o que o
+escopo de 2026-11-23 deixou como pauta com gate próprio — a **Fase 2** (memória de qualidade) é a
+seguinte, e o **furo #46** (o `load_pack` síncrono trava o frame do load) continua dono da Fase 4,
+onde o governor precisa dele de qualquer forma. Dos furos, **#38** (o import continua reclamando
+antes do build) e **#39** (réguas cegas a `native/`) seguem como decisão do dono; o **#20** sem a
+colheita que nomeia a folha; o **#31** sem atribuição; o **#41** como furo da contagem de malha; o
+**#44** fica onde a 23 o deixou; o **#45** é arrumação do dono. `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram tocados por este pouso. A
+fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
