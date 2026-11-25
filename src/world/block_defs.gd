@@ -67,6 +67,12 @@ static var _opaque: PackedByteArray = PackedByteArray()
 static var _draw: PackedByteArray = PackedByteArray()
 static var _stack: PackedByteArray = PackedByteArray()
 static var _drop: PackedByteArray = PackedByteArray()
+## 1 = o bloco nao se sustenta sozinho: se a celula de baixo fica livre, ele desce.
+## Um bit por bloco, no mesmo registro de ids estaveis. Os outros predicados de fisica
+## que o prompt do dossie 17 listava (fall_class, breaks_a_fall, blocks_air,
+## is_replaceable, destructible) NAO entram aqui: nenhum tem comprador nesta peca, e a
+## regra da casa e generalizar no segundo chamador, nao no primeiro.
+static var _gravity: PackedByteArray = PackedByteArray()
 static var _hard: PackedFloat32Array = PackedFloat32Array()
 static var _names: PackedStringArray = PackedStringArray()
 
@@ -82,6 +88,7 @@ static func init_tables() -> void:
 	_draw.resize(COUNT)
 	_stack.resize(COUNT)
 	_drop.resize(COUNT)
+	_gravity.resize(COUNT)
 	_hard.resize(COUNT)
 	_names.resize(COUNT)
 	for i in COUNT:
@@ -90,6 +97,7 @@ static func init_tables() -> void:
 		_draw[i] = Draw.OPAQUE
 		_stack[i] = STACK_DEFAULT
 		_drop[i] = i                 # por regra o bloco cai como ele mesmo
+		_gravity[i] = 0
 		_hard[i] = 0.4
 	_solid[Block.AIR] = 0
 	_opaque[Block.AIR] = 0
@@ -142,6 +150,10 @@ static func init_tables() -> void:
 	_drop[Block.GRASS] = Block.DIRT
 	# folha nao e material de construcao: cai como nada ate existir sapling.
 	_drop[Block.LEAVES] = Block.AIR
+	# Unico bloco com gravidade nesta peca: o mundo gera areia sobre areia e a lavra do
+	# jogador pode puxar o po de baixo (dossie 17). Terra e neve ficam de fora porque
+	# nenhuma das duas tem comprador ainda -- entrada com comprador, nao por analogia.
+	_gravity[Block.SAND] = 1
 
 
 static func is_solid(b: int) -> bool:
@@ -150,6 +162,12 @@ static func is_solid(b: int) -> bool:
 
 static func is_opaque(b: int) -> bool:
 	return _opaque[b] == 1
+
+
+## Este bloco obedece gravidade? Unico predicado fisico do registro hoje: a queda da
+## areia (dossie 17). Leitura por indice, sem alocacao, no mesmo custo de is_solid.
+static func has_gravity(b: int) -> bool:
+	return _gravity[b] == 1
 
 
 ## Classe de desenho da face (Draw.OPAQUE / ALPHA / LIQUID).
