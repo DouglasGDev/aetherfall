@@ -963,8 +963,9 @@ e a projeção do `TickJournal` não foram tocados (`git diff --name-only 114bcd
 src/persistence src/world/aether_field.gd` devolve vazio) e o que se move é o **mundo** que entra na
 projeção — uma corrida com areia caindo não reproduz os hashes publicados, pelo motivo registrado em
 2026-11-21. A régua de âncoras rodou na árvore de trabalho: **41** arquivos (o 41º é
-`docs/planos/24-malha-orcamento-de-tempo.md`, a pauta nova do dono ainda **sem commit**, que sozinha
-responde por **52** ponteiros, **3** rótulos, **62** links e **0** casos), **3 420** ponteiros,
+`docs/planos/24-malha-orcamento-de-tempo.md`, a pauta nova do dono — **sem commit** naquela medição,
+pousada no merge `7435159` —, que sozinha responde por **52** ponteiros, **3** rótulos, **62** links e
+**0** casos), **3 420** ponteiros,
 **215** rótulos, **4 081** links e **93** casos objetivos, **zero** na página 17 — os 93 são a face
 medida do furo **#28** (24 no status, 10 no dossiê 12, 10 no 10-alcateia, 9 no 14, e o resto dividido
 entre 13, 16, 19, 09, 20, 18, 23, 15, 11, 07, 06, 01, `docs/engine/simclock` e AGENTS),
@@ -972,7 +973,13 @@ aberta por três pousos antes deste: só `8a53b56 → 95d519a` move **+182/−18
 **+232/−25** em `main.gd`. A re-derivação desse corpo é a passada seguinte, com dono por grupo. A fila
 serializada passa a **22 → 18 → 20 → 13** (a 22 em voo nas Fases 4–5); a pauta **24**, pedida pelo dono
 nesta mesma conversa, entra na frente dela em `docs/pauta-malha-orcamento-de-tempo-24`, com o dossiê
-escrito antes de qualquer linha de `src/`. Nenhum gate de fase se fecha aqui (mandato 4), o `push` é palavra do dono, e a prova dele
+escrito antes de qualquer linha de `src/`. O fecho em documentos fecha a passada:
+`docs/pouso-blocos-17` com `456dad9` (o amostrador do **#56**), `ac3a76c` (as 25 evidências e a seção 7
+do readback) e `9e35854` (a prosa) pousa no merge **`659173c`**, e a pauta 24 (`eca32ed`) pousa no merge
+seguinte **`7435159`**. Entre `95d519a` e `7435159` os arquivos de `src` e `tests` tocados são **zero**
+(`git diff --name-only 95d519a 7435159 -- src tests` devolve vazio), então os números do pin valem na
+`main` de hoje **por identidade de árvore**, não por corrida nova — nenhuma corrida foi re-rodada nesta
+passada, e nada aqui autoriza ler isso como re-medição. Nenhum gate de fase se fecha aqui (mandato 4), o `push` é palavra do dono, e a prova dele
 é `git ls-remote --heads origin`.
 
 **Registro de 2026-11-25 (2), autorizada pelo dono na própria conversa — o corte das microtravadas entra
