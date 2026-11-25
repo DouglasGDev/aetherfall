@@ -1,0 +1,19 @@
+# O par que faltava: o runner de reacoes NAO completa hoje em NENHUMA das duas arvores.
+# Corrida 1 (PONTA, 78742d6 + os docs desta passada), 08:26:34-08:35:41, em C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2:
+#   260 s de teto de shell nao bastaram; o processo foi encerrado por mim com 2 min 16 s de CPU e 20 linhas de stdout.
+#   (a primeira tentativa, a mesma, bufferizada em variavel: 8 min 40 s de parede, 2 min 16 s de CPU, sem rodape).
+# Corrida 2 (CONTROLE, base eb218fe), 08:38-08:42, em C:/tmp/aetherfall-base-23f2, timeout 260:
+#   exit=124 (o timeout disparou), 55 linhas, SEM rodape de checagens. Copia literal do fim:
+
+#   Please call wait_to_finish() on it to ensure correct cleanup.
+#      at: ~Thread (core/os/thread.cpp:116)
+#   ERROR: 7 RID allocations of type '23NavMeshGeometryParser2D' were leaked at exit.
+#   ERROR: 6 RID allocations of type '23NavMeshGeometryParser3D' were leaked at exit.
+#   ERROR: Pages in use exist at exit in PagedAllocator: N12VariantPools11BucketLargeE
+#      at: ~PagedAllocator (./core/templates/paged_allocator.h:170)
+
+# O que isto decide: o runner de reacoes (pin das duas arvores: 37,381 s na ponta e 36,683 s na base, na janela quieta das 05h-06h)
+#   nao fecha em 260 s hoje nas DUAS arvores. A base nao tem Weather, nao tem RainFx, nao tem material opaco de shader e
+#   nao tem canal de exposicao -- entao a lentidao nao e desta perna. E a mesma marca que a pagina ja publicou
+#   para a suite (rodape +1,4% a +5,7% de parede, pior passo ~2,1x nas duas arvores).
+# O que isto NAO decide: qual processo da maquina. O #31 continua aberto por isso.

@@ -3,11 +3,13 @@ class_name WaterSurface
 ## e `ShaderMaterial` montado em runtime — nenhum recurso importado, porque a familia
 ## de artefatos de import que este repositorio nao controla e o furo #25.
 ##
-## O que o shader sabe de fora vem de dois lugares: tres canais por vertice escritos
+## O que o shader sabe de fora vem de tres lugares: os tres canais por vertice escritos
 ## pela malharia no `COLOR` (§3.3 — `R` mascara de onda, `G` profundidade da coluna em
-## quartos, `B` face vertical) e a direcao do sol, que e do `main.gd`, nao daqui (§2:
+## quartos, `B` face vertical), a direcao do sol, que e do `main.gd`, nao daqui (§2:
 ## hoje o sol e uma constante, entao "caustica quando o sol esta alto" e constante por
-## enquanto — quando a Fase 4 mover o sol, a agua acompanha sem linha nova).
+## enquanto — quando a Fase 4 mover o sol, a agua acompanha sem linha nova), e o `chuva`
+## do `Weather`, que entra pelo mesmo sink que escreve o `molhado` no opaco (§3.10a e
+## §3.10e): um termometro so, lido por quem desena pedra e por quem desena poça.
 
 ## Os valores gravados no material vivem numa so lista, e `params()` e o unico lugar
 ## que a monta: a checagem `material_da_agua_e_shader` confere estes nomes contra os
@@ -37,6 +39,10 @@ const TUNING: Dictionary = {
 	"absorb_per_block": 0.30,
 	"caustic_gain": 0.35,
 	"caustic_freq": 0.55,
+	# §3.10e: o porte da chuva na superficie. Zero no boot e escrito pelo `Weather` atraves
+	# do sink do §3.10a — o mesmo caminho que leva o `molhado` ao opaco, porque o clima que
+	# faz a poça picotar e o clima que escurece a pedra, nao um segundo termometro.
+	"chuva": 0.0,
 }
 
 const SOURCE: String = """shader_type spatial;
@@ -62,6 +68,10 @@ uniform float foam_width = 0.60;
 uniform float absorb_per_block = 0.30;
 uniform float caustic_gain = 0.35;
 uniform float caustic_freq = 0.55;
+// §3.10e: o alvo do `Weather`, 0…1, escrito pelo sink do §3.10a. Com zero o `vertex()`
+// devolve exatamente o que devolvia na Fase 1 — a reação é soma, não substituição, e é isso
+// que faz um vale seco não gastar nada novo no passe.
+uniform float chuva = 0.0;
 
 // k1 corre em +X, k2 em +Z, k3 na diagonal. A terceira existe porque a soma das
 // duas primeiras e listras paralelas: com um quad de 4 cantos por celula, listra
@@ -69,11 +79,29 @@ uniform float caustic_freq = 0.55;
 const vec2 K1 = vec2(1.10, 0.00);
 const vec2 K2 = vec2(0.00, 0.85);
 const vec2 K3 = vec2(0.70, 0.70);
+// A quarta entra na mesa so com chuva > 0. |K4| = 3,50 vezes o `wave_freq` de 1,6 da
+// cerca = 5,60 rad/m, ou seja comprimento de onda de 1,12 m: um picotado por celula, nao
+// uma areia de meio metro que o tile de 16 px nao seguraria. A diagonal (2,60 ; 2,35) e
+// escolhida por nao ser paralela a nenhuma das tres — listra paralela em quad de quatro
+// cantos lee como rampa, e e o mesmo motivo pelo qual a K3 existe.
+const vec2 K4 = vec2(2.60, 2.35);
+// Amplitude menor que a base, como pede o §3.10e: 0,30 x a soma das harmonicas sobre os
+// 0,11 de `wave_amp` = ate 3,3 cm de picotado contra os 4,8 cm da onda de sempre.
+const float RAIN_GAIN = 0.30;
 
-// h com as duas derivadas espaciais na mesma passada. O NORMAL vem do closed form,
+// h com as derivadas espaciais na mesma passada. O NORMAL vem do closed form,
 // nao de diferenca finita, porque o custo e identico e a regularidade nao pode
 // depender do tamanho do triangulo (§3.2).
-vec3 wave(vec2 f, float t) {
+//
+// A gota entra aqui, e nao num segundo `wave()`, exatamente pela linha de cima: somar a
+// altura sem somar a derivada faria a sombra do plano de topo mentir sobre o que o
+// deslocamento fez. Com o par zero o `if` nao roda e os tres numeros sao os da Fase 1.
+//
+// O nome do parametro e `gota` e nao `chuva` porque o GLSL nao admite que um parametro
+// esconda o global de mesmo nome: `float chuva` no contrato de `wave()` devolve
+// `SHADER ERROR: Redefinition of 'chuva'` na hora em que o material monta, impresso quatro
+// vezes na suíte e silencioso em qualquer documento — furo #50 com dentes.
+vec3 wave(vec2 f, float t, float gota) {
 	float a1 = dot(K1, f) * wave_freq + t;
 	float a2 = dot(K2, f) * wave_freq - 1.3 * t;
 	float a3 = dot(K3, f) * wave_freq + 1.7 * t;
@@ -81,6 +109,15 @@ vec3 wave(vec2 f, float t) {
 	float h = (0.55 * sin(a1) + 0.45 * sin(a2) + 0.30 * sin(a3)) * s;
 	float dx = (0.55 * K1.x * cos(a1) + 0.30 * K3.x * cos(a3)) * s * wave_freq;
 	float dy = (0.45 * K2.y * cos(a2) + 0.30 * K3.y * cos(a3)) * s * wave_freq;
+	if (gota > 0.0) {
+		// 4,3 x a cadencia da base: o picotado corre mais rapido do que a onda que o
+		// carrega, que e o que faz chover na superficie em vez de o lago inteiro balancar
+		// mais.
+		float a4 = dot(K4, f) * wave_freq + 4.3 * t;
+		h += sin(a4) * s * gota * RAIN_GAIN;
+		dx += K4.x * cos(a4) * s * wave_freq * gota * RAIN_GAIN;
+		dy += K4.y * cos(a4) * s * wave_freq * gota * RAIN_GAIN;
+	}
 	return vec3(h, dx, dy);
 }
 
@@ -115,7 +152,7 @@ void vertex() {
 	// log da suíte. Por isso o corpo inteiro mora dentro do teste da mascara.
 	if (COLOR.r > 0.0) {
 		vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-		vec3 w = wave(wp.xz, TIME * wave_speed);
+		vec3 w = wave(wp.xz, TIME * wave_speed, chuva);
 		VERTEX.y += COLOR.r * wave_amp * w.x;
 		if (COLOR.b <= 0.0) {
 			// Plano de topo: normal reconstruida. Na lateral (B = 1) a superficie e um

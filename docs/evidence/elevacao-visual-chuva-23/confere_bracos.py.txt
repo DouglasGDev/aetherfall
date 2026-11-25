@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Compara os recortes ENTRE bracos da sonda do dossie 23 §5.4, a partir dos PNGs
+arquivados — nao dos frames vivos. Os tres pares que a pauta pede:
+
+  A vs B  caixa da agua e caixas de relevo, com o material opaco da base
+          (`StandardMaterial3D`) contra o shader desta perna em `--weather=0`:
+          e o braco de INDIFERENCA, e a banda que ele devolve e a que se publica;
+  B vs C  mesmas cameras, `--weather=0` contra `--weather=1`, nas duas caixas de
+          relevo: a assinatura `topo >> abrigo` do canal de exposicao;
+  B vs C  caixa da agua: o uniforme `chuva` do §3.10e.
+
+A aritmetica e a do probe, com a precisao do probe: canais em float32 sobre 255 e
+limiares de 1/255 e 3/255. O float32 mais proximo de 1/255 vale 0,0039215689 e a
+subtracao de dois bytes vizinhos vale 0,0039215686, entao a amostra que difere em
+exatamente um byte NAO entra no ge1. Quem reimplementar em inteiros obtem contagem
+MAIOR que a publicada: o conservadorismo e do instrumento, e o `fracao_ge3` publicado
+e um piso.
+
+O passo e o do probe por caixa (2 na agua, 1 no relevo), para que as amostras sejam as
+mesmas que a linha impresso somou.
+"""
+import sys
+import numpy as np
+from PIL import Image
+
+
+def load(path, passo):
+    a = np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
+    if passo > 1:
+        a = a[::passo, ::passo, :]
+    return a.astype(np.float32) / np.float32(255.0)
+
+
+def diff(a_path, b_path, passo):
+    d = np.abs(load(a_path, passo) - load(b_path, passo)).astype(np.float32)
+    mx = d.max(axis=2).astype(np.float32)
+    um = np.float32(1.0) / np.float32(255.0)
+    tres = np.float32(3.0) / np.float32(255.0)
+    n = int(d.shape[0] * d.shape[1])
+    return {"n": n,
+            "ge1": int((mx >= um).sum()),
+            "ge3": int((mx >= tres).sum()),
+            "mr": float(d[:, :, 0].mean()),
+            "mg": float(d[:, :, 1].mean()),
+            "mb": float(d[:, :, 2].mean()),
+            "size": (d.shape[1], d.shape[0])}
+
+
+def main():
+    if len(sys.argv) != 5:
+        print("uso: confere_bracos.py <a.png> <b.png> <rotulo> <passo>", file=sys.stderr)
+        return 2
+    rotulo = sys.argv[3]
+    passo = int(sys.argv[4])
+    r = diff(sys.argv[1], sys.argv[2], passo)
+    print("BRACOS   %s  lado=%dx%d  passo=%d  amostras=%d  ge1=%d  ge3=%d  "
+          "fracao_ge3=%.4f  media_canal r=%.6f g=%.6f b=%.6f" % (
+              rotulo, r["size"][0], r["size"][1], passo,
+              r["n"], r["ge1"], r["ge3"], r["ge3"] / float(max(r["n"], 1)),
+              r["mr"], r["mg"], r["mb"]))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

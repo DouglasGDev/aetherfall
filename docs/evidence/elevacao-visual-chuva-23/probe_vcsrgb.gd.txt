@@ -1,0 +1,10 @@
+extends SceneTree
+## Sonda curta (gitignored): os numeros do StandardMaterial3D da casa que viram F0 no
+## lighting — `metallic_specular` e o unico que o OpaqueSurface nao copiou e que tem
+## default diferente do 1.0 do `SPECULAR` de um shader escrito a mao.
+
+
+func _init() -> void:
+	var m := StandardMaterial3D.new()
+	print("ESPEC=%.3f  ROUGH=%.3f  METAL=%.3f" % [m.metallic_specular, m.roughness, m.metallic])
+	quit()

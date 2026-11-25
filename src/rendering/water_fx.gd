@@ -20,6 +20,10 @@ const SPLASH_LIFE := 0.55
 const RING_POOL := 12
 const RING_LIFE := 1.1
 const RING_DIAM := 3.2
+## Dono de cada vaga do pool de anéis (§3.10d): a partir da Fase 2 existe um segundo
+## comprador, e sem origem o teto de 12 vagas não diz quem o está gastando.
+const RING_SRC_CORPO := 0
+const RING_SRC_CHUVA := 1
 const BUBBLE_POOL := 4
 const BUBBLE_AMOUNT := 40
 const BUBBLE_LIFE := 1.4
@@ -58,6 +62,10 @@ var _splash: Array = []
 var _splash_life := PackedFloat32Array()
 var _rings: Array = []
 var _ring_life := PackedFloat32Array()
+## Quem pôs cada anel vivo (`RING_SRC_CORPO` ou `RING_SRC_CHUVA`), escrito no `_anel` e
+## lido no `diagnostics()`. Sem isto a cota de ~9 de 12 do §3.10d não teria testemunha:
+## `anis` sozinho soma os dois compradores e não mostra se a chuva está comendo o pool.
+var _ring_src := PackedInt32Array()
 var _bubbles: Array = []
 var _bubble_life := PackedFloat32Array()
 ## Estado por corpo, chave = `identity` do lobo e `-1` do jogador — o mesmo dicionario
@@ -73,6 +81,16 @@ var _salpicos_disparados := 0
 ## durante a janela, que e geografia, nao defeito do FX.
 var _salpicos_jogador := 0
 var _picos := 0
+## Os três numeros do segundo comprador do anel (§3.10d): quantos anéis nasceram de gota,
+## quantas gotas foram **recusadas** por coluna sem agua, e quantas pousaram em `y = 0`
+## -- que e o jeito como um default silencioso apareceria em numero em vez de aparecer na
+## tela. `col_ultima`/`plano_ultima` sao o ultimo ANEL DE CHUVA aceito, e e contra eles que
+## a checagem re-deriva o plano com `world.water_surface_y`, nao contra este par.
+var _anis_chuva := 0
+var _anis_recusados := 0
+var _anis_no_zero := 0
+var _col_ultima := Vector2i(-9, -9)
+var _plano_ultima := -99.0
 ## Colheita de custo (§4, pergunta 4): frames tratados, soma e pico em microsegundos.
 var _quadros := 0
 var _us_total := 0
@@ -105,6 +123,16 @@ func diagnostics() -> Dictionary:
 		"jogador_col": j.get("col", Vector2i(-1, -1)),
 		"jogador_plano": float(j.get("plano", -1.0)),
 		"jogador_blocos": int(j.get("blocos", 0)),
+		# Os tres numeros do comprador novo (§3.10d). `anis` e a soma dos dois doadores do
+		# pool; sem o par abaixo nao ha como saber se a chuva esta dentro da cota ou comendo
+		# as vagas do corpo -- que e justamente a pergunta que a checagem faz.
+		"anis_chuva": _anis_chuva,
+		"anis_recusados": _anis_recusados,
+		"anis_no_zero": _anis_no_zero,
+		"anis_vivos_chuva": _vivos_src(_ring_life, _ring_src, RING_SRC_CHUVA),
+		"anis_vivos_corpo": _vivos_src(_ring_life, _ring_src, RING_SRC_CORPO),
+		"col_ultima": _col_ultima,
+		"plano_ultima": _plano_ultima,
 		# O custo lido, nao o custo lembrado: media e pico do frame de fisica tratado
 		# pelo FX, na arvore que esta rodando agora.
 		"quadros": _quadros,
@@ -184,6 +212,24 @@ func _corpo(key: int, body: VoxelBody, viu: Dictionary) -> void:
 		_bolhas(x, z, plano, blocos)
 
 
+## A porta publica do anel para quem NAO e um corpo (§3.10d): a gota da chuva. O plano vem
+## de quem chamou -- lido de `world.water_surface_y` -- e aqui se decide apenas se ele e
+## pousavel: sem plano a gota **recusa com contador**, nunca pousa em `y = 0`. Essa e a
+## clausula que o braço rejeitado do §3.10d cobrava, e `anis_no_zero` e o numero que prova
+## que ela nao virou enfeite: um default esquecido no chamador aparece aqui, nao na tela.
+func ring_at(x: int, z: int, plano: float) -> bool:
+	if plano <= 0.0:
+		_anis_recusados += 1
+		if plano == 0.0:
+			_anis_no_zero += 1
+		return false
+	_anel(x, z, plano, RING_SRC_CHUVA)
+	_anis_chuva += 1
+	_col_ultima = Vector2i(x, z)
+	_plano_ultima = plano
+	return true
+
+
 ## Quantos voxels de agua ha na coluna, do plano para baixo. Custo de COLUNA e por
 ## evento (§4), e saturado em 6 porque acima de 6 a resposta de bolhas nao muda.
 func _blocos_na_coluna(x: int, z: int) -> int:
@@ -205,6 +251,7 @@ func _blocos_na_coluna(x: int, z: int) -> int:
 func _build_pool() -> void:
 	_splash_life.resize(SPLASH_POOL)
 	_ring_life.resize(RING_POOL)
+	_ring_src.resize(RING_POOL)
 	_bubble_life.resize(BUBBLE_POOL)
 	for i in SPLASH_POOL:
 		var p := _emissor(0.05, SPLASH_AMOUNT, SPLASH_LIFE, 1.0, Vector3(0.0, 6.5, 0.0),
@@ -296,7 +343,10 @@ func _salpico(x: int, z: int, plano: float, vy: float, key: int) -> void:
 	_picos = maxi(_picos, _vivos(_splash_life, SPLASH_POOL))
 
 
-func _anel(x: int, z: int, plano: float) -> void:
+## As duas origens passam por aqui: o corpo em transicao (`_corpo`) e a gota (`ring_at`).
+## O slot e o mesmo pool de 12 -- um pool proprio do `RainFx` dobraria o teto aritmetico
+## do §3.6 sem comprar nada, que e o braço rejeitado do §3.10d.
+func _anel(x: int, z: int, plano: float, src: int = RING_SRC_CORPO) -> void:
 	var i := _next_ring
 	_next_ring = (_next_ring + 1) % RING_POOL
 	var node: MeshInstance3D = _rings[i]
@@ -307,6 +357,7 @@ func _anel(x: int, z: int, plano: float) -> void:
 	# ultimo uso e apareceria ja desbotado.
 	(node.material_override as ShaderMaterial).set_shader_parameter(&"vida", 0.0)
 	_ring_life[i] = RING_LIFE
+	_ring_src[i] = src
 
 
 func _bolhas(x: int, z: int, plano: float, blocos: int) -> void:
@@ -348,5 +399,15 @@ static func _vivos(arr: PackedFloat32Array, n: int) -> int:
 	var k := 0
 	for i in n:
 		if arr[i] > 0.0:
+			k += 1
+	return k
+
+
+## Quantos anéis vivos são de um doador. A vida não diz a origem e a origem não diz a
+## vida — as duas arrays se cruzam aqui, no mesmo endereço de custo do `_vivos`.
+static func _vivos_src(arr: PackedFloat32Array, src: PackedInt32Array, dono: int) -> int:
+	var k := 0
+	for i in arr.size():
+		if arr[i] > 0.0 and src[i] == dono:
 			k += 1
 	return k

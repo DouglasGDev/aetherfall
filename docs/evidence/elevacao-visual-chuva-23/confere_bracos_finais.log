@@ -1,0 +1,14 @@
+--- piso do instrumento: duas corridas iguais da MESMA arvore (fixed-fps)
+BRACOS   B6-vs-B7 topo (mesmo codigo, duas corridas)  lado=96x96  passo=1  amostras=9216  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+BRACOS   B6-vs-B7 abrigo (mesmo codigo, duas corridas)  lado=56x56  passo=1  amostras=3136  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+BRACOS   B6-vs-B7 agua (mesmo codigo, duas corridas)  lado=96x96  passo=2  amostras=9216  ge1=6373  ge3=2368  fracao_ge3=0.2569  media_canal r=0.008288 g=0.008066 b=0.006938
+--- braco (b) publicado: base eb218fe contra esta perna seca, shader como esta no git
+BRACOS   A2-vs-B6 topo (indiferenca, shader commitado)  lado=96x96  passo=1  amostras=9216  ge1=9216  ge3=9034  fracao_ge3=0.9803  media_canal r=0.020878 g=0.020078 b=0.010213
+BRACOS   A2-vs-B6 abrigo (indiferenca, shader commitado)  lado=56x56  passo=1  amostras=3136  ge1=3124  ge3=2899  fracao_ge3=0.9244  media_canal r=0.020369 g=0.023691 b=0.018229
+BRACOS   A2-vs-B6 agua (indiferenca, shader commitado)  lado=96x96  passo=2  amostras=9216  ge1=8707  ge3=6630  fracao_ge3=0.7194  media_canal r=0.030707 g=0.033596 b=0.027482
+--- braco de atribuicao: mesmo par com o decode sRGB devolvido ao tile
+BRACOS   A2-vs-B5 agua (indiferenca com decode)  lado=96x96  passo=2  amostras=9216  ge1=5146  ge3=1139  fracao_ge3=0.1236  media_canal r=0.006868 g=0.006253 b=0.005073
+--- braco (c): seco contra molhado, assinatura topo >> abrigo
+BRACOS   B6-vs-C6 topo (seco x molhado, caixa exposta)  lado=96x96  passo=1  amostras=9216  ge1=9202  ge3=1192  fracao_ge3=0.1293  media_canal r=0.005351 g=0.006975 b=0.011968
+BRACOS   B6-vs-C6 abrigo (seco x molhado, caixa abrigada)  lado=56x56  passo=1  amostras=3136  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+BRACOS   B6-vs-C6 agua (uniforme chuva)  lado=96x96  passo=2  amostras=9216  ge1=8667  ge3=7304  fracao_ge3=0.7925  media_canal r=0.061074 g=0.043579 b=0.018473

@@ -49,37 +49,37 @@ Recorte que a premissa **não** cobre, e que a frase "colocar os lobos em tocas"
 ### 2.1 O mapa e o círculo
 
 - **Área útil.** O mundo é 128 × 128 m = **16 384 m²** (`voxel_config.gd:9-11`, `:19-24`). O
-  sorteio de lar clampa o ponto para `6 … W-6` ([`main.gd:781-782`](../../src/main.gd#L786-L787),
+  sorteio de lar clampa o ponto para `6 … W-6` ([`main.gd:812-813`](../../src/main.gd#L812-L813)),
   ou seja, **116 × 116 = 13 456 m²** de alvo possível; a ronda clampa para `4 … W-4`
   ([`wolf.gd:611-612`](../../src/entities/wolf.gd#L611-L612)).
 - **O jogador acorda no centro.** `spawn_point()` devolve `(64, y, 64)`
-  ([`main.gd:268-271`](../../src/main.gd#L273-L276) e `_ready` põe o jogador ali antes do sorteio
-  ([`main.gd:159`](../../src/main.gd#L159: `player.setup(world, spawn_point())`) e o sorteio da
-  matilha só vem depois ([`main.gd:214`](../../src/main.gd#L219: `_spawn_wolves(WOLF_COUNT)`).
+  ([`main.gd:299-302`](../../src/main.gd#L299-L302)) e `_ready` põe o jogador ali antes do sorteio
+  ([`main.gd:169`](../../src/main.gd#L169): `player.setup(world, spawn_point())`) e o sorteio da
+  matilha só vem depois ([`main.gd:244`](../../src/main.gd#L244): `_spawn_wolves(WOLF_COUNT)`).
 - **A banda do primeiro lobo** é 16–46, 46–70 ou 70–`_band_edge` m do jogador
-  ([`main.gd:518`](../../src/main.gd#L523, tentativas em
-  [`:758-760`](../../src/main.gd#L768-L770); com o jogador no centro, `_band_edge` devolve
-  `sqrt(58² + 58²) = 82,0` m ([`main.gd:741-744`](../../src/main.gd#L746-L749).
+  ([`main.gd:549`](../../src/main.gd#L549), tentativas em
+  [`:758-760`](../../src/main.gd#L794-L796)); com o jogador no centro, `_band_edge` devolve
+  `sqrt(58² + 58²) = 82,0` m ([`main.gd:772-775`](../../src/main.gd#L772-L775)).
 - **Os outros quatro não usam banda nenhuma: usam a mordaca.** Na arvore que a pauta leu
   (`99d1167`), `_spawn_wolves` pedia o lar com `near = _pack_leash()` (`99d1167:src/main.gd:328`)
   e `_pack_leash()` devolvia o **lar do primeiro lobo vivo** — não um por lobo, não rotativo
   (`99d1167:src/main.gd:501-505`). Hoje a ancora é o centro da toca, e quando `near` existe a tentativa é
-  o anel **4–18 m** dele ([`main.gd:762`](../../src/main.gd#L767, `PACK_LEASH = 18.0` em
-  [`:522`](../../src/main.gd#L532), e as bandas do jogador só entram se as 24 tentativas da
-  mordaca se esgotarem (`SPAWN_ATTEMPTS = 24` em [`:514`](../../src/main.gd#L524, laço em
-  [`:772`](../../src/main.gd#L782).
+  o anel **4–18 m** dele ([`main.gd:793`](../../src/main.gd#L793), `PACK_LEASH = 18.0` em
+  [`:522`](../../src/main.gd#L558)), e as bandas do jogador só entram se as 24 tentativas da
+  mordaca se esgotarem (`SPAWN_ATTEMPTS = 24` em [`:514`](../../src/main.gd#L550), laço em
+  [`:772`](../../src/main.gd#L808)).
   Consequência aritmética, **derivada das constantes, não medida**: os cinco lares do boot cabem
   num disco de raio 18 m em torno do lar do lobo 0 — **1 018 m²**, 7,6 % da área útil e 6,2 % do
   mapa. A distância máxima possível entre dois lares do boot é 36 m.
 - **O parto não espalha: adensa.** `_born_from` ancora o ponto no **ponto médio dos dois lares**
-  ([`main.gd:484`](../../src/main.gd#L489) e a âncora entra pela mesma mordaca de 4–18 m
-  ([`main.gd:762`](../../src/main.gd#L767). Com dois adultos a ≤ 36 m um do outro, o médio está
+  ([`main.gd:515`](../../src/main.gd#L515)) e a âncora entra pela mesma mordaca de 4–18 m
+  ([`main.gd:793`](../../src/main.gd#L793)). Com dois adultos a ≤ 36 m um do outro, o médio está
   dentro do mesmo disco; cada geração pode correr o lar ≤ 18 m, e nada no código ancora um lar a
   um **lugar**.
-- **A reposição também não espalha.** A fila de 45 s ([`main.gd:30`](../../src/main.gd#L30,
-  esvaziada em [`:294-307`](../../src/main.gd#L304-L317, `respawn` enfileirado na recusa em
-  [`:368`](../../src/main.gd#L378 e na recolha de cadáver em
-  [`:915`](../../src/main.gd#L944) chama `_spawn_wolves(1)`, que de novo ancora no **primeiro
+- **A reposição também não espalha.** A fila de 45 s ([`main.gd:30`](../../src/main.gd#L30),
+  esvaziada em [`:294-307`](../../src/main.gd#L330-L343), `respawn` enfileirado na recusa em
+  [`:368`](../../src/main.gd#L404) e na recolha de cadáver em
+  [`:915`](../../src/main.gd#L970)) chama `_spawn_wolves(1)`, que de novo ancora no **primeiro
   vivo**. Um elemento da fila é um número (`RESPAWN_DELAY`), não um par `(toca, atraso)`: hoje a
   fila não tem como dizer **de onde** veio a vaga.
 - **A ronda é em torno do baricentro do que o lobo lê**, e não do seu lar: `_leaf_wander`
@@ -93,18 +93,18 @@ Recorte que a premissa **não** cobre, e que a frase "colocar os lobos em tocas"
 
 ### 2.2 A coesão já sabe separar — é o sorteio que não deixa
 
-- `PACK_COHESION_RADIUS = 24.0` ([`main.gd:39`](../../src/main.gd#L39) é o que faz dois lobos se
-  lerem, e `_rebuild_packs()` ([`main.gd:859-879`](../../src/main.gd#L883-L903) já monta um grafo
+- `PACK_COHESION_RADIUS = 24.0` ([`main.gd:39`](../../src/main.gd#L39)) é o que faz dois lobos se
+  lerem, e `_rebuild_packs()` ([`main.gd:909-929`](../../src/main.gd#L909-L929)) já monta um grafo
   **por distância**, uma passada por passo, sem alocar por leitura
-  ([`main.gd:850-853`](../../src/main.gd#L874-L877, [`:905-924`](../../src/main.gd#L910-L929).
+  ([`main.gd:900-903`](../../src/main.gd#L900-L903), [`:931-950`](../../src/main.gd#L936-L955)).
   Isto significa que **não existe código de "grupo" a escrever**: se os lares ficarem a mais de
   24 m, os componentes se separam sozinhos, e a ronda de cada um passa a ser o baricentro do seu
   próprio componente — a propriedade da perna 10 sobrevive intacta, só muda a quem ela se aplica.
 - **`pack_pairs` não é aresta de coesão** — é **par testado**: o contador incrementa em
-  [`main.gd:873`](../../src/main.gd#L897, **antes** do teste de raio em
-  [`:869`](../../src/main.gd#L898. Com 5 vivos ele é sempre C(5,2) = 10 e com 12 é sempre 66.
+  [`main.gd:923`](../../src/main.gd#L923), **antes** do teste de raio em
+  [`:869`](../../src/main.gd#L924). Com 5 vivos ele é sempre C(5,2) = 10 e com 12 é sempre 66.
   A asserção `pack_pairs == n*(n-1)/2` da suíte
-  ([`smoke_test.gd:315-320`](../../tests/smoke_test.gd#L315-L320)) é, portanto, **verdade
+  ([`smoke_test.gd:357-362`](../../tests/smoke_test.gd#L357-L362)) é, portanto, **verdade
   aritmética**: o que decide aquela linha hoje é o `biggest >= 2` (o maior `_pack` lido), não o
   número de pares. Nada em `src/` nem em `tests/` conta **arestas aceitas** nem componentes.
   Registrar como **furo #21** (§8).
@@ -116,7 +116,7 @@ Recorte que a premissa **não** cobre, e que a frase "colocar os lobos em tocas"
 comentário (`llm_server_host.gd:4`, `audio_director.gd:179`, `player.gd:588`), `TREE_DENSITY` /
 `BOULDER_DENSITY` (`world_gen.gd:7-8`, `:236`, `:238`) e `fog_density` (`main.gd:1003`). Não há:
 lista de tocas, campo `den` no lobo, chave no save, contador de componentes em `diagnostics()`
-([`main.gd:1180-1216`](../../src/main.gd#L1204-L1240 tem `wolves`, `wolves_alive`, `pack_pairs`,
+([`main.gd:1230-1274`](../../src/main.gd#L1230-L1274) tem `wolves`, `wolves_alive`, `pack_pairs`,
 `pending_respawns`, `census_cap`, `load_created`, `load_retired`, `census_refusals`, `births` —
 nenhum deles diz **onde** a matilha está), nem predicado de distância mínima entre lares de grupos
 diferentes.
@@ -125,21 +125,21 @@ diferentes.
 
 | Promessa já verde | Onde | O que a 16 faz com ela |
 |---|---|---|
-| "lar do boot fora da distância segura e da visada" | [`aether_reactions_test.gd:3181-3184`](../../tests/aether_reactions_test.gd#L3212-L3215 | **mantida**: cada toca nova passa pelo mesmo `_spawn_point_ok` (`main.gd:730-735`) |
-| "lobo reposto nasce fora da distancia segura e da visada" | [`:3202-3205`](../../tests/aether_reactions_test.gd#L3239-L3242 | mantida, e ganha a cláusula de **qual** toca |
-| "lares do spawn real em colunas diferentes, censo fechado pela fila" | [`:2744-2748`](../../tests/aether_reactions_test.gd#L2781-L2785 | mantida: coluna distinta continua exigida (`_home_columns`, `main.gd:507-511`) |
-| "censo do boot fecha a conta: o que nao nasce volta para a fila" | [`:3172-3174`](../../tests/aether_reactions_test.gd#L3209-L3211 | mantida, e a fila passa a carregar a toca |
-| ronda de lobo único idêntica à fórmula anterior | [`:1991-1995`](../../tests/aether_reactions_test.gd#L2028-L2032 | **intacta apenas no braço A** (§3.4): ela replay-a `_pick_wander(home, …)`, e `home` continua sendo o lar do lobo |
-| `ronda_centro_e_baricentro_e_nao_o_lar_do_lobo` | [`:2047-2050`](../../tests/aether_reactions_test.gd#L2084-L2087 | **intacta apenas no braço A**; o braço B re-derive esta linha e a de cima, e isso é custo declarado, não surpresa |
+| "lar do boot fora da distância segura e da visada" | [`aether_reactions_test.gd:3212-3215`](../../tests/aether_reactions_test.gd#L3212-L3215) | **mantida**: cada toca nova passa pelo mesmo `_spawn_point_ok` (`main.gd:730-735`) |
+| "lobo reposto nasce fora da distancia segura e da visada" | [`:3202-3205`](../../tests/aether_reactions_test.gd#L3239-L3242) | mantida, e ganha a cláusula de **qual** toca |
+| "lares do spawn real em colunas diferentes, censo fechado pela fila" | [`:2744-2748`](../../tests/aether_reactions_test.gd#L2781-L2785) | mantida: coluna distinta continua exigida (`_home_columns`, `main.gd:507-511`) |
+| "censo do boot fecha a conta: o que nao nasce volta para a fila" | [`:3172-3174`](../../tests/aether_reactions_test.gd#L3209-L3211) | mantida, e a fila passa a carregar a toca |
+| ronda de lobo único idêntica à fórmula anterior | [`:1991-1995`](../../tests/aether_reactions_test.gd#L2028-L2032) | **intacta apenas no braço A** (§3.4): ela replay-a `_pick_wander(home, …)`, e `home` continua sendo o lar do lobo |
+| `ronda_centro_e_baricentro_e_nao_o_lar_do_lobo` | [`:2047-2050`](../../tests/aether_reactions_test.gd#L2084-L2087) | **intacta apenas no braço A**; o braço B re-derive esta linha e a de cima, e isso é custo declarado, não surpresa |
 | spawn em lote == spawn um a um (assinatura da sequência) | [`simulation_rng_test.gd:119-127`](../../tests/simulation_rng_test.gd#L119-L127) | **tem de continuar verde**: a escolha de toca não pode ser função de sorteio extra nem de ordem de processo |
-| "alcateia existe na sessao real" | [`smoke_test.gd:315-320`](../../tests/smoke_test.gd#L315-L320) | re-derivada: `biggest >= 2` passa a conviver com `componentes >= 2` |
+| "alcateia existe na sessao real" | [`smoke_test.gd:357-362`](../../tests/smoke_test.gd#L357-L362) | re-derivada: `biggest >= 2` passa a conviver com `componentes >= 2` |
 
 ## 3. O que a peça exige
 
 ### 3.1 Dono do estado
 
 A toca é **lugar registrado pela sessão**, não etiqueta do lobo. O dono é `main.gd`, pelo mesmo
-motivo declarado na perna 11 ([`main.gd:458-459`](../../src/main.gd#L463-L464): `wolves`,
+motivo declarado na perna 11 ([`main.gd:489-490`](../../src/main.gd#L489-L490)): `wolves`,
 `_next_identity` e `_home_columns()` já têm um dono só. A peça nova é `var _dens: Array` (uma
 entrada por toca, com o centro em metros e a coluna que a ocupa), construída no sorteio e lida no
 sorteio. O lobo ganha **um** campo de leitura — `den: int`, o índice da toca — porque a reposição
@@ -151,21 +151,21 @@ com default explícito (fase/idade/`mate_cd`, [`:1130-1138`](../../src/entities/
 ### 3.2 Regra de colocação (o corte real no círculo de 18 m)
 
 1. `DEN_COUNT = 3` `[TARGET]` — o número do pedido ("2–3 tocas"); **3 é o teto de fundação e o
-   boot escolhe 3** porque com `WOLF_COUNT` = 5 ( [`main.gd:9`](../../src/main.gd#L9) a
+   boot escolhe 3** porque com `WOLF_COUNT` = 5 ( [`main.gd:9`](../../src/main.gd#L9)) a
    distribuição 2/2/1 é a menor que faz um componente ter dois membros e ainda deixar sobra.
    Fundar mais que `DEN_COUNT` é recusado e **contado**, não silencioso (mesma régua da recusa de
-   censo, [`main.gd:472-476`](../../src/main.gd#L477-L481).
+   censo, [`main.gd:503-507`](../../src/main.gd#L503-L507)).
 2. **Fundar** usa as bandas que já existem, em torno do jogador **no instante do boot**, e acrescenta
    um portão: ≥ `DEN_MIN_DIST` do centro de **toda** toca já fundada. Os portões velhos
    (`SAFE_SPAWN_DIST`, visada, coluna ocupada, seco, volume livre) continuam os mesmos e na mesma
-   ordem ([`main.gd:783-802`](../../src/main.gd#L788-L807).
+   ordem ([`main.gd:814-833`](../../src/main.gd#L814-L833)).
 3. **Entrar** usa a mordaca de sempre, com a âncora trocada de "primeiro vivo" para "centro da
-   toca escolhida", e o anel 4–18 m ([`main.gd:762`](../../src/main.gd#L767) não muda de valor.
+   toca escolhida", e o anel 4–18 m ([`main.gd:793`](../../src/main.gd#L793)) não muda de valor.
 4. **Escolher a toca** é determinístico e sem sorteio novo: a mais vazia (menor número de membros
    vivos), desempate por índice menor. Isto é o que mantém a equivalência lote/um-a-um do
    `simulation_rng_test` (§2.4), porque a função é do estado vivo, não da sequência de `randf`.
 5. A toca **não segue o jogador**: fundada, fica. É o corte com o comportamento atual, que
-   refaz a banda em torno de `player.position3()` a cada recusa ([`main.gd:758`](../../src/main.gd#L763).
+   refaz a banda em torno de `player.position3()` a cada recusa ([`main.gd:789`](../../src/main.gd#L789)).
 6. `DEN_MIN_DIST`: o valor sai **medido** nesta perna, com o arco derivado antes do código — para
    dois corpos não se lerem é preciso > `PACK_COHESION_RADIUS` = 24 m, e para dois *componentes*
    não se fundirem é preciso mais, porque o corpo anda até 22 m do baricentro
@@ -176,14 +176,14 @@ com default explícito (fase/idade/`mate_cd`, [`:1130-1138`](../../src/entities/
 
 ### 3.3 Pertença nos três caminhos que põem bicho no mundo
 
-- **Sorteio** ([`main.gd:356-379`](../../src/main.gd#L361-L384): a primeira `DEN_COUNT` crias
+- **Sorteio** ([`main.gd:387-410`](../../src/main.gd#L387-L410)): a primeira `DEN_COUNT` crias
   fundam; o resto entra.
-- **Fila** ([`main.gd:299-312`](../../src/main.gd#L304-L317, `:373`, `:939`): o elemento da fila
+- **Fila** ([`main.gd:330-343`](../../src/main.gd#L330-L343), `:399`, `:965`): o elemento da fila
   passa a carregar a **toca de quem morreu**, e a reposição entra nela. Hoje a fila é uma lista de
   floats; é a mudança que faz "a toca que perdeu" existir. O `.size()` lido por
-  `pending_respawns` ([`:1188`](../../src/main.gd#L1217) e por
+  `pending_respawns` ([`:1188`](../../src/main.gd#L1243)) e por
   `simulation_rng_test.gd:104` não muda de significado.
-- **Parto** ([`main.gd:469-502`](../../src/main.gd#L474-L507): a cria herda a toca do adulto de
+- **Parto** ([`main.gd:500-533`](../../src/main.gd#L500-L533)): a cria herda a toca do adulto de
   **identidade menor** — o mesmo desempate por identidade que a ronda já usa para ordenar
   assentos ([`wolf.gd:639-644`](../../src/entities/wolf.gd#L639-L644)) — e o âncora deixa de ser o
   ponto médio dos dois lares, porque um casal de tocas diferentes produzia um lar **fora de
@@ -201,33 +201,33 @@ estava porque nunca houve para onde); com três, ele pode **re-fundir** as tocas
   o componente ≥ 2 ao fim da janela.
 - **Braço B (colocação + âncora)** — `DEN_RANGE` limita o centro da ronda ao próprio
   `_territory_center` **deslocado no máximo até a borda da toca**. Custo honesto: re-derivar
-  `ronda_centro_e_baricentro_e_nao_o_lar_do_lobo` ([`aether_reactions_test.gd:2053-2056`](../../tests/aether_reactions_test.gd#L2084-L2087)
-  e a linha do lobo único ([`:1991-1995`](../../tests/aether_reactions_test.gd#L2028-L2032), e
+  `ronda_centro_e_baricentro_e_nao_o_lar_do_lobo` ([`aether_reactions_test.gd:2084-2087`](../../tests/aether_reactions_test.gd#L2084-L2087))
+  e a linha do lobo único ([`:1991-1995`](../../tests/aether_reactions_test.gd#L2028-L2032)), e
   mexer em `wolf.gd` com checagem gateada da perna 10. Só entra com o vermelho do braço A na mesa.
 
 A casa decide: **A primeiro**, e o número que escolhe entre os dois é impresso, não argumentado.
 
 ### 3.5 O que sai em observabilidade
 
-`diagnostics()` ([`main.gd:1180-1216`](../../src/main.gd#L1204-L1240) ganha três números, todos
+`diagnostics()` ([`main.gd:1230-1274`](../../src/main.gd#L1230-L1274)) ganha três números, todos
 derivados do que já existe, nenhum no caminho quente: `dens` (toca fundada), `den_components`
 (componentes conexos do grafo lido) e `den_min_dist` (menor distância centro-a-centro). O F3 não
 chama `diagnostics()` por frame — ele lê `clock.*` direto
 ([`hud.gd:258`](../../src/ui/hud.gd#L258)) e a linha por lobo vem do roster
-([`main.gd:843`](../../src/main.gd#L848) — então a conta roda quando o diagnóstico é pedido, e o
-`stats_line()` ([`main.gd:1174-1177`](../../src/main.gd#L1198-L1201) ganha a toca de cada lobo na
+([`main.gd:874`](../../src/main.gd#L874)) — então a conta roda quando o diagnóstico é pedido, e o
+`stats_line()` ([`main.gd:1224-1227`](../../src/main.gd#L1224-L1227)) ganha a toca de cada lobo na
 linha que já imprime por bicho.
 
 ## 4. Custo — as quatro perguntas
 
 - **Roda por frame, por tick ou às vezes?** Colocação: **às vezes** — cinco no boot
-  ([`main.gd:214`](../../src/main.gd#L219), um por fila de 45 s
-  ([`:294-307`](../../src/main.gd#L304-L317) e um por parto com cadência de 1 s e cooldown de
-  300 s por par ([`main.gd:553`](../../src/main.gd#L558, [`:569`](../../src/main.gd#L574). O
+  ([`main.gd:244`](../../src/main.gd#L244)), um por fila de 45 s
+  ([`:294-307`](../../src/main.gd#L330-L343)) e um por parto com cadência de 1 s e cooldown de
+  300 s por par ([`main.gd:584`](../../src/main.gd#L584), [`:595`](../../src/main.gd#L600)). O
   `O(tries × 24)` pior caso já é o de hoje; a portada nova (`≥ DEN_MIN_DIST` de toda toca) custa
   `≤ 3` contas de distância por tentativa, no caminho raro. Nada entra em `_sim_tick` nem em
   `_physics_process`. Pertença: uma atribuição no `_make_wolf`
-  ([`main.gd:396-414`](../../src/main.gd#L401-L419). O grafo já é reconstruído por passo e sua
+  ([`main.gd:427-445`](../../src/main.gd#L427-L445)). O grafo já é reconstruído por passo e sua
   complexidade não muda (`≤ 66` pares com `CENSUS_CAP` = 12).
 - **Quantas entidades são alcançadas?** ≤ 12 lobos vivos e ≤ 3 tocas. Componentes: `O(n +
   arestas)` sobre buffers que já existem, **dentro de `diagnostics()`** — não por tick.
@@ -239,7 +239,7 @@ linha que já imprime por bicho.
 - **Como sei que ficou melhor — e o log existe em headless?** O número que decide é o que a
   checagem imprime: `componentes=`, `max_componente=`, `den_min_dist=` e a lista de lares por
   toca, na sessão real de boot e depois de 1 400 passos de fila, no mesmo harness de
-  `_boot_session` ([`aether_reactions_test.gd:3125-3148`](../../tests/aether_reactions_test.gd#L3156-L3179).
+  `_boot_session` ([`aether_reactions_test.gd:3156-3179`](../../tests/aether_reactions_test.gd#L3156-L3179)).
   Consequência de versão, escrita **antes** do código: `Channel.COUNT`
   ([`aether_field.gd:9`](../../src/world/aether_field.gd#L9)) e `FORMAT_VERSION`
   ([`tick_journal.gd:4`](../../src/persistence/tick_journal.gd#L4)) não são tocados, e a
@@ -269,10 +269,10 @@ godot --headless --path . tests/smoke_test.tscn
    "cinco lares espalhados que nunca foram território" (dossiê 10 §3.2), só que do outro lado.
 3. **`cada_toca_e_um_lugar_valido`** — todo centro de toca passa por `_volume_clear` + coluna
    seca + `_spawn_point_ok` e nenhum dois centros partilham coluna
-   ([`main.gd:783-795`](../../src/main.gd#L788-L800, [`:730-735`](../../src/main.gd#L735-L740).
+   ([`main.gd:814-826`](../../src/main.gd#L814-L826), [`:756-761`](../../src/main.gd#L761-L766)).
 4. **`reposicao_volta_para_a_toca_perdida`** — mata um lobo da toca 2, esvazia a fila pela
    transição real (cadáver 1 s + 45 s, `:265-274` e `:674-684`, passos dados pelo `_sim_tick`
-   como em [`aether_reactions_test.gd:3187-3194`](../../tests/aether_reactions_test.gd#L3218-L3225)
+   como em [`aether_reactions_test.gd:3218-3225`](../../tests/aether_reactions_test.gd#L3218-L3225))
    e exige `novo.den == 2`, lar a ≤ `PACK_LEASH` do centro da toca 2 **e** a ≥ `DEN_MIN_DIST` dos
    centros das outras. Sem a segunda metade, a checagem passa com a regressão de hoje.
 5. **`nascimento_fica_na_toca_dos_pais`** — dois adultos da mesma toca produzem cria com o mesmo
@@ -291,9 +291,9 @@ godot --headless --path . tests/smoke_test.tscn
    palco marca **todas** as colunas da caixa útil (116 × 116 ≈ 13 456 entradas, num fixture de
    teste, não no jogo) e exige `recusados == 8` com `soma(motivos) == tries × SPAWN_ATTEMPTS × 8`.
    Para `motivos` ser lido em número — hoje ele só é **interpolado na string impressa**
-   ([`main.gd:766`](../../src/main.gd#L771, `:590-592`) — o dicionário de recusa devolve a chave
+   ([`main.gd:797`](../../src/main.gd#L797), `:616-618`) — o dicionário de recusa devolve a chave
    `motivos`. A asserção `violacoes == 0` de
-   [`:2769-2771`](../../tests/aether_reactions_test.gd#L2806-L2808 deixa de ser a única palavra.
+   [`:2769-2771`](../../tests/aether_reactions_test.gd#L2806-L2808) deixa de ser a única palavra.
 9. **`toca_sobrevive_ao_save`** — save com três tocas → load devolve `den` e centros; e um save
    **sem** a chave (o disco anterior à perna) carrega com default derivado, sem inventar lobo nem
    perder censo, pelo mesmo padrão aditivo de fase/idade/`mate_cd`
@@ -302,10 +302,10 @@ godot --headless --path . tests/smoke_test.tscn
 10. **`assinatura_de_populacao_estavel`** — lote == um-a-um == outra ordem, com as tocas no meio:
     é a checagem do `simulation_rng_test` §2.4, e 16 não escreve uma nova — ela **não pode quebrar**
     as três existentes. Se quebrar, a escolha de toca virou função da sequência de sorteios.
-11. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:39`](../../tests/aether_reactions_test.gd#L39,
-    **225** nesta leitura), o censo do runner ([`:3096`](../../tests/aether_reactions_test.gd#L3133),
+11. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:39`](../../tests/aether_reactions_test.gd#L39),
+    **225** nesta leitura), o censo do runner ([`:3096`](../../tests/aether_reactions_test.gd#L3133)),
     os 27 do `simulation_rng_test` ([`:9`](../../tests/simulation_rng_test.gd#L9)) e a última
-    linha da suíte ([`smoke_test.gd:223`](../../tests/smoke_test.gd#L223), **252 / 0 / 43,0 s** na
+    linha da suíte ([`smoke_test.gd:265`](../../tests/smoke_test.gd#L265), **252 / 0 / 43,0 s** na
     `main` `e0450a3`) sobem com o lote e são re-medidos no clone limpo com `--import` frio.
 
 ## 6. O que NÃO fazer
@@ -321,7 +321,7 @@ godot --headless --path . tests/smoke_test.tscn
   lobo **lê** decide a ronda (dossiê 10); a toca entra como **lugar**, e a pertença só muda o que
   o sorteio e o parto escrevem. Se aparecer um `if den == 2` em `wolf.gd`, o lote está errado.
 - **Nenhum aviso na tela sobre tocas.** A perna 14 tirou os dois letreiros de criatura
-  ([`main.gd:304-308`](../../src/main.gd#L309-L313) e a regra continua: o jogador acha a matilha
+  ([`main.gd:335-339`](../../src/main.gd#L335-L339)) e a regra continua: o jogador acha a matilha
   pelos rastros. A fala de fundação é log de headless (`print`), não `hud.show_message`.
 - **Não subir `Channel.COUNT` nem `FORMAT_VERSION`** para "registrar a toca no Éter". Parentesco e
   pertença por canal é a decisão de versão do dossiê 13, e ela está guardada atrás do segundo
@@ -366,8 +366,8 @@ assumiu a 16 ou a 11 como donas — a 11 pousou sem mexer em `_spawn_home_point`
 esta perna, pelo §5.8.
 
 Fica aberto, e é novo, lido aqui: **furo #21** — `pack_pairs` conta **pares testados**
-([`main.gd:873`](../../src/main.gd#L897) e não arestas aceitas, então a asserção
-`pack_pairs == n(n-1)/2` de [`smoke_test.gd:316`](../../tests/smoke_test.gd#L316) não decide nada
+([`main.gd:923`](../../src/main.gd#L923)) e não arestas aceitas, então a asserção
+`pack_pairs == n(n-1)/2` de [`smoke_test.gd:358`](../../tests/smoke_test.gd#L358) não decide nada
 sobre coesão; o que decide é o `biggest >= 2` da mesma linha. O §5 fecha isso com um número de
 componentes, mas a linha da suíte continua afirmando igualdade aritmética enquanto a perna não
 pousar, e nada aqui deve ser lido como se tivesse consertado.
@@ -383,10 +383,10 @@ pousar, e nada aqui deve ser lido como se tivesse consertado.
   ([`wolf.gd:994-996`](../../src/entities/wolf.gd#L994-L996)). Prometer "ele volta para a toca
   dormir" seria escrever um comportamento sem comprador nenhum de §5.
 - **"vi um lobo só" como sorte de semente**: não é. O círculo de 18 m é consequência de duas
-  constantes ([`main.gd:762`](../../src/main.gd#L767, [`:522-526`](../../src/main.gd#L527-L531),
+  constantes ([`main.gd:793`](../../src/main.gd#L793), [`:548-552`](../../src/main.gd#L553-L557)),
   e vale para toda semente; a semente muda **onde** é o círculo, nunca o tamanho dele. Isso é o que
   a checagem 1 pode exigir sem depender de sorte.
 - **"colocar os lobos longe do jogador" como o pedido**: longe é a perna 14 e já está gateado
   (`SAFE_SPAWN_DIST` + visada). O que a 16 acrescenta é **entre eles**, e o portão novo não pode
   comprar segurança: cada toca continua passando pelo predicado do jogador inteiro
-  ([`main.gd:730-735`](../../src/main.gd#L735-L740).
+  ([`main.gd:761-766`](../../src/main.gd#L761-L766)).

@@ -90,6 +90,30 @@ var _oracle_probe: MindOracle = null
 var _gate_host: AfMindRuntime = null
 var _gate_oracle: MindOracle = null
 
+## Estado da Fase 2 (dossie 23 §5.3). Cada leitura vive aqui porque o gate e armado num
+## passo e cobrado no seguinte — o mesmo formato das janelas de 70 quadros do FX da agua.
+## A pilha de seis pedras do palco de exposicao (`CH_STACK`) existe para que o canal A
+## tenha um 0, um 0,75 e um 1 dentro de um chunk de terreno real, sem depender do relevo
+## que a semente resolveu desenhar naquele chunk.
+const CH_STACK := 6
+const CH_RNG_PIN := 7301
+var _ch_scratch: VoxelWorld = null
+var _ch_scratch_root: Node3D = null
+var _ch_mesh: Mesh = null
+var _ch_pilha := Vector3i(-1, -1, -1)
+var _ch_op := {}
+var _ch_fall := -1.0
+var _ch_ramp_up := -1.0
+var _ch_up_frame := -1
+var _ch_down_frame := -1
+var _ch_e0 := 0.0
+var _ch_e1 := 0.0
+var _ch_edits0 := 0
+var _ch_sig := ""
+var _ch_col := Vector2i(-1, -1)
+var _ch_rings0 := -1
+var _ch_refus0 := -1
+
 
 func _ready() -> void:
 	_t0 = Time.get_ticks_msec()
@@ -142,6 +166,24 @@ func _ready() -> void:
 		["cadaver no chao", 0, _check_corpse],
 		["recolhimento e reposicao", 460, _check_reap],
 		["censo do disco", 0, _check_censo_disk],
+		# As linhas da Fase 2 fecham o `_steps`, nao no meio dela: cada linha com espera
+		# propria empurra o indice de quadro de tudo que vem depois, e `cubo no quadrante
+		# inferior direito, mira livre` e uma assercao com menos de um pixel de folga sobre
+		# uma pose que respira com o numero de quadros vivos (`fp_viewmodel.gd:79` soma
+		# `_phase` a cada passo do jogador, e a pose de medida em `minerar e colocar` nao
+		# azera a fase nos 20 `advance` proprios). Medido: base com 300 quadros a mais antes
+		# daquela linha deu `cubo=[752..938 x 357..546]` e o mesmo VERMELHO, com codigo
+		# identico em todo o resto. E o **furo #49**, dono a perna do viewmodel em 1a
+		# pessoa; enquanto ele nao for pago, nenhuma linha nova com espera entra na frente.
+		["chuva: material opaco e fiel", 0, _check_opaque_surface],
+		["chuva: exposicao de ceu por coluna", 0, _check_weather_exposure],
+		["chuva: dono do clima", 0, _check_weather_owner],
+		["chuva: rampa — subir", 0, _check_weather_ramp_arm],
+		["chuva: rampa — descer", 150, _check_weather_ramp_down],
+		["chuva: rampa — desce e chega no material", 60, _check_weather_ramp_assert],
+		["chuva: rng da sessao", 0, _check_weather_rng],
+		["chuva: janela molhada — armar", 0, _check_rain_window_arm],
+		["chuva: anel, orcamento e nao-escrita", 90, _check_rain_window_assert],
 	]
 	_until = int(_steps[0][1])
 	print("== aetherfall smoke test  seed %d ==" % SEED)
@@ -839,6 +881,544 @@ func _fx_assinatura_coluna(x: int, z: int) -> String:
 		if main.world.edits.has(k):
 			partes.append("%d=%d" % [y, int(main.world.edits[k])])
 	return "%d,%d:%s" % [x, z, "|".join(partes)]
+
+
+# ------------------------------------------- chuva e molhado (dossie 23 §5.3)
+
+## As portas de leitura do gate da Fase 2. Nada aqui escreve `Weather`, `OpaqueSurface`
+## ou `RainFx` como nome de classe, nem `VoxelWorld.EXPOSURE_FALL` como constante: uma
+## referencia direta a um tipo que ainda nao existe e **erro de compilacao do script
+## inteiro**, e o modo de falha que a casa ja contou — um SCRIPT ERROR dentro de um passo
+## derruba checagens em silencio e a suíte passa a contar menos com o mesmo "0 falhas"
+## (mandato 1). Entao o gate nasce vermelho **lendo por nome**: `ResourceLoader.exists`,
+## `has_method()`, `Object.get()` e o mapa de constantes do GDScript, cada ausencia
+## devolvendo um numero nomeado (-1, -99) em vez de uma excecao. Quando o codigo pousar,
+## as mesmas portas devolvem o valor real e nenhuma assercao foi escrita de proposito
+## "contra o null".
+func _ch_script(caminho: String) -> GDScript:
+	if not ResourceLoader.exists(caminho):
+		return null
+	var scr := load(caminho)
+	return scr if scr is GDScript else null
+
+
+func _ch_call(o: Object, nome: String) -> Variant:
+	if o == null or not o.has_method(nome):
+		return null
+	return o.call(nome)
+
+
+func _ch_call1(o: Object, nome: String, arg: Variant) -> Variant:
+	if o == null or not o.has_method(nome):
+		return null
+	return o.call(nome, arg)
+
+
+func _ch_dict(o: Object, nome: String) -> Dictionary:
+	var v: Variant = _ch_call(o, nome)
+	if v is Dictionary:
+		return v
+	return {}
+
+
+## O numero de uma constante numerica do script, lido do mapa e nao re-digitado no teste
+## — a mesma recusa de repetir um numero contra ele mesmo que a testemunha de uniformes
+## da agua faz com o `SOURCE`. As chaves chegam como `StringName`, entao a comparacao e
+## por `String`; constante ausente (ou que nao e numero) devolve -1, e nenhum -1 passa em
+## assercao nenhuma.
+func _ch_const(scr: GDScript, nome: String) -> float:
+	if scr == null:
+		return -1.0
+	var cm: Dictionary = scr.get_script_constant_map()
+	for k in cm:
+		if String(k) == nome:
+			var v = cm[k]
+			if v is int or v is float:
+				return float(v)
+			return -1.0
+	return -1.0
+
+
+func _ch_static(scr: GDScript, nome: String) -> Variant:
+	if scr == null:
+		return null
+	var c := Callable(scr, nome)
+	return c.call() if c.is_valid() else null
+
+
+## O material opaco pela porta que a Fase 2 abre em `VoxelWorld` (§3.10c). Sem a porta,
+## `null` — e e esse `null` que faz as duas primeiras linhas do gate nascerem vermelhas
+## com o nome da ausencia impresso, nao um indice chutado.
+func _ch_opaque_of(w: VoxelWorld) -> Material:
+	return _ch_call(w, "opaque_material") as Material
+
+
+## O surface que carrega a instancia exata do material; -1 sem material. Copia o
+## instrumento da agua (`_water_surface_index`) porque o motivo e o mesmo: os grupos sao
+## acrescentados condicionalmente e indice fixo ja deixou o pano sem material nenhum.
+func _ch_surface_index(mesh: Mesh, mat: Material) -> int:
+	if mesh == null or mat == null:
+		return -1
+	for i in mesh.get_surface_count():
+		if mesh.surface_get_material(i) == mat:
+			return i
+	return -1
+
+
+func _ch_weather() -> Node:
+	return main.get_node_or_null("Weather")
+
+
+## Varredura de `get_property_list()` pelo tipo que o renderizador nao pode segurar
+## (§3.8): o mesmo instrumento do `fx_sem_eter` da Fase 1. Node nulo devolve **falso** —
+## ausencia nao e indiferenca, e quem nao existe tambem nao escreve no mundo por acidente
+## nenhum.
+func _ch_sem_eter(o: Object) -> bool:
+	if o == null:
+		return false
+	for prop in o.get_property_list():
+		if String(prop["class_name"]) == "AetherField":
+			return false
+	return true
+
+
+func _ch_contar_gdshader() -> int:
+	return _ch_walk_shader("res://src") + _ch_walk_shader("res://tests")
+
+
+## O escopo e nomeado de proposito: a cláusula do §3.1 é "mais de um `.gdshader` no
+## projeto", e o que a suíte varre são as duas pastas de código rastreadas — `.tools` é
+## gitignored e não é material do jogo.
+func _ch_walk_shader(dir_path: String) -> int:
+	var d := DirAccess.open(dir_path)
+	if d == null:
+		return 0
+	var n := 0
+	d.list_dir_begin()
+	var f := d.get_next()
+	while f != "":
+		if not f.begins_with("."):
+			var p := dir_path + "/" + f
+			if d.current_is_dir():
+				n += _ch_walk_shader(p)
+			elif f.ends_with(".gdshader"):
+				n += 1
+		f = d.get_next()
+	d.list_dir_end()
+	return n
+
+
+## Seis pedras empilhadas **no ar**, dentro de um chunk de terreno real: o topo da coluna
+## passa a ser a pilha (o `surface_height` do §3.10b é exatamente essa leitura), o ar em
+## volta faz cada face existir de verdade, e os y dos vértices caem nos três pontos que a
+## fórmula nomeia — `topo+1`, `topo-1`, `topo-4`. Longe das bordas do chunk (folga de 4)
+## para que o culling não coma as laterais. `record = false`: o teste não escreve no
+## mundo, e o mesh se reconstrói aqui, uma vez, sem esperar o orçamento de 2 chunks/frame.
+func _ch_palco(w: VoxelWorld) -> Vector3i:
+	for x in range(8, VoxelConfig.world_size_x() - 8, 3):
+		if x % VoxelConfig.CHUNK_SIZE_X < 4 or x % VoxelConfig.CHUNK_SIZE_X > 11:
+			continue
+		for z in range(8, VoxelConfig.world_size_z() - 8, 3):
+			if z % VoxelConfig.CHUNK_SIZE_Z < 4 or z % VoxelConfig.CHUNK_SIZE_Z > 11:
+				continue
+			var base := w.surface_height(x, z)
+			if base + CH_STACK + 3 > VoxelConfig.CHUNK_SIZE_Y - 1:
+				continue
+			var y0 := base + 6
+			for i in CH_STACK:
+				w.set_block(Vector3i(x, y0 + i, z), BlockDefs.Block.STONE, false)
+			var cell := Vector3i(x, y0, z)
+			w.build_chunk_mesh(w.chunk_at(cell))
+			return cell
+	return Vector3i(-1, -1, -1)
+
+
+## Census do grupo opaco de um surface. `so_pilha` limita aos vértices da coluna da
+## pilha (o XZ e o y da caixa), porque é ali que o y do vértice determina a exposição sem
+## a vizinhança; o resto do chunk entra na contagem de R=G=B e no min/max do A, que é o
+## canal lido por ninguém antes desta perna.
+func _ch_opaque_attrs(mesh: Mesh, oi: int, pilha: Vector3i, por_pilha: bool) -> Dictionary:
+	var out := {"verts": 0, "rgb": 0, "a_min": 2.0, "a_max": -1.0, "dispersos": 0, "por_y": {}}
+	if mesh == null or oi < 0:
+		return out
+	var arr := mesh.surface_get_arrays(oi)
+	var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var cols: PackedColorArray = arr[Mesh.ARRAY_COLOR]
+	for k in verts.size():
+		var v: Vector3 = verts[k]
+		var c: Color = cols[k]
+		var na_pilha := v.x >= float(pilha.x) - 0.001 and v.x <= float(pilha.x) + 1.001 \
+				and v.z >= float(pilha.z) - 0.001 and v.z <= float(pilha.z) + 1.001 \
+				and v.y >= float(pilha.y) - 0.001 and v.y <= float(pilha.y) + float(CH_STACK) + 0.001
+		if por_pilha and not na_pilha:
+			continue
+		out["verts"] = int(out["verts"]) + 1
+		if absf(c.r - c.g) < 0.0001 and absf(c.g - c.b) < 0.0001:
+			out["rgb"] = int(out["rgb"]) + 1
+		out["a_min"] = minf(float(out["a_min"]), c.a)
+		out["a_max"] = maxf(float(out["a_max"]), c.a)
+		if na_pilha:
+			var y := int(roundf(v.y))
+			var por: Dictionary = out["por_y"]
+			if por.has(y):
+				if absf(float(por[y]) - c.a) > 0.0001:
+					out["dispersos"] = int(out["dispersos"]) + 1
+			else:
+				por[y] = c.a
+	return out
+
+
+## `expos = clampf(1 - (topo - y)/EXPOSURE_FALL, 0, 1)` do §3.10b, com o `FALL` lido da
+## constante do mundo. `topo` é o `y` do voxel mais alto da coluna — a definição que o
+## próprio `surface_height` usa, e é por isso que o vértice do topo fica em `topo+1`.
+func _ch_esperada(topo: float, y: float, fall: float) -> float:
+	if fall <= 0.0:
+		return -1.0
+	return clampf(1.0 - (topo - y) / fall, 0.0, 1.0)
+
+
+func _check_opaque_surface() -> void:
+	_ch_scratch_root = Node3D.new()
+	add_child(_ch_scratch_root)
+	_ch_scratch = VoxelWorld.new()
+	_ch_scratch.setup_world(_ch_scratch_root)
+	_ch_scratch.generate(SEED)
+	_ch_pilha = _ch_palco(_ch_scratch)
+	var mat := _ch_opaque_of(_ch_scratch)
+	_ch_mesh = null
+	if _ch_pilha.x >= 0:
+		var chunk: VoxelChunk = _ch_scratch.chunk_at(_ch_pilha)
+		if chunk != null and chunk.mesh_instance != null:
+			_ch_mesh = chunk.mesh_instance.mesh
+	var oi := _ch_surface_index(_ch_mesh, mat)
+	_ch_op = _ch_opaque_attrs(_ch_mesh, oi, _ch_pilha, false)
+	_ch_fall = _ch_const(_ch_script("res://src/world/voxel_world.gd"), "EXPOSURE_FALL")
+
+	# O par de testemunhas que a agua ja usa: a lista que o GDScript grava e a que a
+	# SOURCE declara. Nome gravado sem declaracao correspondente e um no-op silencioso,
+	# e headless nao compila shader nenhum para avisar. `gdshader_em_src_tests` e o
+	# numero que fecha a discussao do §3.1 — 0 antes, 0 depois.
+	var scr := _ch_script("res://src/world/opaque_surface.gd")
+	var declarados := PackedStringArray()
+	var gravados := PackedStringArray()
+	var vd: Variant = _ch_static(scr, "declared_uniforms")
+	var vg: Variant = _ch_static(scr, "written_uniforms")
+	if vd is PackedStringArray:
+		declarados = vd
+	if vg is PackedStringArray:
+		gravados = vg
+	var sem_fonte := 0
+	for k: String in gravados:
+		if not declarados.has(k):
+			sem_fonte += 1
+	_check("material_opaco_e_shader",
+		mat != null and mat is ShaderMaterial and (mat as ShaderMaterial).shader != null
+				and oi >= 0 and sem_fonte == 0 and declarados.size() > 0 and gravados.size() > 0,
+		"shader=%s  surface=%d  declarados=%d  gravados=%d  sem_fonte=%d  gdshader_em_src_tests=%d  pilha=%s" % [
+			mat != null and mat is ShaderMaterial, oi, declarados.size(), gravados.size(),
+			sem_fonte, _ch_contar_gdshader(), _ch_pilha])
+
+	# R=G=B e a aritmetica do `bright` intacta (§3.10b, a clausula que autoriza o A como
+	# portador); o A e o canal que passou a variar. Na base a malharia escrevia `1.0` em
+	# todos os vertices opacos (eb218fe:src/world/voxel_world.gd:689) e `a_min` sai 1,000
+	# — o vermelho com nome, nao um crash. Hoje o `a` da exposicao entra pela mesma
+	# escrita (src/world/voxel_world.gd:773).
+	_check("opaco_preserva_rgb_da_face",
+		oi >= 0 and int(_ch_op["verts"]) > 0 and int(_ch_op["rgb"]) == int(_ch_op["verts"])
+				and float(_ch_op["a_min"]) < 0.01 and float(_ch_op["a_max"]) > 0.99,
+		"verts=%d  rgb_iguais=%d  a_min=%.3f  a_max=%.3f  surface=%d" % [
+			int(_ch_op["verts"]), int(_ch_op["rgb"]), float(_ch_op["a_min"]),
+			float(_ch_op["a_max"]), oi])
+
+
+func _check_weather_exposure() -> void:
+	var pilha_p := _ch_opaque_attrs(_ch_mesh, _ch_surface_index(_ch_mesh, _ch_opaque_of(_ch_scratch)),
+			_ch_pilha, true)
+	var por: Dictionary = pilha_p["por_y"]
+	var topo := float(_ch_pilha.y + CH_STACK - 1)
+	var y_topo := int(_ch_pilha.y + CH_STACK)
+	var y_abaixo := int(_ch_pilha.y + CH_STACK - 2)
+	var y_fundo := int(_ch_pilha.y + 1)
+	var a_topo := float(por.get(y_topo, -1.0))
+	var a_abaixo := float(por.get(y_abaixo, -1.0))
+	var a_fundo := float(por.get(y_fundo, -1.0))
+	var e_topo := _ch_esperada(topo, float(y_topo), _ch_fall)
+	var e_abaixo := _ch_esperada(topo, float(y_abaixo), _ch_fall)
+	var e_fundo := _ch_esperada(topo, float(y_fundo), _ch_fall)
+	# Tolerancia de 1/255 = 0,0039: o `COLOR` e um byte por canal, e os tres numeros da
+	# §5.3 (1,000 / 0,750 / 0,000) sao o `FALL` de 4 blocos chegado por esse canal.
+	_check("exposicao_de_ceu_por_coluna",
+			_ch_fall > 0.0 and e_topo > 0.99 and int(pilha_p["verts"]) > 0
+					and absf(a_topo - e_topo) < 0.004 and absf(a_abaixo - e_abaixo) < 0.004
+					and absf(a_fundo - e_fundo) < 0.004 and int(pilha_p["dispersos"]) == 0,
+			"EXPOSURE_FALL=%.1f  topo=%.3f/%.3f  abaixo=%.3f/%.3f  fundo=%.3f/%.3f  y_na_pilha=%d  dispersos=%d" % [
+			_ch_fall, a_topo, e_topo, a_abaixo, e_abaixo, a_fundo, e_fundo,
+			int(pilha_p["verts"]), int(pilha_p["dispersos"])])
+	_ch_scratch_root.queue_free()
+	_ch_scratch = null
+	_ch_scratch_root = null
+	_ch_mesh = null
+
+	# O braço rejeitado do §3.10b (varredura por face ou por voxel) é o que esta linha
+	# impede de voltar: o contador tem de fechar com **uma leitura por coluna por
+	# rebuild**, e `256 = CHUNK_SIZE_X * CHUNK_SIZE_Z` sai do config, nao da memoria.
+	# `chunks_lidos >= 64` porque o boot malha os 64 e a sessao real ainda pode rebuildar
+	# (lobo cava — perna 12); o que morde e a proporcao, nao o numero absoluto.
+	var ed := _ch_dict(main.world, "exposure_diagnostics")
+	var cols_por_chunk := VoxelConfig.CHUNK_SIZE_X * VoxelConfig.CHUNK_SIZE_Z
+	var chunks_lidos := int(ed.get("chunks_lidos", -1))
+	var col_lidas := int(ed.get("col_lidas", -1))
+	var faces_opacas := int(ed.get("faces_opacas", -1))
+	var faces_por_coluna := float(faces_opacas) / float(col_lidas) if col_lidas > 0 else -1.0
+	# `esperado` e impresso como texto quando nao ha leitura: `chunks_lidos * 256` com o
+	# -1 da ausencia daria -256, um numero que parece medida e nao e.
+	var esperado := "sem leitura" if chunks_lidos < 0 else str(chunks_lidos * cols_por_chunk)
+	_check("exposicao_nao_e_varredura_por_face",
+			chunks_lidos >= 64 and col_lidas == chunks_lidos * cols_por_chunk,
+			"chunks_lidos=%d  col_lidas=%d  esperado=%s  cols_por_chunk=%d  faces_opacas=%d  faces_por_coluna=%.2f" % [
+			chunks_lidos, col_lidas, esperado, cols_por_chunk,
+			faces_opacas, faces_por_coluna])
+
+
+func _check_weather_owner() -> void:
+	var no := _ch_weather()
+	var tem_chuva := no != null and no.get("chuva") is float
+	var tem_molhado := no != null and no.get("molhado") is float
+	var mundos := 0
+	var eteres := 0
+	var jogadores := 0
+	if no != null:
+		for prop in no.get_property_list():
+			var t := String(prop["class_name"])
+			if t == "VoxelWorld":
+				mundos += 1
+			elif t == "AetherField":
+				eteres += 1
+			elif t == "Player":
+				jogadores += 1
+	_check("clima_e_dono_visual",
+			no != null and tem_chuva and tem_molhado and mundos == 0 and eteres == 0
+					and jogadores == 0,
+			"no=%s  chuva=float=%s  molhado=float=%s  world_refs=%d  eter_refs=%d  player_refs=%d" % [
+			no != null, tem_chuva, tem_molhado, mundos, eteres, jogadores])
+
+
+func _check_weather_ramp_arm() -> void:
+	var no := _ch_weather()
+	_ch_up_frame = _frame
+	_ch_call1(no, "pedir_chuva", 1.0)
+	print("  rampa: no=%s  pedir_chuva(1.0) chamado=%s  molhado_0=%.3f  chuva=%.3f" % [
+		no != null, no != null and no.has_method("pedir_chuva"),
+		float(no.get("molhado")) if no != null else -1.0,
+		float(no.get("chuva")) if no != null else -1.0])
+
+
+func _check_weather_ramp_down() -> void:
+	var no := _ch_weather()
+	_ch_ramp_up = float(no.get("molhado")) if no != null else -1.0
+	_ch_down_frame = _frame
+	_ch_call1(no, "pedir_chuva", 0.0)
+	print("  rampa: topo_atingido=%.3f em %d frames  pedir_chuva(0.0) chamado=%s" % [
+		_ch_ramp_up, _frame - _ch_up_frame, no != null and no.has_method("pedir_chuva")])
+
+
+func _check_weather_ramp_assert() -> void:
+	var no := _ch_weather()
+	var down := float(no.get("molhado")) if no != null else -1.0
+	var frames_down := _frame - _ch_down_frame
+	var t := float(frames_down) / float(Engine.get_physics_ticks_per_second())
+	var scr := _ch_script("res://src/rendering/weather.gd")
+	var rise := _ch_const(scr, "WEATHER_RISE")
+	var decay := _ch_const(scr, "WEATHER_DECAY")
+	var esperado := 1.0 - decay * t if decay > 0.0 else -1.0
+	# O sink do §3.10a: sem ler o `molhado` do **material**, o no poderia existir,
+	# integrar a rampa e nao chegar a lugar nenhum — e o verde seria sobre um caminho
+	# desligado. `get_shader_parameter` devolve o que o material esta usando agora.
+	var mat := _ch_opaque_of(main.world)
+	var uniform := -99.0
+	if mat != null and mat is ShaderMaterial:
+		var v = (mat as ShaderMaterial).get_shader_parameter("molhado")
+		if v is float or v is int:
+			uniform = float(v)
+	_check("molhado_sobe_e_desce",
+			no != null and rise > 0.0 and decay > 0.0 and decay < rise
+					and _ch_ramp_up >= 0.99 and down < _ch_ramp_up
+					and absf(down - esperado) <= 0.02 and absf(uniform - down) <= 0.001,
+			"molhado 0.000->%.3f em %d frames  desceu=%.3f em %d frames  esperado=%.3f  material=%.3f  rise=%.3f  decay=%.3f  secs=%.3f" % [
+			_ch_ramp_up, maxi(_ch_down_frame - _ch_up_frame, 0), down,
+			frames_down, esperado, uniform, rise, decay, t])
+
+
+func _check_weather_rng() -> void:
+	# O molde da perna 12 (`aether_reactions_test.gd`), pino de `simulation_rng_test.gd:75-77`
+	# entre o armamento e a leitura: seed -> `randi()` de depois -> mesma seed -> os sorteios
+	# -> `randi()` tem de devolver o pino. Envolvido numa chamada **autonomica** fora da
+	# arvore, nao numa janela da sessao: a simulação ao vivo nao e deterministica (mandato 3)
+	# e pino algum pode prometer o que ela sorteia.
+	seed(CH_RNG_PIN)
+	var pino := randi()
+	seed(CH_RNG_PIN)
+	var scr := _ch_script("res://src/rendering/weather.gd")
+	var col_a: Array = []
+	var col_b: Array = []
+	var w1: Object = scr.new() if scr != null else null
+	var w2: Object = scr.new() if scr != null else null
+	for i in 8:
+		var v1: Variant = _ch_call(w1, "sortear_coluna")
+		var v2: Variant = _ch_call(w2, "sortear_coluna")
+		if v1 is Vector2i and v2 is Vector2i:
+			col_a.append(v1)
+			col_b.append(v2)
+	var depois := randi()
+	if w1 != null:
+		(w1 as Node).free()
+	if w2 != null:
+		(w2 as Node).free()
+	# Identidade: a chuva sorteia na RNG **dela**. Se o `rng()` do clima for o mesmo objeto
+	# que `_population_rng` do `main`, o clima esta comendo a sequencia do censo e o
+	# determinismo de `intent`/spawn passa a depender de quantos frames choveu.
+	var no := _ch_weather()
+	var rng_clima: Object = _ch_call(no, "rng")
+	var rng_pop: Object = main.get("_population_rng")
+	_check("chuva_nao_consome_rng_da_sessao",
+			depois == pino and col_a.size() == 8 and col_a == col_b and rng_clima != null
+					and rng_clima != rng_pop,
+			"pino_antes=%d  pino_depois=%d  global_preservado=%s  colunas_iguais=%s  n=%d  script=%s  rng_do_clima=%s  rng_da_populacao=%s" % [
+			pino, depois, depois == pino, col_a == col_b, col_a.size(), scr != null,
+			rng_clima != null, rng_pop != null])
+
+
+func _check_rain_window_arm() -> void:
+	var no := _ch_weather()
+	_ch_call1(no, "pedir_chuva", 1.0)
+	# A coluna mais funda ja foi escolhida pelo passo da queda (§5.1) e e ela que a
+	# assinatura de nao-escrita vigia; o resto do mundo fica impresso sem ser assercao,
+	# porque lobo cava e grama cresce por causa legitima.
+	_ch_col = _fx_col
+	_ch_sig = _fx_assinatura_coluna(_fx_col.x, _fx_col.y)
+	_ch_edits0 = main.world.edits.size()
+	_ch_e0 = main.aether.total_energy()
+	var d: Dictionary = main.water_fx.diagnostics()
+	_ch_rings0 = int(d.get("anis_chuva", -1))
+	_ch_refus0 = int(d.get("anis_recusados", -1))
+	print("  janela molhada: chuva=1.0 no=%s  anis_chuva_0=%d  recusados_0=%d  edits=%d  sig=%d chars" % [
+		no != null, _ch_rings0, _ch_refus0, _ch_edits0, _ch_sig.length()])
+
+
+func _check_rain_window_assert() -> void:
+	var d: Dictionary = main.water_fx.diagnostics()
+	var anis := int(d.get("anis_chuva", -1))
+	var recusos := int(d.get("anis_recusados", -1))
+	var vivo_c := int(d.get("anis_vivos_chuva", -1))
+	var vivo_k := int(d.get("anis_vivos_corpo", -1))
+	var no_zero := int(d.get("anis_no_zero", -1))
+	var col_ult := Vector2i(-9, -9)
+	var plano_fx := -99.0
+	if d.get("col_ultima") is Vector2i:
+		col_ult = d["col_ultima"]
+		plano_fx = float(d.get("plano_ultima", -99.0))
+	var na_agua := col_ult.x != -9 and _fx_coluna_agua(col_ult.x, col_ult.y) > 0
+	var plano_mundo := -99.0
+	if col_ult.x != -9:
+		plano_mundo = main.world.water_surface_y(col_ult.x, col_ult.y)
+	# O anel e do pool que ja existe (§3.10d): o ultimo lugar que ele pousou tem de estar
+	# no plano que o **mundo** devolve para aquela coluna, coluna sem agua recusa com
+	# contador, e a cota de ~9 de 12 vagas viva e lida com os dois compradores na janela.
+	_check("anel_de_chuva_so_na_agua",
+			anis > _ch_rings0 and _ch_rings0 >= 0 and no_zero == 0 and vivo_c >= 0
+					and vivo_k >= 0 and vivo_c + vivo_k <= WaterFx.RING_POOL and na_agua
+					and absf(plano_fx - plano_mundo) < 0.001,
+			"anis_chuva=%d->%d  recusados=%d->%d  col_ultima=%s  na_agua=%s  plano_fx=%.3f  plano_mundo=%.3f  vivo_chuva=%d  vivo_corpo=%d  pool=%d  no_zero=%d" % [
+			_ch_rings0, anis, _ch_refus0, recusos, col_ult, na_agua, plano_fx, plano_mundo,
+			vivo_c, vivo_k, WaterFx.RING_POOL, no_zero])
+
+	# A porta do §3.10e, lida do mesmo jeito que `molhado_sobe_e_desce` le a do opaco: o
+	# numero que a superficie da agua desenha tem de ser o numero que o clima pediu. Sem
+	# esta linha o `chuva` poderia estar declarado na SOURCE, escrito em `params()` e nunca
+	# atualizado por nadie — um uniforme congelado em zero da verde em todas as outras nove.
+	# Os dois tamanhos vao impressos porque e aqui que o par 16/14 da Fase 1 vira 17/15: o
+	# re-derivar tem de aparecer na corrida, nao so no documento.
+	var wmat: Material = main.world.water_material()
+	var water_chuva := -99.0
+	if wmat != null and wmat is ShaderMaterial:
+		var vc = (wmat as ShaderMaterial).get_shader_parameter("chuva")
+		if vc is float or vc is int:
+			water_chuva = float(vc)
+	var alvo := float(_ch_weather().get("chuva")) if _ch_weather() != null else -99.0
+	var wscr := _ch_script("res://src/world/water_surface.gd")
+	var decl: Variant = _ch_static(wscr, "declared_uniforms")
+	var writ: Variant = _ch_static(wscr, "written_uniforms")
+	var nd := (decl as PackedStringArray).size() if decl is PackedStringArray else -1
+	var nw := (writ as PackedStringArray).size() if writ is PackedStringArray else -1
+	_check("agua_le_a_chuva",
+			water_chuva > 0.0 and absf(water_chuva - alvo) <= 0.001 and nd == nw + 2,
+			"chuva_no=%.3f  uniforme_agua=%.3f  declarados=%d  gravados=%d" % [
+			alvo, water_chuva, nd, nw])
+
+	# Orcamento com aritmetica, nao com adjetivo (§3.6, o teto que a Fase 1 escreveu	# prevendo este segundo comprador): `amount` x `lifetime` de cada emissor nao pode
+	# passar do `amount` dele, e o soma dos `amount` da arvore e o teto declarado. Os
+	# quatro numeros saem das constantes do `RainFx` — re-digit-los no teste seria a
+	# assercao conferindo a si mesma.
+	var rfx: Object = main.get("rain_fx")
+	var scr := _ch_script("res://src/rendering/rain_fx.gd")
+	var near_amount := _ch_const(scr, "NEAR_AMOUNT")
+	var far_amount := _ch_const(scr, "FAR_AMOUNT")
+	var near_rate := _ch_const(scr, "NEAR_RATE")
+	var near_life := _ch_const(scr, "NEAR_LIFE")
+	var far_rate := _ch_const(scr, "FAR_RATE")
+	var far_life := _ch_const(scr, "FAR_LIFE")
+	var tv: Variant = _ch_static(scr, "teto_particulas")
+	var teto := int(tv) if tv is int else -1
+	var emissores := 0
+	var soma := 0
+	var fiel_near := false
+	var fiel_far := false
+	if rfx != null:
+		for c in rfx.get_children():
+			if c is GPUParticles3D:
+				emissores += 1
+				var p := c as GPUParticles3D
+				soma += p.amount
+				if p.amount == int(near_amount):
+					fiel_near = absf(p.lifetime - near_life) < 0.001
+				elif p.amount == int(far_amount):
+					fiel_far = absf(p.lifetime - far_life) < 0.001
+	var near_viva := near_rate * near_life if near_rate > 0.0 and near_life > 0.0 else -1.0
+	var far_viva := far_rate * far_life if far_rate > 0.0 and far_life > 0.0 else -1.0
+	_check("orcamento_de_particulas_da_chuva",
+			scr != null and rfx != null and emissores == 2 and soma == teto
+					and near_amount > 0.0 and far_amount > 0.0
+					and teto == int(near_amount + far_amount) and fiel_near and fiel_far
+					and near_viva <= near_amount and far_viva <= far_amount,
+			"emissores=%d  soma=%d  teto=%d  near=%.0f*%.1f=%.0f<=%.0f  far=%.0f*%.1f=%.0f<=%.0f  fiel_near=%s  fiel_far=%s" % [
+			emissores, soma, teto, near_rate, near_life, near_viva, near_amount,
+			far_rate, far_life, far_viva, far_amount, fiel_near, fiel_far])
+
+	# A clausula do §5.1 estendida a janela inteira, com os tres nos sob a mesma
+	# varredura. A banda do Eter **nao** e um ratio solto como o da Fase 1: medido nesta
+	# arvore, a janela molhada de 90 quadros apanha lobo cavando (perna 12), e o cavar
+	# escreve WORK no campo — entao `eter_chuva=0,37` com `eter_seco=0,00` nao e a chuva
+	# escrevendo no Eter, e o lobo. O cavo tem testemunha propria: `world.edits` cresce
+	# com ele, porque o `set_block` da perna 12 grava. Logo a banda so vale na janela em
+	# que nada foi editado — fora dai ela nao tem dono, e o que morde passa a ser a
+	# varredura estrutural: um no sem nenhuma referencia a `AetherField` nao tem por onde
+	# escrever no campo. A renuncia e impressa com nome, nunca em silencio.
+	_ch_e1 = main.aether.total_energy()
+	var world: VoxelWorld = main.world
+	var seca := absf(_fx_seco_e1 - _fx_seco_e0)
+	var molhada := absf(_ch_e1 - _ch_e0)
+	var edits_na_janela := world.edits.size() - _ch_edits0
+	var banda_val := edits_na_janela == 0
+	var fx_sem := _ch_sem_eter(main.water_fx)
+	var rain_sem := _ch_sem_eter(rfx)
+	var wth_sem := _ch_sem_eter(_ch_weather())
+	var sig_ok := _ch_sig == _fx_assinatura_coluna(_ch_col.x, _ch_col.y)
+	_check("chuva_nao_escreve_o_mundo",
+			sig_ok and AetherField.Channel.COUNT == 3 and fx_sem and rain_sem and wth_sem
+					and (not banda_val or molhada <= 4.0 * seca),
+			"assinatura_ok=%s  edits_na_janela=%d  banda_val=%s  edits_globais=%d->%d  eter_seco=%.6f  eter_chuva=%.6f  canais=%d  fx_sem_eter=%s  rain_sem_eter=%s  weather_sem_eter=%s" % [
+			sig_ok, edits_na_janela, banda_val, _ch_edits0, world.edits.size(), seca, molhada,
+			AetherField.Channel.COUNT, fx_sem, rain_sem, wth_sem])
 
 
 static func _sha_hex(s: String) -> String:

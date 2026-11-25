@@ -1,0 +1,21 @@
+extends SceneTree
+## Sonda curta (gitignored): os defaults do `StandardMaterial3D` que o `OpaqueSurface`
+## precisa reproduzir, e quais `render_mode` de specular o front-end do shader aceita.
+## O instrumento e o stdout: atribuir `.code` passa pelo `shader_set_code` mesmo no
+## renderer dummy do headless, entao um render_mode invalido imprime SHADER ERROR aqui.
+
+
+func _init() -> void:
+	var m := StandardMaterial3D.new()
+	print("shading_mode=%d  diffuse_mode=%d  specular_mode=%d  roughness=%.2f  metallic=%.2f  vertex_color=%s  cull=%d  filter=%d" % [
+		m.shading_mode, m.diffuse_mode, m.specular_mode, m.roughness, m.metallic,
+		str(m.vertex_color_use_as_albedo), m.cull_mode, m.texture_filter])
+	print("enums: PER_PIXEL=%d  DIFFUSE_BURLEY=%d  SCHLICK_GGX=%d  TOON=%d  DISABLED=%d  NEAREST_WITH_MIPS=%d" % [
+		BaseMaterial3D.SHADING_MODE_PER_PIXEL, BaseMaterial3D.DIFFUSE_BURLEY,
+		BaseMaterial3D.SPECULAR_SCHLICK_GGX, BaseMaterial3D.SPECULAR_TOON,
+		BaseMaterial3D.SPECULAR_DISABLED, BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS])
+	for rm in ["specular_schlick_ggx", "specular_schlick_blurry", "specular_disabled"]:
+		var sh := Shader.new()
+		sh.code = "shader_type spatial;\nrender_mode %s, diffuse_burley;\nvoid fragment(){ALBEDO = vec3(1.0);}\n" % rm
+		print("--- tentando render_mode `%s` (o SHADER ERROR, se houver, sai logo abaixo)" % rm)
+	quit()

@@ -1,0 +1,31 @@
+## Varredura de citacoes NUAS em comentario de codigo: `(voxel_world.gd:689)` — sem prefixo de
+## diretorio e sem a forma `#L`. Nenhuma das tres reguas da casa casa esses ponteiros: o
+## `tools/check_doc_anchors.py` tem corpus de `AGENTS.md` + `README.md` + `docs/` (a funcao
+## `doc_files`, linha 80) e nenhum dos tres instrumentos abre um arquivo de `src/` ou `tests/`;
+## e os que abrem exigem o prefixo `src/`/`tests/` para casar. O criterio impresso aqui e
+## linha-branca: o alvo existe, o numero esta dentro do arquivo, e a linha esta vazia — que e a
+## forma do furo #28 que a varredura numerica nao ve. O script e rascunho desta conversa
+## (C:/tmp/citas_nuas.py), nao do repositorio.
+
+### arvore de trabalho, depois dos tres consertos desta passada
+$ cd <worktree 78742d6+docs> && python C:/tmp/citas_nuas.py
+BRANCO   src\entities\wolf.gd:131  ->  main.gd:913  (arquivo tem 1333 linhas)
+BRANCO   tests\aether_reactions_test.gd:5329  ->  voxel_world.gd:301  (arquivo tem 832 linhas)
+citacoes nuas em comentarios de codigo: 50
+
+### clone limpo da base eb218fe
+$ cd C:/tmp/aetherfall-base-23f2 && python C:/tmp/citas_nuas.py
+BRANCO   src\entities\voxel_body.gd:115  ->  voxel_world.gd:305  (arquivo tem 748 linhas)
+citacoes nuas em comentarios de codigo: 44
+
+## leitura. A passada abriu medindo 52 nuas e 4 brancas na arvore de trabalho (contra 44 e 1 na
+## base): os tres consertos — `src/world/opaque_surface.gd:57` (virou cite com prefixo de
+## revisao, que e a forma da casa para "a leitura daquela arvore" e sai do corpus da varredura de
+## proposito), `src/world/opaque_surface.gd:59` (`voxel_atlas.gd:36` -> `:35`, a linha do
+## `srgb_to_linear()`) e `tests/smoke_test.gd:1121-1125` (a base com prefixo de revisao e o `a`
+## de hoje escrito com o prefixo `src/world/`, para nao acrescentar uma cita nua nova) — deixam a
+## arvore em 50 nuas e 2 brancas. As duas restantes moram em arquivo que a clausula "so visual"
+## nao alcana: `src/entities/wolf.gd:131` (o `_on_acted("break")` esta hoje em
+## `src/main.gd:960-963`; na base ja estava em `:936-938`, ou seja, o ponteiro estava errado antes
+## desta perna) e `tests/aether_reactions_test.gd:5329` (o alvo de hoje e a guarda de carimbo em
+## `src/world/voxel_world.gd:339`). Furo #51 no status.

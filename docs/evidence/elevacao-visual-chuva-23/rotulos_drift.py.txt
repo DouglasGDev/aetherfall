@@ -1,0 +1,54 @@
+## Rotulo com um numero, URL com outro: `[main.gd:331](src/main.gd#L362)` — a forma que o
+## `AGENTS.md` usa desde as pernas antigas, e que a re-derivacao mecanica desta perna tambem usa
+## quando so o URL envelheceu. A regua de ancoras da casa confere o rotulo com o CONTEUDO da
+## linha-alvo e o URL com o ARQUIVO, mas nunca o numero do rotulo com o numero do URL, entao a
+## divergencia e invisivel para ela; `verify_plan_cites.py` le o numero do rotulo e nao o do URL.
+## E a segunda face do furo #28, contada. O script e rascunho desta conversa
+## (C:/tmp/rotulos_drift.py), nao do repositorio. Corpus: AGENTS.md, README.md, o status, as 23
+## paginas de docs/planos/, docs/engine/simclock.md e as paginas de docs/design/.
+
+### arvore de trabalho
+$ cd <worktree 78742d6+docs> && python C:/tmp/rotulos_drift.py
+   76  docs/melhorias-status.md
+   10  AGENTS.md
+    6  docs\planos\10-alcateia-rutinas.md
+    4  docs\planos\11-acasalamento-filhote-e-censo.md
+    4  docs\design\09-veloren-mechanics-adaptation.md
+    3  docs/engine/simclock.md
+    3  docs\planos\13-arvore-genealogica-e-ether.md
+    3  docs\design\07-project-structure.md
+    3  docs\design\08-roadmap-risks-licensing.md
+    2  docs\planos\09-bioma-cor-de-pelo-e-ether.md
+    2  docs\planos\14-convivio-da-alcateia.md
+rotulos com numero conferidos: 1403  divergentes do proprio URL: 116
+  amostra: AGENTS.md  [[:3136-3139](tests/aether_reactions_test.gd#L3142-L3->L3142]
+  amostra: AGENTS.md  [[:331](src/main.gd#L362->L362]
+  amostra: AGENTS.md  [[:288-290](src/main.gd#L319-L321->L319]
+  amostra: AGENTS.md  [[:762](src/main.gd#L793->L793]
+
+### clone limpo da base eb218fe
+$ cd C:/tmp/aetherfall-base-23f2 && python C:/tmp/rotulos_drift.py
+   75  docs/melhorias-status.md
+   10  AGENTS.md
+    6  docs\planos\10-alcateia-rutinas.md
+    4  docs\planos\11-acasalamento-filhote-e-censo.md
+    4  docs\design\09-veloren-mechanics-adaptation.md
+    3  docs/engine/simclock.md
+    3  docs\planos\13-arvore-genealogica-e-ether.md
+    3  docs\design\07-project-structure.md
+    3  docs\design\08-roadmap-risks-licensing.md
+    2  docs\planos\09-bioma-cor-de-pelo-e-ether.md
+    2  docs\planos\14-convivio-da-alcateia.md
+rotulos com numero conferidos: 1376  divergentes do proprio URL: 115
+  amostra: AGENTS.md  [[:3136-3139](tests/aether_reactions_test.gd#L3142-L3->L3142]
+  amostra: AGENTS.md  [[:331](src/main.gd#L336->L336]
+  amostra: AGENTS.md  [[:288-290](src/main.gd#L293-L295->L293]
+  amostra: AGENTS.md  [[:762](src/main.gd#L767->L767]
+
+## leitura. 116 contra 115 — e o um a mais e desta frase no status, que da um exemplo literal da
+## propria classe e passa a contar a si mesma (o mesmo efeito que a regua de identificadores teve
+## na pagina 23, onde a frase que lista as ausencias e a decima ausente). Descontada ela, a
+## passada introduz ZERO rotulos divergentes: a distribuicao por arquivo e identica nas duas
+## arvores, inclusive o status em 75. Fica como debito com dono fora desta perna; a setima classe
+## do furo #51 (mapa linha-a-linha no check_doc_anchors.py) e o que paga os dois casos — rotulo e
+## URL — de uma vez.

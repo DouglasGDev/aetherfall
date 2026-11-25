@@ -1,0 +1,42 @@
+# Re-corrida da régua de 25 ms na PONTA desta perna (78742d6 + os docs desta passada), 2026-11-25.
+# Comando (por corrida, serial): C:/Aetherfall/.tools/Godot_v4.7.2-stable_win64_console.exe --headless --path . tests/smoke_test.tscn
+# Copia literal do rodape e das linhas [FAIL] de cada corrida; o rodape e a ultima linha do stdout.
+# Motivo da re-corrida: 0 registro do pouso da 23 (fase 1) deixa como debito desta casa --
+#   "a proxima perna que rodar a suite nesta arvore roda com o amostrador ligado e arquiva o par". O par esta aqui.
+# Testemunha de carga das janelas: carga_janela_ponta.log, carga_janela_base.log, carga_janela_ponta_sem_concorrente.log
+
+== corrida 1a (antes das 3 em serie) -- C:/tmp/suite_final_23f2.log
+== 275 checagens  3 falhas  63.7 s de teste ==
+espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.56 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+[FAIL] portao aberto volta a pedir            pedidos=0  motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore
+[FAIL] recusa da fila nomeia o motivo         motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore  status=-1
+[FAIL] espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.56 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+
+== corrida 2a -- C:/tmp/suite_ponta_1.log
+== 275 checagens  3 falhas  65.3 s de teste ==
+espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.95 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+[FAIL] portao aberto volta a pedir            pedidos=0  motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore
+[FAIL] recusa da fila nomeia o motivo         motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore  status=-1
+[FAIL] espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.95 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+
+== corrida 3a -- C:/tmp/suite_ponta_2.log
+== 275 checagens  3 falhas  65.5 s de teste ==
+espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=32.41 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+[FAIL] portao aberto volta a pedir            pedidos=0  motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore
+[FAIL] recusa da fila nomeia o motivo         motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore  status=-1
+[FAIL] espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=32.41 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+
+== corrida 4a -- C:/tmp/suite_ponta_3.log
+== 275 checagens  3 falhas  64.9 s de teste ==
+espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.37 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+[FAIL] portao aberto volta a pedir            pedidos=0  motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore
+[FAIL] recusa da fila nomeia o motivo         motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore  status=-1
+[FAIL] espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.37 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+
+== corrida 5a -- janela sem outro Godot do projeto na maquina -- C:/tmp/suite_ponta_quieta.log
+== 275 checagens  3 falhas  65.4 s de teste ==
+espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.33 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+[FAIL] portao aberto volta a pedir            pedidos=0  motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore
+[FAIL] recusa da fila nomeia o motivo         motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore  status=-1
+[FAIL] espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=31.33 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+

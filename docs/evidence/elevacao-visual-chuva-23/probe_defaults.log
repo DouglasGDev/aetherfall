@@ -1,0 +1,13 @@
+ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+   at: open_dynamic_library (platform/windows/os_windows.cpp:483)
+ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+   at: open_library (core/extension/gdextension.cpp:810)
+ERROR: Error loading extension: 'res://native/af_mind/af_mind.gdextension'.
+   at: load_extensions (core/extension/gdextension_manager.cpp:333)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+shading_mode=1  diffuse_mode=0  specular_mode=0  roughness=1.00  metallic=0.00  vertex_color=false  cull=0  filter=3
+enums: PER_PIXEL=1  DIFFUSE_BURLEY=0  SCHLICK_GGX=0  TOON=1  DISABLED=2  NEAREST_WITH_MIPS=2
+--- tentando render_mode `specular_schlick_ggx` (o SHADER ERROR, se houver, sai logo abaixo)
+--- tentando render_mode `specular_schlick_blurry` (o SHADER ERROR, se houver, sai logo abaixo)
+--- tentando render_mode `specular_disabled` (o SHADER ERROR, se houver, sai logo abaixo)

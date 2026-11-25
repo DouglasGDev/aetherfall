@@ -1,13 +1,13 @@
 # 03 — Canais MORTE / SOM / FOGO no `AetherField`
 
-Plano do item 4 de "Falta" (`docs/melhorias-status.md:510-518`). Nenhum número aqui é de
+Plano do item 4 de "Falta" (`docs/melhorias-status.md:574-582`). Nenhum número aqui é de
 corrida nova: eu não rodei engine nem suíte. Onde não há log, diz "não medido".
 
 **Estado em 2026-11-19 (mudado por execução, não por leitura):** o **passo 1 do §7** — a colheita
 sem canal novo — foi rodado, medido e publicado em `9f3622b`; §5, §7, §8 e a nota de contagem do §9
 foram atualizados com os números daquele clone. Nada do §2 em diante (canais MORTE/SOM/FOGO) saiu,
 e `Channel.COUNT` continua 3. A nota de medição está em
-`docs/melhorias-status.md:1834-1914`.
+`docs/melhorias-status.md:1964-2044`.
 
 ## 1. Premissa nomeada
 
@@ -25,10 +25,10 @@ logo o trabalho é ligar fonte a consumidora, não acrescentar linhas em tabelas
 | decaimento | `HALF_LIFE = [90.0, 55.0, 120.0]`, **lido** em `keep = pow(0.5, elapsed / HALF_LIFE[ch])` | `aether_field.gd:13`, uso em `:120` |
 | fluxo | `DIFFUSE_RATE = [0.06, 0.16, 0.10]`; corte `MIN_VALUE 0,004` (`:16`), teto `MAX_VALUE 4,0` (`:17`) | `aether_field.gd:15` |
 | cor | `CHANNEL_COLOR` com 3 entradas | `src/rendering/aether_viz.gd:12-16` |
-| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1646` |
+| geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1711` |
 | porta de escrita | `imprint(world_pos, ch, amount)` — posição primeiro, canal segundo | `aether_field.gd:87-89` |
 | fontes reais | medo no spawn `main.gd:295`; lavra 0,42 / colocação 0,20 `main.gd:477-479`; sangue 0,22 `main.gd:388`; morte do jogador `main.gd:544-545`; lobo ferido `wolf.gd:1291-1292`; lobo morto `wolf.gd:1310-1311`; medo do lobo `wolf.gd:490`, sangue `wolf.gd:772` | as fontes dos 3 canais novos: **zero ocorrências** |
-| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:295`, constante `src/main.gd:27` |
+| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:347`, constante `src/main.gd:27` |
 | alocação | `var hot := PackedInt32Array()` **por canal por passada** (3/s de lógica → 12/s); o scratch `_nb_i`/`_nb_w` é reusado (`:38-39`, `:162-163`) | `aether_field.gd:122` |
 | rastreamento | `_find_scent()`: 7×7 = 49 células × 3 `sample_cell` = **147 leituras na camada própria**; se nenhuma passa de `0,06` ali, o mesmo 7×7 se repete em ±1 camada com 2 canais — **98 por camada vizinha aberta**, 196 se as duas abrem. Peso `blood + work*0,35`, camada Y vem de `cell_of_world(center())`; memória 32 células / 30 s / renovação 0,06 | `src/entities/wolf.gd:960-1000` (gate do escalonamento `:974-975`, loops `:976-977`, célula `:978`, peso `:980-981`, canal `:992`, `cell_of_world` `:965`), constantes `wolf.gd:27-34`; custo medido em `docs/evidence/rastro-duas-camadas/readback.log` |
 | consumidoras | `flee`: `_fear_level` peso 1,7; `investigate`: `_scent_strength` 1,6, `1-_fear_level` 0,8 e o veto `ha rastro`; `_fear_level = fear*0,85 + threat*0,9 + blood*0,35 + panic*0,55` (`PACK_PANIC_FEAR` `:53`); amostras locais por tick `wolf.gd:923-925` | `wolf.gd:802-858`, o `_fear_level` composto em `:940-941`; mecanismo e normalização por `weight_sum` em `src/ai/utility_scorer.gd:73-75`; `min_lead` default 0,06 em `:41` e **sobrescrito para 0,05** por `wolf.gd:803` |
@@ -42,11 +42,11 @@ igual para os três" não sai dessa aritmética (11,33% exigiria elapsed/HL = 0,
 s de lógica numa passada). Não há "outro mecanismo que zera o campo": `:128-129` é `if rate <= 0.0:
 continue` e o único zeramento é o corte espacial de `MIN_VALUE` em `:149-152`, com a quantia
 colhida em `pass_cut[ch]` (`:153`). Isto era `[MEASURED]` **de leitura de código**, com o resto sem
-corrida: a checagem `meia-vida reduziu a energia` só afirma `e2 < e1` (`tests/smoke_test.gd:1116`) e
+corrida: a checagem `meia-vida reduziu a energia` só afirma `e2 < e1` (`tests/smoke_test.gd:2275`) e
 o log da rodada do `a8967e0` mostrava 2.500 → 2.296
 (`docs/evidence/third-person-carry/clone-suite.log:68`), 8,16% de perda onde `HALF_LIFE[FEAR]` prevê
 1,15% em 8 passadas (0,9985570^8 = 0,98850 → 2,471). **A metade não medida saiu em `9f3622b`:** os
-0,175 de diferença são `0,176129` de corte, colhidos na cadeia de `tests/smoke_test.gd:1088-1101` e
+0,175 de diferença são `0,176129` de corte, colhidos na cadeia de `tests/smoke_test.gd:2247-2260` e
 impressos por `:692-702`. O parágrafo acima deixa de ser débito e passa a ser §8.
 
 ## 3. Por canal novo
@@ -147,7 +147,7 @@ das curvas na mesma mudança do imprint, nada de ler o canal no `AudioDirector`.
 
 ## 8. Citações que não conferem no repositório
 
-- `docs/melhorias-status.md:510-511`: "três tabelas paralelas de `aether_field.gd:11-15`" e "uma
+- `docs/melhorias-status.md:574-575`: "três tabelas paralelas de `aether_field.gd:11-15`" e "uma
   cor em `aether_viz.gd:12-16"`. No arquivo há duas tabelas (`:13`, `:15`), mais `CHANNEL_NAMES`
   (`:11`) e o `enum Channel` (`:9`); a cor é a quinta superfície com largura e a sexta é
   `Channel.COUNT` dentro da projeção do journal (`src/persistence/tick_journal.gd:38`) — abrir
@@ -165,7 +165,7 @@ das curvas na mesma mudança do imprint, nada de ler o canal no `AudioDirector`.
 - `AGENTS.md` publica 196 608 B/tick e 3 canais: os dois valores caem com o commit 2.
 - ~~O log publicado não fecha conta com `HALF_LIFE`~~ — **fechado por medição em `9f3622b`**:
   `docs/evidence/third-person-carry/clone-suite.log:68` mostrava 2.500 → 2.296 (8,16%) em 8 passadas
-  de `diffuse_and_decay(0.25)` — hoje o laço está em `tests/smoke_test.gd:1088-1101` e o par
+  de `diffuse_and_decay(0.25)` — hoje o laço está em `tests/smoke_test.gd:2247-2260` e o par
   `2.500 -> 2.296` é impresso por `:690-691` — onde `HALF_LIFE[FEAR] = 120` prevê
   0,9985570^8 = 0,98850 → 2,471. Os 0,175 que faltavam
   são, medidos, **`0,176129` de corte de `MIN_VALUE`** (`aether_field.gd:146-153`, colhidos em

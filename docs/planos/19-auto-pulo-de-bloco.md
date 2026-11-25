@@ -22,7 +22,7 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 - **braço vermelho de origem**: com o código de hoje, o mesmo cenário não sobe. Isso é aritmética
   do código, não opinião — ver §2;
 - **braço de indiferença**: com a parede de 6 blocos do cenário que já existe
-  ([`aether_reactions_test.gd:1115`](../../tests/aether_reactions_test.gd#L1146), o corpo **não**
+  ([`aether_reactions_test.gd:1146`](../../tests/aether_reactions_test.gd#L1146)), o corpo **não**
   é lançado para cima, e ainda assim re-arma o desvio. Sem esse lado, a checagem verde estaria
   afirmando apenas que atiramos o corpo para o alto sempre que ele encosta em alguma coisa.
 
@@ -30,7 +30,7 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 
 **O grid tem célula de 1 unidade de mundo**, e nada no mundo tem altura intermediária: o teste de
 colisão percorre as células cobertas pela caixa com `floori` em cada eixo
-([voxel_world.gd:362-373](../../src/world/voxel_world.gd#L362-L373)), e a conversão contínua→bloco é
+([voxel_world.gd:410-421](../../src/world/voxel_world.gd#L410-L421)), e a conversão contínua→bloco é
 o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então "subir um bloco" é
 **subir 1,00 m**, e essa é a régua contra a qual os três números abaixo falham.
 
@@ -73,11 +73,11 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
   do lobo é o segundo comprador da regra, não abstração no primeiro.
 - **Os dois cenários que a suíte já tem apontam para direções opostas.** No corredor liso o contrato
   é **nenhum** lançamento: `horizontais == 0 and rearms == 0 and lancamentos == 0`
-  ([aether_reactions_test.gd:1024](../../tests/aether_reactions_test.gd#L1055) — e ele continuaria
+  ([aether_reactions_test.gd:1055](../../tests/aether_reactions_test.gd#L1055)) — e ele continuaria
   verde com o conserto, porque sem bloqueio horizontal nenhum dos dois caminhos é pego. Na parede de
   6 blocos o contrato era **tem lançamento**: `rearms > 0 and lancamentos > 0`, na linha `:1035` da
   leitura desta página. Essa asserção **muda de lado** com este dossiê — hoje é `rearms > 0 and
-  lancamentos == 0` ([`:1109`](../../tests/aether_reactions_test.gd#L1146) —: contra um muro de seis
+  lancamentos == 0` ([`:1109`](../../tests/aether_reactions_test.gd#L1146)) —: contra um muro de seis
   blocos, saltar é desperdício, e é ela que o braço de indiferença do §1 vira de cabeça para baixo.
   Registrar isso antes do código é o ponto: o verde antigo não era errado, era a melhor afirmação
   possível antes de existir o predicado que distingue os dois casos.
@@ -115,7 +115,7 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
    linha, não de propriedade — e a propriedade perde.
 5. **Altura de célula é 1 unidade, e isso é premissa, não constante nomeada.** O predicado usa
    `+1,0` porque o grid é de 1 — `aabb_hits_solid` percorre células por `floori`
-   ([`voxel_world.gd:362-373`](../../src/world/voxel_world.gd#L362-L373)). Se um dia
+   ([`voxel_world.gd:410-421`](../../src/world/voxel_world.gd#L410-L421)). Se um dia
    existir `SLAB` de meia altura — o id 18 já está reservado no registro de blocos — o número vira
    pergunta do `BlockDefs`, e é aí, no segundo comprador, que ele sobe de degrau.
 
@@ -156,7 +156,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
    nasce vermelha.
 3. **`penhasico_nao_gasta_salto`** — o braço de indiferença: a parede de 6 blocos do cenário que já
    existe, agora com `lancamentos == 0` e `rearms > 0`. É a asserção que esta página lia em `:1035`
-   — re-derivada hoje em [`aether_reactions_test.gd:1115`](../../tests/aether_reactions_test.gd#L1146,
+   — re-derivada hoje em [`aether_reactions_test.gd:1146`](../../tests/aether_reactions_test.gd#L1146),
    lida do outro lado — e é por isso que ela é re-derivada neste lote em vez de apagada.
 4. **`agachado_nao_e_arremessado`** — o mesmo degrau com `crouching` true: corpo continua do lado de
    cá, `Δy == 0`. A checagem que dá dente à recusa do §3.3.
@@ -170,7 +170,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
 6. **`pulo_nao_custou_passo_de_ninguem`** — 1 000 ticks andando em plano sem bloqueio e 1 000 ticks
    com um degrau no caminho, `worst_sim_ms` e `dropped_ticks` lado a lado; atribuição por
    composição, como o contrato exige.
-7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:39`](../../tests/aether_reactions_test.gd#L39,
+7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:39`](../../tests/aether_reactions_test.gd#L39),
    **183** nesta leitura, na `main` mergida da perna 14) sobe com o lote e é re-medido no clone
    limpo com `--import` frio, com o SHA pinado.
 
@@ -181,7 +181,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
   melhor e com intenção, e o auto-pulo tem de ser indiferente ao input manual, nunca somar os dois
   impulsos no mesmo frame.
 - **Não** mexer no riacho de `_rng` do lobo nem no `_population_rng` da sessão
-  ([`main.gd:71`](../../src/main.gd#L71): o conserto é regra geométrica, não sorteio novo, e um
+  ([`main.gd:91`](../../src/main.gd#L91)): o conserto é regra geométrica, não sorteio novo, e um
   riacho novo derrubaria `tests/simulation_rng_test.gd` sem consertar nada.
 - **Não** tocar em `FORMAT_VERSION`, `Channel.COUNT` nem na projeção do `TickJournal`: nenhum bloco
   se move por esta perna, e o `state_hash` continua função do que já era.
