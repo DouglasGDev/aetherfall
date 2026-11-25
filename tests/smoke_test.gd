@@ -1331,8 +1331,30 @@ func _check_rain_window_assert() -> void:
 			_ch_rings0, anis, _ch_refus0, recusos, col_ult, na_agua, plano_fx, plano_mundo,
 			vivo_c, vivo_k, WaterFx.RING_POOL, no_zero])
 
-	# Orcamento com aritmetica, nao com adjetivo (§3.6, o teto que a Fase 1 escreveu
-	# prevendo este segundo comprador): `amount` x `lifetime` de cada emissor nao pode
+	# A porta do §3.10e, lida do mesmo jeito que `molhado_sobe_e_desce` le a do opaco: o
+	# numero que a superficie da agua desenha tem de ser o numero que o clima pediu. Sem
+	# esta linha o `chuva` poderia estar declarado na SOURCE, escrito em `params()` e nunca
+	# atualizado por nadie — um uniforme congelado em zero da verde em todas as outras nove.
+	# Os dois tamanhos vao impressos porque e aqui que o par 16/14 da Fase 1 vira 17/15: o
+	# re-derivar tem de aparecer na corrida, nao so no documento.
+	var wmat: Material = main.world.water_material()
+	var water_chuva := -99.0
+	if wmat != null and wmat is ShaderMaterial:
+		var vc = (wmat as ShaderMaterial).get_shader_parameter("chuva")
+		if vc is float or vc is int:
+			water_chuva = float(vc)
+	var alvo := float(_ch_weather().get("chuva")) if _ch_weather() != null else -99.0
+	var wscr := _ch_script("res://src/world/water_surface.gd")
+	var decl: Variant = _ch_static(wscr, "declared_uniforms")
+	var writ: Variant = _ch_static(wscr, "written_uniforms")
+	var nd := (decl as PackedStringArray).size() if decl is PackedStringArray else -1
+	var nw := (writ as PackedStringArray).size() if writ is PackedStringArray else -1
+	_check("agua_le_a_chuva",
+			water_chuva > 0.0 and absf(water_chuva - alvo) <= 0.001 and nd == nw + 2,
+			"chuva_no=%.3f  uniforme_agua=%.3f  declarados=%d  gravados=%d" % [
+			alvo, water_chuva, nd, nw])
+
+	# Orcamento com aritmetica, nao com adjetivo (§3.6, o teto que a Fase 1 escreveu	# prevendo este segundo comprador): `amount` x `lifetime` de cada emissor nao pode
 	# passar do `amount` dele, e o soma dos `amount` da arvore e o teto declarado. Os
 	# quatro numeros saem das constantes do `RainFx` — re-digit-los no teste seria a
 	# assercao conferindo a si mesma.
