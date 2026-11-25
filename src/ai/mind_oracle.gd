@@ -51,6 +51,11 @@ const MODEL_ALIAS := "mind-small"
 ## soltos repetidos em dois lugares.
 const PROMPT_MAX_TOKENS := 64
 const PROMPT_TEMPERATURE := 0.7
+## O k da janela de crencas do prompt (Fase 2 §20.5): o prompt imprime o top-k
+## por qualidade, nao o dicionario inteiro. O runner carrega uma copia literal
+## (`K_JANELA_PROVA`) porque ler-la no vermelho seria SCRIPT ERROR — padrao
+## BIAS_MEDIDA.
+const JANELA_CRENCAS: int = 8
 
 ## Portao de prontidao (dossie 15 §4.4): quando existe um dono de pack, ele diz
 ## quando o modelo esta no estado de fila. Sem portao — o caso da suite e o de
@@ -272,6 +277,39 @@ static func _prompt_narracao(w) -> String:
 			+ "sistemas, sem listas, sem pense em voz alta. " + _prompt_for(w)
 
 
+## A janela de crencas: PURA no estado da mente — a premissa
+## `selecao_de_beliefs_e_pura_no_estado` (§20.5) como codigo. Ordena por
+## confianca desc, depois `vezes` desc, depois `visto_em` desc, e fecha com o
+## desempate TOTAL pela chave: o dicionario do Godot e ordenado pela insercao,
+## e sem o desempate final o mesmo estado em duas ordens de insercao
+## devolveria duas janelas. Nao le relogio, aleatoriedade nem identidade de
+## fora — mesmo estado -> mesma janela -> mesmo prompt -> mesma chave de
+## conteudo da cache (§6.5), senao a cache fixa memoria velha no replay.
+## Devolve os ids na ordem em que o prompt os imprime.
+static func _janela_crencas(beliefs: Dictionary) -> Array:
+	var itens: Array = []
+	for id in beliefs:
+		var b = beliefs[id]
+		itens.append({
+			"id": id,
+			"conf": float(b.get("confidence", 0.0)),
+			"vezes": int(b.get("vezes", 0)),
+			"visto": int(b.get("visto_em", -1)),
+		})
+	itens.sort_custom(func(a: Dictionary, c: Dictionary) -> bool:
+		if float(a["conf"]) != float(c["conf"]):
+			return float(a["conf"]) > float(c["conf"])
+		if int(a["vezes"]) != int(c["vezes"]):
+			return int(a["vezes"]) > int(c["vezes"])
+		if int(a["visto"]) != int(c["visto"]):
+			return int(a["visto"]) > int(c["visto"])
+		return String(a["id"]) < String(c["id"]))
+	var janela: Array = []
+	for i in mini(JANELA_CRENCAS, itens.size()):
+		janela.append(itens[i]["id"])
+	return janela
+
+
 ## Funcao PURA do lobo: nao le instancia nenhuma, por isso e static — o gate do
 ## contrato monta o MESMO prompt que o wrapper envia, sem copiar o formato a mao.
 static func _prompt_for(w) -> String:
@@ -280,13 +318,12 @@ static func _prompt_for(w) -> String:
 	var recent: Array = []
 	for i in range(maxi(eps.size() - 3, 0), eps.size()):
 		recent.append("%s (forca %.2f)" % [eps[i]["kind"], float(eps[i]["mag"])])
+	# A janela top-k (Fase 2 §20.5) substitui o dicionario inteiro: o prompt
+	# mostra as crencas que a QUALIDADE ordenou, nao a ordem de insercao — e a
+	# selecao e pura no estado da mente, entao o mesmo estado produz o mesmo
+	# texto e a chave de conteudo da cache continua valendo entre as corridas.
 	var bl := ""
-	for id in d.get("beliefs", {}):
-		# A crenca em memoria e dict com os quatro campos (Fase 2 §20.5 — o
-		# to_dict do Mind gravou confianca, fonte, visto_em e vezes); o prompt
-		# segue lendo SO a confianca: o texto fica byte a byte o MESMO do Passo
-		# 5 neste commit, e as chaves de conteudo da cache (§6.5) nao mudam.
-		# A janela top-k entra no commit seguinte, junto com a mudanca de texto.
+	for id in _janela_crencas(d.get("beliefs", {})):
 		bl += "%s=%.2f " % [id, float(d["beliefs"][id]["confidence"])]
 	return (
 		"lobo %d; intencao atual: %s; vida %.0f%%; fome %.0f%%; "
