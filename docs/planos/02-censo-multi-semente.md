@@ -55,5 +55,5 @@ Não chamar o censo de replay: a projeção exclui jogador, corpos, RNG e comand
   verdadeira no conteúdo e imprecisa na forma — `state_hash(tick, world, field, roster)` é
   `static` (`src/persistence/tick_journal.gd:16`) e recebe o tick como argumento, mas quem o
   carimba em disco é `record()` (`:69-87`), ativo só com journal aberto. O censo pode chamar o
-  `static` direto; quem chama na gameplay é `main.state_hash()` (`src/main.gd:1258`).
+  `static` direto; quem chama na gameplay é `main.state_hash()` (`src/main.gd:1259`).
 - O briefing dizia "a única checagem determinística conhecida compara 16 colunas geradas duas vezes": existe a segunda comparação das mesmas 16 colunas após load (`tests/smoke_test.gd:2820-2824`).

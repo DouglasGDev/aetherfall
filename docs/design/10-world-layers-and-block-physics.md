@@ -1003,7 +1003,7 @@ mundo velho não tinha nada ali, e o novo tem faixa profunda, lava e bedrock. Re
 fechamento `[DECIDED]`: migrar por translação e **recusar o slot se qualquer edição
 antiga cair em faixa que o novo mundo não conhece** (`y_novo < Y_BEDROCK_TOP + 1`).
 A gravação/conferência de `gen_version` já existe em `save_game`/`load_game`
-([main.gd:1010](../../src/main.gd#L1010), [main.gd:1045](../../src/main.gd#L1045)):
+([main.gd:1026](../../src/main.gd#L1026), [main.gd:1055](../../src/main.gd#L1055)):
 hoje o save incompatível é recusado antes da restauração. A migração proposta precisa
 atualizar essa versão junto das edições; não há migração implementada aqui.
 

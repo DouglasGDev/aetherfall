@@ -38,7 +38,7 @@ A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:4
 
 ## 7. Custo — as quatro perguntas
 
-- Roda por quê? O F3 monta, por invocação do refresh (cadência não verificada neste plano), uma string de 3 linhas por mente (src/entities/wolf.gd:1346-1353). O `to_dict()` do oráculo aloca Array+Dictionary por mente por pedido, com 1 pedido em voo e recuo de 30 s (src/ai/mind_oracle.gd:13, :43-54, :87).
+- Roda por quê? O F3 monta, por invocação do refresh (cadência não verificada neste plano), uma string de 3 linhas por mente (src/entities/wolf.gd:1346-1353). O `to_dict()` do oráculo aloca Array+Dictionary por mente por pedido, com 1 pedido em voo e recuo de 30 s (src/ai/mind_oracle.gd:13, :64-71, :131).
 - Quantas entidades? 5 lobos (src/main.gd:9), só os vivos (:813-818), 1 jogador.
 - Aloco no caminho quente? `mind.decay()` varre `beliefs` a cada tick (src/entities/wolf.gd:893) e o tamanho dessas coleções **não medido**; o indexamento extra de um store fora da entidade também não.
 - Como sei que ficou melhor? Pelo log do runner de §6 — que ainda não existe. Este plano não publica número de custo.

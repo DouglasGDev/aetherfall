@@ -49,7 +49,7 @@ Motor: Godot 4.7.2-stable (`ed1daf0bf`), Vulkan Forward+, AMD Radeon RX 9060 XT.
 | "**hash de estado** e journal de tick são sagrados" | Agora há `TickJournal.state_hash()` e gravação JSONL de `[tick, hash]`, sob demanda ([tick_journal.gd](../src/persistence/tick_journal.gd)). A projeção mínima cobre semente/versão/dimensões, tick, edições, bytes completos do Éter e identidades/intenções/crenças das mentes vivas. `main._sim_tick` registra após incrementar o tick e dentro do cronômetro ([main.gd:321-327](../src/main.gd#L321-L327), cronometrado em [:280-282](../src/main.gd#L285-L287)) | **primitivo implementado, validação abaixo**; não cobre todo o estado da simulação nem registra comandos: replay permanece item 2 |
 | "testes de determinismo: 20 sementes × 1000 ticks no cenário do lobo" | A suíte roda **uma** semente (`const SEED := 20261116` — [smoke_test.gd:10](../tests/smoke_test.gd#L10)) e a checagem determinística é uma só: 16 colunas de altura geradas duas vezes e comparadas — [smoke_test.gd:394-404](../tests/smoke_test.gd#L394-L404). Não há harness multi-semente em `tests/` | **falso hoje**; só faz sentido depois do hash |
 | "budget HOT medido" | `SubtreeGuard` mede só a árvore e retorna falha no estouro — [bt_tree.gd:117-134](../src/ai/behavior/bt_tree.gd#L117-L134), default 250 µs; o lobo usa **400 µs** — [wolf.gd:448-449](../src/entities/wolf.gd#L448-L449). O F3 mostra custo/estouros — [wolf.gd:953](../src/entities/wolf.gd#L953). O teste de rastros agora colhe `sim_step` integral e `last_us`/`trips`, com um lobo por cenário; não mede o agregado simultâneo da matilha | **parcial**; há colheita estreita, mas o HOT de cinco lobos e o gate P1 continuam abertos |
-| "oráculo ainda é HTTP, não nativo — fortaleça sem fingir que é nativo" | O transporte HTTP **saiu** no Passo 4 do dossiê 22: o nó de requisição é a ponte nativa — `_ext.enqueue` ([mind_oracle.gd:121](../src/ai/mind_oracle.gd#L121)) e `wait(id, 0)` por frame ([:139](../src/ai/mind_oracle.gd#L139)), timeout zero que não pendura os 50 ms do tick — e `grep -rn HTTPRequest src` devolve **vazio** (gate `transporte_http_zerado` no runner, 32 arquivos lidos, 0 ocorrências). Ficam o recuo cheio de 30 s (`RETRY_COOLDOWN`, [mind_oracle.gd:24](../src/ai/mind_oracle.gd#L24)), o round-robin pela matilha, o prompt dobrado numa mensagem só e a chave externa `KEY_ENV`/`KEY_FILE` ([:31](../src/ai/mind_oracle.gd#L31), §2.1). O recuo curto do `503` morreu com o transporte: a espera pelo modelo é o portão do `AfMindRuntime` ([af_mind_runtime.gd:68](../src/ai/af_mind_runtime.gd#L68)). Não há cache nem embeddings | **correto no diagnóstico, e o diagnóstico foi pago**; a robustez agora é de disco e ClassDB, não de porta |
+| "oráculo ainda é HTTP, não nativo — fortaleça sem fingir que é nativo" | O transporte HTTP **saiu** no Passo 4 do dossiê 22: o nó de requisição é a ponte nativa — `_ext.enqueue` ([mind_oracle.gd:224](../src/ai/mind_oracle.gd#L224)) e `wait(id, 0)` por frame ([:242](../src/ai/mind_oracle.gd#L242)), timeout zero que não pendura os 50 ms do tick — e `grep -rn HTTPRequest src` devolve **vazio** (gate `transporte_http_zerado` no runner, 32 arquivos lidos, 0 ocorrências). Ficam o recuo cheio de 30 s (`RETRY_COOLDOWN`, [mind_oracle.gd:36](../src/ai/mind_oracle.gd#L36)), o round-robin pela matilha, o prompt dobrado numa mensagem só e a chave externa `KEY_ENV`/`KEY_FILE` ([:43](../src/ai/mind_oracle.gd#L43), §2.1). O recuo curto do `503` morreu com o transporte: a espera pelo modelo é o portão do `AfMindRuntime` ([af_mind_runtime.gd:68](../src/ai/af_mind_runtime.gd#L68)). Não há cache nem embeddings | **correto no diagnóstico, e o diagnóstico foi pago**; a robustez agora é de disco e ClassDB, não de porta |
 | "reduza o acoplamento de `main.gd` / `wolf.gd` / memória" | Os números reais hoje (medidos nesta ponta com `wc -l`): `main.gd` 1246 linhas, `wolf.gd` 1218, `player.gd` 787, `voxel_world.gd` 687, `mind.gd` 167, `aether_field.gd` 234, `smoke_test.gd` 2681; o journal é dono de seu arquivo e contadores. O acoplamento é estrutural, não de tamanho: `main.gd` é dono de mundo, relógio, matilha, HUD, oráculo, visualização, o nó de áudio, o hospedeiro do modelo e as tocas ao mesmo tempo — [main.gd:45-60](../src/main.gd#L45-L60), `var _dens` em [:116](../src/main.gd#L116) | **válido**; medir por linhas é proxy, o que importa é o dono único |
 | "zero derivação GPL do Veloren" | Verificado por ausência: nenhum `.rs` e nenhum `.ron` no repositório. As menções a Veloren são comentários de idéia e de origem em 12 pontos de `src/` (ex.: [inventory.gd:5-17](../src/items/inventory.gd#L5-L17), que inclusive separa "o que não veio do Veloren") e o link do §09 | **correto**; nada a corrigir |
 | "números medidos, gates subtrativos, docs derivados de código" | Já é a prática da casa: §08 tem a tabela "Estado real do roadmap" com o que existe e o que falta por fase — [08-roadmap-risks-licensing.md:20-38](design/08-roadmap-risks-licensing.md) | **correto**; o §08 já carrega o estado real, não precisa de nova edição |
@@ -65,9 +65,9 @@ o mesmo texto traz, no mesmo espírito da tabela acima.
 |---|---|---|
 | "Estamos em P0/P1" | O §08 diz outra coisa, e a suíte confirma: o projeto está **antes** de P1 e **sem nenhum gate fechado** — [08-roadmap-risks-licensing.md:36-38](design/08-roadmap-risks-licensing.md). Existe um slice P0/P1 jogável, não uma fase encerrada | **verdade como ponto de partida, falso como fase**; ler "P0/P1" como "o que existe", nunca como "o que está aprovado" |
 | "Não quebrar determinismo ou a capacidade de hash/journal sem avisar" | O primitivo agora existe: ordenação de edições, identidades e crenças; Float32 integral do Éter; versão do formato; ticks consecutivos em arquivo novo. O save é deliberadamente diferente: filtra Éter e não conserva a origem das crenças. `diagnostics()` expõe custo e última assinatura ([main.gd:1180-1215](../src/main.gd#L1180-L1215)) | **salvaguarda do contrato mínimo**; preservar a projeção não equivale a tornar o jogo determinístico |
-| "A mente propõe, as regras dispõem — LLM nunca decide movimento, dano, posição ou estado" | Verdade hoje por fiação, não por verifier: a única saída de `MindOracle` é `_narrations` — [mind_oracle.gd:47](../src/ai/mind_oracle.gd#L47), [:176](../src/ai/mind_oracle.gd#L176) — lida por `narration_of()` ([:96-97](../src/ai/mind_oracle.gd#L96-L97)) e entregue só ao HUD ([main.gd:193](../src/main.gd#L193) → [hud.gd:276-277](../src/ui/hud.gd#L276-L277)). Grep de `oracle`/`narration` em `src/` não acha nenhum outro consumidor: nem `Mind`, nem `Wolf`, nem o mundo leem o oráculo | **correto hoje**; o dia em que o oráculo *sugerir*, a sugestão entra como crença em quarentena (§04), não como intenção escrita |
+| "A mente propõe, as regras dispõem — LLM nunca decide movimento, dano, posição ou estado" | Verdade hoje por fiação, não por verifier: a única saída de `MindOracle` é `_narrations` — [mind_oracle.gd:72](../src/ai/mind_oracle.gd#L72), [:170](../src/ai/mind_oracle.gd#L170) — lida por `narration_of()` ([:150-151](../src/ai/mind_oracle.gd#L150-L151)) e entregue só ao HUD ([main.gd:193](../src/main.gd#L193) → [hud.gd:276-277](../src/ui/hud.gd#L276-L277)). Grep de `oracle`/`narration` em `src/` não acha nenhum outro consumidor: nem `Mind`, nem `Wolf`, nem o mundo leem o oráculo | **correto hoje**; o dia em que o oráculo *sugerir*, a sugestão entra como crença em quarentena (§04), não como intenção escrita |
 | "Completar o mínimo de P1: AetherField, Mind, consolidação, observabilidade, testes de hash, budget" | Três dos seis existem: `AetherField` (com 3 dos 6 canais), `Mind` e a **consolidação** — mas esta vive dentro de `Mind`, não num `MindStore` à parte. Observabilidade há em texto (F3), inspector não; o primitivo de hash mínimo tem suíte própria, mas o cenário multi-semente ainda não existe; "budget" tem mecanismo e colheita estreita de um lobo, não do agregado HOT | **metade feito**; item por item nas linhas acima e na fila "Falta" |
-| "Melhorar a degradação e a robustez do oráculo atual (ainda HTTP)" | Correto no diagnóstico, e a degradação segue checada sem rede — agora contra a ponte: o runtime sem pack não emite chamada ([smoke_test.gd:2539-2542](../tests/smoke_test.gd#L2539-L2542)) e a recusa da fila nomeia o motivo e arma o recuo cheio ([:2558-2562](../tests/smoke_test.gd#L2558-L2562)). O caminho feliz não depende mais de `llama-server` de fora: o pack abre dentro do processo, e num clone sem o dll gitignored o wrapper nomeia a ausência no pedido | **correto**; o transporte saiu no Passo 4 do dossiê 22 e a robustez do pack é o §6.3 |
+| "Melhorar a degradação e a robustez do oráculo atual (ainda HTTP)" | Correto no diagnóstico, e a degradação segue checada sem rede — agora contra a ponte: o runtime sem pack não emite chamada ([smoke_test.gd:2539-2542](../tests/smoke_test.gd#L2539-L2542)) e a recusa da fila nomeia o motivo e arma o recuo cheio ([:2574-2577](../tests/smoke_test.gd#L2574-L2577)). O caminho feliz não depende mais de `llama-server` de fora: o pack abre dentro do processo, e num clone sem o dll gitignored o wrapper nomeia a ausência no pedido | **correto**; o transporte saiu no Passo 4 do dossiê 22 e a robustez do pack é o §6.3 |
 | "Repositório: github.com/DouglasGDev/aetherfall" | `origin` confere. Publicação re-confirmada em `42799fa` — o `push` devolveu `1db00cf..42799fa main -> main` e `git ls-remote --heads origin` respondeu `42799fa0f0987b20d58902b4b2f7a4927a93cfd2 refs/heads/main` em 2026-11-19, o mesmo SHA do `HEAD` local. Os seis blocos desta revisão (som, journal, RNG, rastros, mão e porte em 3ª pessoa) estão todos no remoto; a confirmação anterior, de 2026-11-18, parava em `1db00cf` com hash/journal e rastros ainda locais | **correto**; publicação se confirma por `ls-remote`, nunca pelo código 0 do `push` |
 | "Ao final de um bloco, atualize ou proponha atualização de `docs/melhorias-status.md`" | É este arquivo, com as seções que o prompt pede (feito / em andamento / falta / backlog / débitos / furos / notas) | **correto**; já é a prática da casa, e agora está escrita em [`AGENTS.md`](../AGENTS.md) |
 
@@ -85,7 +85,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
 | "Alocação é cara: evite arrays, dicionários, objetos e strings no tick quente" | O blackboard é um `Dictionary` novo por lobo por tick ([wolf.gd:911](../src/entities/wolf.gd#L911), 100/s no teto de matilha viva); a difusão aloca um `PackedInt32Array` por canal por passada ([aether_field.gd:122](../src/world/aether_field.gd#L122), 3 a cada 0,25 s). O cache novo chama `keys()` a cada scan e nas expulsões ([wolf.gd:962](../src/entities/wolf.gd#L962), [:648](../src/entities/wolf.gd#L648)). Os tempos de `sim_step` não isolam essas alocações | **válido como restrição**; primeiro a colheita de alocação, não otimização alegada por contagem teórica |
 | "LOD é obrigatório em sistemas de IA/simulação" | Não há LOD por distância: os lobos vivos rodam a árvore inteira a cada tick. O que há é throttle temporal — difusão e visão 4×/s, cadáveres 1×/s ([main.gd:27-31](../src/main.gd#L27-L31)) — e varredura de rastros a cada 0,25 s ([wolf.gd:681-682](../src/entities/wolf.gd#L681-L682)), com nova leitura após inspeção | **falso hoje**; a peça tem nome no design (`HotSet`/Véu, §04 e §06) e é P2: sem custo em log, é backlog, não tarefa |
 | "Budget explícito: defina e respeite orçamentos de tempo (ex.: HOT minds ≤ X ms)" | Quatro orçamentos são código: 50 ms por passo com teto de 5 passos por frame ([sim_clock.gd:19-29](../src/core/sim_clock.gd#L19-L29)), 400 µs por árvore ([wolf.gd:448-449](../src/entities/wolf.gd#L448-L449); default da classe, 250 µs, em [bt_tree.gd:117-120](../src/ai/behavior/bt_tree.gd#L117-L120)), 2 chunks de malha por frame ([main.gd:28](../src/main.gd#L28)) e 0,25 s de difusão. O "≤ 2,5 ms" do gate de P1 continua `[TARGET]` no §08, e a aritmética (5 × 400 µs = 2 ms) cabe nele sem que nenhum log mostre a soma | **parcial**; orçamento por peça existe, o agregado do gate é alvo sem medição |
-| "Observabilidade > micro-otimização cega: se não dá para medir, não dá para saber se melhorou" | Para o tick, dá: a última linha do diagnóstico da suíte publica `pior passo` e `perdidos` ([smoke_test.gd:2710-2712](../tests/smoke_test.gd#L2710-L2712)). Frame e fila de malha só aparecem em janela; BT agora tem colheita no cenário estreito de rastros, sem equivaler ao agregado HOT; custo de alocação não é medido. Hash/escrita/flush agora têm contadores próprios no diagnóstico do journal | **é o débito da colheita de custo**, e é o que trava as cinco linhas acima de virarem otimização |
+| "Observabilidade > micro-otimização cega: se não dá para medir, não dá para saber se melhorou" | Para o tick, dá: a última linha do diagnóstico da suíte publica `pior passo` e `perdidos` ([smoke_test.gd:2902-2904](../tests/smoke_test.gd#L2902-L2904)). Frame e fila de malha só aparecem em janela; BT agora tem colheita no cenário estreito de rastros, sem equivaler ao agregado HOT; custo de alocação não é medido. Hash/escrita/flush agora têm contadores próprios no diagnóstico do journal | **é o débito da colheita de custo**, e é o que trava as cinco linhas acima de virarem otimização |
 
 ## Feito nesta sessão
 
@@ -129,7 +129,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   `fd9b41e0…` **porque o mundo mudou** (tocas/spawn na projeção de Éter+lobos), não o instrumento: o
   valor antigo fica como registro da base `99d1167`, não reescrito. Nesta rodada o runner ganhou uma
   linha de `OBSERVACAO` com `gen_ms`/`mesh_ms`/`worst_sim_ms` (o `diagnostics()` de
-  [`src/main.gd:1182`](../src/main.gd#L1182)/[:1205](../src/main.gd#L1210) já os tinha, o log não os
+  [`src/main.gd:1182`](../src/main.gd#L1182)/[:1206](../src/main.gd#L1206) já os tinha, o log não os
   mostrava); é `print`, não gate, e a rodada dupla confirmou que ele **não move o hash**. Tempo: parede
   46,4 s médios, dentro do runner 45,8 s (~262 ticks/s), `gen_ms≈940`/`mesh_ms≈4317`/`worst_sim_ms 13–15`
   por corrida. **O que isso NÃO fecha:** (a) gate de fase fecha o dono do repositório, não esta peça
@@ -148,11 +148,11 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   círculo de `PACK_LEASH = 18 m` porque `_pack_leash()` devolvia o lar do **primeiro** lobo vivo,
   enquanto a caixa útil é 116 × 116 m. **O que o código faz hoje:** `_dens`
   ([main.gd:116](../src/main.gd#L116)) é a lista de centros fundados, com teto `DEN_COUNT := 3`
-  ([:534](../src/main.gd#L539)), e a pertenca é do lobo (`Wolf.den`,
+  ([:535](../src/main.gd#L535)), e a pertenca é do lobo (`Wolf.den`,
   [wolf.gd:186](../src/entities/wolf.gd#L186)) mas decidida pela sessão, nunca pelo bicho. `_place_request`
   ([main.gd:673-712](../src/main.gd#L673-L712)) **funda** enquanto couber e, com todas fundadas — ou
   com a fundação recusada havendo ao menos uma — **entra na mais vazia**; fundar exige
-  `DEN_MIN_DIST := 48.0` ([:542](../src/main.gd#L547)), cobrado pelo portão `_den_gate_ok`
+  `DEN_MIN_DIST := 48.0` ([:543](../src/main.gd#L543)), cobrado pelo portão `_den_gate_ok`
   ([:605-611](../src/main.gd#L610-L616)) e impresso como separação mínima no chão do centro novo
   ([:681-690](../src/main.gd#L686-L695)); passa pelo mesmo `_spawn_home_point` dos portões da
   perna 14 ([:756-821](../src/main.gd#L761-L826)) com o `gate` novo, então entrar numa toca **não**
@@ -165,7 +165,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   disco anterior à perna devolve `_dens` vazio e todos `-1`
   ([main.gd:1099-1105](../src/main.gd#L1099-L1105)). A observabilidade é `dens`, `den_min_dist`
   ([:618-625](../src/main.gd#L623-L630)) e `den_components` ([:640-660](../src/main.gd#L645-L665))
-  dentro de `diagnostics()` ([:1191-1192](../src/main.gd#L1196-L1197)) — nada no caminho quente — e é
+  dentro de `diagnostics()` ([:1192-1193](../src/main.gd#L1192-L1193)) — nada no caminho quente — e é
   aí que os furos **#18** e **#21**, ambos com dono escrito antes da primeira linha, foram pagos com
   número (ver as entradas). **Medido nesta árvore:** 3 tocas fundadas no boot com separação mínima
   lida **55,9 m** contra a régua de 48 m, `componentes=3` e `arestas_entre_tocas=0`; o custo do
@@ -834,7 +834,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     gate nascer vermelho: **nenhum item nasce de nenhuma morte** — o `die()` do lobo escreve BLOOD e FEAR
     ([wolf.gd:1319-1320](../src/entities/wolf.gd#L1319-L1320)), arma o timer de cadáver
     ([:1321](../src/entities/wolf.gd#L1321)) e só então emite `died` ([:1322](../src/entities/wolf.gd#L1322)),
-    cujos **dois** consumidores somam um contador de abate ([main.gd:990](../src/main.gd#L990)) e tocam um
+    cujos **dois** consumidores somam um contador de abate ([main.gd:996](../src/main.gd#L996)) e tocam um
     som ([audio_director.gd:412](../src/audio/audio_director.gd#L412)); a sonda de alcance do pulo é
     **fixa de uma célula** — `can_step_over` testa `feet + (x, 1.0, z)` em
     [voxel_body.gd:176-181](../src/entities/voxel_body.gd#L176-L181) — enquanto o ápice do impulso é
@@ -1159,7 +1159,7 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     ([evidence/alcateia-rutinas/pos-merge-suite.log:23-24](evidence/alcateia-rutinas/pos-merge-suite.log)).
     Duas leituras erradas cabem nessa linha. A primeira: `pares=10` **não** são pares coesos, são as
     **comparações** `i<j` que a passada da sessão avalia — `_pack_pairs += 1` roda em todo par
-    testado, dentro ou fora do raio ([main.gd:873](../src/main.gd#L873), dentro de `_rebuild_packs`
+    testado, dentro ou fora do raio ([main.gd:874](../src/main.gd#L874), dentro de `_rebuild_packs`
     [:859-879](../src/main.gd#L864-L884)), e `10 = 5·4/2` é justamente o total de combinações de
     cinco lobos, ou seja: o número é teto de trabalho, nunca de matilha formada. A segunda, e é o
     furo: `maior_matilha_lida` é o maior `_pack.size()` entre os lobos, e `_pack` **não** conta o
@@ -1398,8 +1398,8 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
 21. **Uma cláusula do gate de alcateia da suíte é verdade aritmética, e do modo como está escrita
     não gateia nada.** A checagem "alcateia existe na sessao real" ([smoke_test.gd:315-320](../tests/smoke_test.gd#L315-L320))
     exige `pack_pairs == n(n-1)/2` **e** `biggest >= 2`. O contador é incrementado em
-    [main.gd:873](../src/main.gd#L873) **antes** do teste de raio em
-    [main.gd:874](../src/main.gd#L874) — ele conta **pares examinados**, não arestas de coesão —,
+    [main.gd:874](../src/main.gd#L874) **antes** do teste de raio em
+    [main.gd:875](../src/main.gd#L875) — ele conta **pares examinados**, não arestas de coesão —,
     então a **primeira** cláusula é verdadeira por construção para qualquer censo vivo, com matilha
     formada ou não: é `n·(n-1)/2` contra `n·(n-1)/2`. Quem decide a coesão é **só** `biggest >= 2`,
     lida do buffer reconstruído ([main.gd:876-877](../src/main.gd#L876-L877)). O fato não é novo — o
@@ -3288,7 +3288,7 @@ de quatro lobos colocados a propósito uns dos outros
 `biggest >= 1` não barra esse estado; a perna 14 é quem troca por `>= 2` quando o spawn mudar, e isso
 está registrado **antes** do código. **Pago:** o `>= 2` está em
 [smoke_test.gd:315-320](../tests/smoke_test.gd#L315-L320) e quem muda o spawn é a mordaca de 18 m
-([`PACK_LEASH`](../src/main.gd#L527)).
+([`PACK_LEASH`](../src/main.gd#L528)).
 
 ### A tabela que a nota das dez ocorrências prometeu
 
@@ -3687,9 +3687,9 @@ escrita. O mesmo vale para a conta do "objeto deus": 599 → 662 linhas e um don
 hospedeiro do modelo), em [`AGENTS.md`](../AGENTS.md) e aqui na linha do acoplamento. Desde aquela
 ponta a conta subiu de novo — 759 em [`src/main.gd`](../src/main.gd) — sem que o dono mudasse.
 Relida na ponta da perna 14: **787**, e o acréscimo é o spawn —
-[`_home_columns`](../src/main.gd#L507-L517), [`SPAWN_BANDS`](../src/main.gd#L518),
-[`PACK_LEASH`](../src/main.gd#L527-L533), [`_spawn_point_ok`](../src/main.gd#L730-L740) e
-[`_spawn_home_point`](../src/main.gd#L756-L828) — não um dono novo.
+[`_home_columns`](../src/main.gd#L508-L512), [`SPAWN_BANDS`](../src/main.gd#L519),
+[`PACK_LEASH`](../src/main.gd#L528), [`_spawn_point_ok`](../src/main.gd#L731-L736) e
+[`_spawn_home_point`](../src/main.gd#L757-L829) — não um dono novo.
 Relida na ponta da perna 16: **1242** linhas, e o acréscimo é a toca dentro do bloco da matilha —
 [`var _dens`](../src/main.gd#L116), [`_den_counts`](../src/main.gd#L575-L586),
 [`_emptiest_den`](../src/main.gd#L587-L604), [`_den_gate_ok`](../src/main.gd#L605-L617),
@@ -3978,16 +3978,16 @@ A mecânica nova, pelo que roda hoje: o alvo escrito pela árvore é filtrado po
 custou budget de BT; o rumo de saída da água é pedido por
 [`_demand_shore()`](../src/entities/wolf.gd#L743-L754) na cadência do nariz e o resgate por tempo de
 nado continua em [`SHORE_AFTER`](../src/entities/wolf.gd#L149), aplicado em
-[:901](../src/entities/wolf.gd#L901); o lar sai de [`_spawn_home_point`](../src/main.gd#L756-L828)
-sobre as [`SPAWN_BANDS`](../src/main.gd#L518) em torno da posição **atual** do jogador, passa pelo
-predicado único [`_spawn_point_ok`](../src/main.gd#L730-L735) (≥ `SAFE_SPAWN_DIST` **e** visada
-bloqueada) e, quando recusa, imprime o motivo em [:814](../src/main.gd#L819) em vez de cair no
-centro; quem nasce por mordaca usa [`PACK_LEASH`](../src/main.gd#L527) = 18 m sobre o lar de um
+[:901](../src/entities/wolf.gd#L901); o lar sai de [`_spawn_home_point`](../src/main.gd#L757-L829)
+sobre as [`SPAWN_BANDS`](../src/main.gd#L519) em torno da posição **atual** do jogador, passa pelo
+predicado único [`_spawn_point_ok`](../src/main.gd#L731-L736) (≥ `SAFE_SPAWN_DIST` **e** visada
+bloqueada) e, quando recusa, imprime o motivo em [`:815`](../src/main.gd#L815) em vez de cair no
+centro; quem nasce por mordaca usa [`PACK_LEASH`](../src/main.gd#L528) = 18 m sobre o lar de um
 irmão vivo. Os dois letreiros de criatura saíram; o contador de abate fica.
 
 ### A corrida que sustenta os números
 
-Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L78)
+Runner de reações: censo declarado [`EXPECTED_CHECKS`](../tests/aether_reactions_test.gd#L99)
 **150 → 183** com **oito cenários novos** nomeados em
 [:28-32](../tests/aether_reactions_test.gd#L28-L32). A suíte ficou em **246 checagens** do primeiro
 ao último degrau — o degrau (f) mudou uma asserção
@@ -8167,17 +8167,17 @@ lançadores já passava **no vermelho** — eles nunca citaram llama, porque que
 `llm_server_host.gd` dentro do jogo, não o launcher.
 
 **O que o commit (b) `5138549` entrega.** `mind_oracle.gd` (§5.4) é wrapper da ponte: o nó de
-requisição é `_ext.enqueue` ([mind_oracle.gd:121](../src/ai/mind_oracle.gd#L121)) e o
-`wait(id, 0)` por frame ([:139](../src/ai/mind_oracle.gd#L139)) — timeout zero, consulta não
+requisição é `_ext.enqueue` ([mind_oracle.gd:224](../src/ai/mind_oracle.gd#L224)) e o
+`wait(id, 0)` por frame ([:242](../src/ai/mind_oracle.gd#L242)) — timeout zero, consulta não
 bloqueante, status 1 preserva o slot, nenhum `await` pendura os 50 ms do tick. O `LOADING_COOLDOWN`
 do `503` **morreu com o transporte**: a espera pelo modelo é o portão `ready_provider`, ligado ao
 `AfMindRuntime.ready()` ([af_mind_runtime.gd:68](../src/ai/af_mind_runtime.gd#L68)) em
-[main.gd:257](../src/main.gd#L257); o recuo cheio de 30 s fica
-([`RETRY_COOLDOWN` :24](../src/ai/mind_oracle.gd#L24)), e a chave externa também — `KEY_ENV`/`KEY_FILE`
-([:31](../src/ai/mind_oracle.gd#L31), §2.1: quem sobe um `llama-server` na mão lê as mesmas fontes).
+[main.gd:258](../src/main.gd#L258); o recuo cheio de 30 s fica
+([`RETRY_COOLDOWN` :36](../src/ai/mind_oracle.gd#L36)), e a chave externa também — `KEY_ENV`/`KEY_FILE`
+([:43](../src/ai/mind_oracle.gd#L43), §2.1: quem sobe um `llama-server` na mão lê as mesmas fontes).
 A narrativa continua sendo a única saída: gravada em
-([:148](../src/ai/mind_oracle.gd#L148)), lida por `narration_of()`
-([:106-107](../src/ai/mind_oracle.gd#L106-L107)); num clone sem o dll gitignored, `_ext` nasce
+([:170](../src/ai/mind_oracle.gd#L170)), lida por `narration_of()`
+([:150-151](../src/ai/mind_oracle.gd#L150-L151)); num clone sem o dll gitignored, `_ext` nasce
 null e cada pedido nomeia a ausência. `src/ai/af_mind_runtime.gd` (§6.3, novo) é o dono do ciclo do
 pack sobre disco e ClassDB: estados da matriz de falha nomeados ([:21](../src/ai/af_mind_runtime.gd#L21)
 em diante), `STEP_PERIOD = 1.0` — um passo por frame para o F3 acompanhar
@@ -8185,16 +8185,16 @@ em diante), `STEP_PERIOD = 1.0` — um passo por frame para o F3 acompanhar
 linhas) e, com o transporte, morrem o processo filho, a sonda de porta, o vigia e os dois kills; a
 sonda da perna 15 (`tests/llm_server_boot_probe`) aposenta junto. A fiação em `main.gd`:
 `llm_host` agora é `AfMindRuntime` ([main.gd:55](../src/main.gd#L55)), o `diagnostics()` mantém a
-chave `"llm"` ([main.gd:1214](../src/main.gd#L1214)) e o F3 lê a linha de status por
-`llm_status_provider` ([main.gd:259](../src/main.gd#L259)), que imprime o `last_reason` do oráculo
-([af_mind_runtime.gd:85-87](../src/ai/af_mind_runtime.gd#L85-L87)) — leitura, nenhuma escrita. A
+chave `"llm"` ([main.gd:1215](../src/main.gd#L1215)) e o F3 lê a linha de status por
+`llm_status_provider` ([main.gd:260](../src/main.gd#L260)), que imprime o `last_reason` do oráculo
+([af_mind_runtime.gd:85-86](../src/ai/af_mind_runtime.gd#L85-L86)) — leitura, nenhuma escrita. A
 metade HTTP do gate `contrato_igal_ao_http` virou **cliente de referência dentro do runner**: as 17
 ocorrências de `HTTPRequest` que sobram vivem em `tests/aether_reactions_test.gd`, e o grep do gate
 mira só `src/`.
 
 **O custo que o passo assume e não esconde:** o `load_pack` do gguf é chamada síncrona da extensão e
 o frame que a executa trava o tempo do load — o `open_ms` que a ponte mede
-([af_mind_runtime.gd:163](../src/ai/af_mind_runtime.gd#L163)); o overlap que o processo filho dava
+([af_mind_runtime.gd:171](../src/ai/af_mind_runtime.gd#L171)); o overlap que o processo filho dava
 com a geração **acabou**. É o **furo #46**, aberto nesta rodada com o número na mesa e sem conserto
 nela.
 
@@ -8211,7 +8211,7 @@ nela.
 ([passo4_journal.log:145](evidence/oraculo-nativo-passo4-22/passo4_journal.log#L145)). No smoke, as
 checagens do degradado foram renomeadas para a ponte: "runtime sem pack nao emite chamada na ponte"
 ([smoke_test.gd:2539](../tests/smoke_test.gd#L2539)) e as duas da recusa nomeada
-([:2558-2562](../tests/smoke_test.gd#L2558-L2562)).
+([:2574-2577](../tests/smoke_test.gd#L2574-L2577)).
 
 **O que a rodada deixa aberto.** Dentro da perna falta o **Passo 5** (cache §5.5, validador e a
 régua do budget), cada peça com gate próprio. O `src/` **se move** nesta rodada — é a primeira
@@ -8327,3 +8327,41 @@ cegas a `native/`) seguem como decisão do dono; o **#20** sem a colheita que no
 sem atribuição; o **#41** como furo da contagem de malha; o **#44** fica onde a 23 o deixou; o **#45**
 é arrumação do dono. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal`
 não foram tocados por este pouso. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+## Rodada 2026-11-24 (10) — Passo 5 do dossiê 22: a cache de conteúdo devolve a frase sem modelo, o portão do verificador checa o que a mente propõe, e a régua do budget mediu antes de cortar (branch `feat/oraculo-nativo-passo5-22`, base `eb218fe`, vermelho `e7e2d59`, ponta `1b5ff5f`)
+
+O que o passo entrega, na ordem dos commits: **`e7e2d59`** — os dois gates de abertura nascem
+vermelhos na mesma corrida (runner **331 checagens 3 falhas 49,079 s**; a cache não existe com
+`existe=false` impresso, a segunda semente paga decode de novo com `pedidos_b=1`, o verificador
+nomeado não está em `src/ai`; suíte 264/0/52,7 s) e a régua do budget **mede no vermelho**, antes de
+qualquer corte — `worst_sim_ms=12.75 ms pico=12 750 µs` com o decode em voo dentro da malha de
+1 400 passos. **`5b06f51`** — `af_cache_determina_replay` fecha verde (runner 332/1; a falha
+restante é a do verificador, que fecha no commit seguinte): chave de conteúdo
+`prompt|pack|max_tokens|temperature` estável entre corridas (`315/315 chars iguais=true`), instância
+fresca lendo do arquivo separado do save pela chave reconstruída de fora (`lida=143 chars`), segunda
+semente com `pedidos_b=0 acertos_cache=1` — zero consultas à fila é a diferença entre "o modelo
+responde igual" e "a cache responde sem modelo". Cache **opt-in** via `--oracle-cache=`, JSON com
+versão e recusa nomeada; narrativa recusada ou vazia nunca entra. **`824445e`** —
+`verifier_recusa_id_forjado` fecha verde: o portão único `MindOracle.aceitar_saida` recusa a saída
+que cita id inexistente na alcateia com o motivo nomeado, o controle entra pelo mesmo portão, fail
+closed com roster vazio; a régua do budget re-mede com o portão no caminho
+(`worst_sim_ms=13.09 ms trips=0→0`; runner **336/0/48,429 s**). **`e8c41f5`** — o `.uid` do
+`oracle_cache.gd` versionado (mesma classe do furo #25: um clone re-derivaria uid diferente do
+histórico). **`1b5ff5f`** — as métricas do §2.4 no F3: a linha de pronto ganha
+`fila/decode/cache` lidos da ponte com `-1` como ausente **nomeado** sem ponte, e o
+`diagnostics()` expõe as quatro chaves; suíte **266/0/52,7 s** (264 + 2), runner
+**336/0/47,970 s**, RNG **27/0/2,708 s**, journal **128/0/5,766 s**, zero `SCRIPT ERROR` nas quatro.
+
+Evidência em [`docs/evidence/oraculo-nativo-passo5-22/`](evidence/oraculo-nativo-passo5-22/) — os
+doze logs dos três estágios (vermelho/cache/verifier, runner × suíte) mais os quatro da ponta com o
+F3. O §19 do [dossiê 22](planos/22-oraculo-nativo-gdextension.md) carrega a narrativa completa; o
+**furo #46** foi avaliado e fica em pé com motivo nomeado (carga assíncrona da extensão é trabalho
+da Fase 4, onde o governor precisa dela de qualquer forma). A re-derivação de citações vivas desta
+rodada cobriu os **cinco documentos donos do bloco** (`AGENTS.md`, este status, o dossiê 22, o
+índice dos planos e o README) — e fica registrado o que ela **não** cobriu: **27 documentos** fora
+desse lote também citam os arquivos tocados (pautas 01–20 e 23, cinco docs de design e o
+`simclock.md`). As pautas citam números pineados às suas próprias árvores de medição e os designs
+descrevem alvo, mas a classe é a do **furo #28**: a régua não vê prosa cujo número-alvo continua
+dentro do arquivo. O §2 do dossiê 22 foi tratado à mão por isso — pinado a `bb13752` (Fase 0) e
+`5138549` (Passo 4) porque `mind_oracle.gd` mudou de forma sob a prosa dele. `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` intocados. Nenhum gate de fase fecha.
+A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.

@@ -120,7 +120,7 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L204-L212) chamada no
   `_process`, **fora** do passo de simulação, com
   [`MESH_BUDGET := 2`](../../src/main.gd#L28) chunks por frame
-  (chamada em [main.gd:330](../../src/main.gd#L330)). As duas leituras que o contrato
+  (chamada em [main.gd:332](../../src/main.gd#L332)). As duas leituras que o contrato
   publica: **64 chunks em ~4,3 s no boot** ([README.md:148-149](../../README.md#L148-L149)) ≈
   67 ms/chunk, e o `_last_mesh_ms` do frame lido pelo F3. Uma pilha de N areias em cascata
   são N remoções **e** N fixações: até `2N` células sujas, e a malharia não sabe que a
@@ -175,11 +175,11 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
    posição do corpo (doc [`:549-553`](../design/10-world-layers-and-block-physics.md#L549-L553)):
    o integrador para em substep e a AABB pode parar um substep acima do solo.
 5. **Onde a roda roda**: `updates.flush(clock.tick)` e depois o `sim_step` das entidades,
-   dentro de [`_sim_tick`](../../src/main.gd#L285) — **antes** das mentes, para que uma
+   dentro de [`_sim_tick`](../../src/main.gd#L286) — **antes** das mentes, para que uma
    conversão só integre no tick seguinte (doc
    [`:757-759`](../design/10-world-layers-and-block-physics.md#L757-L759)). Nada em
    `_physics_process`: o passo de simulação é o que o `clock.begin_step`/`end_step` cronometra
-   ([main.gd:276](../../src/main.gd#L276),
+   ([main.gd:281-283](../../src/main.gd#L281-L283),
    [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e é o que o hash lê.
 6. **`queued` e `overflow` visíveis**, no `diagnostics()` ao lado de `dropped_ticks`
    ([main.gd:1180-1215](../../src/main.gd#L1180-L1215)) e no F3, como o doc exige em
@@ -306,7 +306,7 @@ que já existe.
   ligar, existem para serem escritas; o doc 10 as especifica em pseudocódigo e o próprio doc
   as lista como inexistentes em [`:652-659`](../design/10-world-layers-and-block-physics.md#L652-L659).
 - "processar no tick de 20 Hz com orçamento": correto e alinhado com
-  [`_sim_tick`](../../src/main.gd#L285)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
+  [`_sim_tick`](../../src/main.gd#L286)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
   prompt chama de "orçamento" o que **não** é o budget de malha; os dois tetos são diferentes
   e o do meio de campo (`MESH_BUDGET`) não pode ser tocado por esta perna.
 - "`Landing.SHATTER` vira item no chão": não há item no chão. Ver §6.

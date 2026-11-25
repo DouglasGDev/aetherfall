@@ -34,13 +34,13 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    antes de qualquer lote, não depois.
 2. **A mente propõe, as regras dispõem.** LLM/oráculo nunca decide movimento, dano, posição ou
    estado de mundo. *Seguro por construção hoje:* a única saída de `MindOracle` que chega a quem
-   age é o dicionário `_narrations` ([mind_oracle.gd:55](src/ai/mind_oracle.gd#L55), gravado em
-   [:148](src/ai/mind_oracle.gd#L148)), lido por `narration_of()`
-   ([:106-107](src/ai/mind_oracle.gd#L106-L107)) e entregue só ao HUD
+   age é o dicionário `_narrations` ([mind_oracle.gd:72](src/ai/mind_oracle.gd#L72), gravado em
+   [:170](src/ai/mind_oracle.gd#L170)), lido por `narration_of()`
+   ([:150-151](src/ai/mind_oracle.gd#L150-L151)) e entregue só ao HUD
    ([main.gd:193](src/main.gd#L193) → [hud.gd:276-277](src/ui/hud.gd#L276-L277)). O dono do pack
    lê um campo do oráculo — `last_reason` na linha de status do F3
-   ([af_mind_runtime.gd:85-87](src/ai/af_mind_runtime.gd#L85-L87), entregue por
-   `llm_status_provider` em [main.gd:259](src/main.gd#L259)) — leitura, nenhuma escrita. Não
+   ([af_mind_runtime.gd:85-86](src/ai/af_mind_runtime.gd#L85-L86), entregue por
+   `llm_status_provider` em [main.gd:260](src/main.gd#L260)) — leitura, nenhuma escrita. Não
    existe caminho do oráculo para `Mind`, `Wolf` ou `VoxelWorld`; a decisão
    vem de BT + utilidade
    ([wolf.gd:422-450](src/entities/wolf.gd#L422-L450), [:824-826](src/entities/wolf.gd#L824-L826),
@@ -83,8 +83,8 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    `MindsInspector` não existe. O custo de BT sai no F3 (`tree_stats()`,
    [wolf.gd:1356-1357](src/entities/wolf.gd#L1356-L1357)); agora há também colheita headless
    estreita de `sim_step` integral e `_guard.last_us`/`trips`, um lobo por cenário
-   ([aether_reactions_test.gd:316-328](tests/aether_reactions_test.gd#L316-L328),
-   [:3136-3139](tests/aether_reactions_test.gd#L3142-L3145)). O guard mede só BT, sem
+   ([aether_reactions_test.gd:374-376](tests/aether_reactions_test.gd#L374-L376),
+   [:1918-1919](tests/aether_reactions_test.gd#L1918-L1919)). O guard mede só BT, sem
    percepção/utilidade ([wolf.gd:448-450](src/entities/wolf.gd#L448-L450)); isso não mede
    o HOT agregado dos cinco lobos nem fecha P1.
 6. **Mudanças pequenas e atômicas.** Um assunto por commit e suíte verde entre eles, com a
@@ -143,7 +143,7 @@ após o primeiro registro, duplicata, regressão ou salto (exige `last_tick + 1`
 ([main.gd:321-327](src/main.gd#L321-L327)); sem o modo, o tick só consulta `active()`.
 O load válido encerra o arquivo antes de restaurar o mundo
 ([main.gd:1057-1059](src/main.gd#L1057-L1059)); sair da cena também o fecha
-([main.gd:1272-1273](src/main.gd#L1272-L1273)). O arquivo cresce apenas enquanto a gravação
+([main.gd:1287](src/main.gd#L1287)). O arquivo cresce apenas enquanto a gravação
 explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 
 **Orçamentos que já são código**, não intenção (regra 7):
@@ -152,8 +152,8 @@ explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 | --- | --- | --- |
 | Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-L29) |
 | Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs); só BT, não percepção/utilidade | [bt_tree.gd:117-137](src/ai/behavior/bt_tree.gd#L117-L137), [wolf.gd:448-449](src/entities/wolf.gd#L448-L449) |
-| Malha | 2 chunks por frame — **contagem, não tempo**: medido 52–177 ms no pior quadro, contra um piso de instrumento de 6,0 ms; é o furo #41 | [main.gd:28](src/main.gd#L28), usado em [:331](src/main.gd#L336), [voxel_world.gd:203-212](src/world/voxel_world.gd#L203-L212) |
-| Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:27](src/main.gd#L27), [:288-290](src/main.gd#L293-L295) |
+| Malha | 2 chunks por frame — **contagem, não tempo**: medido 52–177 ms no pior quadro, contra um piso de instrumento de 6,0 ms; é o furo #41 | [main.gd:28](src/main.gd#L28), usado em [:332](src/main.gd#L332), [voxel_world.gd:203-212](src/world/voxel_world.gd#L203-L212) |
+| Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:27](src/main.gd#L27), [:291](src/main.gd#L291) |
 | Recolha de cadáver, visão do Éter | 1 s e 0,25 s | [main.gd:31](src/main.gd#L31), [:29](src/main.gd#L29) |
 
 **O que doeu nas corridas históricas, antes do journal** (regra 2): o boot, não o tick.
@@ -227,7 +227,7 @@ serialização, SHA256 e escrita com `flush`. Não é custo total de alocação 
 O journal expõe `records`, `last_us`, `worst_us` e `total_us` (hash + escrita + flush
 concluídos) em `diagnostics()["journal"]`
 ([tick_journal.gd:74-98](src/persistence/tick_journal.gd#L74-L98),
-[main.gd:1208](src/main.gd#L1208)). No candidato histórico local recém-importado, anterior
+[main.gd:1209](src/main.gd#L1209)). No candidato histórico local recém-importado, anterior
 ao refinamento dos rastros, 205 registros custaram 160 000 µs ao todo, com pico de
 1 646 µs; o load encerrou a gravação. Os dois smokes, sem/com journal, terminaram sem
 ticks perdidos, mas não são replay pareado, prova de otimização ou medição do lobo
@@ -244,7 +244,7 @@ perto ou longe ([wolf.gd:906-911](src/entities/wolf.gd#L906-L911)). A peça do d
 
 **Anti-bloat, com o estado real:**
 
-- `main.gd` é o "objeto deus" conhecido — 1268 linhas nesta revisão (`wc -l`), 510 na `main` de `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
+- `main.gd` é o "objeto deus" conhecido — 1287 linhas nesta revisão (`wc -l`), 510 na `main` de `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
   oráculo, visualização, instância do journal, o nó de áudio e o hospedeiro do modelo ([main.gd:43-62](src/main.gd#L43-L62)), com as tocas da perna 16 dentro do bloco da matilha (`var _dens` em [:116](src/main.gd#L116)). Isso está registrado como
   débito, não como licença: mudança que precisa de estado novo pergunta primeiro **quem é o
   dono** daquele estado.
@@ -345,11 +345,11 @@ uma com um agente responsável.** Elas entram no "dentro"; a posição de cada u
    **spawn a distância segura e fora da visada** — o predicado único `_spawn_point_ok()` exige
    ≥ `SAFE_SPAWN_DIST` (32 m) **e** que a linha do olho do jogador ao peito do lobo esteja bloqueada
    ([`src/main.gd:730-735`](src/main.gd#L730-L735)), dentro das bandas em torno da posição **atual**
-   do jogador (`SPAWN_BANDS` [`:513`](src/main.gd#L518), busca em [`:751-816`](src/main.gd#L756-L821)),
+   do jogador (`SPAWN_BANDS` [`:519`](src/main.gd#L519), busca em [`:756-821`](src/main.gd#L756-L821)),
    sem fallback mudo no centro e com a recusa impressa por motivo contado; colunas de lar distintas
-   por lobo (`_home_columns()` [`:502-506`](src/main.gd#L507-L511)) e mordaca de 18 m sobre o lar de
-   um irmao vivo (`PACK_LEASH` [`:522`](src/main.gd#L527), centro lido à época em `99d1167:src/main.gd:501-511`,
-   hoje o centro da própria toca — `_entrada()` [`:704-708`](src/main.gd#L709-L713)),
+   por lobo (`_home_columns()` [`:508-512`](src/main.gd#L508-L512)) e mordaca de 18 m sobre o lar de
+   um irmao vivo (`PACK_LEASH` [`:528`](src/main.gd#L528), centro lido à época em `99d1167:src/main.gd:501-511`,
+   hoje o centro da própria toca — `_entrada()` [`:710-713`](src/main.gd#L710-L713)),
    que é o conserto do furo #16 — sem ela a alcateia nunca se formou na sessao real da suíte.
    Sustenteam isso **33 checagens em oito cenários** nomeados no runner
    ([`tests/aether_reactions_test.gd:28-32`](tests/aether_reactions_test.gd#L28-L32); o censo
@@ -453,11 +453,11 @@ que o dono fez em 2026-11-21.** Entra no "dentro" como
 fixa o nome), e na fila serializada fica exatamente onde ele escolheu: **depois da 19 e antes da 12** — a
 ordem **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13** não muda. A premissa nomeada na página,
 lida do código e não de corrida: os cinco lares do boot cabem num círculo de **18 m**, porque
-`PACK_LEASH = 18.0` ([src/main.gd:527](src/main.gd#L527)) é a primeira tentativa
-([:762](src/main.gd#L767)) e `_pack_leash()` devolvia o lar do **primeiro** lobo vivo
+`PACK_LEASH = 18.0` ([src/main.gd:528](src/main.gd#L528)) é a primeira tentativa
+([:763](src/main.gd#L763)) e `_pack_leash()` devolvia o lar do **primeiro** lobo vivo
 (`99d1167:src/main.gd:501-505`; a perna 16 apagou a função e hoje o centro lido é a própria
-toca, `_entrada()` [`:704-708`](src/main.gd#L709-L713)), enquanto a caixa útil é 116 × 116 m — o clamp de `6 … W-6` em
-[:781-782](src/main.gd#L786-L787) sobre um mundo de 128 × 128. É por isso que ele percorreu o vale
+toca, `_entrada()` [`:710-713`](src/main.gd#L710-L713)), enquanto a caixa útil é 116 × 116 m — o clamp de `6 … W-6` em
+[:783-784](src/main.gd#L783-L784) sobre um mundo de 128 × 128. É por isso que ele percorreu o vale
 inteiro e viu um lobo só. A página decide o gate por **componentes conexos do grafo de coesão** lido em
 `pack_of()`, não por adjetivo, e abre o par de braços (§3.4) antes do código: **A** (só colocação) é a
 escolhida primeiro e só se aceita com a checagem de derivação verde; **B** (dar âncora ao centro de
@@ -466,7 +466,7 @@ mesa. Duas consequências de documentação, registradas **antes** de qualquer l
 recusas de spawn nunca tiveram testemunha numérica — `motivos` só era interpolado na string impressa,
 `99d1167:src/main.gd:545`) passa a ter dono fixo, a perna 16, e deixa de estar oferecido à 16
 **ou** à 11; e esta leitura abre o **furo #21** — `pack_pairs` incrementa em
-[:873](src/main.gd#L878) **antes** do teste de raio em [:874](src/main.gd#L879), então a asserção
+[:874](src/main.gd#L874) **antes** do teste de raio em [:875](src/main.gd#L875), então a asserção
 `pack_pairs == n(n-1)/2` da suíte é verdade aritmética e só `biggest >= 2` decide coesão. Nada desta
 página encosta em `Channel.COUNT`, `FORMAT_VERSION` nem `GEN_VERSION`, e nenhuma linha de código dela
 foi escrita: a branch abre da `main` no ponto atual, com o gate nascendo vermelho.
@@ -585,7 +585,7 @@ Quatro afirmações do prompt a leitura devolve diferente, e duas metades dele a
 ([src/entities/wolf.gd:1319-1320](src/entities/wolf.gd#L1319-L1320)), arma o timer de cadáver
 ([:1321](src/entities/wolf.gd#L1321)) e só então emite `died` ([:1322](src/entities/wolf.gd#L1322)).
 (2) O sinal **não** é órfão — tem **dois** consumidores em `src/`, e nenhum deles é um item:
-`_on_wolf_died` ([src/main.gd:409](src/main.gd#L409) conecta, corpo em [`:985`](src/main.gd#L990)) só
+`_on_wolf_died` ([src/main.gd:410](src/main.gd#L410) conecta, corpo em [`:991`](src/main.gd#L991)) só
 soma `stats["wolves_felled"]`, e o diretor de áudio toca `wolf_died`
 ([src/audio/audio_director.gd:161](src/audio/audio_director.gd#L161), corpo em [`:412`](src/audio/audio_director.gd#L412));
 a conclusão do prompt fica de pé, o motivo dela não. (3) "Lobos presos diante de bloco" era a pauta da
@@ -593,8 +593,8 @@ a conclusão do prompt fica de pé, o motivo dela não. (3) "Lobos presos diante
 leito `amb_birds` tocando sem nenhuma ave no mundo **não** é defeito do tipo da 19 — é cama de ambiência
 de campo aberto, correta como ambiência; o que ela prova é que o mundo já promete céu vivo. O que a
 re-derivação acrescentou e a pauta não citava quando foi escrita: **a 16 deu toca à matilha** — `var _dens`
-([src/main.gd:116](src/main.gd#L116)), `den_components()` ([:640](src/main.gd#L645)) publicado no
-`diagnostics()` ([:1192](src/main.gd#L1197)), `Wolf.den`
+([src/main.gd:116](src/main.gd#L116)), `den_components()` ([:641](src/main.gd#L641)) publicado no
+`diagnostics()` ([:1193](src/main.gd#L1193)), `Wolf.den`
 ([src/entities/wolf.gd:186](src/entities/wolf.gd#L186)) com a chave `den` já no disco
 ([`:1372`](src/entities/wolf.gd#L1372), lida em [`:1405`](src/entities/wolf.gd#L1405)) — território que
 mexe no §3.9 da página e em nenhuma das quatro afirmações acima.
@@ -758,7 +758,7 @@ suíte (§5.1). (4) "Caústicas quando o sol está alto" não tem variável: `_b
 ([main.gd:1220-1256](src/main.gd#L1220-L1256)); não existe clima no projeto, e isso é o que segura a
 Fase 2 como pauta e não como código desta perna (§3.9). O que a perna fez com essa afirmação foi
 **expor** o sol à água — `_sun_dir` lido do `basis` da luz ([main.gd:1231](src/main.gd#L1231), entregue em
-[:141](src/main.gd#L143)) — sem tocar no `Environment`, que é da Fase 4.
+[:141](src/main.gd#L141)) — sem tocar no `Environment`, que é da Fase 4.
 
 Uma consequência de instrumento, escrita antes do código porque é ela que divide o gate: **headless não
 exercita o `RenderingDevice`, então nenhuma corrida da suíte pode afirmar que o shader compila.** O
