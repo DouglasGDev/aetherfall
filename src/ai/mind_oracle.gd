@@ -51,12 +51,26 @@ const MODEL_ALIAS := "mind-small"
 ## soltos repetidos em dois lugares.
 const PROMPT_MAX_TOKENS := 64
 const PROMPT_TEMPERATURE := 0.7
+## O k da janela de crencas do prompt (Fase 2 §20.5): o prompt imprime o top-k
+## por qualidade, nao o dicionario inteiro. O runner carrega uma copia literal
+## (`K_JANELA_PROVA`) porque ler-la no vermelho seria SCRIPT ERROR — padrao
+## BIAS_MEDIDA.
+const JANELA_CRENCAS: int = 8
 
 ## Portao de prontidao (dossie 15 §4.4): quando existe um dono de pack, ele diz
 ## quando o modelo esta no estado de fila. Sem portao — o caso da suite e o de
 ## quem sobe o servidor na mao — o ciclo de pedido segue como sempre.
 var ready_provider: Callable = Callable()
 var roster_provider: Callable = Callable()
+## O LEDGER da Fase 2 (§20.6): a verdade de mundo que o portao da Camada 5 le —
+## `entity_id -> vivo (bool)`, com o jogador (ACTOR_PLAYER) incluido. Sem o
+## provider o portao degrada ao comportamento do Passo 5 (ids contra o roster),
+## e a degradacao fica nomeada em `ultimo_portao` — nunca silenciosa.
+var ledger_provider: Callable = Callable()
+## O portao ativo na ultima chamada de `aceitar_saida`: "ledger" com o provider
+## valido, "roster" na degradacao do Passo 5. Observabilidade do gate — quem le
+## o log sabe contra QUE verdade a saida foi conferida.
+var ultimo_portao := ""
 
 ## A ponte nativa, criada no `_ready` quando a ClassDB tem a classe. Num clone
 ## sem o dll (gitignored) ela fica null e cada pedido nomeia a ausencia — o
@@ -151,26 +165,58 @@ func narration_of(wolf_id: int) -> String:
 	return String(_narrations.get(wolf_id, ""))
 
 
-## O PORTAO da Camada 5 (§6.4/§7.1): a UNICA rota pela qual uma saida do oraculo
-## entra no mundo — narrativa gravada, crenca, intencao. A saida que nomeia um
-## `entity_id` que nao existe na alcateia NAO passa: sem narrativa, sem crenca,
-## sem intencao, e a recusa NOMEIA o id forjado (o numero que decide). Com o
-## modelo no MESMO heap, ausencia de caminho nao e prova — o portao checado e.
-## Roster invalido ou vazio e fail closed: qualquer citacao e forjada.
+## O PORTAO da Camada 5 (§6.4/§7.1, expandido na Fase 2 §20.6): a UNICA rota
+## pela qual uma saida do oraculo entra no mundo — narrativa gravada, crenca,
+## intencao. Com o ledger ligado, a conferencia e contra a verdade de mundo
+## (ids alem do roster — o jogador entre eles — e FATO declarado contra o
+## ledger); sem ledger, degrada ao roster do Passo 5, nomeado em
+## `ultimo_portao`. Recusa = sem narrativa, sem crenca, sem intencao, com o id
+## e o motivo NOMEADOS; fato confirmado (morte de cadaver) entra no Mind do
+## narrador como QUARENTENA — nunca como intencao escrita no corpo (mandato 2).
 func aceitar_saida(wolf_id: int, texto: String) -> bool:
-	var ids: Array = []
-	if roster_provider.is_valid():
-		for w in roster_provider.call():
-			if w != null and is_instance_valid(w):
-				ids.append(int(w.identity))
-	if not _verificador.aceitar(texto, ids):
+	var fatos: Array = []
+	var aceito := false
+	if ledger_provider.is_valid():
+		ultimo_portao = "ledger"
+		aceito = _verificador.aceitar_ledger(texto, ledger_provider.call())
+		if aceito:
+			fatos = _verificador.fatos_confirmados.duplicate()
+	else:
+		ultimo_portao = "roster"
+		var ids: Array = []
+		if roster_provider.is_valid():
+			for w in roster_provider.call():
+				if w != null and is_instance_valid(w):
+					ids.append(int(w.identity))
+		aceito = _verificador.aceitar(texto, ids)
+	if not aceito:
 		last_reason = _verificador.ultimo_motivo
 		_cooldowns[wolf_id] = RETRY_COOLDOWN
 		return false
 	_narrations[wolf_id] = texto
 	_cooldowns[wolf_id] = RETRY_COOLDOWN
+	_quarentena(wolf_id, fatos)
 	narration_ready.emit(wolf_id, texto)
 	return true
+
+
+## Escreve a quarentena dos fatos que o LEDGER confirmou no Mind do narrador
+## (Fase 2 §20.6): a morte declarada e validada contra o ledger vira crenca
+## rebaixada com a fonte "oracle" — o oraculo sugere, a arvore dispoe. Le o
+## `mind` por `w.get("mind")` de proposito: o roster pode conter corpo de prova
+## sem mente (o `_LoboProva` do Passo 5) e `get` devolve null onde o acesso
+## direto derrubaria o gate — lobo sem mente nao escreve nada, e o narrador
+## sem lobo no roster tambem nao (a quarentena e do NARRADOR do fato).
+func _quarentena(wolf_id: int, fatos: Array) -> void:
+	if fatos.is_empty() or not roster_provider.is_valid():
+		return
+	for w in roster_provider.call():
+		if w != null and is_instance_valid(w) and int(w.identity) == wolf_id:
+			var m = w.get("mind")
+			if m != null and m.has_method("quarentena"):
+				for id in fatos:
+					m.quarentena("oracle_caiu_%d" % int(id))
+			return
 
 
 ## Liga a cache (§6.5) no arquivo dado — CLI `--oracle-cache=`, padrao da casa
@@ -272,6 +318,39 @@ static func _prompt_narracao(w) -> String:
 			+ "sistemas, sem listas, sem pense em voz alta. " + _prompt_for(w)
 
 
+## A janela de crencas: PURA no estado da mente — a premissa
+## `selecao_de_beliefs_e_pura_no_estado` (§20.5) como codigo. Ordena por
+## confianca desc, depois `vezes` desc, depois `visto_em` desc, e fecha com o
+## desempate TOTAL pela chave: o dicionario do Godot e ordenado pela insercao,
+## e sem o desempate final o mesmo estado em duas ordens de insercao
+## devolveria duas janelas. Nao le relogio, aleatoriedade nem identidade de
+## fora — mesmo estado -> mesma janela -> mesmo prompt -> mesma chave de
+## conteudo da cache (§6.5), senao a cache fixa memoria velha no replay.
+## Devolve os ids na ordem em que o prompt os imprime.
+static func _janela_crencas(beliefs: Dictionary) -> Array:
+	var itens: Array = []
+	for id in beliefs:
+		var b = beliefs[id]
+		itens.append({
+			"id": id,
+			"conf": float(b.get("confidence", 0.0)),
+			"vezes": int(b.get("vezes", 0)),
+			"visto": int(b.get("visto_em", -1)),
+		})
+	itens.sort_custom(func(a: Dictionary, c: Dictionary) -> bool:
+		if float(a["conf"]) != float(c["conf"]):
+			return float(a["conf"]) > float(c["conf"])
+		if int(a["vezes"]) != int(c["vezes"]):
+			return int(a["vezes"]) > int(c["vezes"])
+		if int(a["visto"]) != int(c["visto"]):
+			return int(a["visto"]) > int(c["visto"])
+		return String(a["id"]) < String(c["id"]))
+	var janela: Array = []
+	for i in mini(JANELA_CRENCAS, itens.size()):
+		janela.append(itens[i]["id"])
+	return janela
+
+
 ## Funcao PURA do lobo: nao le instancia nenhuma, por isso e static — o gate do
 ## contrato monta o MESMO prompt que o wrapper envia, sem copiar o formato a mao.
 static func _prompt_for(w) -> String:
@@ -280,9 +359,13 @@ static func _prompt_for(w) -> String:
 	var recent: Array = []
 	for i in range(maxi(eps.size() - 3, 0), eps.size()):
 		recent.append("%s (forca %.2f)" % [eps[i]["kind"], float(eps[i]["mag"])])
+	# A janela top-k (Fase 2 §20.5) substitui o dicionario inteiro: o prompt
+	# mostra as crencas que a QUALIDADE ordenou, nao a ordem de insercao — e a
+	# selecao e pura no estado da mente, entao o mesmo estado produz o mesmo
+	# texto e a chave de conteudo da cache continua valendo entre as corridas.
 	var bl := ""
-	for id in d.get("beliefs", {}):
-		bl += "%s=%.2f " % [id, float(d["beliefs"][id])]
+	for id in _janela_crencas(d.get("beliefs", {})):
+		bl += "%s=%.2f " % [id, float(d["beliefs"][id]["confidence"])]
 	return (
 		"lobo %d; intencao atual: %s; vida %.0f%%; fome %.0f%%; "
 		+ "confianca no jogador %.2f; memorias recentes: %s; crencas: %s. "
