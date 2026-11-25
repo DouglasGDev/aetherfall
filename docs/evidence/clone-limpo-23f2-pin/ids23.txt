@@ -1,0 +1,2 @@
+== docs/planos/23-elevacao-visual-agua.md -- identificadores citados em backticks: 97
+   AUSENTES em src/ e tests/: ARRAY_DATA, CPUParticles3D, LINEAR_WITH_MIPMAPS, ReflectionProbe, Weather, ae3d7dc4199b997b52008ec316d4a5f7a6f738277af9792d6b54e2efe073a0b0, entered_water, forward_plus, gdshader
