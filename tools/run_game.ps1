@@ -5,9 +5,12 @@
 #      config/features = "4.7"),
 #   2. se nao ha motor, baixa o build portavel oficial para dentro de .tools/
 #      e confere tamanho + sha256 antes de extrair,
-#   3. se falta o cache de importacao (.godot/global_script_class_cache.cfg),
-#      roda o --import: sem ele o projeto abre com "Could not find type" em
-#      tudo que usa class_name,
+#   3. confere o cache de importacao (.godot/) contra a arvore: se falta, se o
+#      motor mudou, ou se algum .gd/.tscn/.tres/imagem/audio esta mais novo que
+#      o ultimo import, roda o --import antes de abrir. Sem isso o jogo abre
+#      lendo produto velho -- "Could not find type" para todo class_name novo,
+#      textura e som antigos -- porque o que ele carrega e o .godot/imported/,
+#      nao o arquivo da arvore,
 #   4. recusa abrir se ja ha janela do mesmo save (user:// e o config/name do
 #      project.godot, nao a pasta), e lanca o jogo.
 #
@@ -45,6 +48,27 @@ trap {
 
 $Root = Split-Path -Parent $PSScriptRoot
 $ClassCache = Join-Path $Root ".godot\global_script_class_cache.cfg"
+$ImportedDir = Join-Path $Root ".godot\imported"
+
+# O carimbo que este launcher grava depois de um import bem sucedido: a data do
+# global_script_class_cache.cfg nao serve de referencia porque o motor so reescreve
+# aquele arquivo quando a LISTA de classes muda -- editar um .gd sem mudar o
+# registro deixaria o cache parecendo fresco para sempre.
+$ImportStampRel = ".godot\aetherfall_last_import.txt"
+
+# Tipos cujo conteudo o motor copia para dentro de .godot/imported/ (e o registro
+# de classes): mexer neles e o que faz a arvore ficar mais nova que o produto.
+# .json fica fora de proposito: o jogo le levels.json e os saves direto do disco.
+$ImportExts = @(
+    ".gd", ".uid", ".tscn", ".tres", ".gdshader",
+    ".png", ".jpg", ".jpeg", ".webp", ".svg",
+    ".ogg", ".wav", ".mp3", ".ttf", ".otf", ".glb", ".gltf"
+)
+
+# docs/ nao entra: nenhuma linha de res:// carrega a evidencia, e cada commit de
+# documento forcaria um import. models/ e lido pelo oraculo em disco, nao pelo
+# motor. Os pontos comecados em "." (.git, .godot, .qoder, .tools) caiem sozinhos.
+$ImportSkipDirs = @("docs", "models", "logs", "bin", "saves", "__pycache__")
 
 # Este launcher e do Windows: o pin e o zip win64, e a leitura das instancias
 # abertas usa WMI. Em Linux/macOS o caminho e o mesmo, na mao:
@@ -296,6 +320,77 @@ function Get-GameInstances([string]$Exe) {
 }
 
 
+## Os arquivos da arvore que tem um produto dentro de .godot/. A descida e feita
+## a mao com uma pilha porque um Get-ChildItem -Recurse puro atravessaria
+## .qoder/worktrees (outros clones, cada um com a arvore inteira) e .tools (o
+## motor baixado) para depois descartar o que ele mesmo caminhou.
+function Get-ImportedSources([string]$ProjectDir) {
+    $found = @()
+    $stack = New-Object System.Collections.Generic.Stack[string]
+    $stack.Push($ProjectDir)
+    while ($stack.Count -gt 0) {
+        $dir = $stack.Pop()
+        foreach ($sub in (Get-ChildItem -LiteralPath $dir -Directory -Force -ErrorAction SilentlyContinue)) {
+            if ($sub.Name.StartsWith(".") -or $ImportSkipDirs -contains $sub.Name) { continue }
+            $stack.Push($sub.FullName)
+        }
+        foreach ($f in (Get-ChildItem -LiteralPath $dir -File -ErrorAction SilentlyContinue)) {
+            if ($ImportExts -contains $f.Extension.ToLowerInvariant()) { $found += $f }
+        }
+    }
+    return $found
+}
+
+
+## O veredito de frescor com o numero que o decide: quantos arquivos importaveis
+## estao mais novos que o ultimo import e qual e o mais recente. "Pronto" e os
+## quatro juntos -- registro de classes presente, produtos presentes, o mesmo
+## motor que importou, e nada da arvore tocado depois do carimbo.
+function Get-ImportVerdict([string]$EngineVer) {
+    $out = @{ pronto = $true; motivo = ""; novos = 0; mais_novo = ""; desde = "" }
+    if (-not (Test-Path -LiteralPath $ClassCache)) {
+        $out.pronto = $false
+        $out.motivo = "falta o registro de classes (.godot\global_script_class_cache.cfg)"
+        return $out
+    }
+    if (-not (Test-Path -LiteralPath $ImportedDir)) {
+        $out.pronto = $false
+        $out.motivo = "falta .godot\imported (os produtos do ultimo import sumiram da arvore)"
+        return $out
+    }
+    $stamp = Join-Path $Root $ImportStampRel
+    $ref = $null
+    if (Test-Path -LiteralPath $stamp) {
+        $linhas = @(Get-Content -LiteralPath $stamp -ErrorAction SilentlyContinue)
+        $ver = ""
+        if ($linhas.Count -gt 0) { $ver = ([string]$linhas[0]).Trim() }
+        $ref = (Get-Item -LiteralPath $stamp).LastWriteTime
+        $out.desde = $ref.ToString("yyyy-MM-dd HH:mm")
+        if ($ver -and ($ver -ne $EngineVer)) {
+            $out.pronto = $false
+            $out.motivo = "o cache veio do motor $ver e esta rodada usa $EngineVer"
+            return $out
+        }
+    }
+    else {
+        # cache feito antes deste carimbo: a data do cfg e o melhor palpite que ha, e
+        # o proximo import grava o carimbo -- a duvida nao passa de uma rodada
+        $ref = (Get-Item -LiteralPath $ClassCache).LastWriteTime
+        $out.desde = ($ref.ToString("yyyy-MM-dd HH:mm") + ", sem carimbo (li a data do cfg)")
+    }
+    $mais = $ref
+    foreach ($f in (Get-ImportedSources $Root)) {
+        if ($f.LastWriteTime -gt $ref) { $out.novos += 1 }
+        if ($f.LastWriteTime -gt $mais) { $mais = $f.LastWriteTime; $out.mais_novo = $f.FullName }
+    }
+    if ($out.novos -gt 0) {
+        $out.pronto = $false
+        $out.motivo = "$($out.novos) arquivo(s) importavel(is) mais novo(s) que o ultimo import"
+    }
+    return $out
+}
+
+
 ## Start-Process nao coloca aspas nos argumentos, entao o caminho do clone, que
 ## pode ter espaco, e citado a mao.
 function Format-Argv([string[]]$Argv) {
@@ -368,7 +463,7 @@ else {
     $mode = "jogo"
 }
 
-$needsImport = -not (Test-Path $ClassCache)
+$frescor = Get-ImportVerdict $godot.ver
 
 # vale para qualquer motor: o que identifica o projeto nao e o binario e sim o
 # --path lido da linha de comando de cada processo (mesmo config/name = mesmo
@@ -378,11 +473,13 @@ $openGames = @(Get-GameInstances $godot.exe)
 Write-Step "plano"
 Write-Host "   projeto : $Root"
 Write-Host "   modo    : $mode"
-if ($needsImport) {
-    Write-Host "   import  : necessario (falta .godot\global_script_class_cache.cfg)"
+if ($frescor.pronto) {
+    Write-Host "   import  : fresco (ultimo em $($frescor.desde); $($frescor.novos) arquivo(s) mais novo(s))"
 }
 else {
-    Write-Host "   import  : ja feito"
+    Write-Host "   import  : necessario - $($frescor.motivo)"
+    if ($frescor.desde) { Write-Host "             ultimo import em $($frescor.desde)" }
+    if ($frescor.mais_novo) { Write-Host "             o mais recente: $($frescor.mais_novo)" }
 }
 if ($openGames.Count -gt 0) {
     Write-Host "   aberto  : $($openGames.Count) janela(s) do mesmo save"
@@ -410,14 +507,26 @@ if ($openGames.Count -gt 0 -and $mode -eq "suite") {
     Write-Host "       numeros de tempo desta corrida nao sao publicaveis."
 }
 
-if ($needsImport) {
-    Write-Step "importando o projeto (uma vez so; monta o .godot/ e o registro de classes)"
-    $rc = Invoke-GodotHeadless $godot.exe $importArgv
-    if ($rc -ne 0) { throw "o import falhou com codigo $rc" }
-    if (-not (Test-Path $ClassCache)) {
-        throw "o import terminou mas o cache de classes nao apareceu; veja o log acima"
+if (-not $frescor.pronto) {
+    # importar com outra instancia viva do projeto escreve em .godot/ enquanto o
+    # outro processo le os mesmos produtos: no melhor caso o import errora com
+    # sharing violation, no pior o jogo abre com meio arquivo de cada rodada.
+    if ($openGames.Count -gt 0) {
+        Write-Host ""
+        Write-Host "ATENCAO: o cache esta velho ($($frescor.motivo)) mas ha janela do mesmo save aberta."
+        Write-Host "Nada foi reimportado -- o jogo vai abrir lendo o produto velho de .godot/imported/."
+        Write-Host "Fecha a janela e roda de novo para o import acontecer."
     }
-    Write-Host "   ok"
+    else {
+        Write-Step "reimportando o projeto ($($frescor.motivo); monta o .godot/ e o registro de classes)"
+        $rc = Invoke-GodotHeadless $godot.exe $importArgv
+        if ($rc -ne 0) { throw "o import falhou com codigo $rc" }
+        if (-not (Test-Path -LiteralPath $ClassCache)) {
+            throw "o import terminou mas o cache de classes nao apareceu; veja o log acima"
+        }
+        Set-Content -LiteralPath (Join-Path $Root $ImportStampRel) -Value $godot.ver
+        Write-Host "   ok"
+    }
 }
 
 if ($mode -eq "suite") {
