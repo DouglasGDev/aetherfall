@@ -9971,3 +9971,125 @@ Ficam escritos como dívida, não como feito:
 - **#57** (o README mandando correr uma cena que o Passo 4 da 22 aposentou) tem dono escrito e nenhuma
   linha trocada: é da perna 22, que ainda está em voo com **+389/−28** não commitados em `src` e
   `tests` na ponta `114bcd2` do worktree.
+
+
+## Rodada 2026-11-25 (16) — o `Rodar.bat` deixa de perguntar "falta o cache?" e passa a perguntar "a árvore é mais nova que o último import?" (branch `fix/rodar-arquivos-frescos`, base `36e842c`, pontas de código `cadb98a` e `dc97073`, evidência nesta ponta de documentos)
+
+O pedido do dono é uma frase e ela estava errada no launcher desde o dia em que o launcher nasceu:
+*"o rodar.bat tem que forcar arquivos frescos e nao arquivo velho"*. A regra de abertura do passo 3 era
+`Test-Path .godot\global_script_class_cache.cfg` — uma pergunta de **existência** num problema de
+**idade**. Lido na árvore de trabalho antes do conserto
+([`estado-do-cache-antes.log`](evidence/rodar-arquivos-frescos/estado-do-cache-antes.log)): o registro de
+classes parado em **14:13:54**, **163** produtos em `.godot/imported/` com o mais novo em
+**2026-11-24 18:17:16**, carimbo **ausente**, e **3 de 160** arquivos importáveis mais novos que o
+próprio `cfg`. A resposta da regra velha era "não falta" — e o jogo abria lendo o produto velho, porque
+o que o motor carrega é o `.godot/imported/`, não o arquivo da árvore. É o mesmo motivo que já estava
+escrito na página: sem import, `class_name` novo abre com "Could not find type"; o que faltava era ver
+que **`git pull` e troca de branch envelhecem o cache sem apagar nenhum arquivo**.
+
+**Por que a data do `cfg` não serve de régua, e o que entrou no lugar dela.** O motor só reescreve
+`global_script_class_cache.cfg` quando a **lista** de classes muda — editar um `.gd` sem mudar o
+registro deixaria o cache parecendo fresco para sempre, que é exatamente o defeito medido acima. Então o
+launcher passou a ser dono do próprio carimbo:
+[`tools/run_game.ps1:57`](../tools/run_game.ps1#L57) declara
+`.godot\aetherfall_last_import.txt`, gravado com a versão do motor depois de um import que terminou
+verde ([`:545`](../tools/run_game.ps1#L545)). O veredito é uma função só —
+[`Get-ImportVerdict`](../tools/run_game.ps1#L349-L391) — e exige os quatro juntos: registro de classes
+presente, produtos presentes, **o mesmo motor que importou**, e nada da árvore tocado depois do
+carimbo. A varredura ([`Get-ImportedSources`](../tools/run_game.ps1#L327-L342)) é feita a mão com uma
+pilha explícita porque um `Get-ChildItem -Recurse` puro atravessaria `.qoder/worktrees` — outros clones,
+cada um com a árvore inteira — e `.tools` (o motor baixado) para depois descartar o que ele mesmo
+caminhou. Entra por extensão ([`:62-67`](../tools/run_game.ps1#L62-L67)): `.gd`, `.uid`, `.tscn`,
+`.tres`, `.gdshader`, as seis imagens, os três áudios, as duas fontes, os dois glTF. Não entram `docs/`,
+`models/`, `logs/`, `bin/`, `saves/`, `__pycache__` ([`:71`](../tools/run_game.ps1#L71)) nem `.json` —
+`assets/audio/levels.json` e os saves são lidos direto do disco pelo jogo, então forçar re-import por
+eles seria pagar por nada.
+
+**Os cinco braços têm log, cada um com a linha que o decide**
+([`bracos-do-veredito.log`](evidence/rodar-arquivos-frescos/bracos-do-veredito.log)): carimbo do mesmo
+motor → `import  : fresco (ultimo em 2026-11-25 19:22; 0 arquivo(s) mais novo(s))`; um `.gd` tocado →
+`necessario - 1 arquivo(s) importavel(is) mais novo(s) que o ultimo import` com
+`o mais recente: ...\src\main.gd`; carimbo gravado por outro motor →
+`necessario - o cache veio do motor 4.3.1 e esta rodada usa 4.7.2`; árvore sem carimbo → o mesmo número
+com a confissão anexa `sem carimbo (li a data do cfg)`; e sem `.godot/` →
+`falta o registro de classes (.godot\global_script_class_cache.cfg)`. O quarto braço é o caso de
+upgrade — todo clone criado antes desta perna não tem carimbo — e ele **diz** que usou o palpite, em vez
+de calar; o import seguinte grava o carimbo e a dúvida não passa de uma rodada.
+
+**A cláusula do concorrente, que é o contrário do que se poderia querer.** Com janela do mesmo save
+aberta, o import **não roda** ([`:528-536`](../tools/run_game.ps1#L528-L536)): reimportar enquanto outro
+processo lê os mesmos produtos é escrever em `.godot/imported/` debaixo dele — no melhor caso *sharing
+violation*, no pior o jogo abre com meio arquivo de cada rodada. O launcher então avisa em voz alta
+`ATENCAO: o cache esta velho (...) mas ha janela do mesmo save aberta.` /
+`Nada foi reimportado -- o jogo vai abrir lendo o produto velho de .godot/imported/.`, em vez de fazer o
+re-import e esconder o que fez. A detecção de instância é a que já existia e vale para qualquer motor:
+o `--path` lido da linha de comando de cada processo, não o nome do binário nem a pasta.
+
+**Forçar frescor não é caro, e o número é um par de paredes**
+([`parede-com-import.log`](evidence/rodar-arquivos-frescos/parede-com-import.log),
+[`parede-fresco.log`](evidence/rodar-arquivos-frescos/parede-fresco.log),
+[`reimport-direto-3arquivos.log`](evidence/rodar-arquivos-frescos/reimport-direto-3arquivos.log),
+[`chkonly-fresco.log`](evidence/rodar-arquivos-frescos/chkonly-fresco.log)): **67 s** de parede com o
+re-import disparado contra **67 s** com o cache fresco, numa suíte que se declarou **61,5 s** e
+**65,2 s** nas duas — os dois braços fecham na mesma parede, então o re-import incremental não passa do
+ruído de uma corrida para outra da mesma árvore. Medido sozinho, ele custa **4 069 ms**, exit 0, com
+**0** linhas de `ERROR`/`WARNING` no stderr. A varredura dos 160 arquivos cabe nos **589 ms** de um
+`-CheckOnly` que ainda inclui o *cold start* do próprio PowerShell. Os dois vermelhos das duas corridas
+são o **furo #38**, com a literalidade de sempre:
+`motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore`. Nada do que esta perna escreve
+toca `src/` ou `tests/` — `git diff --name-only 36e842c HEAD -- src tests` devolve **vazio** — então o
+pin publicado da perna 17 (**278 / 0**) vale para esta árvore por identidade, e não por re-corrida
+(mandato 3, item 6).
+
+**Um vermelho que não era de frescor, e tem número: o furo #64.** O `Invoke-GodotHeadless` chama o
+*build de console* do motor, e o script roda com `$ErrorActionPreference = "Stop"` no topo. No PowerShell
+5.1 cada linha de stderr de um programa nativo vira `ErrorRecord`, e com `Stop` a primeira
+`ERROR: ...` cai no `trap` do launcher. Não aparece em `Rodar.bat`, que abre um processo novo com
+`-File`; aparece quando o script é chamado de dentro de outra sessão PowerShell — e ali o launcher
+morria em **0,4 s** com **39** linhas e nenhuma linha da suíte
+([`pais-powershell-antes.log`](evidence/rodar-arquivos-frescos/pais-powershell-antes.log)):
+`ERRO: ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND`, logo depois
+de `== reimportando o projeto (1 arquivo(s) importavel(is) mais novo(s) que o ultimo import; ...) ==`. O
+`ERR_FILE_NOT_FOUND` é o motor falando do pack nativo ausente — é o #38, e o motor **tem** direito de
+escrever isso em stderr. O defeito é do launcher, que transformou o aviso em suicídio. O conserto é
+[`Invoke-EngineConsole`](../tools/run_game.ps1#L423-L440): `Continue` em volta da chamada nativa,
+`finally` devolvendo a preferência, e o contrato continuando sendo o **código de saída** — a suíte
+escreve `ERROR` de propósito. Depois: **70,4 s**, **470** linhas, as `ERROR` do motor atravessando para
+a janela, `== 278 checagens  2 falhas  64.6 s de teste ==` e `codigo 1 (0 = tudo passou)`
+([`pais-powershell-depois.log`](evidence/rodar-arquivos-frescos/pais-powershell-depois.log)).
+
+**O que esta perna não muda, escrito de propósito.** Nenhuma constante de versão é tocada
+(`Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` estão fora do diff — o
+diff é um arquivo só: `tools/run_game.ps1`, **570** linhas, **+144/−18`). Nenhuma perna da fila
+serializada **24 → 22 → 18 → 20 → 13** se move com ela: é `fix/` de instrumento de 1 clique, não dossiê,
+e nenhum gate de fase se fecha aqui (mandato 4). A régua de âncoras pegou o corpo que esta ponta deixou
+velho: as sete citações de `run_game.ps1` em
+[`docs/planos/15-oraculo-embutido-no-boot.md`](planos/15-oraculo-embutido-no-boot.md#L129-L142) —
+`:60-64`→`:84-88`, `:413-421`→`:528-547`, `:357`→`:470`, `:400-405`→`:514-520` (duas vezes, uma delas na
+tabela do §4), `:28-33`→`:31-37`, `:313-320`→`:406-417` e `:431-434`→`:560-570` — foram re-derivadas
+contra esta ponta, alvo a alvo, e a frase do launcher naquela página passou a descrever as quatro causas
+em vez da ausência do cache.
+
+Fica escrito como dívida, não como feito:
+
+- **Nenhum clone limpo desta ponta.** Os números acima são da árvore de trabalho do worktree
+  `C:\Aetherfall\.qoder\worktrees\rodar-frescos`, o que é legítimo porque `src` e `tests` dali são os do
+  pin da 17 por identidade de árvore. O `--import` frio de um clone da ponta ainda é a prova que a casa
+  pede antes de publicar número de suíte; re-correr no clone do merge fecha.
+- **O passo 4 com janela não foi re-corrido.** A regra da mesa é nenhuma janela aberta por mim, e o
+  caminho de lançamento continua exercido só até o `-CheckOnly` e a recusa com exit 2 — ambos medidos.
+  Com o `--import` agora disparando por idade, o primeiro boot depois de um `git pull` reimporta antes
+  de abrir, e é esse mesmo caminho que o `-Tests` desta rodada percorreu duas vezes no mesmo cache.
+- **Um instrumento morto nesta evidência.** A segunda metade de
+  [`arvore-real-checkonly.log`](evidence/rodar-arquivos-frescos/arvore-real-checkonly.log) é o probe
+  batendo no próprio erro: ele tocava `assets\audio\*.ogg` sem `-Recurse`, e os `.ogg` moram em `amb/` e
+  `sfx/`, então o `$ogg[0]` veio nulo e o script gitignored morreu antes de imprimir o veredito. A
+  metade viva vale (a leitura `fresco` na árvore real, com o carimbo gravado pelo próprio launcher, e o
+  `-CheckOnly` saindo **antes** de qualquer import); o braço B foi medido em árvore cheia, no worktree,
+  sobre `src/main.gd` e `src/world/voxel_world.gd` — não em um palco montado.
+- **Colisão de documento com a perna 24.** `README.md` e `docs/melhorias-status.md` estão sujos e **não
+  commitados** na árvore primária (`git status --porcelain` dá 23 arquivos entre `docs/`, `AGENTS.md` e
+  `README.md` na `perf/malha-orcamento-de-tempo-24`), e esta ponta escreve nos dois. O pouso é em `main`
+  por *worktree* temporário, então nada ali é tocado por esta mão; quem re-deriva o conflito é a perna 24
+  ao trazer a `main` para dentro de si (item 5 de "Branches"), e o `git merge` recusa árvore suja — a
+  proteção é do trabalho deles, não desta passada.

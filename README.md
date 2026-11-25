@@ -79,8 +79,21 @@ Dois toques em **`Rodar.bat`**, na raiz do clone. Ele faz, nesta ordem:
    (os dois números publicados pela API de releases do repositório oficial do
    Godot, batidos com o zip já instalado nesta máquina). Download truncado é
    descartado, não vira engine.
-3. **roda o `--import`** se faltar `.godot/global_script_class_cache.cfg` — o
-   passo existe por um motivo, veja abaixo.
+3. **confere o cache contra a árvore e reimporta se está velho** — o `--import`
+   roda quando falta `.godot/global_script_class_cache.cfg`, quando falta
+   `.godot/imported/`, quando o cache veio de outra versão do motor, ou quando
+   algum script, cena, recurso, shader, imagem, áudio, fonte ou modelo está mais
+   novo que o último import. O carimbo é `.godot/aetherfall_last_import.txt`, que
+   o próprio launcher escreve com a versão do motor — a data do
+   `global_script_class_cache.cfg` não serve, porque o motor só reescreve aquele
+   arquivo quando a **lista** de classes muda, e editar um script sem mudar o
+   registro deixaria o cache parecendo fresco para sempre. O passo existe pelo
+   mesmo motivo de antes — sem import o projeto abre com "Could not find type" em
+   tudo que usa `class_name` — mas o motivo é mais largo que a ausência do cache:
+   o que o jogo carrega é o `.godot/imported/`, não o arquivo da árvore, então
+   `git pull` e troca de branch também envelhecem o cache. Com uma janela do mesmo
+   save aberta o import **não** roda — seria escrever nos produtos que outro
+   processo está lendo — e o launcher avisa em voz alta que o jogo vai abrir velho.
 4. **abre o jogo.** Se o processo morrer nos primeiros 6 s, o launcher reabre
    pelo build de console para o erro aparecer na tela em vez de a janela
    simplesmente sumir; se ele sobrevive, a janela preta do launcher fecha e a
@@ -91,6 +104,24 @@ repositório, com `.tools/` vazio: o download de 86.013.866 bytes, o digest
 conferido, o import montando o cache de classes e o `-CheckOnly` devolvendo 0. A
 recusa do passo 4 com uma janela já aberta também é medida — código 2, sem nada
 lançado.
+
+O passo 3 tem os cinco vereditos em log, em
+[`docs/evidence/rodar-arquivos-frescos/`](docs/evidence/rodar-arquivos-frescos/):
+fresco com carimbo do mesmo motor, script mais novo que o carimbo, carimbo gravado
+por outro motor (`o cache veio do motor 4.3.1 e esta rodada usa 4.7.2`), árvore sem
+carimbo — que cai na data do `cfg` e diz que caiu — e sem `.godot/`. O defeito que a
+regra antiga deixava passar é o segundo braço, lido na árvore de trabalho antes do
+conserto: o `global_script_class_cache.cfg` estava parado em 14:13:54 com **3 de 160**
+arquivos importáveis mais novos que ele, e a pergunta "falta o cache?" respondia "não
+falta" — o jogo abria lendo o `.godot/imported/` velho. Forçar frescor não sai caro:
+**67 s** de parede com o re-import disparado contra **67 s** com o cache fresco, numa
+suíte que se declarou **61,5 s** e **65,2 s** nas duas — o re-import incremental
+direto mede **4 069 ms**, exit 0, zero `ERROR`/`WARNING` no stderr, e a varredura dos
+160 arquivos cabe nos **589 ms** de um `-CheckOnly` que ainda inclui o *cold start* do
+próprio PowerShell. Os dois vermelhos de ambas as corridas são o **furo #38**
+(`motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore`): `native/`
+não existe num clone sem build, e o pin publicado da perna 17 — mesmo `src/` e mesmo
+`tests/` desta árvore, já que esta perna só toca `tools/` e esta página — mede **278 / 0**.
 
 Não compila nada: o "executável" do jogo é o projeto GDScript mais a engine
 portável. Não há `npm install` da vida, e atlas e texturas são desenhados em
