@@ -62,6 +62,11 @@ var water_fx: WaterFx = null
 ## `clima_e_dono_visual` e a checagem que vigia isso, e por isso a sessao e quem conhece
 ## os dois lados.
 var weather: Weather = null
+## O veu da chuva (dossie 23 §3.10d): dois emissores criados no boot, um lote de aneis por
+## cadencia, e duas portas — le o `chuva` do Weather, pede a coluna sorteada a ele e entrega o
+## anel ao WaterFx por `Callable`. Nenhum dos tres no conhece o tipo do outro além do que o
+## `main.gd` liga aqui.
+var rain_fx: RainFx = null
 var wolves: Array = []
 var elapsed: float = 0.0
 var stats := {"mined": 0, "placed": 0, "wolves_felled": 0, "deaths": 0}
@@ -222,6 +227,14 @@ func _ready() -> void:
 	weather.name = "Weather"
 	add_child(weather)
 	weather.apply_sink(Callable(self, "_apply_molhado"))
+
+	# O veu depois dos dois porque e o unico que aponta para os dois: `weather` de quem pede a
+	# coluna, `water_fx` de quem poe o anel. Os tres no ficam sem referencia cruzada.
+	rain_fx = RainFx.new()
+	rain_fx.name = "RainFx"
+	rain_fx.ring_sink = Callable(water_fx, "ring_at")
+	add_child(rain_fx)
+	rain_fx.setup(world, weather, player)
 
 	_spawn_wolves(WOLF_COUNT)
 	_start_journal_from_args()
@@ -1226,6 +1239,9 @@ func diagnostics() -> Dictionary:
 		# coluna que alimenta o canal de exposicao. Sem o par, o `molhado` do material e o
 		# `col_lidas` da malharia seriam numeros de corrida, nao de sessao.
 		"weather": weather.diagnostics() if weather != null else {},
+		# Dossie 23 §3.10d: o lote decidido por cadencia, com o par aceito/recusado do lado de
+		# quem sorteia — o contador do WaterFx e do lado de quem poe. Os dois tem de bater.
+		"rain_fx": rain_fx.diagnostics() if rain_fx != null else {},
 		"exposure": world.exposure_diagnostics(),
 		# O host so existe fora de headless (dossie 15 §4.6): na suíte a linha e
 		# vazia, e e exatamente esse o numero que a checagem 8 espera.
