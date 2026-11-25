@@ -57,6 +57,11 @@ var audio: AudioDirector = null
 ## O FX da agua (dossie 23 §3.6): leitura de corpo, pool fixo, nenhuma escrita no
 ## mundo — `fx_nao_escreve_o_mundo` e a checagem que paga a frase.
 var water_fx: WaterFx = null
+## O dono visual do clima (dossie 23 §3.10a): dois numeros, uma RNG propria e um sink
+## que escreve um uniforme. Nenhum `VoxelWorld`, `AetherField` ou `Player` mora nele —
+## `clima_e_dono_visual` e a checagem que vigia isso, e por isso a sessao e quem conhece
+## os dois lados.
+var weather: Weather = null
 var wolves: Array = []
 var elapsed: float = 0.0
 var stats := {"mined": 0, "placed": 0, "wolves_felled": 0, "deaths": 0}
@@ -211,8 +216,16 @@ func _ready() -> void:
 	add_child(water_fx)
 	water_fx.setup(world, player)
 
+	# O clima entra aqui porque o sink escreve no material, e o material so existe depois
+	# de `world.setup_world` → `_build_materials`, que rodou la em cima.
+	weather = Weather.new()
+	weather.name = "Weather"
+	add_child(weather)
+	weather.apply_sink(Callable(self, "_apply_molhado"))
+
 	_spawn_wolves(WOLF_COUNT)
 	_start_journal_from_args()
+	_start_weather_from_args()
 
 
 ## Decisao 4.6 do dossie 15, ajustada pelo §6.3 do dossie 22: em headless o dono
@@ -1209,6 +1222,11 @@ func diagnostics() -> Dictionary:
 		# Dossie 23 §3.6: o teto do FX e aritmética dos `amount` declarados e os
 		# vivos da janela sao lidos aqui — sem esta linha o orcamento seria adjetivo.
 		"water_fx": water_fx.diagnostics() if water_fx != null else {},
+		# Dossie 23 §3.10a e §3.10b: os dois numeros do clima e o custo da varredura de
+		# coluna que alimenta o canal de exposicao. Sem o par, o `molhado` do material e o
+		# `col_lidas` da malharia seriam numeros de corrida, nao de sessao.
+		"weather": weather.diagnostics() if weather != null else {},
+		"exposure": world.exposure_diagnostics(),
 		# O host so existe fora de headless (dossie 15 §4.6): na suíte a linha e
 		# vazia, e e exatamente esse o numero que a checagem 8 espera.
 		"llm": llm_host.diagnostics() if llm_host != null else {},
@@ -1267,6 +1285,25 @@ func _start_journal_from_args() -> void:
 				push_error("abrir journal: %s" % error_string(err))
 				get_tree().quit(1)
 			return
+
+
+## `--weather=<alvo>` e a porta da sonda §5.4: o braco molhado precisa existir sem tecla
+## sintética (a regra da casa para input injetado), e o alvo entra pela rampa do
+## `Weather` pelo mesmo caminho que a suíte usa — nao ha atalho que escreva `molhado`,
+## porque o numero que o material ve tem de ter o mesmo dono que o numero que integra.
+func _start_weather_from_args() -> void:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--weather="):
+			weather.pedir_chuva(clampf(
+				float(arg.trim_prefix("--weather=")), 0.0, 1.0))
+			return
+
+
+## O unico fio entre o clima e o mundo: um numero para um uniforme (§3.10a, o padrao dos
+## provedores da casa ao contrario — aqui a sessao e quem conhece os dois lados para que
+## o `Weather` nao precise conhecer o mundo).
+func _apply_molhado(v: float) -> void:
+	world.opaque_material().set_shader_parameter("molhado", v)
 
 
 func _exit_tree() -> void:

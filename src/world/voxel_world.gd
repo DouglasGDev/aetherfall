@@ -33,6 +33,12 @@ const FACE_TINT: Array = [0.88, 0.88, 0.82, 0.82, 1.0, 0.60]
 const AO_MIN_BRIGHT: float = 0.42
 const WATER_TOP_DROP: float = 0.12
 const MAX_DDA_STEPS: int = 512
+# Quantos blocos de coluna separam o topo da ravina do beiral que ja conta como
+# exposto (dossie 23 §3.10b): `expos = 1 - (topo - y) / EXPOSURE_FALL`. Com 4, a face
+# do proprio topo chega 1,000, uma celula abaixo sai 0,750 e quatro abaixo sai zero --
+# o gradiente que a sonda §5.4 mede em duas caixas. Menor que isso e degrau na parede,
+# maior e morro inteiro escurecendo junto, que e o braco (c) rejeitado.
+const EXPOSURE_FALL: int = 4
 
 const CHUNK_SIZE_X: int = VoxelChunk.SIZE_X
 const CHUNK_SIZE_Y: int = VoxelChunk.SIZE_Y
@@ -50,7 +56,7 @@ var _sz: int = 0
 var _flat_ready: bool = false
 
 var _atlas: Texture2D = null
-var _mat_opaque: StandardMaterial3D = null
+var _mat_opaque: ShaderMaterial = null
 var _mat_water: ShaderMaterial = null
 var _mat_glass: StandardMaterial3D = null
 # A direcao do sol e do `main.gd`, que cria o no, nao daqui; o material da agua
@@ -70,6 +76,17 @@ var _edit_stamp: Dictionary = {}    # Vector2i (coord) -> usec do carimbo aberto
 var _edit_us_total: int = 0
 var _edit_us_worst: int = 0
 var _edit_us_count: int = 0
+# Cache de topo de coluna do chunk sendo malhado agora (dossie 23 §3.10b): um `int` por
+# coluna, e a unica fonte do `expos` que vai ao `COLOR.a` do grupo opaco. Varre **uma vez
+# por rebuild**, nao por face nem por voxel — o braco (b) rejeitado custaria ate 6 faces
+# × 64 leituras no lugar exato onde a casa ja teve de aprender a nao varrer o mundo por
+# triangulo (furo #41). Os tres contadores abaixo sao a testemunha: a suíte asserta
+# `col_lidas == chunks_lidos * CHUNK_SIZE_X * CHUNK_SIZE_Z`, que e aritmetica de uma
+# leitura por coluna, e `faces_opacas` ao lado mostra o que o braco rejeitado custaria.
+var _ct_top: PackedInt32Array = PackedInt32Array()
+var _exposure_chunks: int = 0
+var _exposure_cols: int = 0
+var _exposure_faces: int = 0
 
 static var _ao_offsets: Array = []
 static var _tables_ready: bool = false
@@ -88,12 +105,12 @@ func setup_world(p_root: Node3D) -> void:
 
 func _build_materials() -> void:
 	_atlas = VoxelAtlas.build_texture()
-	_mat_opaque = StandardMaterial3D.new()
-	_mat_opaque.albedo_texture = _atlas
-	_mat_opaque.vertex_color_use_as_albedo = true
-	_mat_opaque.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
-	_mat_opaque.roughness = 0.92
-	_mat_opaque.metallic = 0.0
+	# O opaco passou a `ShaderMaterial` porque o molhamento da Fase 2 e um numero por
+	# vertice (o `COLOR.a` do §3.10b) e um `StandardMaterial3D` nao le canal nenhum: ele
+	# multiplica o RGB pelo tint da face e descarta o alfa. O que o material velho fazia
+	# esta reproduzido dentro da SOURCE do `OpaqueSurface`, e o braco `--weather=0` da
+	# sonda §5.4 e que mede se a reproducao e fiel.
+	_mat_opaque = OpaqueSurface.build_material(_atlas)
 	_mat_water = WaterSurface.build_material(_atlas, _water_sun)
 	# O vidro e amostrado como a agua mas sem o recuo de topo, e com o filtro
 	# NEAREST da pedra: linear em cima de um tile que e quase todo alpha deixa a
@@ -119,6 +136,13 @@ func atlas_texture() -> Texture2D:
 ## `main.gd` grava nele a direção do sol.
 func water_material() -> ShaderMaterial:
 	return _mat_water
+
+
+## O material opaco, pela mesma porta da agua (§5.3): a suíte prova por aqui que o surface
+## opaco de um chunk real carrega um `ShaderMaterial` -- e o `main.gd` grava nele o
+## `molhado` que o `Weather` integra, sem que o clima precise conhecer o mundo.
+func opaque_material() -> ShaderMaterial:
+	return _mat_opaque
 
 
 func set_water_sun_direction(dir: Vector3) -> void:
@@ -509,6 +533,7 @@ static func _ensure_tables() -> void:
 func build_chunk_mesh(c: VoxelChunk) -> void:
 	var ox: int = c.coord.x * CHUNK_SIZE_X
 	var oz: int = c.coord.y * CHUNK_SIZE_Z
+	_scan_col_tops(c)
 
 	var v := PackedVector3Array()
 	var nr := PackedVector3Array()
@@ -573,8 +598,10 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 					else:
 						var ao := _corner_ao_array(gx, y, gz, f)
 						var jitter: float = float(_hash3(gx, y, gz) % 5) * 0.012
+						_exposure_faces += 1
 						_emit_face(v, nr, uv, cl, ix, gx, y, gz, f, tile, ao,
-							FACE_TINT[f] + jitter, 0.0)
+							FACE_TINT[f] + jitter, 0.0, Vector2.ZERO,
+							_ct_top[z * CHUNK_SIZE_X + x])
 
 	var mesh := ArrayMesh.new()
 	# O indice do surface e o que era antes de acrescentar: um chunk de vidro sem
@@ -612,6 +639,52 @@ func _water_blocks_below(x: int, y: int, z: int) -> int:
 	while n < 4 and is_water_xyz(x, y - 1 - n, z):
 		n += 1
 	return n
+
+
+## Varre o topo de cada coluna do chunk, **uma vez por rebuild** (dossie 23 §3.10b).
+## Desce do teto e para no primeiro solido, entao a coluna coberta custa uma leitura e a
+## coluna de ar custa `CHUNK_SIZE_Y` -- a mesma conta do `surface_height`
+## (`voxel_world.gd:463-469`), feita uma vez por coluna em vez de uma por face.
+##
+## A leitura e no `data` do proprio chunk, nao por `get_block_xyz`: aqui sao ate 16 384
+## perguntas por rebuild e o `get_block_xyz` gasta cada uma em quatro testes de limite que,
+## dentro do chunk sendo malhado, nunca sao verdadeiros (x e z vem do laco, y de
+## `CHUNK_SIZE_Y`). O indice e o MESMO caminho linear que `c.get_block` usa, e o chunk tem
+## altura cheia (`CHUNK_SIZE_Y` camadas), entao a coluna inteira cabe nos 16 KB do proprio
+## `data` -- nem o `ox` nem o `oz` globais entram na conta.
+func _scan_col_tops(c: VoxelChunk) -> void:
+	var n := CHUNK_SIZE_X * CHUNK_SIZE_Z
+	if _ct_top.size() != n:
+		_ct_top.resize(n)
+	var d: PackedByteArray = c.data
+	for z in CHUNK_SIZE_Z:
+		for x in CHUNK_SIZE_X:
+			# O indice comeca no **topo** da coluna, porque e de la que a conta desce:
+			# o local e `(y * CHUNK_SIZE_Z + z) * CHUNK_SIZE_X + x`, entao o passo e um
+			# `n` por camada e o primeiro byte lido e o de `y = CHUNK_SIZE_Y - 1`.
+			var i: int = (CHUNK_SIZE_Y - 1) * n + z * CHUNK_SIZE_X + x
+			var top := -1
+			var y := CHUNK_SIZE_Y - 1
+			while y >= 0:
+				if BlockDefs.is_solid(d[i]):
+					top = y
+					break
+				i -= n
+				y -= 1
+			_ct_top[z * CHUNK_SIZE_X + x] = top
+	_exposure_cols += n
+	_exposure_chunks += 1
+
+
+## Os tres numeros do §3.10b: quantos chunks foram varridos, quantas colunas isso da e
+## quantas faces essas colunas emitiram. E a linha que impede a varredura por face de
+## voltar pela janela -- `col_lidas == chunks_lidos * 256` e aritmetica de uma leitura por
+## coluna, e `faces_por_coluna` ao lado mostra o que o braco rejeitado custaria.
+func exposure_diagnostics() -> Dictionary:
+	return {
+		"chunks_lidos": _exposure_chunks, "col_lidas": _exposure_cols,
+		"faces_opacas": _exposure_faces, "fall": EXPOSURE_FALL,
+	}
 
 
 func _corner_ao_array(gx: int, gy: int, gz: int, f: int) -> PackedFloat32Array:
@@ -655,7 +728,7 @@ func _emit_face(
 	cols: PackedColorArray, idx: PackedInt32Array,
 	gx: int, gy: int, gz: int, f: int, tile: int,
 	ao: PackedFloat32Array, tint: float, top_drop: float,
-	water_flags: Vector2 = Vector2.ZERO) -> void:
+	water_flags: Vector2 = Vector2.ZERO, topo: int = -1) -> void:
 	var base: int = verts.size()
 	var corners: Array = FACE_CORNERS[f]
 	var face_uvs: Array = FACE_UVS[f]
@@ -686,7 +759,18 @@ func _emit_face(
 				0.0 if f == 4 or f == 5 else 1.0,
 				1.0))
 		else:
-			cols.append(Color(bright, bright, bright, 1.0))
+			# O alfa do grupo opaco era o canal escrito e lido por ninguem (o espelho do
+			# furo #43, do outro lado da mesa): o `StandardMaterial3D` multiplica o RGB no
+			# albedo e nao tem transparencia ligada, entao o que ele carregava nao chegava
+			# a lugar nenhum. Com o material em shader (§3.10c) o canal passou a ter
+			# comprador: a exposicao de cielo da coluna, que o `molhado × COLOR.a` do
+			# fragment usa para escurecer o beiral e deixar o leito da ravina intocado.
+			# `topo < 0` e o "sem coluna" do vidro, que nao tem comprador de molhamento
+			# nesta fase (§3.10f) e continua com o alfa 1,0 de sempre.
+			var a := 1.0
+			if topo >= 0:
+				a = clampf(1.0 - float(topo - int(py)) / float(EXPOSURE_FALL), 0.0, 1.0)
+			cols.append(Color(bright, bright, bright, a))
 	# CW visto de fora = face frontal no Godot (Vulkan inverte o Y no framebuffer):
 	# com (0,1,2)/(0,2,3) o rasterizador descartava todo topo e os blocos
 	# apareciam transparentes.
