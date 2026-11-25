@@ -47,8 +47,8 @@ inclui versões, seed real, tick, dimensões, edições ordenadas, identidades/i
 dos lobos vivos e todos os bytes Float32 do Éter; exclui jogador, corpos, RNG, episódios,
 relações, timers e comandos. O contrato completo está em [AGENTS.md](../../AGENTS.md).
 A CLI `-- --tick-journal=path` ativa a gravação após o incremento do tick, dentro do
-cronômetro ([main.gd:340-344](../../src/main.gd#L340-L344), cronometrado em [:294-297](../../src/main.gd#L299-L302),
-[:1248-1256](../../src/main.gd#L1253-L1261)). Isso não é hash completo, replay nem prova de
+cronômetro ([main.gd:340-344](../../src/main.gd#L345-L349, cronometrado em [:294-297](../../src/main.gd#L304-L307,
+[:1248-1256](../../src/main.gd#L1277-L1285). Isso não é hash completo, replay nem prova de
 determinismo da simulação: **hash estável em 3 execuções continua sem gate fechado**.
 
 ### P0 — Fundação `[gate mais importante do projeto]`
@@ -75,8 +75,8 @@ zero violações; budget HOT ≤ `[TARGET]` 2,5 ms medido (número real entra aq
 
 **Colheita atual, não fechamento do gate:** `tests/aether_reactions_test.gd` colhe
 `sim_step` integral e `_guard.last_us`/`trips`, com totais e picos, **um lobo por cenário**
-([aether_reactions_test.gd:379-408](../../tests/aether_reactions_test.gd#L379-L408),
-[:1549-1550](../../tests/aether_reactions_test.gd#L1555-L1556)). O guard cronometra só BT,
+([aether_reactions_test.gd:379-408](../../tests/aether_reactions_test.gd#L410-L439,
+[:1549-1550](../../tests/aether_reactions_test.gd#L1586-L1587). O guard cronometra só BT,
 sem percepção/utilidade, que vêm antes dele
 ([wolf.gd:907-911](../../src/entities/wolf.gd#L907-L911),
 [bt_tree.gd:130-137](../../src/ai/behavior/bt_tree.gd#L130-L137)). A soma de amostras desse

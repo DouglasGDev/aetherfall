@@ -28,7 +28,7 @@ logo o trabalho é ligar fonte a consumidora, não acrescentar linhas em tabelas
 | geometria | `_per_channel = size_x*size_y*size_z` (`:48`), dimensões de `:45-47`; `state_bytes()` confirma 196.608 B nos 3 canais | `aether_field.gd:45-54`, medida em `docs/melhorias-status.md:1646` |
 | porta de escrita | `imprint(world_pos, ch, amount)` — posição primeiro, canal segundo | `aether_field.gd:87-89` |
 | fontes reais | medo no spawn `main.gd:295`; lavra 0,42 / colocação 0,20 `main.gd:477-479`; sangue 0,22 `main.gd:388`; morte do jogador `main.gd:544-545`; lobo ferido `wolf.gd:1291-1292`; lobo morto `wolf.gd:1310-1311`; medo do lobo `wolf.gd:490`, sangue `wolf.gd:772` | as fontes dos 3 canais novos: **zero ocorrências** |
-| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:290`, constante `src/main.gd:27` |
+| passada | `diffuse_and_decay(AETHER_PERIOD)` com `AETHER_PERIOD = 0.25` → 4 passadas/s | `aether_field.gd:117-156`, chamada `src/main.gd:295`, constante `src/main.gd:27` |
 | alocação | `var hot := PackedInt32Array()` **por canal por passada** (3/s de lógica → 12/s); o scratch `_nb_i`/`_nb_w` é reusado (`:38-39`, `:162-163`) | `aether_field.gd:122` |
 | rastreamento | `_find_scent()`: 7×7 = 49 células × 3 `sample_cell` = **147 leituras na camada própria**; se nenhuma passa de `0,06` ali, o mesmo 7×7 se repete em ±1 camada com 2 canais — **98 por camada vizinha aberta**, 196 se as duas abrem. Peso `blood + work*0,35`, camada Y vem de `cell_of_world(center())`; memória 32 células / 30 s / renovação 0,06 | `src/entities/wolf.gd:960-1000` (gate do escalonamento `:974-975`, loops `:976-977`, célula `:978`, peso `:980-981`, canal `:992`, `cell_of_world` `:965`), constantes `wolf.gd:27-34`; custo medido em `docs/evidence/rastro-duas-camadas/readback.log` |
 | consumidoras | `flee`: `_fear_level` peso 1,7; `investigate`: `_scent_strength` 1,6, `1-_fear_level` 0,8 e o veto `ha rastro`; `_fear_level = fear*0,85 + threat*0,9 + blood*0,35 + panic*0,55` (`PACK_PANIC_FEAR` `:53`); amostras locais por tick `wolf.gd:923-925` | `wolf.gd:802-858`, o `_fear_level` composto em `:940-941`; mecanismo e normalização por `weight_sum` em `src/ai/utility_scorer.gd:73-75`; `min_lead` default 0,06 em `:41` e **sobrescrito para 0,05** por `wolf.gd:803` |
@@ -187,7 +187,7 @@ aqui porque a regra 1 do contrato não permite herdar número sem fonte.
   (`:30`), `SCENT_MEMORY_SECONDS 30,0` (`:32`), `SCENT_MEMORY_CAP 32` (`:33`) e `SCENT_RENEWAL
   0,06` (`:34`); "TTL de 3000 ms" erra nome, unidade e linha.
 - `DECAY_PER_SEC`, `SOURCE_RATE`, `SATURATION` e os "três dicionários paralelos em
-  `tests/aether_reactions_test.gd:84-100`" — assemblado do prompt que produziu este dossiê, e é
+  `tests/aether_reactions_test.gd:87-127`" — assemblado do prompt que produziu este dossiê, e é
   assim que ele fica registrado, com o número que o prompt escreveu: nenhum dos três nomes e
   nenhum dos três dicionários ocorre em `src/` ou `tests/`. Na árvore de hoje `:222` é `_check` e
   `:229` é `_test_fixture`.
