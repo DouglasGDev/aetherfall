@@ -10,6 +10,10 @@ param([int]$n = 120, [int]$step = 1, [string]$proj = "")
 # arvore primaria a partir de uma worktree ele amostraria o projeto errado e o par
 # vermelha↔verde do #31 sairia com o PID de outra corrida (mesma face do furo #53).
 if ($proj -eq "") { $proj = Split-Path -Parent $PSScriptRoot }
+# ExecutablePath do Win32_Process vem com barra invertida. Um -proj escrito com barra de
+# frente -- o jeito do Git Bash -- nao casa, e a amostra sai "sem-godot-no-projeto" com o
+# Godot rodando na mesa: a testemunha vira constante, a mesma classe do furo #44.
+$proj = $proj.Replace("/", "\").TrimEnd("\")
 Write-Output ("AMOSTRA t=- proj=" + $proj)
 for ($i = 0; $i -lt $n; $i++) {
   $t = (Get-Date).ToUniversalTime().ToString("HH:mm:ss")

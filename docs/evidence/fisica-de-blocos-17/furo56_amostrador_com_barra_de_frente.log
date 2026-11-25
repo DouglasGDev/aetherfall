@@ -1,0 +1,13 @@
+AMOSTRA t=- proj=C:\Aetherfall
+AMOSTRA t=18:44:02 load=20% ram_livre=18848/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=23% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=23% ram=100MB pid=20816 cpu=0% ram=7MB pid=26256 cpu=104% ram=110MB alheias= [QuantumEngine:14228=75%]
+AMOSTRA t=18:44:04 load=11% ram_livre=18834/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=17% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=11% ram=100MB pid=20816 cpu=0% ram=7MB pid=26256 cpu=104% ram=113MB alheias= [QuantumEngine:14228=81%]
+AMOSTRA t=18:44:05 load=21% ram_livre=18891/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=17% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=17% ram=100MB alheias= [CrossDeviceService:10872=85%] [QuantumEngine:14228=74%] [MsMpEng:5568=40%]
+AMOSTRA t=18:44:07 load=10% ram_livre=18848/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=16% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=22% ram=100MB alheias= [QuantumEngine:14228=62%]
+AMOSTRA t=18:44:09 load=6% ram_livre=18852/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=22% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=22% ram=100MB alheias= [QuantumEngine:14228=83%] [Qoder:15368=55%] [MsMpEng:5568=27%]
+AMOSTRA t=18:44:11 load=14% ram_livre=18876/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=22% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=22% ram=100MB alheias= [Qoder#4:17116=80%] [QuantumEngine:14228=68%]
+AMOSTRA t=18:44:12 load=27% ram_livre=18834/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=11% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=23% ram=100MB alheias= [Qoder#4:17116=174%] [QuantumEngine:14228=81%] [MsMpEng:5568=29%]
+AMOSTRA t=18:44:14 load=7% ram_livre=18975/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=16% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=16% ram=100MB alheias= [QuantumEngine:14228=67%]
+AMOSTRA t=18:44:16 load=4% ram_livre=18966/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=23% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=17% ram=100MB alheias= [QuantumEngine:14228=69%]
+AMOSTRA t=18:44:18 load=8% ram_livre=18940/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=16% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=22% ram=100MB alheias= [grep#1:5396=99%] [QuantumEngine:14228=72%] [Qoder:15368=44%]
+AMOSTRA t=18:44:20 load=18% ram_livre=18963/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=16% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=22% ram=101MB alheias= [QuantumEngine:14228=67%] [MsMpEng:5568=28%]
+AMOSTRA t=18:44:21 load=9% ram_livre=18946/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=11% ram=96MB pid=28668 cpu=0% ram=7MB pid=5220 cpu=23% ram=101MB alheias= [Qoder#5:14584=98%] [QuantumEngine:14228=75%]
