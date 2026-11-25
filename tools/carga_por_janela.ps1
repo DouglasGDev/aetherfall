@@ -1,0 +1,39 @@
+param([int]$n = 120, [int]$step = 1, [string]$proj = "")
+# Amostrador de carga da janela de uma corrida headless (furo #31).
+# A regra que ele obedece: filtrar por ExecutablePath DENTRO do projeto, nao por nome
+# de processo, e nomear o PID da corrida. Nenhum outro processo e nosso para calar.
+# Uma unica consulta PerfProc por amostra, e o pareamento por ProcessId e feito em
+# PowerShell: o WQL com "ProcessId=<n>" nessa classe e rejeitado como consulta invalida
+# (furo #44: a chave da tabela e IDProcess, nao ProcessId).
+#
+# O projeto e o checkout de onde este script veio, nao um caminho fixo: apontado para a
+# arvore primaria a partir de uma worktree ele amostraria o projeto errado e o par
+# vermelha↔verde do #31 sairia com o PID de outra corrida (mesma face do furo #53).
+if ($proj -eq "") { $proj = Split-Path -Parent $PSScriptRoot }
+Write-Output ("AMOSTRA t=- proj=" + $proj)
+for ($i = 0; $i -lt $n; $i++) {
+  $t = (Get-Date).ToUniversalTime().ToString("HH:mm:ss")
+  $load = (Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'").PercentProcessorTime
+  $os = Get-CimInstance -ClassName Win32_OperatingSystem
+  $livreMB = [math]::Round($os.FreePhysicalMemory / 1KB)
+  $totMB = [math]::Round($os.TotalVisibleMemorySize / 1KB)
+  $perf = @(Get-CimInstance -ClassName Win32_PerfFormattedData_PerfProc_Process)
+  $g = ""
+  foreach ($p in (Get-CimInstance -ClassName Win32_Process -Filter "Name LIKE '%odot%'")) {
+    if ($p.ExecutablePath -and $p.ExecutablePath.StartsWith($proj)) {
+      $pp = $perf | Where-Object { $_.IDProcess -eq $p.ProcessId } | Select-Object -First 1
+      $cpu = if ($pp) { $pp.PercentProcessorTime } else { -1 }
+      $ram = if ($pp) { [math]::Round($pp.WorkingSet / 1MB) } else { -1 }
+      $g += " pid=$($p.ProcessId) cpu=$cpu% ram=$ram`MB"
+    }
+  }
+  if ($g -eq "") { $g = " sem-godot-no-projeto" }
+  $alheias = ""
+  foreach ($x in ($perf | Where-Object { $_.Name -ne '_Total' -and $_.Name -ne 'Idle' } |
+      Sort-Object -Property PercentProcessorTime -Descending | Select-Object -First 3)) {
+    if ($x.Name -notlike '*odot*') { $alheias += " [$($x.Name):$($x.IDProcess)=$($x.PercentProcessorTime)%]" }
+  }
+  if ($alheias -eq "") { $alheias = " [nenhuma]" }
+  Write-Output ("AMOSTRA t=$t load=$load% ram_livre=$livreMB/$totMB MB$g alheias=$alheias")
+  Start-Sleep -Seconds $step
+}
