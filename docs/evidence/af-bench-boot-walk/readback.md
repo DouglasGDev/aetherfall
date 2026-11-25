@@ -134,13 +134,13 @@ nos mesmos ticks nas três corridas, e o `fd9b41e0…` que fecha o lote é idên
 O `SubtreeGuard` da mente do lobo mede o próprio passo com relógio de parede e devolve `FAILURE` acima do
 orçamento
 ([`src/ai/behavior/bt_tree.gd:130-137`](../../../src/ai/behavior/bt_tree.gd#L130-L137), orçamento de 400 µs
-declarado em [`src/entities/wolf.gd:389-390`](../../../src/entities/wolf.gd#L389-L390)). Isso é um canal de
+declarado em [`src/entities/wolf.gd:393-394`](../../../src/entities/wolf.gd#L393-394)). Isso é um canal de
 relógio dentro do caminho hashado, porque há folha da subtree guardada que escreve o que a projeção lê: o
 imprint de MEDO no Éter
-([`src/entities/wolf.gd:440`](../../../src/entities/wolf.gd#L440), dentro da folha `fugir` quando
+([`src/entities/wolf.gd:444`](../../../src/entities/wolf.gd#L444), dentro da folha `fugir` quando
 `_threat > 0`) e o `mind.remember` do rastro examinado
-([`src/entities/wolf.gd:568`](../../../src/entities/wolf.gd#L568)). `intent` em si não sai da árvore (sai
-do scorer, [`src/entities/wolf.gd:793`](../../../src/entities/wolf.gd#L793)), então o risco não é trocar de
+([`src/entities/wolf.gd:572`](../../../src/entities/wolf.gd#L572)). `intent` em si não sai da árvore (sai
+do scorer, [`src/entities/wolf.gd:797`](../../../src/entities/wolf.gd#L797)), então o risco não é trocar de
 intento e sim **suprimir uma escrita**.
 
 A medição diz que não é beira de orçamento: a própria guarda mediu ~1,0 ms a ~3,4 ms nesses oito pares

@@ -36,14 +36,14 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    estado de mundo. *Seguro por construção hoje:* a única saída de `MindOracle` que chega a quem
    age é o dicionário `_narrations` ([mind_oracle.gd:86](src/ai/mind_oracle.gd#L86), gravado em
    [:196](src/ai/mind_oracle.gd#L196)), lido por `narration_of()`
-   ([:164-165](src/ai/mind_oracle.gd#L164-L165)) e entregue só ao HUD
+   ([:164-165](src/ai/mind_oracle.gd#L164-165)) e entregue só ao HUD
    ([main.gd:208](src/main.gd#L208) → [hud.gd:276-277](src/ui/hud.gd#L276-L277)). O dono do pack
    lê um campo do oráculo — `last_reason` na linha de status do F3
    ([af_mind_runtime.gd:85-86](src/ai/af_mind_runtime.gd#L85-L86), entregue por
    `llm_status_provider` em [main.gd:291](src/main.gd#L291)) — leitura, nenhuma escrita. Não
    existe caminho do oráculo para `Mind`, `Wolf` ou `VoxelWorld`; a decisão
    vem de BT + utilidade
-   ([wolf.gd:422-450](src/entities/wolf.gd#L422-L450), [:824-826](src/entities/wolf.gd#L824-L826),
+   ([wolf.gd:426-454](src/entities/wolf.gd#L426-454), [:828-830](src/entities/wolf.gd#L828-830),
    `src/ai/utility_scorer.gd`).
    *Fica faltando:* é verdade por ausência de ligação, não por verifier. Quando o oráculo
    começar a sugerir algo, a sugestão entra como crença em quarentena (§04), nunca como
@@ -81,11 +81,11 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    [hud.gd:245-281](src/ui/hud.gd#L245-L281)) mostra tick, `worst_step_ms`, ticks perdidos,
    total por canal do Éter e uma linha por lobo com a narrativa do oráculo. *Falta para P1:*
    `MindsInspector` não existe. O custo de BT sai no F3 (`tree_stats()`,
-   [wolf.gd:1356-1357](src/entities/wolf.gd#L1356-L1357)); agora há também colheita headless
+   [wolf.gd:1372-1373](src/entities/wolf.gd#L1372-1373)); agora há também colheita headless
    estreita de `sim_step` integral e `_guard.last_us`/`trips`, um lobo por cenário
-   ([aether_reactions_test.gd:405-407](tests/aether_reactions_test.gd#L405-L407),
-   [:1949-1950](tests/aether_reactions_test.gd#L1949-L1950)). O guard mede só BT, sem
-   percepção/utilidade ([wolf.gd:448-450](src/entities/wolf.gd#L448-L450)); isso não mede
+   ([aether_reactions_test.gd:428-430](tests/aether_reactions_test.gd#L428-430),
+   [:1972-1973](tests/aether_reactions_test.gd#L1972-1973)). O guard mede só BT, sem
+   percepção/utilidade ([wolf.gd:452-454](src/entities/wolf.gd#L452-454)); isso não mede
    o HOT agregado dos cinco lobos nem fecha P1.
 6. **Mudanças pequenas e atômicas.** Um assunto por commit e suíte verde entre eles, com a
    medição de cada um no próprio commit. O corte da revisão do golpe é o exemplo: o conserto do passo
@@ -124,7 +124,7 @@ voxels fora do tick ([player.gd:685](src/entities/player.gd#L685),
 [:711](src/entities/player.gd#L711)) e seus sinais também imprimem no Éter
 ([main.gd:1010-1015](src/main.gd#L1010-L1015)). O lobo não é só 20 Hz:
 `wolf._physics_process` locomove o corpo e reduz timers de cadáver, atordoamento e desvio
-por frame ([wolf.gd:1203-1259](src/entities/wolf.gd#L1203-L1259)). Decisão de IA, difusão,
+por frame ([wolf.gd:1215-1271](src/entities/wolf.gd#L1215-1271)). Decisão de IA, difusão,
 recolha de cadáveres e respawns são agendados pelo tick de 20 Hz, com cadências próprias
 ([main.gd:342-377](src/main.gd#L342-L377), [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7)).
 `begin_step`/`end_step` cronometra esse passo em microsegundos
@@ -150,8 +150,8 @@ explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 
 | Orçamento | Valor hoje | Onde |
 | --- | --- | --- |
-| Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-L29) |
-| Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs); só BT, não percepção/utilidade | [bt_tree.gd:117-137](src/ai/behavior/bt_tree.gd#L117-L137), [wolf.gd:448-449](src/entities/wolf.gd#L448-L449) |
+| Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-29) |
+| Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs); só BT, não percepção/utilidade | [bt_tree.gd:117-137](src/ai/behavior/bt_tree.gd#L117-L137), [wolf.gd:452-453](src/entities/wolf.gd#L452-453) |
 | Malha | 2 chunks por frame — **contagem, não tempo**: medido 52–177 ms no pior quadro, contra um piso de instrumento de 6,0 ms; é o furo #41 | [main.gd:28](src/main.gd#L28), usado em [:363](src/main.gd#L363), [voxel_world.gd:227-236](src/world/voxel_world.gd#L227-L236) |
 | Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:27](src/main.gd#L27), [:322](src/main.gd#L322) |
 | Recolha de cadáver, visão do Éter | 1 s e 0,25 s | [main.gd:31](src/main.gd#L31), [:29](src/main.gd#L29) |
@@ -170,7 +170,7 @@ chunks (README, seção "Limites conhecidos (medidos nesta máquina)").
 ainda (regras 5 e 1, nesta ordem):
 
 - o blackboard do BT é um `Dictionary` novo por lobo por tick
-  ([wolf.gd:911](src/entities/wolf.gd#L911)): com a matilha inteira viva, 5 × 20 = 100
+  ([wolf.gd:923](src/entities/wolf.gd#L923)): com a matilha inteira viva, 5 × 20 = 100
   dicionários por segundo (o `sim_step` retorna cedo em cadáver, então o número é teto
   derivado do código, não medição de alocação);
 - a difusão aloca um `PackedInt32Array` por canal por passada
@@ -189,12 +189,12 @@ Então o primeiro passo de qualquer otimização é a colheita, não o corte.
 **Leitor de rastros: custo do scan medido por ablação; alocação continua sem medição.** Cada
 scan percorre `7 × 7` células na camada Y do lobo: **49 × 3 leituras** `sample_cell`
 (BLOOD/WORK/FEAR) por lobo, com seleção por `BLOOD + 0,35 × WORK`
-([wolf.gd:960-1000](src/entities/wolf.gd#L960-L1000)). Se nenhuma célula da camada própria passa
+([wolf.gd:972-1012](src/entities/wolf.gd#L972-1012)). Se nenhuma célula da camada própria passa
 de `SCENT_MIN`, o mesmo quadrado se repete na camada de cima e na de baixo — **98 leituras por
 camada vizinha aberta** (dois canais, sem FEAR), 196 por scan quando as duas abrem. A cadência
 é `0,25 s`, com rescan no tick seguinte à inspeção concluída
-([:582-590](src/entities/wolf.gd#L582-L590),
-[:927-928](src/entities/wolf.gd#L927-L928), [:960-961](src/entities/wolf.gd#L960-L961)); cinco lobos podem fazer o scan no mesmo tick.
+([:586-594](src/entities/wolf.gd#L586-594),
+[:939-940](src/entities/wolf.gd#L939-940), [:972-973](src/entities/wolf.gd#L972-973)); cinco lobos podem fazer o scan no mesmo tick.
 O `sim_step` integral de 2 768 passos no cenário estreito mede **324 159 µs** com a camada
 própria, **427 537 µs** com as três camadas incondicionais e **363 680 µs** com o gate pelo
 nível próprio: o escalonamento corta 64 190 das 111 132 leituras extras (567 scans, 479
@@ -202,22 +202,22 @@ entradas de camada vizinha contra o máximo de 1 134). O chão do rastro não me
 `surface_height()` pela busca pelo sólido na mesma camada move o total em −1,8 % (324 159 →
 318 171 µs) e nas três camadas em −1,5 % (434 052 → 427 537 µs), ambos dentro do ruído das
 corridas repetidas do mesmo braço
-([:1021-1029](src/entities/wolf.gd#L1021-L1029); [matriz de ablação, seis braços](docs/evidence/rastro-duas-camadas/readback.log)).
+([:1033-1041](src/entities/wolf.gd#L1033-1041); [matriz de ablação, seis braços](docs/evidence/rastro-duas-camadas/readback.log)).
 Os **2 768 passos** são os do cenário estreito na árvore daquela matriz, e só por isso os três números de
 cima se comparam entre si: o lote da perna 12 pôs no mesmo instrumento duas checagens que avançam passos,
 e na ponta dele o rodapé imprime **10 568** passos com `sim_step` total de **2 169 480 µs** — comparar o
 rodapé de hoje com a matriz de 2026-11-22 seria comparar árvores diferentes.
 Isso não conta todo o `sim_step`: há ainda três amostras locais por tick e LOS quando
-pode importar ([:919-925](src/entities/wolf.gd#L919-L925)). Ao concluir os `2 s` de
+pode importar ([:931-937](src/entities/wolf.gd#L931-937)). Ao concluir os `2 s` de
 inspeção, a vizinhança `3 × 3` acrescenta até duas leituras por célula válida para
 registrar a força ponderada no cache, limitado a **32 células por lobo**, com expiração
 em `30 s` e renovação por aumento de pelo menos `0,06` ponderado
-([:27-34](src/entities/wolf.gd#L27-L34), [:635-649](src/entities/wolf.gd#L635-L649),
-[:987-988](src/entities/wolf.gd#L987-L988)). `keys()` aloca um Array por scan para
+([:27-34](src/entities/wolf.gd#L27-34), [:639-653](src/entities/wolf.gd#L639-653),
+[:999-1000](src/entities/wolf.gd#L999-1000)). `keys()` aloca um Array por scan para
 recolher expirados e também nas evicções ao atingir o teto
-([:962-964](src/entities/wolf.gd#L962-L964), [:647-648](src/entities/wolf.gd#L647-L648)).
+([:974-976](src/entities/wolf.gd#L974-976), [:651-652](src/entities/wolf.gd#L651-652)).
 O cache transitório pertence ao lobo e é limpo no load
-([:1408](src/entities/wolf.gd#L1408)). Esses limites de cache e de alocação são
+([:1424](src/entities/wolf.gd#L1424)). Esses limites de cache e de alocação são
 derivados do código: a ablação mede o scan, não a alocação total, e nada aqui fecha P1.
 
 **Cópia de estado e custo observado:** com journal ativo, `state_bytes()` copia
@@ -236,10 +236,10 @@ refinado: [fontes e logs](docs/melhorias-status.md#notas-de-medição).
 **LOD (regra 6) é parcial, e se diz assim:** existe *throttle temporal* por subsistema —
 difusão e visualização do Éter 4×/s, cadáveres 1×/s; o leitor de rastros tem cadência de
 `0,25 s` (com rescan após inspeção) e o registro de avistamentos, `2 s`
-([wolf.gd:582-590](src/entities/wolf.gd#L582-L590), [:950-952](src/entities/wolf.gd#L950-L952)).
+([wolf.gd:586-594](src/entities/wolf.gd#L586-594), [:962-964](src/entities/wolf.gd#L962-964)).
 Isso não limita a LOS a 4×/s: ela é consultada a cada tick se o jogador está vivo e a
 menos de 30 m. Não existe *LOD por distância*: os lobos vivos avaliam o BT a cada tick,
-perto ou longe ([wolf.gd:906-911](src/entities/wolf.gd#L906-L911)). A peça do design é o
+perto ou longe ([wolf.gd:918-923](src/entities/wolf.gd#L918-923)). A peça do design é o
 `HotSet`/Véu (§04, §06) e pertence a P2; antes de o custo aparecer em log, ela é backlog.
 
 **Anti-bloat, com o estado real:**
@@ -337,11 +337,11 @@ uma com um agente responsável.** Elas entram no "dentro"; a posição de cada u
    vaga devolvida à fila de respawn não anuncia um ponto que pode ter sido recusado
    ([`src/main.gd:356-369`](src/main.gd#L356-L369)); **ronda por chão seco sem copiar o teste
    para dentro das folhas** — o alvo escrito pela árvore é filtrado depois do tick por
-   `_resolve_dry_target()` ([`src/entities/wolf.gd:764-768`](src/entities/wolf.gd#L764-L768),
-   chamado em [`:912`](src/entities/wolf.gd#L912), fora dos 400 µs do `SubtreeGuard`), e a água é
+   `_resolve_dry_target()` ([`src/entities/wolf.gd:768-772`](src/entities/wolf.gd#L768-772),
+   chamado em [`:912`](src/entities/wolf.gd#L924), fora dos 400 µs do `SubtreeGuard`), e a água é
    último recurso com travessia comprometida por `SCENT_PERIOD` (`_demand_shore()`
-   [`:743-754`](src/entities/wolf.gd#L743-L754)) mais o resgate por tempo de nado
-   (`SHORE_AFTER` [`:149`](src/entities/wolf.gd#L149), aplicado em [`:901`](src/entities/wolf.gd#L901));
+   [`:743-754`](src/entities/wolf.gd#L747-758)) mais o resgate por tempo de nado
+   (`SHORE_AFTER` [`:149`](src/entities/wolf.gd#L149), aplicado em [`:913`](src/entities/wolf.gd#L913));
    **spawn a distância segura e fora da visada** — o predicado único `_spawn_point_ok()` exige
    ≥ `SAFE_SPAWN_DIST` (32 m) **e** que a linha do olho do jogador ao peito do lobo esteja bloqueada
    ([`src/main.gd:761-766`](src/main.gd#L761-L766)), dentro das bandas em torno da posição **atual**
@@ -353,7 +353,7 @@ uma com um agente responsável.** Elas entram no "dentro"; a posição de cada u
    que é o conserto do furo #16 — sem ela a alcateia nunca se formou na sessao real da suíte.
    Sustenteam isso **33 checagens em oito cenários** nomeados no runner
    ([`tests/aether_reactions_test.gd:28-32`](tests/aether_reactions_test.gd#L28-L32); o censo
-   [`:60`](tests/aether_reactions_test.gd#L64) que a 14 subiu de 150 para 183 é **240** hoje,
+   [`:60`](tests/aether_reactions_test.gd#L65) que a 14 subiu de 150 para 183 é **240** hoje,
    depois da 16) e a checagem da sessão real
    ([`tests/smoke_test.gd:399-404`](tests/smoke_test.gd#L399-L404)), agora com `biggest >= 2`.
 2. **Árvore genealógica de todo ser vivo, com o Éter trabalhando isso** (dossiê
@@ -364,8 +364,8 @@ uma com um agente responsável.** Elas entram no "dentro"; a posição de cada u
    entidade viva: identidade, pais, geração) e a **escada de complexidade** — animal simples ×
    humano/NPC mais complexo — fica documentada como `[TARGET]`, sem estrutura nova antes do segundo
    comprador (regra da casa: generalize no segundo chamador, não no primeiro). Hoje a personalidade
-   é sorteada da semente do próprio lobo (`Mind._init` `src/ai/mind.gd:30-38`, chamado em
-   `src/entities/wolf.gd:313` com `1000 + identity`) e **nenhum pai contribui com nada**; o pelo vem
+   é sorteada da semente do próprio lobo (`Mind._init` `src/ai/mind.gd:61-69`, chamado em
+   `src/entities/wolf.gd:317` com `1000 + identity`) e **nenhum pai contribui com nada**; o pelo vem
    do bioma do lar (`FUR_COLORS` `src/entities/wolf.gd:160-165`, `home_biome` `:177`), não de
    herança. Guard-rail registrado **antes** do código: canal novo ou proveniência por célula no
    `AetherField` não é detalhe de implementação — `Channel.COUNT` (`src/world/aether_field.gd:9`) e
@@ -457,7 +457,7 @@ lida do código e não de corrida: os cinco lares do boot cabem num círculo de 
 ([:794](src/main.gd#L794)) e `_pack_leash()` devolvia o lar do **primeiro** lobo vivo
 (`99d1167:src/main.gd:501-505`; a perna 16 apagou a função e hoje o centro lido é a própria
 toca, `_entrada()` [`:741-744`](src/main.gd#L741-L744)), enquanto a caixa útil é 116 × 116 m — o clamp de `6 … W-6` em
-[:814-815](src/main.gd#L814-L815) sobre um mundo de 128 × 128. É por isso que ele percorreu o vale
+[:814-815](src/main.gd#L814-815) sobre um mundo de 128 × 128. É por isso que ele percorreu o vale
 inteiro e viu um lobo só. A página decide o gate por **componentes conexos do grafo de coesão** lido em
 `pack_of()`, não por adjetivo, e abre o par de braços (§3.4) antes do código: **A** (só colocação) é a
 escolhida primeiro e só se aceita com a checagem de derivação verde; **B** (dar âncora ao centro de
@@ -485,7 +485,7 @@ declaração ([src/world/voxel_world.gd:6](src/world/voxel_world.gd#L6)) e o emi
 ([:336](src/world/voxel_world.gd#L336)), então o gate desta perna observa estado de mundo lido
 (`get_block` + [`world.edits`](src/world/voxel_world.gd#L54)) e quem assina o sinal continua sendo a 17 —
 que é exatamente o motivo pelo qual a checagem `queda_move_a_celula` daquela página nasce vermelha.
-(3) **O desemperto já tem dois ramos**, e o segundo é da 19 ([src/entities/wolf.gd:1239-1254](src/entities/wolf.gd#L1239-L1254)),
+(3) **O desemperto já tem dois ramos**, e o segundo é da 19 ([src/entities/wolf.gd:1251-1266](src/entities/wolf.gd#L1251-1266)),
 então cavar entra como **terceiro** ramo do mesmo `if` (fork A), e a alternativa de folha nova na
 `Selector` (fork B) só se abre com o A vermelho porque `intent` é hashiado pelo journal. (4) **Quem cava
 é decidido pelo alcance do corpo**, não por fase: `PHASE_SCALE` dá 0,45 ao filhote
@@ -499,7 +499,7 @@ o peso do vizinho por **um** voxel no canto da célula de 4×4×4
 ([src/world/aether_field.gd:174-176](src/world/aether_field.gd#L174-L176),
 [src/world/voxel_config.gd:16](src/world/voxel_config.gd#L16)), então a frase antiga "difundem com menos
 barreira" não é falsificável e o item (b) foi re-baseado no `y` que `_scent_ground_y` devolve
-([src/entities/wolf.gd:1025-1029](src/entities/wolf.gd#L1025-L1029)) — dono perna 05. Uma consequência nova de
+([src/entities/wolf.gd:1037-1041](src/entities/wolf.gd#L1037-1041)) — dono perna 05. Uma consequência nova de
 palco de teste, e é a que deixaria uma checagem verde pelo motivo errado: `_wall` e `_cave_carve` do
 runner chamam `set_block` com `record` default, ou seja, parede de teste **é construção registrada**; o
 scaffolding do cavar tem de escrever com `record = false`. Nada deste registro encosta em
@@ -582,21 +582,21 @@ e o **estado** mudou, não a projeção.
 
 Quatro afirmações do prompt a leitura devolve diferente, e duas metades dele a árvore já pagou. (1)
 "Drops são fracos" não: **não existem**. O `die()` do lobo escreve BLOOD e FEAR
-([src/entities/wolf.gd:1319-1320](src/entities/wolf.gd#L1319-L1320)), arma o timer de cadáver
-([:1321](src/entities/wolf.gd#L1321)) e só então emite `died` ([:1322](src/entities/wolf.gd#L1322)).
+([src/entities/wolf.gd:1331-1332](src/entities/wolf.gd#L1331-1332)), arma o timer de cadáver
+([:1333](src/entities/wolf.gd#L1333)) e só então emite `died` ([:1334](src/entities/wolf.gd#L1334)).
 (2) O sinal **não** é órfão — tem **dois** consumidores em `src/`, e nenhum deles é um item:
 `_on_wolf_died` ([src/main.gd:441](src/main.gd#L441) conecta, corpo em [`:1041`](src/main.gd#L1041)) só
 soma `stats["wolves_felled"]`, e o diretor de áudio toca `wolf_died`
 ([src/audio/audio_director.gd:161](src/audio/audio_director.gd#L161), corpo em [`:412`](src/audio/audio_director.gd#L412));
 a conclusão do prompt fica de pé, o motivo dela não. (3) "Lobos presos diante de bloco" era a pauta da
-**19**, que pousou: hoje o impulso sai em [src/entities/wolf.gd:1247](src/entities/wolf.gd#L1247). (4) O
+**19**, que pousou: hoje o impulso sai em [src/entities/wolf.gd:1259](src/entities/wolf.gd#L1259). (4) O
 leito `amb_birds` tocando sem nenhuma ave no mundo **não** é defeito do tipo da 19 — é cama de ambiência
 de campo aberto, correta como ambiência; o que ela prova é que o mundo já promete céu vivo. O que a
 re-derivação acrescentou e a pauta não citava quando foi escrita: **a 16 deu toca à matilha** — `var _dens`
 ([src/main.gd:126](src/main.gd#L126)), `den_components()` ([:672](src/main.gd#L672)) publicado no
 `diagnostics()` ([:1243](src/main.gd#L1243)), `Wolf.den`
 ([src/entities/wolf.gd:186](src/entities/wolf.gd#L186)) com a chave `den` já no disco
-([`:1372`](src/entities/wolf.gd#L1372), lida em [`:1405`](src/entities/wolf.gd#L1405)) — território que
+([`:1372`](src/entities/wolf.gd#L1388), lida em [`:1421`](src/entities/wolf.gd#L1421)) — território que
 mexe no §3.9 da página e em nenhuma das quatro afirmações acima.
 
 Disso saem dois furos novos, ambos com dono escrito antes de qualquer linha. **#24**: o
@@ -607,9 +607,9 @@ compartilhada por 1000 lobos e o estado no `Blackboard` — e na árvore não h�
 classe `Blackboard` — a palavra só aparece num comentário de `src/`,
 [src/ai/behavior/bt_tree.gd:3](src/ai/behavior/bt_tree.gd#L3), que é justamente a promessa, não o
 mecanismo; o estado chega como `Dictionary` literal inline no tick,
-[src/entities/wolf.gd:911](src/entities/wolf.gd#L911) — e cada `Wolf` constrói a própria árvore: `setup()`
-([:299](src/entities/wolf.gd#L299)) chama `_build_tree()` ([:318](src/entities/wolf.gd#L318)), corpo em
-([:422](src/entities/wolf.gd#L422)) — e o comentário de [src/ai/behavior/bt_tree.gd:2](src/ai/behavior/bt_tree.gd#L2)
+[src/entities/wolf.gd:923](src/entities/wolf.gd#L923) — e cada `Wolf` constrói a própria árvore: `setup()`
+([:303](src/entities/wolf.gd#L303)) chama `_build_tree()` ([:322](src/entities/wolf.gd#L322)), corpo em
+([:426](src/entities/wolf.gd#L426)) — e o comentário de [src/ai/behavior/bt_tree.gd:2](src/ai/behavior/bt_tree.gd#L2)
 repete a promessa. Dono: perna 20 §3.5, com a checagem `arvore_por_arquetype` pagando o número. **#25**:
 `tests/audio_test.gd.uid` e `tests/audio_live_probe.gd.uid` estão fora do git enquanto todos os outros
 scripts estão (`src` 30/30, `tests` 7 de 9), então todo clone limpo mostra duas linhas `??` depois do

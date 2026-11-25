@@ -379,7 +379,7 @@ Cada checagem nomeia a premissa que exige e imprime o número que a decide — r
     `401` tem de ser impresso como `llm: 401`, não como recuo anônimo em
     [`mind_oracle.gd:176-200`](../../src/ai/mind_oracle.gd#L176-L200)); **com** o header ⇒ `200`.
 
-`EXPECTED_CHECKS` (150 na leitura deste dossiê em [`aether_reactions_test.gd:64`](../../tests/aether_reactions_test.gd#L64)),
+`EXPECTED_CHECKS` (150 na leitura deste dossiê em [`aether_reactions_test.gd:65`](../../tests/aether_reactions_test.gd#L65)),
 os censores irmãos (audio 73, simulation_rng 27, journal 128) e o rodapé da suíte **não mudam por
 este lote se as checagens 1-10 viverem na cena de prova** — que é o plano. Se alguma delas entrar
 na suíte, o número vira invariante no mesmo commit, anunciado antes de escrever.

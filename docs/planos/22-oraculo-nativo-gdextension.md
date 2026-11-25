@@ -436,7 +436,7 @@ não levanta processo nenhum de IA. Checagem `transporte_http_zerado` no runner,
 `oracle_cache` (hash → resposta, §6.5), `BeliefVerifier` mínimo (§7.1) e as métricas do §2.4 no F3.
 Gate: `af_cache_determina_replay` (a mesma semente duas vezes, com o modelo desligado na segunda,
 devolve a mesma frase) e `budget_do_oraculo_nao_estoura_a_arvore` — `worst_sim_ms` do cenário de
-reação dentro do `SubtreeGuard` de **400 µs** ([`src/entities/wolf.gd:448-449`](../../src/entities/wolf.gd#L448-L449)),
+reação dentro do `SubtreeGuard` de **400 µs** ([`src/entities/wolf.gd:452-453`](../../src/entities/wolf.gd#L452-453)),
 porque a regra de bolso do contrato é que o que vai em `_sim_tick` divide os 50 ms do passo com a
 matilha do momento ([`docs/engine/simclock.md:21`](../engine/simclock.md#L21)) — cinco lobos no boot,
 teto de censo 12, e o laço percorre `wolves` e não um literal
@@ -552,7 +552,7 @@ põe `mind.kind`, `intent` e as crenças ordenadas é [`:35`](../../src/persiste
 Um modelo amostrado não é determinístico. A resposta é a §6.5: **CI lê cache**, e a checagem que
 garante que rodar sem modelo não move hash **já existe e está verde** —
 `journal_hash_inalterado_sem_escolha`
-([`tests/aether_reactions_test.gd:3811`](../../tests/aether_reactions_test.gd#L3811), registrada no
+([`tests/aether_reactions_test.gd:3834`](../../tests/aether_reactions_test.gd#L3834), registrada no
 runner em [`:36`](../../tests/aether_reactions_test.gd#L36)): ela prova os dois lados, o de que o
 que **não** está na projeção não move o hash e o de que uma confiança mexida na mesma chave move.
 O que a Fase 1 acrescenta a esse contrato é o terceiro lado: **com cache, o texto tem de ser o mesmo**
@@ -582,23 +582,23 @@ Registrado antes do código porque é isto que o §0 de uma próxima re-derivaç
    campo equivalente em `src/entities/wolf.gd`, que declara `intent`
    ([`:174`](../../src/entities/wolf.gd#L174)), `_scorer` ([`:216`](../../src/entities/wolf.gd#L216))
    e `_guard` ([`:218`](../../src/entities/wolf.gd#L218)), e escolhe a intenção por utilidade em
-   [`:862`](../../src/entities/wolf.gd#L862) `intent = _scorer.choose(...)`, com a histerese de
+   [`:866`](../../src/entities/wolf.gd#L866) `intent = _scorer.choose(...)`, com a histerese de
    `min_lead` 0,06 (`src/ai/utility_scorer.gd:41`) e o intervalo mínimo de 0,45 s (`:42`). O que já
-   **registra consequência** é a mente: `Mind.remember` ([`src/ai/mind.gd:45`](../../src/ai/mind.gd#L45))
-   grava o átomo e chama `_drift` ([`:56-64`](../../src/ai/mind.gd#L56-L64)), que **muda a
+   **registra consequência** é a mente: `Mind.remember` ([`src/ai/mind.gd:76`](../../src/ai/mind.gd#L76))
+   grava o átomo e chama `_drift` ([`:56-64`](../../src/ai/mind.gd#L87-95)), que **muda a
    personalidade a partir do histórico** — `caution` sobe com `hurt`, `aggression` sobe com `win` e
    cai com `hurt`, `curiosity` cai com `fed` — e `_consolidate`
-   ([`:67-74`](../../src/ai/mind.gd#L67-L74)) converte o que transbordou do `EPISODIC_CAP` de 24
+   ([`:67-74`](../../src/ai/mind.gd#L98-105)) converte o que transbordou do `EPISODIC_CAP` de 24
    ([`:7`](../../src/ai/mind.gd#L7)) em crença com `confidence` e `source`. Então a Fase 3 **não**
    começa do zero: o estado de "quem esta criatura virou" existe e é lido
-   (`temperament()` [`:41`](../../src/ai/mind.gd#L41)), com decaimento por minuto
-   (`decay` [`:133`](../../src/ai/mind.gd#L133)) e soleira de uso (`believes`
-   [`:119`](../../src/ai/mind.gd#L119)). Falta exatamente uma coisa para virar UCB1: **a curva de
+   (`temperament()` [`:41`](../../src/ai/mind.gd#L72)), com decaimento por minuto
+   (`decay` [`:133`](../../src/ai/mind.gd#L164)) e soleira de uso (`believes`
+   [`:119`](../../src/ai/mind.gd#L150)). Falta exatamente uma coisa para virar UCB1: **a curva de
    resultado por opção**. Hoje o `scored()` do scorer
    ([`src/ai/utility_scorer.gd:54`](../../src/ai/utility_scorer.gd#L54)) pondera o presente e o
    temperamento, e nada nele guarda `(vitórias, tentativas, variância)` por tática — o termo de
    exploração `sqrt(2 ln N / n_i)` precisa de `N` e `n_i` por **par arquétipo × tática**, e o
-   `breakdown()` ([`:109`](../../src/ai/utility_scorer.gd#L109)) é a superfície onde ele mora. Isto é
+   `breakdown()` ([`:109`](../../src/ai/utility_scorer.gd#L121)) é a superfície onde ele mora. Isto é
    Fase 3, é pequeno, e é **por cima do estado que já existe** — não uma estrutura nova.
 4. **"Manter a opção de servidor externo como fallback."** — não vem escrito assim no prompt, mas é
    o que a leitura "substituir gradualmente" sugere, e eu recuso: dual-path é a primeira forma de
@@ -852,7 +852,7 @@ o hash tem de registrar é a do **checkout**, não a do editor.
 
 O §5.1 prometia uma checagem que **nasce vermelha**. Ela existe, roda, e o vermelho é número, não
 adjetivo. `_test_extensao_carrega_classe`
-([`tests/aether_reactions_test.gd:5571`](../../tests/aether_reactions_test.gd#L5571)) entrou no fim da
+([`tests/aether_reactions_test.gd:5594`](../../tests/aether_reactions_test.gd#L5594)) entrou no fim da
 lista de testes (`:49`) e imprime, nesta ordem, as cinco premissas de que o Passo 1 é dono:
 
 1. **descritor no disco** — `FileAccess.file_exists("res://native/af_mind/af_mind.gdextension")`;
@@ -874,7 +874,7 @@ roubada por um `SCRIPT ERROR` no meio, e os três `stderr` da rodada estão em *
 ([`passo1b_stderr_conta.log`](../evidence/oraculo-nativo-22/passo1b_stderr_conta.log)).
 
 O censo foi re-derivado na hora, não depois: `EXPECTED_CHECKS` passa de **283** a **288**
-([`:65`](../../tests/aether_reactions_test.gd#L74)), porque a linha `_checks + 1 == EXPECTED_CHECKS` de
+([`:65`](../../tests/aether_reactions_test.gd#L75)), porque a linha `_checks + 1 == EXPECTED_CHECKS` de
 `_finish` é justamente o instrumento que converte passo abortado em vermelho. As outras duas corridas não
 se moveram: suíte **255 checagens / 0 falhas / 48,7 s**
 ([`passo1b_suite.log`](../evidence/oraculo-nativo-22/passo1b_suite.log)) e journal **128 / 0 / 5,770 s**
@@ -1795,7 +1795,7 @@ espera pelo modelo deixa de ser transporte e passa a ser o portão `ready_provid
 pedido nomeia a ausência — o degradado continua checado pela suíte, agora com o motivo da fila:
 "runtime sem pack nao emite chamada na ponte"
 ([smoke_test.gd:3118](../../tests/smoke_test.gd#L3118)) e as duas checagens da recusa que nomeia o
-motivo e arma o recuo cheio ([:3137-3141](../../tests/smoke_test.gd#L3137-L3141)).
+motivo e arma o recuo cheio ([:3137-3141](../../tests/smoke_test.gd#L3137-3141)).
 
 ### 18.3 O `AfMindRuntime`: ciclo do pack sobre disco e ClassDB, sem processo filho, sem porta
 
@@ -1947,10 +1947,10 @@ código da fase nasce desta ponta e se chama **`feat/oraculo-nativo-fase2-22`**;
 
 | O §5.6 pede para a Fase 2 | O que a árvore de hoje tem |
 |---|---|
-| relevância por **recência** | crença nenhuma carimba tempo — o `decay` **apaga** abaixo de `CONFIDENCE_MIN` ([`src/ai/mind.gd:144`](../../src/ai/mind.gd#L144)), não carimba |
-| **frequência** | não existe contador por crença — o `reinforce` soma no confidence ([`src/ai/mind.gd:98`](../../src/ai/mind.gd#L98)) e só |
-| **peso emocional** | parcial e já dentro do código: `hurt` +0,22 contra `saw_player` +0,15 na consolidação ([`src/ai/mind.gd:67-74`](../../src/ai/mind.gd#L67-L74)) |
-| **centralidade no grafo** | não existe grafo — `relations` é ator→confiança, uma aresta por ator ([`src/ai/mind.gd:26`](../../src/ai/mind.gd#L26)) |
+| relevância por **recência** | crença nenhuma carimba tempo — o `decay` **apaga** abaixo de `CONFIDENCE_MIN` ([`src/ai/mind.gd:175`](../../src/ai/mind.gd#L175)), não carimba |
+| **frequência** | não existe contador por crença — o `reinforce` soma no confidence ([`src/ai/mind.gd:129`](../../src/ai/mind.gd#L129)) e só |
+| **peso emocional** | parcial e já dentro do código: `hurt` +0,22 contra `saw_player` +0,15 na consolidação ([`src/ai/mind.gd:98-105`](../../src/ai/mind.gd#L98-105)) |
+| **centralidade no grafo** | não existe grafo — `relations` é ator→confiança, uma aresta por ator ([`src/ai/mind.gd:38`](../../src/ai/mind.gd#L38)) |
 | **embeddings locais** | zero no repositório — e o §9 já decidiu: sem métrica de recall antes, sem embedding |
 | **consolidação no sono** | não existe ciclo de sono no mundo; o que existe é consolidação por overflow (§20.4.2) |
 | **verifier grounded por ids do ledger** | o portão guarda ids do **roster** ([`src/ai/belief_verifier.gd:37`](../../src/ai/belief_verifier.gd#L37), [`src/ai/mind_oracle.gd:176-200`](../../src/ai/mind_oracle.gd#L176-L200)); id de ledger nenhum passa por ele |
@@ -1960,28 +1960,28 @@ código da fase nasce desta ponta e se chama **`feat/oraculo-nativo-fase2-22`**;
 Quatro donos na mesa, e só um deles é memória de qualidade:
 
 - **`Mind` é o dono da memória de qualidade.** `beliefs` é `String -> {confidence, source}`
-  ([`src/ai/mind.gd:25`](../../src/ai/mind.gd#L25)) — sem timestamp, sem contador, sem grafo. As
+  ([`src/ai/mind.gd:37`](../../src/ai/mind.gd#L37)) — sem timestamp, sem contador, sem grafo. As
   três leituras que existem são por **chave exata**: `believes` com soleira 0,35
-  ([`src/ai/mind.gd:119`](../../src/ai/mind.gd#L119)), `last_atom`
-  ([`src/ai/mind.gd:77`](../../src/ai/mind.gd#L77)) e `count_kind`
-  ([`src/ai/mind.gd:84`](../../src/ai/mind.gd#L84)). O `remember` apenda o átomo e consolida **no
+  ([`src/ai/mind.gd:150`](../../src/ai/mind.gd#L150)), `last_atom`
+  ([`src/ai/mind.gd:108`](../../src/ai/mind.gd#L108)) e `count_kind`
+  ([`src/ai/mind.gd:115`](../../src/ai/mind.gd#L115)). O `remember` apenda o átomo e consolida **no
   estouro** do cap 24 ([`src/ai/mind.gd:7`](../../src/ai/mind.gd#L7),
-  [`src/ai/mind.gd:50-52`](../../src/ai/mind.gd#L50-L52)); a consolidação
-  ([`src/ai/mind.gd:67-74`](../../src/ai/mind.gd#L67-L74)) é síncrona, amortizada, dentro do
+  [`src/ai/mind.gd:81-83`](../../src/ai/mind.gd#L81-83)); a consolidação
+  ([`src/ai/mind.gd:98-105`](../../src/ai/mind.gd#L98-105)) é síncrona, amortizada, dentro do
   `remember` do próprio tick. O decaimento é exponencial com fator 0,14/min
-  ([`src/ai/mind.gd:8`](../../src/ai/mind.gd#L8), [`src/ai/mind.gd:133`](../../src/ai/mind.gd#L133))
+  ([`src/ai/mind.gd:8`](../../src/ai/mind.gd#L8), [`src/ai/mind.gd:164`](../../src/ai/mind.gd#L164))
   e apaga abaixo de 0,02 ([`src/ai/mind.gd:9`](../../src/ai/mind.gd#L9),
-  [`src/ai/mind.gd:144`](../../src/ai/mind.gd#L144)). Persiste pelo `to_dict`
-  ([`src/ai/mind.gd:162`](../../src/ai/mind.gd#L162)) e volta pelo `from_dict` com `source`
-  "loaded" ([`src/ai/mind.gd:187`](../../src/ai/mind.gd#L187)).
+  [`src/ai/mind.gd:175`](../../src/ai/mind.gd#L175)). Persiste pelo `to_dict`
+  ([`src/ai/mind.gd:284`](../../src/ai/mind.gd#L284)) e volta pelo `from_dict` com `source`
+  "loaded" ([`src/ai/mind.gd:313`](../../src/ai/mind.gd#L313)).
 - **O corpo tem caches próprios, e não são memória.** `_checked_scents` é a dedupe espacial do
   lobo ([`src/entities/wolf.gd:242`](../../src/entities/wolf.gd#L242)) com TTL 30 s, cap 32 e
   renovação 0,06 ([`src/entities/wolf.gd:32-34`](../../src/entities/wolf.gd#L32-L34)); escreve com
-  evicção no cap ([`src/entities/wolf.gd:647-648`](../../src/entities/wolf.gd#L647-L648)), lê com
-  expiração e renovação ([`src/entities/wolf.gd:962-964`](../../src/entities/wolf.gd#L962-L964),
-  [`src/entities/wolf.gd:987`](../../src/entities/wolf.gd#L987)) e é zerado no load
-  ([`src/entities/wolf.gd:1408`](../../src/entities/wolf.gd#L1408)) — morre com o corpo, não entra
-  no save ([`src/entities/wolf.gd:1372`](../../src/entities/wolf.gd#L1372)), não entra no journal.
+  evicção no cap ([`src/entities/wolf.gd:651-652`](../../src/entities/wolf.gd#L651-652)), lê com
+  expiração e renovação ([`src/entities/wolf.gd:974-976`](../../src/entities/wolf.gd#L974-976),
+  [`src/entities/wolf.gd:999`](../../src/entities/wolf.gd#L999)) e é zerado no load
+  ([`src/entities/wolf.gd:1424`](../../src/entities/wolf.gd#L1424)) — morre com o corpo, não entra
+  no save ([`src/entities/wolf.gd:1388`](../../src/entities/wolf.gd#L1388)), não entra no journal.
 - **A projeção do journal lê só três campos.** O `state_hash` ordena as beliefs por chave e projeta
   `[key, confidence, source]` ([`src/persistence/tick_journal.gd:29-34`](../../src/persistence/tick_journal.gd#L29-L34)).
   Consequência nomeada para a fase: **qualquer campo novo dentro de uma belief é invisível à
@@ -2013,8 +2013,8 @@ headless antes.
 
 **Decisão: nada novo de consolidação na Fase 2.** O mundo não tem ciclo de sono para pendurar
 nada; o que existe é a consolidação por overflow — síncrona, amortizada, dentro do `remember` do
-próprio tick ([`src/ai/mind.gd:50-52`](../../src/ai/mind.gd#L50-L52),
-[`src/ai/mind.gd:67-74`](../../src/ai/mind.gd#L67-L74)) — determinística por construção. Braço
+próprio tick ([`src/ai/mind.gd:81-83`](../../src/ai/mind.gd#L81-83),
+[`src/ai/mind.gd:98-105`](../../src/ai/mind.gd#L98-105)) — determinística por construção. Braço
 rejeitado: **cadência periódica de compactação no tick** — subsystem novo no hospedeiro
 (single-writer), custo novo dentro do orçamento de 50 ms, e nenhum comprador medido pedindo.
 Reabre com: a **pressão de consolidação medida** (átomos consolidados por sessão e tamanho da
@@ -2025,8 +2025,8 @@ tabela de beliefs) ou um comprador da Fase 4 (LOD e orçamento).
 **Decisão: os dois donos ficam, cada um no seu lugar.** `_checked_scents` é a dedupe espacial do
 corpo (§20.3): morre com o corpo, não tem hash, não persiste, não projeta. A memória de qualidade
 é o `Mind`: persiste no save e volta no load
-([`src/entities/wolf.gd:1372`](../../src/entities/wolf.gd#L1372),
-[`src/entities/wolf.gd:1406`](../../src/entities/wolf.gd#L1406)) e projeta no journal
+([`src/entities/wolf.gd:1388`](../../src/entities/wolf.gd#L1388),
+[`src/entities/wolf.gd:1422`](../../src/entities/wolf.gd#L1422)) e projeta no journal
 ([`src/persistence/tick_journal.gd:29-34`](../../src/persistence/tick_journal.gd#L29-L34)). Braço
 rejeitado 1: **generalizar a cache do corpo para dentro do `Mind`** — cria um segundo ledger (o
 crime do §6.5) e escreve no ledger o que o dono proibiu; braço rejeitado 2: **substituir

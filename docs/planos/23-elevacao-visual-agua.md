@@ -56,7 +56,7 @@ opaco (`eb218fe:src/world/voxel_world.gd:91-96`, a árvore desta leitura) e para
 anterior é o estado de abertura da Fase 2 também**: o que restou de `StandardMaterial3D` é justamente o
 que a Fase 2 troca por shader — o opaco passou a `OpaqueSurface.build_material(_atlas)`
 ([:113](../../src/world/voxel_world.gd#L113)) e o vidro continua `StandardMaterial3D`, hoje em
-[:118-124](../../src/world/voxel_world.gd#L118-L124) —, e o `COLOR` do grupo opaco, que a água
+[:118-124](../../src/world/voxel_world.gd#L118-124) —, e o `COLOR` do grupo opaco, que a água
 aprendeu a ler, continua tendo um
 canal que ninguém lê — a leitura com número está no §3.10b.
 
@@ -104,8 +104,8 @@ como código (§3.6, §4).
 pela caixa ([voxel_world.gd:423-432](../../src/world/voxel_world.gd#L423-L432)). O jogador lê o campo
 para nadar e para a respiração ([player.gd:486](../../src/entities/player.gd#L486),
 [:537](../../src/entities/player.gd#L537), [:593](../../src/entities/player.gd#L593)) e o lobo para
-empuxo, velocidade e o cronômetro de nado ([wolf.gd:1211-1212](../../src/entities/wolf.gd#L1211-L1212),
-[:1230](../../src/entities/wolf.gd#L1230), [:1265](../../src/entities/wolf.gd#L1265)).
+empuxo, velocidade e o cronômetro de nado ([wolf.gd:1223-1224](../../src/entities/wolf.gd#L1223-1224),
+[:1242](../../src/entities/wolf.gd#L1242), [:1277](../../src/entities/wolf.gd#L1277)).
 
 **Já existe o padrão de quem reage à transição sem escrever no mundo.** O diretor de áudio guarda
 um estado por corpo e age na **borda** da mudança: `if in_water != bool(st["in_water"])`
