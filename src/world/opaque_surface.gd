@@ -44,12 +44,15 @@ const TUNING: Dictionary = {
 }
 
 const SOURCE: String = """shader_type spatial;
-// `specular_schlick_blurry` e `diffuse_burley` sao os defaults do `StandardMaterial3D`
-// que este material substitui; o default de um shader spatial e `schlick_ggx` +
-// `lambert`, entao omitir as duas linhas seria trocar o mundo inteiro por um tom
-// diferente sem que ninguem tenha pedido. Nenhum outro `render_mode`: o passe continua
-// opaco (sem `blend_*`, sem `ALPHA`) e o `cull_back` e o do material velho.
-render_mode specular_schlick_blurry, diffuse_burley;
+// `diffuse_burley` + `specular_schlick_ggx` sao os defaults do `StandardMaterial3D` que
+// este material substitui, medidos e nao lembrados (`.tools/probe_defaults.gd`:
+// `diffuse_mode=0`=BURLEY, `specular_mode=0`=SCHLICK_GGX). Escrever as duas explicitas e
+// o que impede a reproducao de virar outro tom se o default do engine mudar de endereco.
+// A primeira versao desta linha dizia `specular_schlick_blurry`, que e de Godot 3 e NAO
+// existe no 4.7: o front-end recusou com `SHADER ERROR: Invalid render mode` (o eixo do
+// furo #46). Nenhum outro `render_mode`: o passe continua opaco (sem `blend_*`, sem
+// `ALPHA`) e o `cull_back` e o do material velho.
+render_mode diffuse_burley, specular_schlick_ggx;
 
 // NEAREST_WITH_MIPMAPS e o filtro do material velho (`voxel_world.gd:94`), e e o que
 // mantem o tile de 16 px em quadros: linear no atlas faria a parede de pedra virar
