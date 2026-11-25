@@ -35,10 +35,11 @@ const TESTS: Array[StringName] = [
 	&"_test_bloco_em_queda_nao_sobe",
 	&"_test_queda_pousa_antes_do_save",
 	&"_test_queda_nao_custou_tempo_de_ninguem",
+	&"_test_f3_e_diagnostics_mostram_a_fila",
 	&"_test_journal_hash_muda_so_com_movimento",
 ]
-# 5 abertura + 7 checagens do gate + 3 fechamento. Toda checagem nova move este número.
-const EXPECTED_CHECKS: int = 15
+# 5 abertura + 8 checagens do gate + 3 fechamento. Toda checagem nova move este número.
+const EXPECTED_CHECKS: int = 16
 
 const SAND: int = BlockDefs.Block.SAND
 const AIR: int = BlockDefs.Block.AIR
@@ -56,6 +57,8 @@ const ARM_X: int = 46        # coluna do braco com cascata: checagem 6
 const ARM_Z: int = 46
 const HASH_X: int = 50       # cena do par de hashes: checagem 7
 const HASH_Z: int = 50
+const F3_X: int = 56         # coluna em voo lida pelo F3 e pelo diagnostics(): checagem 8
+const F3_Z: int = 56
 const PILE: int = 6
 const PURE_TICKS: int = 1000
 const ARM_TICKS: int = 1000
@@ -439,7 +442,10 @@ func _test_queda_sem_varredura_de_mundo() -> bool:
 
 
 # §5.2 -- a origem vira AIR, uma celula abaixo vira SAND, as duas chaves entram no diario,
-# e a fila volta a zero. Vermelho hoje: nenhum consumidor existe, entao nada se move.
+# e a fila drena depois da ultima edicao. Vermelho hoje: nenhum consumidor existe, entao nada
+# se move. A premissa que esta checagem exige e a do §4 do dossie: `queued` volta a zero em
+# <= N ticks contados a partir da ULTIMA escrita do grid -- que, numa queda, e a do proprio
+# pouso -- e nao no tick em que o grao toca o chao.
 
 func _test_queda_move_a_celula() -> bool:
 	if not _session_ok() or not _has_method_in(_main, "block_stats"):
@@ -465,6 +471,15 @@ func _test_queda_move_a_celula() -> bool:
 		if _world.get_block(shelf) == SAND:
 			k = _main.clock.tick - n
 			break
+	# A DRENAGEM e um passo a mais, nao um detalhe do logaritmo: quem pousou escreve no grid
+	# pela mesma porta do jogador (`block_changed`), entao o grao ja fixado re-entra na fila e
+	# o tick seguinte o devolve como apoiado. A exigencia do dossie §4 e "volta a zero em <= N
+	# ticks depois da ULTIMA edicao" -- e a ultima edicao e o proprio pouso. Exigir zero no
+	# tick do choque era ler uma promessa que nenhuma linha do produto faz.
+	var drain: int = 0
+	while drain < 8 and int(_stats().get("queued", -1)) > 0:
+		_tick(1)
+		drain += 1
 	var st: Dictionary = _stats()
 	var moved: bool = _world.get_block(origin) == AIR and _world.get_block(shelf) == SAND
 	var journaled: bool = _world.edits.has(origin) and int(_world.edits[origin]) == AIR \
@@ -473,11 +488,11 @@ func _test_queda_move_a_celula() -> bool:
 			and int(st.get("queued", -1)) == 0 and int(st.get("falling", -1)) == 0 \
 			and _world.edits.size() == edits_before + 2
 	var ev: String = ("N=%d N+k=%d (k=%d) origem=(%d,%d,%d)->%d destino=(%d,%d,%d)->%d "
-		+ "edits=%d->%d queued_no_gatilho=%d queued_final=%d em_voo=%d leituras=%d") % [
+		+ "edits=%d->%d queued_no_gatilho=%d drenagem=%d queued_final=%d em_voo=%d leituras=%d") % [
 		n, n + maxi(k, 0), k,
 		origin.x, origin.y, origin.z, _world.get_block(origin),
 		shelf.x, shelf.y, shelf.z, _world.get_block(shelf),
-		edits_before, _world.edits.size(), queued_at_trigger,
+		edits_before, _world.edits.size(), queued_at_trigger, drain,
 		int(st.get("queued", -1)), int(st.get("falling", -1)),
 		int(st.get("reads", 0)) - reads_before]
 	if not ok:
@@ -563,9 +578,9 @@ func _test_bloco_em_queda_nao_sobe() -> bool:
 	_tick(2)
 	_log.clear()
 	_world.set_block(shelf, AIR, false)
+	var st0: Dictionary = _stats()
 	var ys: Array = []
 	var step_up: float = -1.0
-	var on_ground_seen: bool = false
 	var ticks_to_land: int = 0
 	for i in range(160):
 		_tick(1)
@@ -582,10 +597,17 @@ func _test_bloco_em_queda_nao_sobe() -> bool:
 		if feet is Vector3:
 			ys.append(roundf(float(feet.y) * 1000.0) / 1000.0)
 		step_up = float(body.get("step_up"))
-		if bool(body.get("on_ground")):
-			on_ground_seen = true
-			ticks_to_land = i + 1
-			break
+	var st1: Dictionary = _stats()
+	# O corpo em voo morre no tick do pouso, entao a unica testemunha de QUEM o derrubou e o
+	# contador do dono: `placed` cresceu (fixou celula) e `stranded` ficou em zero (nao foi
+	# expiracao de MAX_FALL_TICKS). `on_ground` era a testemunha escrita antes do codigo e a
+	# primeira corrida a derrubou com numero: pe parado em 45,1, topo do apoio em 45,0, folga
+	# medida 0,10 m contra um probe de chao de 0,06 m (voxel_body.gd:17) -- o flag nunca
+	# acordaria, e a checagem ficaria verde so se o grao parasse rente, o que o integrador de
+	# substep nao garante. O que a cláusula §3.4 exige e "pousa AO LADO do apoio, nao em cima
+	# dele", e isso `beside` + `pousou_por_apoio` decidem.
+	var pousou_por_apoio: bool = int(st1.get("placed", 0)) == int(st0.get("placed", 0)) + 1 \
+			and int(st1.get("stranded", 0)) == int(st0.get("stranded", 0))
 	var monotone: bool = ys.size() >= 2
 	for j in range(1, ys.size()):
 		if float(ys[j]) > float(ys[j - 1]) + 1e-6:
@@ -599,11 +621,19 @@ func _test_bloco_em_queda_nao_sobe() -> bool:
 			and _world.get_block(Vector3i(wall.x, y0 + 1, wall.z)) == STONE \
 			and _world.get_block(Vector3i(wall.x, y0 + 2, wall.z)) == STONE \
 			and _world.get_block(wall_top_free) == AIR
-	var ok: bool = ys.size() >= 2 and monotone and step_up == 0.0 and beside and on_ground_seen
+	# A face do apoio e o plano `landed.y`; o pe medido parou acima dela, e a distancia e o que
+	# o probe de chao do corpo nunca alcanca.
+	var folga: float = -1.0
+	if not ys.is_empty():
+		folga = float(ys[ys.size() - 1]) - float(landed.y)
+	var ok: bool = ys.size() >= 2 and monotone and step_up == 0.0 and beside and pousou_por_apoio
 	var ev: String = ("amostras_do_pe=%d ticks_ate_o_pouso=%d step_up=%.3f pe_monotono=%s "
-		+ "no_chao=%s pouso=(%d,%d,%d)=%d origem=%d acima_da_pilha=%d parede=(%d,%d) "
+		+ "pousou_por_apoio=%s placed=%d->%d stranded=%d folga_pe_sobre_apoio=%.3f m "
+		+ "probe_do_corpo=%.3f m | pouso=(%d,%d,%d)=%d origem=%d acima_da_pilha=%d parede=(%d,%d) "
 		+ "topo_livre=%d feet_y=%s") % [
-		ys.size(), ticks_to_land, step_up, str(monotone), str(on_ground_seen),
+		ys.size(), ticks_to_land, step_up, str(monotone), str(pousou_por_apoio),
+		int(st0.get("placed", 0)), int(st1.get("placed", 0)), int(st1.get("stranded", 0)),
+		folga, VoxelBody.GROUND_PROBE,
 		landed.x, landed.y, landed.z, _world.get_block(landed), _world.get_block(origin),
 		_world.get_block(above),
 		_world.get_block(Vector3i(wall.x, y0 + 1, wall.z)),
@@ -733,6 +763,61 @@ func _test_queda_nao_custou_tempo_de_ninguem() -> bool:
 	return _check(ok, "queda_nao_custou_tempo_de_ninguem", ev)
 
 
+# §5.8 -- visibilidade (dossie 17 §3.6): `queued` e `overflow` tem de estar no `diagnostics()`
+# AO LADO de `dropped_ticks` e na linha do F3, com o mesmo valor que o estado da fila tem
+# naquele tick. A checagem só vale com grao em voo de verdade: uma linha que imprime zero
+# combina com um zero lido na mão, e seria verde sem o F3 existir.
+
+func _test_f3_e_diagnostics_mostram_a_fila() -> bool:
+	if not _session_ok() or not _has_method_in(_main, "block_stats"):
+		return _check(false, "f3_e_diagnostics_mostram_a_fila", _signature(
+			"sem fila anexada nao ha numero a expor: diagnostics() nao traz block_updates e a "
+			+ "linha do F3 do §3.6 nao existe -- o §4 do dossie exige o numero, nao o adjetivo"))
+	var y0: int = _world.surface_height(F3_X, F3_Z)
+	for i in range(3):
+		_world.set_block(Vector3i(F3_X, y0 + 1 + i, F3_Z), SAND, false)
+	_world.set_block(Vector3i(F3_X, y0, F3_Z), AIR, false)
+	# espera a janela em que ha fila E corpo em voo, sem sair do passo do produto
+	var waited: int = 0
+	var st: Dictionary = _stats()
+	while waited < 6 and (int(st.get("queued", 0)) == 0 or int(st.get("falling", 0)) == 0):
+		_tick(1)
+		waited += 1
+		st = _stats()
+	var dg: Dictionary = _main.diagnostics()
+	var side_by_side: bool = dg.has("block_updates") and dg.has("dropped_ticks")
+	var dg_q: int = int((dg.get("block_updates") as Dictionary).get("queued", -1))
+	var dg_reads: int = int((dg.get("block_updates") as Dictionary).get("reads", -1))
+	var same_state: bool = dg_q == int(st.get("queued", -2)) \
+			and dg_reads == int(st.get("reads", -3))
+	# O F3 e ligado pelo mecanismo do jogador (`toggle_debug`, o mesmo bind do F3 real), nao
+	# escrevendo `_debug_on` na mao: a regra 4 do ciclo de trabalho desta casa.
+	_main.player.toggle_debug.emit()
+	_main.hud._process(0.2)
+	var dbg := String(_main.hud._debug.text)
+	var linha: bool = dbg.contains("blocos  fila")
+	var mostrados: int = 0
+	for k: String in ["fila", "em voo", "eventos", "leituras", "overflow"]:
+		if dbg.contains(k):
+			mostrados += 1
+	var numerada: bool = dbg.contains("fila %d" % dg_q) \
+			and dbg.contains("em voo %d" % int(st.get("falling", -4))) \
+			and dbg.contains("leituras %d" % dg_reads) \
+			and dbg.contains("overflow %d" % int(st.get("overflow", -5)))
+	var live: bool = int(st.get("queued", 0)) >= 1 and int(st.get("falling", 0)) >= 1
+	var ok: bool = side_by_side and same_state and linha and mostrados == 5 and numerada and live
+	var ev: String = ("diagnostics: block_updates=%s dropped_ticks=%s queued=%d/%d leituras=%d/%d "
+		+ "| F3: linha=%s rotulos=%d/5 fila=%d em_voo=%d eventos=%d leituras=%d overflow=%d "
+		+ "| ticks_ate_a_janela=%d em_voo_no_gatilho=%s") % [
+		str(dg.has("block_updates")), str(dg.has("dropped_ticks")), dg_q,
+		int(st.get("queued", -2)), dg_reads, int(st.get("reads", -3)),
+		str(linha), mostrados, dg_q, int(st.get("falling", -4)), int(st.get("events", -6)),
+		dg_reads, int(st.get("overflow", -5)), waited, str(live)]
+	if not ok:
+		ev = _signature(ev)
+	return _check(ok, "f3_e_diagnostics_mostram_a_fila", ev)
+
+
 # §5.7 -- par da mesma semente: sem movimento o hash reproduz o da rodada sem a fila; com a
 # cascata ele diverge, e a divergencia e exatamente a dupla de chaves novas do diario.
 
@@ -741,10 +826,23 @@ func _test_journal_hash_muda_so_com_movimento() -> bool:
 		return _check(false, "journal_hash_muda_so_com_movimento", _signature(
 			"par nao rodado: sem fila anexada nao ha o que comparar, e o state_hash so projeta "
 			+ "world.edits (tick_journal.gd:16-21)"))
+	# Par LIMPOR: a assercao `diff_before.is_empty()` desta checagem afirma que as DUAS chaves
+	# da queda sao as unicas do diario da cena. Reaproveitar `_h_b` mediria o diff contra as
+	# quedas gravadas pelas checagens 1 e 3 -- o `== 2` sairia vermelho por culpa alheia, e a
+	# variante frouxa (contar so a janela) passaria verde aceitando chave fantasma em qualquer
+	# outra celula. Mundo novo, mesma semente, fila anexada.
+	var h: Dictionary = _make_harness("hash", true)
+	if _hqueue(h) == null or h.get("spawner") == null:
+		return _check(false, "journal_hash_muda_so_com_movimento", _signature(
+			"quarto mundo de prova nasceu sem fila ou sem spawner"))
 	var wa: VoxelWorld = _h_a["world"]
-	var wb: VoxelWorld = _h_b["world"]
+	var wb: VoxelWorld = h["world"]
 	var y0: int = wb.surface_height(HASH_X, HASH_Z)
-	var shelf := Vector3i(HASH_X, y0, HASH_Z)
+	# A prateleira e UMA celula acima do topo do relevo, e o grao pousa nela: com o grao a duas
+	# celulas do chao solidificado ele ja estaria sem apoio na fase quieta, e o "sem movimento
+	# reproduz o hash" pararia de significar "a fila nao mexe no mundo" -- significaria so que
+	# os dois lados cairam igual.
+	var shelf := Vector3i(HASH_X, y0 + 1, HASH_Z)
 	var origin := Vector3i(HASH_X, y0 + 2, HASH_Z)
 	# o cenario e todo ele `record = false`: invisivel ao diario nos dois mundos, entao as
 	# unicas chaves registradas da cena inteira sao as DUAS que a queda escreve.
@@ -754,31 +852,37 @@ func _test_journal_hash_muda_so_com_movimento() -> bool:
 	var runs: int = 40
 	# A nunca ouviu o sinal (fila criada, nunca anexada): e a rodada sem a peca.
 	for t in range(1, runs + 1):
-		_h_b["queue"].call("flush", t)
-		_h_b["spawner"].call("step", SimClock.STEP)
+		h["queue"].call("flush", t)
+		h["spawner"].call("step", SimClock.STEP)
+	h["tick"] = runs
 	_h_a["tick"] = runs
-	_h_b["tick"] = runs
 	var ha_quiet: String = Journal.state_hash(runs, wa, _h_a["field"], [])
-	var hb_quiet: String = Journal.state_hash(runs, wb, _h_b["field"], [])
+	var hb_quiet: String = Journal.state_hash(runs, wb, h["field"], [])
 	var equal_quiet: bool = ha_quiet == hb_quiet and ha_quiet.length() == 64
 	# agora o apoio sai so no B, com a cascata andando ate o repouso
 	var diff_before: Array = _edits_diff(wa, wb)
 	wb.set_block(shelf, AIR, false)
-	var pair: Dictionary = _drive(_h_b, 200)
+	var pair: Dictionary = _drive(h, 200)
 	var moved: Array = _ys(pair["conversions"])
 	var diff_after: Array = _edits_diff(wa, wb)
-	var hb_moved: String = Journal.state_hash(int(_h_b["tick"]), wb, _h_b["field"], [])
-	var ha_after: String = Journal.state_hash(int(_h_b["tick"]), wa, _h_a["field"], [])
-	var diverged: bool = hb_moved != ha_quiet and ha_after == ha_quiet
+	var hb_moved: String = Journal.state_hash(int(h["tick"]), wb, h["field"], [])
+	var ha_after: String = Journal.state_hash(int(h["tick"]), wa, _h_a["field"], [])
+	# Os dois lados no MESMO tick, e isso nao e cosmetico: o numero do tick esta na projecao do
+	# hash (tick_journal.gd:16-21), entao a formula anterior -- `ha_after == ha_quiet`, com A no
+	# tick final e a referencia no tick 40 -- era falsa por construcao, qualquer que fosse o
+	# mundo. A primeira corrida acusou justamente isso. Fechado o tick dos dois lados, a unica
+	# grandeza que pode separar os hashes e o conteudo de `world.edits`, e `attributed` e quem
+	# nomeia as celulas que o separaram.
+	var diverged: bool = hb_moved != ha_after
 	var attributed: bool = diff_before.is_empty() and diff_after.size() == 2
 	var ok: bool = equal_quiet and diverged and attributed and int(pair["queued"]) == 0 \
-			and _hfalling(_h_b).is_empty() and not moved.is_empty()
+			and _hfalling(h).is_empty() and not moved.is_empty()
 	var ev: String = ("sem_movimento: %d ticks hash_A=%.10s hash_B=%.10s iguais=%s | "
 		+ "com_cascata: celulas=%s ticks=%d hash_A=%.10s hash_B=%.10s divergiu=%s | "
 		+ "chaves_novas_do_diario=%d (%s) queued_final=%d em_voo=%d") % [
 		runs, ha_quiet, hb_quiet, str(equal_quiet), _seq(moved), int(pair["ticks"]),
 		ha_after, hb_moved, str(diverged), diff_after.size(), ", ".join(diff_after),
-		int(pair["queued"]), _hfalling(_h_b).size()]
+		int(pair["queued"]), _hfalling(h).size()]
 	if not ok:
 		ev = _signature(ev)
 	return _check(ok, "journal_hash_muda_so_com_movimento", ev)
