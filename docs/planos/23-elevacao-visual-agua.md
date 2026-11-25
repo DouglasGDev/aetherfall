@@ -461,7 +461,7 @@ não tem comprador de molhamento nesta fase.
    construção — então são no máximo 64 leituras e a coluna seca paga as 64 inteiras para devolver
    `-1,0`. Não é varredura de mapa.
 2. **Quantas entidades são alcançadas?** Corpos: **1 jogador + até 5 lobos** (`WOLF_COUNT = 5`,
-   [main.gd:9](../../src/main.gd#L9; censo até `CENSUS_CAP = 12`, [`:18`](../../src/main.gd#L18);
+   [main.gd:9](../../src/main.gd#L9); censo até `CENSUS_CAP = 12`, [`:18`](../../src/main.gd#L18);
    o FX itera sobre a lista que o `wolves_provider` já devolve. Superfície de água: a área dos surfaces de água dos 64
    chunks, que **não muda** com esta perna (§3.2, §5.1). Teto de partículas: **impresso na suíte** e
    igual a `pool × amount` por sistema, com o valor na linha da checagem — não no adjetivo.

@@ -23,18 +23,18 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
    criatura chega ao toast, e o feedback da ação do próprio jogador continua chegando. **Nasce
    vermelha**: `main.gd:263` e `:511` daquela ponta — os dois letreiros — existem.
    *(Entregue: os dois saíram da tela. A fila de respawn é hoje só o comentário em
-   [main.gd:304-312](../../src/main.gd#L309-L317 e a morte imprime apenas o contador em
-   [`_on_wolf_died`](../../src/main.gd#L1014-L1019.)*
-4. **Spawn não aparece na frente do jogador.** Criar lobo (boot [main.gd:214](../../src/main.gd#L219,
+   [main.gd:304-312](../../src/main.gd#L309-L317) e a morte imprime apenas o contador em
+   [`_on_wolf_died`](../../src/main.gd#L1014-L1019).)*
+4. **Spawn não aparece na frente do jogador.** Criar lobo (boot [main.gd:214](../../src/main.gd#L219),
    fila [:307](../../src/main.gd#L317) a menos de `SAFE_SPAWN_DIST` do jogador ou com LOS
    livre do olho até o ponto não o coloca ali, e a recusa é impressa — nunca revertida em silêncio ao
    centro. **Nasce vermelha por construção**: na ponta do dossiê, `_random_ground_point`
    (`main.gd:322-336` de `eb6ec8d`) não menciona o jogador em nenhuma linha.
-   *(Entregue: quem sorteia é [`_spawn_home_point`](../../src/main.gd#L762-L834 sobre as
-   [`SPAWN_BANDS`](../../src/main.gd#L524, e cada candidata passa antes por
-   [`_spawn_point_ok`](../../src/main.gd#L736-L741 — distância e visada contra o olho do jogador;
+   *(Entregue: quem sorteia é [`_spawn_home_point`](../../src/main.gd#L762-L834) sobre as
+   [`SPAWN_BANDS`](../../src/main.gd#L524), e cada candidata passa antes por
+   [`_spawn_point_ok`](../../src/main.gd#L736-L741) — distância e visada contra o olho do jogador;
    a recusa conta os motivos e imprime "spawn RECUSADO:" em
-   [:808-810](../../src/main.gd#L818-L820, sem fallback para o centro.)*
+   [:808-810](../../src/main.gd#L818-L820), sem fallback para o centro.)*
 
 ## 2. Estado real do código (lido, não medido)
 
@@ -61,7 +61,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   ([`:157`](../../src/main.gd#L159) — e o anel 16–46 m gira em torno **dele**
   ([`:346`](../../src/main.gd#L356), exigindo `y > SEA_LEVEL` (26,
   [voxel_config.gd:13](../../src/world/voxel_config.gd#L13)) e volume inteiro livre
-  ([`_volume_clear`](../../src/main.gd#L834-L836: encaixado, o corpo congela — diz o comentário);
+  ([`_volume_clear`](../../src/main.gd#L834-L836): encaixado, o corpo congela — diz o comentário);
   após 24 tentativas cai **em silêncio** no centro ([`:404-405`](../../src/main.gd#L414-L415), o
   pior ponto possível num 128×128 ([`:10-11`](../../src/world/voxel_config.gd#L10-L11)) com margem
   sobrando. O `load` põe o jogador onde estava ([`:1081`](../../src/main.gd#L1110) e a matilha segue
@@ -69,9 +69,9 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   portão de 30 m da percepção ([wolf.gd:922](../../src/entities/wolf.gd#L922)) — nunca no spawn.
 - **Dois tipos de aviso numa fila só**
   ([`show_message`](../../src/ui/hud.gd#L154-L157), fade `:212-214`): anúncio de criatura —
-  [main.gd:298](../../src/main.gd#L303 e `main.gd:853` (dispara para **qualquer** morte, vista ou não) — e
+  [main.gd:298](../../src/main.gd#L303) e `main.gd:853` (dispara para **qualquer** morte, vista ou não) — e
   feedback/diagnóstico: boot `:107`, morte do jogador `:194`, `player.notice` →
-  [`_on_notice`](../../src/main.gd#L983-L984 (emissores
+  [`_on_notice`](../../src/main.gd#L983-L984) (emissores
   [player.gd:309](../../src/entities/player.gd#L309)/[:682](../../src/entities/player.gd#L682)/[:700](../../src/entities/player.gd#L700)),
   save/load `:377`/`:379`/`:385`/`:389`/`:425`, craft [hud.gd:603](../../src/ui/hud.gd#L603)/`:605`.
 - **O que substitui o texto, lido e não assumido:** passos posicionais
@@ -100,8 +100,8 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
 - **Deriva de citação:** o contrato apontava o blackboard para `wolf.gd:622`, fim de
   `_build_scorer`; re-ancorado, hoje é **um** `Dictionary` por lobo por tick, na chamada da
   árvore ([`wolf.gd:911`](../../src/entities/wolf.gd#L911)) e no `_breakdown` do escorredor ([`utility_scorer.gd:76`](../../src/ai/utility_scorer.gd#L76)).
-  `EXPECTED_CHECKS` é [`:60`](../../tests/aether_reactions_test.gd#L64 (150 na leitura deste dossiê) e os
-  30 cenários vão de [`:8-29`](../../tests/aether_reactions_test.gd#L8-L29.
+  `EXPECTED_CHECKS` é [`:60`](../../tests/aether_reactions_test.gd#L64) (150 na leitura deste dossiê) e os
+  30 cenários vão de [`:8-29`](../../tests/aether_reactions_test.gd#L8-L29).
 
 ## 3. O que a peça exige
 

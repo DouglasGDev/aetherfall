@@ -17,9 +17,9 @@ checagens que a sustentam, está na rodada Acasalamento 11 do `docs/melhorias-st
 1. **O censo é uma variável real do mundo se um save gravado com 7 lobos carrega 7 lobos.** Na
    leitura desta página o `load` tinha teto por índice **e** inventava sobrevivente:
    `for i in mini(saved.size(), wolves.size()): wolves[i].load_state(saved[i])`, com `wolves` já
-   cheio pelos 5 do boot — [`_spawn_wolves`](../../src/main.gd#L361-L397 chamado
-   com `WOLF_COUNT` em [:212](../../src/main.gd#L219, constante em
-   [:9](../../src/main.gd#L9. Save com 3 lobos → os outros 2 continuavam vivos com o estado do
+   cheio pelos 5 do boot — [`_spawn_wolves`](../../src/main.gd#L361-L397) chamado
+   com `WOLF_COUNT` em [:212](../../src/main.gd#L219), constante em
+   [:9](../../src/main.gd#L9). Save com 3 lobos → os outros 2 continuavam vivos com o estado do
    boot; save com 7 → 2 filhotes desapareciam no disco. **Falsificável em headless:** gravar com N,
    recarregar, exigir N e exigir que cada identidade carregada bate com a gravada. O load que fecha
    essa premissa pareia por identidade e faz do censo do disco a autoridade
@@ -34,7 +34,7 @@ checagens que a sustentam, está na rodada Acasalamento 11 do `docs/melhorias-st
    dimensões do Éter e os lobos ordenados por identidade
    ([tick_journal.gd:36](../../src/persistence/tick_journal.gd#L36), projeção mínima descrita em
    [:16-44](../../src/persistence/tick_journal.gd#L16-L44)); o save recusa gerador velho por
-   [`gen_version`](../../src/main.gd#L1069 contra [`GEN_VERSION = 4`](../../src/world/world_gen.gd#L6).
+   [`gen_version`](../../src/main.gd#L1069) contra [`GEN_VERSION = 4`](../../src/world/world_gen.gd#L6).
 
 ## 2. Estado real do código (lido, não medido)
 
@@ -47,11 +47,11 @@ linha, com o ponteiro vivo. Os números de linha desta seção são ponteiros pa
   `_spawn_wolves(1)` ([main.gd:299-312](../../src/main.gd#L304-L317). Cada lobo nascia com
   `home` sorteado e identidade incrementada
   ([main.gd:356-379](../../src/main.gd#L361-L384); os mortos saem pela recolha de cadáver a cada
-  1 s ([`_reap_corpses`](../../src/main.gd#L932-L952, `CORPSE_CHECK_PERIOD` em
+  1 s ([`_reap_corpses`](../../src/main.gd#L932-L952), `CORPSE_CHECK_PERIOD` em
   [:31](../../src/main.gd#L31). **Naquela leitura nada nascia por causa interna do mundo.**
   **Hoje o censo é variável e tem teto:** `CENSUS_CAP := 12`
   ([main.gd:18](../../src/main.gd#L18) e o nascimento é
-  [`_born_from`](../../src/main.gd#L474-L507, que imprime a recusa quando o censo está no teto
+  [`_born_from`](../../src/main.gd#L474-L507), que imprime a recusa quando o censo está no teto
   ([main.gd:472-475](../../src/main.gd#L477-L480) em vez de truncar em silêncio. O letreiro "uma
   nova matilha entrou no vale" já não existia quando esta perna abriu — a 14 o tirou, e o motivo
   está escrito no próprio código.
@@ -166,13 +166,13 @@ linha, com o ponteiro vivo. Os números de linha desta seção são ponteiros pa
   é 2,5 ms para as árvores — ou seja, **12 é teto de censo, não orçamento de BT liberado**: o
   escalonamento por fase (filhote com árvore mais barata) é o que mantém a soma dentro do número.
 - **Aloco no caminho quente?** O acasalamento não aloca; o `_reap_corpses` e a fila de respawn já
-  são `Array` com remoção por índice ([main.gd:293-298](../../src/main.gd#L298-L303,
+  são `Array` com remoção por índice ([main.gd:293-298](../../src/main.gd#L298-L303),
   [:903-923](../../src/main.gd#L932-L952). Spawn novo cria nós em cena — o custo real é de
   `_build_visual` (um `StandardMaterial3D` + ~12 `BoxMesh` por lobo,
   [wolf.gd:1448-1477](../../src/entities/wolf.gd#L1448-L1477)) e acontece **uma vez** por nascimento.
 - **Como sei que ficou melhor?** Não é "ficou melhor", é "o censo é real": as checagens do §5. O
   número que tem de continuar válido é o rodapé do runner (colheita estreita de `sim_step` e BT,
-  [aether_reactions_test.gd:301-317](../../tests/aether_reactions_test.gd#L332-L348,
+  [aether_reactions_test.gd:301-317](../../tests/aether_reactions_test.gd#L332-L348),
   [:1146-1147](../../tests/aether_reactions_test.gd#L1183-L1184) e o `trips == 0` do `SubtreeGuard`.
 
 ## 5. Gate em headless
@@ -214,7 +214,7 @@ Checagens:
    `FORMAT_VERSION == 1`, e o caminho do disco reidratando fase, idade e cooldown no bicho certo
    ([`_test_journal_hash_inalterado_sem_escolha`](../../tests/aether_reactions_test.gd#L3867-L3934).
 
-`EXPECTED_CHECKS` ([aether_reactions_test.gd:61](../../tests/aether_reactions_test.gd#L64, **119**
+`EXPECTED_CHECKS` ([aether_reactions_test.gd:61](../../tests/aether_reactions_test.gd#L64), **119**
 na leitura desta página) e as contagens de suíte (**237 / 0 falhas** na mesma leitura, pin
 [`README.md`](../../README.md)) sobem com o lote e são re-medidos no clone limpo com `--import` frio
 antes de virar número publicado — e as **nove** citações de censo do §2 re-derivadas no mesmo commit.

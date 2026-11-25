@@ -86,15 +86,15 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **O que uma célula que muda custa.** Cada conversão é um `set_block` → `edits[p] = b`
   ([voxel_world.gd:286](../../src/world/voxel_world.gd#L286)) + chunk sujo
   ([`:292-303`](../../src/world/voxel_world.gd#L292-L303)) remalhado a **2 chunks por frame**
-  ([main.gd:28](../../src/main.gd#L28, [`:337`](../../src/main.gd#L337) ≈ 67 ms de
+  ([main.gd:28](../../src/main.gd#L28), [`:337`](../../src/main.gd#L337) ≈ 67 ms de
   boot por chunk nas medidas do contrato ([README.md:148-149](../../README.md#L148-L149)).
   O `edits` **não tem teto** ([`:42`](../../src/world/voxel_world.gd#L42) é um `Dictionary`
   puro, serializado inteiro em [main.gd:1012](../../src/main.gd#L1036); hoje cresce
   1 chave por ação do jogador, e um ecossistema que cresce sozinho o faria crescer por tempo de
   sessão, não por trabalho do jogador. Isso é o débito real desta linha, declarado antes.
 - **RNG: há um riacho por dono e a suíte bate nele.** A sessão tem
-  `_population_rng` ([main.gd:71](../../src/main.gd#L71, semeado por
-  `("population:%d" % world_seed).hash()` em [`:353`](../../src/main.gd#L363 na perna 11) e
+  `_population_rng` ([main.gd:71](../../src/main.gd#L71), semeado por
+  `("population:%d" % world_seed).hash()` em [`:353`](../../src/main.gd#L363) na perna 11) e
   cada lobo tem o `_rng` próprio. Uma propagação que sortear célula **comendo o riacho da
   população** muda a ordem de spawns e derruba a suíte de RNG isolada
   (`tests/simulation_rng_test.gd`) sem mudar uma linha de comportamento. O lote abre riacho
@@ -215,7 +215,7 @@ godot --headless --path . tests/smoke_test.tscn
 8. **`crescimento_nao_consome_rng_da_sessao`** — o riacho novo não toca `_population_rng`: a
    mesma semente, com e sem mecânica ligada, devolve a mesma sequência de spawns já conferida
    por `tests/simulation_rng_test.gd`. Sem ela, a perna passa a mentir sobre sorteio.
-9. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39,
+9. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39),
    **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:223](../../tests/smoke_test.gd#L223))
    sobem com o lote, re-medidos no clone limpo com `--import` frio.
 

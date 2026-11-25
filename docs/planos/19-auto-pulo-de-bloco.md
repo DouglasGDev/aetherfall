@@ -156,7 +156,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
    nasce vermelha.
 3. **`penhasico_nao_gasta_salto`** — o braço de indiferença: a parede de 6 blocos do cenário que já
    existe, agora com `lancamentos == 0` e `rearms > 0`. É a asserção que esta página lia em `:1035`
-   — re-derivada hoje em [`aether_reactions_test.gd:1115`](../../tests/aether_reactions_test.gd#L1146,
+   — re-derivada hoje em [`aether_reactions_test.gd:1115`](../../tests/aether_reactions_test.gd#L1146),
    lida do outro lado — e é por isso que ela é re-derivada neste lote em vez de apagada.
 4. **`agachado_nao_e_arremessado`** — o mesmo degrau com `crouching` true: corpo continua do lado de
    cá, `Δy == 0`. A checagem que dá dente à recusa do §3.3.
@@ -170,7 +170,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
 6. **`pulo_nao_custou_passo_de_ninguem`** — 1 000 ticks andando em plano sem bloqueio e 1 000 ticks
    com um degrau no caminho, `worst_sim_ms` e `dropped_ticks` lado a lado; atribuição por
    composição, como o contrato exige.
-7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:39`](../../tests/aether_reactions_test.gd#L39,
+7. `EXPECTED_CHECKS` ([`aether_reactions_test.gd:39`](../../tests/aether_reactions_test.gd#L39),
    **183** nesta leitura, na `main` mergida da perna 14) sobe com o lote e é re-medido no clone
    limpo com `--import` frio, com o SHA pinado.
 

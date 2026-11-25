@@ -123,7 +123,7 @@ Total: **51 arquivos, 1.677.718 bytes (1.60 MiB)**.
 
 Nenhum byte dos arquivos muda em runtime. O que se aplica em runtime é ganho,
 cadência e roteamento, no [src/audio/audio_director.gd](../src/audio/audio_director.gd)
-(`AudioDirector`, 619 linhas), que o [src/main.gd:205-209](../src/main.gd#L205-L209
+(`AudioDirector`, 619 linhas), que o [src/main.gd:205-209](../src/main.gd#L205-L209)
 cria por último no `_ready` — "último a entrar e o primeiro a ser ouvido".
 
 **Barramentos.** `default_bus_layout.tres` (carregado por

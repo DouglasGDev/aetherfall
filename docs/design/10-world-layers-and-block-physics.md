@@ -29,7 +29,7 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:565-577](../../src/entities/player.gd) |
 | Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:276` |
 | Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:362-372](../../src/world/voxel_world.gd) |
-| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:934-936](../../src/main.gd#L958-L960; coleta em [player.gd:670-683](../../src/entities/player.gd#L670-L683) |
+| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:934-936](../../src/main.gd#L958-L960); coleta em [player.gd:670-683](../../src/entities/player.gd#L670-L683) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
 pelo [documento 11](11-inventory-crafting.md):** a dureza saiu de `Player._hardness()`
@@ -444,7 +444,7 @@ bloco é estado de mundo, e o hash de estado do gate P0 depende disso. O `TickJo
 atual só assina uma projeção mínima, **sem corpos nem comandos**
 ([tick_journal.gd:16-44](../../src/persistence/tick_journal.gd#L16-L44)); não cobre a
 entidade de queda proposta nem fecha esse gate. Hoje, jogador e locomoção/timers do lobo
-ainda mudam por frame de física ([main.gd:277](../../src/main.gd#L282,
+ainda mudam por frame de física ([main.gd:277](../../src/main.gd#L282),
 [wolf.gd:1203-1259](../../src/entities/wolf.gd#L1203-L1259)).
 
 ### Matemática
@@ -605,7 +605,7 @@ func _overlapping(cell: Vector3i) -> Array:
 `e.has_method("body_aabb")` não é decoração: `body_aabb()` já é o contrato de
 entidade visada do projeto (player.gd:616, [wolf.gd:305-306](../../src/entities/wolf.gd#L305-L306)),
 e `entity_provider` é o `Callable` que `Main` injeta hoje no jogador
-([main.gd:160](../../src/main.gd#L160 → `targets_under_crosshair`,
+([main.gd:160](../../src/main.gd#L160) → `targets_under_crosshair`,
 [main.gd:834-839](../../src/main.gd#L839-L844).
 
 ### Da fila para a entidade
@@ -1003,7 +1003,7 @@ mundo velho não tinha nada ali, e o novo tem faixa profunda, lava e bedrock. Re
 fechamento `[DECIDED]`: migrar por translação e **recusar o slot se qualquer edição
 antiga cair em faixa que o novo mundo não conhece** (`y_novo < Y_BEDROCK_TOP + 1`).
 A gravação/conferência de `gen_version` já existe em `save_game`/`load_game`
-([main.gd:1026](../../src/main.gd#L1050, [main.gd:1055](../../src/main.gd#L1079):
+([main.gd:1026](../../src/main.gd#L1050), [main.gd:1055](../../src/main.gd#L1079):
 hoje o save incompatível é recusado antes da restauração. A migração proposta precisa
 atualizar essa versão junto das edições; não há migração implementada aqui.
 
