@@ -24,12 +24,12 @@ de `src/world/` (`VoxelConfig`, `BlockDefs`, `VoxelChunk`, `VoxelWorld`, `WorldG
 | Pior passo de sim | 8,82 ms, nenhum tick perdido | `.tools/suite_final.log:225` |
 | Blocos | 9 ids; tabelas de `solido`/`opaco`/`nome` apenas | [block_defs.gd:5-38](../../src/world/block_defs.gd) |
 | Dureza | `Player._hardness()` não existe mais: quem responde é o registro (`BlockDefs.hardness`) | [player.gd:629](../../src/entities/player.gd) |
-| Gravidade de **bloco** | não existe. Gravidade de **corpo** sim: 24,0 m/s², terminal 42,0 | [voxel_body.gd:6-15](../../src/entities/voxel_body.gd) |
+| Gravidade de **bloco** | existia só no papel até 2026-11-25: hoje `SAND` carrega o bit `_gravity` e cai por entidade. Gravidade de **corpo** é a mesma de sempre: 24,0 m/s², terminal 42,0 | [block_defs.gd:156](../../src/world/block_defs.gd#L156) com `has_gravity` em [:169](../../src/world/block_defs.gd#L169), [`falling_block.gd`](../../src/entities/falling_block.gd), [`voxel_body.gd:6-15`](../../src/entities/voxel_body.gd#L6-L15) |
 | Queda do jogador | dano por velocidade de impacto; seguro 14 m/s, 3,5 por m/s, teto 55 | [player.gd:75-77](../../src/entities/player.gd), `:567-573` |
 | Respiração / sufoco | medidor `air` + dano por período, ligado só a água | [player.gd:565-577](../../src/entities/player.gd) |
-| Evento de bloco | `VoxelWorld.block_changed` **declarado e emitido, com zero inscritos** | [voxel_world.gd:6](../../src/world/voxel_world.gd), emissão em `:276` |
-| Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:362-372](../../src/world/voxel_world.gd) |
-| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:984-986](../../src/main.gd#L984-L986); coleta em [player.gd:670-683](../../src/entities/player.gd#L670-L683) |
+| Evento de bloco | **declarado, emitido e ouvido** desde 2026-11-25: a fila de gravidade é o único inscrito em `src/` | [voxel_world.gd:6](../../src/world/voxel_world.gd#L6), emissão em [:312](../../src/world/voxel_world.gd#L312), conexão em [block_update_queue.gd:35](../../src/world/block_update_queue.gd#L35) |
+| Colisão voxel | binária: `aabb_hits_solid` pergunta `is_solid` por célula | [voxel_world.gd:405-415](../../src/world/voxel_world.gd#L405-L415) |
+| Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§11), mas não entidade de item no mundo | contador atual em [main.gd:1018-1019](../../src/main.gd#L1018-L1019); coleta em [player.gd:676-690](../../src/entities/player.gd#L676-L690) |
 
 **O baseline é o commit em que a spec foi escrita, e três linhas dele já foram pagas
 pelo [documento 11](11-inventory-crafting.md):** a dureza saiu de `Player._hardness()`
@@ -41,7 +41,14 @@ que a linha 32 ainda importa para o §10.4.
 
 A última linha mas uma é a peça que faltava: a regra 3 do pedido ("atualize a física
 só nos vizinhos, nunca varra o mundo") não precisa de um mecanismo de detecção novo —
-precisa de um **consumidor** do sinal que já existe e hoje ninguém escuta.
+precisa de um **consumidor** do sinal que já existe e hoje ninguém escuta. **Escuta, desde
+o pouso da perna 17:** [`block_update_queue.gd:35`](../../src/world/block_update_queue.gd#L35)
+conecta `block_changed` e a fila resolve **2 leituras por evento**, não varredura. O número
+que dá dente à regra está em [`docs/evidence/fisica-de-blocos-17/merge_gate.log`](../evidence/fisica-de-blocos-17/merge_gate.log):
+mil ticks sem edição devolvem `leituras=0`, contra os **20.971.520** `get_block`/s que uma
+varredura do mapa de 1.048.576 células a 20 Hz custaria. O que o §10 ainda não tem é o
+`quebra_queda`/`SHATTER` (nenhum bloco com a flag) e o drop no chão — os dois continuam
+`[TARGET]` pelas razões de §11 e da linha 32 acima.
 
 ## 10.2 Eixo Y: faixas e camadas
 
@@ -196,7 +203,8 @@ Regras que a tabela carrega:
   Um único campo "não sólido" daria a resposta errada para a lava.
 - **`quebra_queda` ≠ `not solido`.** SLAB é sólido para movimento (você pisa nela) e é
   alvo de quebra para queda — no modelo de colisão binário de hoje
-  (voxel_world.gd:362-372) não existe "colisão de meia altura", então a laje precisa
+  ([voxel_world.gd:405-415](../../src/world/voxel_world.gd#L405-L415)) não existe "colisão de meia altura",
+  então a laje precisa
   dos dois flags separados ou a regra do pedido vira mentira. A colisão parcial fica
   `[OPEN]` (§10.9).
 - **`destrutivel == false`** (BEDROCK, WATER, LAVA) trava a lavra **antes** do
@@ -651,8 +659,8 @@ bloco cair para sempre em cima de um suporte recém-colocado.)
 
 | Necessidade | Estado hoje | Custo real |
 |---|---|---|
-| Entidade física de bloco | inexistente | `src/entities/falling_block.gd` + spawner e step em `Main` |
-| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:992-995](../../src/main.gd#L992-L995)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
+| Entidade física de bloco | **existe desde 2026-11-25** (perna 17): o grão em voo, o spawner e o passo de 20 Hz | pago: [`src/entities/falling_block.gd`](../../src/entities/falling_block.gd) (109 linhas), [`falling_block_spawner.gd`](../../src/entities/falling_block_spawner.gd) (77) e [`block_update_queue.gd`](../../src/world/block_update_queue.gd) (129), com a fila andada em [main.gd:343](../../src/main.gd#L343) |
+| Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§11). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:1018-1021](../../src/main.gd#L1018-L1021)) | sistema inteiro: `DropItem` (VoxelBody pequeno) + pickup + destino no HUD. O `_shatter` do pedido **não tem onde cair** sem isso |
 | Sufocamento em jogador | o medidor `air` existe, mas `_update_breath` só olha água (player.gd:572-574) | uma linha: `no_air := world.is_water_xyz(olho) or BlockDefs.blocks_air(world.get_block(olho))` — `blocks_air` é derivado dos campos de §10.3, não um décimo flag |
 | Sufocamento em NPC | o lobo **não tem medidor de ar** | ou um `Breath` comum aos dois, ou dano por tick direto no NPC enterrado |
 | Dano vindo de objeto do mundo | `take_damage` é `(amount, from)` no jogador e `(amount, actor, from)` no lobo | dispatch no dono da cena (padrão `Main._on_attacked`, main.gd:967-970); nenhum `is Player` dentro da física |
@@ -1003,7 +1011,7 @@ mundo velho não tinha nada ali, e o novo tem faixa profunda, lava e bedrock. Re
 fechamento `[DECIDED]`: migrar por translação e **recusar o slot se qualquer edição
 antiga cair em faixa que o novo mundo não conhece** (`y_novo < Y_BEDROCK_TOP + 1`).
 A gravação/conferência de `gen_version` já existe em `save_game`/`load_game`
-([main.gd:1076](../../src/main.gd#L1076), [main.gd:1105](../../src/main.gd#L1105)):
+([main.gd:1107](../../src/main.gd#L1107), [main.gd:1136](../../src/main.gd#L1136)):
 hoje o save incompatível é recusado antes da restauração. A migração proposta precisa
 atualizar essa versão junto das edições; não há migração implementada aqui.
 

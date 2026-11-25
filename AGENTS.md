@@ -910,6 +910,71 @@ como o débito do pouso da Fase 1 mandava, mostra um só PID do projeto na janel
 vermelho de hoje não é defeito de nenhuma das duas árvores, e o **#31** continua aberto exatamente
 porque falta o par vermelha↔verde da *mesma* árvore com o CPU do Godot nos dois lados.
 
+**Registro de 2026-11-25 — o código da perna 17 pousa na `main`, e o `block_changed` ganha a sua única
+leitora.** Nada aqui é exceção de ordem nem gate de fase: a autorização usada é a nomeada das pernas
+anteriores — `merge --no-ff` na `main`, com o gate de fase continuando do dono (mandato 4). A perna era
+a da vez, foi aberta da `main` no ponto atual (`8bddcab`) e pousou sobre o que a `main` tinha
+entretanto: `git merge --no-ff feat/fisica-de-blocos-que-caem-17` → **`95d519a`**, pais `114bcd2` e
+`60150ce`, **41 arquivos, +16 758/−19**, com o código em três arquivos novos
+([`src/world/block_update_queue.gd`](src/world/block_update_queue.gd) 129,
+[`src/entities/falling_block.gd`](src/entities/falling_block.gd) 109,
+[`src/entities/falling_block_spawner.gd`](src/entities/falling_block_spawner.gd) 77), `src/main.gd`
++82, [`src/world/voxel_world.gd`](src/world/voxel_world.gd) +19,
+[`src/world/block_defs.gd`](src/world/block_defs.gd) +18, [`src/ui/hud.gd`](src/ui/hud.gd) +9, o gate
+[`tests/block_physics_test.gd`](tests/block_physics_test.gd) 936 e +8 no runner de reações.
+
+O que ela fecha, lido no que corre: o débito que a perna 12 abriu — `block_changed` **sem consumidor**
+em `src/` — passa a ter exatamente uma conexão ([`block_update_queue.gd:35`](src/world/block_update_queue.gd#L35),
+entre as **7** linhas do `grep -rn block_changed src`, das quais **4** são comentário), e a checagem imprime
+`consumidores_antes_da_perna=1` contra `=0` no vermelho `f338c91`; "a fila não varre" vira número
+(`ticks=1000 leituras=0` contra os **20 971 520**/s que a varredura das 1 048 576 células custaria); e
+o disco nunca vê bloco em voo é quiesce com `no_disco=6 fantasma_no_disco=0 at_rest=true`. O número
+pineado é o do **clone limpo** de `95d519a` com `--import` frio: gate **16 / 0 / 9/9 testes / 25,487 s**,
+suíte **278 / 0 / 67,5 s**, reações **364 / 0 / 68,303 s**, RNG **27 / 0 / 2,955 s**, journal
+**128 / 0 / 7/7 / 7,002 s**, zero `SCRIPT ERROR` nos 13 logs; as árvores `src`/`tests` do clone são as
+da `main` (`2e3e3622…` / `0dc61649…`), iguais às da ponta medida.
+
+Duas leituras desta passada, com a mesa na frente, e nenhuma é cosmética. (1) **O censo não é desta
+perna**: 277 → 278 é da 25 e 355 → 364 é da Fase 3 da 22 — a 17 não escreve `tests/smoke_test.gd`
+(`git diff --numstat 114bcd2 95d519a -- tests/smoke_test.gd` devolve vazio) e o gate dela vive num
+runner próprio, fora dos quatro contratos. (2) **Os 29 vermelhos do runner sem provisionamento são o
+furo #38, com os nomes lidos**: `contrato` ×14, `extensao_pack_no_processo` ×7,
+`af_cache_determina_replay` ×5, `budget_do_oraculo` ×2 e `budget_do_oraculo_nao_estoura_a_arvore` ×1,
+com `grep -c "FALHA.*queda\|FALHA.*bloco"` = **0** no mesmo log.
+
+Dois furos esta passada abre e não fecha, ambos com dono escrito antes da linha. **#56** — o
+amostrador de carga que o **#31** cobrava ficava **mudo** quando o `-proj` chegava com barra de
+frente: o `ExecutablePath` do `Win32_Process` é invertido, o `StartsWith` nunca casava, e os **11**
+logs deste pouso imprimiram `sem-godot-no-projeto` em **100 %** das linhas (90/140/140/60/60/150 na
+primária, 45/95/85/15/20 no clone) enquanto havia **quatro** processos do projeto vivos na mesa. Mesma
+classe do **#44**: a testemunha vira constante. O conserto está em
+[`tools/carga_por_janela.ps1`](tools/carga_por_janela.ps1) e a consequência sai publicada com o número
+— **nenhum `worst_sim_ms` deste pouso tem testemunha de janela**, então ele vale como grandeza contra o
+teto de 25 ms (14,24–15,62 ms, `perdidos=0` em todas as corridas) e **não** como comparação entre
+árvores; o par vermelha↔verde da *mesma* árvore com o CPU do Godot nos dois lados segue sendo débito do
+próximo elo que rodar este gate. **#57** — o README manda correr `tests/llm_server_boot_probe.tscn`
+([README.md:621](README.md#L621), ficha em [`:734`](README.md#L734)) e a cena foi aposentada no Passo 4
+da perna 22 (`5138549`, que levou o `.gd` junto): `ls tests/*.tscn` devolve **3** arquivos e nenhum com
+esse nome. Dono: perna 22, que tem o substituto em voo (`tests/load_pack_fase4_test.gd`, ainda solto na
+worktree da Fase 4). Esta perna não toca nessas duas linhas: quem aposenta a peça limpa a ficha dela.
+
+Consequência de versão, reafirmada com o diff na mão: `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION`
+e a projeção do `TickJournal` não foram tocados (`git diff --name-only 114bcd2 95d519a --
+src/persistence src/world/aether_field.gd` devolve vazio) e o que se move é o **mundo** que entra na
+projeção — uma corrida com areia caindo não reproduz os hashes publicados, pelo motivo registrado em
+2026-11-21. A régua de âncoras rodou na árvore de trabalho: **41** arquivos (o 41º é
+`docs/planos/24-malha-orcamento-de-tempo.md`, a pauta nova do dono ainda **sem commit**, que sozinha
+responde por **52** ponteiros, **3** rótulos, **62** links e **0** casos), **3 420** ponteiros,
+**215** rótulos, **4 081** links e **93** casos objetivos, **zero** na página 17 — os 93 são a face
+medida do furo **#28** (24 no status, 10 no dossiê 12, 10 no 10-alcateia, 9 no 14, e o resto dividido
+entre 13, 16, 19, 09, 20, 18, 23, 15, 11, 07, 06, 01, `docs/engine/simclock` e AGENTS),
+aberta por três pousos antes deste: só `8a53b56 → 95d519a` move **+182/−18** em `voxel_world.gd` e
+**+232/−25** em `main.gd`. A re-derivação desse corpo é a passada seguinte, com dono por grupo. A fila
+serializada passa a **22 → 18 → 20 → 13** (a 22 em voo nas Fases 4–5); a pauta **24**, pedida pelo dono
+nesta mesma conversa, entra na frente dela em `docs/pauta-malha-orcamento-de-tempo-24`, com o dossiê
+escrito antes de qualquer linha de `src/`. Nenhum gate de fase se fecha aqui (mandato 4), o `push` é palavra do dono, e a prova dele
+é `git ls-remote --heads origin`.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do
