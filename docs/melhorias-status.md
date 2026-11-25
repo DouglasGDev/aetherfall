@@ -8511,3 +8511,124 @@ mais o manifesto. O §21 do dossiê carrega a narrativa completa. As três decis
 permanecem fechadas; `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal`
 não foram tocados (a projeção provada indiferente pela checagem, não por frase). Nenhum gate de fase
 fecha. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+
+## O pouso da Fase 2 na `main` — as quatro corridas da mergida, o clone limpo com o `build.bat` rodando dentro dele e a régua do budget medindo duas vezes abaixo do teto (2026-11-25, `docs/registro-pouso-fase2-22`, base `7cd3ff2`, ponta `610ba00`, merge `4ceb1a5`)
+
+### O que o merge toca, com o número em cada árvore
+
+`git merge --no-ff feat/oraculo-nativo-fase2-22` devolve **`4ceb1a5`** sobre **`7cd3ff2`** (ponta da
+branch: `610ba00`, o commit de docs que fecha a re-derivação de 31 páginas), **54 arquivos,
++22 946/−730**: em `src/ai/`, [`belief_verifier.gd`](../src/ai/belief_verifier.gd) +65 (a rota do
+ledger: `aceitar_ledger` recusa id fora do ledger e fato contradito, confirma morte sobre cadáver),
+[`mind.gd`](../src/ai/mind.gd) +65 (`visto_em`/`vezes` na crença, `_janela_crencas` pura com
+`JANELA_CRENCAS = 8`, `Mind.quarentena`), [`mind_oracle.gd`](../src/ai/mind_oracle.gd) +111
+(`ledger_provider`/`ultimo_portao`, `_quarentena` → `Mind.quarentena`); em
+[`src/main.gd`](../src/main.gd) +24 (`ledger_do_mundo()` ligado, id 1 compartilhado lobo/jogador); no
+[`tests/aether_reactions_test.gd`](../tests/aether_reactions_test.gd) +430 (o gate
+`crenca_falsa_nao_vira_fato` fechando, censo 344 → **355**); e a prosa re-ancorada (commit `610ba00`).
+
+| Árvore | `7cd3ff2` | `610ba00` | `4ceb1a5` |
+| --- | --- | --- | --- |
+| `src` | `827c7eeb810cff46…` | `2f2f21571a0a2a0d…` | **`2f2f2157…`** |
+| `tests` | `c1efd81a19b2d8b7…` | `d2af7ae3a932619d…` | **`d2af7ae3…`** |
+| `native` | `2c2baea7df22865f…` | **idem** | **idem** |
+
+O `native` fica parado nas três revisões: a Fase 2 é GDScript puro — nenhuma linha da extensão, do
+`build.bat` ou do gate de símbolos se move, e os números de build abaixo são re-medição de
+ferramenta, não de código. O `src` e o `tests` mudam, e por isso os números de runner e suíte abaixo
+são re-medição de contrato, não herança por identidade.
+
+Publicação da branch conferida com `git ls-remote --heads origin`:
+`refs/heads/feat/oraculo-nativo-fase2-22` = `610ba006a1fffe77d7649c914d3fc6e3604fcd3b`. A da `main`
+desta passada é conferida pelo mesmo comando no fecho deste registro — é a única prova de que saiu; o
+exit 0 do `push` não prova.
+
+### As quatro corridas da árvore mergida, com a máquina livre
+
+Antes delas, `--import` na árvore mergida
+([`main_mergida_import.log`](evidence/registro-pouso-fase2-22/main_mergida_import.log), exit 0) com a
+assinatura esperada da classe do **furo #38**: exatamente **4** linhas `ERROR` nas **7, 9, 147, 149**
+(2× `Condition "!FileAccess::exists(path)"` + 2× `GDExtension dynamic library not found`) — a dll é
+construída depois do import — e `git status` imprimindo as **6** linhas `??` esperadas (2×
+`tests/audio_*.gd.uid`, furo #25; 4× `caixa-*.png.import` da perna 23, furo #45). O provisionamento
+da junção `.tools\llama` e do hardlink do gguf é ambiente de máquina, não mudança de árvore. As
+quatro rodaram serial.
+
+- `build.bat` na árvore mergida
+  ([`main_mergida_build.log`](evidence/registro-pouso-fase2-22/main_mergida_build.log)): exit 0,
+  `[gate] link_codigo=0`, a régua de dll em **243** (`dll_bytes=184320`), o export em **244**
+  (`export= 1 00002FD0 af_mind_entry`), a tabela de imports do dll em **256**
+  (`[import] OK referenciados=55 modulos=4 nomes_na_tabela=55`) e a rota do prompt fechando em
+  **240** (`[corrida] probe_rota_codigo=0`) com o veredito `ROTA_DE_PROMPT_CONFIRMADA`.
+- Runner de reações:
+  [`main_mergida_runner.log`](evidence/registro-pouso-fase2-22/main_mergida_runner.log) — as cinco
+  `OK extensao_carrega_classe` nas linhas **535–539** (descritor no disco, `ja_vinha_do_boot=true
+  agora=true`, `is_library_open=true`, `class_exists(AfMindOracle)=true`,
+  `instantiate_valido=true get_class=AfMindOracle`), os três números do §5.2 em **2596**
+  (`base=900079760 apos_load=3630637200 apos_ctx=4282327184 ctx_state_bytes=606
+  versao=1.0.0-dev`), a régua do budget da Fase 2 em **3917** (`OK
+  budget_do_oraculo_nao_estoura_a_arvore | narradas=5/5 pedidos=8 worst_decode_us=791650 |
+  worst_sim_ms=15.59 ms pico_do_passo=15588 us media=2669.7 us/passo total=3737631 us em 1400
+  passos`), `trips_solo=0 trips_matilha=0` em **3940**, censo **355/355** em **3941** e
+  **3944** `355 checagens 0 falhas 59.911 s`. Exit 0, zero `SCRIPT ERROR`. O cenário estreito
+  imprime **10 568** passos (`sim_step total=2 523 835 µs`, pico `5 625 µs`) e a matilha
+  **1 341** (`sim_tick total=3 443 871 µs`, pico `14 930 µs`).
+- Suíte: [`main_mergida_suite.log`](evidence/registro-pouso-fase2-22/main_mergida_suite.log)
+  linha **380** `== 266 checagens  0 falhas  60.8 s de teste ==`, exit 0, zero `SCRIPT ERROR`.
+- RNG e journal na mergida:
+  [`main_mergida_rng.log`](evidence/registro-pouso-fase2-22/main_mergida_rng.log) **77–78**
+  (`27/27`, `27 checagens 0 falhas 2.858 s`) e
+  [`main_mergida_journal.log`](evidence/registro-pouso-fase2-22/main_mergida_journal.log)
+  **142–143** (`128/128`, `128 checagens 0 falhas 7/7 testes concluidos 6.975 s`).
+
+### O pin: clone limpo de `4ceb1a5`, com o `build.bat` rodando dentro dele
+
+Clone de `C:/Aetherfall` com `git checkout 4ceb1a5` em HEAD desanexado (árvores conferidas: `src`
+`2f2f2157…`, `tests` `d2af7ae3…`), provisionado com a junção e o hardlink, `--import` frio com a
+**mesma** assinatura de 4 `ERROR` nas mesmas linhas **7, 9, 147, 149** e as mesmas **6** `??`, e
+`git status --porcelain` com exatamente 6 linhas antes do build.
+
+- `build.bat` dentro do clone
+  ([`clone_limpo_build.log`](evidence/registro-pouso-fase2-22/clone_limpo_build.log)): exit 0, e as
+  quatro réguas saem com os **mesmos** valores da mergida — `dll_bytes=184320` em **243**,
+  `export= 1 00002FD0 af_mind_entry`, `[import] OK referenciados=55 modulos=4 nomes_na_tabela=55`
+  em **256**, `[corrida] probe_rota_codigo=0` em **240** com
+  `[prompt] veredito=ROTA_DE_PROMPT_CONFIRMADA`.
+- Runner no clone:
+  [`clone_limpo_runner.log`](evidence/registro-pouso-fase2-22/clone_limpo_runner.log) — as cinco
+  `OK extensao_carrega_classe` nas mesmas linhas **535–539**, os três números do §5.2 em **2596**
+  iguais, o gguf impresso pelo caminho do clone em **541**
+  (`gguf=C:/aetherfall_pin_fase2/models/qwen3.5-4b-q4_k_m.gguf bytes=2740937888`), a régua do
+  budget em **3917** (`narradas=5/5 pedidos=7 worst_decode_us=796414 | worst_sim_ms=13.82 ms
+  pico_do_passo=13823 us media=2503.8 us/passo total=3505323 us em 1400 passos`) — segunda
+  medição da mesma régua em outra árvore-física, ambos os piores passos abaixo do teto de 50 ms,
+  com a variação de `pedidos` (8→7) e de `worst_decode_us` já coberta pela não-determinismo da
+  simulação ao vivo registrada no mandato 3 —, censo **355/355** em **3941** e **3944**
+  `355 checagens 0 falhas 64.063 s`. Exit 0, zero `SCRIPT ERROR`.
+- Suíte no clone:
+  [`clone_limpo_suite.log`](evidence/registro-pouso-fase2-22/clone_limpo_suite.log) linha **380**
+  `== 266 checagens  0 falhas  54.4 s de teste ==`, exit 0, zero `SCRIPT ERROR`.
+- RNG e journal ficam nas quatro corridas da mergida: o que o clone renova aqui é o par que exerce
+  o jogo real e o gate novo — suíte + runner.
+
+O número pineado para `4ceb1a5` é: runner **355 / 0** (59,911 s na mergida; **64,063 s** no clone),
+suíte **266 / 0** (60,8 s; **54,4 s**), RNG **27 / 0 / 2,858 s** e journal **128 / 0 / 6,975 s** — as
+duas últimas só na mergida; a régua do budget oraculo mediu **15,59 ms** (mergida) e **13,82 ms**
+(clone), ambos abaixo do teto de 50 ms do passo, com decode em voo dentro da malha de 1 400 passos.
+
+### O que o pouso deixa aberto
+
+Nenhum gate de fase (mandato 4). Dentro da perna 22, a **Fase 2 fechou o dela**: memória de
+qualidade no `Mind`, janela top-k pura no prompt, portão lendo o ledger com quarentena rebaixada.
+Seguem as fases autorizadas como pauta, cada uma com gate próprio e nenhuma linha antes de a
+anterior fechar o dela: a **Fase 3** (adaptação por bandit, gate `bandit_une_numero_observavel`), a
+**Fase 4** (ferramentas e observabilidade; dona do **furo #46** — o `load_pack` síncrono que trava o
+frame do load — e do consumidor da quarentena no inspector) e a **Fase 5** (LOD e orçamento; o
+`inspector_ve_a_mesma_leitura_do_journal`). Dos furos, **#38** (o import continua reclamando antes
+do build) e **#39** (réguas cegas a `native/`) seguem como decisão do dono; o **#20** sem a colheita
+que nomeia a folha; o **#31** sem atribuição; o **#41** como furo da contagem de malha; o **#44**
+fica onde a 23 o deixou; o **#45** é arrumação do dono. A atribuição do par de vazamento do quit
+(e o `ERROR: 2 resources still in use at exit` que o clone imprime no fecho) segue sem dono. O
+**#25** e o **#45** seguem uncommitted por decisão registrada. `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram tocados por este pouso. A
+fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
