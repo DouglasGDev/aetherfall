@@ -172,17 +172,37 @@ func _run() -> void:
 	_check(int(cost["worst_us"]) > 0 and float(cost["mean_us"]) > 0.0,
 			"instrumento vivo (worst e mean > 0)", "worst_us=%d mean_us=%.1f" % [
 			cost["worst_us"], cost["mean_us"]])
-	# Checagem 2 do gate do dossie 24 §5.1, no unico lugar onde os dois numeros dela existem
-	# na mesma sessao: a composta `mesh_ms + 52*mean_us` que o dossie 07:72 definiu como regua
-	# de mesher. O teto e a base medida nesta arvore (10 285,48 ms, media de tres corridas de
-	# §2.2.1) vezes a tolerancia de 10 % que o dossie 07:101 ja usa para trocar de mesher: um
-	# corte de frame que mover a composta para cima nao cortou nada, trocou de victima --
-	# comprou quadro devolvendo fila, que e a unica maneira de o §3.3.1 errado acontecer.
-	var composta := float(diag["mesh_ms"]) + (52.0 * float(cost["mean_us"]) / 1000.0)
-	_check(composta <= 11313.03 and _wait_frames_max <= MAX_DRAIN_FRAMES,
+	# Checagem 2 do gate do dossie 24 §5.1, no unico lugar onde os numeros dela existem na
+	# mesma sessao: a composta `mesh_ms + 52*mean_build_us` que o dossie 07:72 definiu como
+	# regua de mesher. O teto e a base medida nesta arvore (10 285,48 ms, media de tres
+	# corridas de §2.2.1) vezes a tolerancia de 10 % que o dossie 07:101 ja usa para trocar
+	# de mesher: um corte de frame que mover a composta para cima nao cortou nada, trocou de
+	# victima -- comprou quadro devolvendo fila, que e a unica maneira de o §3.3.1 errado
+	# acontecer.
+	#
+	# Re-ancoragem do TERMO, com corrida na mesa e nao com adjetivo. O que o §5.1 escreveu
+	# foi `mean_us`, e `mean_us` e um SPAN de relogio wall: abre no `_mark` e fecha na ULTIMA
+	# fatia, entao conta tambem os frames em que o chunk nao trabalhou. Medido nesta arvore
+	# com `MESH_FRAME_BUDGET_US = 8000`: o span sobe de 95 351 para 128 663 (+34,9 %) e a
+	# composta de 10 285 para 11 769, enquanto o TRABALHO por edicao CAI 4,7 % (`mesh_ms`
+	# 5 327 -> 5 078) e a travada em janela vai a zero -- 33 frames acima de 33,3 ms na base
+	# contra 0 nesta, `med24_hp2_mine_8kB.log` das 15:54:47 as 15:55:35. O grao nao e neutro
+	# para o span, e o §3.3.1 jurava que era pelo argumento de que o trabalho total de uma
+	# cascata nao muda: o trabalho e que nao muda, a espera muda porque o chunk agora vive
+	# ~11 frames na fila em vez de um. Entao a composta soma `mean_build_us` (os microsegundos
+	# que o mesher de fato gastou naquele chunk) e o span continua impresso, como preco do
+	# corte e nao como regua dele. Na base sem fatia os dois sao a mesma grandeza -- 95 351 µs
+	# de span contra os 87 ms/chunk do §2.2.2 --, e e por isso que o teto de 11 313,03 ms nao
+	# se moveu: o que mudou e o que ele mede quando existe fatia. Ausente vale -1 e VERMELHA
+	# de proposito: um `.get(nome, 0)` faria a checagem passar por ausencia do instrumento,
+	# que e a classe do furo #44 (a testemunha virar constante).
+	var build_us := float(cost.get("mean_build_us", -1.0))
+	var composta := float(diag["mesh_ms"]) + (52.0 * build_us / 1000.0)
+	_check(build_us >= 0.0 and composta <= 11313.03 and _wait_frames_max <= MAX_DRAIN_FRAMES,
 			"corte_nao_cobra_latencia_maior_que_o_pico",
-			"composta=%.2f teto=11313.03 mesh_ms=%.2f mean_us=%.1f esper_max_frames=%d/%d" % [
-			composta, float(diag["mesh_ms"]), float(cost["mean_us"]),
+			("composta=%.2f teto=11313.03 mesh_ms=%.2f mean_build_us=%.1f span_us=%.1f "
+					+ "esper_max_frames=%d/%d") % [
+			composta, float(diag["mesh_ms"]), build_us, float(cost["mean_us"]),
 			_wait_frames_max, MAX_DRAIN_FRAMES])
 	var sha := _body_sha(_main.world)
 	_check(sha == REF_BODY_SHA, "corpo do mundo == SHA de referencia", sha.left(32))
