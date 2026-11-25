@@ -9901,9 +9901,10 @@ foi re-medido com o amostrador ligado: `27 checagens 0 falhas 2.882 s`.
 
 - `python tools/check_doc_anchors.py` na árvore de trabalho (**41** arquivos):
   **3 420 ponteiros · 215 rótulos · 4 081 links** conferidos, **93** casos objetivos. O 41º arquivo é
-  `docs/planos/24-malha-orcamento-de-tempo.md`, pauta do dono pedida nesta mesma conversa e ainda **não
-  commitada** nesta revisão — ela responde por **52** ponteiros, **3** rótulos, **62** links e **0**
-  casos, corrida sozinha pela mesma régua. A divisão por
+  `docs/planos/24-malha-orcamento-de-tempo.md`, a pauta do corte das microtravadas que o dono pediu
+  nesta mesma conversa — **sem commit** no momento em que a régua correu, pousada no merge `7435159`
+  do fecho abaixo. Sozinha ela responde por **52** ponteiros, **3** rótulos, **62** links e **0**
+  casos, corrida pela mesma régua. A divisão por
   arquivo é o número que o furo **#28** previa e a régua numérica não vê: status **24**, dossiê 12
   **10**, `10-alcateia` **10**, 14 **9**, 13 **6**, `docs/engine/simclock` **6**, 16 **5**, 19 **4**,
   09 **4**, 20 **3**, 18 **3**, AGENTS **3**, e **1** cada para 23, 15, 11, 07, 06 e 01 —
@@ -9915,8 +9916,8 @@ foi re-medido com o amostrador ligado: `27 checagens 0 falhas 2.882 s`.
 - `python tools/verify_plan_cites.py` no corpus de **39** arquivos (`AGENTS.md`, `README.md`, este
   status, `docs/design/*.md`, `docs/planos/*.md`): **3 104** citações com número conferidas, **0**
   números fora do arquivo, **43** arquivos citados que não existem. O glob de `docs/planos` apanha a
-  pauta 24, não commitada nesta revisão, que responde por **52** conferidas e **0** ausentes corrida
-  isolada. A divisão por documento é
+  pauta 24 — sem commit no momento da medição —, que responde por **52** conferidas e **0** ausentes
+  corrida isolada. A divisão por documento é
   **14** em `docs/design/07-project-structure.md` (a página de convenções, que usa os sufixos
   `*_service.gd`/`*_store.gd`/`*_job.gd` como **exemplos de nome**, não como inventário do que
   existe), **11** neste status, **5** em `docs/planos/README.md`, **2** cada nos dossiês 15 e 06, em
@@ -9934,3 +9935,39 @@ foi re-medido com o amostrador ligado: `27 checagens 0 falhas 2.882 s`.
   `ROCK_LOOSE`, `TORCH`, `_landing_cell`, `_shatter`, `quebra_queda`, `sofre_gravidade`) — todos da
   classe "peça que a página declara comprar ou rejeita", nenhum falso positivo: `sofre_gravidade` é o
   nome do prompt, o código batizou a flag `_gravity`/`has_gravity`.
+
+### O fecho em documentos: os quatro commits, os dois merges e a prova de identidade
+
+A passada não deixa trabalho solto na árvore primária — nem o desta perna, nem o da pauta que o dono
+pediu na mesma conversa:
+
+| Commit | Branch | Assunto | Que prova |
+| --- | --- | --- | --- |
+| `456dad9` | `docs/pouso-blocos-17` | `-proj` normalizado no amostrador | o **furo #56** pago, com os dois logs de testemunha |
+| `ac3a76c` | `docs/pouso-blocos-17` | as 25 evidências do pouso + a seção 7 do readback | os rodapés das onze corridas, `SCRIPT ERROR` **0** nos 13 logs, a contagem `grep -c` dos onze amostradores |
+| `9e35854` | `docs/pouso-blocos-17` | README, doc 10, dossiê 17, este status, AGENTS | as seis âncoras pagas e as três réguas |
+| `eca32ed` | `docs/pauta-malha-orcamento-de-tempo-24` | pauta 24 (dossiê + índice + registro) | **nenhuma** linha de `src/` — só pauta |
+
+Os três primeiros pousam no merge **`659173c`** e o quarto no merge seguinte **`7435159`**. Entre
+`95d519a` (o pin pineado) e `7435159` (a `main` deste fecho) o diff em `src` e `tests` tem **zero**
+arquivos — `git diff --name-only 95d519a 7435159 -- src tests` devolve vazio, medido antes de escrever
+esta linha. É por isso que suíte **278 / 0 / 67,2 s**, gate **16 / 0 · 9/9 · 27,689 s**, reações
+**364 / 29 ↔ 364 / 0**, RNG **27 / 0** e journal **128 / 0** valem na árvore de hoje **por identidade
+de árvore**, e não porque esta passada re-correu a suíte: nenhuma linha de jogo mudou desde a medição,
+e publicar o contrário seria número de memória (mandato 3, item 6).
+
+Ficam escritos como dívida, não como feito:
+
+- **Publicação**: a `main` local está **15** commits à frente de `origin/main` (contado com
+  `git rev-list --count origin/main..main` às 19:18 UTC desta rodada; **17** depois do merge deste fecho).
+  O `push` é palavra do dono e a única prova dele é `git ls-remote --heads origin`.
+- **O typo de `60150ce`**: a mensagem carrega `com管道 cortado` na linha 14 — dois tokens CJK no meio
+  de uma frase em português. A história não se reescreve (os números do status estão pinados em SHA),
+  então a correção vive aqui, como registro.
+- **Instrumento solto**: `C:/tmp/aetherfall-pin-17` (o clone limpo do pin), `.tools/pin17_clone.sh` e
+  os `.tools/pouso17_*.sh` continuam na mesa. Nada deles é evidência; são a mão que mediu.
+- **As 93 âncoras** dos documentos das outras pernas, com dono nomeado por grupo na passada de
+  re-derivação — o **furo #28** medido, não resolvido.
+- **#57** (o README mandando correr uma cena que o Passo 4 da 22 aposentou) tem dono escrito e nenhuma
+  linha trocada: é da perna 22, que ainda está em voo com **+389/−28** não commitados em `src` e
+  `tests` na ponta `114bcd2` do worktree.
