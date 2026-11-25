@@ -9450,10 +9450,10 @@ Relido no árvore reparada: âncoras **40 · 3 323 ponteiros (+43) · 212 rótul
 **casos objetivos: 0** ([`ancoras.txt`](evidence/reparo-conflitos-pos-merge/ancoras.txt)); citações do
 corpus **2 855 conferidas (+43) / 0 fora do arquivo / 26 FALTA** e do par com o dossiê **1 212 / 0**
 ([`cites_corpus.txt`](evidence/reparo-conflitos-pos-merge/cites_corpus.txt),
-[`cites_cinco.txt`](evidence/reparo-conflitos-pos-merge/cites_cinco.txt)); identificadores da página
-exit **0** com o veredito igual ao do pin (mesma lista de ausências com os números a parte); o scan
-de rótulo-×-URL dá **8** casos nas duas árvores — o reparo não acrescenta derivação — e o de citação
-nua **0**.
+[`cites_cinco.txt`](evidence/reparo-conflitos-pos-merge/cites_cinco.txt)); identificadores da página exit **0** com o veredito igual ao do pin (mesma lista de ausências com os números a parte); o scan
+de rótulo-×-URL dá **8** casos nas duas árvores — o reparo não acrescenta derivação
+([`rotulo_vs_url.txt`](evidence/reparo-conflitos-pos-merge/rotulo_vs_url.txt)) — e o de citação nua
+**0** ([`citacao_nua.txt`](evidence/reparo-conflitos-pos-merge/citacao_nua.txt)).
 
 **Código: zero byte.** `src` e `tests` da árvore reparada são os mesmos `9b5dc8ec…` / `d534212a…`,
 então os quatro números pineados da árvore integrada valem aqui **por identidade de árvore** e não
