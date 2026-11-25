@@ -6941,13 +6941,16 @@ func _test_crenca_falsa_nao_vira_fato() -> bool:
 ## jogador -> morte -> `on_kill`. O contador e instancia, nao captura de lambda,
 ## porque o fio sobrevive a tres bracos em sequencia.
 var _gate_vitorias: int = 0
-# Para onde a presa renasce depois de morrer: 32,6 m do laro do lobo, dentro da
-# meseta de pedra e fora do alcance de vista (30 m, wolf.gd `_los_player`). A
-# renascenca longe e o roteiro do duelo — a presa some e a curva de retorno e o
-# que o bandit encurta — e a distancia e a que separa as duas fases do loop:
-# mordida com LOS (hunt domina e ninguem discute) e busca sem LOS (flee,
-# hunt-memoria e patrulha discutem a vez).
-var _gate_pos_renascenca := Vector3(83.0, 51.001, 83.0)
+# Para onde a presa renasce depois de morrer: ~11 m do laro do lobo, dentro do
+# alcance de vista (30 m, wolf.gd `_los_player`). A primeira versao deste duelo
+# renascia a presa a 32,6 m, FORA de vista — e o rastro mediu o defeito: mordida
+# em t<300, `flee` nos 2400 ticks seguintes e hunt vetado para sempre (a
+# memoria de vista dura 6 s, `SIGHT_MEMORY_SECONDS`), de modo que nenhum bonus
+# pos-veto podia produzir a segunda vitoria — o portao era indecidivel por
+# construcao, para qualquer ganho. A renascenca dentro de vista devolve a
+# discussao ao lugar onde o bandit decide: entre golpes, flee e hunt disputam a
+# vez a ~10 m, e o bonus da curva e o que desempata.
+var _gate_pos_renascenca := Vector3(68.0, 51.001, 68.0)
 
 
 ## As duas linhas do `_on_wolf_bit` de main.gd (:1035): dano no jogador e, morto
@@ -6969,14 +6972,27 @@ func _gate_mordida(w: Wolf, amount: float) -> void:
 ## desconfianca, e o que se mede aqui e a escolha de tatica com todos os
 ## portoes ABERTOS, nao a tranca. Simetrico nos tres bracos por construcao:
 ## mesmo seed (`_arm`), mesmo relogio, mesmo campo, golpes nos mesmos ticks.
-func _gate_janela(ticks: int, cadencia: int, dano: float) -> int:
+## O rastro de trajetoria (a cada 300 ticks) e instrumento de calibracao: o
+## gate decide por contagem de vitorias, e o rastro nomeia ONDE o braco gastou
+## a janela — sem ele um delta=0 nao diz se a curva nao puxa ou se puxa para
+## onde nao mata.
+func _gate_janela(ticks: int, cadencia: int, dano: float, rotulo: String) -> int:
 	_gate_vitorias = 0
 	for i: int in ticks:
 		_advance(1)
+		if (i + 1) % 300 == 0:
+			print("RASTRO %s t=%d intent=%s dist_jog=%.1f vitorias=%d" % [rotulo,
+					i + 1, _wolf.intent, _wolf.center().distance_to(_player.position3()),
+					_gate_vitorias])
 		if (i + 1) % cadencia == 0 and _wolf.alive:
 			_wolf.take_damage(dano, Wolf.ACTOR_PLAYER, _player.position3())
 			if _wolf.alive:
 				_wolf.hp = Wolf.MAX_HP
+	print("RASTRO %s fim pos=%s dist_jog=%.1f vitorias=%d curva=%s estilo=%s" % [rotulo,
+			_wolf.body.feet_pos, _wolf.center().distance_to(_player.position3()),
+			_gate_vitorias,
+			str(_wolf.mind.leitura_bandit()) if _wolf.mind.has_method("leitura_bandit") else "ausente",
+			str(_wolf.mind.estilo()) if _wolf.mind.has_method("estilo") else "ausente"])
 	return _gate_vitorias
 
 
@@ -7006,6 +7022,7 @@ func _test_bandit_une_numero_observavel() -> bool:
 	# com a ligacao padrao (verdade do jogo). No vermelho `bandit_ligado` ainda
 	# nao existe e o `.set()` e no-op: os tres bracos sao o mesmo lobo.
 	var contagens: Array[int] = []
+	var rotulos: Array[String] = ["off1", "off2", "on"]
 	for braco: int in 3:
 		_arm(spawn_proximo, pos_player)
 		_player.respawn_at(pos_player)
@@ -7013,7 +7030,7 @@ func _test_bandit_une_numero_observavel() -> bool:
 			_wolf.mind.set("bandit_ligado", false)
 		if not _wolf.bit_player.is_connected(_gate_mordida):
 			_wolf.bit_player.connect(_gate_mordida)
-		contagens.append(_gate_janela(janela, cadencia, dano_golpe))
+		contagens.append(_gate_janela(janela, cadencia, dano_golpe, rotulos[braco]))
 		_wolf.bit_player.disconnect(_gate_mordida)
 	# (1) A premissa nomeada primeiro: a rota da curva existe no Mind.
 	var m: Mind = _wolf.mind
