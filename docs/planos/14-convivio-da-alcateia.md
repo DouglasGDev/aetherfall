@@ -53,7 +53,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   [`_leaf_stalk`](../../src/entities/wolf.gd#L554-L564),
   [`_leaf_investigate`](../../src/entities/wolf.gd#L567-L605) → `_scent_pos` de
   [`_find_scent`](../../src/entities/wolf.gd#L960-L1000) com o chão de
-  [`_scent_ground_y`](../../src/entities/wolf.gd#L1025-L1029). O corpo já nada: `SWIM_SPEED_FACTOR`
+  [`_scent_ground_y`](../../src/entities/wolf.gd#L1037-L1041). O corpo já nada: `SWIM_SPEED_FACTOR`
   [:1230](../../src/entities/wolf.gd#L1230), flutuabilidade `:760-766`, remo `:815-826`, e o
   `feet_pos.y < -6,0` → `home` [:1255-1257](../../src/entities/wolf.gd#L1255-L1257).
 - **Spawn seco, desencaixado e indiferente ao jogador.** `spawn_point()` é a **coluna central**
@@ -79,7 +79,7 @@ Citações contra a `main` em `eb6ec8d`; a árvore de trabalho já trazia a 10 e
   com cooldown global de 18 s ([`_vocalize`](../../src/audio/audio_director.gd#L513-L531);
   `BARK_RANGE`/`HOWL_COOLDOWN`/alcance 64 m [:26-44](../../src/audio/audio_director.gd#L26-L44)),
   sfx espacializado de mordida/dano/morte (`:404-413`), BLOOD 1,1 + FEAR 0,55 do
-  [`die()`](../../src/entities/wolf.gd#L1312-L1323) (lidos por qualquer nariz, vistos no F4) e o
+  [`die()`](../../src/entities/wolf.gd#L1324-L1335) (lidos por qualquer nariz, vistos no F4) e o
   cadáver por 6 s ([wolf.gd:40](../../src/entities/wolf.gd#L40)) até a recolha de 1 s
   ([`_reap_corpses`](../../src/main.gd#L958-L978)). Roster e narrativa só com F3.
 - **A 10 em curso é fronteira, não concorrente:** `pack_provider` no lobo,

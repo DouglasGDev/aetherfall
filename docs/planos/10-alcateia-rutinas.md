@@ -33,14 +33,14 @@ não descreve mais o estado daquele dia.
   [`_build_tree`](../../src/entities/wolf.gd#L422-L452) monta
   `Selector[f Sequence[guard, flee], Sequence[guard, chase], ...]` sobre quatro ramos
   (`flee`, `hunt`, `sniff`, `patrol`) e embrulha tudo em `SubtreeGuard.new().init("mente.lobo", …, 400)`
-  ([:422](../../src/entities/wolf.gd#L422)). Nenhum nó lia outro lobo.
+  ([:426](../../src/entities/wolf.gd#L426)). Nenhum nó lia outro lobo.
   *(Relido nesta ponta: a §3.5 pôs a leitura da matilha nas folhas —
-  [`_leaf_chase`](../../src/entities/wolf.gd#L503) e
+  [`_leaf_chase`](../../src/entities/wolf.gd#L507) e
   [`_leaf_investigate`](../../src/entities/wolf.gd#L567-L605) contam vizinhos por `intent` em
-  [`_hunt_pack_size`](../../src/entities/wolf.gd#L525) e em
+  [`_hunt_pack_size`](../../src/entities/wolf.gd#L529) e em
   [`_scent_seat`](../../src/entities/wolf.gd#L619-L632), e
-  [`_leaf_wander`](../../src/entities/wolf.gd#L652) pega o setor pelo posto em
-  [`_territory_rank`](../../src/entities/wolf.gd#L708).)*
+  [`_leaf_wander`](../../src/entities/wolf.gd#L656) pega o setor pelo posto em
+  [`_territory_rank`](../../src/entities/wolf.gd#L712).)*
 - **O blackboard não tinha matilha.** `sim_step` chamava
   `_tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.tick, "dt": dt})` e `_think`
   passava `{"wolf": self, "elapsed": elapsed}` ao escorredor. Era o dicionário novo por lobo por
@@ -48,7 +48,7 @@ não descreve mais o estado daquele dia.
   ([`AGENTS.md`](../../AGENTS.md), "Alocação no caminho quente").
   *(Relido nesta ponta: as duas chamadas seguem em
   [:911](../../src/entities/wolf.gd#L911) e [:862](../../src/entities/wolf.gd#L862) e agora
-  **carregam** `"pack": _pack` — a lista que [`_read_pack`](../../src/entities/wolf.gd#L869-L870)
+  **carregam** `"pack": _pack` — a lista que [`_read_pack`](../../src/entities/wolf.gd#L881-L882)
   renova uma vez por tick (§3.1). O dicionário continua sendo o mesmo débito, agora com uma
   `Array` a mais dentro dele, e a alocação segue sem medição própria.)*
 - **A percepção só enxergava o jogador.**
@@ -80,9 +80,9 @@ não descreve mais o estado daquele dia.
   deles — os dois números acima. A §3.6 entrou no escorredor pela porta da percepção, sem
   consideração nova.)*
 - **Rondar já existia, mas sem área e sem coordenação.**
-  [`_leaf_wander`](../../src/entities/wolf.gd#L652) sorteia até 8 tentativas de ponto seco a
-  5–22 m do `home` (com [`_dry_ground`](../../src/entities/wolf.gd#L717) e
-  [`_shore_point`](../../src/entities/wolf.gd#L725) como portas). O `home` vinha de
+  [`_leaf_wander`](../../src/entities/wolf.gd#L656) sorteia até 8 tentativas de ponto seco a
+  5–22 m do `home` (com [`_dry_ground`](../../src/entities/wolf.gd#L721) e
+  [`_shore_point`](../../src/entities/wolf.gd#L729) como portas). O `home` vinha de
   `_random_ground_point(16.0, 46.0)` — leitura da ponta deste dossiê —, sorteado um por lobo em
   [`_spawn_wolves`](../../src/main.gd#L387-L410): cinco lares espalhados, **nenhum território
   compartilhado**, e a mensagem de respawn dizia "uma nova matilha entrou no vale"
@@ -98,18 +98,18 @@ não descreve mais o estado daquele dia.
   [`_territory_center`](../../src/entities/wolf.gd#L694-L701) e dá a fatia de cada um pelo
   [`_territory_rank`](../../src/entities/wolf.gd#L708-L713) — não por `identity % n`; com um lobo
   só o centro volta a ser o próprio lar e a fatia o círculo inteiro, que é a ronda de antes.)*
-- **Cercar não existia.** [`_leaf_chase`](../../src/entities/wolf.gd#L503) ia direto ao alvo e
-  [`_leaf_stalk`](../../src/entities/wolf.gd#L554) ia ao último avistamento
+- **Cercar não existia.** [`_leaf_chase`](../../src/entities/wolf.gd#L507) ia direto ao alvo e
+  [`_leaf_stalk`](../../src/entities/wolf.gd#L558) ia ao último avistamento
   (`mind.last_atom("saw_player")`). `_move_target` era um ponto só, e a locomoção em
   [`_physics_process`](../../src/entities/wolf.gd#L1203-L1259) só tinha desemperto + desvio
   ([:1239-1241](../../src/entities/wolf.gd#L1239-L1241)) — nada distribuía os lobos em torno de nada.
   *(Relido nesta ponta: o assento angular da §3.4 escreve o `_move_target` dos que caçam em
   [:506-514](../../src/entities/wolf.gd#L506-L514) →
-  [`_seat_point`](../../src/entities/wolf.gd#L548-L551), o da ronda em
+  [`_seat_point`](../../src/entities/wolf.gd#L552-L555), o da ronda em
   [:665](../../src/entities/wolf.gd#L665) e o do rastro em
   [:619-632](../../src/entities/wolf.gd#L619-L632); o ramo que falta em
   [:1246-1247](../../src/entities/wolf.gd#L1246-L1247) é o pulo do degrau, perna 19, não cerco.)*
-- **Atacar em grupo só existia no sentido acidental.** [`_leaf_bite`](../../src/entities/wolf.gd#L771)
+- **Atacar em grupo só existia no sentido acidental.** [`_leaf_bite`](../../src/entities/wolf.gd#L775)
   alcança `BITE_RANGE` com `_bite_cd` ([:23-25](../../src/entities/wolf.gd#L23-L25) e o cooldown em
   `sim_step` [:878](../../src/entities/wolf.gd#L878)), imprime BLOOD 0,18
   ([:781](../../src/entities/wolf.gd#L781)) e reforça `prey_wounded`. Cinco lobos podiam morder no
@@ -132,7 +132,7 @@ não descreve mais o estado daquele dia.
   ([:119-120](../../src/ai/mind.gd#L119-L120)), decaimento exponencial por minuto
   ([:133-151](../../src/ai/mind.gd#L133-L151)) e deriva de temperamento por experiência
   ([:56-64](../../src/ai/mind.gd#L56-L64)). `main` persiste cada mente por
-  [`state_dict`](../../src/entities/wolf.gd#L1360)/[`load_state`](../../src/entities/wolf.gd#L1376).
+  [`state_dict`](../../src/entities/wolf.gd#L1376)/[`load_state`](../../src/entities/wolf.gd#L1392).
   Não há canal de lobo para lobo.
 
 ## 3. O que a peça exige
@@ -210,7 +210,7 @@ não descreve mais o estado daquele dia.
   tick ([:911](../../src/entities/wolf.gd#L911)) passou a carregar a leitura da matilha. Antes de
   somar qualquer alocação nova, o lote **reaproveitou** um buffer por sessão (o mesmo array,
   reescrito a cada passo) — se a solução fosse alocar cinco arrays por tick, ela não entrava.
-  *(Escrito nesta ponta: [`_read_pack`](../../src/entities/wolf.gd#L869-L870) só troca a referência
+  *(Escrito nesta ponta: [`_read_pack`](../../src/entities/wolf.gd#L881-L882) só troca a referência
   pelo [`pack_of`](../../src/main.gd#L900-L902) da sessão, e [`_pack_put`](../../src/main.gd#L940-L955)
   reescreve a entrada no lugar, com o buffer cortado por `resize` em
   [:873-874](../../src/main.gd#L928-L929); o dicionário do blackboard continua o mesmo débito do

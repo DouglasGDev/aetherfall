@@ -46,7 +46,7 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   checagem `bioma_nao_altera_terreno` é quem garante que nenhum byte de solo mudou na troca.
 - **O pelo era uma linha só, e compartilhada.** *(leitura anterior à perna 09; o que
   ela entregou está em [../melhorias-status.md](../melhorias-status.md))*
-  [`_build_visual()`](../../src/entities/wolf.gd#L1448) criava um `StandardMaterial3D` por lobo
+  [`_build_visual()`](../../src/entities/wolf.gd#L1464) criava um `StandardMaterial3D` por lobo
   ([:1452](../../src/entities/wolf.gd#L1452)) e pintava todos com o mesmo cinza — hoje o
   `temperate` de `FUR_COLORS` ([:163](../../src/entities/wolf.gd#L163)) — e as caixas do corpo
   usavam essa material ([:1462-1463](../../src/entities/wolf.gd#L1462-L1463)). Não havia cor

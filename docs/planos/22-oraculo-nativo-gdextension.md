@@ -1964,7 +1964,7 @@ Quatro donos na mesa, e só um deles é memória de qualidade:
   três leituras que existem são por **chave exata**: `believes` com soleira 0,35
   ([`src/ai/mind.gd:119`](../../src/ai/mind.gd#L119)), `last_atom`
   ([`src/ai/mind.gd:77`](../../src/ai/mind.gd#L77)) e `count_kind`
-  ([`src/ai/mind.gd:84`](../../src/ai/mind.gd#L84)). O `remember` apenda o átomo e consolida **no
+  ([`src/ai/mind.gd:115`](../../src/ai/mind.gd#L115)). O `remember` apenda o átomo e consolida **no
   estouro** do cap 24 ([`src/ai/mind.gd:7`](../../src/ai/mind.gd#L7),
   [`src/ai/mind.gd:50-52`](../../src/ai/mind.gd#L50-L52)); a consolidação
   ([`src/ai/mind.gd:67-74`](../../src/ai/mind.gd#L67-L74)) é síncrona, amortizada, dentro do
@@ -1972,8 +1972,8 @@ Quatro donos na mesa, e só um deles é memória de qualidade:
   ([`src/ai/mind.gd:8`](../../src/ai/mind.gd#L8), [`src/ai/mind.gd:133`](../../src/ai/mind.gd#L133))
   e apaga abaixo de 0,02 ([`src/ai/mind.gd:9`](../../src/ai/mind.gd#L9),
   [`src/ai/mind.gd:144`](../../src/ai/mind.gd#L144)). Persiste pelo `to_dict`
-  ([`src/ai/mind.gd:162`](../../src/ai/mind.gd#L162)) e volta pelo `from_dict` com `source`
-  "loaded" ([`src/ai/mind.gd:187`](../../src/ai/mind.gd#L187)).
+  ([`src/ai/mind.gd:284`](../../src/ai/mind.gd#L284)) e volta pelo `from_dict` com `source`
+  "loaded" ([`src/ai/mind.gd:313`](../../src/ai/mind.gd#L313)).
 - **O corpo tem caches próprios, e não são memória.** `_checked_scents` é a dedupe espacial do
   lobo ([`src/entities/wolf.gd:242`](../../src/entities/wolf.gd#L242)) com TTL 30 s, cap 32 e
   renovação 0,06 ([`src/entities/wolf.gd:32-34`](../../src/entities/wolf.gd#L32-L34)); escreve com
