@@ -49,6 +49,8 @@ const TESTS: Array[StringName] = [
 	&"_test_cavar_sobrevive_ao_save", &"_test_extensao_carrega_classe",
 	&"_test_extensao_pack_no_processo", &"_test_contrato_igal_ao_http",
 	&"_test_transporte_http_zerado",
+	&"_test_af_cache_determina_replay", &"_test_verifier_recusa_id_forjado",
+	&"_test_budget_do_oraculo_nao_estoura_a_arvore",
 ]
 # 320 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
 # §5.1), o gate do esqueleto nativo: descritor no disco, extensao listada pela
@@ -75,7 +77,21 @@ const TESTS: Array[StringName] = [
 # cada checagem nova porque a linha `_checks + 1 == EXPECTED_CHECKS` de `_finish` e
 # o que converte passo abortado por `SCRIPT ERROR` em vermelho: um numero chutado aqui
 # desarma o instrumento inteiro.
-const EXPECTED_CHECKS: int = 320
+#
+# Passo 5 (dossie 22 §5.5) acrescenta onze: as SEIS de `af_cache_determina_replay`
+# (§6.5) -- runtime e gguf no disco, o pack do wrapper no estado de fila pela rota
+# do passo 2 (b), a corrida A narrada pelo wrapper com o modelo no processo, a
+# chave de conteudo estavel entre as corridas, a cache escrita em ARQUIVO separado
+# do save (nasce VERMELHO: nada escreve o arquivo enquanto o oracle_cache nao
+# existir) e o replay da segunda corrida devolvendo a mesma frase SEM consultar a
+# fila (nasce VERMELHO com pedidos=1 impresso: sem cache, a segunda corrida paga o
+# decode de novo) -- mais a UM de `verifier_recusa_id_forjado` (§6.4/§7.1), que
+# nasce vermelha enquanto o verificador nomeado nao existir em src/ai -- mais as
+# QUATRO de `budget_do_oraculo_nao_estoura_a_arvore` (§5.5) -- a regua do passo de
+# 25 ms com o decode do oraculo EM VOO dentro da malha de 1 400 passos, estrutural-
+# mente vermelha num clone sem runtime/gguf e com o SubtreeGuard de 400 us sem
+# estouro nenhum.
+const EXPECTED_CHECKS: int = 331
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -6201,6 +6217,246 @@ func _test_transporte_http_zerado() -> bool:
 	return true
 
 
+## Passo 5 do dossie 22 (§5.5/§6.5) -- o gate `af_cache_determina_replay`, que e a
+## frase do dono virada checagem: a mesma semente duas vezes, com o modelo
+## DESLIGADO na segunda, devolve a MESMA frase. A cache do oraculo (§6.5) e
+## `hash(prompt ⊕ pack ⊕ params) -> resposta` em ARQUIVO separado do save, lido
+## antes de inferir -- "cache nao e memoria: e determinismo de CI" (o §7.3 fecha o
+## terceiro lado do contrato do journal: com cache, o texto tem de ser o mesmo).
+## Duas corridas pelo WRAPPER real: na A o modelo decoda (pack na ponte DO PROPRIO
+## oraculo, pela rota medida do passo 2 (b)); na B um oraculo NOVO tem de servir a
+## mesma frase sem consultar a fila nenhuma vez (`pedidos == 0` e o numero que
+## decide -- e a unica forma de "modelo desligado" que a ponte oferece, porque o
+## estado do pack e do PROCESSO e nao existe rota de descarga). Nasce VERMELHO de
+## proposito: enquanto a cache nao existir, a corrida B nao tem de onde tirar a
+## frase senao da fila, e o vermelho imprime `pedidos_b=1` -- a consulta que a
+## cache existe para nao pagar. As premissas de disco nascem vermelhas num clone
+## sem runtime/gguf (gitignored), no padrao do passo 2 (b). Os dois oraculos do
+## gate ficam FORA da arvore e o ciclo deles e dirigido a mao (`_ready` chamado
+## uma vez, `_process` so quando o gate chama): nenhum frame da engine dispara
+## pedido fora da janela medida, e o roster e um metodo do proprio gate.
+func _test_af_cache_determina_replay() -> bool:
+	var classe := &"AfMindOracle"
+	if not ClassDB.class_exists(classe):
+		_check(false, "af_cache_determina_replay: a classe do esqueleto nao esta na ClassDB",
+				"class_exists(%s)=false -- o passo 1 nao fechou nesta arvore" % String(classe))
+		return true
+	var runtime_dir := ProjectSettings.globalize_path("res://.tools/llama/runtime")
+	var gguf := ProjectSettings.globalize_path("res://models/qwen3.5-4b-q4_k_m.gguf")
+	# O arquivo da cache e do gate: caminho proprio, removido ANTES da corrida A
+	# para a existencia medida no fim ser escrita POR ESTA corrida, nunca por uma
+	# corrida anterior que deixou lixo (o determinismo do vermelho depende disso).
+	var caminho_cache := "user://oracle_cache_passo5.json"
+	var caminho_cache_abs := ProjectSettings.globalize_path(caminho_cache)
+	if FileAccess.file_exists(caminho_cache):
+		DirAccess.remove_absolute(caminho_cache_abs)
+	var tem_llama := FileAccess.file_exists(runtime_dir + "/llama.dll")
+	var tem_gguf := FileAccess.file_exists(gguf)
+	_check(tem_llama and tem_gguf, "af_cache_determina_replay: runtime e gguf no disco",
+			"runtime=%s gguf=%s llama_dll=%s" % [runtime_dir, gguf, str(tem_llama)])
+	_arm()
+	# Corrida A -- o modelo LIGADO. O estado do pack e do processo (a ponte reusa
+	# o unico contexto dele), e a rota de carga nao tem descarga (o ponteiro do
+	# modelo e substituido sem free em `af_pack_load`), entao o gate CARREGA so se
+	# o processo ainda nao esta no estado de fila -- recarregar por reforco seria
+	# pagar o load de novo e crescer memoria sem rota de volta.
+	var o1 := MindOracle.new()
+	o1._ready()
+	var ext_a := o1.ext()
+	var vivo_a := is_instance_valid(ext_a)
+	var estado_a := int(ext_a.pack_state()) if vivo_a else -1
+	var carregou := false
+	if vivo_a and estado_a != 4 and tem_gguf:
+		int(ext_a.set_runtime_dir(runtime_dir))
+		int(ext_a.load_pack("", ""))
+		int(ext_a.load_pack(MindOracle.MODEL_ALIAS, gguf))
+		int(ext_a.ctx_probe(2048))
+		carregou = true
+		estado_a = int(ext_a.pack_state())
+	_check(estado_a == 4,
+			"af_cache_determina_replay: o pack do wrapper chega ao estado de fila (4)",
+			"estado=%d carregou=%s gguf=%s err='%s'" % [estado_a, str(carregou),
+				str(tem_gguf), String(ext_a.err_text()) if vivo_a else "sem ponte"])
+	# O roster e o do gate: o lobo armado, estavel. O prompt dele e reconstruido
+	# DEPOIS do decode e tem de ser identico -- a chave da cache (§6.5) e de
+	# conteudo, e a igualdade entre as corridas e o que faz a chave valer.
+	o1.roster_provider = Callable(self, "_gate_roster_solo")
+	var prompt_a := MindOracle._prompt_narracao(_wolf)
+	var prazo_a := Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < prazo_a and o1.narration_of(_wolf.identity) == "":
+		o1._process(0.05)
+		await _gate_frame_sleep(50)
+	var frase_a := o1.narration_of(_wolf.identity)
+	_check(frase_a != "" and o1.requests_issued == 1,
+			"af_cache_determina_replay: a corrida A narra pelo wrapper com o modelo no processo",
+			"frase_a=%d chars pedidos=%d status=%d motivo='%s'" % [
+				frase_a.length(), o1.requests_issued, o1.last_status, o1.last_reason])
+	var prompt_b := MindOracle._prompt_narracao(_wolf)
+	_check(prompt_a == prompt_b and prompt_a.length() > 0,
+			"af_cache_determina_replay: a chave de conteudo e estavel entre as corridas",
+			"prompt_a=%d chars prompt_b=%d chars iguais=%s" % [
+				prompt_a.length(), prompt_b.length(), str(prompt_a == prompt_b)])
+	# A cache em arquivo separado do save, escrita pela corrida A (§6.5). Nasce
+	# VERMELHO: nesta arvore nada escreve o arquivo -- o conserto e o `oracle_cache`
+	# que o `_poll` do wrapper passa a alimentar.
+	var cache_em_disco := FileAccess.file_exists(caminho_cache)
+	_check(cache_em_disco,
+			"af_cache_determina_replay: a cache ficou em arquivo separado do save",
+			"caminho=%s existe=%s -- premissa do §6.5: hash de conteudo -> resposta, em arquivo" % [
+				caminho_cache, str(cache_em_disco)])
+	# Corrida B -- a segunda semente, SEM consulta ao modelo: oraculo novo, ponte
+	# propria, roster do mesmo lobo. `pedidos == 0` decide: sem a cache lida antes
+	# de inferir, o wrapper so tem o caminho da fila (e o vermelho imprime a
+	# consulta que nao devia existir).
+	var o2 := MindOracle.new()
+	o2._ready()
+	o2.roster_provider = Callable(self, "_gate_roster_solo")
+	var prazo_b := Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < prazo_b and o2.requests_issued == 0 \
+			and o2.narration_of(_wolf.identity) == "":
+		o2._process(0.05)
+	while Time.get_ticks_msec() < prazo_b and o2.narration_of(_wolf.identity) == "":
+		o2._process(0.05)
+		await _gate_frame_sleep(50)
+	var narr_b := o2.narration_of(_wolf.identity)
+	_check(narr_b == frase_a and o2.requests_issued == 0,
+			"af_cache_determina_replay: a segunda corrida devolve a MESMA frase sem consultar a fila",
+			"frase_a=%d chars narr_replay=%d chars igual=%s pedidos_b=%d motivo_b='%s'" % [
+				frase_a.length(), narr_b.length(), str(narr_b == frase_a),
+				o2.requests_issued, o2.last_reason])
+	o1.free()
+	o2.free()
+	return true
+
+
+## Passo 5 do dossie 22 (§6.4/§7.1) -- a checagem `verifier_recusa_id_forjado`.
+## O mandato 2 ("mente propoe, regras dispoe") hoje e sustentado por AUSENCIA de
+## caminho: nao existe conector entre o oraculo e a intencao. Com o modelo no
+## MESMO heap, ausencia de caminho deixa de ser prova -- "o argumento de que ele
+## nao tem para onde escrever e mais fraco quando ele e um objeto no mesmo heap"
+## (§6.4). Entao o contrato ganha um verificador nomeado (`BeliefVerifier`) na
+## fronteira da Camada 5: a saida que nomeia um `entity_id` que nao existe na
+## alcateia nao pode produzir narrativa, crenca nem intencao. Nasce VERMELHO
+## enquanto o verificador nao existir em src/ai -- o caminho impresso e o que
+## falta, e o fechamento (o portao de aceite no wrapper) e o commit que o
+## vermelho cobra.
+func _test_verifier_recusa_id_forjado() -> bool:
+	var caminho := "res://src/ai/belief_verifier.gd"
+	var existe := FileAccess.file_exists(caminho)
+	_check(existe,
+			"verifier_recusa_id_forjado: o verificador nomeado existe na fronteira da Camada 5",
+			"caminho=%s existe=%s -- premissa do §6.4: mesmo heap, ausencia de caminho nao e prova" % [
+				caminho, str(existe)])
+	return true
+
+
+## Passo 5 do dossie 22 (§5.5) -- o gate `budget_do_oraculo_nao_estoura_a_arvore`.
+## A regra de bolso do contrato: o que vai em `_sim_tick` divide os 50 ms do passo
+## com a matilha do momento. O Passo 5 poe o decode do modelo NO MESMO processo da
+## simulacao, entao a regua do passo (25 ms, a mesma do `espalhamento`) tem de ser
+## medida com o decode EM VOO dentro da malha: 1 400 passos da matilha real de
+## cinco bichos, com o `_process` do wrapper DENTRO do bracket do relogio (o poll
+## nao bloqueia -- `wait(id, 0)`, timeout zero e consulta nao bloqueante -- e o
+## custo dele e do passo, nao de um frame fora da conta), e o `SubtreeGuard` de
+## 400 us (src/entities/wolf.gd:448-449) sem estouro nenhum. O corte por
+## prioridade, se um dia for preciso, vem DEPOIS do numero, nunca antes: "o numero
+## primeiro, o orcamento depois". Num clone sem runtime/gguf (gitignored) as
+## premissas nascem vermelhas com o caminho impresso, e a regua sem decode em voo
+## nao mede o que o gate nomeia -- a checagem exige narradas >= 1 para valer.
+func _test_budget_do_oraculo_nao_estoura_a_arvore() -> bool:
+	var classe := &"AfMindOracle"
+	if not ClassDB.class_exists(classe):
+		_check(false, "budget_do_oraculo: a classe do esqueleto nao esta na ClassDB",
+				"class_exists(%s)=false -- o passo 1 nao fechou nesta arvore" % String(classe))
+		return true
+	var runtime_dir := ProjectSettings.globalize_path("res://.tools/llama/runtime")
+	var gguf := ProjectSettings.globalize_path("res://models/qwen3.5-4b-q4_k_m.gguf")
+	var tem_llama := FileAccess.file_exists(runtime_dir + "/llama.dll")
+	var tem_gguf := FileAccess.file_exists(gguf)
+	_arm()
+	_boot_session(int(Session.WOLF_COUNT))
+	var s: Session = _session
+	# O oraculo do cenario: o mesmo conjunto que o boot real monta (§6.3 -- wrapper
+	# com roster da sessao e pack na ponte dele), dirigido a mao e fora da arvore,
+	# porque o runner headless nao tem dono de pack. O estado do pack e do
+	# processo e nao existe rota de descarga: carrega so se o estado ainda nao e 4.
+	var o := MindOracle.new()
+	o._ready()
+	var ext_o := o.ext()
+	var vivo_o := is_instance_valid(ext_o)
+	var estado_o := int(ext_o.pack_state()) if vivo_o else -1
+	var carregou := false
+	if vivo_o and estado_o != 4 and tem_gguf:
+		int(ext_o.set_runtime_dir(runtime_dir))
+		int(ext_o.load_pack("", ""))
+		int(ext_o.load_pack(MindOracle.MODEL_ALIAS, gguf))
+		int(ext_o.ctx_probe(2048))
+		carregou = true
+		estado_o = int(ext_o.pack_state())
+	_check(tem_llama and tem_gguf and estado_o == 4,
+			"budget_do_oraculo: runtime, gguf e pack no estado de fila (4)",
+			"runtime=%s gguf=%s estado=%d carregou=%s err='%s'" % [
+				str(tem_llama), str(tem_gguf), estado_o, str(carregou),
+				String(ext_o.err_text()) if vivo_o else "sem ponte"])
+	o.roster_provider = Callable(s, "wolves_roster")
+	var trips_antes := 0
+	for w: Wolf in _pack_wolves():
+		trips_antes += int(w._guard.trips)
+	var tick0 := int(s.diagnostics()["tick"])
+	var total_us := 0
+	var pico_us := 0
+	var passos := 0
+	while passos < 1400:
+		passos += 1
+		var t0 := Time.get_ticks_usec()
+		s.clock.begin_step()
+		s._sim_tick()
+		# O poll do oraculo DENTRO do bracket: e o que o Passo 5 poe do lado de la
+		# do relogio com a matilha -- dividir os 50 ms e o contrato que o gate
+		# mede, e um poll fora do bracket seria medir a regua de mentira.
+		o._process(SimClock.STEP)
+		s.clock.end_step()
+		var cost := Time.get_ticks_usec() - t0
+		total_us += cost
+		pico_us = maxi(pico_us, cost)
+		for w: Wolf in _pack_wolves():
+			for frame: int in 3:
+				w._physics_process(SimClock.STEP / 3.0)
+	var d: Dictionary = s.diagnostics()
+	# O desmanche nao deixa decode em voo: o round-robin pode ter enfileirado o
+	# proximo pedido nos ultimos passos, e sair do processo com a thread dele
+	# rodando derruba o desligamento da engine com segfault (medido na primeira
+	# corrida do vermelho: o rodape saiu e o quit virou 139). O prazo e teto.
+	var prazo_dreno := Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < prazo_dreno and o._busy:
+		o._process(0.05)
+		await _gate_frame_sleep(50)
+	var trips_depois := 0
+	var narradas := 0
+	for w: Wolf in _pack_wolves():
+		trips_depois += int(w._guard.trips)
+		if o.narration_of(w.identity) != "":
+			narradas += 1
+	var worst_us := int(ext_o.worst_decode_us()) if vivo_o else -1
+	var media_us := float(total_us) / float(maxi(passos, 1))
+	_check(int(d["tick"]) - tick0 == 1400,
+			"budget_do_oraculo: premissa da malha medida",
+			"passos=%d tick0=%d->%d matilha=%d" % [
+				passos, tick0, int(d["tick"]), _pack_wolves().size()])
+	_check(narradas >= 1 and worst_us > 0
+			and float(d["worst_sim_ms"]) <= 25.0 and pico_us <= 25000,
+			"budget_do_oraculo_nao_estoura_a_arvore",
+			"narradas=%d/%d pedidos=%d worst_decode_us=%d | worst_sim_ms=%.2f ms pico_do_passo=%d us media=%.1f us/passo total=%d us em %d passos" % [
+				narradas, _pack_wolves().size(), o.requests_issued, worst_us,
+				float(d["worst_sim_ms"]), pico_us, media_us, total_us, passos])
+	_check(trips_depois == trips_antes and narradas >= 1,
+			"budget_do_oraculo: o SubtreeGuard de 400 us nao estoura com o decode em voo",
+			"trips_antes=%d trips_depois=%d narradas=%d" % [trips_antes, trips_depois, narradas])
+	o.free()
+	_pack_release()
+	return true
+
+
 ## GET sequencial com UM HTTPRequest reusado: pedido aberto com erro de abertura
 ## devolve o resultado -1 sem nunca pendurar -- `await` so acontece com a requisicao
 ## aceita, e o `timeout` do nodo garante que ela sempre completa.
@@ -6229,3 +6485,11 @@ func _gate_frame_sleep(ms: int) -> void:
 	var prazo := Time.get_ticks_msec() + ms
 	while Time.get_ticks_msec() < prazo:
 		await process_frame
+
+
+## O roster dos gates do Passo 5: o lobo armado (`_arm`), e so ele. Metodo do
+## gate e nao lambda porque o `Callable` do roster do wrapper precisa sobreviver
+## ao lobo trocar de teste -- e um lobo liberado faz o wrapper receber lista
+## vazia, que e recusa nomeada, nunca um ponteiro pendente.
+func _gate_roster_solo() -> Array:
+	return [_wolf] if is_instance_valid(_wolf) else []
