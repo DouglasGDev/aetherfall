@@ -282,7 +282,12 @@ static func _prompt_for(w) -> String:
 		recent.append("%s (forca %.2f)" % [eps[i]["kind"], float(eps[i]["mag"])])
 	var bl := ""
 	for id in d.get("beliefs", {}):
-		bl += "%s=%.2f " % [id, float(d["beliefs"][id])]
+		# A crenca em memoria e dict com os quatro campos (Fase 2 §20.5 — o
+		# to_dict do Mind gravou confianca, fonte, visto_em e vezes); o prompt
+		# segue lendo SO a confianca: o texto fica byte a byte o MESMO do Passo
+		# 5 neste commit, e as chaves de conteudo da cache (§6.5) nao mudam.
+		# A janela top-k entra no commit seguinte, junto com a mudanca de texto.
+		bl += "%s=%.2f " % [id, float(d["beliefs"][id]["confidence"])]
 	return (
 		"lobo %d; intencao atual: %s; vida %.0f%%; fome %.0f%%; "
 		+ "confianca no jogador %.2f; memorias recentes: %s; crencas: %s. "

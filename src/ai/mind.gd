@@ -16,7 +16,7 @@ var personality := {
 	"curiosity": 0.50,
 }
 var episodic: Array = []          # {tick, kind, actor, pos(Vector3), magnitude}
-var beliefs := {}                 # String -> {confidence: float, source: String}
+var beliefs := {}                 # String -> {confidence, source, visto_em, vezes}
 var relations := {}               # actor:int -> trust:float (-1..1)
 var consolidated_events: int = 0
 
@@ -83,13 +83,22 @@ func count_kind(p_kind: String) -> int:
 	return n
 
 
-func reinforce(p_id: String, p_delta: float, p_source: String) -> void:
+## Toca a crenca: soma o delta na confianca, nomeia a fonte e CONTA o toque em
+## `vezes`. O carimbo `visto_em` so segue o tick que CONFIRMOU (p_tick >= 0 e
+## delta positivo): reforco negativo contesta a crenca, e contestar nao e ter
+## visto de novo. Metadata da Fase 2 (§20.5) — `visto_em` e o ultimo tick que
+## confirmou, `vezes` e quantos toques a crenca tomou; ambos sao leitura do que
+## o prompt da janela ordena e nunca entram na projecao do TickJournal (§20.5).
+func reinforce(p_id: String, p_delta: float, p_source: String, p_tick: int = -1) -> void:
 	var b = beliefs.get(p_id)
 	if b == null:
-		b = {"confidence": 0.0, "source": p_source}
+		b = {"confidence": 0.0, "source": p_source, "visto_em": -1, "vezes": 0}
 		beliefs[p_id] = b
 	b["confidence"] = clampf(float(b["confidence"]) + p_delta, 0.0, 1.0)
 	b["source"] = p_source
+	b["vezes"] = int(b.get("vezes", 0)) + 1
+	if p_tick >= 0 and p_delta > 0.0:
+		b["visto_em"] = p_tick
 
 
 func belief(p_id: String) -> float:
@@ -110,6 +119,9 @@ func decay(elapsed_minutes: float) -> void:
 		return
 	var keep := _keep_factor(elapsed_minutes)
 	var stale: Array = []
+	# A metadata de qualidade (`visto_em`/`vezes`) NAO decai: e historia de
+	# toques, nao confianca. Ela sai junto quando a crenca inteira morre abaixo
+	# do minimo — o esquecimento apaga a crenca, nunca deixa metadata orfa.
 	for id in beliefs:
 		var b = beliefs[id]
 		b["confidence"] = float(b["confidence"]) * keep
@@ -141,7 +153,14 @@ func to_dict() -> Dictionary:
 		})
 	var bl := {}
 	for id in beliefs:
-		bl[id] = beliefs[id]["confidence"]
+		# Os quatro campos vao ao disco (Fase 2 §20.5): a qualidade sobrevive ao
+		# save/load. O `get` com default tolera dict montado a mao sem metadata.
+		bl[id] = {
+			"confidence": beliefs[id]["confidence"],
+			"source": beliefs[id]["source"],
+			"visto_em": int(beliefs[id].get("visto_em", -1)),
+			"vezes": int(beliefs[id].get("vezes", 0)),
+		}
 	return {
 		"kind": kind, "identity": identity, "personality": personality,
 		"episodic": ep, "beliefs": bl, "relations": relations,
@@ -164,4 +183,24 @@ func from_dict(d: Dictionary) -> void:
 		})
 	beliefs.clear()
 	for id in d.get("beliefs", {}):
-		beliefs[id] = {"confidence": float(d["beliefs"][id]), "source": "loaded"}
+		# Formato novo (Fase 2 §20.5): dict com os quatro campos. Formato velho
+		# (float solto, saves de antes da Fase 2): reconstruido sem metadata —
+		# `visto_em` -1 e `vezes` 0 dizem "nenhum toque confirmado desde o
+		# load". O source volta "loaded" nos dois: o load nao e testemunha — a
+		# crenca gravada vale, mas nao conta como percepcao direta desta vida
+		# (politica do gate; mudar isso e decisao de versao, nao desta fase).
+		var vb = d["beliefs"][id]
+		if vb is Dictionary:
+			beliefs[id] = {
+				"confidence": float(vb.get("confidence", 0.0)),
+				"source": "loaded",
+				"visto_em": int(vb.get("visto_em", -1)),
+				"vezes": int(vb.get("vezes", 0)),
+			}
+		else:
+			beliefs[id] = {
+				"confidence": float(vb),
+				"source": "loaded",
+				"visto_em": -1,
+				"vezes": 0,
+			}
