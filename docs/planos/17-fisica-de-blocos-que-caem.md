@@ -120,7 +120,7 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L204-L212) chamada no
   `_process`, **fora** do passo de simulação, com
   [`MESH_BUDGET := 2`](../../src/main.gd#L28) chunks por frame
-  (chamada em [main.gd:325](../../src/main.gd#L325)). As duas leituras que o contrato
+  (chamada em [main.gd:330](../../src/main.gd#L330)). As duas leituras que o contrato
   publica: **64 chunks em ~4,3 s no boot** ([README.md:148-149](../../README.md#L148-L149)) ≈
   67 ms/chunk, e o `_last_mesh_ms` do frame lido pelo F3. Uma pilha de N areias em cascata
   são N remoções **e** N fixações: até `2N` células sujas, e a malharia não sabe que a
@@ -128,9 +128,9 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   (doc [`:672`](../design/10-world-layers-and-block-physics.md#L672)) existir, não para
   aumentar `MESH_BUDGET`.
 - **Cada escrita de bloco entra no save e no hash.** `edits[p]` é gravado inteiro no
-  [`save_game()`](../../src/main.gd#L1005-L1025) (`:991-1009`) e re-aplicado no
-  [`load_game()`](../../src/main.gd#L1043-L1070) (`:1052-1054`), e o `diagnostics()` já imprime
-  `edits.size()` ([`:1179`](../../src/main.gd#L1179)). A projeção do
+  [`save_game()`](../../src/main.gd#L1010-L1030) (`:991-1009`) e re-aplicado no
+  [`load_game()`](../../src/main.gd#L1048-L1075) (`:1052-1054`), e o `diagnostics()` já imprime
+  `edits.size()` ([`:1179`](../../src/main.gd#L1184)). A projeção do
   [`TickJournal.state_hash`](../../src/persistence/tick_journal.gd#L16-L44) ordena e mistura as
   **edições** na conta ([`:17-21`](../../src/persistence/tick_journal.gd#L17-L21)).
   Consequência declarada antes do código: um corrida com areia caindo **não** reproduz os
@@ -175,14 +175,14 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
    posição do corpo (doc [`:549-553`](../design/10-world-layers-and-block-physics.md#L549-L553)):
    o integrador para em substep e a AABB pode parar um substep acima do solo.
 5. **Onde a roda roda**: `updates.flush(clock.tick)` e depois o `sim_step` das entidades,
-   dentro de [`_sim_tick`](../../src/main.gd#L280) — **antes** das mentes, para que uma
+   dentro de [`_sim_tick`](../../src/main.gd#L285) — **antes** das mentes, para que uma
    conversão só integre no tick seguinte (doc
    [`:757-759`](../design/10-world-layers-and-block-physics.md#L757-L759)). Nada em
    `_physics_process`: o passo de simulação é o que o `clock.begin_step`/`end_step` cronometra
-   ([main.gd:271](../../src/main.gd#L271),
+   ([main.gd:276](../../src/main.gd#L276),
    [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e é o que o hash lê.
 6. **`queued` e `overflow` visíveis**, no `diagnostics()` ao lado de `dropped_ticks`
-   ([main.gd:1175-1210](../../src/main.gd#L1175-L1210)) e no F3, como o doc exige em
+   ([main.gd:1180-1215](../../src/main.gd#L1180-L1215)) e no F3, como o doc exige em
    [`:746-749`](../design/10-world-layers-and-block-physics.md#L746-L749): estourar o teto
    adia grãos, não os perde, e sem o número a discussão sobre `MAX_PER_TICK` é opinião.
 7. **O estado de queda não vai para o save — e isso é decisão escrita, não esquecimento.**
@@ -306,7 +306,7 @@ que já existe.
   ligar, existem para serem escritas; o doc 10 as especifica em pseudocódigo e o próprio doc
   as lista como inexistentes em [`:652-659`](../design/10-world-layers-and-block-physics.md#L652-L659).
 - "processar no tick de 20 Hz com orçamento": correto e alinhado com
-  [`_sim_tick`](../../src/main.gd#L280)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
+  [`_sim_tick`](../../src/main.gd#L285)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
   prompt chama de "orçamento" o que **não** é o budget de malha; os dois tetos são diferentes
   e o do meio de campo (`MESH_BUDGET`) não pode ser tocado por esta perna.
 - "`Landing.SHATTER` vira item no chão": não há item no chão. Ver §6.
