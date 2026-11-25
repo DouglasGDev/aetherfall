@@ -1,0 +1,16 @@
+extends SceneTree
+## Sonda curta (gitignored): quais `render_mode` de specular o front-end do shader aceita
+## NO CAMINHO QUE O JOGO USA. A primeira versao deste probe atribuia `sh.code` sem prender
+## o shader a um material e nao imprimia erro nenhum -- eixo do furo #50: no renderer dummy
+## do headless a parse so acontece quando o `ShaderMaterial` toma o `Shader`, entao um
+## `render_mode` invalido e visivel na suite (via stdout), mas so se o material existir.
+
+
+func _init() -> void:
+	for rm in ["specular_schlick_ggx", "specular_schlick_blurry", "specular_disabled", "diffuse_burley"]:
+		var sh := Shader.new()
+		sh.code = "shader_type spatial;\nrender_mode %s;\nvoid fragment(){ALBEDO = vec3(1.0);}\n" % rm
+		var m := ShaderMaterial.new()
+		m.shader = sh
+		print("--- %s: material montado (o SHADER ERROR, se houver, sai ACIMA desta linha)" % rm)
+	quit()

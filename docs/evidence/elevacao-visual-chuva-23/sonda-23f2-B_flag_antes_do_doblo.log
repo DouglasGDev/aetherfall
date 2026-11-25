@@ -1,0 +1,23 @@
+ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+   at: open_dynamic_library (platform/windows/os_windows.cpp:483)
+ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+   at: open_library (core/extension/gdextension.cpp:810)
+ERROR: Error loading extension: 'res://native/af_mind/af_mind.gdextension'.
+   at: load_extensions (core/extension/gdextension_manager.cpp:333)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+af_mind_runtime  ausente (runtime)  sem runtime do llama em C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2/.tools/llama/runtime
+SONDA  braco=S  arvore=C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2/  moldura=(1920, 1080)  seed=20261116  coluna=(100,52)  blocos=12  topo=26  plano=27.00
+SONDA  braco=S  mirante coluna=(101,39) chao=27 dist=14 olho=(101.50, 29.62, 39.50) yaw=3.06482 pitch=-0.19830
+SONDA  braco=S  sem penhasco visivel (drop>=6 e as duas caixas no quadro)

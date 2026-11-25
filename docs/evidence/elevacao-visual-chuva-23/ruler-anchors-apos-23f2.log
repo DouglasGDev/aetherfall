@@ -1,0 +1,20 @@
+$ python tools/check_doc_anchors.py
+## corpus: AGENTS.md, README.md e os 38 arquivos de docs/ na arvore de trabalho
+## (quarenta no total). Os cinco casos sao os links ../.tools/ gitignored que a
+## base tambem devolve -- ver ruler-anchors-base-23f2.log.
+## Re-leitura do fechamento, depois das testemunhas de timing e do paragrafo do
+## manifesto: 3 683 -> 3 692 links relativos (nove ponteiros novos para os logs da
+## re-corrida, dois deles citados duas vezes, mais o do artifacts.sha256). Ponteiros
+## (3 193) e rotulos (212) nao se moveram. Rodada tres vezes na arvore final: saida
+## identica nas tres. O controle `--ref eb218fe` (no arquivo ao lado) segue em 122
+## casos porque le os alvos do disco, onde os tres arquivos desta perna ja cresceram.
+
+corpus na arvore de trabalho  arquivos: 40  ponteiros conferidos: 3193  rotulos conferidos: 212  links relativos conferidos: 3692
+docs/melhorias-status.md:3414  ../.tools/_chk_labels.py  LINK QUEBRADO
+docs/melhorias-status.md:5990  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:5995  ../.tools/_carga_por_janela.py  LINK QUEBRADO
+docs/melhorias-status.md:6025  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:6027  ../.tools/_carga_por_janela.py  LINK QUEBRADO
+casos objetivos: 5
+
+exit=1

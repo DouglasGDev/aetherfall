@@ -44,22 +44,22 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
 
 - **O sinal existe e ninguém o escuta.** [`signal block_changed(pos, prev, now)`](../../src/world/voxel_world.gd#L6)
   é declarado em `voxel_world.gd:6` e emitido no fim de
-  [`set_block`](../../src/world/voxel_world.gd#L278-L289) (emissão em
-  [`:288`](../../src/world/voxel_world.gd#L288)). Um grep de `block_changed` em `src/` e
+  [`set_block`](../../src/world/voxel_world.gd#L302-L313) (emissão em
+  [`:312`](../../src/world/voxel_world.gd#L312)). Um grep de `block_changed` em `src/` e
   `tests/` devolve **duas** ocorrências, as duas nessa file — a declaração e a emissão — e
   nenhum `.connect(` em lugar nenhum: o sinal nunca teve leitor desde que entrou. A porta do
   design ("a única porta de entrada para 'este voxel tem
   gravidade?' é o sinal", doc 10 [`:663-665`](../design/10-world-layers-and-block-physics.md#L663-L665))
   está construído do lado de escrever e vazia do lado de ler.
 - **`set_block` já é o ponto único de mutação, com as quatro consequências certas**
-  ([`:278-289`](../../src/world/voxel_world.gd#L278-L289)): recusa fora de
+  ([`:302-313`](../../src/world/voxel_world.gd#L302-L313)): recusa fora de
   `VoxelConfig.in_world_bounds` ( [`:26`](../../src/world/voxel_config.gd#L26), que exige
   `0 ≤ y < 64`), retorna `false` se `prev == b` (`:256-257` — escrever o que já está lá **não**
   emite evento), grava chunk **e** índice linear em
-  [`_write_raw`](../../src/world/voxel_world.gd#L268-L275), guarda a edição em
-  [`edits[p]`](../../src/world/voxel_world.gd#L286) quando `record` (o default é `true`), suja
+  [`_write_raw`](../../src/world/voxel_world.gd#L292-L299), guarda a edição em
+  [`edits[p]`](../../src/world/voxel_world.gd#L310) quando `record` (o default é `true`), suja
   o chunk e os vizinhos de borda em
-  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L292-L303) e só então emite. Os dois
+  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L316-L327) e só então emite. Os dois
   únicos chamadores de gameplay hoje são do jogador:
   [`:685`](../../src/entities/player.gd#L685) (quebra → `AIR`) e
   [`:711`](../../src/entities/player.gd#L711) (colocação).
@@ -110,17 +110,17 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   em queda que herdar `step_up` **sobe** em vez de parar no apoio; o `setup` da entidade novo
   tem de zerar `step_up` e o lote tem de ter a checagem que prova isso (§5.4).
 - **O fundo do mundo segura a cascata sem `BEDROCK`.**
-  [`get_block_xyz`](../../src/world/voxel_world.gd#L252-L265) devolve `STONE` para `y < 0` e
+  [`get_block_xyz`](../../src/world/voxel_world.gd#L276-L289) devolve `STONE` para `y < 0` e
   para `x`/`z` fora do mapa, e `AIR` acima de `CHUNK_SIZE_Y` (`:226-232`). Logo
   `is_supported(x, 0, z)` é **verdadeiro por construção** e nenhuma cascata atravessa o soalho
   — o que também significa que um bloco expulso pelo topo só para com o teto de ticks da
   entidade (`MAX_FALL_TICKS`, doc [`:486`](../design/10-world-layers-and-block-physics.md#L486)).
 - **O custo real de cada voxel movido é a malharia, e ela tem orçamento próprio.**
   `set_block` → `_touch_chunks_of` → fila `_dirty` consumida por
-  [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L204-L212) chamada no
+  [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L228-L236) chamada no
   `_process`, **fora** do passo de simulação, com
   [`MESH_BUDGET := 2`](../../src/main.gd#L28) chunks por frame
-  (chamada em [main.gd:332](../../src/main.gd#L332)). As duas leituras que o contrato
+  (chamada em [main.gd:358](../../src/main.gd#L358)). As duas leituras que o contrato
   publica: **64 chunks em ~4,3 s no boot** ([README.md:148-149](../../README.md#L148-L149)) ≈
   67 ms/chunk, e o `_last_mesh_ms` do frame lido pelo F3. Uma pilha de N areias em cascata
   são N remoções **e** N fixações: até `2N` células sujas, e a malharia não sabe que a
@@ -128,9 +128,9 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   (doc [`:672`](../design/10-world-layers-and-block-physics.md#L672)) existir, não para
   aumentar `MESH_BUDGET`.
 - **Cada escrita de bloco entra no save e no hash.** `edits[p]` é gravado inteiro no
-  [`save_game()`](../../src/main.gd#L1010-L1030) (`:991-1009`) e re-aplicado no
-  [`load_game()`](../../src/main.gd#L1048-L1075) (`:1052-1054`), e o `diagnostics()` já imprime
-  `edits.size()` ([`:1179`](../../src/main.gd#L1184)). A projeção do
+  [`save_game()`](../../src/main.gd#L1036-L1056) (`:1017-1035`) e re-aplicado no
+  [`load_game()`](../../src/main.gd#L1074-L1101) (`:1078-1080`), e o `diagnostics()` já imprime
+  `edits.size()` ([`:1179`](../../src/main.gd#L1210)). A projeção do
   [`TickJournal.state_hash`](../../src/persistence/tick_journal.gd#L16-L44) ordena e mistura as
   **edições** na conta ([`:17-21`](../../src/persistence/tick_journal.gd#L17-L21)).
   Consequência declarada antes do código: um corrida com areia caindo **não** reproduz os
@@ -175,14 +175,14 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
    posição do corpo (doc [`:549-553`](../design/10-world-layers-and-block-physics.md#L549-L553)):
    o integrador para em substep e a AABB pode parar um substep acima do solo.
 5. **Onde a roda roda**: `updates.flush(clock.tick)` e depois o `sim_step` das entidades,
-   dentro de [`_sim_tick`](../../src/main.gd#L286) — **antes** das mentes, para que uma
+   dentro de [`_sim_tick`](../../src/main.gd#L312) — **antes** das mentes, para que uma
    conversão só integre no tick seguinte (doc
    [`:757-759`](../design/10-world-layers-and-block-physics.md#L757-L759)). Nada em
    `_physics_process`: o passo de simulação é o que o `clock.begin_step`/`end_step` cronometra
-   ([main.gd:281-283](../../src/main.gd#L281-L283),
+   ([main.gd:307-309](../../src/main.gd#L307-L309),
    [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e é o que o hash lê.
 6. **`queued` e `overflow` visíveis**, no `diagnostics()` ao lado de `dropped_ticks`
-   ([main.gd:1180-1215](../../src/main.gd#L1180-L1215)) e no F3, como o doc exige em
+   ([main.gd:1206-1249](../../src/main.gd#L1206-L1249)) e no F3, como o doc exige em
    [`:746-749`](../design/10-world-layers-and-block-physics.md#L746-L749): estourar o teto
    adia grãos, não os perde, e sem o número a discussão sobre `MAX_PER_TICK` é opinião.
 7. **O estado de queda não vai para o save — e isso é decisão escrita, não esquecimento.**
@@ -208,7 +208,7 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   que os 100 dicionários/s do blackboard que o contrato já lista como não medidos. No passo
   sem eventos, `flush` alocaria um `Array` vazio: o lote devolve cedo (`if _pending.is_empty()`),
   e isso é uma linha, não uma abstração. O `_flat` já existe para leitura barata
-  ([`:259-260`](../../src/world/voxel_world.gd#L259-L260)).
+  ([`:283-284`](../../src/world/voxel_world.gd#L283-L284)).
 - **Como sei que ficou melhor / quanto custa?** Não é otimização, é mecânica: o número que
   tem de existir antes de qualquer celebração é `worst_sim_ms` com a cascata andando
   (`clock.worst_step_ms`, [sim_clock.gd:37-39](../../src/core/sim_clock.gd#L37-L39), já lido
@@ -251,7 +251,7 @@ godot --headless --path . tests/smoke_test.tscn
    bloco se move sozinho), o segundo diverge e a divergência é atribuída às duas chaves de
    `edits` novas. Sem o primeiro lado, a checagem aceita queda em qualquer lugar.
 8. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39),
-   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:223](../../tests/smoke_test.gd#L223))
+   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:265](../../tests/smoke_test.gd#L265))
    sobem com o lote e são re-medidos no clone limpo com `--import` frio, com o SHA pinado.
 
 ## 6. O que NÃO fazer
@@ -306,7 +306,7 @@ que já existe.
   ligar, existem para serem escritas; o doc 10 as especifica em pseudocódigo e o próprio doc
   as lista como inexistentes em [`:652-659`](../design/10-world-layers-and-block-physics.md#L652-L659).
 - "processar no tick de 20 Hz com orçamento": correto e alinhado com
-  [`_sim_tick`](../../src/main.gd#L286)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
+  [`_sim_tick`](../../src/main.gd#L312)/[`SimClock`](../../src/core/sim_clock.gd#L5-L7) — mas o
   prompt chama de "orçamento" o que **não** é o budget de malha; os dois tetos são diferentes
   e o do meio de campo (`MESH_BUDGET`) não pode ser tocado por esta perna.
 - "`Landing.SHATTER` vira item no chão": não há item no chão. Ver §6.

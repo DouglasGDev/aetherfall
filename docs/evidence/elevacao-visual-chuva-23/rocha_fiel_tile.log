@@ -1,0 +1,30 @@
+ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+   at: open_dynamic_library (platform/windows/os_windows.cpp:483)
+ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+   at: open_library (core/extension/gdextension.cpp:810)
+ERROR: Error loading extension: 'res://native/af_mind/af_mind.gdextension'.
+   at: load_extensions (core/extension/gdextension_manager.cpp:333)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+FONTE  opaque_surface=presente  linhas=14  matematica_igual=true
+FIEL  dist=45 m  moldura=1920x1080  placas=10  passo=1
+FIEL  dist=45  i=0  nome=std_base  lado=40x39  amostras=1560  cores=82  media=(113.22,129.76,152.31)  p01=(102,120,143)  p99=(122,137,159)  delta_vs_std=(+0.00,+0.00,+0.00)
+FIEL  dist=45  i=1  nome=std_near  lado=39x39  amostras=1521  cores=87  media=(112.43,128.81,151.18)  p01=(101,119,142)  p99=(121,136,157)  delta_vs_std=(-0.79,-0.96,-1.13)
+FIEL  dist=45  par=std_base->std_near  ge1=770  ge3=376  fracao_ge3=0.2472  media_canal r=0.009705 g=0.008756 b=0.008560
+FIEL  dist=45  i=2  nome=sh_color  lado=39x39  amostras=1521  cores=195  media=(154.19,165.36,182.90)  p01=(126,140,161)  p99=(171,180,195)  delta_vs_std=(+40.97,+35.60,+30.59)
+FIEL  dist=45  par=std_base->sh_color  ge1=1521  ge3=1521  fracao_ge3=1.0000  media_canal r=0.160298 g=0.139280 b=0.119634
+FIEL  dist=45  i=3  nome=sh_s2l  lado=39x39  amostras=1521  cores=217  media=(146.08,157.99,176.17)  p01=(118,133,154)  p99=(172,180,195)  delta_vs_std=(+32.86,+28.22,+23.86)
+FIEL  dist=45  par=std_base->sh_s2l  ge1=1521  ge3=1518  fracao_ge3=0.9980  media_canal r=0.128500 g=0.110365 b=0.093243
+FIEL  dist=45  i=4  nome=sh_pow22  lado=39x39  amostras=1521  cores=220  media=(146.03,157.90,176.01)  p01=(118,133,154)  p99=(171,180,195)  delta_vs_std=(+32.81,+28.14,+23.70)
+FIEL  dist=45  par=std_base->sh_pow22  ge1=1519  ge3=1510  fracao_ge3=0.9928  media_canal r=0.128356 g=0.110071 b=0.092681
+FIEL  dist=45  i=5  nome=sh_nocolor  lado=39x39  amostras=1521  cores=63  media=(161.74,172.10,188.88)  p01=(133,147,167)  p99=(172,181,195)  delta_vs_std=(+48.52,+42.34,+36.57)
+FIEL  dist=45  par=std_base->sh_nocolor  ge1=1521  ge3=1521  fracao_ge3=1.0000  media_canal r=0.189920 g=0.165710 b=0.143086
+FIEL  dist=45  i=6  nome=sh_s2l_nospec  lado=39x39  amostras=1521  cores=225  media=(141.45,153.99,172.91)  p01=(112,128,150)  p99=(168,177,193)  delta_vs_std=(+28.23,+24.23,+20.60)
+FIEL  dist=45  par=std_base->sh_s2l_nospec  ge1=1517  ge3=1497  fracao_ge3=0.9842  media_canal r=0.110679 g=0.095035 b=0.080805
+FIEL  dist=45  i=7  nome=sh_s2l_rough1  lado=39x39  amostras=1521  cores=237  media=(142.03,154.64,173.53)  p01=(112,129,151)  p99=(168,177,193)  delta_vs_std=(+28.81,+24.88,+21.22)
+FIEL  dist=45  par=std_base->sh_s2l_rough1  ge1=1519  ge3=1508  fracao_ge3=0.9915  media_canal r=0.112683 g=0.097288 b=0.082950
+FIEL  dist=45  i=8  nome=sh_tile_s2l  lado=39x39  amostras=1521  cores=74  media=(112.98,129.23,151.45)  p01=(102,120,142)  p99=(122,136,158)  delta_vs_std=(-0.24,-0.53,-0.87)
+FIEL  dist=45  par=std_base->sh_tile_s2l  ge1=843  ge3=536  fracao_ge3=0.3524  media_canal r=0.011517 g=0.009741 b=0.009217
+FIEL  dist=45  i=9  nome=sh_tile_s2l_color_s2l  lado=40x39  amostras=1560  cores=85  media=(111.56,128.17,150.60)  p01=(102,120,143)  p99=(122,137,158)  delta_vs_std=(-1.66,-1.59,-1.72)
+FIEL  dist=45  par=std_base->sh_tile_s2l_color_s2l  ge1=930  ge3=314  fracao_ge3=0.2013  media_canal r=0.007159 g=0.006533 b=0.006913

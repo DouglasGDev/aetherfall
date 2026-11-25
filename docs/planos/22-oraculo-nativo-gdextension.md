@@ -268,7 +268,7 @@ essa mesma porta. O braço escolhido está no §6.3; o rejeitado está no §8.4.
 
 A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de leitura:
 
-- [`src/main.gd:193`](../../src/main.gd#L193) — injeta o `narration_provider` no HUD chamando
+- [`src/main.gd:213`](../../src/main.gd#L213) — injeta o `narration_provider` no HUD chamando
   `oracle.narration_of(id)`;
 - [`src/ui/hud.gd:276-277`](../../src/ui/hud.gd#L276-L277) — imprime `ia:` no F3;
 - o `narration_ready` ([`src/ai/mind_oracle.gd:9`](../../src/ai/mind_oracle.gd#L9)) que o lobo não
@@ -276,17 +276,17 @@ A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de l
   futuro MindsInspector, e a Fase 5 da tabela do §5.6 é o comprador que faltava.
 
 E a única porta de **entrada** é o roster (`roster_provider`, [`:40`](../../src/ai/mind_oracle.gd#L40),
-ligado em [`src/main.gd:191`](../../src/main.gd#L191) com `Callable(self, "wolves_roster")`) mais os
+ligado em [`src/main.gd:211`](../../src/main.gd#L211) com `Callable(self, "wolves_roster")`) mais os
 campos injetáveis de `server_url`/`request_timeout`/`api_key`/`ready_provider`
 ([`:32-40`](../../src/ai/mind_oracle.gd#L32-L40)); o `ready_provider` é ligado pelo hospedeiro em
-[`src/main.gd:257`](../../src/main.gd#L257). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
+[`src/main.gd:309`](../../src/main.gd#L309). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
 A regra do dono — "a mente propõe, as regras dispõem" — hoje é verdadeira **por topologia**: não existe
 caminho do oráculo para a intenção. A Fase 1 tem de manter a topologia, e o §7.1 registra que topologia
 não é prova.
 
 ### 2.4 O que o F3 já diz sobre a IA, e o que ele não diz
 
-`diagnostics()` de [`src/main.gd:1214`](../../src/main.gd#L1214) expõe `"llm": llm_host.diagnostics()`,
+`diagnostics()` de [`src/main.gd:1282`](../../src/main.gd#L1282) expõe `"llm": llm_host.diagnostics()`,
 que por sua vez (`llm_server_host.gd:159` — aposentado no Passo 4 do dossiê 22, commit 5138549)
 devolve
 `state`, `pid`, `boot_ms`, `loading_503`, `retries`, `requests`, `kills`, `spawned`, `detail` e `url` —
@@ -1791,11 +1791,11 @@ chave externa `KEY_ENV`/`KEY_FILE` (`5138549:src/ai/mind_oracle.gd:31`) — quem
 `llama-server` na mão lê as mesmas duas fontes. O que morre: o `LOADING_COOLDOWN` do `503`, porque a
 espera pelo modelo deixa de ser transporte e passa a ser o portão `ready_provider`, ligado ao
 `AfMindRuntime.ready()` ([af_mind_runtime.gd:68](../../src/ai/af_mind_runtime.gd#L68)) em
-[main.gd:257](../../src/main.gd#L257). Num clone sem o dll gitignored, `_ext` nasce null e cada
+[main.gd:309](../../src/main.gd#L309). Num clone sem o dll gitignored, `_ext` nasce null e cada
 pedido nomeia a ausência — o degradado continua checado pela suíte, agora com o motivo da fila:
 "runtime sem pack nao emite chamada na ponte"
-([smoke_test.gd:2539](../../tests/smoke_test.gd#L2539)) e as duas checagens da recusa que nomeia o
-motivo e arma o recuo cheio ([:2558-2562](../../tests/smoke_test.gd#L2558-L2562)).
+([smoke_test.gd:3118](../../tests/smoke_test.gd#L3118)) e as duas checagens da recusa que nomeia o
+motivo e arma o recuo cheio ([:3137-3141](../../tests/smoke_test.gd#L3137-L3141)).
 
 ### 18.3 O `AfMindRuntime`: ciclo do pack sobre disco e ClassDB, sem processo filho, sem porta
 
@@ -1811,8 +1811,8 @@ o processo filho, a sonda de porta, o vigia e os dois kills; a sonda da perna 15
 vira **cliente de referência dentro do runner** — as 17 ocorrências de `HTTPRequest` que sobram
 vivem em `tests/aether_reactions_test.gd`, e o grep do gate mira só `src/`. A fiação em `main.gd`:
 `llm_host` agora é `AfMindRuntime` ([main.gd:55](../../src/main.gd#L55)), o `diagnostics()` mantém
-a chave `"llm"` ([main.gd:1214](../../src/main.gd#L1214)) e o F3 lê a linha de status por
-`llm_status_provider` ([main.gd:259](../../src/main.gd#L259)), que junta estado, contexto,
+a chave `"llm"` ([main.gd:1282](../../src/main.gd#L1282)) e o F3 lê a linha de status por
+`llm_status_provider` ([main.gd:285](../../src/main.gd#L285)), que junta estado, contexto,
 `load_ms`, VRAM e o `last_reason` do oráculo
 ([af_mind_runtime.gd:85-87](../../src/ai/af_mind_runtime.gd#L85-L87)) — leitura, nenhuma escrita,
 mandato 2 intacto.
@@ -2066,7 +2066,7 @@ cache vira máquina do tempo de memória velha.
 - **Premissa:** expandir o portão ([`src/ai/mind_oracle.gd:160-173`](../../src/ai/mind_oracle.gd#L160-L173))
   para ids do ledger exige que a rota que ele guarda **exista** — e hoje não existe nenhum
   escritor de belief com origem no oráculo: a narração sai só para o HUD
-  ([`src/main.gd:193`](../../src/main.gd#L193) →
+  ([`src/main.gd:203`](../../src/main.gd#L203) →
   [`src/ui/hud.gd:276-279`](../../src/ui/hud.gd#L276-L279)). O gate nasce **vermelho** porque o
   portão de ids de ledger e o escritor de quarentena não existem ainda.
 - **Cenário:** saída do oráculo afirmando fato que o ledger contradiz. O id forjado já é recusado

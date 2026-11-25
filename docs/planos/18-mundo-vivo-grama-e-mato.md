@@ -30,7 +30,7 @@ a regra pedida.
 **B. O mato é visto, pisado e colhido, e não é um cubo.** Falsificável: `PLANT` colocado sobre
 `GRASS` por geração **e** por espalhamento, `is_solid` falso (corpo atravessa), `line_of_sight`
 atravessa (o ray só para em sólido,
-[voxel_world.gd:426](../../src/world/voxel_world.gd#L426), [`:454`](../../src/world/voxel_world.gd#L454)),
+[voxel_world.gd:450](../../src/world/voxel_world.gd#L450), [`:478`](../../src/world/voxel_world.gd#L478)),
 dureza de mão nua, e um drop não-zero. A parte visual tem uma premissa própria e incômoda: o
 atlas é gerado em runtime por uma função por tile
 ([voxel_atlas.gd:10-31](../../src/world/voxel_atlas.gd#L10-L31)), então "tem forma de mato" só é
@@ -42,7 +42,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
   ([player.gd:685](../../src/entities/player.gd#L685) quebra,
   [`:711`](../../src/entities/player.gd#L711) coloca). O mundo é estático depois da geração:
   `world_gen.gd` escreve as colunas uma vez (em [`generate_chunk`](../../src/world/world_gen.gd#L174)
-  e companhia) e o [`apply_edits`](../../src/world/voxel_world.gd#L190) só reaplica o que o
+  e companhia) e o [`apply_edits`](../../src/world/voxel_world.gd#L214) só reaplica o que o
   jogador já tinha feito.
 - **Grama é só um bloco com drop de terra.** `GRASS` = id 1, tile 0/1, dureza 0,38, e o drop é
   `DIRT` ([`_drop[Block.GRASS] = Block.DIRT`](../../src/world/block_defs.gd#L142), com a razão
@@ -58,7 +58,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
   dossiê 09 (bioma como código) já entregue é pré-condição, não vizinhança.
 - **`DIRT` exposto é uma pergunta de duas leituras**: `get_block(p + Y) == AIR` e o vizinho.
   O que **não** se faz para responder é chamar
-  [`surface_height(x, z)`](../../src/world/voxel_world.gd#L463-L469): ela sobe a coluna do topo
+  [`surface_height(x, z)`](../../src/world/voxel_world.gd#L487-L493): ela sobe a coluna do topo
   (`CHUNK_SIZE_Y - 1 = 63`) até achar sólido — 64 `is_solid` por coluna, por candidato. Um
   candidato por tick custa 2 + 4 leituras; uma varredura de superfície do mapa inteiro custaria
   128 × 128 × ~64 = **~1 048 576** leituras por passada. O número é aritmética sobre
@@ -84,17 +84,17 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
   dossiê: o mato cai como 1 `PLANT`, e plantar de novo é **colocar o bloco**, não item de
   agricultura.
 - **O que uma célula que muda custa.** Cada conversão é um `set_block` → `edits[p] = b`
-  ([voxel_world.gd:286](../../src/world/voxel_world.gd#L286)) + chunk sujo
-  ([`:292-303`](../../src/world/voxel_world.gd#L292-L303)) remalhado a **2 chunks por frame**
-  ([main.gd:28](../../src/main.gd#L28), [`:332`](../../src/main.gd#L332)) ≈ 67 ms de
+  ([voxel_world.gd:310](../../src/world/voxel_world.gd#L310)) + chunk sujo
+  ([`:316-327`](../../src/world/voxel_world.gd#L316-L327)) remalhado a **2 chunks por frame**
+  ([main.gd:28](../../src/main.gd#L28), [`:358`](../../src/main.gd#L358)) ≈ 67 ms de
   boot por chunk nas medidas do contrato ([README.md:148-149](../../README.md#L148-L149)).
-  O `edits` **não tem teto** ([`:42`](../../src/world/voxel_world.gd#L42) é um `Dictionary`
-  puro, serializado inteiro em [main.gd:1012](../../src/main.gd#L1012)); hoje cresce
+  O `edits` **não tem teto** ([`:48`](../../src/world/voxel_world.gd#L48) é um `Dictionary`
+  puro, serializado inteiro em [main.gd:1038](../../src/main.gd#L1038)); hoje cresce
   1 chave por ação do jogador, e um ecossistema que cresce sozinho o faria crescer por tempo de
   sessão, não por trabalho do jogador. Isso é o débito real desta linha, declarado antes.
 - **RNG: há um riacho por dono e a suíte bate nele.** A sessão tem
-  `_population_rng` ([main.gd:71](../../src/main.gd#L71), semeado por
-  `("population:%d" % world_seed).hash()` em [`:353`](../../src/main.gd#L358) na perna 11) e
+  `_population_rng` ([main.gd:81](../../src/main.gd#L81), semeado por
+  `("population:%d" % world_seed).hash()` em [`:353`](../../src/main.gd#L384) na perna 11) e
   cada lobo tem o `_rng` próprio. Uma propagação que sortear célula **comendo o riacho da
   população** muda a ordem de spawns e derruba a suíte de RNG isolada
   (`tests/simulation_rng_test.gd`) sem mudar uma linha de comportamento. O lote abre riacho
@@ -153,7 +153,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
    **um campo, um comprador**, e o comprador é a colocação do jogador. Não é refatoração
    opcional: sem isso o mato é um obstáculo invisível que come o clique do jogador.
 6. **Observabilidade antes de orgulho**: `diagnostics()`
-   ([main.gd:1180-1215](../../src/main.gd#L1180-L1215)) ganha `growth_queued`, `growth_converted`
+   ([main.gd:1206-1249](../../src/main.gd#L1206-L1249)) ganha `growth_queued`, `growth_converted`
    e `edits.size()` já está lá (`:721`) — o par `edits` × tempo de sessão é o que mede se a
    linha é ecologia ou vazamento de disco.
 
@@ -162,7 +162,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
 - **Roda por frame, por tick ou às vezes?** A fila de crescimento: **dentro do tick de 20 Hz**,
   mas com reavaliação a cada `GROW_PERIOD` segundos de simulação; a conversão: no máximo
   1 por tick. A malha resultante: `_process`, fora do budget do passo
-  ([main.gd:332](../../src/main.gd#L332)).
+  ([main.gd:358](../../src/main.gd#L358)).
 - **Quantas entidades são alcançadas?** Nenhum bicho. Células: 1 evento de bloco candidata
   **5** (ela + 4 vizinhas), e cada reavaliação custa 6 `get_block` (1 própria + 1 acima + 1
   abaixo + 4 vizinhas, menos as sobrepostas). Com `GROW_MAX_PER_TICK = 1`, o teto por segundo
@@ -216,7 +216,7 @@ godot --headless --path . tests/smoke_test.tscn
    mesma semente, com e sem mecânica ligada, devolve a mesma sequência de spawns já conferida
    por `tests/simulation_rng_test.gd`. Sem ela, a perna passa a mentir sobre sorteio.
 9. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39),
-   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:223](../../tests/smoke_test.gd#L223))
+   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:265](../../tests/smoke_test.gd#L265))
    sobem com o lote, re-medidos no clone limpo com `--import` frio.
 
 ## 6. O que NÃO fazer

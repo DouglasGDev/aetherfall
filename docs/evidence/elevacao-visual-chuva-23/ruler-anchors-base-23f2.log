@@ -1,0 +1,133 @@
+$ python tools/check_doc_anchors.py --ref eb218fe
+## os DOCUMENTOS sao lidos de eb218fe e os ALVOS do disco: o controle mede a
+## arvore de hoje contra a prosa de antes, entao ele se move quando um alvo muda
+## de linha. Medido duas vezes nesta passada: 123 antes dos consertos de comentario
+## de opaque_surface.gd e smoke_test.gd, 122 depois. Terceira medicao no fechamento, na arvore com os logs de timing
+## linkados: os mesmos 122 casos e os mesmos 3 138 / 209 / 3 604.
+
+corpus em eb218fe  arquivos: 40  ponteiros conferidos: 3138  rotulos conferidos: 209  links relativos conferidos: 3604
+AGENTS.md:469  src/main.gd:879-879  BRANCO
+AGENTS.md:486  src/world/voxel_world.gd:42-42  BRANCO
+AGENTS.md:538  src/world/voxel_world.gd:42-42  BRANCO
+AGENTS.md:597  src/main.gd:1197-1197  BRANCO
+docs/design/11-inventory-crafting.md:196  src/main.gd:1023-1023  BRANCO
+docs/engine/simclock.md:109  src/main.gd:330-336  ROTULO FORA DO CORPO [_process] em 356-364
+docs/engine/simclock.md:117  src/main.gd:1205-1205  BRANCO
+docs/engine/simclock.md:118  tests/smoke_test.gd:261-262  BRANCO
+docs/engine/simclock.md:136  src/main.gd:292-292  BRANCO
+docs/engine/simclock.md:136  src/main.gd:859-859  BRANCO
+docs/engine/simclock.md:142  src/main.gd:330-331  ROTULO FORA DO CORPO [_process] em 356-364
+docs/engine/simclock.md:183  src/main.gd:276-282  ROTULO FORA DO CORPO [_physics_process] em 302-310
+docs/engine/simclock.md:33  src/main.gd:1027-1027  BRANCO
+docs/engine/simclock.md:49  src/main.gd:286-286  BRANCO
+docs/melhorias-status.md:1422  src/main.gd:1197-1197  BRANCO
+docs/melhorias-status.md:1449  src/world/voxel_world.gd:268-277  ROTULO FORA DO CORPO [_write_raw] em 292-301
+docs/melhorias-status.md:1449  src/world/voxel_world.gd:278-291  ROTULO FORA DO CORPO [set_block] em 302-315
+docs/melhorias-status.md:1460  src/world/voxel_world.gd:42-42  BRANCO
+docs/melhorias-status.md:151  src/main.gd:539-539  BRANCO
+docs/melhorias-status.md:160  src/main.gd:378-378  BRANCO
+docs/melhorias-status.md:202  src/main.gd:569-569  BRANCO
+docs/melhorias-status.md:2564  tests/smoke_test.gd:261-261  BRANCO
+docs/melhorias-status.md:2782  tests/smoke_test.gd:262-262  BRANCO
+docs/melhorias-status.md:3291  src/main.gd:527-527  ROTULO FORA DO CORPO [PACK_LEASH] em 553-559
+docs/melhorias-status.md:3349  ../.tools/_chk_labels.py  LINK QUEBRADO
+docs/melhorias-status.md:3690  src/main.gd:507-517  ROTULO FORA DO CORPO [_home_columns] em 533-543
+docs/melhorias-status.md:3690  src/main.gd:518-518  ROTULO FORA DO CORPO [SPAWN_BANDS] em 544-544
+docs/melhorias-status.md:3691  src/main.gd:527-533  ROTULO FORA DO CORPO [PACK_LEASH] em 553-559
+docs/melhorias-status.md:3691  src/main.gd:730-740  ROTULO FORA DO CORPO [_spawn_point_ok] em 756-766
+docs/melhorias-status.md:3694  src/main.gd:575-586  ROTULO FORA DO CORPO [_den_counts] em 601-612
+docs/melhorias-status.md:3695  src/main.gd:587-604  ROTULO FORA DO CORPO [_emptiest_den] em 613-630
+docs/melhorias-status.md:3695  src/main.gd:605-617  ROTULO FORA DO CORPO [_den_gate_ok] em 631-643
+docs/melhorias-status.md:3696  src/main.gd:618-639  ROTULO FORA DO CORPO [den_min_dist] em 644-665
+docs/melhorias-status.md:3697  src/main.gd:534-541  ROTULO FORA DO CORPO [DEN_COUNT] em 560-567
+docs/melhorias-status.md:3697  src/main.gd:542-552  ROTULO FORA DO CORPO [DEN_MIN_DIST] em 568-578
+docs/melhorias-status.md:3982  src/main.gd:518-518  ROTULO FORA DO CORPO [SPAWN_BANDS] em 544-544
+docs/melhorias-status.md:3983  src/main.gd:730-735  ROTULO FORA DO CORPO [_spawn_point_ok] em 756-766
+docs/melhorias-status.md:3985  src/main.gd:527-527  ROTULO FORA DO CORPO [PACK_LEASH] em 553-559
+docs/melhorias-status.md:4480  src/main.gd:762-762  BRANCO
+docs/melhorias-status.md:4757  src/main.gd:539-539  BRANCO
+docs/melhorias-status.md:4761  src/main.gd:378-378  BRANCO
+docs/melhorias-status.md:4775  src/main.gd:1197-1197  BRANCO
+docs/melhorias-status.md:5175  src/world/voxel_world.gd:306-318  ROTULO FORA DO CORPO [_mark] em 330-347
+docs/melhorias-status.md:5176  src/world/voxel_world.gd:324-331  ROTULO FORA DO CORPO [_record_edit_cost] em 348-361
+docs/melhorias-status.md:5177  src/world/voxel_world.gd:338-347  ROTULO FORA DO CORPO [edit_mesh_cost] em 362-373
+docs/melhorias-status.md:5325  docs/melhorias-status.md:3275-3275  BRANCO
+docs/melhorias-status.md:5925  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:5930  ../.tools/_carga_por_janela.py  LINK QUEBRADO
+docs/melhorias-status.md:5960  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:5962  ../.tools/_carga_por_janela.py  LINK QUEBRADO
+docs/melhorias-status.md:7366  src/world/voxel_world.gd:212-212  BRANCO
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md:14  src/main.gd:309-309  BRANCO
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md:31  docs/melhorias-status.md:1774-1774  BRANCO
+docs/planos/04-budget-hot-medido.md:31  tests/smoke_test.gd:261-262  BRANCO
+docs/planos/05-difusao-fora-do-tick.md:3  docs/melhorias-status.md:691-691  BRANCO
+docs/planos/06-decompor-main-gd.md:46  tests/smoke_test.gd:2464-2464  BRANCO
+docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:62  src/main.gd:309-310  BRANCO
+docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:79  src/main.gd:1197-1197  BRANCO
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:63  src/main.gd:978-979  BRANCO
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:69  src/main.gd:756-756  ROTULO FORA DO CORPO [_spawn_home_point] em 782-854
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:71  src/main.gd:518-518  ROTULO FORA DO CORPO [SPAWN_BANDS] em 544-544
+docs/planos/10-alcateia-rutinas.md:193  src/main.gd:890-905  ROTULO FORA DO CORPO [_pack_put] em 916-933
+docs/planos/10-alcateia-rutinas.md:214  src/main.gd:850-852  ROTULO FORA DO CORPO [pack_of] em 876-884
+docs/planos/10-alcateia-rutinas.md:214  src/main.gd:890-905  ROTULO FORA DO CORPO [_pack_put] em 916-933
+docs/planos/10-alcateia-rutinas.md:260  src/main.gd:356-379  ROTULO FORA DO CORPO [_spawn_wolves] em 382-421
+docs/planos/10-alcateia-rutinas.md:260  src/main.gd:60-60  ROTULO FORA DO CORPO [wolves] em 70-70
+docs/planos/10-alcateia-rutinas.md:261  src/main.gd:908-920  ROTULO FORA DO CORPO [_reap_corpses] em 934-954
+docs/planos/10-alcateia-rutinas.md:87  src/main.gd:356-379  ROTULO FORA DO CORPO [_spawn_wolves] em 382-421
+docs/planos/10-alcateia-rutinas.md:91  src/main.gd:756-756  ROTULO FORA DO CORPO [_spawn_home_point] em 782-854
+docs/planos/10-alcateia-rutinas.md:92  src/main.gd:672-672  ROTULO FORA DO CORPO [_place_request] em 698-734
+docs/planos/10-alcateia-rutinas.md:93  src/main.gd:518-518  ROTULO FORA DO CORPO [SPAWN_BANDS] em 544-544
+docs/planos/11-acasalamento-filhote-e-censo.md:200  tests/smoke_test.gd:2922-2978  ROTULO FORA DO CORPO [_check_censo_disk] em 3502-3629
+docs/planos/11-acasalamento-filhote-e-censo.md:50  src/main.gd:908-928  ROTULO FORA DO CORPO [_reap_corpses] em 934-954
+docs/planos/12-bicho-cavando-voxel.md:117  src/world/voxel_world.gd:204-212  ROTULO FORA DO CORPO [process] em 228-238
+docs/planos/12-bicho-cavando-voxel.md:123  src/world/voxel_world.gd:219-219  ROTULO FORA DO CORPO [last_mesh_ms] em 243-246
+docs/planos/12-bicho-cavando-voxel.md:125  src/world/voxel_world.gd:306-319  ROTULO FORA DO CORPO [_mark] em 330-347
+docs/planos/12-bicho-cavando-voxel.md:126  src/world/voxel_world.gd:324-332  ROTULO FORA DO CORPO [_record_edit_cost] em 348-361
+docs/planos/12-bicho-cavando-voxel.md:127  src/world/voxel_world.gd:338-348  ROTULO FORA DO CORPO [edit_mesh_cost] em 362-373
+docs/planos/12-bicho-cavando-voxel.md:131  src/world/voxel_world.gd:215-215  ROTULO FORA DO CORPO [pending_meshes] em 239-242
+docs/planos/12-bicho-cavando-voxel.md:132  src/world/voxel_world.gd:223-223  ROTULO FORA DO CORPO [meshes_built] em 247-250
+docs/planos/12-bicho-cavando-voxel.md:159  tests/smoke_test.gd:429-429  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:79  src/world/voxel_world.gd:273-273  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:83  src/world/voxel_world.gd:268-277  ROTULO FORA DO CORPO [_write_raw] em 292-301
+docs/planos/12-bicho-cavando-voxel.md:84  src/world/voxel_world.gd:42-42  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:85  src/world/voxel_world.gd:292-305  ROTULO FORA DO CORPO [_touch_chunks_of] em 316-329
+docs/planos/13-arvore-genealogica-e-ether.md:103  src/main.gd:842-843  ROTULO FORA DO CORPO [wolves_roster] em 868-875
+docs/planos/13-arvore-genealogica-e-ether.md:256  src/main.gd:60-60  ROTULO FORA DO CORPO [wolves] em 70-70
+docs/planos/13-arvore-genealogica-e-ether.md:324  src/main.gd:1258-1259  ROTULO FORA DO CORPO [state_hash] em 1292-1295
+docs/planos/13-arvore-genealogica-e-ether.md:46  src/main.gd:70-70  ROTULO FORA DO CORPO [_next_identity] em 80-80
+docs/planos/13-arvore-genealogica-e-ether.md:97  src/main.gd:396-419  ROTULO FORA DO CORPO [_make_wolf] em 422-446
+docs/planos/13-arvore-genealogica-e-ether.md:98  src/main.gd:356-379  ROTULO FORA DO CORPO [_spawn_wolves] em 382-421
+docs/planos/14-convivio-da-alcateia.md:27  src/main.gd:990-995  ROTULO FORA DO CORPO [_on_wolf_died] em 1016-1023
+docs/planos/14-convivio-da-alcateia.md:34  src/main.gd:518-518  ROTULO FORA DO CORPO [SPAWN_BANDS] em 544-544
+docs/planos/14-convivio-da-alcateia.md:35  src/main.gd:730-735  ROTULO FORA DO CORPO [_spawn_point_ok] em 756-766
+docs/planos/14-convivio-da-alcateia.md:64  src/main.gd:829-831  ROTULO FORA DO CORPO [_volume_clear] em 855-859
+docs/planos/14-convivio-da-alcateia.md:68  src/world/voxel_world.gd:454-460  ROTULO FORA DO CORPO [line_of_sight] em 478-486
+docs/planos/14-convivio-da-alcateia.md:72  src/main.gd:298-298  BRANCO
+docs/planos/14-convivio-da-alcateia.md:74  src/main.gd:959-960  ROTULO FORA DO CORPO [_on_notice] em 985-988
+docs/planos/14-convivio-da-alcateia.md:84  src/main.gd:908-928  ROTULO FORA DO CORPO [_reap_corpses] em 934-954
+docs/planos/15-oraculo-embutido-no-boot.md:477  docs/melhorias-status.md:553-553  BRANCO
+docs/planos/15-oraculo-embutido-no-boot.md:506  src/main.gd:1008-1008  BRANCO
+docs/planos/15-oraculo-embutido-no-boot.md:517  src/main.gd:1250-1251  BRANCO
+docs/planos/16-tocas-da-alcateia.md:163  src/main.gd:762-762  BRANCO
+docs/planos/16-tocas-da-alcateia.md:226  src/main.gd:569-569  BRANCO
+docs/planos/16-tocas-da-alcateia.md:386  src/main.gd:762-762  BRANCO
+docs/planos/16-tocas-da-alcateia.md:67  src/main.gd:762-762  BRANCO
+docs/planos/16-tocas-da-alcateia.md:76  src/main.gd:762-762  BRANCO
+docs/planos/17-fisica-de-blocos-que-caem.md:113  src/world/voxel_world.gd:252-265  ROTULO FORA DO CORPO [get_block_xyz] em 276-291
+docs/planos/17-fisica-de-blocos-que-caem.md:120  src/world/voxel_world.gd:204-212  ROTULO FORA DO CORPO [process] em 228-238
+docs/planos/17-fisica-de-blocos-que-caem.md:131  src/main.gd:1010-1030  ROTULO FORA DO CORPO [save_game] em 1036-1073
+docs/planos/17-fisica-de-blocos-que-caem.md:178  src/main.gd:285-285  ROTULO FORA DO CORPO [_sim_tick] em 311-355
+docs/planos/17-fisica-de-blocos-que-caem.md:309  src/main.gd:285-285  ROTULO FORA DO CORPO [_sim_tick] em 311-355
+docs/planos/17-fisica-de-blocos-que-caem.md:47  src/world/voxel_world.gd:278-289  ROTULO FORA DO CORPO [set_block] em 302-315
+docs/planos/17-fisica-de-blocos-que-caem.md:59  src/world/voxel_world.gd:268-275  ROTULO FORA DO CORPO [_write_raw] em 292-301
+docs/planos/17-fisica-de-blocos-que-caem.md:62  src/world/voxel_world.gd:292-303  ROTULO FORA DO CORPO [_touch_chunks_of] em 316-329
+docs/planos/18-mundo-vivo-grama-e-mato.md:45  src/world/voxel_world.gd:190-190  BRANCO
+docs/planos/18-mundo-vivo-grama-e-mato.md:45  src/world/voxel_world.gd:190-190  ROTULO FORA DO CORPO [apply_edits] em 214-227
+docs/planos/18-mundo-vivo-grama-e-mato.md:61  src/world/voxel_world.gd:463-469  ROTULO FORA DO CORPO [surface_height] em 487-500
+docs/planos/18-mundo-vivo-grama-e-mato.md:91  src/world/voxel_world.gd:42-42  BRANCO
+docs/planos/23-elevacao-visual-agua.md:72  src/world/voxel_world.gd:104-104  BRANCO
+docs/planos/23-elevacao-visual-agua.md:77  src/world/voxel_world.gd:677-677  BRANCO
+docs/planos/README.md:322  docs/melhorias-status.md:2431-2431  BRANCO
+casos objetivos: 122
+
+exit=1

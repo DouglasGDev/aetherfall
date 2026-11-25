@@ -37,10 +37,10 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    age é o dicionário `_narrations` ([mind_oracle.gd:72](src/ai/mind_oracle.gd#L72), gravado em
    [:170](src/ai/mind_oracle.gd#L170)), lido por `narration_of()`
    ([:150-151](src/ai/mind_oracle.gd#L150-L151)) e entregue só ao HUD
-   ([main.gd:193](src/main.gd#L193) → [hud.gd:276-277](src/ui/hud.gd#L276-L277)). O dono do pack
+   ([main.gd:203](src/main.gd#L203) → [hud.gd:276-277](src/ui/hud.gd#L276-L277)). O dono do pack
    lê um campo do oráculo — `last_reason` na linha de status do F3
    ([af_mind_runtime.gd:85-86](src/ai/af_mind_runtime.gd#L85-L86), entregue por
-   `llm_status_provider` em [main.gd:260](src/main.gd#L260)) — leitura, nenhuma escrita. Não
+   `llm_status_provider` em [main.gd:286](src/main.gd#L286)) — leitura, nenhuma escrita. Não
    existe caminho do oráculo para `Mind`, `Wolf` ou `VoxelWorld`; a decisão
    vem de BT + utilidade
    ([wolf.gd:422-450](src/entities/wolf.gd#L422-L450), [:824-826](src/entities/wolf.gd#L824-L826),
@@ -63,7 +63,7 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    ([aether_field.gd:232-234](src/world/aether_field.gd#L232-L234)), sem o corte do save.
    **Não inclui** jogador, corpos, RNG, episódios, relações, timers ou comandos; não torna a
    simulação determinística. `main.state_hash()` expõe a consulta
-   ([main.gd:1258-1259](src/main.gd#L1258-L1259)); o acesso ao estado autoritativo permanece aberto.
+   ([main.gd:1292-1293](src/main.gd#L1292-L1293)); o acesso ao estado autoritativo permanece aberto.
    O contrato foi exercitado em headless antes do refinamento dos rastros; resultados
    históricos locais e fontes medidas estão nas [notas do status](docs/melhorias-status.md#notas-de-medição).
    O candidato final com o lobo refinado também foi importado sem cache e validado;
@@ -92,10 +92,10 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    de golpe e a publicação do número do clone limpo são dois commits porque cada um tem uma
    corrida que lhe responde.
 7. **Comentário explica o porquê, em português.** Nunca narrar o óbvio do código. Modelos
-   reais: [smoke_test.gd:323-333](tests/smoke_test.gd#L323-L333) (por que o teste dá o `dt` e os
+   reais: [smoke_test.gd:407-417](tests/smoke_test.gd#L407-L417) (por que o teste dá o `dt` e os
    passos ele mesmo) e o `GEN_VERSION` [world_gen.gd:6](src/world/world_gen.gd#L6), que faz o
    save velho ser recusado com mensagem em vez de lido torto
-   ([main.gd:1054-1055](src/main.gd#L1054-L1055)).
+   ([main.gd:1106-1107](src/main.gd#L1106-L1107)).
 8. **Zero derivação GPL do Veloren.** Inspiração de idéias e sistemas é permitida; código e
    asset, não. *Verificado por ausência:* nenhum `.rs` e nenhum `.ron` no repositório;
    [docs/design/09](docs/design/09-veloren-mechanics-adaptation.md) separa o que veio de lá como
@@ -119,31 +119,31 @@ O terceiro mandato não pede otimização nova: pede que nenhuma mudança entre 
 o custo dela. Ele é aplicável porque o projeto **já** tem instrumento — e tem, com nomes:
 
 **As duas cadências.** O jogador local roda por *frame de física*
-([main.gd:276-282](src/main.gd#L276-L282) → `update_local`): lavra e colocação escrevem
+([main.gd:328-334](src/main.gd#L328-L334) → `update_local`): lavra e colocação escrevem
 voxels fora do tick ([player.gd:685](src/entities/player.gd#L685),
 [:711](src/entities/player.gd#L711)) e seus sinais também imprimem no Éter
-([main.gd:934-939](src/main.gd#L934-L939)). O lobo não é só 20 Hz:
+([main.gd:986-991](src/main.gd#L986-L991)). O lobo não é só 20 Hz:
 `wolf._physics_process` locomove o corpo e reduz timers de cadáver, atordoamento e desvio
 por frame ([wolf.gd:1203-1259](src/entities/wolf.gd#L1203-L1259)). Decisão de IA, difusão,
 recolha de cadáveres e respawns são agendados pelo tick de 20 Hz, com cadências próprias
-([main.gd:285-320](src/main.gd#L285-L320), [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7)).
+([main.gd:337-372](src/main.gd#L337-L372), [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7)).
 `begin_step`/`end_step` cronometra esse passo em microsegundos
-([main.gd:280-282](src/main.gd#L280-L282), [sim_clock.gd:32-39](src/core/sim_clock.gd#L32-L39)),
+([main.gd:332-334](src/main.gd#L332-L334), [sim_clock.gd:32-39](src/core/sim_clock.gd#L32-L39)),
 incluindo o journal ativo. Regra de bolso: o que você coloca em `_sim_tick` divide 50 ms
 com 5 lobos; o que coloca em `_physics_process` divide o frame com a renderização.
 
 **Journal sob demanda, não gravação automática.** A CLI lê, após `--`,
-`--tick-journal=path` ([main.gd:1262-1269](src/main.gd#L1262-L1269)). `start()` recusa caminho
+`--tick-journal=path` ([main.gd:1296-1303](src/main.gd#L1296-L1303)). `start()` recusa caminho
 existente: cada corrida exige arquivo novo explícito, sem reabrir histórico nem criar
 arquivos automaticamente entre sessões ([tick_journal.gd:47-62](src/persistence/tick_journal.gd#L47-L62)).
 `record()` acrescenta JSONL `[tick,hash]` com `flush` por linha; recusa tick negativo e,
 após o primeiro registro, duplicata, regressão ou salto (exige `last_tick + 1`)
 ([tick_journal.gd:69-87](src/persistence/tick_journal.gd#L69-L87)). A chamada ocorre após
 `clock.tick += 1`, **dentro** do cronômetro da simulação
-([main.gd:321-327](src/main.gd#L321-L327)); sem o modo, o tick só consulta `active()`.
+([main.gd:373-379](src/main.gd#L373-L379)); sem o modo, o tick só consulta `active()`.
 O load válido encerra o arquivo antes de restaurar o mundo
-([main.gd:1057-1059](src/main.gd#L1057-L1059)); sair da cena também o fecha
-([main.gd:1287](src/main.gd#L1287)). O arquivo cresce apenas enquanto a gravação
+([main.gd:1083-1085](src/main.gd#L1083-L1085)); sair da cena também o fecha
+([main.gd:1347](src/main.gd#L1347)). O arquivo cresce apenas enquanto a gravação
 explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 
 **Orçamentos que já são código**, não intenção (regra 7):
@@ -152,8 +152,8 @@ explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 | --- | --- | --- |
 | Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-L29) |
 | Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs); só BT, não percepção/utilidade | [bt_tree.gd:117-137](src/ai/behavior/bt_tree.gd#L117-L137), [wolf.gd:448-449](src/entities/wolf.gd#L448-L449) |
-| Malha | 2 chunks por frame — **contagem, não tempo**: medido 52–177 ms no pior quadro, contra um piso de instrumento de 6,0 ms; é o furo #41 | [main.gd:28](src/main.gd#L28), usado em [:332](src/main.gd#L332), [voxel_world.gd:203-212](src/world/voxel_world.gd#L203-L212) |
-| Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:27](src/main.gd#L27), [:291](src/main.gd#L291) |
+| Malha | 2 chunks por frame — **contagem, não tempo**: medido 52–177 ms no pior quadro, contra um piso de instrumento de 6,0 ms; é o furo #41 | [main.gd:28](src/main.gd#L28), usado em [:358](src/main.gd#L358), [voxel_world.gd:227-236](src/world/voxel_world.gd#L227-L236) |
+| Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:27](src/main.gd#L27), [:317](src/main.gd#L317) |
 | Recolha de cadáver, visão do Éter | 1 s e 0,25 s | [main.gd:31](src/main.gd#L31), [:29](src/main.gd#L29) |
 
 **O que doeu nas corridas históricas, antes do journal** (regra 2): o boot, não o tick.
@@ -182,7 +182,7 @@ Essas alocações ainda não têm medição própria: os monitores do engine lid
 `TIME_PROCESS` e `TIME_PHYSICS_PROCESS`, só no overlay F3
 ([hud.gd:248-251](src/ui/hud.gd#L248-L251)). Em headless, a suíte colhe o pior passo
 (`worst_sim_ms`, vindo de `clock.worst_step_ms`) e `dropped_ticks` pelo `diagnostics()`
-([main.gd:1180-1206](src/main.gd#L1180-L1206)). A colheita estreita de reações já separa
+([main.gd:1232-1266](src/main.gd#L1232-L1266)). A colheita estreita de reações já separa
 `sim_step` integral de BT, mas não mede alocações nem o HOT agregado dos cinco lobos.
 Então o primeiro passo de qualquer otimização é a colheita, não o corte.
 
@@ -227,7 +227,7 @@ serialização, SHA256 e escrita com `flush`. Não é custo total de alocação 
 O journal expõe `records`, `last_us`, `worst_us` e `total_us` (hash + escrita + flush
 concluídos) em `diagnostics()["journal"]`
 ([tick_journal.gd:74-98](src/persistence/tick_journal.gd#L74-L98),
-[main.gd:1209](src/main.gd#L1209)). No candidato histórico local recém-importado, anterior
+[main.gd:1235](src/main.gd#L1235)). No candidato histórico local recém-importado, anterior
 ao refinamento dos rastros, 205 registros custaram 160 000 µs ao todo, com pico de
 1 646 µs; o load encerrou a gravação. Os dois smokes, sem/com journal, terminaram sem
 ticks perdidos, mas não são replay pareado, prova de otimização ou medição do lobo
@@ -245,7 +245,7 @@ perto ou longe ([wolf.gd:906-911](src/entities/wolf.gd#L906-L911)). A peça do d
 **Anti-bloat, com o estado real:**
 
 - `main.gd` é o "objeto deus" conhecido — 1287 linhas nesta revisão (`wc -l`), 510 na `main` de `eb6ec8d`, donas de mundo, relógio, matilha, HUD,
-  oráculo, visualização, instância do journal, o nó de áudio e o hospedeiro do modelo ([main.gd:43-62](src/main.gd#L43-L62)), com as tocas da perna 16 dentro do bloco da matilha (`var _dens` em [:116](src/main.gd#L116)). Isso está registrado como
+  oráculo, visualização, instância do journal, o nó de áudio e o hospedeiro do modelo ([main.gd:43-72](src/main.gd#L43-L72)), com as tocas da perna 16 dentro do bloco da matilha (`var _dens` em [:126](src/main.gd#L126)). Isso está registrado como
   débito, não como licença: mudança que precisa de estado novo pergunta primeiro **quem é o
   dono** daquele estado.
 - Generalize no segundo chamador, não no primeiro. O padrão da casa é dado no código até
@@ -290,7 +290,7 @@ Duas recortes que a autorização **não** cobre, porque o código já os entreg
 existe: a lavra contínua do jogador (`player.gd:654-665`, segura `break_block`, o progresso soma
 por frame e o bloco cai quando `hardness` estoura) e a coleta automática no inventário
 (`:677-690`, o drop do registro entra direto) — ambas checadas em
-[`tests/smoke_test.gd:1295-1303`](tests/smoke_test.gd#L1295-L1303) ("segurar break minerou", "tempo de
+[`tests/smoke_test.gd:2454-2462`](tests/smoke_test.gd#L2454-L2462) ("segurar break minerou", "tempo de
 mineracao == dureza", "lavra entrou no inventario como drop"). Melhorar o que já passou no gate
 continua vetado; o buraco real **à data daquela autorização** era nenhum bicho escrever no mundo — os
 dois únicos `world.set_block` de gameplay eram os do jogador (`src/entities/player.gd:685`, `:711`); a 12 escreveu o terceiro.
@@ -333,9 +333,9 @@ uma com um agente responsável.** Elas entram no "dentro"; a posição de cada u
    centro depois de 24 tentativas, e **nenhum caminho de spawn consultava a posição atual do jogador
    nem `world.line_of_sight`** (`f2823a8:src/world/voxel_world.gd:393`).
    O que a perna entregou, com os números de hoje: **nenhum letreiro de criatura** — as duas
-   frases saíram, o contador de abate fica ([`src/main.gd:990-996`](src/main.gd#L990-L996)) e a
+   frases saíram, o contador de abate fica ([`src/main.gd:1042-1048`](src/main.gd#L1042-L1048)) e a
    vaga devolvida à fila de respawn não anuncia um ponto que pode ter sido recusado
-   ([`src/main.gd:299-312`](src/main.gd#L299-L312)); **ronda por chão seco sem copiar o teste
+   ([`src/main.gd:351-364`](src/main.gd#L351-L364)); **ronda por chão seco sem copiar o teste
    para dentro das folhas** — o alvo escrito pela árvore é filtrado depois do tick por
    `_resolve_dry_target()` ([`src/entities/wolf.gd:764-768`](src/entities/wolf.gd#L764-L768),
    chamado em [`:912`](src/entities/wolf.gd#L912), fora dos 400 µs do `SubtreeGuard`), e a água é
@@ -344,18 +344,18 @@ uma com um agente responsável.** Elas entram no "dentro"; a posição de cada u
    (`SHORE_AFTER` [`:149`](src/entities/wolf.gd#L149), aplicado em [`:901`](src/entities/wolf.gd#L901));
    **spawn a distância segura e fora da visada** — o predicado único `_spawn_point_ok()` exige
    ≥ `SAFE_SPAWN_DIST` (32 m) **e** que a linha do olho do jogador ao peito do lobo esteja bloqueada
-   ([`src/main.gd:730-735`](src/main.gd#L730-L735)), dentro das bandas em torno da posição **atual**
-   do jogador (`SPAWN_BANDS` [`:519`](src/main.gd#L519), busca em [`:756-821`](src/main.gd#L756-L821)),
+   ([`src/main.gd:756-761`](src/main.gd#L756-L761)), dentro das bandas em torno da posição **atual**
+   do jogador (`SPAWN_BANDS` [`:545`](src/main.gd#L545), busca em [`:782-847`](src/main.gd#L782-L847)),
    sem fallback mudo no centro e com a recusa impressa por motivo contado; colunas de lar distintas
-   por lobo (`_home_columns()` [`:508-512`](src/main.gd#L508-L512)) e mordaca de 18 m sobre o lar de
-   um irmao vivo (`PACK_LEASH` [`:528`](src/main.gd#L528), centro lido à época em `99d1167:src/main.gd:501-511`,
-   hoje o centro da própria toca — `_entrada()` [`:710-713`](src/main.gd#L710-L713)),
+   por lobo (`_home_columns()` [`:534-538`](src/main.gd#L534-L538)) e mordaca de 18 m sobre o lar de
+   um irmao vivo (`PACK_LEASH` [`:554`](src/main.gd#L554), centro lido à época em `99d1167:src/main.gd:501-511`,
+   hoje o centro da própria toca — `_entrada()` [`:736-739`](src/main.gd#L736-L739)),
    que é o conserto do furo #16 — sem ela a alcateia nunca se formou na sessao real da suíte.
    Sustenteam isso **33 checagens em oito cenários** nomeados no runner
    ([`tests/aether_reactions_test.gd:28-32`](tests/aether_reactions_test.gd#L28-L32); o censo
    [`:60`](tests/aether_reactions_test.gd#L61) que a 14 subiu de 150 para 183 é **240** hoje,
    depois da 16) e a checagem da sessão real
-   ([`tests/smoke_test.gd:315-320`](tests/smoke_test.gd#L315-L320)), agora com `biggest >= 2`.
+   ([`tests/smoke_test.gd:399-404`](tests/smoke_test.gd#L399-L404)), agora com `biggest >= 2`.
 2. **Árvore genealógica de todo ser vivo, com o Éter trabalhando isso** (dossiê
    [`docs/planos/13-arvore-genealogica-e-ether.md`](docs/planos/13-arvore-genealogica-e-ether.md),
    branch `feat/arvore-genealogica-13`, dono o agente `genealogia-13`). Recorte lido antes de
@@ -453,11 +453,11 @@ que o dono fez em 2026-11-21.** Entra no "dentro" como
 fixa o nome), e na fila serializada fica exatamente onde ele escolheu: **depois da 19 e antes da 12** — a
 ordem **09 → 10 → 15 → 14 → 11 → 19 → 16 → 12 → 17 → 18 → 13** não muda. A premissa nomeada na página,
 lida do código e não de corrida: os cinco lares do boot cabem num círculo de **18 m**, porque
-`PACK_LEASH = 18.0` ([src/main.gd:528](src/main.gd#L528)) é a primeira tentativa
-([:763](src/main.gd#L763)) e `_pack_leash()` devolvia o lar do **primeiro** lobo vivo
+`PACK_LEASH = 18.0` ([src/main.gd:554](src/main.gd#L554)) é a primeira tentativa
+([:789](src/main.gd#L789)) e `_pack_leash()` devolvia o lar do **primeiro** lobo vivo
 (`99d1167:src/main.gd:501-505`; a perna 16 apagou a função e hoje o centro lido é a própria
-toca, `_entrada()` [`:710-713`](src/main.gd#L710-L713)), enquanto a caixa útil é 116 × 116 m — o clamp de `6 … W-6` em
-[:783-784](src/main.gd#L783-L784) sobre um mundo de 128 × 128. É por isso que ele percorreu o vale
+toca, `_entrada()` [`:736-739`](src/main.gd#L736-L739)), enquanto a caixa útil é 116 × 116 m — o clamp de `6 … W-6` em
+[:809-810](src/main.gd#L809-L810) sobre um mundo de 128 × 128. É por isso que ele percorreu o vale
 inteiro e viu um lobo só. A página decide o gate por **componentes conexos do grafo de coesão** lido em
 `pack_of()`, não por adjetivo, e abre o par de braços (§3.4) antes do código: **A** (só colocação) é a
 escolhida primeiro e só se aceita com a checagem de derivação verde; **B** (dar âncora ao centro de
@@ -466,7 +466,7 @@ mesa. Duas consequências de documentação, registradas **antes** de qualquer l
 recusas de spawn nunca tiveram testemunha numérica — `motivos` só era interpolado na string impressa,
 `99d1167:src/main.gd:545`) passa a ter dono fixo, a perna 16, e deixa de estar oferecido à 16
 **ou** à 11; e esta leitura abre o **furo #21** — `pack_pairs` incrementa em
-[:874](src/main.gd#L874) **antes** do teste de raio em [:875](src/main.gd#L875), então a asserção
+[:900](src/main.gd#L900) **antes** do teste de raio em [:901](src/main.gd#L901), então a asserção
 `pack_pairs == n(n-1)/2` da suíte é verdade aritmética e só `biggest >= 2` decide coesão. Nada desta
 página encosta em `Channel.COUNT`, `FORMAT_VERSION` nem `GEN_VERSION`, e nenhuma linha de código dela
 foi escrita: a branch abre da `main` no ponto atual, com o gate nascendo vermelho.
@@ -482,8 +482,8 @@ não permissão**: o jogador soma `_mining_accum += delta` contra `target_hardne
 ([:685](src/entities/player.gd#L685)), então `STONE 0,95` **cai** — o que limita a pata é lista de
 material, não a régua. (2) **`block_changed` não tem um único consumidor** no repositório: existem só a
 declaração ([src/world/voxel_world.gd:6](src/world/voxel_world.gd#L6)) e o emit
-([:288](src/world/voxel_world.gd#L288)), então o gate desta perna observa estado de mundo lido
-(`get_block` + [`world.edits`](src/world/voxel_world.gd#L42)) e quem assina o sinal continua sendo a 17 —
+([:336](src/world/voxel_world.gd#L336)), então o gate desta perna observa estado de mundo lido
+(`get_block` + [`world.edits`](src/world/voxel_world.gd#L54)) e quem assina o sinal continua sendo a 17 —
 que é exatamente o motivo pelo qual a checagem `queda_move_a_celula` daquela página nasce vermelha.
 (3) **O desemperto já tem dois ramos**, e o segundo é da 19 ([src/entities/wolf.gd:1239-1254](src/entities/wolf.gd#L1239-L1254)),
 então cavar entra como **terceiro** ramo do mesmo `if` (fork A), e a alternativa de folha nova na
@@ -535,7 +535,7 @@ gitignored). A fila serializada passa a **12 → 17 → 18 → 20 → 13**: a 16
 `feat/bicho-cavando-12` — que **abriu depois, da `main` de `dcbcbe8`**, e pousou em `fa94cb5` no registro
 abaixo — e depois dele 17, 18, 20 e 13. O motivo que esta frase dava para o vermelho estava errado, e a própria página 12 o
 tinha corrigido dois registros antes: o gate do cavar observa `get_block` +
-[`world.edits`](src/world/voxel_world.gd#L42), não o sinal, então a branch nasce vermelha porque nenhuma
+[`world.edits`](src/world/voxel_world.gd#L54), não o sinal, então a branch nasce vermelha porque nenhuma
 linha do cavar existia ainda, não porque `block_changed` continua sem consumidor nenhum — esse continua
 sendo débito da 17 assinar. **A fila P0/P1 continua aberta**: budget HOT sem medição, censo multi-semente
 sem corrida e bake-off de AF sem número são exatamente os elos que a 16 não toca, e nada desta rodada
@@ -585,7 +585,7 @@ Quatro afirmações do prompt a leitura devolve diferente, e duas metades dele a
 ([src/entities/wolf.gd:1319-1320](src/entities/wolf.gd#L1319-L1320)), arma o timer de cadáver
 ([:1321](src/entities/wolf.gd#L1321)) e só então emite `died` ([:1322](src/entities/wolf.gd#L1322)).
 (2) O sinal **não** é órfão — tem **dois** consumidores em `src/`, e nenhum deles é um item:
-`_on_wolf_died` ([src/main.gd:410](src/main.gd#L410) conecta, corpo em [`:991`](src/main.gd#L991)) só
+`_on_wolf_died` ([src/main.gd:436](src/main.gd#L436) conecta, corpo em [`:1017`](src/main.gd#L1017)) só
 soma `stats["wolves_felled"]`, e o diretor de áudio toca `wolf_died`
 ([src/audio/audio_director.gd:161](src/audio/audio_director.gd#L161), corpo em [`:412`](src/audio/audio_director.gd#L412));
 a conclusão do prompt fica de pé, o motivo dela não. (3) "Lobos presos diante de bloco" era a pauta da
@@ -593,8 +593,8 @@ a conclusão do prompt fica de pé, o motivo dela não. (3) "Lobos presos diante
 leito `amb_birds` tocando sem nenhuma ave no mundo **não** é defeito do tipo da 19 — é cama de ambiência
 de campo aberto, correta como ambiência; o que ela prova é que o mundo já promete céu vivo. O que a
 re-derivação acrescentou e a pauta não citava quando foi escrita: **a 16 deu toca à matilha** — `var _dens`
-([src/main.gd:116](src/main.gd#L116)), `den_components()` ([:641](src/main.gd#L641)) publicado no
-`diagnostics()` ([:1193](src/main.gd#L1193)), `Wolf.den`
+([src/main.gd:126](src/main.gd#L126)), `den_components()` ([:667](src/main.gd#L667)) publicado no
+`diagnostics()` ([:1219](src/main.gd#L1219)), `Wolf.den`
 ([src/entities/wolf.gd:186](src/entities/wolf.gd#L186)) com a chave `den` já no disco
 ([`:1372`](src/entities/wolf.gd#L1372), lida em [`:1405`](src/entities/wolf.gd#L1405)) — território que
 mexe no §3.9 da página e em nenhuma das quatro afirmações acima.
@@ -731,7 +731,7 @@ não é preferência: o dono pediu esta perna agora e mandou aplicar. O preço �
 17 e 18 rebaseiam numa árvore onde o material da água e o `COLOR` dos vértices de água já mudaram, e cada
 uma **re-rome o gate** na árvore resultante (item 5 de "Branches"). O choque lido antes de abrir:
 `src/main.gd` é de escritor único e a 22 também o toca (o hospedeiro do modelo,
-[main.gd:230-265](src/main.gd#L230-L265)); esta perna escreve **três linhas** nele — instantiate do nó de
+[main.gd:282-317](src/main.gd#L282-L317)); esta perna escreve **três linhas** nele — instantiate do nó de
 FX e a linha de diagnóstico.
 
 Quatro afirmações do prompt a leitura da base (`b0ed929`) devolveu diferente, e nenhuma é cosmética. É
@@ -750,15 +750,15 @@ por isso, não por descrever peça inexistente. (3) "Refração" já tinha onde 
 `FACE_TINT` da face (`b0ed929:src/world/voxel_world.gd:528-530`, `:627-628`) e `_mat_water` não ligava
 `vertex_color_use_as_albedo` (ligavam o opaco `b0ed929:...:88` e o vidro `:104`); isso era o **furo #43** —
 a face lateral da água com o tint descartado — e a página escolheu esse canal como portador da máscara
-(§3.3). Hoje o shader lê esse canal — [`water_surface.gd:116`](src/world/water_surface.gd#L116) e
-[`:136-138`](src/world/water_surface.gd#L136-L138) — e o material que o carrega nasce em
-[`voxel_world.gd:97`](src/world/voxel_world.gd#L97), com a asserção de que ele é lido na própria
+(§3.3). Hoje o shader lê esse canal — [`water_surface.gd:190`](src/world/water_surface.gd#L190) e
+[`:210-212`](src/world/water_surface.gd#L210-L212) — e o material que o carrega nasce em
+[`voxel_world.gd:131`](src/world/voxel_world.gd#L131), com a asserção de que ele é lido na própria
 suíte (§5.1). (4) "Caústicas quando o sol está alto" não tem variável: `_build_environment` escreve um sol
 **parado** em `rotation_degrees (-42, 55, 0)` com elevação fixa de ~48° e uma `fog_density` de `0,006`
-([main.gd:1220-1256](src/main.gd#L1220-L1256)); não existe clima no projeto, e isso é o que segura a
+([main.gd:1254-1290](src/main.gd#L1254-L1290)); não existe clima no projeto, e isso é o que segura a
 Fase 2 como pauta e não como código desta perna (§3.9). O que a perna fez com essa afirmação foi
-**expor** o sol à água — `_sun_dir` lido do `basis` da luz ([main.gd:1231](src/main.gd#L1231), entregue em
-[:141](src/main.gd#L141)) — sem tocar no `Environment`, que é da Fase 4.
+**expor** o sol à água — `_sun_dir` lido do `basis` da luz ([main.gd:1265](src/main.gd#L1265), entregue em
+[:151](src/main.gd#L151)) — sem tocar no `Environment`, que é da Fase 4.
 
 Uma consequência de instrumento, escrita antes do código porque é ela que divide o gate: **headless não
 exercita o `RenderingDevice`, então nenhuma corrida da suíte pode afirmar que o shader compila.** O
@@ -835,6 +835,80 @@ base, e o septuagésimo sexto é a própria frase que lista as ausências contan
 todos da classe "peça que a página declara comprar". A fila serializada passa a **22 → 17 → 18 → 20 →
 13**: a 23 sai da frente, o elo seguinte é `feat/oraculo-nativo-gdextension-22`, que continua em voo na
 árvore primária com trabalho não commitado em `native/af_mind/`.
+
+**Registro de 2026-11-25 — a Fase 2 do dossiê 23 abre como código. Nenhuma autorização nova e nenhuma
+posição de fila muda.** A autorização usada é a do registro de 2026-11-24, que pôs as Fases 2→5 "como
+pauta dentro dessa mesma perna, cada uma com gate próprio e nenhuma linha escrita antes de a anterior
+fechar o dela": a Fase 1 fechou o gate dela e pousou (`05e8917`), então a Fase 2 é a da vez. O corte está
+escrito em [`docs/planos/23-elevacao-visual-agua.md`](docs/planos/23-elevacao-visual-agua.md) §3.10, o
+gate em §5.3 e a sonda em §5.4, e este registro é **anterior** a qualquer linha de `src/` (mandato 4).
+A fila serializada continua **22 → 17 → 18 → 20 → 13** — Fase dentro de perna não é elo novo.
+
+Quatro coisas a leitura da árvore de abertura (`eb218fe`) devolve diferente do que a pauta dizia, e
+nenhuma é cosmética. (1) A pauta (§3.9) afirmava que a Fase 2 "reabre a discussão do §3.1"; a cláusula do
+§3.1 é *"quando existir mais de **um** `.gdshader` no projeto"*, e o segundo material desta fase, como o
+primeiro, nasce de uma constante `.gd`. Arquivos `.gdshader`: **0 antes, 0 depois** — a discussão não
+reabre, e a página corrige a si mesma com o número impresso (§5.3, primeira linha). (2) O que a Fase 2 reabre
+é outra cláusula, a do §3.3 braço (a): na árvore de abertura o `COLOR` do grupo opaco escreve
+`Color(bright, bright, bright, 1.0)` (`eb218fe:src/world/voxel_world.gd:689`) e o consumidor é um
+`StandardMaterial3D` com `vertex_color_use_as_albedo` (`eb218fe:src/world/voxel_world.gd:93`), que
+multiplica **RGB** e não tem transparência ligada — o alfa é canal escrito como constante e lido por
+ninguém, do mesmo achado do furo #43, mas desta vez **usado** como portador da exposição de céu. Com o A
+gasto, o vento da Fase 3 perde o canal livre que a pauta lhe oferecia e passa a ter comprador real para o
+atributo custom (`ARRAY_DATA`) do §3.3. (3) O pool de anéis do §3.6 ganha o **segundo comprador** que o braço rejeitado do §3.7
+registrava como inexistente: a porta é `WaterFx.ring_at()`, com origem e recusa
+contadas, e não um segundo pool. (4) O choque em `src/main.gd` deixou de ser previsto e passou a ser
+lido: a 22 escreveu **14 linhas** ali desde a base desta fase (`git diff --stat eb218fe..1b5ff5f --
+src/main.gd` = 14 inserções, `git worktree list` dando a árvore primária em `feat/oraculo-nativo-passo5-22`),
+e os dois lugares que ela tocou são os dois que esta fase usa — uma linha no bloco de nós de render em
+`_ready` (~:213) e o fim de `_start_journal_from_args()` (:1270), onde o `--weather=` entra. Worktree
+separado (`.qoder/worktrees/elevacao-chuva-23f2`), escritor único por arquivo por branch, e **re-rome do
+gate na árvore resultante** (item 5 de "Branches") continuam sendo o preço aceito, não uma preferência.
+
+Disso sai um furo novo, com dono escrito antes da linha: **#47** — a sonda com janela da Fase 2 produz
+recortes PNG dentro do projeto, e foi exatamente assim que o **#45** nasceu (os quatro
+`caixa-*.png` de `docs/evidence/elevacao-visual-agua-23` commitados sem `.png.import`, todo clone limpo
+imprimindo `??` depois do `--import`). Esta fase **não repete o passo**: a pasta nova de evidência leva
+um `.gdignore`, que demonstra o conserto local em uma pasta e **não** fecha o #45. A régua foi relida
+nesta árvore e o escopo do #45 é **menor** do que a pauta do pouso da 22 fazia crer: dos **29** PNGs e
+**1** SVG rastreados, **quatro** arquivos estão sem sidecar e os quatro estão em
+`docs/evidence/elevacao-visual-agua-23`; `docs/evidence/fp-hand` tem **14** `.import` versionados,
+`docs/media` **11**, `assets/` **51** e o `icon.svg` da raiz tem o dele — ou seja, o débito é de quatro
+arquivos, não de três pastas, e a arrumação neles continua sendo do dono do repositório.
+Consequência de versão declarada agora, não depois: `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não são tocados, e a expectativa explícita
+desta fase é que uma corrida com chuva **reproduza** os hashes publicados — chuva visual não move
+`intent`, crenças, edições nem canais; se o hash se mover, o defeito é desta perna e a testemunha é a
+assinatura por coluna da checagem `chuva_nao_escreve_o_mundo`. Nenhum gate de fase se fecha aqui, e a
+fila P0/P1 (budget HOT, censo multi-semente, bake-off de AF) continua aberta.
+
+**Emenda do mesmo dia, escrita com a corrida na mesa (dossiê 23 §5.4 e a rodada "Rodada 2026-11-25 (2)"
+de [`docs/melhorias-status.md`](docs/melhorias-status.md)).** A frase acima sobre reproduzir hashes estava
+mais forte que o instrumento e é corrigida aqui, não no commit histórico: o mandato 3 desta casa já mediu
+que **a simulação ao vivo não é determinística** — dois runs da mesma árvore, sem chuva nenhuma, dão `hp`,
+Éter e pior passo diferentes — então não existe par que valide "hash igual com e sem chuva", e nenhum foi
+corrido. O que existe, e foi medido, é o antecedente estrutural: os três nós novos não seguram referência
+a `AetherField`, `VoxelWorld` ou `Player` (`fx_sem_eter=true rain_sem_eter=true weather_sem_eter=true`,
+`world_refs=0 eter_refs=0 player_refs=0`), `Channel.COUNT` continua **3** e nenhuma linha de
+`src/persistence/` foi tocada (`git diff --name-only eb218fe..78742d6 -- src/ai src/items native
+src/entities/wolf.gd src/world/block_defs.gd src/persistence` devolve vazio). A corrida pareada com
+`--tick-journal=` nos dois braços fica registrada como **débito**, não como feito. Duas coisas mais saem
+da rodada: o **#46** desta perna virou **#50** e o **#47** escrito no `_steps` virou **#49** — colisão de
+índice, o primeiro com o `load_pack` síncrono da 22 já publicado na `main`, o segundo com o próprio #47 do
+parágrafo acima — e a banda de indiferença do material opaco **não** coube na banda pequena: 0,9803 contra
+um chão de instrumento de 0,0000, com causa nomeada em dois instrumentos (a segunda decodificação sRGB que
+o `StandardMaterial3D` fazia) e o **furo #48** aberto para o `_mat_glass`, que ficou na outra matemática.
+
+Uma terceira coisa sai da mesma rodada e é regra de conduta, não número: **as réguas de timing desta
+máquina não são comparáveis entre janelas**. A régua de 25 ms do `espalhamento_nao_estoura_o_passo` deu
+12,94–15,48 ms nas sete corridas da manhã e **31,33–32,41 ms** cinco horas depois na mesma árvore — e a
+base `eb218fe`, sem nenhuma linha desta fase, deu **30,80–31,26 ms** na mesma janela, com o rodapé da
+corrida quase parado (+1,4% a +4,1%) e o pico do passo em ×2,1. O amostrador do **#31**, ligado agora
+como o débito do pouso da Fase 1 mandava, mostra um só PID do projeto na janela vermelha e
+`CrossDeviceService` a 215–291% de um núcleo. Consequência operacional: **quem publicar um número de
+`worst_sim_ms` publica a janela com ele**, e um gate de timing se corre com o amostrador ligado — o
+vermelho de hoje não é defeito de nenhuma das duas árvores, e o **#31** continua aberto exatamente
+porque falta o par vermelha↔verde da *mesma* árvore com o CPU do Godot nos dois lados.
 
 ## Ciclo de trabalho
 
