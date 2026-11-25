@@ -226,7 +226,7 @@ func _ready() -> void:
 	weather = Weather.new()
 	weather.name = "Weather"
 	add_child(weather)
-	weather.apply_sink(Callable(self, "_apply_molhado"))
+	weather.apply_sink(Callable(self, "_apply_clima"))
 
 	# O veu depois dos dois porque e o unico que aponta para os dois: `weather` de quem pede a
 	# coluna, `water_fx` de quem poe o anel. Os tres no ficam sem referencia cruzada.
@@ -1315,11 +1315,18 @@ func _start_weather_from_args() -> void:
 			return
 
 
-## O unico fio entre o clima e o mundo: um numero para um uniforme (§3.10a, o padrao dos
-## provedores da casa ao contrario — aqui a sessao e quem conhece os dois lados para que
-## o `Weather` nao precise conhecer o mundo).
-func _apply_molhado(v: float) -> void:
+## O unico fio entre o clima e o mundo: um numero que sai, dois uniformes que chegam (§3.10a,
+## o padrao dos provedores da casa ao contrario — aqui a sessao e quem conhece os dois lados
+## para que o `Weather` nao precise conhecer o mundo).
+##
+## O opaco recebe o `molhado`, que rampa; a agua recebe o `chuva` pedido, que nao rampa: a gota
+## comeca a picotar no instante em que chove, a pedra escurece em ~1,7 s. Sao dois numeros e um
+## so estado — e o `Weather` que decide quando os dois sao empurrados juntos, inclusive no
+## `pedir_chuva` que nao move a rampa, para que a poca e a parede nunca contarem climas
+## diferentes.
+func _apply_clima(v: float) -> void:
 	world.opaque_material().set_shader_parameter("molhado", v)
+	world.water_material().set_shader_parameter("chuva", weather.chuva)
 
 
 func _exit_tree() -> void:

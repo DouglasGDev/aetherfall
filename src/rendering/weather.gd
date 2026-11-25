@@ -35,6 +35,9 @@ var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 # `get_property_list()` justamente para isso nao virar habito.
 var _sink: Callable = Callable()
 var _aplicado: float = 0.0
+## O ultimo alvo que chegou ao material. `molhado` e o que integra; este par e o que garante
+## que um `pedir_chuva` sem rampa ainda assim bate na superficie (§3.10e).
+var _alvo_aplicado: float = 0.0
 var pedidos_aplicados: int = 0
 var frames_integrados: int = 0
 
@@ -68,7 +71,14 @@ func _physics_process(delta: float) -> void:
 	# resto, nenhuma chamada — e o `pedidos_aplicados` parado e a testemunha de que o
 	# vale seco nao custa um uniforme por quadro.
 	var em_repouso := molhado == alvo
-	if (em_repouso and molhado != _aplicado) or absf(molhado - _aplicado) >= WEATHER_SNAP:
+	# A terceira clausula e do `chuva` que a agua le (§3.10e), nao do `molhado` que sobe:
+	# pedir o valor em que a rampa esta parada nao move `molhado` nenhum, mas e um estado novo
+	# para a superficie. Sem ela, `pedir_chuva(0.4)` no meio da descida de 1,0 para 0,4
+	# deixaria a agua picotando em chuva cheia enquanto a pedra seca — dois climas na mesma
+	# tela, e o §3.10a existe para isso nao acontecer.
+	if (em_repouso and molhado != _aplicado) or absf(molhado - _aplicado) >= WEATHER_SNAP \
+			or alvo != _alvo_aplicado:
+		_alvo_aplicado = alvo
 		_aplicado = molhado
 		pedidos_aplicados += 1
 		if _sink.is_valid():
@@ -81,6 +91,7 @@ func _physics_process(delta: float) -> void:
 func apply_sink(sink: Callable) -> void:
 	_sink = sink
 	_aplicado = molhado
+	_alvo_aplicado = clampf(chuva, 0.0, 1.0)
 	pedidos_aplicados += 1
 	if _sink.is_valid():
 		_sink.call(molhado)
