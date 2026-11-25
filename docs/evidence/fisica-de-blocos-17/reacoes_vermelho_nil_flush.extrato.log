@@ -1,0 +1,46 @@
+# EXTRATO, nao a corrida inteira. O log bruto medido tem 5828612 bytes e ficou em .tools/c17-reactions.log (gitignored).
+# Assinaturas contadas no bruto: 11716 linhas de SCRIPT ERROR, sendo:
+  11693 Invalid call. Nonexistent function 'flush' in base 'Nil'.
+     23 Invalid call. Nonexistent function 'stats' in base 'Nil'.
+
+## primeiras 24 linhas
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK geracao real | seed=20261116 chunks=64
+OK 2025 colunas secas, piso y=50, ar ate o teto | invalidas=0
+OK Player pronto com atlas real | ready=true atlas=():<ImageTexture#-9223371992344820162>
+OK sem input automatico ou malharia | process=false meshes=0
+OK WORK sem jogador perceptivel | dist=73.595 los=false
+OK imprint WORK .42 atrai | work=0.4200 tick=1 intent=investigate reaction=seguindo trabalho feet=(58.03524, 51.001, 62.0) speed=1.0033 target=(66.0, 50.6, 62.0)
+OK aproximacao fisica do rastro | dist 7.965 -> 6.035 tick=17 intent=investigate reaction=seguindo trabalho feet=(59.9645, 51.001, 62.0) speed=2.5993 target=(66.0, 50.6, 62.0)
+OK rastro nao fabrica avistamento | episodios=0
+OK premissa dos pesos simultaneos | blood=0.250 work*.35=0.147
+OK vence o rastro ponderado mais forte | esperado=(58.0, 50.6, 66.0) tick=1 intent=investigate reaction=seguindo sangue feet=(58.0, 51.001, 62.03524) speed=1.0033 target=(58.0, 50.6, 66.0)
+OK premissa dos pesos simultaneos | blood=0.080 work*.35=0.294
+OK vence o rastro ponderado mais forte | esperado=(66.0, 50.6, 62.0) tick=1 intent=investigate reaction=seguindo trabalho feet=(58.03524, 51.001, 62.0) speed=1.0033 target=(66.0, 50.6, 62.0)
+OK medo local com jogador invisivel | player_z=18.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-1.28479, 0.0, 0.0) tick=7 intent=flee reaction=evitando medo feet=(60.71521, 51.001, 62.0) speed=5.7728 target=(47.00079, 51.476, 62.0)
+OK medo local com jogador invisivel | player_z=106.0 fear=0.900 east=3.500 dist=44.002
+OK fuga desce gradiente a oeste | vetor=(-1.0, 0.0, 0.0) tick=1 intent=flee reaction=evitando medo feet=(62.0, 51.001, 62.0) speed=0.0000 target=(48.0, 51.476, 62.0)
+OK corpo foge a oeste | deslocamento=(-1.28479, 0.0, 0.0) tick=7 intent=flee reaction=evitando medo feet=(60.71521, 51.001, 62.0) speed=5.7728 target=(47.00079, 51.476, 62.0)
+OK A/B jogador oculto nao muda vetor | A=(-1.0, 0.0, 0.0) B=(-1.0, 0.0, 0.0)
+OK A/B mesmo seed e clock conservam movimento | A=(-1.28479, 0.0, 0.0) B=(-1.28479, 0.0, 0.0)
+OK parede real oculta jogador proximo | dist=8.011 los=false
+OK sem avistamento nao caca | ticks_hunt=0 tick=13 intent=patrol reaction=patrulhando feet=(59.35386, 51.001, 62.50474) speed=2.5954 target=(67.23325, 50.2, 65.44232)
+
+## ultimas 14 linhas
+OK crenca_falsa_nao_vira_fato: a rota do ledger existe no verificador | aceitar_ledger=true -- premissa do §20.6: ids do ledger alem do roster
+OK crenca_falsa_nao_vira_fato: o controle passa — id do jogador fora do roster existe pelo ledger | aceito=true id_forjado=-1 motivo=''
+OK crenca_falsa_nao_vira_fato: o fato contradito pelo ledger e recusado com o id nomeado | aceito=false id=11 motivo='verificador recusou a saida: fato contradito pelo ledger — o lobo 11 e vivo e a saida o declara morto'
+OK crenca_falsa_nao_vira_fato: o portao do wrapper recusa o fato contradito sem escrever no Mind | aceito=false narrativa=0 chars beliefs=0 portao='ledger' motivo='verificador recusou a saida: fato contradito pelo ledger — o lobo 11 e vivo e a saida o declara morto'
+OK crenca_falsa_nao_vira_fato: o fato confirmado entra no Mind como quarentena nomeada | aceito=true narrativa=30 chars quarentena=conf=0.1 source=oracle
+OK crenca_falsa_nao_vira_fato: a quarentena fica abaixo da soleira de believes | conf=conf=0.1 source=oracle soleira=0.35 believes=false
+OK crenca_falsa_nao_vira_fato: o controle passa pelo portao sem escrever no Mind | aceito=true narrativa=41 chars beliefs_antes=1 beliefs_depois=1
+OK runner retornou | run=true
+OK censo de testes completos | 75/75
+OK nenhum estouro de subtree no budget | trips_solo=0 trips_matilha=0
+OK censo de checagens | 355/355
+CENARIO ESTREITO, NAO GATE P1: passos=10568 sim_step total=2470552 us pico=5129 us; BT last_us soma=61700 pico=317 trips=0
+PASSOS DE MATILHA (sessao real, difusao incluida), NAO GATE P1: passos=1493 sim_tick total=2730916 us pico=7566 us; BT last_us soma=0 pico=0 trips=0
+355 checagens 47 falhas 57.720 s
