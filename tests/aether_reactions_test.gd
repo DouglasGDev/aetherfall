@@ -51,6 +51,9 @@ const TESTS: Array[StringName] = [
 	&"_test_transporte_http_zerado",
 	&"_test_af_cache_determina_replay", &"_test_verifier_recusa_id_forjado",
 	&"_test_budget_do_oraculo_nao_estoura_a_arvore",
+	&"_test_selecao_de_beliefs_e_pura_no_estado",
+	&"_test_qualidade_nao_aparece_na_projecao_do_journal",
+	&"_test_crenca_falsa_nao_vira_fato",
 ]
 # 320 = os 283 da perna 12 mais as cinco de `extensao_carrega_classe` (dossie 22
 # §5.1), o gate do esqueleto nativo: descritor no disco, extensao listada pela
@@ -96,7 +99,31 @@ const TESTS: Array[StringName] = [
 # 25 ms com o decode do oraculo EM VOO dentro da malha de 1 400 passos, estrutural-
 # mente vermelha num clone sem runtime/gguf e com o SubtreeGuard de 400 us sem
 # estouro nenhum.
-const EXPECTED_CHECKS: int = 336
+#
+# Fase 2 (dossie 22 §20) acrescenta dezenove: as SEIS de
+# `selecao_de_beliefs_e_pura_no_estado` (§20.5) -- a janela de crencas existe no
+# wrapper (nasceu VERMELHO: o `_prompt_for` imprimia TODAS as crencas na ordem do
+# dicionario), o mesmo estado em duas ordens de insercao devolve a mesma janela, a
+# janela nao deriva com o relogio da parede (mesma leitura apos >= 60 ms medidos),
+# a janela corta em k, o desempate corre confianca -> vezes -> visto -> chave e o
+# prompt de dois corpos de prova com o mesmo estado da mente e identico byte a
+# byte -- mais as SEIS de `qualidade_nao_aparece_na_projecao_do_journal` (§20.5)
+# -- a crenca carrega `visto_em` e `vezes` (nasceu VERMELHO: o `reinforce` so
+# escrevia confidence e source), o carimbo segue o tick que confirmou com o toque
+# negativo contando sem carimbar, o decay preserva a metadata enquanto a crenca
+# vive, o disco (`to_dict`/`from_dict`) devolve os quatro campos, o `state_hash`
+# do TickJournal e INDIFERENTE a visto_em/vezes e o controle move o hash ao mudar
+# confidence (instrumento nao cego) -- mais as SETE de `crenca_falsa_nao_vira_fato`
+# (§20.6) -- a rota `aceitar_ledger` existe no verificador (nasceu VERMELHO), o id
+# do jogador (1, ACTOR_PLAYER) fora do roster do Passo 5 passa pelo ledger, o fato
+# contradito pelo ledger e recusado com o id e o motivo nomeados, a recusa pelo
+# portao do wrapper nao escreve NADA no Mind (e nomeia o portao em
+# `ultimo_portao`), o fato verdadeiro sobre cadaver passa e entra no Mind do
+# narrador como quarentena (source "oracle", confianca 0.10), a quarentena fica
+# abaixo da soleira de `believes` e o controle (narracao pura, ids reais) passa
+# sem escrever. As dezenove contam no vermelho -- cada premissa nasce vermelha
+# nomeada, no padrao do passo 5, e o censo converge aborto em falha.
+const EXPECTED_CHECKS: int = 355
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -106,6 +133,10 @@ const BIAS_MEDIDA: Array = [
 	[1.00, 1.00, 1.00],    # temperate
 	[0.85, 1.15, 0.90],    # wetland
 ]
+# Copia LITERAL de `MindOracle.JANELA_CRENCAS` (o k da janela de crencas da Fase
+# 2), e nao uma leitura de la: no vermelho a constante ainda nao existe e ler-la
+# seria SCRIPT ERROR — o mesmo padrao do pino `BIAS_MEDIDA` acima.
+const K_JANELA_PROVA: int = 8
 
 var _checks: int = 0
 var _failures: int = 0
@@ -6524,6 +6555,365 @@ func _test_budget_do_oraculo_nao_estoura_a_arvore() -> bool:
 	return true
 
 
+## Comparacao valor a valor de duas janelas de crencas: nao depende da igualdade
+## profunda de Array do GDScript e falha ao primeiro elemento diferente — o que
+## importa e a ORDEM, entao o auxiliar nao ordena nada antes de comparar.
+func _arrays_iguais(a, b) -> bool:
+	if not (a is Array) or not (b is Array):
+		return false
+	var aa: Array = a
+	var bb: Array = b
+	if aa.size() != bb.size():
+		return false
+	for i in aa.size():
+		if aa[i] != bb[i]:
+			return false
+	return true
+
+
+## Fase 2 do dossie 22 (§20.5) -- a premissa `selecao_de_beliefs_e_pura_no_estado`.
+## Hoje o prompt do oraculo imprime TODAS as crencas na ordem do dicionario
+## (laco do `_prompt_for`); a Fase 2 troca isso por uma janela top-k
+## deterministica — e a selecao muda o prompt, o prompt muda a chave de conteudo
+## da cache (§6.5), entao a selecao tem de ser PURA no estado da mente: mesmo
+## estado -> mesma janela -> mesmo prompt -> mesma chave de cache, senao a cache
+## fixa memoria velha no replay. Pura aqui e comportamento observavel: a mesma
+## entrada em instantes diferentes da parede devolve a mesma saida — nenhum
+## relogio, aleatoriedade ou identidade de fora pode derivar o conjunto. O
+## desempate e TOTAL (confianca -> vezes -> visto -> chave), porque o dicionario
+## do Godot e ordenado pela insercao: uma ordenacao com resto devolveria duas
+## janelas diferentes para o mesmo estado, e o replay seria sorteio.
+func _test_selecao_de_beliefs_e_pura_no_estado() -> bool:
+	# A sonda e uma instancia do proprio wrapper: has_method numa instancia ve
+	# metodos estaticos (sonda da Fase 2), e a chamada estatica entra por
+	# `.call()` — no vermelho o metodo nao existe e o vermelho e NOMEADO aqui,
+	# sem SCRIPT ERROR derrubando o censo.
+	var sonda := MindOracle.new()
+	var tem_janela: bool = sonda.has_method("_janela_crencas")
+	_check(tem_janela,
+			"selecao_de_beliefs_e_pura: a janela de crencas existe no wrapper",
+			"janela=%s k=%d -- premissa do §20.5: top-k deterministico no prompt" % [
+				str(tem_janela), K_JANELA_PROVA])
+	if not tem_janela:
+		sonda.free()
+		return true
+	# (2) Mesmo estado, duas ordens de insercao, mesma janela: a materia e
+	# identica e so a ordem de insercao difere — uma ordenacao sem desempate
+	# total falha aqui.
+	var estado_a := {
+		"b_beta": {"confidence": 0.5, "source": "testemunha", "visto_em": 10, "vezes": 1},
+		"a_alfa": {"confidence": 0.5, "source": "testemunha", "visto_em": 10, "vezes": 1},
+		"c_gama": {"confidence": 0.9, "source": "testemunha", "visto_em": 10, "vezes": 1},
+	}
+	var estado_b := {
+		"c_gama": {"confidence": 0.9, "source": "testemunha", "visto_em": 10, "vezes": 1},
+		"a_alfa": {"confidence": 0.5, "source": "testemunha", "visto_em": 10, "vezes": 1},
+		"b_beta": {"confidence": 0.5, "source": "testemunha", "visto_em": 10, "vezes": 1},
+	}
+	var janela_a: Array = sonda.call("_janela_crencas", estado_a)
+	var janela_b: Array = sonda.call("_janela_crencas", estado_b)
+	_check(_arrays_iguais(janela_a, janela_b) and janela_a.size() == 3,
+			"selecao_de_beliefs_e_pura: o mesmo estado em duas ordens de insercao devolve a mesma janela",
+			"a=%s b=%s" % [str(janela_a), str(janela_b)])
+	# (3) O relogio da parede avanca e a janela NAO deriva: duas leituras do
+	# mesmo estado separadas por >= 60 ms MEDIDOS de parede — uma janela que
+	# lesse o relogio (ou tick de fora) derivaria no intervalo.
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() < t0 + 60:
+		await process_frame
+	var decorrido := Time.get_ticks_msec() - t0
+	var janela_depois: Array = sonda.call("_janela_crencas", estado_a)
+	_check(_arrays_iguais(janela_a, janela_depois) and decorrido >= 60,
+			"selecao_de_beliefs_e_pura: a janela nao deriva com o relogio da parede",
+			"igual=%s espera=%d ms" % [
+				str(_arrays_iguais(janela_a, janela_depois)), decorrido])
+	# (4) A janela corta em k (copia literal `K_JANELA_PROVA`) e a melhor
+	# confianca entra primeiro: doze crencas com confianca crescente, k na
+	# janela, o topo e a maior.
+	var estado_grande := {}
+	for i in 12:
+		estado_grande["crenca_%02d" % i] = {
+			"confidence": 0.3 + 0.01 * i, "source": "testemunha",
+			"visto_em": i, "vezes": 1}
+	var janela_grande: Array = sonda.call("_janela_crencas", estado_grande)
+	_check(janela_grande.size() == K_JANELA_PROVA and String(janela_grande[0]) == "crenca_11",
+			"selecao_de_beliefs_e_pura: a janela corta em k com a melhor confianca primeiro",
+			"tamanho=%d primeiro=%s k=%d" % [
+				janela_grande.size(), str(janela_grande[0]), K_JANELA_PROVA])
+	# (5) O desempate corre confianca -> vezes -> visto -> chave, exercido rung a
+	# rung: c_gama ganha por confianca; d_delta e f_fi empatam em tudo e a chave
+	# decide (d < f); a_alfa vence b_beta por vezes; e_eps perde por confianca.
+	var estado_empate := {
+		"e_eps": {"confidence": 0.30, "source": "s", "visto_em": 100, "vezes": 5},
+		"c_gama": {"confidence": 0.90, "source": "s", "visto_em": 10, "vezes": 1},
+		"b_beta": {"confidence": 0.50, "source": "s", "visto_em": 10, "vezes": 1},
+		"a_alfa": {"confidence": 0.50, "source": "s", "visto_em": 10, "vezes": 3},
+		"d_delta": {"confidence": 0.50, "source": "s", "visto_em": 20, "vezes": 3},
+		"f_fi": {"confidence": 0.50, "source": "s", "visto_em": 20, "vezes": 3},
+	}
+	var esperado := ["c_gama", "d_delta", "f_fi", "a_alfa", "b_beta", "e_eps"]
+	var janela_empate: Array = sonda.call("_janela_crencas", estado_empate)
+	_check(_arrays_iguais(janela_empate, esperado),
+			"selecao_de_beliefs_e_pura: o desempate corre confianca, vezes, visto e chave",
+			"janela=%s esperado=%s" % [str(janela_empate), str(esperado)])
+	# (6) O consumidor: dois corpos de prova com o MESMO estado da mente e o
+	# MESMO corpo produzem o MESMO prompt byte a byte — e a igualdade que faz a
+	# chave de conteudo da cache (§6.5) valer entre as corridas do replay.
+	var p1 := _LoboProvaMind.new(5)
+	var p2 := _LoboProvaMind.new(5)
+	var estado_prova := {
+		"danger_from_actor_1": {"confidence": 0.8, "source": "testemunha",
+			"visto_em": 12, "vezes": 1},
+		"player_visible_recent": {"confidence": 0.5, "source": "consolidated",
+			"visto_em": 10, "vezes": 2},
+	}
+	p1.mind.beliefs = estado_prova
+	p2.mind.beliefs = estado_prova.duplicate(true)
+	var prompto_1 := MindOracle._prompt_narracao(p1)
+	var prompto_2 := MindOracle._prompt_narracao(p2)
+	_check(prompto_1 == prompto_2 and prompto_1.length() > 0,
+			"selecao_de_beliefs_e_pura: o mesmo estado da mente produz o mesmo prompt",
+			"prompto=%d chars igual=%s" % [prompto_1.length(), str(prompto_1 == prompto_2)])
+	sonda.free()
+	return true
+
+
+## Fase 2 do dossie 22 (§20.5) -- a premissa
+## `qualidade_nao_aparece_na_projecao_do_journal`. A memoria de qualidade poe
+## dois numeros em cada crenca: `visto_em` (o ultimo tick que CONFIRMOU a
+## crenca — reforco negativo contesta, nao confirma) e `vezes` (quantos toques
+## de reinforce ela tomou). O par anti-farsa da premissa: a projecao do
+## TickJournal le so (chave, confidence, source) por crenca, entao a metadata
+## nova NAO pode mover um state_hash — e o controle move o hash ao mudar
+## confidence, provando que o instrumento nao e cego. O disco existe para a
+## qualidade sobreviver ao save/load: `to_dict` grava os quatro campos e
+## `from_dict` devolve, com o source de volta "loaded" (o load nao e testemunha).
+func _test_qualidade_nao_aparece_na_projecao_do_journal() -> bool:
+	# (1) A metadata existe na crenca que o reinforce acabou de tocar. No
+	# vermelho o dict tem so confidence e source — o vermelho e NOMEADO aqui,
+	# sem chamar assinatura que ainda nao existe.
+	var m := Mind.new()
+	m.reinforce("crenca_prova", 0.5, "testemunha")
+	var b = m.beliefs.get("crenca_prova")
+	var visto_txt := "sem crenca"
+	var vezes_txt := "sem crenca"
+	if b != null:
+		visto_txt = str((b as Dictionary).get("visto_em", "ausente"))
+		vezes_txt = str((b as Dictionary).get("vezes", "ausente"))
+	var tem_qualidade := b != null and (b as Dictionary).has("visto_em") \
+			and (b as Dictionary).has("vezes")
+	_check(tem_qualidade,
+			"qualidade_na_projecao: a crenca carrega visto_em e vezes",
+			"visto_em=%s vezes=%s -- premissa do §20.5: metadata de qualidade na crenca" % [
+				visto_txt, vezes_txt])
+	if not tem_qualidade:
+		return true
+	# (2) O carimbo segue o tick que CONFIRMOU: reforco negativo contesta —
+	# conta em `vezes`, mas nao carimba `visto_em` — e todo toque soma. A
+	# assinatura de 4 args e sondada por `get_method_list` (a sonda da Fase 2
+	# mediu o shape) e as chamadas entram por `.call()`: no vermelho a
+	# assinatura ainda nao existe e o parse do GDScript recusa chamada direta
+	# com 4 args — o vermelho tem de ser checagem nomeada, nunca SCRIPT ERROR.
+	var tem_assinatura := false
+	for minfo in m.get_method_list():
+		if String(minfo.get("name", "")) == "reinforce" \
+				and (minfo.get("args", []) as Array).size() >= 4:
+			tem_assinatura = true
+			break
+	var carimbou := false
+	var manteve := false
+	var contou_neg := false
+	var recarimbou := false
+	var contou := false
+	if tem_assinatura:
+		var m2 := Mind.new()
+		m2.call("reinforce", "fato_prova", 0.4, "testemunha", 777)
+		var b2 = m2.beliefs.get("fato_prova")
+		if b2 != null:
+			var d2: Dictionary = b2
+			carimbou = int(d2.get("visto_em", -2)) == 777
+			m2.call("reinforce", "fato_prova", -0.1, "testemunha", 888)
+			manteve = int(d2.get("visto_em", -2)) == 777
+			contou_neg = int(d2.get("vezes", -1)) == 2
+			m2.call("reinforce", "fato_prova", 0.3, "testemunha", 999)
+			recarimbou = int(d2.get("visto_em", -2)) == 999
+			contou = int(d2.get("vezes", -1)) == 3
+	_check(tem_assinatura and carimbou and manteve and contou_neg and recarimbou and contou,
+			"qualidade_na_projecao: o reinforce carimba o tick que confirmou e conta todo toque",
+			"assinatura4=%s carimbo=%s manteve_no_negativo=%s contou_negativo=%s recarimbo=%s vezes3=%s" % [
+				str(tem_assinatura), str(carimbou), str(manteve), str(contou_neg),
+				str(recarimbou), str(contou)])
+	if not (tem_assinatura and carimbou and manteve and contou_neg and recarimbou and contou):
+		return true
+	# (3) O decay preserva a metadata enquanto a crenca vive: um minuto de decay
+	# nao derruba a confianca abaixo do minimo e o carimbo segue la. Quando a
+	# confianca morre, a crenca INTEIRA sai do dicionario — o esquecimento nao
+	# deixa metadata orfa.
+	var m3 := Mind.new()
+	m3.call("reinforce", "fato_decay", 0.6, "testemunha", 500)
+	m3.decay(1.0)
+	var b3 = m3.beliefs.get("fato_decay")
+	var conf_txt := "-1.0"
+	if b3 != null:
+		conf_txt = "%.4f" % float((b3 as Dictionary).get("confidence", 0.0))
+	var decay_preserva := b3 != null \
+			and float((b3 as Dictionary).get("confidence", 0.0)) > Mind.CONFIDENCE_MIN \
+			and int((b3 as Dictionary).get("visto_em", -2)) == 500 \
+			and int((b3 as Dictionary).get("vezes", -1)) == 1
+	_check(decay_preserva,
+			"qualidade_na_projecao: o decay preserva visto_em e vezes enquanto a crenca vive",
+			"conf=%s visto=%d vezes=%d" % [conf_txt,
+				int((b3 as Dictionary).get("visto_em", -2)) if b3 != null else -2,
+				int((b3 as Dictionary).get("vezes", -1)) if b3 != null else -1])
+	# (4) O disco: to_dict grava os quatro campos e from_dict devolve — a
+	# qualidade sobrevive ao save/load. O source volta "loaded" porque o load
+	# nao e testemunha (politica nomeada do from_dict).
+	var d := m3.to_dict()
+	var m4 := Mind.new()
+	m4.from_dict(d)
+	var b4 = m4.beliefs.get("fato_decay")
+	var disco_sobrevive := b4 != null \
+			and is_equal_approx(float((b4 as Dictionary).get("confidence", 0.0)),
+					float((m3.beliefs["fato_decay"] as Dictionary)["confidence"])) \
+			and String((b4 as Dictionary).get("source", "")) == "loaded" \
+			and int((b4 as Dictionary).get("visto_em", -2)) == 500 \
+			and int((b4 as Dictionary).get("vezes", -1)) == 1
+	var disco_txt := "ausente"
+	if b4 != null:
+		disco_txt = "visto=%d vezes=%d source=%s" % [
+			int((b4 as Dictionary).get("visto_em", -2)),
+			int((b4 as Dictionary).get("vezes", -1)),
+			String((b4 as Dictionary).get("source", ""))]
+	_check(disco_sobrevive,
+			"qualidade_na_projecao: os quatro campos sobrevivem ao to_dict/from_dict",
+			"disco=%s conf_igual=%s" % [disco_txt,
+				str(b4 != null and is_equal_approx(
+					float((b4 as Dictionary).get("confidence", 0.0)),
+					float((m3.beliefs["fato_decay"] as Dictionary)["confidence"])))])
+	# (5) A projecao: o state_hash do TickJournal le so (chave, confidence,
+	# source) por crenca — mover a metadata NAO move o hash. O lobo e o REAL do
+	# `_arm`, e o hash e o do proprio journal (a rota que o replay consome).
+	_arm()
+	_wolf.mind.call("reinforce", "player_visible_recent", 0.5, "consolidated", 42)
+	var bhash = _wolf.mind.beliefs.get("player_visible_recent")
+	var h1 := TickJournal.state_hash(999, _world, _field, [_wolf])
+	if bhash != null:
+		(bhash as Dictionary)["visto_em"] = 987654
+		(bhash as Dictionary)["vezes"] = 321
+	var h2 := TickJournal.state_hash(999, _world, _field, [_wolf])
+	_check(bhash != null and h1 == h2,
+			"qualidade_na_projecao: mover visto_em e vezes NAO move o state_hash",
+			"h1=%s h2=%s igual=%s" % [h1.substr(0, 12), h2.substr(0, 12), str(h1 == h2)])
+	# (6) Controle do instrumento: mover confidence MOVE o hash — a projecao nao
+	# e cega, ela e seletiva; o par anti-farsa da premissa.
+	if bhash != null:
+		(bhash as Dictionary)["confidence"] = 0.9
+	var h3 := TickJournal.state_hash(999, _world, _field, [_wolf])
+	_check(h3 != h2,
+			"qualidade_na_projecao: controle — mover confidence move o state_hash",
+			"h2=%s h3=%s diferente=%s" % [h2.substr(0, 12), h3.substr(0, 12), str(h3 != h2)])
+	return true
+
+
+## Fase 2 do dossie 22 (§20.6) -- o gate `crenca_falsa_nao_vira_fato`. O portao
+## da Camada 5 (Passo 5) confere os ids citados contra o ROSTER; a Fase 2
+## expande o MESMO portao para o LEDGER (a verdade de mundo): ids alem do roster
+## — o jogador (ACTOR_PLAYER = 1, wolf.gd:18) entre eles — passam a existir, e o
+## FATO declarado na saida passa a ser conferido contra o ledger: o que o
+## ledger contradiz nao vira narrativa, crenca nem intencao; o que o ledger
+## confirma (a morte de um cadaver) entra no Mind do narrador como crenca em
+## QUARENTENA — source nomeado, confianca rebaixada abaixo da soleira de
+## `believes`, nunca intencao escrita no corpo (mandato 2). O par anti-farsa:
+## braco A (fato falso) recusado com id e motivo nomeados e zero escritas;
+## braco B (controle, ids reais) passa identico antes e depois.
+func _test_crenca_falsa_nao_vira_fato() -> bool:
+	# (1) A rota do ledger existe no verificador. No vermelho o `aceitar` do
+	# Passo 5 e a unica rota — o vermelho e NOMEADO aqui.
+	var v := BeliefVerifier.new()
+	var tem_rota: bool = v.has_method("aceitar_ledger")
+	_check(tem_rota,
+			"crenca_falsa_nao_vira_fato: a rota do ledger existe no verificador",
+			"aceitar_ledger=%s -- premissa do §20.6: ids do ledger alem do roster" % str(tem_rota))
+	if not tem_rota:
+		return true
+	# Braco B primeiro (controle direto no verificador): o id 1 e o JOGADOR,
+	# fora do roster de lobos do Passo 5 — o portao expandido o enxerga pelo
+	# ledger, e a recusa de antes vira aceite com a verdade de mundo na mao. A
+	# chamada entra por `.call()` pelo mesmo motivo das outras: no vermelho o
+	# metodo ainda nao existe e o parse recusa chamada direta a API ausente.
+	var jogador = v.call("aceitar_ledger", "O lobo 1 fareja o vento e acha o rastro.",
+			{1: true, 7: false, 11: true})
+	_check(jogador and v.ultimo_id_forjado == -1,
+			"crenca_falsa_nao_vira_fato: o controle passa — id do jogador fora do roster existe pelo ledger",
+			"aceito=%s id_forjado=%d motivo='%s'" % [
+				str(jogador), v.ultimo_id_forjado, v.ultimo_motivo])
+	# Braco A: o ledger diz o lobo 11 VIVO e a saida o declara morto — recusa
+	# com o id NOMEADO e o motivo do fato contradito.
+	var contradito = v.call("aceitar_ledger", "O lobo 11 caiu no desfiladeiro e nao levantou.",
+			{11: true})
+	_check(not contradito and v.ultimo_id_forjado == 11
+			and v.ultimo_motivo.contains("contradito"),
+			"crenca_falsa_nao_vira_fato: o fato contradito pelo ledger e recusado com o id nomeado",
+			"aceito=%s id=%d motivo='%s'" % [
+				str(contradito), v.ultimo_id_forjado, v.ultimo_motivo])
+	# O portao NO WRAPPER com o ledger ligado: a recusa nao escreve NADA no Mind
+	# do narrador (nem crenca, nem intencao — mandato 2) e o portao ativo fica
+	# nomeado em `ultimo_portao` — a degradacao "roster" e o comportamento do
+	# Passo 5 para os gates que nao ligam o ledger.
+	_lobo_ledger = _LoboProvaMind.new(11)
+	var o := MindOracle.new()
+	o._ready()
+	o.roster_provider = Callable(self, "_gate_roster_ledger")
+	o.set("ledger_provider", Callable(self, "_gate_ledger_prova"))
+	var recusado := o.aceitar_saida(11, "O lobo 11 caiu no desfiladeiro e nao levantou.")
+	var portao := String(o.get("ultimo_portao"))
+	_check(not recusado and o.narration_of(11) == ""
+			and _lobo_ledger.mind.beliefs.is_empty()
+			and portao == "ledger" and o.last_reason.contains("contradito"),
+			"crenca_falsa_nao_vira_fato: o portao do wrapper recusa o fato contradito sem escrever no Mind",
+			"aceito=%s narrativa=%d chars beliefs=%d portao='%s' motivo='%s'" % [
+				str(recusado), o.narration_of(11).length(),
+				_lobo_ledger.mind.beliefs.size(), portao, o.last_reason])
+	# (5) Fato verdadeiro sobre cadaver: o ledger diz o lobo 7 MORTO e a saida
+	# declara a morte — passa, vira narrativa, e o fato entra no Mind do
+	# narrador como crenca em quarentena (source "oracle", confianca 0.10 —
+	# copia literal de Mind.QUARENTENA_CONFIDENCE, que ler-la no vermelho seria
+	# SCRIPT ERROR, padrao BIAS_MEDIDA).
+	var aceito := o.aceitar_saida(11, "O lobo 7 caiu no desfiladeiro.")
+	var bq = _lobo_ledger.mind.beliefs.get("oracle_caiu_7")
+	var quarentena_txt := "ausente"
+	if bq != null:
+		quarentena_txt = "conf=%s source=%s" % [
+			str((bq as Dictionary).get("confidence", "ausente")),
+			String((bq as Dictionary).get("source", "ausente"))]
+	var em_quarentena := bq != null \
+			and is_equal_approx(float((bq as Dictionary).get("confidence", 0.0)), 0.10) \
+			and String((bq as Dictionary).get("source", "")) == "oracle"
+	_check(aceito and em_quarentena and o.narration_of(11).contains("lobo 7"),
+			"crenca_falsa_nao_vira_fato: o fato confirmado entra no Mind como quarentena nomeada",
+			"aceito=%s narrativa=%d chars quarentena=%s" % [
+				str(aceito), o.narration_of(11).length(), quarentena_txt])
+	# (6) A quarentena NAO vira crenca utilizavel: 0.10 fica abaixo da soleira
+	# de `believes` (0.35) — o oraculo sugere, a arvore continua sem aceitar.
+	_check(not _lobo_ledger.mind.believes("oracle_caiu_7"),
+			"crenca_falsa_nao_vira_fato: a quarentena fica abaixo da soleira de believes",
+			"conf=%s soleira=0.35 believes=%s" % [quarentena_txt,
+				str(_lobo_ledger.mind.believes("oracle_caiu_7"))])
+	# (7) Controle pelo MESMO portao: narracao pura com ids reais passa, vira
+	# narrativa e nao escreve crenca NENHUMA — o portao nao e um filtro que
+	# recusa tudo nem um escritor que grava tudo.
+	var antes: int = _lobo_ledger.mind.beliefs.size()
+	var controle := o.aceitar_saida(11, "O lobo 11 fareja o vento e acha o rastro.")
+	_check(controle and o.narration_of(11).contains("fareja")
+			and _lobo_ledger.mind.beliefs.size() == antes,
+			"crenca_falsa_nao_vira_fato: o controle passa pelo portao sem escrever no Mind",
+			"aceito=%s narrativa=%d chars beliefs_antes=%d beliefs_depois=%d" % [
+				str(controle), o.narration_of(11).length(), antes,
+				_lobo_ledger.mind.beliefs.size()])
+	o.free()
+	return true
+
+
 ## GET sequencial com UM HTTPRequest reusado: pedido aberto com erro de abertura
 ## devolve o resultado -1 sem nunca pendurar -- `await` so acontece com a requisicao
 ## aceita, e o `timeout` do nodo garante que ela sempre completa.
@@ -6574,3 +6964,41 @@ class _LoboProva:
 ## do gate (999) nao existe aqui por construcao.
 func _gate_roster_prova() -> Array:
 	return [_LoboProva.new(11)]
+
+
+## Lobo de prova com mente REAL para o gate da Fase 2: o prompt narrativo le
+## identity, intent, hp, max_hp(), hunger e mind — e o gate
+## `crenca_falsa_nao_vira_fato` precisa de um corpo com `mind` para provar que a
+## recusa nao escreve NADA nele e que o fato confirmado entra como quarentena.
+## O corpo e o minimo que `_prompt_for` le: nada aqui toca a arvore.
+class _LoboProvaMind:
+	var identity: int
+	var intent: String = "farejar"
+	var hp: float = 80.0
+	var hunger: float = 0.4
+	var mind: Mind
+	func _init(id: int) -> void:
+		identity = id
+		mind = Mind.new("wolf", id)
+	func max_hp() -> float:
+		return 100.0
+
+
+## O lobo de prova do gate do ledger (identity 11, com mente): e NELE que a
+## recusa tem de nao escrever e o fato confirmado tem de entrar em quarentena.
+## Refrescado a cada corrida do gate — nenhum estado vaza de um teste para outro.
+var _lobo_ledger: _LoboProvaMind
+
+
+## O roster do gate do ledger: o lobo de prova 11 (com mente), e so ele. O id 1
+## (jogador) e o id 7 (cadaver) existem so no ledger do gate — fora do roster,
+## que e o ponto da expansao.
+func _gate_roster_ledger() -> Array:
+	return [_lobo_ledger]
+
+
+## O ledger do gate da Fase 2: verdade de mundo minima — o lobo 7 esta morto, o
+## lobo 11 e o jogador 1 estao vivos. Metodo do gate e nao lambda pelo mesmo
+## motivo do roster: o Callable precisa sobreviver ao teste trocar de lobo.
+func _gate_ledger_prova() -> Dictionary:
+	return {1: true, 7: false, 11: true}

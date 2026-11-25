@@ -29,8 +29,8 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
    morde.
 2. **Herança não é memória.** A personalidade é sorteada da semente do **próprio** lobo
    ([`Mind.new("wolf", p_identity, 1000 + p_identity)`](../../src/entities/wolf.gd#L313), sorteio em
-   [mind.gd:30-32](../../src/ai/mind.gd#L30-L32)) e depois **mutada por experiência**
-   ([`_drift`](../../src/ai/mind.gd#L50-L58)). Nenhum pai contribui com nada. Logo herda-se um
+   [mind.gd:36-38](../../src/ai/mind.gd#L36-L38)) e depois **mutada por experiência**
+   ([`_drift`](../../src/ai/mind.gd#L56-L64)). Nenhum pai contribui com nada. Logo herda-se um
    genoma-base imutável, nunca o valor vivo — senão o filhote nasceria com o trauma do pai.
 3. **Parentesco que o campo não registra não existe para o nariz.** É essa a decisão de versão do
    §3.3, e a única parte daqui que pode tocar
@@ -43,8 +43,8 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
 - **Não existe linhagem em lugar nenhum**: `grep -i "parent|filhote|linhagem|offspring"` em `src/`
   devolve só `cubo`. O identificador único é um inteiro solto
   ([`var identity: int = 0`](../../src/entities/wolf.gd#L171)), incrementado pela sessão
-  ([`_next_identity`](../../src/main.gd#L80), em
-  [`_spawn_wolves`](../../src/main.gd#L383-L423)), e a RNG do lobo vem de
+  ([`_next_identity`](../../src/main.gd#L70), em
+  [`_spawn_wolves`](../../src/main.gd#L362-L388), e a RNG do lobo vem de
   `("wolf:%d:%d" % [world.gen.world_seed, identity]).hash()`
   ([:311](../../src/entities/wolf.gd#L311)) — pai nenhum entra em nenhuma das duas contas.
 - **O pelo é ambiente, não herança**: `FUR_COLORS`
@@ -53,18 +53,18 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
   [`_build_visual`](../../src/entities/wolf.gd#L1453) e **re-derivada no load**
   ([:1380-1382](../../src/entities/wolf.gd#L1380-L1382)). O par já tem gate da rodada 09 — dois lobos em
   biomas diferentes com cores diferentes, dois no mesmo bioma com a mesma
-  ([aether_reactions_test.gd:1641-1659](../../tests/aether_reactions_test.gd#L1641-L1659)). Herança
+  ([aether_reactions_test.gd:1672-1690](../../tests/aether_reactions_test.gd#L1672-L1690)). Herança
   que mutar o pelo de **fundador** passa por cima de um gate fechado.
 - **Save e projeção.** O lobo persiste oito chaves fechadas
   ([`state_dict`](../../src/entities/wolf.gd#L1360-L1365)), o `load_state` lê com default
   ([`d.get`](../../src/entities/wolf.gd#L1393-L1406)), o precedente aditivo da casa é o `inv`
-  ([main.gd:1139-1144](../../src/main.gd#L1139-L1144)) e [`SCHEMA = 1`](../../src/persistence/save_manager.gd#L8)
+  ([main.gd:1111-1116](../../src/main.gd#L1111-L1116)) e [`SCHEMA = 1`](../../src/persistence/save_manager.gd#L8)
   recusa só schema **mais novo** ([:69-71](../../src/persistence/save_manager.gd#L69-L71)). Na
   leitura deste dossiê o load ainda pareava por índice com teto
   (`mini(saved.size(), wolves.size())`): enquanto a 11 não fechasse, um censo que crescesse
   descartaria filhote em silêncio e a árvore não teria o que gravar. **A 11 já fechou isso** — o
   load pareia por identidade e faz do censo do disco a autoridade
-  ([`main.gd:1164-1200`](../../src/main.gd#L1164-L1200)), e a árvore genealógica passa a ter o que
+  ([`main.gd:1112-1148`](../../src/main.gd#L1136-L1172)), e a árvore genealógica passa a ter o que
   gravar. Na projeção do
   journal, lobos vivos ordenados por `identity` com `mind.identity`, `mind.kind`, `intent` e crenças
   por chave ([tick_journal.gd:26-35](../../src/persistence/tick_journal.gd#L26-L35)): **chave nova de
@@ -94,19 +94,19 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
    fundador), `gen: int` (0 = fundador) e `genome: Array` (os três temperamentos-base). Quem escreve
    é a sessão **no ponto onde a 11 cria o filhote**, nunca o próprio lobo. **O que a leitura deste
    dossiê não previa:** `_spawn_wolves` era o único criador. Hoje o caminho único é
-   [`_make_wolf`](../../src/main.gd#L423-L446), que serve ao sorteio
-   ([`_spawn_wolves`](../../src/main.gd#L383-L406)), ao nascimento
-   ([`_born_from`](../../src/main.gd#L496-L529)) e ao disco
-   ([`load_game`](../../src/main.gd#L1100-L1158)) — e a ascendência entra por parâmetro nesse caminho
+   [`_make_wolf`](../../src/main.gd#L402-L421), que serve ao sorteio
+   ([`_spawn_wolves`](../../src/main.gd#L362-L388), ao nascimento
+   ([`_born_from`](../../src/main.gd#L475-L508)) e ao disco
+   ([`load_game`](../../src/main.gd#L1073-L1185) — e a ascendência entra por parâmetro nesse caminho
    único, porque os pais são sabidos no nascimento e no disco, e o sorteio não os tem. A "árvore" é
    **derivação
-   sob demanda** do roster ([`wolves_roster`](../../src/main.gd#L869-L870)): nenhum objeto novo,
+   sob demanda** do roster ([`wolves_roster`](../../src/main.gd#L848-L849): nenhum objeto novo,
    nenhuma travessia por tick, e só um segundo comprador justificaria arquivo próprio (regra da casa:
    generalize no segundo chamador).
 2. **Determinismo sem relógio de parede.** Genoma de um RNG **local** semeado por
    `("lineage:%d:%d:%d:%d" % [world.gen.world_seed, pai, mae, filho]).hash()`, no precedente exato de
    [wolf.gd:311](../../src/entities/wolf.gd#L311). O `_population_rng` da sessão
-   ([main.gd:91](../../src/main.gd#L91), semeado em [:353-354](../../src/main.gd#L410-L411)) não pode
+   ([main.gd:71](../../src/main.gd#L71), semeado em [:353-354](../../src/main.gd#L363-L364)) não pode
    ser consumido por decisão de acasalamento, e nenhum `Time.get_ticks_*` entra aí. Fundador mantém o
    sorteio atual de `Mind._init` — é o que deixa os gates de 09 e 11 verdes.
 3. **O que o Éter faz com isso — as quatro opções com preço, e uma recomendada.**
@@ -124,7 +124,7 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
      `HALF_LIFE`, `DIFFUSE_RATE`, `CHANNEL_NAMES`
      ([:11-15](../../src/world/aether_field.gd#L11-L15)), em `IMPRINT_BIAS`
      ([world_gen.gd:45-50](../../src/world/world_gen.gd#L45-L50)), na cópia literal pinada
-     `BIAS_MEDIDA` ([aether_reactions_test.gd:66-75](../../tests/aether_reactions_test.gd#L66-L75)) e
+     `BIAS_MEDIDA` ([aether_reactions_test.gd:69-78](../../tests/aether_reactions_test.gd#L69-L78)) e
      na cor do viz ([aether_viz.gd:12-16](../../src/rendering/aether_viz.gd#L12-L16)); **e** como
      `Channel.COUNT` está no array hash-eado
      ([tick_journal.gd:38](../../src/persistence/tick_journal.gd#L38)), é subida de `FORMAT_VERSION`,
@@ -134,7 +134,7 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
      como **dado** dentro da projeção ([:29-35](../../src/persistence/tick_journal.gd#L29-L35)),
      então `FORMAT_VERSION` **não** sobe — mas o hash de um run com nascimento se move
      legitimamente, e é isso que a checagem 6 protege. Insuficiente porque crença **decai e é
-     apagada** ([`decay`](../../src/ai/mind.gd#L108-L119), `CONFIDENCE_MIN = 0,02` em
+     apagada** ([`decay`](../../src/ai/mind.gd#L133-L147), `CONFIDENCE_MIN = 0,02` em
      [:9](../../src/ai/mind.gd#L9), meia-vida de `BELIEF_DECAY_PER_MIN = 0,14` em
      [:8](../../src/ai/mind.gd#L8)): parentesco não some em cinco minutos de jogo. Serve como
      **leitura**, nunca como **verdade** — e sozinha é enfeite.
@@ -165,7 +165,7 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
 5. **Herança de traços, com as regras que a impedem de mentir.** (i) Temperamentos: herda-se o
    `genome`, `personality` começa igual a ele e **depois** deriva como hoje; ao acasalar lê-se só
    `genome` — a checagem 4 prova isso com número. Como `from_dict` restaura a personalidade inteira
-   ([mind.gd:155](../../src/ai/mind.gd#L155)), fundador sem genoma mantém o valor carregado: nada é
+   ([mind.gd:190](../../src/ai/mind.gd#L190)), fundador sem genoma mantém o valor carregado: nada é
    re-desenhado no load. (ii) Pelo: só com `parents != [-1,-1]` a cor deixa de ser pura do bioma e
    vira mistura das cores dos pais com o bioma como prior; fundador fica 100 % na regra de 09 (a
    checagem 2 guarda isso). (iii) Corpo e HP: `DIMS`
@@ -182,8 +182,8 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
   ([:30](../../src/entities/wolf.gd#L30), gated em [:927-928](../../src/entities/wolf.gd#L927-L928))
   — 4×/s por lobo, dentro do passo de 50 ms cronometrado
   ([sim_clock.gd:5-7](../../src/core/sim_clock.gd#L5-L7),
-  [main.gd:332-334](../../src/main.gd#L332-L334)). A propagação de autoria cai na passada de difusão,
-  4×/s ([main.gd:27](../../src/main.gd#L27), [:283-286](../../src/main.gd#L340-L343)), não 20×.
+  [main.gd:285-287](../../src/main.gd#L285-L287)). A propagação de autoria cai na passada de difusão,
+  4×/s ([main.gd:27](../../src/main.gd#L27), [:283-286](../../src/main.gd#L293-L296)), não 20×.
   **Nada** novo em [`_physics_process`](../../src/entities/wolf.gd#L1203-L1259).
 - **Quantas entidades são alcançadas?** 5 lobos hoje ([`WOLF_COUNT`](../../src/main.gd#L9)), até o
   teto de censo que a 11 escrever (12). A consulta de autoria não visita célula nova: no máximo
@@ -194,12 +194,12 @@ trazia a 10 em curso, e o que ela moveu está registrado no §9.
   precedente do scratch reusado `_nb_i`/`_nb_w`
   ([aether_field.gd:37-39](../../src/world/aether_field.gd#L37-L39), alocado em
   [:42-54](../../src/world/aether_field.gd#L42-L54)); a crença reaproveita o `Dictionary` de
-  [`reinforce`](../../src/ai/mind.gd#L86-L92). O débito registrado do blackboard novo por lobo por
+  [`reinforce`](../../src/ai/mind.gd#L98-L107). O débito registrado do blackboard novo por lobo por
   tick ([wolf.gd:911](../../src/entities/wolf.gd#L911)) **não pode crescer**: se a leitura precisar de
   lista por lobo, usa o buffer único por passo que a 10 §4 mandou — se não couber aí, não entra.
 - **Como sei que ficou melhor, e o log existe em headless?** Não é "melhor", é "a ascendência existe
   e é legível": checagens do §5 no runner que já existe, o rodapé de colheita
-  ([aether_reactions_test.gd:1714-1718](../../tests/aether_reactions_test.gd#L1714-L1718)) e o
+  ([aether_reactions_test.gd:1745-1749](../../tests/aether_reactions_test.gd#L1745-L1749)) e o
   `trips == 0` do `SubtreeGuard` de 400 µs
   ([wolf.gd:448-449](../../src/entities/wolf.gd#L448-L449)). O HOT agregado dos cinco lobos (04) e os
   µs de difusão (05) seguem sem medição: nada aqui fecha P1, e a checagem 6 é o trip-wire de versão.
@@ -227,11 +227,11 @@ Cenários novos no runner dedicado (`TESTS`, hoje 24,
    `parents`/`gen`/`genome` identidade por identidade; imprime `chaves_de_ascendencia_no_save=N/8`.
    **Nasce vermelha** no `state_dict` de hoje, que tem oito chaves e nenhuma é linhagem.
 4. **`heranca_nao_repete_deriva`** — um [`take_damage`](../../src/entities/wolf.gd#L1288) no pai antes
-   do acasalamento deriva a personalidade por [`_drift`](../../src/ai/mind.gd#L50-L58): o genoma do
+   do acasalamento deriva a personalidade por [`_drift`](../../src/ai/mind.gd#L56-L64): o genoma do
    filhote tem de igualar o **base** do pai, não o valor vivo. Imprime base, derivado e herdado.
 5. **`eter_devolve_quem_sangrou`** — mordida real, leitura pelo `_find_scent` do filho: a autoria da
    célula escolhida tem de ser a identidade do agressor, e a crença de parentesco cruza a soleira de
-   [`believes()` 0,35``](../../src/ai/mind.gd#L104-L105). Imprime
+   [`believes()` 0,35``](../../src/ai/mind.gd#L119-L120). Imprime
    `fonte_lida=%d esperado=%d confianca=%.2f`. Sem (d) não há o que imprimir: é o número que prova
    que (c) sozinha é enfeite.
 6. **`journal_hash_inalterado_sem_nascimento`** — cenário estreito com o primitivo presente, sem
@@ -242,10 +242,10 @@ Cenários novos no runner dedicado (`TESTS`, hoje 24,
    espelho de `alcateia_nao_consome_rng_da_sessao` (dossiê 10 §5).
 8. **`ascendencia_e_int_nao_referencia`** — o filho lê os próprios pais depois de `free()` do pai
    (padrão dos lobos soltos do runner,
-   [aether_reactions_test.gd:1593-1599](../../tests/aether_reactions_test.gd#L1593-L1599),
-   [:1640-1641](../../tests/aether_reactions_test.gd#L1646-L1647)); imprime `pais=[..] pai_valido=false`.
+   [aether_reactions_test.gd:1624-1630](../../tests/aether_reactions_test.gd#L1624-L1630),
+   [:1640-1641](../../tests/aether_reactions_test.gd#L1677-L1678)); imprime `pais=[..] pai_valido=false`.
 
-`EXPECTED_CHECKS` ([aether_reactions_test.gd:61](../../tests/aether_reactions_test.gd#L61), **119**
+`EXPECTED_CHECKS` ([aether_reactions_test.gd:64](../../tests/aether_reactions_test.gd#L64), **119**
 na leitura desta página) e o rodapé da suíte (**237 checagens / 0 falhas / 35,5 s** na mesma leitura,
 pin [README.md:192](../../README.md#L192)) sobem com o lote e são **re-medidos** no clone limpo com
 `--import` frio antes de virar número publicado — nunca herdados.
@@ -261,9 +261,9 @@ pin [README.md:192](../../README.md#L192)) sobem com o lote e são **re-medidos*
   mão pela suíte — exatamente o que o contrato proíbe.
 - **Nenhum canal novo por conveniência** (preço no §3.3, exige `FORMAT_VERSION` e linha no status).
 - **Nenhum oráculo/LLM sugerindo ascendência** (mandato 2): a única saída de `MindOracle` é
-  `_narrations` ([mind_oracle.gd:72](../../src/ai/mind_oracle.gd#L72), gravada em
-  [:170](../../src/ai/mind_oracle.gd#L170)), lida por
-  [`narration_of`](../../src/ai/mind_oracle.gd#L150-L159) e entregue só ao HUD.
+  `_narrations` ([mind_oracle.gd:86](../../src/ai/mind_oracle.gd#L86), gravada em
+  [:196](../../src/ai/mind_oracle.gd#L196)), lida por
+  [`narration_of`](../../src/ai/mind_oracle.gd#L164-L165) e entregue só ao HUD.
 - **Nenhum NPC inventado para preencher a escada**; degrau vazio fica `[TARGET]`.
 - **Não re-herdar o adquirido**, não apagar `cor_do_pelo_vem_do_bioma` de fundador, não contar geração
   por `Time.get_ticks_*` nem por frame, e não pôr a proveniência dentro do hash sem dizer que isso
@@ -297,18 +297,18 @@ vezes árvore variável (13) é espaço de estados maior, e nenhum número daqui
   `imprint_bias()`. O status já cita `:45` certo.
 - `world_gen.gd:146` como `biome_at`: a função abre em
   [world_gen.gd:145](../../src/world/world_gen.gd#L145) e `:146` é o `return`.
-- `mind.gd:14-17` para `personality` (real: [13-17](../../src/ai/mind.gd#L13-L17)), `_init` em
-  `:23-31` (real: [24-32](../../src/ai/mind.gd#L24-L32)) e `_drift` em linha 47 de lá (real:
-  [50](../../src/ai/mind.gd#L50), doc comment em `:49`).
+- `mind.gd:14-17` para `personality` (real: [13-17](../../src/ai/mind.gd#L19-L23)), `_init` em
+  `:23-31` (real: [24-32](../../src/ai/mind.gd#L30-L38)) e `_drift` em linha 47 de lá (real:
+  [50](../../src/ai/mind.gd#L56), doc comment em `:49`).
 - `EXPECTED_CHECKS` em `aether_reactions_test.gd:25`: na revisão deste briefing a constante era
   linha 17 (linha 16 era o `]` de `TESTS`), valia **119** e `TESTS`
   tinha 24 cenários — não o 109/21 que publicam os dossiês 10 e 11. Na leitura deste dossiê a linha 25 valia **150**, 30 cenários. Na rodada 19 a constante era
-  [`:60`](../../tests/aether_reactions_test.gd#L61) com **198**; **hoje é a linha
-  [`:60`](../../tests/aether_reactions_test.gd#L61) com 225** (rodada 11).
+  [`:60`](../../tests/aether_reactions_test.gd#L64) com **198**; **hoje é a linha
+  [`:60`](../../tests/aether_reactions_test.gd#L64) com 225** (rodada 11).
 - "load com `mini()` em `main.gd:642`": **esse laço não existe mais** — a 11 trocou o pareamento por
   índice pelo pareamento por identidade, e o censo do disco passou a ser a autoridade. O load que o
-  substituiu está em [main.gd:1164-1200](../../src/main.gd#L1164-L1200); `save_game` é [`:1057-1092`](../../src/main.gd#L1062-L1097)
-  e `load_game` [`:1043-1101`](../../src/main.gd#L1100-L1158). O `main.gd:504` da fila caiu em `_reap_corpses` ([`:955-975`](../../src/main.gd#L960-L980)).
+  substituiu está em [main.gd:1131-1173](../../src/main.gd#L1131-L1173); `save_game` é [`:1035-1070`](../../src/main.gd#L1035-L1070)
+  e `load_game` [`:1073-1185`](../../src/main.gd#L1073-L1185). O `main.gd:504` da fila caiu em `_reap_corpses` ([`:933-945`](../../src/main.gd#L933-L945)).
 - Deslocamento geral em `wolf.gd`: o briefing media +27 linhas da rodada 09 sobre uma base de
   780 linhas; hoje são 1 487 e os alvos vieram de releitura por conteúdo, não de translação. As
   linhas deste parágrafo são as da árvore em que esta página foi re-derivada na rodada 12, conferidas
@@ -321,7 +321,7 @@ vezes árvore variável (13) é espaço de estados maior, e nenhum número daqui
   [:1346-1351](../../src/entities/wolf.gd#L1346-L1351), `_build_visual`
   [`:1448-1477`](../../src/entities/wolf.gd#L1448-L1477) e `load_state`
   [`:1376-1443`](../../src/entities/wolf.gd#L1376-L1443); em `main.gd`,
-  [`state_hash`](../../src/main.gd#L1292-L1293). **Os números que esta página listava como os de
+  [`state_hash`](../../src/main.gd#L1283-L1284). **Os números que esta página listava como os de
   antes saíram do parágrafo**: nem na base de 780 linhas (`f9b63b3`) nem na de 959 eles batiam com o
   símbolo nomeado — a linha 479 de `f9b63b3` é `_courage = …` e a 455 é `_swim_time = 0,0` —, então
   eram hipótese, não leitura, e a regra da casa é não deixar hipótese vestida de citação.

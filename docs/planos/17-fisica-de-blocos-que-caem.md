@@ -119,8 +119,8 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   `set_block` → `_touch_chunks_of` → fila `_dirty` consumida por
   [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L228-L236) chamada no
   `_process`, **fora** do passo de simulação, com
-  [`MESH_BUDGET := 2`](../../src/main.gd#L28) chunks por frame
-  (chamada em [main.gd:358](../../src/main.gd#L358)). As duas leituras que o contrato
+  [`MESH_BUDGET := 2`](../../src/main.gd#L28 chunks por frame
+  (chamada em [main.gd:332](../../src/main.gd#L337). As duas leituras que o contrato
   publica: **64 chunks em ~4,3 s no boot** ([README.md:148-149](../../README.md#L148-L149)) ≈
   67 ms/chunk, e o `_last_mesh_ms` do frame lido pelo F3. Uma pilha de N areias em cascata
   são N remoções **e** N fixações: até `2N` células sujas, e a malharia não sabe que a
@@ -128,9 +128,9 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
   (doc [`:672`](../design/10-world-layers-and-block-physics.md#L672)) existir, não para
   aumentar `MESH_BUDGET`.
 - **Cada escrita de bloco entra no save e no hash.** `edits[p]` é gravado inteiro no
-  [`save_game()`](../../src/main.gd#L1036-L1056) (`:1017-1035`) e re-aplicado no
-  [`load_game()`](../../src/main.gd#L1074-L1101) (`:1078-1080`), e o `diagnostics()` já imprime
-  `edits.size()` ([`:1179`](../../src/main.gd#L1210)). A projeção do
+  [`save_game()`](../../src/main.gd#L1034-L1054 (`:1015-1033`) e re-aplicado no
+  [`load_game()`](../../src/main.gd#L1072-L1099 (`:1076-1078`), e o `diagnostics()` já imprime
+  `edits.size()` ([`:1179`](../../src/main.gd#L1208). A projeção do
   [`TickJournal.state_hash`](../../src/persistence/tick_journal.gd#L16-L44) ordena e mistura as
   **edições** na conta ([`:17-21`](../../src/persistence/tick_journal.gd#L17-L21)).
   Consequência declarada antes do código: um corrida com areia caindo **não** reproduz os
@@ -175,14 +175,14 @@ Recorte que a premissa **não** cobre, e que o prompt misturou:
    posição do corpo (doc [`:549-553`](../design/10-world-layers-and-block-physics.md#L549-L553)):
    o integrador para em substep e a AABB pode parar um substep acima do solo.
 5. **Onde a roda roda**: `updates.flush(clock.tick)` e depois o `sim_step` das entidades,
-   dentro de [`_sim_tick`](../../src/main.gd#L312) — **antes** das mentes, para que uma
+   dentro de [`_sim_tick`](../../src/main.gd#L291 — **antes** das mentes, para que uma
    conversão só integre no tick seguinte (doc
    [`:757-759`](../design/10-world-layers-and-block-physics.md#L757-L759)). Nada em
    `_physics_process`: o passo de simulação é o que o `clock.begin_step`/`end_step` cronometra
-   ([main.gd:307-309](../../src/main.gd#L307-L309),
+   ([main.gd:281-283](../../src/main.gd#L286-L288,
    [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e é o que o hash lê.
 6. **`queued` e `overflow` visíveis**, no `diagnostics()` ao lado de `dropped_ticks`
-   ([main.gd:1206-1249](../../src/main.gd#L1206-L1249)) e no F3, como o doc exige em
+   ([main.gd:1180-1215](../../src/main.gd#L1204-L1239) e no F3, como o doc exige em
    [`:746-749`](../design/10-world-layers-and-block-physics.md#L746-L749): estourar o teto
    adia grãos, não os perde, e sem o número a discussão sobre `MAX_PER_TICK` é opinião.
 7. **O estado de queda não vai para o save — e isso é decisão escrita, não esquecimento.**
@@ -250,8 +250,8 @@ godot --headless --path . tests/smoke_test.tscn
    edição, um com a cascata: o primeiro **reproduz** o hash da rodada sem a feature (nenhum
    bloco se move sozinho), o segundo diverge e a divergência é atribuída às duas chaves de
    `edits` novas. Sem o primeiro lado, a checagem aceita queda em qualquer lugar.
-8. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39),
-   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:265](../../tests/smoke_test.gd#L265))
+8. `EXPECTED_CHECKS` ([aether_reactions_test.gd:39](../../tests/aether_reactions_test.gd#L39,
+   **183** nesta leitura) e a última linha do smoke ([smoke_test.gd:223](../../tests/smoke_test.gd#L223))
    sobem com o lote e são re-medidos no clone limpo com `--import` frio, com o SHA pinado.
 
 ## 6. O que NÃO fazer
@@ -260,7 +260,7 @@ godot --headless --path . tests/smoke_test.tscn
   está registrado no contrato com a contagem dos 645 arquivos de áudio GPL-3.0 deles
   ([`AGENTS.md`, mandato 8](../../AGENTS.md)). O que se aproveita é a **ideia** de areia que
   cai, que este dossiê já deriva do doc 10 e do `BlockDefs` daqui.
-- **Não aumentar `MESH_BUDGET`** ([main.gd:28](../../src/main.gd#L28)) para esconder a fila de
+- **Não aumentar `MESH_BUDGET`** ([main.gd:28](../../src/main.gd#L28) para esconder a fila de
   chunks sujos: o budget é número do contrato, a alavanca é o teto por tick da fila.
 - **Não fazer varredura de coluna nem de chunk** para "achar areia solta", nem no boot, nem a
   cada N ticks. Se aparecer necessidade de re-validação em massa, ela entra como item de

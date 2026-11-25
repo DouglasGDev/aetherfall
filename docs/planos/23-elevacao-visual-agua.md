@@ -112,7 +112,7 @@ um estado por corpo e age na **borda** da mudança: `if in_water != bool(st["in_
 ([audio_director.gd:439-441](../../src/audio/audio_director.gd#L439-L441)), alimentado por leitura do
 `body` do jogador ([`:462`](../../src/audio/audio_director.gd#L462)) e de cada lobo
 ([`:503`](../../src/audio/audio_director.gd#L503)), com a lista entregue por
-`wolves_provider` ([`main.gd:222`](../../src/main.gd#L222)). É a mesma fiação, sem sinal novo, que o
+`wolves_provider` ([`main.gd:202`](../../src/main.gd#L207). É a mesma fiação, sem sinal novo, que o
 FX de água usa (§3.7). O áudio é o **primeiro** consumidor dessa leitura; este é o segundo — e é por
 isso que a regra da casa (generalizar no segundo chamador, não no primeiro) permite a peça nova sem
 pedir um mecanismo novo.
@@ -121,13 +121,13 @@ pedir um mecanismo novo.
 `DirectionalLight3D` com `rotation_degrees = (-42, 55, 0)`, `light_energy = 1,60`, sombra a 80 m,
 `ProceduralSkyMaterial`, `ambient_light_energy = 0,85`, `TONE_MAPPER_FILMIC`, `fog_enabled` com
 `fog_light_color = (0,55, 0,65, 0,78)` e `fog_density = 0,006`
-([main.gd:1254-1290](../../src/main.gd#L1254-L1290)). Não há ciclo de dia/noite, então "caústicas
+([main.gd:1220-1256](../../src/main.gd#L1244-L1280). Não há ciclo de dia/noite, então "caústicas
 quando o sol está alto" (§ Fase 1) é hoje uma **constante**, não uma variável: a elevação do sol é
 fixa em ~48°. Registrar isso é o que impõe §3.9. **O que a perna mudou aqui:** a direção parada
 deixou de ser invisível ao material — `world.set_water_sun_direction(_sun_dir)` no boot
-([`main.gd:151`](../../src/main.gd#L151)) grava o vetor no uniform `sun_dir`
-([`voxel_world.gd:172-174`](../../src/world/voxel_world.gd#L172-L174)), e o shader decide o ganho de
-caústica por ele ([`water_surface.gd:258`](../../src/world/water_surface.gd#L258)). O que continua
+([`main.gd:141`](../../src/main.gd#L141) grava o vetor no uniform `sun_dir`
+([`voxel_world.gd:124-126`](../../src/world/voxel_world.gd#L124-L126)), e o shader decide o ganho de
+caústica por ele ([`water_surface.gd:184`](../../src/world/water_surface.gd#L184)). O que continua
 parado é o sol, não o canal — e é isso que deixa a Fase 2 como pauta.
 
 **Headless não exercita o renderer, e isso é premissa do gate, não detalhe.** A suíte roda com
@@ -297,7 +297,7 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
   herda a consequência escrita lá: o portador dela é o atributo custom do §3.3, cujo número que
   reabria o braço ("se um quarto canal for necessário") agora está satisfeito.
 - **Fase 4 — atmosfera.** `fog_enabled` e `fog_density = 0,006` existem com **uma** curva
-  ([main.gd:1341-1345](../../src/main.gd#L1341-L1345)); height fog é outra função e precisa do
+  ([main.gd:1247-1251](../../src/main.gd#L1271-L1275); height fog é outra função e precisa do
   `Environment` em recurso versionado, não em código — hoje a neblina é escrita à mão dentro de
   `_build_environment`. God rays em `forward_plus` é volumetria do engine, e ninguém mediu o custo
   dela nesta máquina: a fase **começa pela colheita**, como manda o mandato 5.
@@ -461,7 +461,7 @@ não tem comprador de molhamento nesta fase.
    construção — então são no máximo 64 leituras e a coluna seca paga as 64 inteiras para devolver
    `-1,0`. Não é varredura de mapa.
 2. **Quantas entidades são alcançadas?** Corpos: **1 jogador + até 5 lobos** (`WOLF_COUNT = 5`,
-   [main.gd:9](../../src/main.gd#L9); censo até `CENSUS_CAP = 12`, [`:18`](../../src/main.gd#L18));
+   [main.gd:9](../../src/main.gd#L9; censo até `CENSUS_CAP = 12`, [`:18`](../../src/main.gd#L18);
    o FX itera sobre a lista que o `wolves_provider` já devolve. Superfície de água: a área dos surfaces de água dos 64
    chunks, que **não muda** com esta perna (§3.2, §5.1). Teto de partículas: **impresso na suíte** e
    igual a `pool × amount` por sistema, com o valor na linha da checagem — não no adjetivo.
@@ -469,7 +469,7 @@ não tem comprador de molhamento nesta fase.
    por identidade (padrão `audio_director.gd:468`), sem `new()` por frame e sem `Array` novo por
    tick. O que esta perna **acrescenta** ao caminho quente é uma `ShaderMaterial` única, construída
    em `_build_materials`, que já roda no boot (os ~4,7 s de malharia medida,
-   [main.gd:158-165](../../src/main.gd#L158-L165)) — custo de boot, não de tick.
+   [main.gd:138-145](../../src/main.gd#L138-L145) — custo de boot, não de tick.
 4. **Como sei que ficou melhor?** Dois instrumentos, cada um respondendo o que pode: as checagens
    novas da suíte (headless: material, máscara, triângulos, orçamento, transição, não-escrita) e a
    **sonda com janela** (§5.2), que é a única que compila o shader e salva PNG do quadro. Headless
@@ -753,7 +753,7 @@ cerimônia — o incidente do dossiê 03 apagou uma versão já conferida.
   e os documentos.
 - **Choque real:** `src/main.gd` é de escritor único e a 22 também o toca (o hospedeiro do modelo,
   `attach_llm_host` / `_wire_llm_host` em
-  [main.gd:282-317](../../src/main.gd#L282-L317)); `src/world/voxel_world.gd` e `block_defs.gd` são os
+  [main.gd:230-265](../../src/main.gd#L235-L270); `src/world/voxel_world.gd` e `block_defs.gd` são os
   terrenos da 17 e da 18. Esta perna **não** toca `block_defs.gd` nem `src/ai/` nem `native/`.
 - **Consequência aceita e escrita agora** (item 5 de "Branches"): quem pousar depois re-rome o gate
   na árvore resultante. A 23 muda `triangle_count()`? **Não** — e é checagem (§5.1), justamente para
