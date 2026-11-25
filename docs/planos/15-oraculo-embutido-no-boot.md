@@ -473,9 +473,10 @@ A primeira leitura pelo conteúdo, feita naquela ponta, devolveu `:329` e `:2410
 voltou a crescer o arquivo e os dois apodreceram de novo — o primeiro caiu em prosa de clone
 limpo (`:386`), o segundo em linha branca (`:2479`), e a linha branca é o único caso que a gateira
 de `tools/check_doc_anchors.py` vê. Re-leram-se pela frase uma terceira vez na passada do pouso da
-23 (2026-11-24) e são
+23 (2026-11-24) e uma quarta na abertura da Fase 2 do mesmo dossiê (2026-11-25), quando editar o
+"Em andamento" e o item 15 do "Falta" empurrou a linha 3169 oito posições abaixo; hoje são
 [`:553`](../../docs/melhorias-status.md#L553) e
-[`:3169`](../../docs/melhorias-status.md#L3169); a ordem então vigente está treze linhas abaixo da
+[`:3177`](../../docs/melhorias-status.md#L3177); a ordem então vigente está treze linhas abaixo da
 primeira, em [`:566-567`](../../docs/melhorias-status.md#L566-L567). Naquela re-leitura o `:502` da
 linha de cima já não descrevia o alvo — a gateira deu **BRANCO** no `:3059` e **nada** no `:502`,
 porque o número que ela substituiu caiu em prosa de outra exceção, e é exatamente essa face que o

@@ -635,14 +635,17 @@ existem**; `died` **não** é sinal órfão — tem dois consumidores em `src/`,
 leito `amb_birds` tocando sem ave nenhuma no mundo é ambiência de campo aberto correta, não defeito do
 tipo da 19.
 
-**Pauta autorizada em 2026-11-24 e já pousada: o prompt "Elevação Visual (Texturas + Água +
-Atmosfera)", cinco fases com a Fase 1 escrita.** A página é
-[`docs/planos/23-elevacao-visual-agua.md`](planos/23-elevacao-visual-agua.md), o código está no merge
-`05e8917` e a rodada "O pouso da perna 23" abaixo traz as corridas. O que **continua em andamento**
-depois do pouso são três coisas, e nenhuma delas é código desta passada: (1) as **Fases 2→5** —
-clima/vento (`Weather`), superfícies molhadas, vegetação viva, `Environment` de névoa/Glow e os
-materiais dos blocos — autorizadas **como pauta dentro da mesma perna**, cada uma com gate próprio e
-na dependência da anterior (§3.9); (2) a **atribuição do vermelho de 25,76 ms**, que ficou aberta
+**Pauta autorizada em 2026-11-24, Fase 1 pousada e Fase 2 em voo: o prompt "Elevação Visual
+(Texturas + Água + Atmosfera)", cinco fases.** A página é
+[`docs/planos/23-elevacao-visual-agua.md`](planos/23-elevacao-visual-agua.md), o código da Fase 1 está no
+merge `05e8917` e a rodada "O pouso da perna 23" abaixo traz as corridas. A **Fase 2** (chuva e
+superfícies molhadas) abriu como código em `feat/elevacao-visual-chuva-23f2`, base `eb218fe`, worktree
+separado `.qoder/worktrees/elevacao-chuva-23f2`, corte no §3.10, gate no §5.3 e sonda no §5.4; o registro
+de abertura, com as quatro frases que a leitura da árvore devolveu diferente, está no
+[`AGENTS.md`](../AGENTS.md) como "Registro de 2026-11-25". O que **continua em andamento** depois do pouso
+da Fase 1 são três coisas: (1) as **Fases 3→5** — vegetação viva, `Environment` de névoa/Glow e os
+materiais dos blocos — autorizadas **como pauta dentro da mesma perna**, cada uma com gate próprio e na
+dependência da anterior (§3.9); (2) a **atribuição do vermelho de 25,76 ms**, que ficou aberta
 escrita assim, com o dono de pagar a dívida sendo a próxima perna que rodar a suíte nesta árvore com
 o amostrador ligado; (3) a fila serializada, que volta a **22 → 17 → 18 → 20 → 13** — a 23 entrou na
 frente de todas por decisão do dono e sai dela agora, e a 22 ainda está em voo na árvore primária.
@@ -849,15 +852,20 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     antes: folha nova na `Selector`, classe `Blackboard`, canal novo no Éter (é débito do dossiê 03) e
     `SpeciesDef` como `.tres` — o predado de espécie entra como dados construídos uma vez, no padrão de
     [`block_defs.gd:123-137`](../src/world/block_defs.gd#L123-L137).
-15. **As Fases 2→5 do prompt visual** (dossiê 23; **autorizadas como pauta dentro da mesma perna**, com
-    a Fase 1 pousada em `05e8917` e nenhuma linha escrita delas). O que cada uma exige, lido no §3.9 da
-    página: a **Fase 2** (chuva e superfícies molhadas) não tem o que ligar — não existe variável de
-    clima (o sol é constante) e o material opaco é um `StandardMaterial3D` único por mundo
-    ([voxel_world.gd:91-96](../src/world/voxel_world.gd#L91-L96)), então a fase é `Weather` como dono de
-    um estado lido pelo FX **e** pelo material, e é o primeiro comprador de `shader` no opaco; a
-    **Fase 3** (vegetação viva) precisa decidir primeiro **qual canal do `COLOR` opaco** fica livre,
-    porque grama e folha entram no mesmo surface com o jitter `0,012` de
-    [voxel_world.gd:575](../src/world/voxel_world.gd#L575); a **Fase 4** (atmosfera) tem hoje
+15. **As Fases 3→5 do prompt visual** (dossiê 23; **autorizadas como pauta dentro da mesma perna**, com
+    a Fase 1 pousada em `05e8917` e a **Fase 2 em voo** — o que cada uma exige, lido no §3.9 e, para a
+    Fase 2, no §3.10 da página: a **Fase 2** (chuva e superfícies molhadas) não tinha o que ligar — não
+    existia variável de clima (o sol é constante) e o material opaco era um `StandardMaterial3D` único
+    por mundo
+    ([voxel_world.gd:91-96](../src/world/voxel_world.gd#L91-L96)), então ela é `Weather` como dono de
+    um estado lido pelo FX **e** pelo material, e o primeiro comprador de `shader` no opaco; a
+    **Fase 3** (vegetação viva) **perdeu o canal livre** que a pauta lhe oferecia — a Fase 2 gasta o
+    alfa do `COLOR` opaco, que era constante `1.0` e não tinha leitor
+    ([voxel_world.gd:689](../src/world/voxel_world.gd#L689)), e grama e folha entram no mesmo surface com
+    o jitter `0,012` de
+    [voxel_world.gd:575](../src/world/voxel_world.gd#L575), então o portador dela passa a ser o atributo
+    custom (`ARRAY_DATA`) do §3.3, que a Fase 2 transforma em peça com comprador real em vez de
+    hipótese; a **Fase 4** (atmosfera) tem hoje
     `fog_enabled` e `fog_density = 0,006` escritos à mão dentro de `_build_environment`
     ([main.gd:1247-1251](../src/main.gd#L1247-L1251)) — height fog pede `Environment` em recurso
     versionado, e god rays em `forward_plus` é volumetria cujo custo **ninguém mediu nesta máquina**: a
@@ -8327,3 +8335,54 @@ cegas a `native/`) seguem como decisão do dono; o **#20** sem a colheita que no
 sem atribuição; o **#41** como furo da contagem de malha; o **#44** fica onde a 23 o deixou; o **#45**
 é arrumação do dono. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal`
 não foram tocados por este pouso. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+
+## Abertura da Fase 2 do dossiê 23 — chuva e superfícies molhadas como código (2026-11-25, documento puro)
+
+**Nenhuma linha de `src/` ou `tests/` foi escrita por esta rodada, e nenhum número dela é medição.** O
+que existe é o corte (§3.10), o gate (§5.3) e a sonda (§5.4) da Fase 2 em
+[`docs/planos/23-elevacao-visual-agua.md`](planos/23-elevacao-visual-agua.md), o registro com as quatro
+frases que a leitura da árvore de abertura devolveu diferente no
+[`AGENTS.md`](../AGENTS.md) ("Registro de 2026-11-25"), e as três linhas deste arquivo que apontam para
+lá. Branch `feat/elevacao-visual-chuva-23f2`, base `eb218fe`, worktree `.qoder/worktrees/elevacao-chuva-23f2`
+— a 22 continua em voo na árvore primária com trabalho não commitado em `native/af_mind/`, e é por isso
+que a Fase 2 não abre ali.
+
+**O que a leitura da base nomeia, e é o que o gate vai pagar** (derivação aritmética dos constantes, não
+corrida — os números aparecem escritos assim para o vermelho nascer conferível):
+
+- o canal do `COLOR` opaco que a Fase 2 usa é o **alfa**, hoje constante `1.0` em
+  [voxel_world.gd:689](../src/world/voxel_world.gd#L689), lido por ninguém porque
+  `vertex_color_use_as_albedo` multiplica RGB
+  ([voxel_world.gd:93](../src/world/voxel_world.gd#L93));
+- o material opaco é um `StandardMaterial3D` de oito linhas
+  ([voxel_world.gd:91-96](../src/world/voxel_world.gd#L91-L96)) e vira `ShaderMaterial` gerado em `.gd`
+  — `git ls-files '*.gdshader'` dá **0** antes e **0** depois, então a cláusula do §3.1 (mais de um
+  arquivo importado) **não** reabre, ao contrário do que o §3.9 dizia;
+- o pool de anéis passa a ter **dois** compradores (`WaterFx._anel`,
+  [water_fx.gd:299-310](../src/rendering/water_fx.gd#L299-L310)), com origem e recusa contadas pela porta
+  nova `ring_at()`; o orçamento de `RING_POOL` deixa de ser cota do salpico;
+- a lista de uniformes do material da água, hoje `declarados=16  gravados=14` na linha literal do pouso
+  da Fase 1, passa a **17/15** com o `chuva`, e os três lugares do repositório que citam os dois números
+  são re-derivados no commit final;
+- o clima entra por CLI `--weather=<alvo>` no mesmo laço que já lê `--tick-journal=`
+  ([main.gd:1262-1269](../src/main.gd#L1262-L1269)) — sem input sintético, e sem nenhum caminho do FX para
+  o mundo: a cláusula do dono continua sendo a mesma da Fase 1, e a testemunha dela é a checagem de
+  não-escrita por coluna.
+
+**#47 (novo, dono esta fase):** a sonda com janela produz recortes PNG **dentro** do projeto, que é
+exatamente como o **#45** nasceu (os quatro `caixa-*.png` de
+[`docs/evidence/elevacao-visual-agua-23/`](evidence/elevacao-visual-agua-23/) commitados sem
+`.png.import`, todo clone limpo imprimindo `??` depois do `--import`). A pasta nova de evidência leva um
+`.gdignore`, mecanismo que já tem número na casa: o `build.bat` da perna 22 escreve `bin/.gdignore` e o
+`--import` que devolvia 464 B de stderr passou a devolver exit 0 com 0 bytes
+(`docs/melhorias-status.md:6679-6682` acima). Isso demonstra o conserto **em uma pasta** e não fecha o #45, e a
+régua do #45 foi relida nesta árvore: dos **29** PNGs e **1** SVG rastreados, **quatro** estão sem
+sidecar e os quatro estão naquela pasta — `docs/evidence/fp-hand` tem **14** `.import` versionados,
+`docs/media` **11**, `assets/` **51** e o `icon.svg` da raiz tem o dele. O débito é de quatro arquivos,
+não de três pastas, e a arrumação neles continua sendo do dono do repositório.
+
+**Consequência de versão, declarada agora:** `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção
+do `TickJournal` não são tocados, e a expectativa desta fase é que uma corrida com chuva **reproduza** os
+hashes publicados — chuva visual não move `intent`, crenças, edições nem canais. Se o hash se mover, o
+defeito é desta perna. Nenhum gate de fase se fecha aqui; a fila serializada não muda:
+**22 → 17 → 18 → 20 → 13**.

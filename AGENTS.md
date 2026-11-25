@@ -836,6 +836,52 @@ todos da classe "peça que a página declara comprar". A fila serializada passa 
 13**: a 23 sai da frente, o elo seguinte é `feat/oraculo-nativo-gdextension-22`, que continua em voo na
 árvore primária com trabalho não commitado em `native/af_mind/`.
 
+**Registro de 2026-11-25 — a Fase 2 do dossiê 23 abre como código. Nenhuma autorização nova e nenhuma
+posição de fila muda.** A autorização usada é a do registro de 2026-11-24, que pôs as Fases 2→5 "como
+pauta dentro dessa mesma perna, cada uma com gate próprio e nenhuma linha escrita antes de a anterior
+fechar o dela": a Fase 1 fechou o gate dela e pousou (`05e8917`), então a Fase 2 é a da vez. O corte está
+escrito em [`docs/planos/23-elevacao-visual-agua.md`](docs/planos/23-elevacao-visual-agua.md) §3.10, o
+gate em §5.3 e a sonda em §5.4, e este registro é **anterior** a qualquer linha de `src/` (mandato 4).
+A fila serializada continua **22 → 17 → 18 → 20 → 13** — Fase dentro de perna não é elo novo.
+
+Quatro coisas a leitura da árvore de abertura (`eb218fe`) devolve diferente do que a pauta dizia, e
+nenhuma é cosmética. (1) A pauta (§3.9) afirmava que a Fase 2 "reabre a discussão do §3.1"; a cláusula do
+§3.1 é *"quando existir mais de **um** `.gdshader` no projeto"*, e o segundo material desta fase, como o
+primeiro, nasce de uma constante `.gd`. Arquivos `.gdshader`: **0 antes, 0 depois** — a discussão não
+reabre, e a página corrige a si mesma com o número impresso (§5.3, primeira linha). (2) O que a Fase 2 reabre
+é outra cláusula, a do §3.3 braço (a): o `COLOR` do grupo opaco escreve `Color(bright, bright, bright,
+1.0)` ([src/world/voxel_world.gd:689](src/world/voxel_world.gd#L689)) e o consumidor é um
+`StandardMaterial3D` com `vertex_color_use_as_albedo` ([:93](src/world/voxel_world.gd#L93)), que
+multiplica **RGB** e não tem transparência ligada — o alfa é canal escrito como constante e lido por
+ninguém, do mesmo achado do furo #43, mas desta vez **usado** como portador da exposição de céu. Com o A
+gasto, o vento da Fase 3 perde o canal livre que a pauta lhe oferecia e passa a ter comprador real para o
+atributo custom (`ARRAY_DATA`) do §3.3. (3) O pool de anéis do §3.6 ganha o **segundo comprador** que o braço rejeitado do §3.7
+registrava como inexistente: a porta é `WaterFx.ring_at()`, com origem e recusa
+contadas, e não um segundo pool. (4) O choque em `src/main.gd` deixou de ser previsto e passou a ser
+lido: a 22 escreveu **14 linhas** ali desde a base desta fase (`git diff --stat eb218fe..1b5ff5f --
+src/main.gd` = 14 inserções, `git worktree list` dando a árvore primária em `feat/oraculo-nativo-passo5-22`),
+e os dois lugares que ela tocou são os dois que esta fase usa — uma linha no bloco de nós de render em
+`_ready` (~:213) e o fim de `_start_journal_from_args()` (:1270), onde o `--weather=` entra. Worktree
+separado (`.qoder/worktrees/elevacao-chuva-23f2`), escritor único por arquivo por branch, e **re-rome do
+gate na árvore resultante** (item 5 de "Branches") continuam sendo o preço aceito, não uma preferência.
+
+Disso sai um furo novo, com dono escrito antes da linha: **#47** — a sonda com janela da Fase 2 produz
+recortes PNG dentro do projeto, e foi exatamente assim que o **#45** nasceu (os quatro
+`caixa-*.png` de `docs/evidence/elevacao-visual-agua-23` commitados sem `.png.import`, todo clone limpo
+imprimindo `??` depois do `--import`). Esta fase **não repete o passo**: a pasta nova de evidência leva
+um `.gdignore`, que demonstra o conserto local em uma pasta e **não** fecha o #45. A régua foi relida
+nesta árvore e o escopo do #45 é **menor** do que a pauta do pouso da 22 fazia crer: dos **29** PNGs e
+**1** SVG rastreados, **quatro** arquivos estão sem sidecar e os quatro estão em
+`docs/evidence/elevacao-visual-agua-23`; `docs/evidence/fp-hand` tem **14** `.import` versionados,
+`docs/media` **11**, `assets/` **51** e o `icon.svg` da raiz tem o dele — ou seja, o débito é de quatro
+arquivos, não de três pastas, e a arrumação neles continua sendo do dono do repositório.
+Consequência de versão declarada agora, não depois: `Channel.COUNT`,
+`FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não são tocados, e a expectativa explícita
+desta fase é que uma corrida com chuva **reproduza** os hashes publicados — chuva visual não move
+`intent`, crenças, edições nem canais; se o hash se mover, o defeito é desta perna e a testemunha é a
+assinatura por coluna da checagem `chuva_nao_escreve_o_mundo`. Nenhum gate de fase se fecha aqui, e a
+fila P0/P1 (budget HOT, censo multi-semente, bake-off de AF) continua aberta.
+
 ## Ciclo de trabalho
 
 1. **Leia o código real do assunto antes de propor a mudança.** As citações `arquivo:linha` do
