@@ -4,6 +4,11 @@
 # Ferramentas locais (Godot portavel baixado para validar/CI local)
 .tools/
 
+# Worktrees e clones limpos que as pernas deste repo montam dentro da arvore. Cada um
+# tem o proprio .git, entao `git add -A` na raiz indexaria repositorios inteiros aqui
+# dentro; e o status deixava de responder "o que mudou nesta arvore".
+.qoder/
+
 # Artefatos de build e saves
 bin/
 saves/
