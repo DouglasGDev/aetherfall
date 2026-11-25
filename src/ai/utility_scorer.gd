@@ -54,6 +54,13 @@ func add_option(id: String) -> Option:
 func scored(elapsed: float, ctx: Dictionary) -> Array:
 	var results: Array = []
 	_breakdown.clear()
+	# A curva de resultado (Fase 3 §5.6) mora AQUI, onde o dossie aponta: quem
+	# trouxer um Mind no contexto ("bandit") empresta o numero UCB1 da tatica e
+	# o escorredor soma ao score — so isso. O bônus entra DEPOIS do veto
+	# (`not vetoed`): portao fechado e portao fechado, o bandit nao atravessa.
+	# Contexto sem "bandit" (quem monta escorredor a mao) e bônus zero: a
+	# superficie e optica por construcao, e o caminho OFF e o de antes da Fase 3.
+	var bandit = ctx.get("bandit")
 	for o in options:
 		var total := 1.0
 		var additive := 0.0
@@ -73,7 +80,12 @@ func scored(elapsed: float, ctx: Dictionary) -> Array:
 			additive += shaped * c.weight
 			weight_sum += c.weight
 		var score := 0.0 if (vetoed or weight_sum <= 0.0) else additive / weight_sum
-		_breakdown[o.id] = {"score": score, "vetoed": vetoed, "parts": parts}
+		var bonus := 0.0
+		if bandit != null and not vetoed and bandit.has_method("bandit_bonus"):
+			bonus = float(bandit.call("bandit_bonus", o.id))
+			if bonus > 0.0:
+				score += bonus
+		_breakdown[o.id] = {"score": score, "vetoed": vetoed, "parts": parts, "bandit": bonus}
 		results.append([o.id, score])
 	results.sort_custom(func(x: Array, y: Array) -> bool: return float(x[1]) > float(y[1]))
 	return results
