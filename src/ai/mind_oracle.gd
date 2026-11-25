@@ -20,6 +20,12 @@ extends Node
 ## inferir — com o prompt do lobo ja gravado no arquivo separado do save, a
 ## frase volta sem tocar a fila, e o replay de CI roda com o modelo ate fora do
 ## processo. Sem a flag `_cache` e null e o custo por frame e zero.
+##
+## Passo 5 do dossie 22 (§6.4/§7.1): o PORTAO da Camada 5. "A mente propoe, as
+## regras dispoe" deixa de ser ausencia de caminho — com o modelo no MESMO heap
+## esse argumento e fraco — e vira o verificador nomeado (`BeliefVerifier`) na
+## unica rota de escrita: a saida que cita um id que nao existe na alcateia nao
+## produz narrativa, crenca nem intencao, e a recusa nomeia o id forjado.
 
 signal narration_ready(wolf_id: int, text: String)
 
@@ -75,6 +81,9 @@ var cache_hits := 0
 ## Prompt do pedido em voo: e a chave de conteudo quando a resposta chega — a
 ## frase se grava sob a chave do prompt que PRODUZIU o texto, nunca de outro.
 var _ultimo_prompt := ""
+## O verificador nomeado da fronteira da Camada 5 (§6.4): criado no `_ready`, e
+## ele que decide se uma saida do oraculo pode entrar no mundo.
+var _verificador: BeliefVerifier = null
 
 ## Numeros do caminho, para a checagem nomear a premissa em vez de adjetivar:
 ## quantos pedidos sairam para a fila, qual foi o ultimo status do `wait`
@@ -87,6 +96,7 @@ var last_reason := ""
 func _ready() -> void:
 	if ClassDB.class_exists(&"AfMindOracle"):
 		_ext = ClassDB.instantiate(&"AfMindOracle")
+	_verificador = BeliefVerifier.new()
 
 
 ## A ponte nativa que este oraculo usa. O AfMindRuntime (dossie 22 §6.3) dirige
@@ -139,6 +149,28 @@ func _process(delta: float) -> void:
 ## estado interno, nao entrada do sistema de decisao.
 func narration_of(wolf_id: int) -> String:
 	return String(_narrations.get(wolf_id, ""))
+
+
+## O PORTAO da Camada 5 (§6.4/§7.1): a UNICA rota pela qual uma saida do oraculo
+## entra no mundo — narrativa gravada, crenca, intencao. A saida que nomeia um
+## `entity_id` que nao existe na alcateia NAO passa: sem narrativa, sem crenca,
+## sem intencao, e a recusa NOMEIA o id forjado (o numero que decide). Com o
+## modelo no MESMO heap, ausencia de caminho nao e prova — o portao checado e.
+## Roster invalido ou vazio e fail closed: qualquer citacao e forjada.
+func aceitar_saida(wolf_id: int, texto: String) -> bool:
+	var ids: Array = []
+	if roster_provider.is_valid():
+		for w in roster_provider.call():
+			if w != null and is_instance_valid(w):
+				ids.append(int(w.identity))
+	if not _verificador.aceitar(texto, ids):
+		last_reason = _verificador.ultimo_motivo
+		_cooldowns[wolf_id] = RETRY_COOLDOWN
+		return false
+	_narrations[wolf_id] = texto
+	_cooldowns[wolf_id] = RETRY_COOLDOWN
+	narration_ready.emit(wolf_id, texto)
+	return true
 
 
 ## Liga a cache (§6.5) no arquivo dado — CLI `--oracle-cache=`, padrao da casa
@@ -216,10 +248,14 @@ func _poll() -> void:
 	var text := _clean(String(out.get("text", "")))
 	if status == 0 and text != "":
 		last_reason = ""
-		_narrations[_pending_id] = text
-		_cooldowns[_pending_id] = RETRY_COOLDOWN
+		# O portao da Camada 5 decide ANTES de qualquer escrita (§6.4): narrativa,
+		# cache e sinal so existem com a saida aceita — a saida que nomeia um id
+		# que nao existe na alcateia nao produz nada, e a recusa nomeia o id
+		# forjado. Recusada tambem nao vira cache: o que a cache devolve e o que
+		# o wrapper ACEITOU.
+		if not aceitar_saida(_pending_id, text):
+			return
 		_cache_grava(_ultimo_prompt, text)
-		narration_ready.emit(_pending_id, text)
 		return
 	# Decode concluido sem texto ou slot perdido: recuo cheio com o motivo que a
 	# ponte escreveu — impresso, nao anonimizado (dossie 15 §9).

@@ -86,14 +86,17 @@ const TESTS: Array[StringName] = [
 # instancia FRESCA lendo a frase do arquivo pela chave de conteudo reconstruida de
 # fora (§6.5 -- "lida antes de inferir") e o replay da segunda corrida devolvendo a
 # mesma frase SEM consultar a fila com acertos_cache=1 (nasceu VERMELHO com
-# pedidos=1 impresso: sem cache, a segunda corrida paga o decode de novo) -- mais a
-# UM de `verifier_recusa_id_forjado` (§6.4/§7.1), que
-# nasce vermelha enquanto o verificador nomeado nao existir em src/ai -- mais as
+# pedidos=1 impresso: sem cache, a segunda corrida paga o decode de novo) -- mais
+# as CINCO de `verifier_recusa_id_forjado` (§6.4/§7.1) -- o verificador nomeado
+# existe em src/ai (nasceu VERMELHO sem o arquivo), o controle passa no
+# verificador, a forja e recusada com o id NOMEADO, o portao do wrapper
+# (`aceitar_saida`, a rota que o `_poll` usa) recusa a forja sem escrever
+# narrativa e aceita o controle com narrativa e sinal -- mais as
 # QUATRO de `budget_do_oraculo_nao_estoura_a_arvore` (§5.5) -- a regua do passo de
 # 25 ms com o decode do oraculo EM VOO dentro da malha de 1 400 passos, estrutural-
 # mente vermelha num clone sem runtime/gguf e com o SubtreeGuard de 400 us sem
 # estouro nenhum.
-const EXPECTED_CHECKS: int = 332
+const EXPECTED_CHECKS: int = 336
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -6360,10 +6363,12 @@ func _test_af_cache_determina_replay() -> bool:
 ## nao tem para onde escrever e mais fraco quando ele e um objeto no mesmo heap"
 ## (§6.4). Entao o contrato ganha um verificador nomeado (`BeliefVerifier`) na
 ## fronteira da Camada 5: a saida que nomeia um `entity_id` que nao existe na
-## alcateia nao pode produzir narrativa, crenca nem intencao. Nasce VERMELHO
-## enquanto o verificador nao existir em src/ai -- o caminho impresso e o que
-## falta, e o fechamento (o portao de aceite no wrapper) e o commit que o
-## vermelho cobra.
+## alcateia nao pode produzir narrativa, crenca nem intencao. Nasceu VERMELHO
+## enquanto o verificador nao existia em src/ai (commit do vermelho do passo 5);
+## o fechamento e o portao de aceite no wrapper (`aceitar_saida`, a rota que o
+## `_poll` passa a usar), com o controle primeiro -- o portao nao e um filtro que
+## recusa tudo. O roster do gate e um lobo minimo de prova (so `.identity`), e o
+## recuso fail closed: roster vazio recusa qualquer citacao.
 func _test_verifier_recusa_id_forjado() -> bool:
 	var caminho := "res://src/ai/belief_verifier.gd"
 	var existe := FileAccess.file_exists(caminho)
@@ -6371,6 +6376,44 @@ func _test_verifier_recusa_id_forjado() -> bool:
 			"verifier_recusa_id_forjado: o verificador nomeado existe na fronteira da Camada 5",
 			"caminho=%s existe=%s -- premissa do §6.4: mesmo heap, ausencia de caminho nao e prova" % [
 				caminho, str(existe)])
+	if not existe:
+		return true
+	# O controle no verificador: a saida que so cita id do roster PASSA.
+	var v := BeliefVerifier.new()
+	var id_valido := 11
+	var controle := v.aceitar("O lobo %d fareja o vento e acha o rastro." % id_valido, [id_valido])
+	_check(controle and v.ultimo_id_forjado == -1,
+			"verifier_recusa_id_forjado: o controle passa -- saida que so cita id do roster e aceita",
+			"aceito=%s id_forjado=%d motivo='%s'" % [
+				str(controle), v.ultimo_id_forjado, v.ultimo_motivo])
+	# A forja: o id 999 nao existe no roster [11] -- e a recusa NOMEIA o numero,
+	# que e o que decide no log e na checagem.
+	var forjado := v.aceitar("O lobo 999 uiva para a matilha.", [id_valido])
+	_check(not forjado and v.ultimo_id_forjado == 999 and v.ultimo_motivo.contains("999"),
+			"verifier_recusa_id_forjado: a saida com id forjado e recusada e o numero e NOMEADO",
+			"aceito=%s id_forjado=%d motivo='%s'" % [
+				str(forjado), v.ultimo_id_forjado, v.ultimo_motivo])
+	# O portao NO WRAPPER (a rota que o `_poll` usa): recusa = sem narrativa, sem
+	# escrita nenhuma, e o motivo do wrapper e o do verificador.
+	var o := MindOracle.new()
+	o._ready()
+	o.roster_provider = Callable(self, "_gate_roster_prova")
+	var recusado := o.aceitar_saida(7, "O lobo 999 uiva para a matilha.")
+	_check(not recusado and o.narration_of(7) == "" and o.last_reason.contains("999"),
+			"verifier_recusa_id_forjado: o portao do wrapper recusa o id forjado sem escrever narrativa",
+			"aceito=%s narrativa=%d chars motivo='%s'" % [
+				str(recusado), o.narration_of(7).length(), o.last_reason])
+	# E o controle pelo MESMO portao: saida valida entra, vira narrativa e dispara
+	# o sinal que a Fase 5 (MindsInspector) consume.
+	var sinal := [false]
+	o.narration_ready.connect(func(_id: int, _t: String) -> void: sinal[0] = true)
+	var texto_valido := "O lobo %d fareja o vento e acha o rastro." % id_valido
+	var aceito := o.aceitar_saida(7, texto_valido)
+	_check(aceito and o.narration_of(7) == texto_valido and sinal[0],
+			"verifier_recusa_id_forjado: o portao do wrapper aceita o controle e escreve a narrativa",
+			"aceito=%s narrativa=%d chars sinal=%s" % [
+				str(aceito), o.narration_of(7).length(), str(sinal[0])])
+	o.free()
 	return true
 
 
@@ -6517,3 +6560,17 @@ func _gate_frame_sleep(ms: int) -> void:
 ## vazia, que e recusa nomeada, nunca um ponteiro pendente.
 func _gate_roster_solo() -> Array:
 	return [_wolf] if is_instance_valid(_wolf) else []
+
+
+## Lobo minimo de prova para o roster do gate do verificador: o portao da Camada
+## 5 so le `.identity` do roster, e a logica do verificador nao precisa de mundo.
+class _LoboProva:
+	var identity: int
+	func _init(id: int) -> void:
+		identity = id
+
+
+## O roster do gate do verificador: o lobo de prova 11, e so ele. O id forjado
+## do gate (999) nao existe aqui por construcao.
+func _gate_roster_prova() -> Array:
+	return [_LoboProva.new(11)]
