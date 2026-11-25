@@ -43,10 +43,13 @@ const EXPOSURE_FALL: int = 4
 # Teto de tempo de UM frame de malharia, em microsegundos (dossie 24 §3.3, braco B).
 # Derivado da medicao desta perna, nao chutado: um chunk sozinho custa 45,04-152,74 ms
 # (128 amostras, §2.2.2) e o `process()` de antes li o relogio FORA do laco, entao um
-# quadro pagava dois de uma vez e o periodo ia a 152-192 ms. Com 8 000 µs de teto e o
-# nivel `y` mais caro medido em 2,39 ms (152,74 ÷ 64), o pior frame honesto sai 10,4 ms
-# contra os 33,3 ms da janela de travada -- folga de 3x, e o overshoot e limitado a UMA
-# fatia porque o relogio e perguntado antes de cada nivel, nunca no meio de um.
+# quadro pagava dois de uma vez e o periodo ia a 152-192 ms.
+# Este teto manda nos NIVEIS: a varredura de topo de coluna e o comitimento sao atomicos,
+# nao ha onde cortar no meio deles, e por isso o pior frame e budget + um nivel + esses
+# dois — os quatro numeros saem de `mesh_frame_worst()`, impressos no gate 1 do §5.1.
+# Contra a janela de travada de 33,3 ms (§5.2) a soma cabe, e o overshoot de cada piece
+# e limitado a UMA unidade porque o relogio e perguntado antes de cada nivel e antes de
+# abrir chunk novo.
 # O nome tem sufixo de tempo e mora na classe do laco: `MESH_BUDGET` de `main.gd:28`
 # continua sendo ITENS por frame (§3.4) e as duas grandezas nao se traduzem entre si.
 const MESH_FRAME_BUDGET_US: int = 8000
@@ -102,6 +105,17 @@ var _edit_us_count: int = 0
 var _edit_build_us: Dictionary = {}  # Vector2i (coord) -> usec de malha ja gastos
 var _edit_build_total: int = 0
 var _edit_build_worst: int = 0
+# Os tres custos que o teto NAO corta, além dos niveis que ele fatia: o nivel mais caro
+# (o overshoot de um frame e exatamente um, e media de chunk nao serve — 2,39 ms = 152,74 ÷
+# 64 e MEDIA e estourou o teto publicado), a varredura de topo de coluna
+# (`_scan_col_tops`, uma por chunk) e o comitimento (o `ArrayMesh` + upload + no, um por
+# chunk fechado). Nenhum dos tres e fatiavel, entao o pior frame e budget + esses tres.
+# Quem publica um numero de frame publica a composicao (dossie 24 §5.1 gate 1), nao um
+# adjetivo de folga.
+var _mesh_worst_level_us: int = 0
+var _mesh_worst_scan_us: int = 0
+var _mesh_worst_commit_us: int = 0
+var _mesh_worst_frame_us: int = 0
 # Cache de topo de coluna do chunk sendo malhado agora (dossie 23 §3.10b): um `int` por
 # coluna, e a unica fonte do `expos` que vai ao `COLOR.a` do grupo opaco. Varre **uma vez
 # por rebuild**, nao por face nem por voxel — o braco (b) rejeitado custaria ate 6 faces
@@ -300,10 +314,18 @@ func process(p_frame_budget: int) -> void:
 	var antes := Time.get_ticks_usec()
 	while iniciados < p_frame_budget and not _dirty.is_empty():
 		if _slice == null:
+			# O teto manda em QUEM entra, nao so em quanto se anda. Sem esta linha o
+			# frame fechava um chunk (commit), abria o proximo (varredura de topo) e
+			# andava mais niveis por cima do budget — medido 15,39 ms no dreno da propia
+			# suite contra um teto de 8 000 us, que e o furo #41 em miniatura: um corte
+			# que so corta no meio do chunk nao corta o quadro.
+			if antes - t0 >= MESH_FRAME_BUDGET_US:
+				break
 			_slice = _MeshSlice.new()
 			_slice.c = _dirty.front()
 			_scan_col_tops(_slice.c)
 			var apos := Time.get_ticks_usec()
+			_mesh_worst_scan_us = maxi(_mesh_worst_scan_us, apos - antes)
 			_slice.us = apos - antes
 			antes = apos
 			iniciados += 1
@@ -320,13 +342,21 @@ func process(p_frame_budget: int) -> void:
 			# nao custa um relogio a mais no caminho quente (§3.3.1.3 cobra as arrays vivas,
 			# nao a colheita).
 			var depois := Time.get_ticks_usec()
-			_slice.us += depois - antes
+			var nivel_us := depois - antes
+			_slice.us += nivel_us
+			# O overshoot do frame e UM nivel, e o que vale e o nivel mais CARO, nao a media
+			# do chunk (2,39 ms = 152,74 ÷ 64 e uma MEDIA, e foi ela que estourou o teto
+			# publicado no dreno: medido 16,49 ms contra 15,63 ms). Medido aqui, no mesmo
+			# relogio que ja existia, entao o custo de trabalho nao paga uma leitura extra.
+			_mesh_worst_level_us = maxi(_mesh_worst_level_us, nivel_us)
 			antes = depois
 		if _slice.y < CHUNK_SIZE_Y:
 			break
 		_finish_slice()
 		antes = Time.get_ticks_usec()
-	_last_mesh_ms = float(Time.get_ticks_usec() - t0) / 1000.0
+	var gasto := Time.get_ticks_usec() - t0
+	_mesh_worst_frame_us = maxi(_mesh_worst_frame_us, gasto)
+	_last_mesh_ms = float(gasto) / 1000.0
 
 
 ## Fecha a fatia completa: comita a malha, tira o chunk da fila e, se uma edicao caiu no
@@ -357,6 +387,12 @@ func build_chunk_mesh(c: VoxelChunk) -> void:
 	st.c = c
 	var t0 := Time.get_ticks_usec()
 	_scan_col_tops(c)
+	# Os dois custos atomicos vao para o MESMO instrumento do caminho fatiado: o pior frame
+	# honesto e budget + nivel + varredura + commit, e se a varredura e o comitimento só
+	# fossem medidos no boot, a composicao publicada viria de outro caminho que nao o do
+	# jogador editando (mandato 3: o numero vem do que corre).
+	var apos := Time.get_ticks_usec()
+	_mesh_worst_scan_us = maxi(_mesh_worst_scan_us, apos - t0)
 	while st.y < CHUNK_SIZE_Y:
 		_mesh_level(st)
 		st.y += 1
@@ -460,7 +496,9 @@ func _commit_slice(st: _MeshSlice) -> void:
 	# chunk, nao do proximo que herdar o relogio do frame: por isso ele entra em `st.us`
 	# aqui. A conta nao fecha neste ponto — quem fecha e dono da decisao de reabrir ou nao
 	# a fila (`_finish_slice`), e um chunk editado no meio das fatias soma a segunda rodada.
-	st.us += Time.get_ticks_usec() - tc
+	var commit_us := Time.get_ticks_usec() - tc
+	st.us += commit_us
+	_mesh_worst_commit_us = maxi(_mesh_worst_commit_us, commit_us)
 	if _edit_stamp.has(c.coord):
 		_edit_build_us[c.coord] = int(_edit_build_us.get(c.coord, 0)) + st.us
 
@@ -471,6 +509,22 @@ func pending_meshes() -> int:
 
 func last_mesh_ms() -> float:
 	return _last_mesh_ms
+
+
+## A composicao do pior frame de malharia, em usec, do caminho que o jogador usa
+## (`process()`): o teto que corta niveis + o nivel mais caro que o frame pode herdade +
+## a varredura de topo + o comitimento, cada um medido onde ele acontece. `frame_us` e o
+## maximo do total de um `process()` e por isso nunca inclui o boot — la nao ha quadro para
+## proteger (§3.3), e um numero do boot publicado como teto de frame seria a testemunha
+## errada. Quem escreve um teto de frame publica esta linha, nao a soma dos adjetivos.
+func mesh_frame_worst() -> Dictionary:
+	return {
+		"budget_us": MESH_FRAME_BUDGET_US,
+		"level_us": _mesh_worst_level_us,
+		"scan_us": _mesh_worst_scan_us,
+		"commit_us": _mesh_worst_commit_us,
+		"frame_us": _mesh_worst_frame_us,
+	}
 
 
 func meshes_built() -> int:

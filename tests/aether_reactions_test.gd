@@ -148,15 +148,18 @@ const TESTS: Array[StringName] = [
 # vermelho; cada chamada a API ausente entra por `has_method` + `.call()`, porque
 # o parse recusa chamada direta a rota que ainda nao existe.
 #
-# Dossie 24 (malha com orcamento de tempo) acrescenta DUAS aqui, ambas de
-# `malha_orca_tempo_e_nao_itens` -- o gate do §5.1 que nasce VERMELHO contra o `process()`
-# de hoje porque o relogio do loop fica fora dele (`voxel_world.gd:231` e `:236`) e um frame
-# paga dois chunks de uma vez, medido 198,64 ms com `chunks_no_frame=2` no mesmo quadro
-# desta corrida (furo #41). A terceira checagem da pagina,
-# `corte_nao_cobra_latencia_maior_que_o_pico`, mora no bake-off
-# do dossie 07 porque e la que estao `mesh_ms` e `mean_us` que ela compara. As duas contam no
-# vermelho e o teto e lido por `get_script_constant_map()`, no mesmo padrao.
-const EXPECTED_CHECKS: int = 366
+# Dossie 24 (malha com orcamento de tempo) acrescenta TRES aqui, todas do gate do §5.1:
+# `malha_orca_tempo_e_nao_itens` (o primeiro frame do lote), que nasce VERMELHA contra o
+# `process()` de hoje porque o relogio do loop fica fora dele (`voxel_world.gd:231` e `:236`)
+# e um frame paga dois chunks de uma vez, medido 198,64 ms com `chunks_no_frame=2` no mesmo
+# quadro desta corrida (furo #41); `dreno_nao_passa_do_teto_com_as_pecas_atomicas` (o pior
+# frame do dreno, com a varredura de topo e o comitimento dentro do teto), vermelha com
+# 12,35 ms / 15,39 ms medidos contra o teto de 10,39 ms antes da guarda do `process()`
+# entrar; e `orcamento_de_malha_tem_nome_e_origem`. A checagem de latencia da pagina,
+# `corte_nao_cobra_latencia_maior_que_o_pico`, mora no bake-off do dossie 07 porque e la que
+# estao `mesh_ms` e `mean_build_us` que ela compara. As tres contam no censo e o teto e lido
+# por `get_script_constant_map()`, no mesmo padrao.
+const EXPECTED_CHECKS: int = 367
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -5526,11 +5529,14 @@ func _test_colheita_de_malha_sem_cavar() -> bool:
 ## #41, medido 52-177 ms de malha num quadro so, e o recorde publicado de um frame com dois
 ## chunks e 177,37 ms (`8a53b56`) contra 151,21 ms medidos na base desta perna.
 ##
-## Esta porta tem DUAS das tres checagens do §5.1: a 1 (`malha_orca_tempo_e_nao_itens`) e a
-## 3 (`orcamento_de_malha_tem_nome_e_origem`). A 2 (`corte_nao_cobra_latencia_maior_que_o_pico`)
-## mora no bake-off do dossie 07 porque e la que vivem os dois numeros que ela compara --
-## `mesh_ms` da sessao e `mean_us` do `edit_mesh_cost()` -- e la que o `esper_max_frames` ja
-## sai impresso (`af_bakeoff.gd:170`), que e a testemunha de dreno da pagina.
+## Esta porta tem TRES checagens: o primeiro frame do lote (`malha_orca_tempo_e_nao_itens`),
+## o pior frame do dreno com as pecas atomicas dentro do teto
+## (`dreno_nao_passa_do_teto_com_as_pecas_atomicas`) e a origem do nome
+## (`orcamento_de_malha_tem_nome_e_origem`). A do §5.1 que mora fora e a de latencia
+## (`corte_nao_cobra_latencia_maior_que_o_pico`), no bake-off do dossie 07, porque e la que
+## vivem os dois numeros que ela compara -- `mesh_ms` da sessao e `mean_build_us` do
+## `edit_mesh_cost()` -- e la que o `esper_max_frames` ja sai impresso (`af_bakeoff.gd:170`),
+## que e a testemunha de dreno da pagina.
 ##
 ## Nenhuma rota inexistente e chamada: o teto e lido pelo mapa de constantes do script da
 ## instancia, porque o parse recusa o identificador da classe como valor -- medido,
@@ -5538,23 +5544,20 @@ func _test_colheita_de_malha_sem_cavar() -> bool:
 ## class directly", e um SCRIPT ERROR num passo leva checagens embora em silencio (mandato 1).
 ## Mesmo criterio de `bandit_une_numero_observavel`.
 ##
-## As duas portas, cada uma com a premissa nomeada no numero que decide. (1) Com tres chunks
-## CAROS na fila e um budget de ITENS (2) maior que um, um frame nao pode fechar nenhum chunk
-## nem custar mais que o teto do loop somado ao overshoot de UMA fatia -- e o que distingue
-## orcamento de tempo de orcamento de contagem. (3) O teto mora na classe do loop com sufixo
-## de tempo, e `MESH_BUDGET` continua sozinho em `main.gd:28` valendo itens por frame (§3.4):
-## e a checagem que impede este runner envelhecer no dia em que o teto mudar.
+## As tres portas, cada uma com a premissa nomeada no numero que decide. (1) Com tres chunks
+## CAROS na fila e um budget de ITENS (2) maior que um, o PRIMEIRO frame nao pode fechar
+## nenhum chunk nem custar mais que o teto do loop somado ao overshoot de UMA fatia -- e o que
+## distingue orcamento de tempo de orcamento de contagem. (2) O mesmo teto, desta vez com a
+## varredura e o comitimento somados, vale para o PIOR frame do dreno inteiro: sao os dois
+## custos sem onde cortar, e sem contalos a regua passaria a chamar de "overshoot" trabalho
+## real (a classe do furo #44) ou deixaria o quadro abrir dois chunks como abria antes. (3) O
+## teto mora na classe do loop com sufixo de tempo, e `MESH_BUDGET` continua sozinho em
+## `main.gd:28` valendo itens por frame (§3.4): e a checagem que impede este runner
+## envelhecer no dia em que o teto mudar.
 func _test_malha_orca_tempo_e_nao_itens() -> bool:
 	var constes: Dictionary = _world.get_script().get_script_constant_map()
 	var teto_us := int(constes.get("MESH_FRAME_BUDGET_US", 0))
 	var budget := int(Session.MESH_BUDGET)
-	# O teto ACEITO de um frame e o teto do loop mais o overshoot de uma fatia, e o overshoot
-	# e o nivel `y` mais caro ja medido (dossie 24 §2.2.2: 152,74 ms ÷ 64 = 2,39 ms/nivel).
-	# Nao e tolerancia chutada: a fatia e a menor granularidade que o corte tem, entao nenhum
-	# frame honesto pode pasar de teto + uma fatia, e um que pase nao cortou nada. Com o teto
-	# em 8 000 µs isso e o 10,4 ms da pagina, e com o teto zerado (hoje) e 2,39 ms -- a
-	# checagem nasce vermelha contra os 198,64 ms medidos no mesmo frame.
-	var teto_frame_ms := (float(teto_us) / 1000.0) + 2.39
 	# Palco com a fila vazia: sem drenar, o `pending` de depois seria heranca do teste de
 	# malharia anterior e o lote de tres nao seria o lote que a pagina descreve.
 	var sobra := _mesh_frames()
@@ -5582,16 +5585,26 @@ func _test_malha_orca_tempo_e_nao_itens() -> bool:
 	var fila_um_frame := _world.pending_meshes()
 	var frame_ms: float = _world.last_mesh_ms()
 	var fechados := _world.meshes_built() - meshes_antes
+	# As pecas do frame, lidas do instrumento depois de ele rodar (o maximo de cada uma
+	# inclui este proprio frame). O teto ACEITO e o teto do loop mais o overshoot de UM
+	# nivel, e o nivel e o mais CARO medido no caminho fatiado — nao a media do chunk:
+	# 2,39 ms = 152,74 ÷ 64 (§2.2.2) e MEDIA, e foi usar media que deixou o teto publicado
+	# mais apertado que a realidade (medido: dreno em 16,49 ms contra 15,63 ms de teto).
+	# A fatia e a menor granularidade que o corte tem, entao nenhum frame honesto passa de
+	# teto + um nivel (+ a varredura e o comitimento, que nao tem onde cortar).
+	var pecas: Dictionary = _world.mesh_frame_worst()
+	var nivel_ms := float(pecas["level_us"]) / 1000.0
+	var teto_frame_ms := (float(teto_us) / 1000.0) + nivel_ms
 	# No PRIMEIRO frame do lote nenhum chunk pode fechar: um chunk inteiro custa de 45,04 ms
-	# para cima (as 128 amostras do §2.2.2) e o teto mais uma fatia e 10,4 ms. Por isso a
+	# para cima (as 128 amostras do §2.2.2) contra os ~10 ms do teto mais um nivel. Por isso a
 	# metade `fechados == 0` nao e cerimonia -- e ela que diz que o frame parou por tempo, nao
 	# porque a fila tinha uma cauda pronta.
 	_check(pos.size() == 3 and int(sobra["left"]) == 0 and teto_us > 0
 			and frame_ms <= teto_frame_ms and fechados == 0
 			and fila_um_frame > 0 and fila_um_frame == fila_antes,
 			"malha_orca_tempo_e_nao_itens: um frame de malharia para pelo relogio, nao pela contagem de itens",
-			"lote=%d fila=%d->%d budget_itens=%d teto_us=%d teto_frame_ms=%.2f frame_ms=%.2f chunks_no_frame=%d" % [
-			pos.size(), fila_antes, fila_um_frame, budget, teto_us, teto_frame_ms,
+			"lote=%d fila=%d->%d budget_itens=%d teto_us=%d nivel=%.2f teto_frame_ms=%.2f frame_ms=%.2f chunks_no_frame=%d" % [
+			pos.size(), fila_antes, fila_um_frame, budget, teto_us, nivel_ms, teto_frame_ms,
 			frame_ms, fechados])
 	# O resto do lote, frame a frame, pelo caminho do produto, e o mundo volta ao que era pela
 	# mesma rota sem reclamar disco: o teste que roda antes do save nao pode deixar edicao no
@@ -5609,10 +5622,29 @@ func _test_malha_orca_tempo_e_nao_itens() -> bool:
 	var total_lote := (float(cost_fim["mean_us"]) * float(cost_fim["count"])) \
 			- (float(cost_meio["mean_us"]) * float(cost_meio["count"]))
 	var mean_lote := (total_lote / float(n_lote)) if n_lote > 0 else 0.0
+	# (2) O teto vale para TODO o dreno, nao so para o primeiro frame do lote, e essa e a
+	# diferenca entre cortar o CHUNK e cortar o QUADRO: os dois custos sem onde cortar (a
+	# varredura de topo de coluna e o comitimento da malha, com o `ArrayMesh` e o no) vao por
+	# cima do budget, entao o pior frame honesto e teto + UM nivel + UM par deles. A checagem
+	# continua com dentes: sem a guarda no topo do `process()` o frame fecha um chunk, abre o
+	# seguinte e paga varredura e niveis duas vezes, e ai a soma estoura — o furo #41 e
+	# exatamente isso, em escala. A segunda metade do numero publicado mora aqui: o teto
+	# composto tem de caber na janela de travada da pagina (33,30 ms, §5.2), senao o corte
+	# apenas trocou de vitima.
+	var pecas_dreno: Dictionary = _world.mesh_frame_worst()
+	var teto_dreno := teto_frame_ms \
+			+ float(pecas_dreno["scan_us"]) / 1000.0 + float(pecas_dreno["commit_us"]) / 1000.0
+	var worst_dreno := float(dreno["worst_ms"])
 	print(("OBSERVACAO malha_orca lote=%d frames_dreno=%d/%d worst_frame_ms=%.2f "
-			+ "teto_frame_ms=%.2f carimbos_lote=%d mean_lote_us=%.1f fila_final=%d") % [
-			pos.size(), int(dreno["frames"]), int(dreno["teto"]), float(dreno["worst_ms"]),
-			teto_frame_ms, n_lote, mean_lote, int(restaura["left"])])
+			+ "teto_dreno_ms=%.2f carimbos_lote=%d mean_lote_us=%.1f fila_final=%d") % [
+			pos.size(), int(dreno["frames"]), int(dreno["teto"]), worst_dreno,
+			teto_dreno, n_lote, mean_lote, int(restaura["left"])])
+	_check(worst_dreno <= teto_dreno and teto_dreno <= 33.30,
+			"dreno_nao_passa_do_teto_com_as_pecas_atomicas: o pior frame do lote cabe no teto mais a varredura e o comitimento, e o teto cabe na janela de travada",
+			("worst_frame_ms=%.2f teto_dreno_ms=%.2f budget=%.2f nivel=%.2f scan=%.2f commit=%.2f frames=%d/%d janela_hitch=33.30") % [
+			worst_dreno, teto_dreno, float(teto_us) / 1000.0, nivel_ms,
+			float(pecas_dreno["scan_us"]) / 1000.0, float(pecas_dreno["commit_us"]) / 1000.0,
+			int(dreno["frames"]), int(dreno["teto"])])
 	# (3) Nome e origem: o teto e constante da classe do loop (§3.1), com sufixo de tempo e nao
 	# de contagem, lido de la por quem testa, e o valor tem de caber na janela que a propria
 	# pagina usa para chamar um frame de travada (33,3 ms, §5.2). `MESH_BUDGET` de itens nao
