@@ -1,0 +1,92 @@
+AGENTS.md:40  src/main.gd:198-198  BRANCO
+AGENTS.md:457  src/main.gd:768-768  BRANCO
+docs/design/11-inventory-crafting.md:196  src/main.gd:1047-1047  BRANCO
+docs/engine/simclock.md:109  src/main.gd:335-341  ROTULO FORA DO CORPO [_process] em 362-370
+docs/engine/simclock.md:117  src/main.gd:1229-1229  BRANCO
+docs/engine/simclock.md:118  tests/smoke_test.gd:261-262  BRANCO
+docs/engine/simclock.md:139  src/main.gd:972-972  BRANCO
+docs/engine/simclock.md:142  src/main.gd:357-358  ROTULO FORA DO CORPO [_process] em 362-370
+docs/engine/simclock.md:176  src/main.gd:299-299  BRANCO
+docs/engine/simclock.md:183  src/main.gd:281-287  ROTULO FORA DO CORPO [_physics_process] em 308-316
+docs/engine/simclock.md:240  src/main.gd:298-299  BRANCO
+docs/engine/simclock.md:33  src/main.gd:1051-1051  BRANCO
+docs/engine/simclock.md:70  src/main.gd:1230-1230  BRANCO
+docs/melhorias-status.md:1514  src/world/voxel_world.gd:268-277  ROTULO FORA DO CORPO [_write_raw] em 292-301
+docs/melhorias-status.md:1514  src/world/voxel_world.gd:278-291  ROTULO FORA DO CORPO [set_block] em 302-315
+docs/melhorias-status.md:164  src/main.gd:1230-1230  BRANCO
+docs/melhorias-status.md:234  src/main.gd:575-575  BRANCO
+docs/melhorias-status.md:3356  src/main.gd:533-533  ROTULO FORA DO CORPO [PACK_LEASH] em 559-565
+docs/melhorias-status.md:3414  ../.tools/_chk_labels.py  LINK QUEBRADO
+docs/melhorias-status.md:3755  src/main.gd:513-517  ROTULO FORA DO CORPO [_home_columns] em 539-549
+docs/melhorias-status.md:3755  src/main.gd:524-524  ROTULO FORA DO CORPO [SPAWN_BANDS] em 550-550
+docs/melhorias-status.md:3756  src/main.gd:533-533  ROTULO FORA DO CORPO [PACK_LEASH] em 559-565
+docs/melhorias-status.md:3756  src/main.gd:736-741  ROTULO FORA DO CORPO [_spawn_point_ok] em 762-772
+docs/melhorias-status.md:3759  src/main.gd:580-591  ROTULO FORA DO CORPO [_den_counts] em 607-618
+docs/melhorias-status.md:3760  src/main.gd:592-609  ROTULO FORA DO CORPO [_emptiest_den] em 619-636
+docs/melhorias-status.md:3760  src/main.gd:610-622  ROTULO FORA DO CORPO [_den_gate_ok] em 637-649
+docs/melhorias-status.md:3761  src/main.gd:623-644  ROTULO FORA DO CORPO [den_min_dist] em 650-671
+docs/melhorias-status.md:3762  src/main.gd:539-546  ROTULO FORA DO CORPO [DEN_COUNT] em 566-573
+docs/melhorias-status.md:3762  src/main.gd:547-557  ROTULO FORA DO CORPO [DEN_MIN_DIST] em 574-584
+docs/melhorias-status.md:4047  src/main.gd:524-524  ROTULO FORA DO CORPO [SPAWN_BANDS] em 550-550
+docs/melhorias-status.md:4048  src/main.gd:736-741  ROTULO FORA DO CORPO [_spawn_point_ok] em 762-772
+docs/melhorias-status.md:4050  src/main.gd:533-533  ROTULO FORA DO CORPO [PACK_LEASH] em 559-565
+docs/melhorias-status.md:4090  src/main.gd:378-378  BRANCO
+docs/melhorias-status.md:5240  src/world/voxel_world.gd:306-318  ROTULO FORA DO CORPO [_mark] em 330-347
+docs/melhorias-status.md:5241  src/world/voxel_world.gd:324-331  ROTULO FORA DO CORPO [_record_edit_cost] em 348-361
+docs/melhorias-status.md:5242  src/world/voxel_world.gd:338-347  ROTULO FORA DO CORPO [edit_mesh_cost] em 362-373
+docs/melhorias-status.md:5990  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:5995  ../.tools/_carga_por_janela.py  LINK QUEBRADO
+docs/melhorias-status.md:6025  ../.tools/_p12_load_sampler.ps1  LINK QUEBRADO
+docs/melhorias-status.md:6027  ../.tools/_carga_por_janela.py  LINK QUEBRADO
+docs/melhorias-status.md:663  src/main.gd:645-645  BRANCO
+docs/melhorias-status.md:68  src/main.gd:198-198  BRANCO
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md:31  docs/melhorias-status.md:1774-1774  BRANCO
+docs/planos/01-estado-inicial-e-ordem-autoritativa.md:49  src/main.gd:292-293  BRANCO
+docs/planos/04-budget-hot-medido.md:14  src/main.gd:298-299  BRANCO
+docs/planos/04-budget-hot-medido.md:21  src/main.gd:298-299  BRANCO
+docs/planos/04-budget-hot-medido.md:31  src/main.gd:1230-1230  BRANCO
+docs/planos/04-budget-hot-medido.md:31  tests/smoke_test.gd:261-262  BRANCO
+docs/planos/05-difusao-fora-do-tick.md:31  src/main.gd:298-299  BRANCO
+docs/planos/05-difusao-fora-do-tick.md:52  src/main.gd:298-299  BRANCO
+docs/planos/05-difusao-fora-do-tick.md:7  src/main.gd:298-299  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:15  src/main.gd:198-198  BRANCO
+docs/planos/08-mindstore-e-mindsinspector.md:31  src/main.gd:198-198  BRANCO
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:68  src/main.gd:362-362  ROTULO FORA DO CORPO [_spawn_wolves] em 388-427
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:69  src/main.gd:762-762  ROTULO FORA DO CORPO [_spawn_home_point] em 788-860
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:71  src/main.gd:524-524  ROTULO FORA DO CORPO [SPAWN_BANDS] em 550-550
+docs/planos/10-alcateia-rutinas.md:193  src/main.gd:914-929  ROTULO FORA DO CORPO [_pack_put] em 941-958
+docs/planos/10-alcateia-rutinas.md:206  src/main.gd:298-299  BRANCO
+docs/planos/10-alcateia-rutinas.md:214  src/main.gd:874-876  ROTULO FORA DO CORPO [pack_of] em 901-909
+docs/planos/10-alcateia-rutinas.md:214  src/main.gd:914-929  ROTULO FORA DO CORPO [_pack_put] em 941-958
+docs/planos/10-alcateia-rutinas.md:260  src/main.gd:361-384  ROTULO FORA DO CORPO [_spawn_wolves] em 388-427
+docs/planos/10-alcateia-rutinas.md:260  src/main.gd:60-60  ROTULO FORA DO CORPO [wolves] em 70-70
+docs/planos/10-alcateia-rutinas.md:261  src/main.gd:932-944  ROTULO FORA DO CORPO [_reap_corpses] em 959-979
+docs/planos/10-alcateia-rutinas.md:87  src/main.gd:361-384  ROTULO FORA DO CORPO [_spawn_wolves] em 388-427
+docs/planos/10-alcateia-rutinas.md:91  src/main.gd:762-762  ROTULO FORA DO CORPO [_spawn_home_point] em 788-860
+docs/planos/10-alcateia-rutinas.md:92  src/main.gd:678-678  ROTULO FORA DO CORPO [_place_request] em 704-740
+docs/planos/10-alcateia-rutinas.md:93  src/main.gd:524-524  ROTULO FORA DO CORPO [SPAWN_BANDS] em 550-550
+docs/planos/11-acasalamento-filhote-e-censo.md:115  src/main.gd:298-299  BRANCO
+docs/planos/11-acasalamento-filhote-e-censo.md:50  src/main.gd:932-952  ROTULO FORA DO CORPO [_reap_corpses] em 959-979
+docs/planos/13-arvore-genealogica-e-ether.md:103  src/main.gd:848-849  ROTULO FORA DO CORPO [wolves_roster] em 874-885
+docs/planos/13-arvore-genealogica-e-ether.md:324  src/main.gd:1283-1284  ROTULO FORA DO CORPO [state_hash] em 1317-1320
+docs/planos/13-arvore-genealogica-e-ether.md:46  src/main.gd:70-70  ROTULO FORA DO CORPO [_next_identity] em 80-80
+docs/planos/13-arvore-genealogica-e-ether.md:97  src/main.gd:402-421  ROTULO FORA DO CORPO [_make_wolf] em 428-452
+docs/planos/14-convivio-da-alcateia.md:27  src/main.gd:1014-1019  ROTULO FORA DO CORPO [_on_wolf_died] em 1041-1048
+docs/planos/14-convivio-da-alcateia.md:34  src/main.gd:524-524  ROTULO FORA DO CORPO [SPAWN_BANDS] em 550-550
+docs/planos/14-convivio-da-alcateia.md:35  src/main.gd:736-741  ROTULO FORA DO CORPO [_spawn_point_ok] em 762-772
+docs/planos/14-convivio-da-alcateia.md:64  src/main.gd:834-836  ROTULO FORA DO CORPO [_volume_clear] em 861-865
+docs/planos/14-convivio-da-alcateia.md:68  src/world/voxel_world.gd:454-460  ROTULO FORA DO CORPO [line_of_sight] em 478-486
+docs/planos/14-convivio-da-alcateia.md:74  src/main.gd:983-984  BRANCO
+docs/planos/14-convivio-da-alcateia.md:74  src/main.gd:983-984  ROTULO FORA DO CORPO [_on_notice] em 1010-1013
+docs/planos/14-convivio-da-alcateia.md:84  src/main.gd:932-952  ROTULO FORA DO CORPO [_reap_corpses] em 959-979
+docs/planos/15-oraculo-embutido-no-boot.md:94  src/main.gd:198-198  BRANCO
+docs/planos/16-tocas-da-alcateia.md:75  src/main.gd:489-489  BRANCO
+docs/planos/16-tocas-da-alcateia.md:81  src/main.gd:378-378  BRANCO
+docs/planos/17-fisica-de-blocos-que-caem.md:131  src/main.gd:1034-1054  ROTULO FORA DO CORPO [save_game] em 1061-1098
+docs/planos/17-fisica-de-blocos-que-caem.md:178  src/main.gd:291-291  ROTULO FORA DO CORPO [_sim_tick] em 317-361
+docs/planos/17-fisica-de-blocos-que-caem.md:309  src/main.gd:312-312  ROTULO FORA DO CORPO [_sim_tick] em 317-361
+docs/planos/18-mundo-vivo-grama-e-mato.md:91  src/world/voxel_world.gd:42-42  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:155  src/main.gd:735-735  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:158  src/main.gd:645-645  BRANCO
+docs/planos/22-oraculo-nativo-gdextension.md:2069  src/main.gd:198-198  BRANCO
+docs/planos/22-oraculo-nativo-gdextension.md:271  src/main.gd:198-198  BRANCO

@@ -1,0 +1,67 @@
+import os
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("AETHER_ROOT", "C:/Aetherfall"))
+
+
+def norm(p):
+    p = p.replace("\\", "/")
+    if p.startswith("./"):
+        p = p[2:]
+    return p
+
+
+pat = re.compile(r"(?:^|[\s`(|=,[])((?:\.\./)*(?:src|tests|docs|assets|\.tools)/[A-Za-z0-9_./-]+\.(?:gd|md|log|txt|json|tscn|cfg|godot|sha256))(?::(\d+)(?:-(\d+))?)?(#L\d+(?:-L\d+)?)?")
+
+# fichzes de raiz nao tem prefixo de diretorio, entao escapam do padrao acima;
+# as dossies citam AGENTS.md e README.md por numero de linha e esses numeros
+# mudam quando o proprio AGENTS.md cresce.
+pat_root = re.compile(r"(?:^|[\s`(|=,[])((?:AGENTS|README|THIRD_PARTY_LICENSES)\.md)(?::(\d+)(?:-(\d+))?)?()")
+
+total = 0
+missing_file = []
+oob = []
+for arg in sys.argv[1:]:
+    doc = ROOT / arg
+    text = doc.read_text(encoding="utf-8")
+    for m in list(pat.finditer(text)) + list(pat_root.finditer(text)):
+        rel, a, b, anchor = m.group(1), m.group(2), m.group(3), m.group(4)
+        rel = norm(rel)
+        if arg and rel.startswith("../"):
+            # dossie em docs/planos cita por link relativo (../../src/...); resolve
+            # a partir do diretorio do documento, senao o verificador nao ve nada.
+            cand_rel = (Path(arg).parent / rel).resolve().relative_to(ROOT).as_posix()
+            if not (ROOT / cand_rel).exists():
+                # citacao entre aspas de um snippet de markdown (ex.: `(...)` em um
+                # paragrafo que cita o texto do status): nao e link, cai para raiz.
+                cand_rel = rel.split("../")[-1]
+            rel = cand_rel
+        # evidence docs may be referenced from docs/planos with docs/evidence/... or evidence/...
+        cand = ROOT / rel
+        if not cand.exists():
+            missing_file.append((arg, rel))
+            continue
+        if not a and anchor:
+            # forma link do AGENTS.md: (src/main.gd#L136-L142)
+            nums = re.findall(r"\d+", anchor)
+            a = nums[0]
+            b = nums[-1] if len(nums) > 1 else None
+        if not a:
+            continue
+        total += 1
+        nlines = len(cand.read_text(encoding="utf-8", errors="ignore").splitlines())
+        hi = int(b) if b else int(a)
+        if hi > nlines:
+            oob.append((arg, rel, hi, nlines))
+
+missing_unique = sorted(set(missing_file))
+oob_unique = sorted(set(oob))
+print("citacoes com numero de linha conferidas:", total)
+print("arquivos citados que nao existem:", len(missing_unique))
+for x in missing_unique:
+    print("   FALTA", x[0], "->", x[1])
+print("numeros de linha fora do arquivo:", len(oob_unique))
+for x in oob_unique:
+    print("   FORA", x[0], "->", x[1], "linha", x[2], "em arquivo de", x[3], "linhas")

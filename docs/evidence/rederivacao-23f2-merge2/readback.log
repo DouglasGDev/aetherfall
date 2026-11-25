@@ -1,0 +1,130 @@
+re-derivacao de ponteiros e re-rome do gate na arvore do segundo merge — dossie 23, Fase 2
+================================================================================================
+
+arvore = 128e236 (docs desta passada) sobre b4c57a7, cujos pais sao
+         e4c5b31d737f58ce6308ceb9edb1ccb434580719 (a ponta da 23) e
+         4ceb1a52861a020b9ce404329d71d15321926410 (a main que a perna 22 pousou).
+         src   = 9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2
+         tests = d534212a0061b368ee41b4dd8c222886ef0915fe
+         `git diff --name-only b4c57a7 HEAD -- src tests` devolve VAZIO: o que esta abaixo e a
+         mesma arvore de codigo que o re-rome mede, e o merge nao acrescentou linha de src.
+engine = Godot_v4.7.2.stable_win64.official.ed1daf0bf, segunda linha de cada log:
+         "Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT"
+seed   = 20261116   malha = 2 chunks/frame   regua do passo = 25 ms
+
+
+1. OS RODAPES, LIDOS DO QUE ESTA AQUI
+------------------------------------------------------------------------------------------------
+comando                              log                     rodape
+godot --headless --path . --import   merge2_import.log       [ DONE ] loading_editor_layout
+godot --headless --path . tests/smoke_test.tscn
+                                     merge2_suite.log        == 277 checagens  0 falhas  69.3 s de teste ==
+godot --headless --path . --script tests/aether_reactions_test.gd
+                                     merge2_runner.log       355 checagens 0 falhas 50.929 s
+godot --headless --path . --script tests/simulation_rng_test.gd
+                                     merge2_rng.log          27 checagens 0 falhas 2.742 s
+godot --headless --path . --script tests/tick_journal_test.gd
+                                     merge2_journal.log      128 checagens 0 falhas 6.482 s (7/7 testes)
+
+As quatro corridas foram serializadas, uma depois da outra, com o amostrador de carga ligado ao
+lado em cada uma (`carga_suite2.txt`, `carga_runner2.txt` — o mesmo `carga_23f2.ps1.txt`
+arquivado aqui, que filtra por ExecutablePath dentro do projeto e junta por IDProcess, os dois
+eixos dos furos #31 e #44).
+
+Medido nos dois arquivos de carga, neste lote:
+  carga_suite2.txt    90 amostras, load 0 / 12 / 41 % (min/mediana/max), 75 amostras com o
+                      Godot do projeto no ar, QuantumEngine presente em 88 das 90.
+  carga_runner2.txt  110 amostras, load 0 / 7,5 / 31 %, 30 amostras com o Godot no ar,
+                      QuantumEngine presente em 109 das 110.
+Nenhum processo concorrente foi fechado para a corrida sair; a janela vai publicada ao lado do
+numero porque nenhum `worst_sim_ms` desta maquina e comparavel entre janelas (o debito registrado
+na rodada anterior continua).
+
+O que a regua do budget devolve na arvore mergida, lido das linhas literais:
+  merge2_suite.log:365-366   [PASS] nenhum tick perdido no teste inteiro  perdidos=0  pior passo=16.95 ms  tick=450
+                             [PASS] espalhamento_nao_estoura_o_passo      perdidos=0  pior passo=16.95 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m
+  merge2_runner.log:487      OK espalhamento_nao_estoura_o_passo | worst_sim_ms=13.36 ms  pico_do_passo=13360 us  media=2209.5 us/passo  total=3093315 us em 1400 passos
+  merge2_runner.log          CENARIO ESTREITO: passos=10568 sim_step total=2494214 us pico=5198 us; BT last_us soma=62081 pico=291 trips=0
+  merge2_runner.log          MATILHA (sessao real): passos=1341 sim_tick total=3512727 us pico=16923 us; BT last_us soma=62180 pico=205 trips=0
+  merge2_runner.log:125      OK nenhum passo acima da regua de 25 ms e nenhum tick perdido, nos dois bracos | plano worst_sim=10.74 ms dropped=0 | face worst_sim=10.06 ms dropped=0
+  merge2_runner.log          OK contrato: metricas honestas da fila | depth=0 hits=0 misses=2 worst_decode_us=668409 vram_bytes=7016231056
+  merge2_runner.log          OK budget_do_oraculo_nao_estoura_a_arvore | narradas=5/5 pedidos=7 worst_decode_us=792826 | worst_sim_ms=16.61 ms
+
+Contagem de erro nos quatro stdout: `SCRIPT ERROR` = 0, `SHADER ERROR` = 0, `[FAIL]` = 0 — conferido
+por `grep -c` em cada arquivo. A testemunha de que o contador ve um erro quando ele existe e o par
+`chuva23-codigo-a.log` (4 SHADER ERROR) arquivado na pasta da Fase 2, e a contagem de checagens e a
+prova do outro lado: um passo derrubado muda o rodape, nao so a cor.
+
+
+2. O RE-DERIVADO, E O QUE A REGUA NAO VIU (furo #52)
+------------------------------------------------------------------------------------------------
+659 ponteiros movidos em 32 documentos, 534 linhas trocadas, zero byte em src/tests:
+  627 derivados de 4ceb1a5 (a main), 32 derivados de 2f46368 (a ponta da 23), escolhidos por
+  IDENTIDADE EXATA da linha contra os dois pais antes de aplicar o mapa de `git diff -U0`.
+Alvos: 473 src/main.gd, 100 tests/smoke_test.gd, 74 src/world/voxel_world.gd, 70 docs/melhorias-status.md,
+9 src/world/water_surface.gd.
+
+A coluna que decide o furo #52, com os dois numeros:
+  anc_before.txt  = saida de `python tools/check_doc_anchors.py --ref 822a6ea` contra o codigo desta
+                    arvore -> **92 casos objetivos** (BRANCO e ROTULO FORA DO CORPO, mais os cinco
+                    ../.tools/ gitignored)
+  anc_after.txt   = saida de `python tools/check_doc_anchors.py` na arvore desta passada -> **5 casos
+                    objetivos**, todos `../.tools/...` da classe ja tolerada
+A regla de ancoras via, portanto, 87 dos 659 ponteiros que o mapa linha-a-linha moveu. Os outros
+~572 envelheceram para uma linha CHEIA e passaram verdes: ponteiro que se desloca 26 linhas e cai
+em conteudo plausivel e indistinguivel, para a casa, de ponteiro certo. Isso e a segunda face do
+furo #28, agora contada em uma arvore de dois pais.
+
+O exemplo que o mapa deixaria errado: `EXPECTED_CHECKS` era citado na linha 60 de
+tests/aether_reactions_test.gd; o mapa, que desloca posicao e nao simbolo, moveria para 64 — onde
+mora um comentario de cabecalho. A constante vive hoje na linha 126 com o valor 355, e as tres
+reguas ficam verdes nas duas versoes.
+
+Os onze consertos lidos a mao (movimento de simbolo, que mapa nenhum faz):
+  pagina 06  diagnostics 576-578 -> 728-730, 826-827 -> 1052-1053
+  pagina 07  858-865 -> 919-926 (dois lugares), 762-763 -> 924-925
+  pagina 08  732-735 e 708-711 -> 934-937
+  pagina 23  voxel_world 667-689 -> 740-782 (_emit_face, o `for k in 4:` em 740), 574-577 -> 597-600
+  design/09  239 -> main.gd:1279-1287 (o sol escrito, nao o Environment)
+  pagina 13  mind.gd [13-17]->[19-23], [24-32]->[30-38], [50]->[56], doc comment :49 -> :55;
+             EXPECTED_CHECKS :60 -> :126 com 355
+As duas linhas de `wc -l` que o merge envelheceu: main.gd 1311 -> 1371 no AGENTS.md, e a tabela do
+status 1246/1218/787/687/167/234/2681 -> 1371/1487/787/832/222/234/3643 (os sete medidos por
+`wc -l` nesta arvore, um por um).
+
+
+3. AS TRES REGUAS E OS DOIS SCANS, NA ARVORE FINAL
+------------------------------------------------------------------------------------------------
+Os quatro instrumentos vivem fora do git (.tools/ na arvore primaria, C:/tmp na conversa) e estao
+arquivados aqui como .txt para que qualquer linha abaixo reproduza: `verify_plan_cites.py.txt`,
+`verify_plan_ids.py.txt`, `mapa_cites3.py.txt`, `rotulo_vs_url2.py.txt`, `link_scan.py.txt`,
+`carga_23f2.ps1.txt`.
+
+python tools/check_doc_anchors.py
+  corpus na arvore de trabalho  arquivos: 40  ponteiros conferidos: 3315  rotulos conferidos: 212
+  links relativos conferidos: 3804   casos objetivos: 5   (anc_after.txt — os cinco ../.tools/ tolerados)
+AETHER_ROOT=<arvore> python C:/Aetherfall/.tools/verify_plan_cites.py AGENTS.md README.md docs/melhorias-status.md docs/planos/*.md
+  citacoes com numero de linha conferidas: 2841   arquivos citados que nao existem: 60
+  numeros de linha fora do arquivo: 0            (cites_pousada.txt traz os 60 nomes, um por um)
+AETHER_ROOT=<arvore> python C:/Aetherfall/.tools/verify_plan_ids.py docs/planos/23-elevacao-visual-agua.md
+  172 identificadores, 18 ausentes, exit 0 — todos da classe "peca que a pagina declara comprar"
+  (CPUParticles3D, ReflectionProbe, forward_plus, fracao_ge3, builds, hashes de commit)
+python C:/tmp/bk23f2/link_scan.py            TOTAL links sem parentese: 0
+python C:/tmp/bk23f2/rotulo_vs_url2.py       rotulos numericos diferentes da propria URL: 3 -> 0 no corpus inteiro
+  A classe larga (rotulo com nome de arquivo, 116 na leitura anterior) NAO foi re-medida aqui e
+  continua debito do furo #51, setima classe.
+
+
+4. O QUE ESTA PASSADA NAO FECHA
+------------------------------------------------------------------------------------------------
+- O pouso em `main` desta re-derivacao. O `main` local esta em 8073135 com um merge de
+  `origin/main` (e0a558c, o PR #1 do dono) **resolvido e nao commitado** no worktree
+  C:/tmp/aetherfall-pouso-23f2 — trabalho em voo de outra perna, que esta passada nao toca.
+  A prova de que o re-rome acima vale para a arvore do pouso: `git diff --cached 822a6ea -- src tests`
+  nesse worktree devolve VAZIO, ou seja, o codigo do merge reconciliado e byte a byte o codigo cuja
+  suíte esta arquivada aqui.
+- O pin do clone limpo (`--import` frio) do commit de pouso, o registro no status e o `git branch -d`.
+- A corrida pareada `--tick-journal=` continua debito, e `block_changed` continua sem consumidor em
+  `src/` — debito da perna 17.
+- Nenhum gate de fase se fecha aqui. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projecao do
+  `TickJournal` nao foram tocados por esta passada nem pela Fase 2.

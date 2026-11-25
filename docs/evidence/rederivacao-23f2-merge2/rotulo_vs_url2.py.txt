@@ -1,0 +1,66 @@
+"""Rótulo numerico que nao bate com a propria URL: [1205-1215](arquivo#L1279-L1287).
+
+A regula da casa confere o rotulo contra o CORPO do alvo (a linha citada contem o
+texto?), nao contra o numero da URL. Estas duas familias podem divergir e a
+suíte fica verde. O instrumento conta a divergencia por arquivo, na arvore de
+trabalho ou numa revisao (`--ref`).
+"""
+import io, os, re, subprocess, sys
+LINK = re.compile(r"\[((?:[^\[\]]|\[[^\]]*\])*?)\]\((?:\.\./)*((?:src|tests|docs)/[\w./-]+\.(?:gd|md))#L(\d+)(?:-L(\d+))?\)")
+NUM = re.compile(r"^:+(\d+)(?:-(\d+))?$")
+
+
+def docs(ref=None):
+    if ref:
+        out = []
+        listing = subprocess.run(["git", "ls-tree", "-r", "--name-only", ref],
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+        for p in listing.split("\n"):
+            if p.endswith(".md") and (p.startswith("docs/") or p in ("AGENTS.md", "README.md")) and "evidence" not in p:
+                out.append(p)
+        return out
+    out = [p for p in ("AGENTS.md", "README.md") if os.path.exists(p)]
+    for dp, dn, fn in os.walk("docs"):
+        dn[:] = [d for d in dn if d != "evidence"]
+        for f in fn:
+            if f.endswith(".md"):
+                out.append(os.path.join(dp, f).replace("\\", "/"))
+    return out
+
+
+def corpo(ref, path):
+    if ref:
+        r = subprocess.run(["git", "show", "%s:%s" % (ref, path)], capture_output=True,
+                           text=True, encoding="utf-8", errors="replace")
+        return r.stdout.split("\n") if r.returncode == 0 else None
+    return io.open(path, encoding="utf-8").read().split("\n") if os.path.exists(path) else None
+
+
+def main():
+    ref = sys.argv[sys.argv.index("--ref") + 1] if "--ref" in sys.argv else None
+    por_arq, exemplos, total = {}, [], 0
+    for doc in docs(ref):
+        src = corpo(ref, doc)
+        if src is None:
+            continue
+        for n, line in enumerate(src, 1):
+            for m in LINK.finditer(line):
+                lab, path, a, b = m.group(1), m.group(2), m.group(3), m.group(4) or m.group(3)
+                hm = NUM.match(lab.strip().strip("`").strip(":"))
+                if not hm:
+                    continue
+                la, lb = int(hm.group(1)), int(hm.group(2) or hm.group(1))
+                if (la, lb) == (int(a), int(b)):
+                    continue
+                total += 1
+                por_arq[doc] = por_arq.get(doc, 0) + 1
+                if len(exemplos) < 25:
+                    exemplos.append("%s:%d  [%s] vs #L%s-L%s  %s" % (doc, n, lab.strip(), a, b, path))
+    print("rotulos numericos diferentes da propria URL: %d em %d arquivos" % (total, len(por_arq)))
+    for k in sorted(por_arq, key=lambda x: -por_arq[x])[:12]:
+        print("   %4d  %s" % (por_arq[k], k))
+    print("---- exemplos ----")
+    print("\n".join(exemplos))
+
+
+main()
