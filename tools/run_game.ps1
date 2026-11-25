@@ -420,14 +420,32 @@ function Start-GodotAndCheck([string]$Exe, [string[]]$Argv) {
 ## Rodadas sem janela: --import e a suite. Precisam de log visivel, entao o
 ## build de console e chamado direto; sem ele, o stdout e redirecionado para um
 ## arquivo, porque build de GUI lancado de um console nao escreve em lugar algum.
+function Invoke-EngineConsole([string]$Exe, [string[]]$Argv) {
+    # Continue em volta da chamada nativa: o PowerShell 5.1 converte cada linha
+    # de stderr do engine em ErrorRecord, e com o Stop do topo do script a
+    # primeira "ERROR: ..." cai no trap e derruba o launcher inteiro. Medido ao
+    # chamar este script por "& tools\run_game.ps1" de dentro de outra sessao
+    # PowerShell -- o --import parou na primeira linha do GDExtension ausente.
+    # Quem decide se o passo deu certo e o codigo de saida, nao haver ou nao
+    # ERROR no log: a suite escreve ERROR de proposito (o oraculo nativo).
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Exe $Argv 2>&1 | ForEach-Object { [string]$_ } | Out-Host
+    }
+    finally {
+        $ErrorActionPreference = $prev
+    }
+    return $LASTEXITCODE
+}
+
 function Invoke-GodotHeadless([string]$Exe, [string[]]$Argv) {
     # o texto do engine vai para a janela por Out-Host: solto no pipeline ele
     # viria junto com o codigo de saida e o "if ($rc -ne 0)" de quem chama leria
     # um vetor de linhas como se fosse o numero
     $console = Get-ConsoleExe $Exe
     if ($console -ne $Exe) {
-        & $console $Argv | Out-Host
-        return $LASTEXITCODE
+        return Invoke-EngineConsole $console $Argv
     }
     $log = Join-Path $env:TEMP ("aetherfall_godot_" + [guid]::NewGuid().ToString("N") + ".log")
     $p = Start-Process -FilePath $Exe -ArgumentList (Format-Argv $Argv) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $log -RedirectStandardError "$log.err"
@@ -549,5 +567,4 @@ if ($console -eq $godot.exe) {
     Write-Host "   nao ha build de console junto de $($godot.exe); rode -CheckOnly e veja o plano acima."
     exit $rc
 }
-& $console $runArgv
-exit $LASTEXITCODE
+exit (Invoke-EngineConsole $console $runArgv)
