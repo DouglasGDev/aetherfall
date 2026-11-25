@@ -35,8 +35,8 @@ terminando, e o hash do journal entra gravado com o número seguinte. O contador
 processo anterior não existe mais.
 
 A proporção entre os dois relógios tem checagem na suíte, e ela pode falhar: 600 chamadas de
-`advance(1.0 / 60.0)` somam 200 passos [tests/smoke_test.gd:2397-2400](../../tests/smoke_test.gd#L2397-L2400),
-e `step_duration()` é checado igual a 0,05 [tests/smoke_test.gd:2404](../../tests/smoke_test.gd#L2404).
+`advance(1.0 / 60.0)` somam 200 passos [tests/smoke_test.gd:1903-1906](../../tests/smoke_test.gd#L1903-L1906),
+e `step_duration()` é checado igual a 0,05 [tests/smoke_test.gd:1910](../../tests/smoke_test.gd#L1910).
 Dela sai a conta do bench que o dossiê pede: 600 s ÷ 0,05 s = 12 000 ticks, derivado de
 [sim_clock.gd:6](../../src/core/sim_clock.gd#L6) e do texto do §3
 [docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md:35](../planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md)
