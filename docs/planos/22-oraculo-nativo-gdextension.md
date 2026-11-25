@@ -1914,3 +1914,184 @@ decode não-bloqueante no tick, que era o caminho quente real. O trabalho de pon
 (LOD e orçamento), onde o governor precisa de carga assíncrona de qualquer forma. Nenhum gate de
 fase fecha aqui; `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal`
 não foram tocados por nenhum commit deste passo.
+
+
+## 20. A pauta da Fase 2 — memória de qualidade, registrada antes da primeira linha de código
+
+Esta seção é a pauta da Fase 2 do §5.6, escrita em branch só de documentos (`docs/pauta-fase2-22`)
+e registrada **antes** de qualquer linha de código (mandato 4). Nenhum arquivo de `src/`, `tests/`
+ou `native/` foi tocado para produzi-la — a régua da fase de código será
+`git diff --name-only 8b781ac...HEAD -- src tests native` devolvendo **vazio**. Tudo abaixo foi
+re-derivado contra a árvore de hoje lendo os arquivos de novo, no estilo do §8: decisão com braço
+rejeitado e o número que reabre o braço, premissas nascendo vermelhas nomeadas antes do código, e
+o que a fase **não** fecha. O que não tem comprador nomeado aqui não entra na fase.
+
+### 20.1 O contrato de referência
+
+A Fase 1 está fechada na main: merge **1d3f36c** (pais `eb218fe` × `d14c066`) e registro
+**8b781ac**, com os números do fecho valendo para a árvore de hoje: suíte **266/0/52,8 s**, runner
+**336/0/48,797 s**, RNG **27/0/2,712 s**, journal **128/0/5,903 s**; clone limpo runner
+**336/0/56,279 s**, suíte **266/0/53,9 s**, `build.dll` **184 320 B**. A fase herda do Passo 5 as
+peças vivas com os três gates no runner
+([`passo5_runner_f3.log`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log)): as sete de
+`af_cache_determina_replay`
+([`:572-578`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L572-L578)), as cinco de
+`verifier_recusa_id_forjado`
+([`:579-583`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L579-L583)) e as quatro de
+`budget_do_oraculo_nao_estoura_a_arvore`
+([`:592-595`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L592-L595)). A branch de
+código da fase nasce desta ponta e se chama **`feat/oraculo-nativo-fase2-22`**; as três réguas do
+§11 correm dela antes do push, com os logs arquivados em `docs/evidence/fase2-pauta-22/`.
+
+### 20.2 O que o §5.6 pede e a árvore devolve diferente
+
+| O §5.6 pede para a Fase 2 | O que a árvore de hoje tem |
+|---|---|
+| relevância por **recência** | crença nenhuma carimba tempo — o `decay` **apaga** abaixo de `CONFIDENCE_MIN` ([`src/ai/mind.gd:116`](../../src/ai/mind.gd#L116)), não carimba |
+| **frequência** | não existe contador por crença — o `reinforce` soma no confidence ([`src/ai/mind.gd:86`](../../src/ai/mind.gd#L86)) e só |
+| **peso emocional** | parcial e já dentro do código: `hurt` +0,22 contra `saw_player` +0,15 na consolidação ([`src/ai/mind.gd:61-68`](../../src/ai/mind.gd#L61-L68)) |
+| **centralidade no grafo** | não existe grafo — `relations` é ator→confiança, uma aresta por ator ([`src/ai/mind.gd:20`](../../src/ai/mind.gd#L20)) |
+| **embeddings locais** | zero no repositório — e o §9 já decidiu: sem métrica de recall antes, sem embedding |
+| **consolidação no sono** | não existe ciclo de sono no mundo; o que existe é consolidação por overflow (§20.4.2) |
+| **verifier grounded por ids do ledger** | o portão guarda ids do **roster** ([`src/ai/belief_verifier.gd:24`](../../src/ai/belief_verifier.gd#L24), [`src/ai/mind_oracle.gd:160-173`](../../src/ai/mind_oracle.gd#L160-L173)); id de ledger nenhum passa por ele |
+
+### 20.3 O estado real da memória, linha a linha
+
+Quatro donos na mesa, e só um deles é memória de qualidade:
+
+- **`Mind` é o dono da memória de qualidade.** `beliefs` é `String -> {confidence, source}`
+  ([`src/ai/mind.gd:19`](../../src/ai/mind.gd#L19)) — sem timestamp, sem contador, sem grafo. As
+  três leituras que existem são por **chave exata**: `believes` com soleira 0,35
+  ([`src/ai/mind.gd:104`](../../src/ai/mind.gd#L104)), `last_atom`
+  ([`src/ai/mind.gd:71`](../../src/ai/mind.gd#L71)) e `count_kind`
+  ([`src/ai/mind.gd:78`](../../src/ai/mind.gd#L78)). O `remember` apenda o átomo e consolida **no
+  estouro** do cap 24 ([`src/ai/mind.gd:7`](../../src/ai/mind.gd#L7),
+  [`src/ai/mind.gd:44-46`](../../src/ai/mind.gd#L44-L46)); a consolidação
+  ([`src/ai/mind.gd:61-68`](../../src/ai/mind.gd#L61-L68)) é síncrona, amortizada, dentro do
+  `remember` do próprio tick. O decaimento é exponencial com fator 0,14/min
+  ([`src/ai/mind.gd:8`](../../src/ai/mind.gd#L8), [`src/ai/mind.gd:108`](../../src/ai/mind.gd#L108))
+  e apaga abaixo de 0,02 ([`src/ai/mind.gd:9`](../../src/ai/mind.gd#L9),
+  [`src/ai/mind.gd:116`](../../src/ai/mind.gd#L116)). Persiste pelo `to_dict`
+  ([`src/ai/mind.gd:134`](../../src/ai/mind.gd#L134)) e volta pelo `from_dict` com `source`
+  "loaded" ([`src/ai/mind.gd:152`](../../src/ai/mind.gd#L152)).
+- **O corpo tem caches próprios, e não são memória.** `_checked_scents` é a dedupe espacial do
+  lobo ([`src/entities/wolf.gd:242`](../../src/entities/wolf.gd#L242)) com TTL 30 s, cap 32 e
+  renovação 0,06 ([`src/entities/wolf.gd:32-34`](../../src/entities/wolf.gd#L32-L34)); escreve com
+  evicção no cap ([`src/entities/wolf.gd:647-648`](../../src/entities/wolf.gd#L647-L648)), lê com
+  expiração e renovação ([`src/entities/wolf.gd:962-964`](../../src/entities/wolf.gd#L962-L964),
+  [`src/entities/wolf.gd:987`](../../src/entities/wolf.gd#L987)) e é zerado no load
+  ([`src/entities/wolf.gd:1408`](../../src/entities/wolf.gd#L1408)) — morre com o corpo, não entra
+  no save ([`src/entities/wolf.gd:1372`](../../src/entities/wolf.gd#L1372)), não entra no journal.
+- **A projeção do journal lê só três campos.** O `state_hash` ordena as beliefs por chave e projeta
+  `[key, confidence, source]` ([`src/persistence/tick_journal.gd:29-34`](../../src/persistence/tick_journal.gd#L29-L34)).
+  Consequência nomeada para a fase: **qualquer campo novo dentro de uma belief é invisível à
+  projeção**, e uma **chave nova** de belief entra nela sem mudar uma linha do journal.
+- **O prompt do oráculo imprime todas as beliefs, na ordem do dicionário.** O `_prompt_for` usa
+  `w.mind.to_dict()` e itera as beliefs sem janela e sem ordem de qualidade
+  ([`src/ai/mind_oracle.gd:277-294`](../../src/ai/mind_oracle.gd#L277-L294), laço em
+  [`src/ai/mind_oracle.gd:284-285`](../../src/ai/mind_oracle.gd#L284-L285)). E o prompt é **parte
+  da chave de cache** — sha256 de `prompt|pack|max_tokens|temperature`
+  ([`src/ai/oracle_cache.gd:55-56`](../../src/ai/oracle_cache.gd#L55-L56)) — logo **mudar a seleção
+  de beliefs muda a chave de cache**: a seleção tem de ser pura no estado da mente, senão a cache
+  fixa memória velha.
+
+### 20.4 As três decisões de corte
+
+#### 20.4.1 Embeddings: `[OPEN]` atrás de duas premissas — e nenhum entra "para preparar"
+
+**Decisão: nenhum embedding entra na Fase 2.** Braço rejeitado: "entrar agora para a Fase 5 já
+encontrar pronto" — rejeitado com dois furos nomeados: **(a) não existe consumidor** — toda leitura
+de memória hoje é por chave exata (§20.3), e a regra da casa é generalizar no segundo chamador, não
+no primeiro; **(b) não existe métrica de recall** — o §9 já decidiu que embedding sem recall
+medida não entra, e o gate da Fase 5 (`inspector_ve_a_mesma_leitura_do_journal`, linha 454) é uma
+**leitura**, não um recall: passa idêntico com ou sem embedding, logo não paga nada. O braço fica
+**[OPEN]** e reabre quando as duas premissas tiverem dono nomeado: um **segundo consumidor** de
+memória por similaridade e uma **métrica de recall** com par de consultas rotulado, instrumentada
+headless antes.
+
+#### 20.4.2 Consolidação no sono: o que existe é o overflow, e ele fica
+
+**Decisão: nada novo de consolidação na Fase 2.** O mundo não tem ciclo de sono para pendurar
+nada; o que existe é a consolidação por overflow — síncrona, amortizada, dentro do `remember` do
+próprio tick ([`src/ai/mind.gd:44-46`](../../src/ai/mind.gd#L44-L46),
+[`src/ai/mind.gd:61-68`](../../src/ai/mind.gd#L61-L68)) — determinística por construção. Braço
+rejeitado: **cadência periódica de compactação no tick** — subsystem novo no hospedeiro
+(single-writer), custo novo dentro do orçamento de 50 ms, e nenhum comprador medido pedindo.
+Reabre com: a **pressão de consolidação medida** (átomos consolidados por sessão e tamanho da
+tabela de beliefs) ou um comprador da Fase 4 (LOD e orçamento).
+
+#### 20.4.3 Cache do corpo não é memória: nem generalizar, nem substituir
+
+**Decisão: os dois donos ficam, cada um no seu lugar.** `_checked_scents` é a dedupe espacial do
+corpo (§20.3): morre com o corpo, não tem hash, não persiste, não projeta. A memória de qualidade
+é o `Mind`: persiste no save e volta no load
+([`src/entities/wolf.gd:1372`](../../src/entities/wolf.gd#L1372),
+[`src/entities/wolf.gd:1406`](../../src/entities/wolf.gd#L1406)) e projeta no journal
+([`src/persistence/tick_journal.gd:29-34`](../../src/persistence/tick_journal.gd#L29-L34)). Braço
+rejeitado 1: **generalizar a cache do corpo para dentro do `Mind`** — cria um segundo ledger (o
+crime do §6.5) e escreve no ledger o que o dono proibiu; braço rejeitado 2: **substituir
+`_checked_scents` por `Mind`** — a dedupe é por posição e TTL, não por confiança que decai; trocar
+o dono é trocar semântica por economia de linha. Reabre com o **segundo comprador** de uma
+política de cap/TTL/evicção (dossiê 20).
+
+#### 20.4.4 Centralidade no grafo: rejeitada como termo de score
+
+Com o mesmo critério das três acima: não existe grafo para o score ler (§20.2) — `relations` é uma
+aresta por ator, não um grafo. Reabre quando uma perna pousar um grafo real (13 parentesco, 20
+facções) e o comprador do score nomear o caminho.
+
+### 20.5 O que a fase entrega de fato: qualidade por crença, consumida pelo prompt
+
+A entrega honesta da Fase 2 é **metadata de qualidade por crença dentro do `Mind`** — `visto_em`
+(último tick que confirmou a crença) e `vezes` (contagem de `reinforce`) — dentro do dicionário de
+cada belief, fluindo pelo `to_dict`/`from_dict` existentes. Duas premissas nascem vermelhas,
+nomeadas antes do código:
+
+1. **`selecao_de_beliefs_e_pura_no_estado_da_mente`** — o mesmo estado da mente seleciona o mesmo
+   conjunto, provado por sonda headless com dois estados idênticos. Não é pura se lê relógio,
+   aleatoriedade ou identidade de fora do estado.
+2. **`qualidade_nao_aparece_na_projecao_do_journal`** — os campos novos não mudam nenhum
+   `state_hash` para conjunto `(key, confidence, source)` igual, porque a projeção lê só os três
+   campos ([`src/persistence/tick_journal.gd:33-34`](../../src/persistence/tick_journal.gd#L33-L34)).
+
+O consumidor nomeado é o **prompt do oráculo**: a janela de beliefs passa de "todas, na ordem do
+dicionário" ([`src/ai/mind_oracle.gd:284-285`](../../src/ai/mind_oracle.gd#L284-L285)) para
+**top-k determinístico** — ordenação estável, desempate pela chave. O acoplamento de §20.3 vale
+dobrado aqui: a seleção muda o prompt, o prompt muda a chave de cache
+([`src/ai/oracle_cache.gd:55-56`](../../src/ai/oracle_cache.gd#L55-L56)) — pura no estado, ou a
+cache vira máquina do tempo de memória velha.
+
+### 20.6 O gate da fase: `crenca_falsa_nao_vira_fato` nasce vermelho
+
+- **Premissa:** expandir o portão ([`src/ai/mind_oracle.gd:160-173`](../../src/ai/mind_oracle.gd#L160-L173))
+  para ids do ledger exige que a rota que ele guarda **exista** — e hoje não existe nenhum
+  escritor de belief com origem no oráculo: a narração sai só para o HUD
+  ([`src/main.gd:193`](../../src/main.gd#L193) →
+  [`src/ui/hud.gd:276-279`](../../src/ui/hud.gd#L276-L279)). O gate nasce **vermelho** porque o
+  portão de ids de ledger e o escritor de quarentena não existem ainda.
+- **Cenário:** saída do oráculo afirmando fato que o ledger contradiz. O id forjado já é recusado
+  pelo regex do Passo 5 ([`src/ai/belief_verifier.gd:24`](../../src/ai/belief_verifier.gd#L24)); a
+  Fase 2 expande a fronteira para **ids do ledger além do roster** (incluindo o jogador,
+  `ACTOR_PLAYER = 1` ([`src/entities/wolf.gd:18`](../../src/entities/wolf.gd#L18))) e para **fatos
+  afirmados sobre ids válidos**.
+- **Par anti-farsa:** braço A — saída forjada/falsa pelo mesmo portão da Fase 2 → recusa com id e
+  motivo nomeados e leitura de `Mind.beliefs` antes/depois mostrando **zero escritas**; braço B —
+  controle que só cita ids reais passa idêntico antes e depois. Os dois medidos na mesma corrida
+  do runner, e o gate entra no censo do `EXPECTED_CHECKS` **nascendo vermelho** — nunca escrito
+  verde à mão.
+- **Gancho do mandato 2:** quando o oráculo começar a sugerir, a sugestão entra como **crença em
+  quarentena**, nunca como intenção já escrita no corpo — o que o AGENTS.md já registra como
+  "fica faltando" do mandato 2, e é exatamente o escritor que este gate guarda.
+
+### 20.7 O que a Fase 2 não fecha
+
+- **`Channel.COUNT`** ([`src/world/aether_field.gd:9`](../../src/world/aether_field.gd#L9)),
+  **`FORMAT_VERSION`** ([`src/persistence/tick_journal.gd:4`](../../src/persistence/tick_journal.gd#L4))
+  e **`GEN_VERSION`** ([`src/world/world_gen.gd:6`](../../src/world/world_gen.gd#L6)) não são
+  tocados por nenhum commit da fase.
+- **A projeção do `TickJournal` não muda** — as chaves novas de belief entram nela por serem lidas
+  do dicionário (§20.3); nenhuma linha do journal é editada.
+- **Nenhum embedding, nenhum subsistema de sono, nenhuma centralidade** — com os números que
+  reabrem cada braço no §20.4.
+- **A Fase 5 continua sem recall paga** — o gate dela continua sendo leitura; a métrica de recall
+  segue devendo dono e instrumento.
