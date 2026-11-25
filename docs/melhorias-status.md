@@ -323,7 +323,7 @@ estado, então não têm linha aqui — o que tem linha é o instrumento e o cus
   nasce — deixou de ser fallback silencioso. Vermelho do sorteio velho: `dentro=1 visiveis=3 de 5`
   (lobo1 a 16,8 m com `los=true`) e reposto a 25,9 m visível; verde: `dentro=0 visiveis=0 de 5`,
   reposto a 39,3 m com `los=false`. O censo passou de premissa a invariante
-  (`lobos + fila == teto`, [smoke_test.gd:322](../tests/smoke_test.gd#L322)) e os sítios que
+  (`lobos + fila == teto`, [smoke_test.gd:365](../tests/smoke_test.gd#L365)) e os sítios que
   indexavam `wolves[i]` a mão ganharam guarda com nome — índice caído é checagem vermelha, não
   `SCRIPT ERROR`. **(e) Política de aviso:** saem as duas únicas frases de criatura que existiam
   ("uma nova matilha entrou no vale", "o lobo caiu o sangue fica no eter"); fica

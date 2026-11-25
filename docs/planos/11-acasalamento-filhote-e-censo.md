@@ -197,7 +197,7 @@ Checagens:
    e cada `identity` do disco confere com a mente carregada. **Esta checagem nasce vermelha** no
    código da leitura desta página — é o vermelho reproduzido antes do conserto, como o contrato
    pede ([`AGENTS.md`](../../AGENTS.md), ciclo 3). **Onde ela mora hoje:**
-   [`_check_censo_disk`](../../tests/smoke_test.gd#L3502-L3558) na suíte, com a premissa montada
+   [`_check_censo_disk`](../../tests/smoke_test.gd#L3607-L3736) na suíte, com a premissa montada
    por transições reais — o passo "salvar e carregar" abre o sexto bicho pela porta de povoamento
    da sessão e grava seis no disco. O conserto é o load que pareia por identidade
    ([`main.gd:1162-1198`](../../src/main.gd#L1162-L1198)), e o teto do censo no load é recusado com
