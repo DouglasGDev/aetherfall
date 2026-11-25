@@ -1,0 +1,840 @@
+extends Node
+## Sonda com janela do dossie 23 §5.4 — as tres perguntas que headless nao responde na
+## Fase 2: o que **compila** (agora com dois shaders spatial proprios no processo, mais o do
+## anel — a atribuicao por shader vem do stdout, onde cada erro traz
+## `build_material (res://src/world/opaque_surface.gd:NN)` no backtrace, medido na corrida
+## da sombra `chuva23-codigo-c-sombra-4-erros.log`), se o material **opaco** novo desenha o
+## que o `StandardMaterial3D` desenhava (braco de indiferenca: base `eb218fe` contra desta
+## perna com `--weather=0`, no mesmo enquadramento), e se **o molhado aparece** (terceiro
+## braco, `--weather=1`, com a diferenca medida em duas caixas separadas — o topo exposto da
+## coluna e o fundo abrigado — porque a assinatura do efeito e `topo muda >> abrigo muda`, e
+## uma caixa unica nao distingue um filtro global de um canal lido por vertice).
+##
+## Roda em tres arvores/configuracoes com este mesmo arquivo, identificados por
+## `--probe-tag=` depois do separador `--` (sem ele o Godot come a flag como opcao de engine
+## e `OS.get_cmdline_user_args()` devolve vazio — medido: o primeiro braco saiu `braco=S`
+## com o `--probe-tag=B` escrito antes do `--`): A = base `eb218fe`, B = desta perna seco,
+## C = desta perna molhado. O enquadramento e o da Fase 1, copiado sem mudanca nenhuma —
+## `_coluna_mais_funda` e `_enquadrar` com os mesmos anéis, os mesmos passos e o mesmo
+## desempate estrito — porque se o mirante mudar entre os bracos a comparacao deixa de ser
+## sobre o material e passa a ser sobre a cena.
+##
+## A sonda nao toca simbolo nenhum que a arvore de controle nao tenha: `opaque_material()`,
+## `weather`, `rain_fx` e `EXPOSURE_FALL` so existem desta perna em diante, entao sao lidos
+## por `has_method`/`get()` e a ausencia e impressa como testemunha do braco, nao como erro.
+## O `FALLOUT` e o numero da casa escrito a mao justamente por isso:
+## `VoxelWorld.EXPOSURE_FALL` nao parseia na base, e uma sonda que nao roda na arvore de
+## controle nao mede indiferenca.
+##
+## O par de caixas de relevo e escolhido pelo CANAL que o fragment le, nao pela geometria do
+## penhasco, e isto e conserto medido. A versao anterior procurava coluna com vizinho
+## ortogonal mais baixo (`drop >= 5`) e punha as duas caixas sobre a face vertical desse
+## vizinho; a varredura headless do mesmo enquadramento (`probe_relevo_ort.gd`) mostrou o que
+## o mesher escreve de fato: `a = clampf(1 - (topo_coluna - y) / 4)`, com `topo_coluna` lido
+## por `surface_height`, que para no PRIMEIRO SOLIDO — e folha e solido, agua nao. Um morro
+## arborizado tem `topo` nove blocos acima do chao e a face do chao sai com `a = 0` sem
+## nenhum penhasco; o censo devolveu `motivos_do_a=0: borda=1486 morro=189 caverna=1
+## outro=22`, e a `drop >= 5` enxergava zero desses. Escolher por geometria era escolher
+## pixels que o shader nao trata como abrigo. A varredura de agora so usa `surface_height`,
+## `ray_voxel` e o `FALLOUT` literal, todos da base, entao as duas caixas caem nos mesmos
+## pixels nos tres bracos — que e o que faz do braco A um controle e nao um renome do B.
+##
+## Nada de captura de desktop: o frame vem do RenderingServer da propria janela, e a chuva
+## entra por `--weather=<alvo>` — o mesmo caminho que o `Rodar.bat` vai expor — nunca por
+## tecla sintetica.
+
+## Meio-lado da caixa da agua, em pixels: 192 px de lado com passo 2 = 9 216 amostras, os
+## mesmos numeros da sonda da Fase 1, para que o braco seco se compare tambem com ela.
+const HALF_AGUA := 96
+## Teto e piso do meio-lado das duas caixas de relevo, em pixels. A caixa e o maior quadrado
+## inscrito no retangulo puro que a varredura achar, e o teto existe porque um retangulo de
+## campo exposto tem mais de mil pixels de lado: sem teto a caixa de topo engoliria o morro
+## inteiro, inclusive o abrigo, e a assinatura `topo >> abrigo` seria paga por contaminacao e
+## nao pelo canal. O piso de 5 e o que ainda da amostra no passo 1.
+const HALF_R_MAX := 48
+const HALF_R_MIN := 5
+## Recorte de contexto gravado em torno de CADA caixa de relevo: 192 px de lado, o mesmo lado da
+## caixa da agua. Nao entra em regua nenhuma — ele existe para que o retangulo puro que a
+## varredura achou possa ser medido por quem re-deriva, a partir do arquivo. Sao dois recortes e
+## nao um so no meio, porque o par escolhido pode estar a 600 px de distancia: um unicos no
+## ponto medio nao conteria nem uma das duas caixas.
+const HALF_VIZ := 96
+## Passo da varredura de pixels na caixa da agua: 2, o mesmo da Fase 1, para que o braco seco
+## se compare tambem com os numeros daquela corrida.
+const STEP := 2
+## Passo das caixas de relevo: 1, o mesmo da primeira versao do instrumento. Com o meio-lado
+## adaptativo a caixa de abrigo tem ~68 px de lado e no passo 1 sao ~4 600 amostras por caixa —
+## dez vezes o que a caixa de 16 px dava, e e dela que sai o par do §5.4.
+const STEP_R := 1
+## Frames ate a camera assentar depois do teletransporte.
+const APOS_COLOCAR := 6
+## Segundos de relogio antes do primeiro quadro: o `molhado` sobe a 0,60 por segundo e
+## precisa de 1,67 s para chegar em 1,0. Sem esta espera o braco C seria medido no meio da
+## rampa e a assinatura sairia fraquinha por motivo de instrumentacao, nao de shader.
+const AGUARDAR := 3.0
+## Intervalo entre os dois quadros do MESMO braco, em segundos: e o quanto de `TIME` do
+## shader separa as duas amostras (a onda da agua e os anéis de gota andam aqui).
+const PAUSA := 1.25
+## Quantos blocos abaixo do topo da coluna zeram o canal: e o `EXPOSURE_FALL` da casa
+## (`voxel_world.gd`, `_emit_face`), escrito a mao porque a base nao tem o simbolo. Um 4 aqui
+## e o que faz `a = clampf(1 - (topo - y)/4)` valer `<= 0,03` a partir de 3,88 blocos.
+const FALLOUT := 4
+## Alcance do raycast de exposicao: o fundo do enquadramento, onde o ultimo morro ainda visivel
+## poderia enganar um `sem solido` como se fosse ceu.
+const RAY_MAX := 120.0
+## Passo da grade de exposicao, em pixels: 12, o mesmo da passagem `_exposure_rects` da varredura
+## headless, para que o retangulo medido la (o maior abrigo natural do enquadramento do §5.2 deu
+## `120x72 px origem=(588,372)`) seja o retangulo escolhido aqui. Uma grade mais fina nao muda o
+## veredito do shader e multiplica os raycasts por quatro; mais grossa deixaria a caixa encostar
+## num pixel que ninguem viu.
+const GRADE_PX := 12
+## As duas bandas do canal que o fragment do material opaco le. `a >= A_TOPO` e o pixel a no
+## maximo 0,12 bloco do topo da coluna — face de topo de qualquer coluna e a parte de cima das
+## faces laterais do bloco mais alto; `a <= A_ABRIGO` e o pixel a pelo menos 3,88 blocos dele,
+## que e o leito da ravina e o chao embaixo de copa. As folgas de 0,03 para baixo dos extremos
+## existem porque o `a` e interpolado entre vertices: um pixel no meio de uma face pode valer
+## 0,985 e ainda assim o vertice de baixo da mesma face vale 0,75.
+const A_TOPO := 0.97
+const A_ABRIGO := 0.03
+## Quantos retangulos maiores de cada banda a varredura guarda para a disputa do par. O par nao
+## e "o maior com o maior": e o que da a MAIOR caixa limitada pela menor, e depois o mais perto
+## uma da outra, porque a assinatura `topo muda >> abrigo muda` so e sobre o mesmo morro se os
+## dois lados estiverem sob a mesma luz e na mesma distancia.
+const RETANGULOS_TOP_N := 8
+## Folga, em pixels, entre o bordo do retangulo puro e a caixa inscrita. A grade amostra o centro
+## de cada celula, entao o ultimo pixel visto por ela esta a `GRADE_PX/2` do bordo do retangulo;
+## meia celula de folga por lado e o minimo para nenhum canto da caixa cair num pixel que a
+## varredura nao viu. NAO e suficiente para pureza — por isso a caixa ainda e conferida e, se a
+## conferencia reprovar, ela encolhe por `GRADE_PX` ate caber.
+const FOLGA_PX := 8
+## Passo da conferencia dentro da caixa: 2. O de 4 foi medido e deixou passar: o retangulo de
+## abrigo de `120x72 px origem=(588,372)` passou na grade de 12 e reprovou com `fora=8` no passo
+## 4, com o ponto (651,375) valendo `a = 1,000` — copa de arvore a 48 m tem face de quatro a oito
+## pixels, entao entre duas celulas da grade cabe uma folha inteira. No passo 2 a conferencia custa
+## quatro vezes mais raios e nao deixa passar nenhuma.
+const PASSO_CONFERENCIA := 2
+## Diferenca maxima, em metros, entre as profundidades medias das duas caixas do par. Sem ela o
+## desempate por area acharia um topo a 20 m e um abrigo a 70 m e a assinatura `topo >> abrigo`
+## seria paga pela neblina do segundo, nao pelo canal: `fog_density = 0,006` corta o contraste a
+## metade em 115 m, e 15 m de diferenca sao 8 % de neblina entre os dois lados.
+const PROF_MAX_DIF_M := 15.0
+
+var root := ""
+var out_dir := ""
+var tag := "S"
+var main: Node3D = null
+var p: Player = null
+var w: VoxelWorld = null
+var hud = null
+## O mirante escolhido, impresso na linha SONDA: sem o sitio escrito os bracos nao sao
+## conferiveis entre si, porque a caixa depende do enquadramento.
+var _cadrado := {}
+## O par de relevo que da as duas caixas de molhamento: os dois centros em pixels, as duas
+## meias-caixas e o que o canal vale em cada um. Os pontos do mundo saem atras e servem so para
+## testemunhas de corpo estranho (o jogador dentro da caixa de topo).
+var _morro := {}
+var _ponto_topo := Vector3.ZERO
+var _ponto_abrigo := Vector3.ZERO
+
+
+func _ready() -> void:
+	# O audio real nao serve a nenhuma das tres perguntas e o dono da maquina nao pediu
+	# trilha tocando durante a sonda.
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
+	root = ProjectSettings.globalize_path("res://")
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--probe-tag="):
+			tag = arg.trim_prefix("--probe-tag=")
+	out_dir = root.path_join(".tools/chuva_px")
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	get_window().size = Vector2i(1920, 1080)
+	main = load("res://src/main.tscn").instantiate()
+	add_child(main)
+	p = main.player
+	w = main.world
+	hud = main.hud
+	await get_tree().create_timer(1.5).timeout
+	_limpar_hud()
+
+	var coluna := _coluna_mais_funda()
+	if coluna.is_empty():
+		print("SONDA  braco=%s  nenhuma coluna de agua no mundo" % tag)
+		get_tree().quit()
+		return
+	var topo := int(coluna["top"])
+	var alvo := Vector3(float(int(coluna["x"])) + 0.5, float(topo) + 1.0,
+			float(int(coluna["z"])) + 0.5)
+	var img0 := get_viewport().get_texture().get_image()
+	print("SONDA  braco=%s  arvore=%s  moldura=%s  seed=%d  coluna=(%d,%d)  blocos=%d  topo=%d  plano=%.2f" % [
+		tag, root, img0.get_size(), int(w.gen.world_seed), int(coluna["x"]), int(coluna["z"]),
+		int(coluna["n"]), topo, alvo.y])
+
+	if not _enquadrar(alvo):
+		print("SONDA  braco=%s  sem enquadramento valido (nenhum mirante seco com visada)" % tag)
+		get_tree().quit()
+		return
+	var olho: Vector3 = _cadrado["olho"]
+	print("SONDA  braco=%s  mirante coluna=(%d,%d) chao=%d dist=%.0f olho=(%.2f, %.2f, %.2f) yaw=%.5f pitch=%.5f" % [
+		tag, int(_cadrado["x"]), int(_cadrado["z"]), int(_cadrado["chao"]),
+		float(_cadrado["dist"]), olho.x, olho.y, olho.z, p.yaw, p.pitch])
+
+	await _frames(APOS_COLOCAR)
+	_morro = _procurar_morro()
+	if _morro.is_empty():
+		print("SONDA  braco=%s  sem par de relevo puro (bandas a>=%.2f / a<=%.2f, caixas de lado >= %d px e separadas)" % [
+			tag, A_TOPO, A_ABRIGO, HALF_R_MIN * 2])
+		get_tree().quit()
+		return
+	var sp_topo: Vector2 = _morro["sp_topo"]
+	var sp_abrigo: Vector2 = _morro["sp_abrigo"]
+	var hf_topo := int(_morro["half_topo"])
+	var hf_abrigo := int(_morro["half_abrigo"])
+	print(("SONDA  braco=%s  morro topo_px=(%.0f,%.0f) lado=%d a=[%.3f..%.3f] d=%.1f m  "
+			+ "abrigo_px=(%.0f,%.0f) lado=%d a=[%.3f..%.3f] d=%.1f m  sep=%.0f px  "
+			+ "topo_y=%.2f abrigo_y=%.2f") % [
+		tag, sp_topo.x, sp_topo.y, hf_topo * 2, float(_morro["amin_topo"]),
+		float(_morro["amax_topo"]), float(_morro["d_topo"]),
+		sp_abrigo.x, sp_abrigo.y, hf_abrigo * 2, float(_morro["amin_abrigo"]),
+		float(_morro["amax_abrigo"]), float(_morro["d_abrigo"]),
+		float(_morro["sep"]), _ponto_topo.y, _ponto_abrigo.y])
+
+	# A espera da rampa vem depois do morro escolhido e antes do primeiro quadro, para os
+	# dois quadros do mesmo braco amostrarem o clima EM REGIME, nao transitando.
+	await get_tree().create_timer(AGUARDAR).timeout
+	_limpar_hud()
+	var cam_a := p.camera.global_position
+	var img_a := get_viewport().get_texture().get_image()
+	var t_a := Time.get_ticks_msec()
+
+	await get_tree().create_timer(PAUSA).timeout
+	_limpar_hud()
+	var cam_b := p.camera.global_position
+	var img_b := get_viewport().get_texture().get_image()
+	var t_b := Time.get_ticks_msec()
+
+	var wd := img_a.get_width()
+	var ht := img_a.get_height()
+	print("TESTEMUNHA braco=%s  camera_deslocou=%.4f m  %s" % [
+		tag, cam_a.distance_to(cam_b), _testemunha()])
+
+	var agua := p.camera.unproject_position(alvo)
+	var c_topo := sp_topo
+	var c_abr := sp_abrigo
+	print("CAIXA    braco=%s  agua=(%.1f,%.1f) topo=(%.1f,%.1f) abrigo=(%.1f,%.1f) separacao=%.1f px  moldura=%dx%d" % [
+		tag, agua.x, agua.y, c_topo.x, c_topo.y, c_abr.x, c_abr.y,
+		Vector2(c_topo.x - c_abr.x, c_topo.y - c_abr.y).length(), wd, ht])
+
+	# As mesmas caixas saem gravadas em recorte por instante, e sao eles que o
+	# `confere_bracos.py` compara ENTRE bracos: a regua publicada tem de ser conferivel por
+	# quem nao tem a arvore, nem Godot, nem GPU.
+	var caixas := {
+		"agua": {"sp": agua, "half": HALF_AGUA, "step": STEP},
+		"topo": {"sp": c_topo, "half": hf_topo, "step": STEP_R},
+		"abrigo": {"sp": c_abr, "half": hf_abrigo, "step": STEP_R},
+	}
+	var lobos := _lobos_por_caixa(caixas)
+	# Um recorte grande em torno de CADA caixa de relevo, gravado para o arquivo: e o unico
+	# jeito de ver o que a varredura chamou de topo e de abrigo sem religar a GPU, e foi dele
+	# que saiu a conta que corrigiu o ponto de mira do topo.
+	_gravar(img_a, "relevo-topo", c_topo, HALF_VIZ)
+	_gravar(img_a, "relevo-abrigo", c_abr, HALF_VIZ)
+	print("CAIXA    braco=%s  dt=%d ms  agua_lobos=%d  topo_lobos=%d  abrigo_lobos=%d  player_no_topo=%d" % [
+		tag, t_b - t_a, int(lobos["agua"]), int(lobos["topo"]), int(lobos["abrigo"]),
+		int(p.body.feet_pos.distance_to(_ponto_topo) < 3.0)])
+	for nome in ["agua", "topo", "abrigo"]:
+		var c: Dictionary = caixas[nome]
+		var sp: Vector2 = c["sp"]
+		var hf := int(c["half"])
+		_gravar(img_a, nome, sp, hf)
+		_gravar(img_b, nome + "-t2", sp, hf)
+		var co := _conteudo(img_a, int(sp.x) - hf, int(sp.y) - hf,
+				int(sp.x) + hf, int(sp.y) + hf)
+		# O que a caixa CONTIEM, impresso antes de qualquer diferenca: uma caixa sobre ceu ou
+		# sobre neblina e uniforme (`cores=1`) e devolve `fracao_ge3` baixo sem medir nada da
+		# rocha — e foi assim que o primeiro par do §5.4 saiu errado, com o topo apontando para
+		# o ceu acima da quina do penhasco. Sem esta linha a regua de indiferenca pode ser paga
+		# por uma caixa vazia, e vira frase de quem rodou.
+		print(("CONTEUDO braco=%s  caixa=%s  lado=%dpx  amostras=%d  cores=%d  "
+				+ "varia=(%d,%d,%d)  media=(%.2f,%.2f,%.2f)") % [
+					tag, nome, hf * 2, int(co["n"]), int(co["cores"]),
+					int(co["dr"]), int(co["dg"]), int(co["db"]),
+					float(co["mr"]), float(co["mg"]), float(co["mb"])])
+		var st := int(c["step"])
+		var d := _diff(img_a, img_b, int(sp.x) - hf, int(sp.y) - hf,
+				int(sp.x) + hf, int(sp.y) + hf, st)
+		print(("MESMO_BRACO  caixa  braco=%s  %s  lado=%dpx  passo=%d  amostras=%d  ge1=%d  ge3=%d  "
+				+ "fracao_ge3=%.4f  media_canal r=%.6f g=%.6f b=%.6f") % [
+					tag, nome, hf * 2, st,
+					int(d["n"]), int(d["ge1"]), int(d["ge3"]),
+					float(d["ge3"]) / float(maxi(int(d["n"]), 1)),
+					float(d["mr"]), float(d["mg"]), float(d["mb"])])
+	var q := _diff(img_a, img_b, 0, 0, wd, ht, STEP)
+	print(("MESMO_BRACO  quadro braco=%s  amostras=%d  ge1=%d  ge3=%d  fracao_ge3=%.4f") % [
+		tag, int(q["n"]), int(q["ge1"]), int(q["ge3"]),
+		float(q["ge3"]) / float(maxi(int(q["n"]), 1))])
+	print("SONDA ok braco=%s  pngs_em=%s" % [tag, out_dir])
+	get_tree().quit()
+
+
+## O que cada braco e, lido da propria arvore em vez de escrito por quem rodou: na base o
+## material opaco ainda e `StandardMaterial3D` e os nos de clima nao existem, e e isso que
+## faz do braco A um controle e nao um renome do B.
+func _testemunha() -> String:
+	var partes: PackedStringArray = PackedStringArray()
+	if w.has_method("opaque_material"):
+		var om = w.opaque_material()
+		partes.append("opaco=%s" % om.get_class())
+		if om is ShaderMaterial:
+			partes.append("uniforme_molhado=" + _uniform_s((om as ShaderMaterial), "molhado"))
+	else:
+		partes.append("opaco=sem_opaque_material(StandardMaterial3D)")
+	var wm = w.water_material()
+	partes.append("agua=%s" % wm.get_class())
+	if wm is ShaderMaterial:
+		partes.append("uniforme_chuva=" + _uniform_s((wm as ShaderMaterial), "chuva"))
+	var wx: Variant = main.get("weather")
+	if wx == null:
+		partes.append("weather=ausente")
+	else:
+		partes.append("weather=chuva %.3f molhado %.3f" % [
+			float(wx.get("chuva")), float(wx.get("molhado"))])
+	var rx: Variant = main.get("rain_fx")
+	if rx == null:
+		partes.append("rain_fx=ausente")
+	else:
+		var d: Dictionary = rx.call("diagnostics")
+		partes.append(("rain_fx=teto %s ligado %s lotes %s sorteadas %s aceitos %s "
+				+ "recusados %s us_pico %s") % [
+					_num(d, "teto_particulas"), _num(d, "ligado"), _num(d, "lotes"),
+					_num(d, "colunas_sorteadas"), _num(d, "anis_aceitos"),
+					_num(d, "anis_recusados"), _num(d, "us_pico")])
+	var fx: Variant = main.get("water_fx")
+	if fx != null:
+		var fd: Dictionary = fx.call("diagnostics")
+		partes.append("water_fx=anis_chuva %s recusados %s no_zero %s" % [
+			_num(fd, "anis_chuva"), _num(fd, "anis_recusados"), _num(fd, "anis_no_zero")])
+	return "  ".join(partes)
+
+
+## Um numero que a arvore nao tem sai como `ausente`, nunca como 0: um 0 lido onde nao houve
+## leitura seria uma afirmacao sobre a cena ("zero aneis aceitos"), e a testemunha do braco A
+## serve justamente para nao ter que acreditar em frase de quem rodou. Medido na primeira
+## corrida do A: `fd["anis_chuva"]` sobre o `diagnostics()` da Fase 1, que nao tem a chave, e
+## um SCRIPT ERROR que derruba a funcao inteira e devolve linha vazia.
+func _num(d: Dictionary, nome: String) -> String:
+	if not d.has(nome):
+		return "ausente"
+	return str(int(d[nome]))
+
+
+## Ler uniforme e imprimir o que NAO EXISTE como ausencia nomeada, nao como erro: na base
+## `eb218fe` o shader da agua nao declara `chuva` (ele chega nesta perna), entao
+## `get_shader_parameter` devolve `null` e `float(null)` e um SCRIPT ERROR — e o erro derruba
+## a funcao inteira, deixando a linha `TESTEMUNHA` do braco A vazia. Medido na primeira
+## corrida do braco A: `camera_deslocou=0.0000 m` seguido de nada. Uma testemunha muda nao
+## distingue controle de replicacao, e e exatamente o que o §5.4 recusa.
+func _uniform_s(mat: ShaderMaterial, nome: String) -> String:
+	var v: Variant = mat.get_shader_parameter(nome)
+	if v == null:
+		return "ausente"
+	return "%.3f" % float(v)
+
+
+## Os dois avisos do HUD saem do quadro porque a moldura e comparada pixel a pixel: um
+## letreiro que aparece entre os instantes seria contado como molhamento. Nao se escreve
+## campo na mao — e o metodo real do HUD.
+func _limpar_hud() -> void:
+	hud.show_binds(false)
+	hud.show_message("", 0.0)
+
+
+## Copia literal do instrumento da Fase 1 (§5.2): mesma varredura, mesma ordem, mesmo
+## desempate estrito. Mudar aqui mudaria o mirante entre os bracos.
+func _coluna_mais_funda() -> Dictionary:
+	var melhor := {}
+	var melhor_n := 0
+	var sx: int = VoxelConfig.world_size_x()
+	var sz: int = VoxelConfig.world_size_z()
+	for x in range(4, sx - 4, 2):
+		for z in range(4, sz - 4, 2):
+			var y: int = VoxelConfig.CHUNK_SIZE_Y - 1
+			while y >= 0 and not _is_water(x, y, z):
+				y -= 1
+			if y < 0:
+				continue
+			var topo := y
+			var n := 0
+			while y >= 0 and _is_water(x, y, z):
+				n += 1
+				y -= 1
+			if n > melhor_n:
+				melhor_n = n
+				melhor = {"x": x, "z": z, "n": n, "top": topo}
+	return melhor
+
+
+func _is_water(x: int, y: int, z: int) -> bool:
+	return int(w.get_block_xyz(x, y, z)) == int(BlockDefs.Block.WATER)
+
+
+## Copia literal do instrumento da Fase 1, inclusive a ordem dos anéis e o cone de cinco
+## raios: o enquadramento tem de ser o MESMO nos tres bracos.
+func _enquadrar(alvo: Vector3) -> bool:
+	for dist in [6.0, 8.0, 11.0, 14.0, 16.0]:
+		for k in 16:
+			var a := TAU * float(k) / 16.0
+			var cx := int(round(alvo.x + cos(a) * dist))
+			var cz := int(round(alvo.z + sin(a) * dist))
+			var h: int = w.surface_height(cx, cz)
+			if h <= VoxelConfig.SEA_LEVEL or not _paravel(cx, h, cz):
+				continue
+			p.third_person = false
+			p.feet_to_spawn(Vector3(float(cx) + 0.5, float(h + 1), float(cz) + 0.5))
+			p.body.velocity = Vector3.ZERO
+			_apontar(alvo)
+			if p.eye_position().y - alvo.y < 1.0:
+				continue
+			if not _cone_livre(alvo):
+				continue
+			_cadrado = {"dist": dist, "x": cx, "z": cz, "chao": h,
+					"olho": p.eye_position()}
+			return true
+	return false
+
+
+func _cone_livre(alvo: Vector3) -> bool:
+	var eye := p.eye_position()
+	for c in [alvo,
+			alvo + Vector3(1.0, 0.0, 1.0), alvo + Vector3(-1.0, 0.0, 1.0),
+			alvo + Vector3(1.0, 0.0, -1.0), alvo + Vector3(-1.0, 0.0, -1.0)]:
+		var d: Vector3 = c - eye
+		var hit := w.ray_voxel(eye, d.normalized(), d.length() - 0.2)
+		if hit.valid:
+			return false
+	return true
+
+
+func _paravel(x: int, h: int, z: int) -> bool:
+	if not w.is_solid_xyz(x, h, z):
+		return false
+	for dy in [1, 2, 3]:
+		if w.is_solid_xyz(x, h + dy, z):
+			return false
+	return true
+
+
+func _apontar(at: Vector3) -> void:
+	var eye := p.eye_position()
+	var d := at - eye
+	p.yaw = atan2(-d.x, -d.z)
+	p.pitch = asin(clampf(d.y / d.length(), -1.0, 1.0))
+
+
+## O par de caixas que da a assinatura do §5.4, escolhido pelo CANAL que o fragment le, nao
+## pela geometria do penhasco: a moldura inteira e varrida numa grade de `GRADE_PX` pixels, o
+## centro de cada celula vira um raio da camera e o `a` daquele pixel e o do mesher —
+## `clampf(1 - (surface_height(x,z) - y) / FALLOUT)` com (x,z,y) do voxel batido. Da varredura
+## saem duas mascaras (`a >= A_TOPO`, `a <= A_ABRIGO`), de cada mascara os `RETANGULOS_TOP_N`
+## maiores retangulos monotonos, e do produto cruzado dos dois conjuntos o par cuya caixa
+## inscrita MENOR e a maior, com desempate pela separacao — o par mais proximo, porque a
+## assinatura `topo muda >> abrigo muda` so e sobre o mesmo morro se os dois lados estao sob a
+## mesma luz e, por `PROF_MAX_DIF_M`, na mesma profundidade de neblina. Cada caixa e conferida
+## ponto a ponto de `PASSO_CONFERENCIA` em `PASSO_CONFERENCIA` antes de entrar na disputa,
+## encolhendo de uma celula da grade por lado ate passar, e o que decide e o `a` dos pontos, nao
+## o aspecto do recorte.
+##
+## As classes recusadas ANTES das mascaras nao sao enfeite: sem elas "nenhum abrigo no quadro" e
+## uma frase, e com elas e a linha que diz se o que sobrou era ceu, se era a parede que fecha o
+## mapa, ou se era chao de lago embaixo d'agua. As tres tem assinatura em corrida real:
+##   ceu      — o raio nao bate e a celula sai invalida. E isso que nao deixa a caixa de "topo"
+##              ser pedaco de neblina: medido no recorte da primeira versao do par,
+##              `chuva-B-topo.png` era um campo liso de (92,118,137) com `cores=17` contra os 40
+##              do abrigo vizinho, e o `A_vs_B` de 0,7852 foi calculado em ceu.
+##   parede   — a borda do mundo e um bloco atras do outro ate o teto do chunk, entao todo pixel
+##              que nela bate tem `topo = 63` e `a = 0`. Medido na varredura headless do mesmo
+##              enquadramento: `puras_abrigo=385` celulas e os SEIS maiores retangulos de abrigo
+##              todos com `origem=(0,0)` — o canto da moldura, nao o morro. Sem a exclusao a
+##              caixa "abrigada" mediria o muro do mundo e o gate passaria sem relevo nenhum.
+##   submerso — `ray_voxel` para no primeiro SOLIDO e agua nao e solida, entao um raio que cruza
+##              o lago bate no leito; o leito e o topo da propria coluna e sai com `a = 1`. Caixa
+##              de topo sobre leito seria a diferenca da agua contada como rocha.
+## `fora_do_quadro` morreu com a grade — nenhuma celula fora da moldura e amostrada — e
+## `sobrepostas` continua: e ela que impede a diferenca do topo de vazar na do abrigo.
+func _procurar_morro() -> Dictionary:
+	var vs: Vector2i = p.camera.get_viewport().get_texture().get_size()
+	var nx := int(vs.x / GRADE_PX)
+	var ny := int(vs.y / GRADE_PX)
+	var topo_ok: Array = []
+	var abrigo_ok: Array = []
+	var n_celulas := 0
+	var n_ceu := 0
+	var n_borda := 0
+	var n_parede := 0
+	var n_submerso := 0
+	var n_topo := 0
+	var n_abrigo := 0
+	for j in range(ny):
+		var r1: Array = []
+		var r2: Array = []
+		for i in range(nx):
+			var sp := Vector2(float(i * GRADE_PX + int(GRADE_PX / 2)),
+					float(j * GRADE_PX + int(GRADE_PX / 2)))
+			var e := _exposicao_no_px(sp)
+			n_celulas += 1
+			var motivo: String = str(e["motivo"])
+			if motivo == "ceu":
+				n_ceu += 1
+			elif motivo == "borda":
+				n_borda += 1
+			elif motivo == "parede":
+				n_parede += 1
+			elif motivo == "submerso":
+				n_submerso += 1
+			var a := float(e["a"])
+			var p1: bool = motivo == "" and a >= A_TOPO
+			var p2: bool = motivo == "" and a <= A_ABRIGO
+			if p1:
+				n_topo += 1
+			if p2:
+				n_abrigo += 1
+			r1.append(p1)
+			r2.append(p2)
+		topo_ok.append(r1)
+		abrigo_ok.append(r2)
+	var tops: Array = _retangulos(topo_ok, nx, ny, GRADE_PX, RETANGULOS_TOP_N)
+	var abrs: Array = _retangulos(abrigo_ok, nx, ny, GRADE_PX, RETANGULOS_TOP_N)
+	print(("MORRO    braco=%s  grade=%dx%d px_de=%d  celulas=%d  ceu=%d  borda=%d  parede=%d  "
+			+ "submerso=%d  puras_topo=%d  puras_abrigo=%d  retangulos=%d+%d") % [
+		tag, nx, ny, GRADE_PX, n_celulas, n_ceu, n_borda, n_parede, n_submerso,
+		n_topo, n_abrigo, tops.size(), abrs.size()])
+	## A conferencia e por RETANGULO, nao por par: os 8x8 pares confereriam a mesma caixa ate
+	## oito vezes. E ela ENCOLHE a caixa ate ela passar, de uma celula da grade por lado em cada
+	## tentativa — a grade de 12 px so garante os centros que ela viu, e entre dois centros cabe
+	## uma folha inteira (medido: o retangulo de `120x72` reprovou com `fora=8` a um pixel do
+	## bordo de cima). O que se publica e o maior meio-lado que passou, com o numero de
+	## tentativas ao lado: sem ele "a caixa e pura" seria adjetivo e com ele e a linha que diz
+	## quanta folga a grade nao viu.
+	var candidatos: Array = []
+	var passados: Array = []
+	var recusados: Array = []
+	var estreitas := 0
+	var impuras := 0
+	for banda in [true, false]:
+		var lista: Array = tops if bool(banda) else abrs
+		for k in range(lista.size()):
+			var r: Dictionary = lista[k]
+			var centro: Vector2 = r["centro"]
+			var hf := clampi(int(mini(int(r["w"]), int(r["h"])) / 2) - FOLGA_PX, 0, HALF_R_MAX)
+			var linha := ("banda=%s ret=%dx%d px origem=(%.0f,%.0f) centro=(%.0f,%.0f) " % [
+				"topo" if banda else "abrigo", int(r["w"]), int(r["h"]),
+				float(r["x"]), float(r["y"]), centro.x, centro.y]
+					+ "meia_caixa_inicial=%d" % hf)
+			if hf < HALF_R_MIN:
+				estreitas += 1
+				recusados.append("caixa_estreita " + linha)
+				continue
+			var tentativas := 0
+			var cf := {}
+			while true:
+				tentativas += 1
+				cf = _caixa_pura(centro, hf, bool(banda))
+				if int(cf["fora"]) == 0 or hf - GRADE_PX < HALF_R_MIN:
+					break
+				hf -= GRADE_PX
+			linha += (" meia_caixa=%d tentativas=%d pontos=%d fora=%d a=[%.3f..%.3f] " % [
+				hf, tentativas, int(cf["n"]), int(cf["fora"]),
+				float(cf["amin"]), float(cf["amax"])]
+					+ "blocos=%d d=[%.1f..%.1f] m  %s") % [
+				int(cf["blocos"]), float(cf["dmin"]), float(cf["dmax"]), str(cf["primeira"])]
+			if int(cf["fora"]) > 0:
+				impuras += 1
+				recusados.append("caixa_impura " + linha)
+				continue
+			candidatos.append({"topo": banda, "sp": centro, "half": hf,
+					"amin": float(cf["amin"]), "amax": float(cf["amax"]),
+					"d": (float(cf["dmin"]) + float(cf["dmax"])) * 0.5, "linha": linha})
+			passados.append(linha)
+	var melhor := {}
+	var melhor_min := 0
+	var melhor_sep := 1e18
+	var pares := 0
+	var sobrepostas := 0
+	var desniveis := 0
+	for i in range(candidatos.size()):
+		for k in range(candidatos.size()):
+			var c1: Dictionary = candidatos[i]
+			var c2: Dictionary = candidatos[k]
+			if bool(c1["topo"]) == bool(c2["topo"]):
+				continue
+			var t: Dictionary = c1 if bool(c1["topo"]) else c2
+			var b: Dictionary = c2 if bool(c1["topo"]) else c1
+			var sp_t: Vector2 = t["sp"]
+			var sp_b: Vector2 = b["sp"]
+			var sep := sp_t.distance_to(sp_b)
+			if sep < float(int(t["half"]) + int(b["half"]) + 4):
+				sobrepostas += 1
+				continue
+			if absf(float(t["d"]) - float(b["d"])) > PROF_MAX_DIF_M:
+				desniveis += 1
+				continue
+			pares += 1
+			var menor := mini(int(t["half"]), int(b["half"]))
+			if menor < melhor_min:
+				continue
+			if menor == melhor_min and sep >= melhor_sep:
+				continue
+			melhor_min = menor
+			melhor_sep = sep
+			melhor = {"sp_topo": sp_t, "sp_abrigo": sp_b,
+					"half_topo": int(t["half"]), "half_abrigo": int(b["half"]),
+					"amin_topo": float(t["amin"]), "amax_topo": float(t["amax"]),
+					"amin_abrigo": float(b["amin"]), "amax_abrigo": float(b["amax"]),
+					"d_topo": float(t["d"]), "d_abrigo": float(b["d"]), "sep": sep,
+					"linha_topo": str(t["linha"]), "linha_abrigo": str(b["linha"])}
+	print(("MORRO    braco=%s  caixas_confereis=%d  estreitas=%d  impuras=%d  pares_separados=%d  "
+			+ "sobrepostas=%d  fora_de_desnivel=%d  escolhido=%d  menor_meia_caixa=%d  sep=%.0f px") % [
+		tag, candidatos.size(), estreitas, impuras, pares, sobrepostas, desniveis,
+		int(not melhor.is_empty()), melhor_min, melhor_sep])
+	## Os candidatos que passaram e nao só o escolhido: se a regua do §5.4 for contestada, o que
+	## se precisa mostrar e o que ficou de fora da disputa por centimetros de caixa.
+	for i in range(passados.size()):
+		print("MORRO_CAND braco=%s  %s" % [tag, str(passados[i])])
+	for i in range(mini(8, recusados.size())):
+		print("MORRO_RECUS braco=%s  %s" % [tag, str(recusados[i])])
+	if melhor.is_empty():
+		return {}
+	var spt: Vector2 = melhor["sp_topo"]
+	var spa: Vector2 = melhor["sp_abrigo"]
+	var pto_t: Vector3 = _exposicao_no_px(spt)["pto"]
+	var pto_a: Vector3 = _exposicao_no_px(spa)["pto"]
+	_ponto_topo = pto_t
+	_ponto_abrigo = pto_a
+	return melhor
+
+
+## O que o material opaco ve NAQUELE pixel, na formula do mesher e com simbolos que a base tem
+## todos (`surface_height`, `ray_voxel`, `is_water_xyz`). O `a` de um pixel recusado vale -1 e o
+## motivo sai nomeado: um 0 no lugar de uma leitura seria afirmacao sobre a cena, e o motivo e o
+## que diz se o quadro inteiro era ceu ou se so a caixa errada era.
+func _exposicao_no_px(sp: Vector2) -> Dictionary:
+	var cam := p.camera
+	var hit := w.ray_voxel(cam.project_ray_origin(sp), cam.project_ray_normal(sp), RAY_MAX)
+	if not hit.valid:
+		return {"a": -1.0, "motivo": "ceu", "pto": Vector3.ZERO, "vox": Vector3i(-1, -1, -1),
+				"dist": -1.0}
+	var hx: int = hit.voxel.x
+	var hy: int = hit.voxel.y
+	var hz: int = hit.voxel.z
+	var nulo := {"a": -1.0, "pto": hit.point, "vox": hit.voxel, "dist": hit.distance}
+	if hx <= 1 or hz <= 1 or hx >= VoxelConfig.world_size_x() - 2 \
+			or hz >= VoxelConfig.world_size_z() - 2:
+		nulo["motivo"] = "borda"
+		return nulo
+	var topo := w.surface_height(hx, hz)
+	if topo >= VoxelConfig.CHUNK_SIZE_Y - 2:
+		nulo["motivo"] = "parede"
+		return nulo
+	if w.is_water_xyz(hx, hy + 1, hz):
+		nulo["motivo"] = "submerso"
+		return nulo
+	nulo["a"] = clampf(1.0 - float(topo - hit.point.y) / float(FALLOUT), 0.0, 1.0)
+	nulo["motivo"] = ""
+	return nulo
+
+
+## A caixa inteira conferida, nao os cinco pixels de sempre: os pontos de `PASSO_CONFERENCIA` em
+## do quadrado, cada um com o seu `a`, e o veredito em numero — quantos sairam da banda, qual foi
+## o primeiro, o intervalo dos que ficaram, quantos voxels distintos a caixa cobre e o intervalo
+## de distancia. `blocos` e testemunha e nao adjetivo: uma caixa sobre um so plano de face da
+## poucos blocos e uma sobre morro inteiro da dezenas; as duas podem ser puras pelo canal e quem
+## re-deriva escolhe entre elas pelo numero, sem religar a GPU. A grade de 12 px ja disse que o
+## retangulo e puro nos centros que viu; isto aqui diz que a caixa inscrita nao encostou em nada
+## que ela nao viu — e e o que pega a quina entre duas celulas.
+func _caixa_pura(sp: Vector2, half: int, topo_da_banda: bool) -> Dictionary:
+	var n := 0
+	var fora := 0
+	var amin := 2.0
+	var amax := -2.0
+	var dmin := 1e9
+	var dmax := 0.0
+	var blocos := {}
+	var primeira := ""
+	var passo := float(PASSO_CONFERENCIA)
+	var y := sp.y - float(half) + 1.0
+	while y <= sp.y + float(half) - 1.0:
+		var x := sp.x - float(half) + 1.0
+		while x <= sp.x + float(half) - 1.0:
+			var e := _exposicao_no_px(Vector2(x, y))
+			var a := float(e["a"])
+			var d := float(e["dist"])
+			var v: Vector3i = e["vox"]
+			n += 1
+			var ruim := bool(e["motivo"] != "")
+			if not ruim:
+				ruim = (a < A_TOPO) if topo_da_banda else (a > A_ABRIGO)
+			if ruim:
+				fora += 1
+				if primeira == "":
+					primeira = "fora=(%.0f,%.0f) motivo=%s a=%.3f" % [
+						x, y, str(e["motivo"]), a]
+			else:
+				amin = minf(amin, a)
+				amax = maxf(amax, a)
+				dmin = minf(dmin, d)
+				dmax = maxf(dmax, d)
+				blocos[v] = true
+			x += passo
+		y += passo
+	if dmin > dmax:
+		dmin = 0.0
+		dmax = 0.0
+	return {"n": n, "fora": fora, "amin": amin, "amax": amax, "blocos": blocos.size(),
+			"dmin": dmin, "dmax": dmax, "primeira": primeira}
+
+
+## Os `n` maiores retangulos monotonos de uma mascara de celulas puras, por histograma de
+## alturas com pilha — o mesmo algoritmo da passagem `_exposure_rects` da varredura headless,
+## com a mesma grade, para que o retangulo medido la seja o escolhido aqui. Sem deduplicar:
+## dois retangulos ancorados na mesma linha sao dois lugares diferentes da moldura, e o que se
+## quer da lista e onde a cena tem abrigo.
+func _retangulos(m: Array, nx: int, ny: int, passo: int, n: int) -> Array:
+	var achados: Array = []
+	var alturas: Array = []
+	for i in range(nx):
+		alturas.append(0)
+	for j in range(ny):
+		for i in range(nx):
+			alturas[i] = int(alturas[i]) + 1 if bool(m[j][i]) else 0
+		var pilha: Array = []
+		for i in range(nx + 1):
+			var h := 0
+			if i < nx:
+				h = int(alturas[i])
+			var inicio := i
+			while pilha.size() > 0 and int(pilha[pilha.size() - 1][0]) > h:
+				var topo: Array = pilha.pop_back()
+				var th: int = int(topo[0])
+				var ts: int = int(topo[1])
+				inicio = ts
+				if th <= 0:
+					continue
+				var area := th * (i - ts)
+				if achados.size() < n or area > int(achados[achados.size() - 1]["area"]):
+					var rw := (i - ts) * passo
+					var rh := th * passo
+					var x0 := ts * passo
+					var y0 := (j - th + 1) * passo
+					_insere(achados, {"area": area, "w": rw, "h": rh, "x": x0, "y": y0,
+							"centro": Vector2(float(x0) + float(rw) * 0.5,
+								float(y0) + float(rh) * 0.5)}, n)
+			if pilha.size() > 0 and int(pilha[pilha.size() - 1][0]) == h:
+				continue
+			if i < nx:
+				pilha.append([h, inicio])
+	return achados
+
+
+## Insercao ordenada por area, com o teto `n`: os maiores continuam na frente e o que passa do
+## tamanho sai por tras.
+func _insere(arr: Array, novo: Dictionary, n: int) -> void:
+	var i := arr.size()
+	while i > 0 and int(arr[i - 1]["area"]) < int(novo["area"]):
+		i -= 1
+	arr.insert(i, novo)
+	while arr.size() > n:
+		arr.pop_back()
+
+
+func _ou_vazio(v: String) -> String:
+	return v if v != "" else "-"
+
+
+
+## Testemunha de corpo estranho em cada caixa, impressa por caixa e nao escondida: um lobo
+## dentro dela moveria pixels por conta propria, e a asseriao deixaria de ser sobre o
+## material.
+func _lobos_por_caixa(caixas: Dictionary) -> Dictionary:
+	var n := {"agua": 0, "topo": 0, "abrigo": 0}
+	for wolf in main.wolves:
+		if not wolf.alive:
+			continue
+		var s := p.camera.unproject_position(wolf.body.feet_pos + Vector3(0.0, 0.7, 0.0))
+		for nome in caixas:
+			var c: Dictionary = caixas[nome]
+			var sp: Vector2 = c["sp"]
+			var hf := int(c["half"])
+			if absf(s.x - sp.x) <= float(hf) and absf(s.y - sp.y) <= float(hf):
+				n[nome] = int(n[nome]) + 1
+	return n
+
+
+func _gravar(img: Image, nome: String, centro: Vector2, half: int) -> void:
+	var x0 := int(centro.x) - half
+	var y0 := int(centro.y) - half
+	var rec := img.get_region(Rect2i(x0, y0, half * 2, half * 2))
+	rec.save_png(out_dir.path_join("chuva-%s-%s.png" % [tag, nome]))
+
+
+## O que ha DENTRO de uma caixa: quantas cores diferentes, a amplitude por canal e a media.
+## `cores=1` e caixa de ceu ou de neblina, e qualquer diferenca medida nela fala do quadro, nao
+## do material. Le pixel a pixel, sem o passo da regua: aqui o que importa e a amplitude, e
+## amostrar de dois em dois poderia esconder a quina justamente no meio.
+func _conteudo(img: Image, x0: int, y0: int, x1: int, y1: int) -> Dictionary:
+	var n := 0
+	var vista := {}
+	var soma := Vector3.ZERO
+	var mn := Vector3(255, 255, 255)
+	var mx := Vector3.ZERO
+	for y in range(maxi(y0, 0), mini(y1, img.get_height())):
+		for x in range(maxi(x0, 0), mini(x1, img.get_width())):
+			var c := img.get_pixel(x, y)
+			var r := int(round(c.r * 255.0))
+			var g := int(round(c.g * 255.0))
+			var b := int(round(c.b * 255.0))
+			n += 1
+			vista[r | (g << 8) | (b << 16)] = true
+			var v := Vector3(float(r), float(g), float(b))
+			mn = Vector3(minf(mn.x, v.x), minf(mn.y, v.y), minf(mn.z, v.z))
+			mx = Vector3(maxf(mx.x, v.x), maxf(mx.y, v.y), maxf(mx.z, v.z))
+			soma += v
+	return {"n": n, "cores": vista.size(),
+		"dr": int(mx.x - mn.x), "dg": int(mx.y - mn.y), "db": int(mx.z - mn.z),
+		"mr": soma.x / float(maxi(n, 1)), "mg": soma.y / float(maxi(n, 1)),
+		"mb": soma.z / float(maxi(n, 1))}
+
+
+## Aritmetica identica a da Fase 1 e a do `confere_bracos.py`: canais em float32 contra
+## 1/255 e 3/255. O float32 mais proximo de 1/255 e maior que a diferenca entre dois bytes
+## vizinhos, entao uma amostra que difere em exatamente um byte NAO entra no ge1 — o numero
+## publicado e um piso, e e por isso que ele sai daqui e nao de uma conta em inteiros.
+func _diff(a: Image, b: Image, x0: int, y0: int, x1: int, y1: int, step: int) -> Dictionary:
+	var n := 0
+	var um := 0
+	var tres := 0
+	var sr := 0.0
+	var sg := 0.0
+	var sb := 0.0
+	for y in range(maxi(y0, 0), mini(y1, a.get_height()), step):
+		for x in range(maxi(x0, 0), mini(x1, a.get_width()), step):
+			var ca := a.get_pixel(x, y)
+			var cb := b.get_pixel(x, y)
+			var dr: float = absf(ca.r - cb.r)
+			var dg: float = absf(ca.g - cb.g)
+			var db: float = absf(ca.b - cb.b)
+			n += 1
+			sr += dr
+			sg += dg
+			sb += db
+			var mx: float = maxf(dr, maxf(dg, db))
+			if mx >= 1.0 / 255.0:
+				um += 1
+			if mx >= 3.0 / 255.0:
+				tres += 1
+	return {"n": n, "ge1": um, "ge3": tres,
+		"mr": sr / float(maxi(n, 1)), "mg": sg / float(maxi(n, 1)),
+		"mb": sb / float(maxi(n, 1))}
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame

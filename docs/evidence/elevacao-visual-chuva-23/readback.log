@@ -1,0 +1,178 @@
+sonda com janela da Fase 2 — dossie 23 §5.4, as tres perguntas, na ordem em que o dossie as escreve
+
+arvore_teste    = C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2  branch feat/elevacao-visual-chuva-23f2
+                  ponta 1a676fa (codigo C) — os bracos B6/B7/C6 rodam nessa arvore, limpa
+                  os bracos B3/B5/B5fps rodam na MESMA arvore com UMA linha de ablacao no
+                  fragment do `OpaqueSurface`, revertida antes deste commit; a linha exata de
+                  cada um esta impressa abaixo, porque sem ela o log nao e reproduzivel
+arvore_controle = C:/tmp/aetherfall-base-23f2  HEAD eb218fe (a base da branch, sem a perna)
+probe           = chuva_pixel_probe.gd.txt + chuva_pixel_probe.tscn.txt (os dois byte a byte
+                  identicos nas duas arvores — conferido por SHA-256, e o que autoriza dizer
+                  que a diferenca entre A2 e B6 e de arvore e nao de instrumento)
+engine          = Godot_v4.7.2-stable_win64_console (segunda linha de todo log aqui:
+                  "Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT")
+moldura         = 1920x1080   seed = 20261116   coluna d'agua = (100,52)  topo=26  plano=27,00
+caixas          = agua 192 px  topo 96 px  abrigo 56 px, todas recortadas dos frames
+                  completos (chuva-<braco>-*.png arquivados aqui; os frames inteiros ficam em
+                  .tools/chuva_px/, gitignored)
+
+
+PERGUNTA 1 — o que compila
+
+`SHADER ERROR` foi contado por `grep -c` em cada stdout arquivado, e a contagem e zero em todos:
+  base-sonda-23f2-{A,A2,A3}.log      0   (na base nao ha shader proprio nenhum)
+  sonda-23f2-{B3,B5,B5fps,B6,B7,C6}.log 0 0 0 0 0 0   (dois shaders spatial + o do anel)
+  rocha_fiel_tile.log                0   (a cena sintetica, com as 10 variantes no mesmo quadro)
+a testemunha de que o contador ve um erro de shader quando ele existe e o par ja arquivado do
+furo #46: chuva23-codigo-a.log e chuva23-codigo-c-sombra-4-erros.log dao `SHADER ERROR`=4 cada
+um (um por mundo construido, o `specular_schlick_blurry` de Godot 3 recusado pelo front-end do
+4.7) e chuva23-rendermode-conserto.log devolve 0 depois da troca por `specular_schlick_ggx`.
+Isso e headless — e o furo #46 consertou a frase do dossie que dizia que headless era cego ao
+shader: ele nao desenha nem gera SPIR-V, mas roda o front-end GLSL e imprime. O que a janela
+continua sendo a unica testemunha e do pixel.
+
+PERGUNTA 2 — o braço de indiferença: o material opaco novo desenha o que o StandardMaterial3D desenhava
+
+O enquadramento e identico nas duas arvores, e essa identidade e a premissa de todo o resto:
+  A2  mirante coluna=(101,39) chao=27 dist=14 olho=(101.50, 29.62, 39.50) yaw=3.06482 pitch=-0.19830
+  B6  idem, caractere por caractere
+  abrigo/topo — a premissa e que as duas arvores apontam para os mesmos pixels, e ela e medida, nao
+      assumida: a linha do morro sai caracter por caracter igual em A, A2, A3, B3, B5, B5fps, B6, B7
+      e C6 — `morro topo_px=(1116,342) lado=96 a=[1.000..1.000] d=49.9 m  abrigo_px=(648,408)
+      lado=56 a=[0.000..0.000] d=50.5 m  sep=473 px  topo_y=33.31 abrigo_y=29.03` — e o `a` dos
+      dois lados e o valor lido do vertice, nao uma conta da sonda.
+  `TESTEMUNHA camera_deslocou=0.0000 m` em todos os bracos.
+
+PISO DO INSTRUMENTO (duas corridas do MESMO codigo, `--fixed-fps=60`):
+  B6-vs-B7 topo    ge1=0     ge3=0     fracao_ge3=0.0000
+  B6-vs-B7 abrigo  ge1=0     ge3=0     fracao_ge3=0.0000
+  B6-vs-B7 agua    ge1=6373  ge3=2368  fracao_ge3=0.2569   <- o unico chao que nao e zero
+  A2-vs-A3 agua    ge1=259   ge3=113   fracao_ge3=0.0123   (base, duas corridas fixed-fps)
+  A2-vs-A3 topo    ge1=0     ge3=0     fracao_ge3=0.0000
+  A-vs-A2  agua    ge1=460   ge3=148   fracao_ge3=0.0161   (base, free-run contra fixed-fps)
+as duas caixas do relevo nao se movem entre duas corridas da mesma arvore: zero exato. a caixa
+d'agua sim, porque o `TIME` da superficie esta dentro dela e o instrumento nao tem como congelar
+o `TIME` — por isso a linha da agua abaixo so vale comparada a este chao, nunca a zero.
+o chao da agua na perna (0,2569) e maior que o da base (0,0123) porque o shader da agua desta
+perna tem mais termo dependente de `TIME` que o `StandardMaterial3D` da base; foi medido, nao
+inferido, e e o motivo de a caixa d'agua nao ser regua de indiferenca.
+
+O PAR PUBLICADO (base eb218fe contra esta perna com `--weather=0`, shader exatamente como esta no git):
+  A2-vs-B6 topo    ge1=9216  ge3=9034  fracao_ge3=0.9803  media_canal r=0.020878 g=0.020078 b=0.010213
+  A2-vs-B6 abrigo  ge1=3124  ge3=2899  fracao_ge3=0.9244  media_canal r=0.020369 g=0.023691 b=0.018229
+  A2-vs-B6 agua    ge1=8707  ge3=6630  fracao_ge3=0.7194  media_canal r=0.030707 g=0.033596 b=0.027482
+isto NAO cabe numa banda pequena: `fracao_ge3` 0,98 e 0,92 com o chao do instrumento em 0,0000.
+O §5.4 diz o que fazer nesse caso — "o braço (c) do §3.10b volta à mesa com o número, não a banda".
+O numero foi levado a mesa, e a mesa decidiu contra o (c). Segue a atribuicao.
+
+ATRIBUICAO 1 — a sonda de pixels nao distingue qual termo responde, entao o outro instrumento distingue
+`rocha_fiel.gd.txt` monta os DOIS materiais no MESMO quadro, sob a MESMA luz, a MESMA neblina, o
+MESMO tonemap, a MESMA distancia (45 m), 10 placas de 3x3 celulas; a coluna 0 e a receita do
+`StandardMaterial3D` copiada verbatim de `eb218fe:src/world/voxel_world.gd`; cada variante troca
+UM token. Media por canal contra `std_base` (media 113,22 / 129,76 / 152,31):
+  sh_color              (+40,97, +35,60, +30,59)  fracao_ge3=1,0000   o shader como esta no git
+  sh_s2l                (+32,86, +28,22, +23,86)  fracao_ge3=0,9980   decodificando o COLOR
+  sh_pow22              (+32,81, +28,14, +23,70)  fracao_ge3=0,9928   idem com pow(...,2.2)
+  sh_nocolor            (+48,52, +42,34, +36,57)  fracao_ge3=1,0000   COLOR fora da conta
+  sh_tile_s2l            (−0,24,  −0,53,  −0,87)  fracao_ge3=0,3524   decodificando a AMOSTRA
+  sh_tile_s2l_color_s2l  (−1,66,  −1,59,  −1,72)  fracao_ge3=0,2013   os dois
+  std_near               (−0,79,  −0,96,  −1,13)  fracao_ge3=0,2472   o mesmo material, so o filtro trocado
+o `COLOR` nao e o termo: decodificar o vertice deixa a media a 33/255 do material velho. A
+amostra do atlas e: com o decode devolvido a amostra a media cai a 0,24/255 e o residual fica
+dentro do chao do proprio instrumento (`std_near`, uma troca de filtro sem mudar ninguem).
+E o motivo esta no atlas, lido nao lembrado (`probe_tex_srgb.log`): `voxel_atlas.gd:35` chama
+`srgb_to_linear()` antes do `create_from_image`, a textura e `FORMAT_RGBA8` (format=5 — o 4.7
+nao tem formato sRGB em runtime), e o canto do tile `TILE_GRASS_TOP` guarda (0.0941, 0.2667,
+0.0549) contra a base escrita `Color(0.34, 0.55, 0.26)` em `voxel_atlas.gd:58`. O byte ja esta
+linear. O `StandardMaterial3D` decodifica o texto de albedo como sRGB de qualquer maneira: o
+material velho decodificava duas vezes; o shader escrito a mao, uma.
+
+ATRIBUICAO 2 — a mesma conclusao na cena real, com o decode devolvido ao tile (ablacao de uma
+linha no fragment deste instrumento, revertida depois):
+  vec4 tile_raw = texture(atlas, UV);
+  vec4 tile = vec4(mix(tile_raw.rgb / 12.92,
+          pow((tile_raw.rgb + vec3(0.055)) / 1.055, vec3(2.4)), step(vec3(0.04045), tile_raw.rgb)),
+          tile_raw.a);
+  A2-vs-B5 topo    ge1=0     ge3=0     fracao_ge3=0.0000  media r=0.000009 g=0.000012 b=0.000001
+  A2-vs-B5 abrigo  ge1=28    ge3=21    fracao_ge3=0.0067
+  A2-vs-B5 agua    ge1=5146  ge3=1139  fracao_ge3=0.1236  (abaixo do chao da caixa, 0.2569)
+a caixa do relevo exposto passa de 0,9803 a ZERO EXATO. nao sobrou outro termo: luz, filtro,
+geometria, uniformes e camera estao no par e foram conferidos (`camera_deslocou=0.0000`,
+`uniforme_molhado=0.000` dos dois lados, `opaco=ShaderMaterial` na perna contra o
+`StandardMaterial3D` na base — a unica diferenca entre as duas linhas e o shader).
+
+O FALSO CONCERTO, registrado porque e a armadilha que este braco existe para desarmar:
+  A-vs-B3  (shader + `SPECULAR = 0.5;`)  topo   ge1=9216 ge3=9034 fracao=0.9803 r=0.020878 g=0.020078 b=0.010213
+  A2-vs-B6 (shader commitado, sem a linha) topo ge1=9216 ge3=9034 fracao=0.9803 r=0.020878 g=0.020078 b=0.010213
+  A-vs-B3  abrigo ge1=3124 ge3=2899 fracao=0.9244 r=0.020369 g=0.023691 b=0.018229
+  A2-vs-B6 abrigo ge1=3124 ge3=2899 fracao=0.9244 r=0.020369 g=0.023691 b=0.018229
+(topo/abrigo de `confere_bracos_B3.log` e `confere_bracos_finais.log`). As duas linhas de topo sao OS
+MESMOS QUATRO NUMEROS e as duas de abrigo idem, e a base dos dois pares e byte a byte a mesma
+(`A-vs-A2 topo ge1=0 ge3=0` — `confere_bracos_A_A2.log`), entao o que sobra e a variante: a linha
+`SPECULAR = 0.5;` nao comprou diferenca nenhuma nas duas caixas de relevo. Reforco pela testemunha
+que cada braco imprime sobre si mesmo, no mesmo enquadramento e na mesma moldura:
+  CONTEUDO braco=B3  caixa=topo    cores=520 varia=(64,62,32) media=(100.44,120.17,142.01)
+  CONTEUDO braco=B6  caixa=topo    cores=520 varia=(64,62,32) media=(100.44,120.17,142.01)
+  CONTEUDO braco=B3  caixa=abrigo  cores=277 varia=(36,36,39) media=(103.19,123.94,145.57)
+  CONTEUDO braco=B6  caixa=abrigo  cores=277 varia=(36,36,39) media=(103.19,123.94,145.57)
+Escrito assim de proposito, e a limitacao vai junto: o par DIRETO B3-vs-B6 nao foi rodado e os PNGs
+do braco B6 estao aqui, os do B3 nao — quem decide a inercia e a igualdade das seis testemunhas
+acima, nao uma diff que nao existe. O motivo da inercia e o default do engine, medido:
+`probe_vcsrgb.log` da `metallic_specular=0,500` no `StandardMaterial3D` da casa, e o F0 do `SPECULAR`
+num shader espacial ja vale 0,5 — escrever o numero que ja vale nao muda pixel nenhum. Reduzir a
+banda nao e explicar a banda: um escuro que compensa um claro paga o mesmo `fracao_ge3`, e foi por
+isso que a hipotese
+`pow(COLOR.rgb, 2.2)` — que encolhia 0,98 para 0,39 na cena real — nao virou codigo: ela escurece
+o albedo pelo motivo errado.
+
+VEREDITO do braco (b), com a renuncia escrita: o par fiel NAO cabe na banda como o shader esta
+no git, e a causa e uma so, nomeada e medida nos dois instrumentos. A decisao e publicar o shader
+como esta — o §3.10c escolheu "sem `source_color`" de proposito, porque o atlas ja chega linear
+(`voxel_atlas.gd:35`) — e abrir o **furo #48**: a diferenca e a segunda decodificacao que o
+material velho fazia, e ela nao e igual para todos os materiais do mundo: `_mat_glass`
+([src/world/voxel_world.gd:118-124](../../../src/world/voxel_world.gd)) continua
+`StandardMaterial3D` com `albedo_texture = _atlas` + `vertex_color_use_as_albedo` e, portanto,
+continua decodificando duas vezes. Consequencia DERIVADA DO CODIGO, ainda nao medida em pixel:
+vidro e bloco opaco adjacente hoje estao a um decode de distancia, e o numero que paga isso e uma
+caixa sobre uma parede de vidro ao lado de uma de pedra no mesmo quadro. O efeito seco medido
+nesta passada e +5/255 em R e +5/255 em G sobre o relevo exposto (0,0209/0,0201 lineares) —
+clareia, nao escurece. O braco (c) do §3.10b NAO volta: ver o braco (c) abaixo, que e a
+resposta dele com o numero.
+
+PERGUNTA 3 — o molhado aparece, em duas caixas separadas
+  seco  B6: `uniforme_molhado=0.000  uniforme_chuva=0.000  weather=chuva 0.000 molhado 0.000  rain_fx=... ligado 0`
+  molhado C6: `uniforme_molhado=1.000  uniforme_chuva=1.000  weather=chuva 1.000 molhado 1.000  rain_fx=teto 748 ligado 1 sorteadas 176 aceitos 22 recusados 154 us_pico 223  water_fx=anis_chuva 22 recusados 154`
+  B6-vs-C6 topo    ge1=9202  ge3=1192  fracao_ge3=0.1293  media r=0.005351 g=0.006975 b=0.011968
+  B6-vs-C6 abrigo  ge1=0     ge3=0     fracao_ge3=0.0000  media r=0.000000 g=0.000000 b=0.000000
+a assinatura pedida e `topo muda >> abrigo muda` e ela sai exatamente assim: 0,1293 contra zero
+exato — os 3 136 pixels da caixa abrigada nao mudaram um byte quando o `molhado` passou de 0 a 1.
+O `a=[0.000..0.000]` da caixa abrigada e a razao: o canal de exposicao que a malharia escreve no
+alfa vale zero la, entao `molhamento = molhado × COLOR.a` e zero la por mais chuva que caia. Isto
+e o que a §5.3 chamou de "o canal e lido pelo material", agora com pixel: sem o canal por vertice
+o braço (c) — um filtro global — escureceria as duas caixas por igual, e e justamente o teste que
+o (c) nao passa. O azul da caixa exposta sobe (+0,0120 de B, o maior dos tres canais) porque o
+`wet_tint` (0,62/0,66/0,72) desvia para o azul e a lamina de agua baixa o `roughness` de 0,92 para
+0,30 e passa a refletir o ceu.
+A caixa d'agua nao e regua deste braco: `B6-vs-C6 agua fracao_ge3=0.7925` contra um chao de
+0,7538 dentro do MESMO braco (`MESMO_BRACO caixa braco=B6 agua`), entao o pixel da superficie nao
+discrimina chuva de `TIME`. O que decide a reacao da agua a chuva e o `uniforme_chuva=1.000` lido
+de volta na testemunha acima mais a checagem headless `agua_le_a_chuva` (suite
+`chuva23-codigo-c.log`, 275 checagens / 2 falhas).
+
+COMO AS CAIXAS FORAM ESCOLHIDAS, e os tres furos que a escolha abriu (arquivados para nao virar
+ad-hocismo): `sonda-23f2-B_flag_antes_do_doblo.log` e `sonda-23f2-B_diag.log` mostram as duas
+estrategias recusadas — a primeira nao achou penhasco nenhum no enquadramento (`sem penhasco
+visivel (drop>=6 e as duas caixas no quadro)`), a segunda achou uma pilha de drop=10 mas com
+`px_por_bloco=17.4` e `meia_caixa=7`, uma caixa de 14 px sobre 256 amostras. A regua hoje e a
+varredura `160x90` de celulas de 12 px com o motivo de recusa contado por nome:
+  `MORRO grade=160x90 px_de=12 celulas=14400 ceu=531 borda=3068 parede=0 submerso=7283 puras_topo=2708 puras_abrigo=383 retangulos=8+8`
+  `MORRO caixas_confereis=16 estreitas=0 impuras=0 pares_separados=110 sobrepostas=0 fora_de_desnivel=18 escolhido=1 menor_meia_caixa=28 sep=473 px`
+os quatro motivos de recusa existem porque quatro premissas falsas foram medidas antes:
+`parede` (uma face de muro no fundo da imagem nao e abrigo — era contar como abrigo a parede da
+borda do mundo), `submerso` (o `ray_voxel` para no primeiro SOLIDO e agua nao e solida, entao o
+fundo de um lago passava por topo exposto — sao os 7 283 cells), `estreitas`/`impuras` e o par
+anterior de caixas de 16×16 px: `confere_bracos_caixas_primitivas.log` guarda a mesma pergunta com
+256 amostras, onde o abrigo molhado dava `fracao_ge3=0.0117` em vez de 0,0000 — quase verde, e
+verde pelo motivo errado (a caixa era pequena demais para conter o que nao muda).
+
+nenhum braco desta secao e gate de fase: §5.4 e sonda. o gate de fase continua aberto (mandato 4).

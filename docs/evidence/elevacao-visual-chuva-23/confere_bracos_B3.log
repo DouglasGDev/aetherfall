@@ -1,0 +1,6 @@
+BRACOS   A-vs-B3 topo (indiferenca, material velho x shader seco com SPECULAR=0.5)  lado=96x96  passo=1  amostras=9216  ge1=9216  ge3=9034  fracao_ge3=0.9803  media_canal r=0.020878 g=0.020078 b=0.010213
+BRACOS   A-vs-B3 topo t2 (indiferenca)  lado=96x96  passo=1  amostras=9216  ge1=9216  ge3=9034  fracao_ge3=0.9803  media_canal r=0.020878 g=0.020078 b=0.010213
+BRACOS   A-vs-B3 abrigo (indiferenca)  lado=56x56  passo=1  amostras=3136  ge1=3124  ge3=2899  fracao_ge3=0.9244  media_canal r=0.020369 g=0.023691 b=0.018229
+BRACOS   A-vs-B3 abrigo t2 (indiferenca)  lado=56x56  passo=1  amostras=3136  ge1=3124  ge3=2899  fracao_ge3=0.9244  media_canal r=0.020369 g=0.023691 b=0.018229
+BRACOS   A-vs-B3 agua (indiferenca)  lado=96x96  passo=2  amostras=9216  ge1=9016  ge3=8028  fracao_ge3=0.8711  media_canal r=0.046661 g=0.045655 b=0.034497
+BRACOS   A-vs-B3 agua t2 (indiferenca)  lado=96x96  passo=2  amostras=9216  ge1=9121  ge3=8480  fracao_ge3=0.9201  media_canal r=0.049108 g=0.049300 b=0.038260

@@ -1,0 +1,18 @@
+BRACOS   A_vs_B agua t1 (indiferenca: StandardMaterial3D vs shader, weather=0)  lado=96x96  passo=2  amostras=9216  ge1=8703  ge3=6370  fracao_ge3=0.6912  media_canal r=0.030682 g=0.033851 b=0.027062
+BRACOS   A_vs_B agua t2 (indiferenca)  lado=96x96  passo=2  amostras=9216  ge1=8626  ge3=6236  fracao_ge3=0.6766  media_canal r=0.030514 g=0.033605 b=0.026629
+BRACOS   A_vs_B topo t1 (indiferenca: StandardMaterial3D vs shader, weather=0)  lado=16x16  passo=1  amostras=256  ge1=256  ge3=201  fracao_ge3=0.7852  media_canal r=0.004626 g=0.025352 b=0.007644
+BRACOS   A_vs_B topo t2 (indiferenca)  lado=16x16  passo=1  amostras=256  ge1=256  ge3=201  fracao_ge3=0.7852  media_canal r=0.004626 g=0.025352 b=0.007644
+BRACOS   A_vs_B abrigo t1 (indiferenca: StandardMaterial3D vs shader, weather=0)  lado=16x16  passo=1  amostras=256  ge1=240  ge3=163  fracao_ge3=0.6367  media_canal r=0.013817 g=0.011673 b=0.006311
+BRACOS   A_vs_B abrigo t2 (indiferenca)  lado=16x16  passo=1  amostras=256  ge1=240  ge3=163  fracao_ge3=0.6367  media_canal r=0.013817 g=0.011673 b=0.006311
+BRACOS   B_vs_C agua t1 (seco vs molhado)  lado=96x96  passo=2  amostras=9216  ge1=8698  ge3=7530  fracao_ge3=0.8171  media_canal r=0.061976 g=0.043782 b=0.017178
+BRACOS   B_vs_C agua t2 (seco vs molhado)  lado=96x96  passo=2  amostras=9216  ge1=8679  ge3=7366  fracao_ge3=0.7993  media_canal r=0.060676 g=0.042910 b=0.017212
+BRACOS   B_vs_C topo t1 (seco vs molhado)  lado=16x16  passo=1  amostras=256  ge1=256  ge3=241  fracao_ge3=0.9414  media_canal r=0.011060 g=0.005852 b=0.017096
+BRACOS   B_vs_C topo t2 (seco vs molhado)  lado=16x16  passo=1  amostras=256  ge1=256  ge3=241  fracao_ge3=0.9414  media_canal r=0.011060 g=0.005852 b=0.017096
+BRACOS   B_vs_C abrigo t1 (seco vs molhado)  lado=16x16  passo=1  amostras=256  ge1=112  ge3=3  fracao_ge3=0.0117  media_canal r=0.001348 g=0.003048 b=0.005254
+BRACOS   B_vs_C abrigo t2 (seco vs molhado)  lado=16x16  passo=1  amostras=256  ge1=112  ge3=3  fracao_ge3=0.0117  media_canal r=0.001348 g=0.003048 b=0.005254
+BRACOS   A-vs-B agua (indiferenca, base StandardMaterial x perna shader seco)  lado=96x96  passo=2  amostras=9216  ge1=8497  ge3=7186  fracao_ge3=0.7797  media_canal r=0.036541 g=0.037150 b=0.029242
+BRACOS   A-vs-B topo (indiferenca)  lado=96x96  passo=1  amostras=9216  ge1=9216  ge3=9034  fracao_ge3=0.9803  media_canal r=0.020878 g=0.020078 b=0.010213
+BRACOS   A-vs-B abrigo (indiferenca)  lado=56x56  passo=1  amostras=3136  ge1=3124  ge3=2899  fracao_ge3=0.9244  media_canal r=0.020369 g=0.023691 b=0.018229
+BRACOS   B-vs-C topo (mudo x molhado, caixa exposta)  lado=96x96  passo=1  amostras=9216  ge1=9202  ge3=1192  fracao_ge3=0.1293  media_canal r=0.005351 g=0.006975 b=0.011968
+BRACOS   B-vs-C abrigo (mudo x molhado, caixa abrigada)  lado=56x56  passo=1  amostras=3136  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+BRACOS   B-vs-C agua (uniforme chuva)  lado=96x96  passo=2  amostras=9216  ge1=8759  ge3=7390  fracao_ge3=0.8019  media_canal r=0.061974 g=0.044240 b=0.019376

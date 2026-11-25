@@ -1,0 +1,4 @@
+BRACOS   A-vs-A2 agua (MESMA arvore, free-run contra fixed-fps: sensibilidade de TIME)  lado=96x96  passo=2  amostras=9216  ge1=460  ge3=148  fracao_ge3=0.0161  media_canal r=0.001780 g=0.001747 b=0.001511
+BRACOS   A-vs-A2 agua t2 (idem, segunda moldura)  lado=96x96  passo=2  amostras=9216  ge1=379  ge3=116  fracao_ge3=0.0126  media_canal r=0.001494 g=0.001376 b=0.001138
+BRACOS   A-vs-A2 topo (mesma arvore, caixa estatica)  lado=96x96  passo=1  amostras=9216  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+BRACOS   A-vs-A2 abrigo (idem)  lado=56x56  passo=1  amostras=3136  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000

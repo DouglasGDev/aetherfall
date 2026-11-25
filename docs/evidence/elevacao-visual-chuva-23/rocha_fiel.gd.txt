@@ -1,0 +1,394 @@
+extends Node3D
+## Instrumento de FIDELIDADE de material (dossie 23 §5.4, braço de indiferença).
+##
+## Por que ele existe: o par A-vs-B da sonda de pixels deu banda grande (`fracao_ge3` 0,98 no
+## topo exposto e 0,92 no abrigo) e a sonda não diz **qual** peça do shader responde pelo
+## desvio — ela compara dois processos, em duas janelas, e a diferença pode ser luz, filtro ou
+## espaço de cor. Aqui os dois materiais vivem no MESMO quadro, sob a MESMA luz, MESMA neblina,
+## MESMO tonemap e MESMA distância: o que sobra entre a coluna `std_base` (a receita do
+## `StandardMaterial3D` que a perna substituiu, copiada verbatim de
+## `eb218fe:src/world/voxel_world.gd`) e cada variante é só o material.
+##
+## Cada variante troca UM token do shader e a linha impresso nomeia o token. Assim a resposta
+## não é adjetivo: se `sh_s2l` cai na banda e `sh_color` não, o motor decodificava o
+## `ARRAY_COLOR` de sRGB para linear e o shader escrito à mão estava perdendo a decodificação.
+##
+## Os tokens medidos, nesta corrida (`dist=45`, 10 placas, `SHADER ERROR` 0, log
+## `.tools/rocha_fiel_tile.log`): o `COLOR` não é um deles. Contra `std_base` (media
+## 113,22/129,76/152,31) o shader da perna sem decode nenhum (`sh_color`) fecha em
+## `fracao_ge3=1,0000` com **media +40,97 / +35,60 / +30,59** e decodificar só o vértice
+## (`sh_s2l`) mexe na cauda e não na média: **+32,86** ainda, `fracao_ge3` 0,9980. O que fecha
+## é o token da **amostra do atlas** (`{{TILE}}`): `sh_tile_s2l` fica a **−0,24 / −0,53 / −0,87**
+## da média do material velho -- dentro do piso do próprio instrumento, que é a coluna
+## `std_near` (mesmo material, só o filtro trocado) a −0,79 / −0,96 / −1,13. E a razão está
+## no atlas: `voxel_atlas.gd:35` chama `srgb_to_linear()` antes de criar a textura, e a célula
+## 0,0 do tile de grama mede 24/255 contra o 0,34 escrito em `voxel_atlas.gd:58` (conferido em
+## `.tools/probe_tex_srgb.gd`). O `StandardMaterial3D` decodifica o texto de albedo como sRGB
+## de qualquer jeito: o material velho decodificava duas vezes e o shader escrito à mão decodifica
+## uma. A banda que a sonda de pixels chamou de "o shader desenha mais claro" é a segunda
+## decodificação que ele perdia. Ler o `COLOR` como sRGB também encolhe o `fracao_ge3` na cena
+## real, e é exatamente a armadilha que este instrumento existe para desarmar: **reduzir a banda
+## não é explicar a banda**, porque um escuro que compensa um claro paga o mesmo número -- aqui
+## a prova é que a variante errada encolhe a cauda e deixa a média a 33/255 do material velho.
+##
+## Roda nas duas árvores com o MESMO arquivo: a cena é sintética e não depende de `src/` além do
+## atlas (`VoxelAtlas.build_texture`, existe na base). Quando `OpaqueSurface` existe, a fonte do
+## instrumento é conferida linha a linha contra o SOURCE real — sem essa testemunha o
+## instrumento poderia estar fidelizando um shader que não é o da perna.
+
+const TILE := 3               # BlockDefs.TILE_STONE
+const GRID := 8               # VoxelAtlas.GRID
+const TILE_PX := 16           # VoxelAtlas.TILE
+const PASSO_UV := 1.0 / float(GRID)
+const FOLGA_UV := 0.35 / float(GRID * TILE_PX)
+const MEIO := 1.5             # meia aresta da placa (3 m)
+const SEPARACAO := 4.0        # placas vizinhas: 3 m de placa + 1 m de vão
+const TINTS: Array = [1.0, 0.94, 0.88, 0.82, 0.75, 0.60, 1.0, 0.88, 0.75]
+const QUADOS_DE_ESQUERA := 6
+
+var camera: Camera3D = null
+var nomes: PackedStringArray = PackedStringArray()
+var mats: Array = []
+
+
+func _ready() -> void:
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
+	get_window().size = Vector2i(1920, 1080)
+	var dist := 45.0
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--fiel-dist="):
+			dist = float(arg.trim_prefix("--fiel-dist="))
+	_build_cena()
+	var atlas := VoxelAtlas.build_texture()
+	_confere_fonte()
+	_variantes(atlas)
+	for i in range(nomes.size()):
+		var cx := (float(i) - float(nomes.size() - 1) * 0.5) * SEPARACAO
+		var placa := _placa(Vector3(cx, 0.0, -dist))
+		placa.material_override = mats[i]
+		add_child(placa)
+	for _k in range(QUADOS_DE_ESQUERA):
+		await get_tree().process_frame
+	await get_tree().process_frame
+	_medir(dist)
+	get_tree().quit()
+
+
+## A mesma cama de luz e céu do jogo (`main.gd:_build_environment`), porque a pergunta é "os
+## dois materiais respondem igual A ESTA luz", e não "igual a uma luz qualquer".
+func _build_cena() -> void:
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-42.0, 55.0, 0.0)
+	sun.light_energy = 1.60
+	sun.light_color = Color(1.0, 0.96, 0.88)
+	sun.shadow_enabled = true # como no jogo: `main.gd` liga a sombra da DirectionalLight3D
+	add_child(sun)
+
+	var prog := ProceduralSkyMaterial.new()
+	prog.sky_top_color = Color(0.30, 0.50, 0.82)
+	prog.sky_horizon_color = Color(0.70, 0.79, 0.87)
+	prog.ground_bottom_color = Color(0.20, 0.22, 0.26)
+	prog.ground_horizon_color = Color(0.70, 0.79, 0.87)
+	var sky := Sky.new()
+	sky.sky_material = prog
+	var env := Environment.new()
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.85
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.55, 0.65, 0.78)
+	env.fog_density = 0.006
+	var we := WorldEnvironment.new()
+	we.environment = env
+	add_child(we)
+
+	camera = Camera3D.new()
+	camera.fov = 75.0
+	add_child(camera)
+	camera.current = true
+
+
+## Uma placa de 3×3 células de 1 m, cada célula com o UV de um tile do atlas e o `COLOR`
+## montado como o mesher monta: `Color(bright, bright, bright, 1.0)` com o tint da face e o
+## mesmo recuo de 0,35 texel na borda, para não puxar o tile vizinho.
+func _placa(centro: Vector3) -> MeshInstance3D:
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	var idx := PackedInt32Array()
+	var tu := float(TILE % GRID) * PASSO_UV
+	var tv := float(int(TILE / GRID)) * PASSO_UV
+	var k := 0
+	for j in range(3):
+		for i in range(3):
+			var x0 := centro.x - MEIO + float(i)
+			var y0 := centro.y - MEIO + float(j)
+			var b := float(TINTS[k])
+			for c in range(4):
+				var lx := -0.5 + float(int(c == 1 or c == 2))
+				var ly := -0.5 + float(int(c == 2 or c == 3))
+				verts.append(Vector3(x0 + 0.5 + lx, y0 + 0.5 + ly, centro.z))
+				norms.append(Vector3(0.0, 0.0, 1.0))
+				uvs.append(Vector2(
+					tu + FOLGA_UV + (lx + 0.5) * (PASSO_UV - 2.0 * FOLGA_UV),
+					tv + FOLGA_UV + (ly + 0.5) * (PASSO_UV - 2.0 * FOLGA_UV)))
+				cols.append(Color(b, b, b, 1.0))
+			var base := verts.size() - 4
+			idx.append(base)
+			idx.append(base + 2)
+			idx.append(base + 1)
+			idx.append(base)
+			idx.append(base + 3)
+			idx.append(base + 2)
+			k += 1
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = norms
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = cols
+	arrays[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
+
+
+## A receita do material velho, linha a linha de `eb218fe:src/world/voxel_world.gd`
+## (`_build_materials`), inclusive o `roughness` e o `metallic` explícitos: é ela que serve de
+## referência para todas as colunas seguintes.
+func _std(atlas: Texture2D, filtro: BaseMaterial3D.TextureFilter) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = atlas
+	m.vertex_color_use_as_albedo = true
+	m.texture_filter = filtro
+	m.roughness = 0.92
+	m.metallic = 0.0
+	return m
+
+
+## O template do shader: `FILTRO`, `TILE`, `COR` e `EXTRA` são os quatro únicos pontos que as
+## variantes trocam, cada uma com UMA linha de diferença. `TILE` entrou depois de medido que o
+## ponto que move a banda é a amostra do atlas, e não o `COLOR` -- sem a token na amostra este
+## instrumento não tem como colocar a hipótese no banco.
+func _codigo(filtro: String, cor: String, extra: String,
+		amostra := "texture(atlas, UV)") -> String:
+	return """shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+
+uniform sampler2D atlas : {{FILTRO}}, repeat_disable;
+uniform vec4 wet_tint = vec4(0.62, 0.66, 0.72, 1.0);
+uniform float dry_roughness = 0.92;
+uniform float wet_roughness = 0.30;
+uniform float molhado = 0.0;
+
+void fragment() {
+	vec4 tile = {{TILE}};
+	float molhamento = clamp(molhado * COLOR.a, 0.0, 1.0);
+	ALBEDO = tile.rgb * {{COR}} * mix(vec3(1.0), wet_tint.rgb, molhamento);
+	ROUGHNESS = mix(dry_roughness, wet_roughness, molhamento);
+	METALLIC = 0.0;
+{{EXTRA}}
+}
+""".replace("{{FILTRO}}", filtro).replace("{{TILE}}", amostra).replace("{{COR}}", cor).replace("{{EXTRA}}", extra)
+
+
+func _sh(atlas: Texture2D, filtro: String, cor: String, extra: String,
+		amostra := "texture(atlas, UV)") -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = _codigo(filtro, cor, extra, amostra)
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	mat.set_shader_parameter("atlas", atlas)
+	return mat
+
+
+## Atencao ao operador: `%` liga mais forte que `+` em GDScript, entao a frase montada com
+## `%s` e concatenacao deixa o `%s` LITERAL dentro do GLSL, e o shader morre em
+## `SHADER ERROR: Expected expression, found: 'OP_MOD'` — medido na primeira corrida deste
+## instrumento, com as quatro variantes s2l saindo como placeholder de erro (cores=1,
+## media=(204,209,219)). Aqui e tudo concatenacao explícita, sem formatting.
+func _s2l(cor: String) -> String:
+	return ("mix(" + cor + " / 12.92, pow((" + cor + " + vec3(0.055)) / 1.055, vec3(2.4)), "
+			+ "step(vec3(0.04045), " + cor + "))")
+
+
+func _pow(cor: String, e: String) -> String:
+	return "pow(" + cor + ", vec3(" + e + "))"
+
+
+## A mesma conversão aplicada à AMOSTRA do atlas em vez do vértice. Duas chamadas `texture()`
+## no resultado: `tile.a` não é lido por nenhuma linha do fragment, então a duplicação é
+## cosmetica e o GLSL ainda assim une as duas em um só fetch -- em nenhum caso ela decide a
+## coluna que mede.
+func _s2l_tex(orig: String) -> String:
+	return "vec4(" + _s2l(orig + ".rgb") + ", " + orig + ".a)"
+
+
+func _variantes(atlas: Texture2D) -> void:
+	var cor := _s2l("COLOR.rgb")
+	var amostra := "texture(atlas, UV)"
+	nomes.append("std_base")
+	mats.append(_std(atlas, BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS))
+	nomes.append("std_near")
+	mats.append(_std(atlas, BaseMaterial3D.TEXTURE_FILTER_NEAREST))
+	nomes.append("sh_color")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", "COLOR.rgb", "\t"))
+	nomes.append("sh_s2l")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", cor, "\t"))
+	nomes.append("sh_pow22")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", _pow("COLOR.rgb", "2.2"), "\t"))
+	nomes.append("sh_nocolor")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", "vec3(1.0)", "\t"))
+	nomes.append("sh_s2l_nospec")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", cor, "\tSPECULAR = 0.0;"))
+	nomes.append("sh_s2l_rough1")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", cor, "\tROUGHNESS = 1.0;\n\tSPECULAR = 0.0;"))
+	nomes.append("sh_tile_s2l")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", "COLOR.rgb", "\t", _s2l_tex(amostra)))
+	nomes.append("sh_tile_s2l_color_s2l")
+	mats.append(_sh(atlas, "filter_nearest_mipmap", cor, "\t", _s2l_tex(amostra)))
+
+
+## Testemunha de que o template acima É o shader da perna: as linhas de matemática e de
+## uniforme conferidas uma a uma contra `OpaqueSurface.SOURCE`, ignorando comentário e espaço.
+func _confere_fonte() -> void:
+	if not ResourceLoader.exists("res://src/world/opaque_surface.gd"):
+		print("FONTE  opaque_surface=ausente(arvore_de_controle)")
+		return
+	var klass: Object = load("res://src/world/opaque_surface.gd")
+	var real := str(klass.get("SOURCE"))
+	var minhas := _linhas(_codigo(_atlas_hint(real), "COLOR.rgb", "\t"))
+	var deles := _linhas(real)
+	var igual := minhas.size() == deles.size()
+	if igual:
+		for i in range(deles.size()):
+			if minhas[i] != deles[i]:
+				igual = false
+				print("FONTE  linha_%d  perna=%s  instrumento=%s" % [i, deles[i], minhas[i]])
+	print("FONTE  opaque_surface=presente  linhas=%d  matematica_igual=%s" % [
+		deles.size(), str(igual)])
+
+
+## O filtro declarado no SOURCE real, lido em vez de lembrado, para que a coluna `sh_color`
+## compare exatamente o que a perna desenha.
+func _atlas_hint(real: String) -> String:
+	for l: String in real.split("\n"):
+		if l.strip_edges().begins_with("uniform sampler2D atlas :"):
+			var partes: PackedStringArray = l.strip_edges().split(" ")
+			return partes[4].trim_suffix(",")
+	return "filter_nearest_mipmap"
+
+
+func _linhas(codigo: String) -> PackedStringArray:
+	var out := PackedStringArray()
+	for l: String in codigo.split("\n"):
+		var t := l.strip_edges()
+		if t != "" and not t.begins_with("//"):
+			out.append(t)
+	return out
+
+
+func _medir(dist: float) -> void:
+	var img := get_viewport().get_texture().get_image()
+	var caixas: Array = []
+	for i in range(nomes.size()):
+		var cx := (float(i) - float(nomes.size() - 1) * 0.5) * SEPARACAO
+		var a := camera.unproject_position(Vector3(cx - MEIO + 0.25, -MEIO + 0.25, -dist))
+		var b := camera.unproject_position(Vector3(cx + MEIO - 0.25, MEIO - 0.25, -dist))
+		caixas.append([mini(int(a.x), int(b.x)), mini(int(a.y), int(b.y)),
+				maxi(int(a.x), int(b.x)), maxi(int(a.y), int(b.y))])
+	print("FIEL  dist=%.0f m  moldura=%dx%d  placas=%d  passo=1" % [
+		dist, img.get_width(), img.get_height(), nomes.size()])
+	var ref: Image = img.get_region(Rect2i(caixas[0][0], caixas[0][1],
+			caixas[0][2] - caixas[0][0], caixas[0][3] - caixas[0][1]))
+	var st_ref := _stats(ref)
+	for i in range(nomes.size()):
+		var r: Array = caixas[i]
+		var reg: Image = img.get_region(Rect2i(int(r[0]), int(r[1]),
+				int(r[2]) - int(r[0]), int(r[3]) - int(r[1])))
+		var st := _stats(reg)
+		print(("FIEL  dist=%.0f  i=%d  nome=%s  lado=%dx%d  amostras=%d  cores=%d  "
+				+ "media=(%.2f,%.2f,%.2f)  p01=(%.0f,%.0f,%.0f)  p99=(%.0f,%.0f,%.0f)  "
+				+ "delta_vs_std=(%+.2f,%+.2f,%+.2f)") % [
+			dist, i, nomes[i], reg.get_width(), reg.get_height(), int(st["n"]), int(st["cores"]),
+			float(st["mr"]), float(st["mg"]), float(st["mb"]),
+			float(st["lo"][0]), float(st["lo"][1]), float(st["lo"][2]),
+			float(st["hi"][0]), float(st["hi"][1]), float(st["hi"][2]),
+			float(st["mr"]) - float(st_ref["mr"]), float(st["mg"]) - float(st_ref["mg"]),
+			float(st["mb"]) - float(st_ref["mb"])])
+		if i == 0:
+			continue
+		var d := _diff(ref, reg)
+		print(("FIEL  dist=%.0f  par=std_base->%s  ge1=%d  ge3=%d  fracao_ge3=%.4f  "
+				+ "media_canal r=%.6f g=%.6f b=%.6f") % [
+			dist, nomes[i], int(d["ge1"]), int(d["ge3"]),
+			float(d["ge3"]) / float(maxi(int(d["n"]), 1)),
+			float(d["mr"]), float(d["mg"]), float(d["mb"])])
+
+
+func _stats(img: Image) -> Dictionary:
+	var n := 0
+	var vistas := {}
+	var soma := Vector3.ZERO
+	var vr: Array = []
+	var vg: Array = []
+	var vb: Array = []
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var c := img.get_pixel(x, y)
+			var r := int(round(c.r * 255.0))
+			var g := int(round(c.g * 255.0))
+			var b := int(round(c.b * 255.0))
+			soma += Vector3(float(r), float(g), float(b))
+			vr.append(r)
+			vg.append(g)
+			vb.append(b)
+			vistas[str(r) + "," + str(g) + "," + str(b)] = true
+			n += 1
+	var lo := Vector3.ZERO
+	var hi := Vector3.ZERO
+	if n > 0:
+		vr.sort()
+		vg.sort()
+		vb.sort()
+		var kl := maxi(int(float(n) * 0.01), 0)
+		var kh := clampi(int(float(n) * 0.99), 0, n - 1)
+		lo = Vector3(float(vr[kl]), float(vg[kl]), float(vb[kl]))
+		hi = Vector3(float(vr[kh]), float(vg[kh]), float(vb[kh]))
+	return {"n": n, "cores": vistas.size(),
+			"mr": soma.x / float(maxi(n, 1)), "mg": soma.y / float(maxi(n, 1)),
+			"mb": soma.z / float(maxi(n, 1)), "lo": lo, "hi": hi}
+
+
+## A mesma aritmética da sonda e do `confere_bracos.py`: float32 sobre 255, limiares de 1/255
+## e 3/255, diferença pelo maior canal.
+func _diff(a: Image, b: Image) -> Dictionary:
+	var w := mini(a.get_width(), b.get_width())
+	var h := mini(a.get_height(), b.get_height())
+	var n := 0
+	var ge1 := 0
+	var ge3 := 0
+	var soma := Vector3.ZERO
+	var um := 1.0 / 255.0
+	var tres := 3.0 / 255.0
+	for y in range(h):
+		for x in range(w):
+			var ca := a.get_pixel(x, y)
+			var cb := b.get_pixel(x, y)
+			var dr := absf(ca.r - cb.r)
+			var dg := absf(ca.g - cb.g)
+			var db := absf(ca.b - cb.b)
+			soma += Vector3(dr, dg, db)
+			if maxf(dr, maxf(dg, db)) >= um:
+				ge1 += 1
+			if maxf(dr, maxf(dg, db)) >= tres:
+				ge3 += 1
+			n += 1
+	return {"n": n, "ge1": ge1, "ge3": ge3,
+			"mr": soma.x / float(maxi(n, 1)), "mg": soma.y / float(maxi(n, 1)),
+			"mb": soma.z / float(maxi(n, 1))}

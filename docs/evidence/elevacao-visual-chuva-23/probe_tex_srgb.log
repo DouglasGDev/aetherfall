@@ -1,0 +1,23 @@
+ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+   at: open_dynamic_library (platform/windows/os_windows.cpp:483)
+ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+   at: open_library (core/extension/gdextension.cpp:810)
+ERROR: Error loading extension: 'res://native/af_mind/af_mind.gdextension'.
+   at: load_extensions (core/extension/gdextension_manager.cpp:333)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ATLAS format=5 (FORMAT_RGBA8=5)  tamanho=(128, 128)  mip=true
+TILE 0  canto celula=(0,0)  guardado=(0.0941,0.2667,0.0549)  pow2.2=(0.0055,0.0546,0.0017)
+TILE 0  meio celula=(8,8)  guardado=(0.0784,0.2353,0.0431)  pow2.2=(0.0037,0.0415,0.0010)
+TILE 2  canto celula=(32,0)  guardado=(0.1294,0.0667,0.0235)  pow2.2=(0.0111,0.0026,0.0003)
+TILE 2  meio celula=(40,8)  guardado=(0.0706,0.0392,0.0157)  pow2.2=(0.0029,0.0008,0.0001)
+TILE 3  canto celula=(48,0)  guardado=(0.2196,0.2314,0.2510)  pow2.2=(0.0356,0.0399,0.0478)
+TILE 3  meio celula=(56,8)  guardado=(0.2549,0.2627,0.2863)  pow2.2=(0.0494,0.0528,0.0638)
+TILE 1  canto celula=(16,0)  guardado=(0.0627,0.2078,0.0392)  pow2.2=(0.0023,0.0316,0.0008)
+TILE 1  meio celula=(24,8)  guardado=(0.1294,0.0667,0.0275)  pow2.2=(0.0111,0.0026,0.0004)
+TILE 21  canto celula=(80,32)  guardado=(0.7451,0.8863,0.9451)  pow2.2=(0.5234,0.7667,0.8832)
+TILE 21  meio celula=(88,40)  guardado=(0.6000,0.7804,0.8863)  pow2.2=(0.3250,0.5795,0.7667)
+TILE 9  canto celula=(16,16)  guardado=(0.0196,0.1765,0.4431)  pow2.2=(0.0002,0.0220,0.1669)
+TILE 9  meio celula=(24,24)  guardado=(0.0196,0.1686,0.4431)  pow2.2=(0.0002,0.0199,0.1669)
+AUTHORADO voxel_atlas.gd:58 _grass_top base=(0.3400,0.5500,0.2600)
+AUTHORADO voxel_atlas.gd srgb_to_linear() na linha 35, antes de create_from_image

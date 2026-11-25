@@ -1,0 +1,31 @@
+extends SceneTree
+## Sonda curta (gitignored): os bytes do atlas JA sao lineares? Se sim, o decode sRGB que
+## o caminho velho aplicava neles e uma decodificacao a mais, e e isso que a banda do
+## braco (b) da sonda §5.4 esta medindo.
+##
+## A celula e escolhida pelo ID do tile e o endereco e montado com a MESMA aritmetica do
+## `_px` de `voxel_atlas.gd` (`ox = (tile % GRID) * TILE`). A primeira versao desta sonda
+## passava o pixel na mao com um rotulo ao lado, e o rotulo estava errado: `[0, 0]` e
+## `TILE_GRASS_TOP`, nao `TILE_DIRT` — a numbero impresso estava certo e a frase ao lado
+## dele nao, que e a pior combinacao possivel num instrumento.
+
+
+func _init() -> void:
+	var img := (VoxelAtlas.build_texture() as ImageTexture).get_image()
+	print("ATLAS format=%d (FORMAT_RGBA8=%d)  tamanho=%s  mip=%s" % [
+		img.get_format(), Image.FORMAT_RGBA8, img.get_size(), str(img.has_mipmaps())])
+	for tile in [BlockDefs.TILE_GRASS_TOP, BlockDefs.TILE_DIRT, BlockDefs.TILE_STONE,
+			BlockDefs.TILE_GRASS_SIDE, BlockDefs.TILE_GLASS, BlockDefs.TILE_WATER]:
+		var ox: int = (tile % VoxelAtlas.GRID) * VoxelAtlas.TILE
+		var oy: int = int(tile / VoxelAtlas.GRID) * VoxelAtlas.TILE
+		# O CANTO e o centro, e nao um so: `_grass_top` escreve a base em todo o tile e depois
+		# pinta 26 lamdas por cima, entao o pixel do meio pode ser uma folha e nao a base. O
+		# canto e a celula que responde direto pela cor escrita na linha 58.
+		for off in [[0, 0, "canto"], [VoxelAtlas.TILE / 2, VoxelAtlas.TILE / 2, "meio"]]:
+			var px: Color = img.get_pixel(ox + off[0], oy + off[1])
+			print("TILE %d  %s celula=(%d,%d)  guardado=(%.4f,%.4f,%.4f)  pow2.2=(%.4f,%.4f,%.4f)" % [
+				tile, off[2], ox + off[0], oy + off[1],
+				px.r, px.g, px.b, px.r ** 2.2, px.g ** 2.2, px.b ** 2.2])
+	print("AUTHORADO voxel_atlas.gd:58 _grass_top base=(0.3400,0.5500,0.2600)")
+	print("AUTHORADO voxel_atlas.gd srgb_to_linear() na linha 35, antes de create_from_image")
+	quit()

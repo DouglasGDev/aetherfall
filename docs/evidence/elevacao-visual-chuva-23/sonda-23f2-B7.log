@@ -1,0 +1,52 @@
+ERROR: Condition "!FileAccess::exists(path)" is true. Returning: ERR_FILE_NOT_FOUND
+   at: open_dynamic_library (platform/windows/os_windows.cpp:483)
+ERROR: GDExtension dynamic library not found: 'res://native/af_mind/af_mind.gdextension'.
+   at: open_library (core/extension/gdextension.cpp:810)
+ERROR: Error loading extension: 'res://native/af_mind/af_mind.gdextension'.
+   at: load_extensions (core/extension/gdextension_manager.cpp:333)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+af_mind_runtime  ausente (runtime)  sem runtime do llama em C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2/.tools/llama/runtime
+SONDA  braco=B7  arvore=C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2/  moldura=(1920, 1080)  seed=20261116  coluna=(100,52)  blocos=12  topo=26  plano=27.00
+SONDA  braco=B7  mirante coluna=(101,39) chao=27 dist=14 olho=(101.50, 29.62, 39.50) yaw=3.06482 pitch=-0.19830
+MORRO    braco=B7  grade=160x90 px_de=12  celulas=14400  ceu=531  borda=3068  parede=0  submerso=7283  puras_topo=2708  puras_abrigo=383  retangulos=8+8
+MORRO    braco=B7  caixas_confereis=16  estreitas=0  impuras=0  pares_separados=110  sobrepostas=0  fora_de_desnivel=18  escolhido=1  menor_meia_caixa=28  sep=473 px
+MORRO_CAND braco=B7  banda=topo ret=216x228 px origem=(1008,228) centro=(1116,342) meia_caixa_inicial=48 meia_caixa=48 tentativas=1 pontos=2304 fora=0 a=[1.000..1.000] blocos=51 d=[45.7..54.1] m  
+MORRO_CAND braco=B7  banda=topo ret=456x108 px origem=(972,348) centro=(1200,402) meia_caixa_inicial=46 meia_caixa=46 tentativas=1 pontos=2116 fora=0 a=[1.000..1.000] blocos=51 d=[42.0..50.6] m  
+MORRO_CAND braco=B7  banda=topo ret=216x216 px origem=(1008,228) centro=(1116,336) meia_caixa_inicial=48 meia_caixa=48 tentativas=1 pontos=2304 fora=0 a=[1.000..1.000] blocos=58 d=[45.7..55.3] m  
+MORRO_CAND braco=B7  banda=topo ret=372x120 px origem=(1008,336) centro=(1194,396) meia_caixa_inicial=48 meia_caixa=48 tentativas=1 pontos=2304 fora=0 a=[1.000..1.000] blocos=42 d=[43.1..50.5] m  
+MORRO_CAND braco=B7  banda=topo ret=216x204 px origem=(1008,228) centro=(1116,330) meia_caixa_inicial=48 meia_caixa=48 tentativas=1 pontos=2304 fora=0 a=[1.000..1.000] blocos=58 d=[45.7..55.3] m  
+MORRO_CAND braco=B7  banda=topo ret=456x96 px origem=(972,348) centro=(1200,396) meia_caixa_inicial=40 meia_caixa=40 tentativas=1 pontos=1600 fora=0 a=[1.000..1.000] blocos=36 d=[43.2..50.4] m  
+MORRO_CAND braco=B7  banda=topo ret=216x192 px origem=(1008,228) centro=(1116,324) meia_caixa_inicial=48 meia_caixa=48 tentativas=1 pontos=2304 fora=0 a=[1.000..1.000] blocos=59 d=[46.8..56.4] m  
+MORRO_CAND braco=B7  banda=topo ret=372x108 px origem=(1008,336) centro=(1194,390) meia_caixa_inicial=46 meia_caixa=46 tentativas=1 pontos=2116 fora=0 a=[1.000..1.000] blocos=47 d=[43.1..51.6] m  
+MORRO_CAND braco=B7  banda=abrigo ret=120x72 px origem=(588,372) centro=(648,408) meia_caixa_inicial=28 meia_caixa=28 tentativas=1 pontos=784 fora=0 a=[0.000..0.000] blocos=18 d=[48.1..52.8] m  
+MORRO_CAND braco=B7  banda=abrigo ret=168x48 px origem=(552,372) centro=(636,396) meia_caixa_inicial=16 meia_caixa=16 tentativas=1 pontos=256 fora=0 a=[0.000..0.000] blocos=8 d=[49.4..52.8] m  
+MORRO_CAND braco=B7  banda=abrigo ret=120x60 px origem=(588,372) centro=(648,402) meia_caixa_inicial=22 meia_caixa=22 tentativas=1 pontos=484 fora=0 a=[0.000..0.000] blocos=12 d=[49.4..52.8] m  
+MORRO_CAND braco=B7  banda=abrigo ret=168x36 px origem=(552,372) centro=(636,390) meia_caixa_inicial=10 meia_caixa=10 tentativas=1 pontos=100 fora=0 a=[0.000..0.000] blocos=4 d=[50.3..52.8] m  
+MORRO_CAND braco=B7  banda=abrigo ret=96x60 px origem=(552,360) centro=(600,390) meia_caixa_inicial=22 meia_caixa=22 tentativas=1 pontos=484 fora=0 a=[0.000..0.000] blocos=14 d=[49.5..54.0] m  
+MORRO_CAND braco=B7  banda=abrigo ret=84x60 px origem=(1548,108) centro=(1590,138) meia_caixa_inicial=22 meia_caixa=22 tentativas=1 pontos=484 fora=0 a=[0.000..0.000] blocos=13 d=[62.5..68.2] m  
+MORRO_CAND braco=B7  banda=abrigo ret=60x84 px origem=(588,360) centro=(618,402) meia_caixa_inicial=22 meia_caixa=22 tentativas=1 pontos=484 fora=0 a=[0.000..0.000] blocos=11 d=[49.4..52.8] m  
+MORRO_CAND braco=B7  banda=abrigo ret=132x36 px origem=(1524,132) centro=(1590,150) meia_caixa_inicial=10 meia_caixa=10 tentativas=1 pontos=100 fora=0 a=[0.000..0.000] blocos=4 d=[62.6..65.4] m  
+SONDA  braco=B7  morro topo_px=(1116,342) lado=96 a=[1.000..1.000] d=49.9 m  abrigo_px=(648,408) lado=56 a=[0.000..0.000] d=50.5 m  sep=473 px  topo_y=33.31 abrigo_y=29.03
+TESTEMUNHA braco=B7  camera_deslocou=0.0000 m  opaco=ShaderMaterial  uniforme_molhado=0.000  agua=ShaderMaterial  uniforme_chuva=0.000  weather=chuva 0.000 molhado 0.000  rain_fx=teto 748 ligado 0 lotes 0 sorteadas 0 aceitos 0 recusados 0 us_pico 1  water_fx=anis_chuva 0 recusados 0 no_zero 0
+CAIXA    braco=B7  agua=(960.0,540.0) topo=(1116.0,342.0) abrigo=(648.0,408.0) separacao=472.6 px  moldura=1920x1080
+CAIXA    braco=B7  dt=1242 ms  agua_lobos=0  topo_lobos=0  abrigo_lobos=0  player_no_topo=0
+CONTEUDO braco=B7  caixa=agua  lado=192px  amostras=36864  cores=7185  varia=(157,136,105)  media=(132.85,156.66,192.87)
+MESMO_BRACO  caixa  braco=B7  agua  lado=192px  passo=2  amostras=9216  ge1=8249  ge3=5954  fracao_ge3=0.6461  media_canal r=0.024526 g=0.022838 b=0.017893
+CONTEUDO braco=B7  caixa=topo  lado=96px  amostras=9216  cores=520  varia=(64,62,32)  media=(100.44,120.17,142.01)
+MESMO_BRACO  caixa  braco=B7  topo  lado=96px  passo=1  amostras=9216  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+CONTEUDO braco=B7  caixa=abrigo  lado=56px  amostras=3136  cores=277  varia=(36,36,39)  media=(103.19,123.94,145.57)
+MESMO_BRACO  caixa  braco=B7  abrigo  lado=56px  passo=1  amostras=3136  ge1=0  ge3=0  fracao_ge3=0.0000  media_canal r=0.000000 g=0.000000 b=0.000000
+MESMO_BRACO  quadro braco=B7  amostras=518400  ge1=216172  ge3=148213  fracao_ge3=0.2859
+SONDA ok braco=B7  pngs_em=C:/Aetherfall/.qoder/worktrees/elevacao-chuva-23f2/.tools/chuva_px
