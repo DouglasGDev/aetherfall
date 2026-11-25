@@ -10093,3 +10093,28 @@ Fica escrito como dívida, não como feito:
   por *worktree* temporário, então nada ali é tocado por esta mão; quem re-deriva o conflito é a perna 24
   ao trazer a `main` para dentro de si (item 5 de "Branches"), e o `git merge` recusa árvore suja — a
   proteção é do trabalho deles, não desta passada.
+
+**O pouso.** `git merge --no-ff fix/rodar-arquivos-frescos` → **`28daa0e`**, pais `36e842c` e `bad0d95`,
+**18 arquivos, +3 077/−27**: [`tools/run_game.ps1`](../tools/run_game.ps1) **+144/−18** (o launcher é o
+único código da perna), `README.md` +33/−2, este status +122, a página 15 +11/−7 e **14** arquivos em
+`docs/evidence/rodar-arquivos-frescos/`. A régua do pouso é uma linha: `git diff --stat bad0d95 28daa0e`
+devolve **vazio** — a árvore do merge é **byte a byte** a da ponta medida, `src` e `tests` inclusive, então
+o **278 / 2** da suíte do worktree, o **278 / 0** do pin da perna 17 e os cinco vereditos valem na `main`
+de hoje **por identidade de árvore**, e nenhuma corrida foi re-rodada para esta frase.
+`git push origin main` publicou **21** commits (`114bcd2..28daa0e`), o que quita o débito que os
+registros da 17 e da 24 carregavam ("a `main` local está à frente"): `git ls-remote --heads origin` dá
+`main` = `28daa0eb7a9f…`. Saíram publicadas junto, cada uma com o SHA conferido no mesmo `ls-remote`:
+`fix/rodar-arquivos-frescos` `bad0d95`, `perf/malha-orcamento-de-tempo-24` `99bbbde` (o código da perna 24
+em voo, por pedido explícito do dono de publicar o que existe no git), `docs/fecho-pouso-17` `9b15988`,
+`docs/pouso-blocos-17` `9e35854`, `docs/pauta-malha-orcamento-de-tempo-24` `eca32ed`,
+`feat/fisica-de-blocos-que-caem-17` `60150ce`, `feat/oraculo-nativo-fase2-22` `8bddcab`,
+`feat/oraculo-nativo-fase4-22` `114bcd2`, `test/isolamento-user-smoke-25` `a620352`. Duas ficaram de
+fora por motivo lido, não por esquecimento: `feat/oraculo-nativo-fase4b-22` é branch de agente em voo —
+quem a empurra é o dono dela (item 6 de "Branches") — e `feat/agua-viva-rio-e-escoamento-26` aponta para
+`36e842c`, um commit que já está na `main`, então publicar-lhe o nome não acrescenta registro. A local
+`fix/rodar-arquivos-frescos` saiu com `-d` e os dois *worktrees* da perna foram desfeitos; o scan de
+credencial na ponta (`git grep -F "$K" HEAD`, 32 caracteres do `mind_key.txt` do dono) devolveu
+**limpo**. O que continua aberto, e é o mesmo par de débitos desta rodada: **nenhum clone limpo do merge
+foi corrido** — a régua da casa é número de clone, e aqui o que existe é identidade de árvore, que cobre
+a suíte mas não substitui o `--import` frio de quem for citar `28daa0e` — e o **passo 4 com janela**
+segue sem re-corrida, por regra da mesa.
