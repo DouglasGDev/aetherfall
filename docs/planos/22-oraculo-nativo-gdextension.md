@@ -39,7 +39,7 @@ HTTPRequest src` devolvendo vazio, `tests/live_oracle_probe.tscn` verde contra a
 3. **Cinco fases**, nesta ordem: Oráculo Nativo → Memória de Qualidade → Adaptação Real → LOD e
    Orçamento → Ferramentas e Observabilidade.
 4. **A ponte não é o destino:** `llama.cpp` embutido no GDExtension, não `HTTPRequest` para um
-   `llama-server`. Isto é, o que existe hoje (`src/ai/mind_oracle.gd:76`, `:136`) é a ponte.
+   `llama-server`. Isto é, o que existe hoje (`src/ai/mind_oracle.gd:78`, `:261`) é a ponte.
 5. **Observabilidade primeiro:** o F3 e o MindsInspector têm de dizer o que a IA fez **antes** de
    qualquer melhoria nela. É o §5.5 desta página, e é o motivo pelo qual a Fase 5 não é o fim: a
    régua dela entra na Fase 1.
@@ -221,9 +221,9 @@ o que existe hoje é o que os §§5.3–5.4, o §18 e o §19 pagaram com gate.
 | Papel | Onde |
 |---|---|
 | o nó de transporte | `mind_oracle.gd:42` `var _http: HTTPRequest = null`, criado em `mind_oracle.gd:62`, timeout em `mind_oracle.gd:64`, conectado em `mind_oracle.gd:66` |
-| a chamada | [`:136`](../../src/ai/mind_oracle.gd#L136) `_http.request(server_url + "/v1/chat/completions", auth_headers(), HTTPClient.METHOD_POST, JSON.stringify(payload))` |
+| a chamada | `bb13752:src/ai/mind_oracle.gd:122` `_http.request(server_url + "/v1/chat/completions", auth_headers(), HTTPClient.METHOD_POST, JSON.stringify(payload))` |
 | a resposta | `bb13752:src/ai/mind_oracle.gd:151` `_on_response`, com o `_clean` de 140 caracteres em `bb13752:src/ai/mind_oracle.gd:199` |
-| o que **não** é transporte | o agendamento (`_process` [`:85`](../../src/ai/mind_oracle.gd#L85)), o roster round-robin ([`:99-105``](../../src/ai/mind_oracle.gd#L99-L105)), o recuo (`RETRY_COOLDOWN` [`:13`](../../src/ai/mind_oracle.gd#L13), `LOADING_COOLDOWN` [`:28`](../../src/ai/mind_oracle.gd#L28)), a chave do servidor ([`:19-20`](../../src/ai/mind_oracle.gd#L19-L20), [`:265`](../../src/ai/mind_oracle.gd#L265)), o prompt ([`:145`](../../src/ai/mind_oracle.gd#L145)), a narrativa pública ([`:110``](../../src/ai/mind_oracle.gd#L110)) e o `narration_ready` ([`:9`](../../src/ai/mind_oracle.gd#L9)) |
+| o que **não** é transporte | o agendamento (`_process` [`:71`](../../src/ai/mind_oracle.gd#L71)), o roster round-robin ([`:85-91`](../../src/ai/mind_oracle.gd#L85-L91)), o recuo (`RETRY_COOLDOWN` [`:13`](../../src/ai/mind_oracle.gd#L13), `LOADING_COOLDOWN` [`:28`](../../src/ai/mind_oracle.gd#L28)), a chave do servidor ([`:19-20`](../../src/ai/mind_oracle.gd#L19-L20), [`:219`](../../src/ai/mind_oracle.gd#L219)), o prompt ([`:131`](../../src/ai/mind_oracle.gd#L131)), a narrativa pública ([`:96`](../../src/ai/mind_oracle.gd#L96)) e o `narration_ready` ([`:9`](../../src/ai/mind_oracle.gd#L9)) |
 
 É esta separação que o §6.2 explora: **a ponte é ~60 linhas; os outros ~200 são a mente do
 oráculo**, e ela não muda quando a ponte muda. O pedido do dono ("a camada Python precisa virar um
@@ -240,8 +240,8 @@ de uma leitura anterior, quando o hospedeiro de processo ainda guardava parte do
    (`var _http: HTTPRequest = null`), [`:49`](../../src/ai/mind_oracle.gd#L49) e
    `bb13752:src/ai/mind_oracle.gd:182`/`bb13752:src/ai/mind_oracle.gd:184` (comentários que
    nomeiam a enum `HTTPRequest.Result`, lida do registro da classe em
-   [`:81`](../../src/ai/mind_oracle.gd#L81)), [`:76`](../../src/ai/mind_oracle.gd#L76) (cria o nó),
-   [`:235`](../../src/ai/mind_oracle.gd#L235) (`RESULT_SUCCESS` no `_reason_of`).
+   [`:67`](../../src/ai/mind_oracle.gd#L67)), [`:62`](../../src/ai/mind_oracle.gd#L62) (cria o nó),
+   [`:189`](../../src/ai/mind_oracle.gd#L189) (`RESULT_SUCCESS` no `_reason_of`).
 2. `llm_server_host.gd:87` e `llm_server_host.gd:99` (aposentado no Passo 4 do dossiê 22, commit
    5138549) — o **hospedeiro** que levanta o `llama-server` no boot (perna 15). Ele é dono de
    `OS.create_process` (`llm_server_host.gd:311`), do health-check de porta (`llm_server_host.gd:216`
@@ -268,7 +268,7 @@ essa mesma porta. O braço escolhido está no §6.3; o rejeitado está no §8.4.
 
 A saída do oráculo tem exatamente **três consumidores** em `src/`, todos de leitura:
 
-- [`src/main.gd:218`](../../src/main.gd#L218) — injeta o `narration_provider` no HUD chamando
+- [`src/main.gd:208`](../../src/main.gd#L208) — injeta o `narration_provider` no HUD chamando
   `oracle.narration_of(id)`;
 - [`src/ui/hud.gd:276-277`](../../src/ui/hud.gd#L276-L277) — imprime `ia:` no F3;
 - o `narration_ready` ([`src/ai/mind_oracle.gd:9`](../../src/ai/mind_oracle.gd#L9)) que o lobo não
@@ -279,14 +279,14 @@ E a única porta de **entrada** é o roster (`roster_provider`, [`:40`](../../sr
 ligado em [`src/main.gd:216`](../../src/main.gd#L216) com `Callable(self, "wolves_roster")`) mais os
 campos injetáveis de `server_url`/`request_timeout`/`api_key`/`ready_provider`
 ([`:32-40`](../../src/ai/mind_oracle.gd#L32-L40)); o `ready_provider` é ligado pelo hospedeiro em
-[`src/main.gd:314`](../../src/main.gd#L314). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
+[`src/main.gd:288`](../../src/main.gd#L288). Nada de `Wolf`, `VoxelWorld` ou `Player` chama o oráculo.
 A regra do dono — "a mente propõe, as regras dispõem" — hoje é verdadeira **por topologia**: não existe
 caminho do oráculo para a intenção. A Fase 1 tem de manter a topologia, e o §7.1 registra que topologia
 não é prova.
 
 ### 2.4 O que o F3 já diz sobre a IA, e o que ele não diz
 
-`diagnostics()` de [`src/main.gd:1306`](../../src/main.gd#L1306) expõe `"llm": llm_host.diagnostics()`,
+`diagnostics()` de [`src/main.gd:1272`](../../src/main.gd#L1272) expõe `"llm": llm_host.diagnostics()`,
 que por sua vez (`llm_server_host.gd:159` — aposentado no Passo 4 do dossiê 22, commit 5138549)
 devolve
 `state`, `pid`, `boot_ms`, `loading_503`, `retries`, `requests`, `kills`, `spawned`, `detail` e `url` —
@@ -585,15 +585,15 @@ Registrado antes do código porque é isto que o §0 de uma próxima re-derivaç
    [`:862`](../../src/entities/wolf.gd#L862) `intent = _scorer.choose(...)`, com a histerese de
    `min_lead` 0,06 (`src/ai/utility_scorer.gd:41`) e o intervalo mínimo de 0,45 s (`:42`). O que já
    **registra consequência** é a mente: `Mind.remember` ([`src/ai/mind.gd:45`](../../src/ai/mind.gd#L45))
-   grava o átomo e chama `_drift` ([`:56-64`](../../src/ai/mind.gd#L56-L64)), que **muda a
+   grava o átomo e chama `_drift` ([`:50-58`](../../src/ai/mind.gd#L56-L64)), que **muda a
    personalidade a partir do histórico** — `caution` sobe com `hurt`, `aggression` sobe com `win` e
    cai com `hurt`, `curiosity` cai com `fed` — e `_consolidate`
-   ([`:67-74`](../../src/ai/mind.gd#L67-L74)) converte o que transbordou do `EPISODIC_CAP` de 24
+   ([`:61-68`](../../src/ai/mind.gd#L67-L74)) converte o que transbordou do `EPISODIC_CAP` de 24
    ([`:7`](../../src/ai/mind.gd#L7)) em crença com `confidence` e `source`. Então a Fase 3 **não**
    começa do zero: o estado de "quem esta criatura virou" existe e é lido
-   (`temperament()` [`:41`](../../src/ai/mind.gd#L41)), com decaimento por minuto
-   (`decay` [`:133`](../../src/ai/mind.gd#L133)) e soleira de uso (`believes`
-   [`:119`](../../src/ai/mind.gd#L119)). Falta exatamente uma coisa para virar UCB1: **a curva de
+   (`temperament()` [`:35`](../../src/ai/mind.gd#L41)), com decaimento por minuto
+   (`decay` [`:108`](../../src/ai/mind.gd#L133)) e soleira de uso (`believes`
+   [`:104`](../../src/ai/mind.gd#L119)). Falta exatamente uma coisa para virar UCB1: **a curva de
    resultado por opção**. Hoje o `scored()` do scorer
    ([`src/ai/utility_scorer.gd:54`](../../src/ai/utility_scorer.gd#L54)) pondera o presente e o
    temperamento, e nada nele guarda `(vitórias, tentativas, variância)` por tática — o termo de
@@ -1783,15 +1783,15 @@ launcher.
 
 `mind_oracle.gd` perde o nó HTTP e fala com a ponte nativa: `_ext.enqueue`
 ([mind_oracle.gd:135](../../src/ai/mind_oracle.gd#L135)) e o `wait(id, 0)` por frame
-([:153](../../src/ai/mind_oracle.gd#L153)) — timeout zero, consulta não bloqueante, status 1
+([:139](../../src/ai/mind_oracle.gd#L153)) — timeout zero, consulta não bloqueante, status 1
 preserva o slot (contrato do `mind_prompt.h`), e nenhum `await` pendura os 50 ms do tick. O que
 fica do §2.1: agendamento por frame, round-robin pela matilha, prompt dobrado numa mensagem só,
-recusas nomeadas, recuo cheio de 30 s ([`RETRY_COOLDOWN` :24](../../src/ai/mind_oracle.gd#L24)) e a
+recusas nomeadas, recuo cheio de 30 s ([`RETRY_COOLDOWN` :36](../../src/ai/mind_oracle.gd#L36)) e a
 chave externa `KEY_ENV`/`KEY_FILE` (`5138549:src/ai/mind_oracle.gd:31`) — quem sobe um
 `llama-server` na mão lê as mesmas duas fontes. O que morre: o `LOADING_COOLDOWN` do `503`, porque a
 espera pelo modelo deixa de ser transporte e passa a ser o portão `ready_provider`, ligado ao
 `AfMindRuntime.ready()` ([af_mind_runtime.gd:68](../../src/ai/af_mind_runtime.gd#L68)) em
-[main.gd:314](../../src/main.gd#L314). Num clone sem o dll gitignored, `_ext` nasce null e cada
+[main.gd:288](../../src/main.gd#L288). Num clone sem o dll gitignored, `_ext` nasce null e cada
 pedido nomeia a ausência — o degradado continua checado pela suíte, agora com o motivo da fila:
 "runtime sem pack nao emite chamada na ponte"
 ([smoke_test.gd:3118](../../tests/smoke_test.gd#L3118)) e as duas checagens da recusa que nomeia o
@@ -1811,7 +1811,7 @@ o processo filho, a sonda de porta, o vigia e os dois kills; a sonda da perna 15
 vira **cliente de referência dentro do runner** — as 17 ocorrências de `HTTPRequest` que sobram
 vivem em `tests/aether_reactions_test.gd`, e o grep do gate mira só `src/`. A fiação em `main.gd`:
 `llm_host` agora é `AfMindRuntime` ([main.gd:55](../../src/main.gd#L55)), o `diagnostics()` mantém
-a chave `"llm"` ([main.gd:1306](../../src/main.gd#L1306)) e o F3 lê a linha de status por
+a chave `"llm"` ([main.gd:1272](../../src/main.gd#L1272)) e o F3 lê a linha de status por
 `llm_status_provider` ([main.gd:290](../../src/main.gd#L290)), que junta estado, contexto,
 `load_ms`, VRAM e o `last_reason` do oráculo
 ([af_mind_runtime.gd:85-87](../../src/ai/af_mind_runtime.gd#L85-L87)) — leitura, nenhuma escrita,
@@ -2095,3 +2095,150 @@ cache vira máquina do tempo de memória velha.
   reabrem cada braço no §20.4.
 - **A Fase 5 continua sem recall paga** — o gate dela continua sendo leitura; a métrica de recall
   segue devendo dono e instrumento.
+
+## 21. A Fase 2: a memória de qualidade — `visto_em` e `vezes` no `Mind`, a janela top-k pura no estado da mente, e o portão lendo o ledger
+
+Fase executada em `feat/oraculo-nativo-fase2-22` (base `7cd3ff2`, a pauta do §20), no padrão do
+Passo 5 (§19): corrida de abertura vermelha com as premissas impressas, commits fechando verde um a
+um, corridas finais completas. Quatro commits de código mais o de prosa: **`094dbe9`** (vermelho),
+**`2e946a2`** (metadata no `Mind`), **`8cc3351`** (janela top-k), **`f9c5cbe`** (portão com ledger).
+As três decisões de corte do §20.4 ficam fechadas; as invariâncias do §20.7 intocadas — nenhuma
+linha em `native/`, `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` ou na projeção do
+[`src/persistence/tick_journal.gd:16-44`](../../src/persistence/tick_journal.gd#L16-L44).
+
+### 21.1 O vermelho: as três premissas nascem nomeadas na mesma corrida
+
+O commit **`094dbe9`** só acrescenta checagens: as dezenove do censo novo
+([`tests/aether_reactions_test.gd:126`](../../tests/aether_reactions_test.gd#L126), `EXPECTED_CHECKS`
+de 336 para 355; os três cenários na lista em
+[:54-56](../../tests/aether_reactions_test.gd#L54-L56), corpos em
+[:6586](../../tests/aether_reactions_test.gd#L6586),
+[:6691](../../tests/aether_reactions_test.gd#L6691) e
+[:6829](../../tests/aether_reactions_test.gd#L6829)). A corrida de abertura imprime as três
+premissas vermelhas e o censo converge o aborto
+([`fase2_abertura_runner.log`](../evidence/oraculo-nativo-fase2-22/fase2_abertura_runner.log)):
+`janela=false` em
+[:3919](../evidence/oraculo-nativo-fase2-22/fase2_abertura_runner.log#L3919),
+`visto_em=ausente vezes=ausente` em
+[:3920](../evidence/oraculo-nativo-fase2-22/fase2_abertura_runner.log#L3920),
+`aceitar_ledger=false` em
+[:3921](../evidence/oraculo-nativo-fase2-22/fase2_abertura_runner.log#L3921) e
+`censo 339/355` em
+[:3925](../evidence/oraculo-nativo-fase2-22/fase2_abertura_runner.log#L3925) — **339 checagens 4
+falhas 49,462 s**, com os três gates do Passo 5 verdes na mesma corrida e a régua do budget já
+medindo ([:3917](../evidence/oraculo-nativo-fase2-22/fase2_abertura_runner.log#L3917),
+`worst_sim_ms=13.02 ms`). O detalhe técnico que o vermelho exigiu: o parse do GDScript recusa
+chamada direta a método/assinatura ausente, então toda chamada à API que ainda não existe entra por
+`.call()`/`get`/`set` dinâmicos, e a assinatura de 4 args do `reinforce` é sondada por
+`get_method_list` antes de qualquer chamada — o vermelho é checagem nomeada, nunca `SCRIPT ERROR`.
+
+### 21.2 A metadata de qualidade: o carimbo segue o que confirma, e a projeção não vê nada
+
+Commit **`2e946a2`** — o `reinforce` ganha o quarto argumento `p_tick: int = -1` e passa a contar
+todo toque em `vezes`, carimbando `visto_em` **só quando o delta confirma**
+([`src/ai/mind.gd:98-107`](../../src/ai/mind.gd#L98-L107): reforço negativo contesta, e contestar
+não é ter visto de novo). O `decay` não toca a metadata — ela sai junto quando a crença inteira
+morre abaixo do mínimo ([`src/ai/mind.gd:133-147`](../../src/ai/mind.gd#L133-L147)). O `to_dict`
+grava os quatro campos e o `from_dict` lê o formato novo **e** o float solto dos saves de antes da
+Fase 2, com o `source` de volta `"loaded"` nos dois — o load não é testemunha
+([`src/ai/mind.gd:172-179`](../../src/ai/mind.gd#L172-L179),
+[`src/ai/mind.gd:200-219`](../../src/ai/mind.gd#L200-L219)). O **mesmo commit** atualiza a leitura
+do `_prompt_for` para `["confidence"]`, porque o formato mudou em memória: o texto do prompt fica
+byte a byte o mesmo deste commit, e as chaves de conteúdo da cache não mudam — a janela que muda o
+texto entra no commit seguinte. O par anti-farsa da premissa fecha na corrida
+([`fase2_mind_runner.log`](../evidence/oraculo-nativo-fase2-22/fase2_mind_runner.log)): mover
+`visto_em`/`vezes` **não** move o `state_hash` (`h1=5380ea58470b h2=5380ea58470b` em
+[:3924](../evidence/oraculo-nativo-fase2-22/fase2_mind_runner.log#L3924)) e mover `confidence`
+**move** (`h3=2aab3ac9680b` em
+[:3925](../evidence/oraculo-nativo-fase2-22/fase2_mind_runner.log#L3925)) — a projeção não é cega,
+é seletiva; os quatro campos sobrevivem ao disco
+([:3923](../evidence/oraculo-nativo-fase2-22/fase2_mind_runner.log#L3923)). Runner **344 checagens
+3 falhas 50,213 s** (as duas premissas restantes seguem vermelhas nomeadas); suíte **266/0/53,1 s**.
+
+### 21.3 A janela top-k: seleção pura no estado da mente, cache estável
+
+Commit **`8cc3351`** — `_janela_crencas` (estática, pura,
+[`src/ai/mind_oracle.gd:330-351`](../../src/ai/mind_oracle.gd#L330-L351)) ordena por confiança
+desc, `vezes` desc, `visto_em` desc e fecha com o desempate **total** pela chave: o dicionário do
+Godot é ordenado pela inserção, e sem o desempate final o mesmo estado em duas ordens devolveria
+duas janelas. `JANELA_CRENCAS = 8` é constante nomeada
+([`src/ai/mind_oracle.gd:58`](../../src/ai/mind_oracle.gd#L58)) e o `_prompt_for` imprime a janela
+na ordem dela ([`src/ai/mind_oracle.gd:364-369`](../../src/ai/mind_oracle.gd#L364-L369)), não mais
+o dicionário inteiro. A premissa do §20.5 fecha por comportamento: mesmo estado em duas ordens de
+inserção devolve a mesma janela; nada deriva com o relógio da parede (61 ms medidos entre leituras);
+o desempate é exercido rung a rung
+([`fase2_janela_runner.log`](../evidence/oraculo-nativo-fase2-22/fase2_janela_runner.log#L3923));
+e o consumidor fecha o acoplamento dobro do §20.3 — mesmo estado da mente produz o mesmo prompt
+(`prompto=366 chars igual=true` em
+[:3924](../evidence/oraculo-nativo-fase2-22/fase2_janela_runner.log#L3924)), e o gate do replay do
+Passo 5 segue verde com a janela no caminho (`prompt_a=315 prompt_b=315 iguais=true` em
+[:3898](../evidence/oraculo-nativo-fase2-22/fase2_janela_runner.log#L3898)). Runner **349 checagens
+2 falhas 48,726 s**; a rota do ledger segue vermelha nomeada.
+
+### 21.4 O portão lendo o ledger: fato contradito recusado, fato confirmado em quarentena
+
+Commit **`f9c5cbe`** fecha o gate do §20.6. No verificador, `aceitar_ledger(texto, ledger)`
+([`src/ai/belief_verifier.gd:71-92`](../../src/ai/belief_verifier.gd#L71-L92)): id fora do ledger é
+recusa nomeada; morte declarada sobre quem o ledger diz **morto** é fato confirmado e vai em
+`fatos_confirmados` ([`src/ai/belief_verifier.gd:24`](../../src/ai/belief_verifier.gd#L24)); morte
+declarada sobre quem o ledger diz **vivo** é recusa com o id e o motivo nomeados. O recorte do
+"declarar morte" é conservador e nomeado — `_declara_morte` exige citação e padrão de morte na
+MESMA frase ([`src/ai/belief_verifier.gd:97-108`](../../src/ai/belief_verifier.gd#L97-L108), pontos
+de fim normalizados, lookahead que impede "lobo 1" de casar "lobo 11"), e "matou o lobo N" fica
+FORA de propósito: associar morte ao objeto pede parser que o gate não tem. No wrapper,
+`ledger_provider` ([`src/ai/mind_oracle.gd:69`](../../src/ai/mind_oracle.gd#L69)) liga a verdade de
+mundo e `ultimo_portao` ([`src/ai/mind_oracle.gd:73`](../../src/ai/mind_oracle.gd#L73)) nomeia o
+gate ativo — sem provider, degrada ao roster do Passo 5 (os gates dele seguem fechando verdes sem
+mudança nenhuma). A quarentena é do **narrador**: `_quarentena`
+([`src/ai/mind_oracle.gd:210-222`](../../src/ai/mind_oracle.gd#L210-L222)) escreve `oracle_caiu_N`
+no `Mind` de quem narrou, por `Mind.quarentena`
+([`src/ai/mind.gd:128-130`](../../src/ai/mind.gd#L128-L130)) — confiança `QUARENTENA_CONFIDENCE =
+0.10` e fonte `"oracle"` ([`src/ai/mind.gd:14-15`](../../src/ai/mind.gd#L14-L15)), abaixo da
+soleira de `believes`; a leitura do `mind` é por `w.get("mind")` porque o roster pode ter corpo de
+prova sem mente. O main liga o ledger no boot ([`src/main.gd:206`](../../src/main.gd#L206) →
+[`src/main.gd:886-902`](../../src/main.gd#L886-L902)): lobos e jogador no mesmo espaço de ids, com
+o id 1 **compartilhado** (`ACTOR_PLAYER = 1`,
+[`src/entities/wolf.gd:18`](../../src/entities/wolf.gd#L18)) e a escolha conservadora nomeada no
+comentário — falso positivo custa narrativa recusada com motivo impresso; falso negativo é o que a
+fronteira existe para não deixar passar. O gate fecha nos sete números da corrida
+([`fase2_final_runner.log`](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log)): o id do
+jogador fora do roster passa pelo ledger
+([:3932](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3932)); o fato contradito é
+recusado com o motivo `o lobo 11 e vivo e a saida o declara morto`
+([:3933](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3933)); a recusa no wrapper
+não escreve **nada** no `Mind` com o portão nomeado
+([:3934](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3934)); o fato confirmado
+entra como quarentena `conf=0.1 source=oracle`
+([:3935](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3935)), fica abaixo da
+soleira ([:3936](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3936)) e o controle de
+narração pura passa sem escrever
+([:3937](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3937)).
+
+### 21.5 As quatro corridas da ponta, com o orçamento re-medido no portão expandido
+
+Suíte **266/0/53,9 s**
+([`fase2_final_suite.log`](../evidence/oraculo-nativo-fase2-22/fase2_final_suite.log#L380)), runner
+**355/0/50,681 s**
+([`fase2_final_runner.log`](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3944)), RNG
+**27/0/2,732 s** ([`fase2_final_rng.log`](../evidence/oraculo-nativo-fase2-22/fase2_final_rng.log#L78)),
+journal **128/0/6,007 s**
+([`fase2_final_journal.log`](../evidence/oraculo-nativo-fase2-22/fase2_final_journal.log#L143)) —
+zero `SCRIPT ERROR` nas quatro. A régua do budget re-medida com o top-k no caminho de todo prompt e
+o portão expandido no caminho de toda saída: `worst_sim_ms=15.97 ms pico_do_passo=15 973 µs
+media=2 381,3 µs/passo worst_decode_us=791 373 narradas=5/5` com o decode em voo dentro da malha de
+1 400 passos ([:3917](../evidence/oraculo-nativo-fase2-22/fase2_final_runner.log#L3917)) e o
+`SubtreeGuard` de 400 µs sem estouro (`trips=0→0`). O custo da Fase 2 dentro do passo é leitura de
+dicionário e uma ordenação de k itens por narração — o número continua folgado contra a régua de
+25 ms do §5.5.
+
+### 21.6 O que a Fase 2 não fechou
+
+- As **três decisões de corte** do §20.4 seguem fechadas com os mesmos ganchos de reabertura; nada
+  de embedding, cadência de consolidação, `_checked_scents` ou centralidade entrou.
+- A **projeção do `TickJournal`** segue lendo só `(key, confidence, source)` por crença — provado
+  pelo controle do §21.2, não por frase.
+- A quarentena entra no `Mind` e ninguém a consome ainda além da soleira: o **comprador** dela é a
+  Fase 5 (o inspector lê o journal; crença em quarentena aparece projetada como qualquer crença de
+  confiança baixa, com a fonte `"oracle"` nomeada).
+- O **furo #46** (o `load_pack` síncrono) continua dono da Fase 4; nenhum gate de fase fecha. A
+  fila serializada não muda: **22 → 17 → 18 → 20 → 13**.

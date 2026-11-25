@@ -1,0 +1,21 @@
+     87  docs/melhorias-status.md
+     22  docs/planos/16-tocas-da-alcateia.md
+     14  docs/planos/13-arvore-genealogica-e-ether.md
+     13  docs/planos/12-bicho-cavando-voxel.md
+     12  docs/planos/14-convivio-da-alcateia.md
+      8  docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md
+      7  docs/planos/22-oraculo-nativo-gdextension.md
+      5  docs/planos/10-alcateia-rutinas.md
+      5  docs/planos/11-acasalamento-filhote-e-censo.md
+      4  docs/design/09-veloren-mechanics-adaptation.md
+      4  docs/planos/15-oraculo-embutido-no-boot.md
+      3  docs/design/07-project-structure.md
+rotulos com numero conferidos: 2065  divergentes do proprio URL: 198
+AGENTS.md:53  [`SEED := 20261116`](tests/smoke_test.gd#L10
+AGENTS.md:356  [`:60`](tests/aether_reactions_test.gd#L64
+docs/melhorias-status.md:49  [:280-282](src/main.gd#L342
+docs/melhorias-status.md:188  [:605-611](src/main.gd#L641
+docs/melhorias-status.md:189  [:681-690](src/main.gd#L717
+docs/melhorias-status.md:190  [:756-821](src/main.gd#L792
+docs/melhorias-status.md:192  [:373](src/main.gd#L435
+docs/melhorias-status.md:193  [:483-484](src/main.gd#L545

@@ -1,0 +1,3 @@
+corpus na arvore de trabalho  arquivos: 40  ponteiros conferidos: 3323  rotulos conferidos: 212  links relativos conferidos: 3848
+casos objetivos: 0
+exit_ancoras=0

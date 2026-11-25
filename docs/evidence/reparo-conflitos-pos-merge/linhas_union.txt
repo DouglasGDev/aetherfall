@@ -1,0 +1,172 @@
+revs: base=7cd3ff2 ours=8073135 theirs=955dc47 res=8bddcab
+arquivos com perda aparente: 23 de 32
+perdidas: ours=403  theirs=283
+
+---- docs/planos/22-oraculo-nativo-gdextension.md  ours=134 theirs=134
+   [-ours ] | a chamada | `bb#:src/ai/mind_oracle.gd:#` `_http.request(server_url + "/v#/chat/completions", auth_headers(), HTTPClient.METHOD_POST, JSON.stringify(payload))
+   [-ours ] ## #. A Fase #: a memória de qualidade — `visto_em` e `vezes` no `Mind`, a janela top-k pura no estado da mente, e o portão lendo o ledger
+   [-ours ] Fase executada em `feat/oraculo-nativo-fase#-#` (base `#cd#ff#`, a pauta do §#), no padrão do
+   [-theirs] | a chamada | `bb#:src/ai/mind_oracle.gd:#` `_http.request(server_url + "/v#/chat/completions", auth_headers(), HTTPClient.METHOD_POST, JSON.stringify(payload))
+   [-theirs] ## #. A Fase #: a memória de qualidade — `visto_em` e `vezes` no `Mind`, a janela top-k pura no estado da mente, e o portão lendo o ledger
+   [-theirs] Fase executada em `feat/oraculo-nativo-fase#-#` (base `#cd#ff#`, a pauta do §#), no padrão do
+
+---- docs/planos/16-tocas-da-alcateia.md  ours=59 theirs=38
+   [-ours ] sorteio de lar clampa o ponto para `# … W-#` ([`main.gd:#-#`](../../src/main.gd#L#-L#),
+   [-ours ] ([`main.gd:#-#`](../../src/main.gd#L#-L#) e `_ready` põe o jogador ali antes do sorteio
+   [-ours ] ([`main.gd:#`](../../src/main.gd#L#: `player.setup(world, spawn_point())`) e o sorteio da
+   [-theirs] sorteio de lar clampa o ponto para `# … W-#` ([`main.gd:#-#`](../../src/main.gd#L#-L#),
+   [-theirs] ([`main.gd:#-#`](../../src/main.gd#L#-L#) e `_ready` põe o jogador ali antes do sorteio
+   [-theirs] [`:#-#`](../../src/main.gd#L#-L#); com o jogador no centro, `_band_edge` devolve
+
+---- docs/planos/11-acasalamento-filhote-e-censo.md  ours=27 theirs=18
+   [-ours ] cheio pelos # do boot — [`_spawn_wolves`](../../src/main.gd#L#-L# chamado
+   [-ours ] com `WOLF_COUNT` em [:#](../../src/main.gd#L#, constante em
+   [-ours ] [:#](../../src/main.gd#L#. Save com # lobos → os outros # continuavam vivos com o estado do
+   [-theirs] ([`main.gd:#-#`](../../src/main.gd#L#-L#).
+   [-theirs] grava ([main.gd:#-#](../../src/main.gd#L#-L#). Um filhote que envelhece por
+   [-theirs] - **A população era constante e só repunha.** `WOLF_COUNT := #` ([main.gd:#](../../src/main.gd#L#);
+
+---- docs/planos/10-alcateia-rutinas.md  ours=29 theirs=15
+   [-ours ] [`_spawn_wolves`](../../src/main.gd#L#-L#: cinco lares espalhados, **nenhum território
+   [-ours ] [`_spawn_home_point`](../../src/main.gd#L#, chamado por
+   [-ours ] [`_place_request`](../../src/main.gd#L# a partir de
+   [-theirs] sessão ([main.gd:#](../../src/main.gd#L#) e lido na mira
+   [-theirs] `relations` ([mind.gd:#-#](../../src/ai/mind.gd#L#-L#), `trust/adjust_trust` por ator
+   [-theirs] ([:#-#](../../src/ai/mind.gd#L#-L#), `believes()` com soleira #,#
+
+---- docs/engine/simclock.md  ours=38 theirs=0
+   [-ours ] útil do corpo do passo, antes do journal [src/main.gd:#](../../src/main.gd#L#. Lido junto com
+   [-ours ] [main.gd:#-#](../../src/main.gd#L#-L#, isso dá uma regra que quem escreve código dentro do
+   [-ours ] [main.gd:#](../../src/main.gd#L# e volta do disco [main.gd:#](../../src/main.gd#L#; o
+
+---- docs/planos/14-convivio-da-alcateia.md  ours=24 theirs=12
+   [-ours ] [main.gd:#-#](../../src/main.gd#L#-L# e a morte imprime apenas o contador em
+   [-ours ] [`_on_wolf_died`](../../src/main.gd#L#-L#.)*
+   [-ours ] #. **Spawn não aparece na frente do jogador.** Criar lobo (boot [main.gd:#](../../src/main.gd#L#,
+   [-theirs] fila [:#](../../src/main.gd#L#) a menos de `SAFE_SPAWN_DIST` do jogador ou com LOS
+   [-theirs] ([`:#-#`](../../src/main.gd#L#-L#) — onde o próprio jogador é posto
+   [-theirs] ([`:#`](../../src/main.gd#L#) — e o anel #–# m gira em torno **dele**
+
+---- docs/planos/17-fisica-de-blocos-que-caem.md  ours=11 theirs=4
+   [-ours ] [`MESH_BUDGET := #`](../../src/main.gd#L# chunks por frame
+   [-ours ] (chamada em [main.gd:#](../../src/main.gd#L#). As duas leituras que o contrato
+   [-ours ] [`save_game()`](../../src/main.gd#L#-L# (`:#-#`) e re-aplicado no
+   [-theirs] (chamada em [main.gd:#](../../src/main.gd#L#). As duas leituras que o contrato
+   [-theirs] `edits.size()` ([`:#`](../../src/main.gd#L#). A projeção do
+   [-theirs] ([main.gd:#-#](../../src/main.gd#L#-L#) e no F#, como o doc exige em
+
+---- docs/planos/23-elevacao-visual-agua.md  ours=7 theirs=7
+   [-ours ] `wolves_provider` ([`main.gd:#`](../../src/main.gd#L#). É a mesma fiação, sem sinal novo, que o
+   [-ours ] ([main.gd:#-#](../../src/main.gd#L#-L#). Não há ciclo de dia/noite, então "caústicas
+   [-ours ] ([`main.gd:#`](../../src/main.gd#L#) grava o vetor no uniform `sun_dir`
+   [-theirs] `wolves_provider` ([`main.gd:#`](../../src/main.gd#L#). É a mesma fiação, sem sinal novo, que o
+   [-theirs] ([main.gd:#-#](../../src/main.gd#L#-L#). Não há ciclo de dia/noite, então "caústicas
+   [-theirs] ([`main.gd:#`](../../src/main.gd#L#) grava o vetor no uniform `sun_dir`
+
+---- docs/design/10-world-layers-and-block-physics.md  ours=8 theirs=5
+   [-ours ] | Drop / item coletável | no baseline, minerar só apagava e contava; hoje há pilhas (§#), mas não entidade de item no mundo | contador atual em [main.gd:#-#](..
+   [-ours ] ([main.gd:#-#](../../src/main.gd#L#-L#), # Hz (`SimClock.HZ`,
+   [-ours ] ainda mudam por frame de física ([main.gd:#](../../src/main.gd#L#,
+   [-theirs] ([main.gd:#-#](../../src/main.gd#L#-L#), # Hz (`SimClock.HZ`,
+   [-theirs] [main.gd:#-#](../../src/main.gd#L#-L#).
+   [-theirs] | Item coletável / drop | entidade no mundo inexistente; pilhas já existem (§#). `_on_block_broken` atualiza o contador e as bancadas ([main.gd:#-#](../../src/m
+
+---- docs/planos/18-mundo-vivo-grama-e-mato.md  ours=8 theirs=5
+   [-ours ] ([main.gd:#](../../src/main.gd#L#, [`:#`](../../src/main.gd#L#) ≈ # ms de
+   [-ours ] puro, serializado inteiro em [main.gd:#](../../src/main.gd#L#); hoje cresce
+   [-ours ] `_population_rng` ([main.gd:#](../../src/main.gd#L#, semeado por
+   [-theirs] ([main.gd:#](../../src/main.gd#L#), [`:#`](../../src/main.gd#L#) ≈ # ms de
+   [-theirs] puro, serializado inteiro em [main.gd:#](../../src/main.gd#L#); hoje cresce
+   [-theirs] ([main.gd:#-#](../../src/main.gd#L#-L#) ganha `growth_queued`, `growth_converted`
+
+---- docs/design/09-veloren-mechanics-adaptation.md  ours=9 theirs=3
+   [-ours ] [main.gd:#-#](../../src/main.gd#L#-L# — nada disso existe no Veloren; é a nossa trilha
+   [-ours ] [mind.gd:#-#](../../src/ai/mind.gd#L#-L#, [:#-#](../../src/ai/mind.gd#L#-L#.
+   [-ours ] de `#,#` do máximo [mind.gd:#-#](../../src/ai/mind.gd#L#-L#,
+   [-theirs] ([aether_reactions_test.gd:#-#](../../tests/aether_reactions_test.gd#L#-L#). Ele usa
+   [-theirs] [:#-#](../../tests/aether_reactions_test.gd#L#-L#).
+   [-theirs] [:#-#](../../tests/aether_reactions_test.gd#L#-L#). O guard mede só BT, não
+
+---- docs/design/11-inventory-crafting.md  ours=6 theirs=6
+   [-ours ] `Main._benches` mantém a lista ([main.gd:#-#](../../src/main.gd#L#-L#) — entra no
+   [-ours ] ([main.gd:#-#](../../src/main.gd#L#-L#), então não há estado de bancada para corromper.
+   [-ours ] ([player.gd:#](../../src/entities/player.gd), [main.gd:#](../../src/main.gd#L#). O
+   [-theirs] `Main._benches` mantém a lista ([main.gd:#-#](../../src/main.gd#L#-L#) — entra no
+   [-theirs] ([main.gd:#-#](../../src/main.gd#L#-L#), então não há estado de bancada para corromper.
+   [-theirs] ([player.gd:#](../../src/entities/player.gd), [main.gd:#](../../src/main.gd#L#). O
+
+---- docs/melhorias-status.md  ours=6 theirs=6
+   [-ours ] (`_physics_process` de [main.gd:#-#](../src/main.gd#L#-L#) e os números de orçamento
+   [-ours ] ([main.gd:#](../src/main.gd#L#), `_rebuild_packs` [:#-#](../src/main.gd#L#-L#)) e
+   [-ours ] ([main.gd:#-#](../src/main.gd#L#-L#), com a razão escrita em [:#-#](../src/main.gd#L#-L#))
+   [-theirs] (`_physics_process` de [main.gd:#-#](../src/main.gd#L#-L#) e os números de orçamento
+   [-theirs] ([main.gd:#](../src/main.gd#L#), `_rebuild_packs` [:#-#](../src/main.gd#L#-L#)) e
+   [-theirs] ([main.gd:#-#](../src/main.gd#L#-L#), com a razão escrita em [:#-#](../src/main.gd#L#-L#))
+
+---- docs/planos/09-bioma-cor-de-pelo-e-ether.md  ours=8 theirs=4
+   [-ours ] ([main.gd:#-#](../../src/main.gd#L#-L#), `FEAR #,#` no spawn
+   [-ours ] ([:#](../../src/main.gd#L#), `BLOOD #,#` + `FEAR #,#` no cadáver
+   [-ours ] ([:#-#](../../src/main.gd#L#-L#). Uma coluna de gelo e uma de savana imprimem o mesmo
+   [-theirs] ([main.gd:#-#](../../src/main.gd#L#-L#), `FEAR #,#` no spawn
+   [-theirs] ([:#](../../src/main.gd#L#), `BLOOD #,#` + `FEAR #,#` no cadáver
+   [-theirs] ([:#-#](../../src/main.gd#L#-L#). Uma coluna de gelo e uma de savana imprimem o mesmo
+
+---- docs/planos/12-bicho-cavando-voxel.md  ours=5 theirs=5
+   [-ours ] | "WORK é assinatura exclusiva do jogador" | **Quebrada de propósito pelo item (d)** — e era **esta** página que decidia a quebra, como o §#.#.(i) do dossiê # r
+   [-ours ] | (nada sobre bancadas) | As bancadas do jogador são uma **lista derivada do mundo** alimentada só pelos sinais do `Player` ([main.gd:#-#](../../src/main.gd#L#-
+   [-ours ] ([main.gd:#-#](../../src/main.gd#L#-L#). As duas leituras que o contrato publica: **# chunks
+   [-theirs] | "WORK é assinatura exclusiva do jogador" | **Quebrada de propósito pelo item (d)** — e era **esta** página que decidia a quebra, como o §#.#.(i) do dossiê # r
+   [-theirs] | (nada sobre bancadas) | As bancadas do jogador são uma **lista derivada do mundo** alimentada só pelos sinais do `Player` ([main.gd:#-#](../../src/main.gd#L#-
+   [-theirs] ([main.gd:#-#](../../src/main.gd#L#-L#). As duas leituras que o contrato publica: **# chunks
+
+---- docs/planos/13-arvore-genealogica-e-ether.md  ours=4 theirs=6
+   [-ours ] [`_spawn_wolves`](../../src/main.gd#L#-L#), e a RNG do lobo vem de
+   [-ours ] ([`_spawn_wolves`](../../src/main.gd#L#-L#), ao nascimento
+   [-ours ] ([`load_game`](../../src/main.gd#L#-L#) — e a ascendência entra por parâmetro nesse caminho
+   [-theirs] [`_spawn_wolves`](../../src/main.gd#L#-L#), e a RNG do lobo vem de
+   [-theirs] ([`_spawn_wolves`](../../src/main.gd#L#-L#), ao nascimento
+   [-theirs] ([`load_game`](../../src/main.gd#L#-L#) — e a ascendência entra por parâmetro nesse caminho
+
+---- docs/planos/19-auto-pulo-de-bloco.md  ours=6 theirs=4
+   [-ours ] ([`aether_reactions_test.gd:#`](../../tests/aether_reactions_test.gd#L#), o corpo **não**
+   [-ours ] ([aether_reactions_test.gd:#](../../tests/aether_reactions_test.gd#L#) — e ele continuaria
+   [-ours ] lancamentos == #` ([`:#`](../../tests/aether_reactions_test.gd#L#) —: contra um muro de seis
+   [-theirs] ([`aether_reactions_test.gd:#`](../../tests/aether_reactions_test.gd#L#), o corpo **não**
+   [-theirs] ([aether_reactions_test.gd:#](../../tests/aether_reactions_test.gd#L#) — e ele continuaria
+   [-theirs] lancamentos == #` ([`:#`](../../tests/aether_reactions_test.gd#L#) —: contra um muro de seis
+
+---- docs/design/08-roadmap-risks-licensing.md  ours=4 theirs=2
+   [-ours ] cronômetro ([main.gd:#-#](../../src/main.gd#L#-L#, cronometrado em [:#-#](../../src/main.gd#L#-L#,
+   [-ours ] [:#-#](../../src/main.gd#L#-L#). Isso não é hash completo, replay nem prova de
+   [-ours ] ([aether_reactions_test.gd:#-#](../../tests/aether_reactions_test.gd#L#-L#,
+   [-theirs] [:#-#](../../src/main.gd#L#-L#). Isso não é hash completo, replay nem prova de
+   [-theirs] [:#-#](../../tests/aether_reactions_test.gd#L#-L#). O guard cronometra só BT,
+
+---- docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md  ours=3 theirs=3
+   [-ours ] ([main.gd:#](../../src/main.gd#L#) conecta, corpo em [`:#-#`](../../src/main.gd#L#-L#)) faz
+   [-ours ] ([mind.gd:#](../../src/ai/mind.gd#L#), `beliefs` ([`:#`](../../src/ai/mind.gd#L#)) e
+   [-ours ] ([`:#-#`](../../src/ai/mind.gd#L#-L#)) — sem RNG nova, porque o riacho é um débito lido, não
+   [-theirs] ([main.gd:#](../../src/main.gd#L#) conecta, corpo em [`:#-#`](../../src/main.gd#L#-L#)) faz
+   [-theirs] ([mind.gd:#](../../src/ai/mind.gd#L#), `beliefs` ([`:#`](../../src/ai/mind.gd#L#)) e
+   [-theirs] ([`:#-#`](../../src/ai/mind.gd#L#-L#)) — sem RNG nova, porque o riacho é um débito lido, não
+
+---- docs/audio-provenance.md  ours=3 theirs=2
+   [-ours ] (`AudioDirector`, # linhas), que o [src/main.gd:#-#](../src/main.gd#L#-L#
+   [-ours ] [main.gd:#-#](../src/main.gd#L#-L#); não escreve voxel, não imprime no Éter e
+   [-ours ] ([main.gd:#](../src/main.gd#L#) — nunca vira save.
+   [-theirs] [main.gd:#-#](../src/main.gd#L#-L#); não escreve voxel, não imprime no Éter e
+   [-theirs] ([main.gd:#](../src/main.gd#L#) — nunca vira save.
+
+---- docs/planos/08-mindstore-e-mindsinspector.md  ours=2 theirs=2
+   [-ours ] - `Mind`: `EPISODIC_CAP = #` (src/ai/mind.gd:#), FIFO com consolidação do átomo mais velho (:#-#). `_consolidate` converte só `hurt` e `saw_player` (:#-#); `hit
+   [-ours ] A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:#), escrita em :# (saída aceita) e :# (acerto de cache) e lida só por `narration_of()
+   [-theirs] - `Mind`: `EPISODIC_CAP = #` (src/ai/mind.gd:#), FIFO com consolidação do átomo mais velho (:#-#). `_consolidate` converte só `hurt` e `saw_player` (:#-#); `hit
+   [-theirs] A peça que garante a separação hoje é `_narrations` (src/ai/mind_oracle.gd:#), escrita em :# (saída aceita) e :# (acerto de cache) e lida só por `narration_of()
+
+---- AGENTS.md  ours=1 theirs=1
+   [-ours ] depois da Fase # da #) e a checagem da sessão real
+   [-theirs] depois da Fase # da #) e a checagem da sessão real
+
+---- docs/design/07-project-structure.md  ours=1 theirs=1
+   [-ours ] | [src/main.gd](../../src/main.gd) (# linhas) | dona da instância do journal; grava após incrementar o tick, dentro do cronômetro ([:#-#](../../src/main.gd#L#-L
+   [-theirs] | [src/main.gd](../../src/main.gd) (# linhas) | dona da instância do journal; grava após incrementar o tick, dentro do cronômetro ([:#-#](../../src/main.gd#L#-L

@@ -1,0 +1,35 @@
+ok    AGENTS.md                                                  res=944 ours=944 theirs=944  ours_sem=0 theirs_sem=0 
+ok    docs/audio-provenance.md                                   res=191 ours=191 theirs=191  ours_sem=0 theirs_sem=0 
+ok    docs/design/07-project-structure.md                        res=346 ours=346 theirs=346  ours_sem=0 theirs_sem=0 
+ok    docs/design/08-roadmap-risks-licensing.md                  res=142 ours=142 theirs=142  ours_sem=0 theirs_sem=0 
+ok    docs/design/09-veloren-mechanics-adaptation.md             res=250 ours=250 theirs=250  ours_sem=0 theirs_sem=0 
+ok    docs/design/10-world-layers-and-block-physics.md           res=924 ours=924 theirs=924  ours_sem=0 theirs_sem=0 
+ok    docs/design/11-inventory-crafting.md                       res=197 ours=197 theirs=197  ours_sem=0 theirs_sem=0 
+ok    docs/engine/simclock.md                                    res=250 ours=250 theirs=250  ours_sem=0 theirs_sem=0 
+ok    docs/melhorias-status.md                                   res=8339 ours=8234 theirs=8151  ours_sem=0 theirs_sem=0 
+ok    docs/planos/01-estado-inicial-e-ordem-autoritativa.md      res=61 ours=61 theirs=61  ours_sem=0 theirs_sem=0 
+ok    docs/planos/03-canais-morte-som-fogo.md                    res=181 ours=181 theirs=181  ours_sem=0 theirs_sem=0 
+ok    docs/planos/04-budget-hot-medido.md                        res=43 ours=43 theirs=43  ours_sem=0 theirs_sem=0 
+ok    docs/planos/05-difusao-fora-do-tick.md                     res=63 ours=63 theirs=63  ours_sem=0 theirs_sem=0 
+ok    docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md res=142 ours=142 theirs=142  ours_sem=0 theirs_sem=0 
+ok    docs/planos/08-mindstore-e-mindsinspector.md               res=33 ours=33 theirs=33  ours_sem=0 theirs_sem=0 
+ok    docs/planos/09-bioma-cor-de-pelo-e-ether.md                res=156 ours=156 theirs=156  ours_sem=0 theirs_sem=0 
+ok    docs/planos/10-alcateia-rutinas.md                         res=278 ours=278 theirs=278  ours_sem=0 theirs_sem=0 
+ok    docs/planos/11-acasalamento-filhote-e-censo.md             res=283 ours=283 theirs=283  ours_sem=0 theirs_sem=0 
+ok    docs/planos/12-bicho-cavando-voxel.md                      res=424 ours=424 theirs=424  ours_sem=0 theirs_sem=0 
+ok    docs/planos/13-arvore-genealogica-e-ether.md               res=306 ours=306 theirs=306  ours_sem=0 theirs_sem=0 
+ok    docs/planos/14-convivio-da-alcateia.md                     res=215 ours=215 theirs=215  ours_sem=0 theirs_sem=0 
+ok    docs/planos/15-oraculo-embutido-no-boot.md                 res=475 ours=475 theirs=475  ours_sem=0 theirs_sem=0 
+ok    docs/planos/16-tocas-da-alcateia.md                        res=346 ours=346 theirs=346  ours_sem=0 theirs_sem=0 
+ok    docs/planos/17-fisica-de-blocos-que-caem.md                res=297 ours=297 theirs=297  ours_sem=0 theirs_sem=0 
+ok    docs/planos/18-mundo-vivo-grama-e-mato.md                  res=254 ours=254 theirs=254  ours_sem=0 theirs_sem=0 
+ok    docs/planos/19-auto-pulo-de-bloco.md                       res=223 ours=223 theirs=223  ours_sem=0 theirs_sem=0 
+ok    docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md     res=542 ours=542 theirs=542  ours_sem=0 theirs_sem=0 
+PERDA docs/planos/22-oraculo-nativo-gdextension.md               res=1770 ours=1770 theirs=1903  ours_sem=0 theirs_sem=7 RES-MENOR
+      [-theirs] ## 21. A Fase 2: a memória de qualidade — `visto_em` e `vezes` no `Mind`, a janela top-k pura no estado da mente, e o po
+      [-theirs] ### 21.1 O vermelho: as três premissas nascem nomeadas na mesma corrida
+      [-theirs] ### 21.2 A metadata de qualidade: o carimbo segue o que confirma, e a projeção não vê nada
+ok    docs/planos/23-elevacao-visual-agua.md                     res=741 ours=741 theirs=741  ours_sem=0 theirs_sem=0 
+ok    docs/planos/README.md                                      res=512 ours=512 theirs=512  ours_sem=0 theirs_sem=0 
+
+TOTAL headings perdidos: ours=0 theirs=7
