@@ -46,6 +46,7 @@ const TESTS: Array[StringName] = [
 	&"_test_entrada_de_rastro_exposta_no_chao_lido",
 	&"_test_cavar_nao_consome_rng_da_sessao",
 	&"_test_colheita_de_malha_sem_cavar",
+	&"_test_malha_orca_tempo_e_nao_itens",
 	&"_test_cavar_sobrevive_ao_save", &"_test_extensao_carrega_classe",
 	&"_test_extensao_pack_no_processo", &"_test_contrato_igal_ao_http",
 	&"_test_transporte_http_zerado",
@@ -146,7 +147,16 @@ const TESTS: Array[StringName] = [
 # com vitorias na tatica (9) -- bonus nunca atravessa portao. As nove contam no
 # vermelho; cada chamada a API ausente entra por `has_method` + `.call()`, porque
 # o parse recusa chamada direta a rota que ainda nao existe.
-const EXPECTED_CHECKS: int = 364
+#
+# Dossie 24 (malha com orcamento de tempo) acrescenta DUAS aqui, ambas de
+# `malha_orca_tempo_e_nao_itens` -- o gate do §5.1 que nasce VERMELHO contra o `process()`
+# de hoje porque o relogio do loop fica fora dele (`voxel_world.gd:231` e `:236`) e um frame
+# paga dois chunks de uma vez, medido 198,64 ms com `chunks_no_frame=2` no mesmo quadro
+# desta corrida (furo #41). A terceira checagem da pagina,
+# `corte_nao_cobra_latencia_maior_que_o_pico`, mora no bake-off
+# do dossie 07 porque e la que estao `mesh_ms` e `mean_us` que ela compara. As duas contam no
+# vermelho e o teto e lido por `get_script_constant_map()`, no mesmo padrao.
+const EXPECTED_CHECKS: int = 366
 # Copia LITERAL da tabela de vies medida nesta revisao (WorldGen.IMPRINT_BIAS), e
 # nao uma leitura de la: o pino da checagem 4 do dossie 09 so tem como falhar
 # quando a tabela do gen e editada se o par esperado vier de outro lugar.
@@ -5332,18 +5342,35 @@ func _test_entrada_de_rastro_exposta_no_chao_lido() -> bool:
 ## `last_mesh_ms()` de um lote. `MESH_BUDGET` e lido de `src/main.gd:28`, nao copiado
 ## para ca: o numero que importa e o preco do orcamento que o jogador sente, e um 2
 ## escrito a mao envelheceria no dia em que o budget mudar.
-func _mesh_frames(frames_limit: int = 64) -> Dictionary:
+##
+## O teto default era `64` frames e o dossie 24 §3.3.1.4 jurava que ele continuava valido
+## porque "uma edicao custa ~11 fatias, no maximo ~22 -- dentro dos 64". Medido nesta
+## arvore, a parte da edicao esta certa (`esper_max_frames=23` no bake-off, dentro dos 64
+## dela) e a conta do palco esta errada: o palco deste runner deixa **26** chunks na fila
+## (a plateia e montada com `set_block` antes de malhar), e 26 x ~11 fatias = ~286 frames --
+## com o 64 literal a fila nao drena, `remeshes` para em 6, `count` fica em 1 contra 9
+## remeshes e o `max_pending` congela em 24. Cinco checagens vermelhas de uma causa, e a
+## causa e a UNIDADE do teto, nao a vazao: em tempo de relogio o trabalho e o mesmo
+## (87 ms de malha por chunk, com ou sem fatia). Entao o teto vira aritmetica do grao --
+## no pior caso o frame cabe UM nivel, `SIZE_Y` frames por chunk, mais a margem de 64 que
+## a casa ja tinha -- e o numero que a checagem publica continua sendo `frames`, que e o
+## que o jogador sente. Um teto que se deriva do grao nao precisa ser reenvelhecido a cada
+## mudanca de `MESH_FRAME_BUDGET_US`.
+func _mesh_frames(frames_limit: int = -1) -> Dictionary:
+	var limite := frames_limit
+	if limite < 0:
+		limite = _world.pending_meshes() * VoxelChunk.SIZE_Y + 64
 	var frames := 0
 	var max_pending := _world.pending_meshes()
 	var worst_ms := 0.0
-	while _world.pending_meshes() > 0 and frames < frames_limit:
+	while _world.pending_meshes() > 0 and frames < limite:
 		_world.process(int(Session.MESH_BUDGET))
 		frames += 1
 		max_pending = maxi(max_pending, _world.pending_meshes())
 		worst_ms = maxf(worst_ms, _world.last_mesh_ms())
 	return {
 		"frames": frames, "max_pending": max_pending, "worst_ms": worst_ms,
-		"left": _world.pending_meshes(),
+		"left": _world.pending_meshes(), "teto": limite,
 	}
 
 
@@ -5459,15 +5486,17 @@ func _test_colheita_de_malha_sem_cavar() -> bool:
 			"meshes=%d/%d  fila_no_boot=%d  boot_ms=%.1f  meshes_ant=%d" % [
 			meshes_1, _world.chunks.size(), fila_0, boot_ms, meshes_0])
 	_check(int(palco["left"]) == 0, "a fila que o palco deixou drena antes do lote",
-			"fila_ini=%d remeshes=%d frames=%d fila_max=%d" % [
-			fila_0, meshes_2 - meshes_1, int(palco["frames"]), int(palco["max_pending"])])
+			"fila_ini=%d remeshes=%d frames=%d/%d fila_max=%d" % [
+			fila_0, meshes_2 - meshes_1, int(palco["frames"]), int(palco["teto"]),
+			int(palco["max_pending"])])
 	_check(feitos == alvos and chunks_do_lote.size() == alvos,
 			"o lote removeu um voxel por lobo do censo do boot, em chunks distintos",
 			"aceitas=%d alvos=%d chunks=%d y=%d" % [feitos, alvos, chunks_do_lote.size(), y_lido])
 	_check(int(colheita["left"]) == 0 and int(cost["pending"]) == 0,
 			"fila de malharia drena e nenhum carimbo fica aberto",
-			"fila=%d carimbos_abertos=%d frames=%d" % [
-			int(colheita["left"]), int(cost["pending"]), int(colheita["frames"])])
+			"fila=%d carimbos_abertos=%d frames=%d/%d" % [
+			int(colheita["left"]), int(cost["pending"]), int(colheita["frames"]),
+			int(colheita["teto"])])
 	# A conta do instrumento tem de bater com o trabalho que a fila fez: todo chunk
 	# remalhado depois do carimbo fecha um carimbo, e nenhum carimbo fecha sem remesh.
 	_check(int(cost["count"]) == meshes_3 - meshes_2,
@@ -5487,6 +5516,116 @@ func _test_colheita_de_malha_sem_cavar() -> bool:
 		feitos, int(colheita["frames"]), int(colheita["max_pending"]),
 		float(colheita["worst_ms"]), int(cost["count"]), int(cost["worst_us"]),
 		float(cost["mean_us"]), int(cost["pending"])])
+	return true
+
+
+## Gate do dossie 24 §5.1, a regra do loop em headless. As checagens nascem VERMELHAS
+## contra o codigo de hoje porque nenhuma das pecas existe: `process()` le o relogio FORA
+## do laco (`voxel_world.gd:231` antes do primeiro chunk, `:236` depois do ultimo), entao
+## um frame com dois chunks na fila paga os dois sem perguntar a nenhum relogio -- o furo
+## #41, medido 52-177 ms de malha num quadro so, e o recorde publicado de um frame com dois
+## chunks e 177,37 ms (`8a53b56`) contra 151,21 ms medidos na base desta perna.
+##
+## Esta porta tem DUAS das tres checagens do §5.1: a 1 (`malha_orca_tempo_e_nao_itens`) e a
+## 3 (`orcamento_de_malha_tem_nome_e_origem`). A 2 (`corte_nao_cobra_latencia_maior_que_o_pico`)
+## mora no bake-off do dossie 07 porque e la que vivem os dois numeros que ela compara --
+## `mesh_ms` da sessao e `mean_us` do `edit_mesh_cost()` -- e la que o `esper_max_frames` ja
+## sai impresso (`af_bakeoff.gd:170`), que e a testemunha de dreno da pagina.
+##
+## Nenhuma rota inexistente e chamada: o teto e lido pelo mapa de constantes do script da
+## instancia, porque o parse recusa o identificador da classe como valor -- medido,
+## `VoxelWorld.get_script_constant_map()` devolve "Cannot call non-static function on the
+## class directly", e um SCRIPT ERROR num passo leva checagens embora em silencio (mandato 1).
+## Mesmo criterio de `bandit_une_numero_observavel`.
+##
+## As duas portas, cada uma com a premissa nomeada no numero que decide. (1) Com tres chunks
+## CAROS na fila e um budget de ITENS (2) maior que um, um frame nao pode fechar nenhum chunk
+## nem custar mais que o teto do loop somado ao overshoot de UMA fatia -- e o que distingue
+## orcamento de tempo de orcamento de contagem. (3) O teto mora na classe do loop com sufixo
+## de tempo, e `MESH_BUDGET` continua sozinho em `main.gd:28` valendo itens por frame (§3.4):
+## e a checagem que impede este runner envelhecer no dia em que o teto mudar.
+func _test_malha_orca_tempo_e_nao_itens() -> bool:
+	var constes: Dictionary = _world.get_script().get_script_constant_map()
+	var teto_us := int(constes.get("MESH_FRAME_BUDGET_US", 0))
+	var budget := int(Session.MESH_BUDGET)
+	# O teto ACEITO de um frame e o teto do loop mais o overshoot de uma fatia, e o overshoot
+	# e o nivel `y` mais caro ja medido (dossie 24 §2.2.2: 152,74 ms ÷ 64 = 2,39 ms/nivel).
+	# Nao e tolerancia chutada: a fatia e a menor granularidade que o corte tem, entao nenhum
+	# frame honesto pode pasar de teto + uma fatia, e um que pase nao cortou nada. Com o teto
+	# em 8 000 µs isso e o 10,4 ms da pagina, e com o teto zerado (hoje) e 2,39 ms -- a
+	# checagem nasce vermelha contra os 198,64 ms medidos no mesmo frame.
+	var teto_frame_ms := (float(teto_us) / 1000.0) + 2.39
+	# Palco com a fila vazia: sem drenar, o `pending` de depois seria heranca do teste de
+	# malharia anterior e o lote de tres nao seria o lote que a pagina descreve.
+	var sobra := _mesh_frames()
+	var pos: Array = []
+	for key in _world.chunks:
+		if pos.size() >= 3:
+			break
+		var c: VoxelChunk = _world.chunks[key]
+		var x: int = c.coord.x * VoxelChunk.SIZE_X + VoxelChunk.SIZE_X / 2
+		var z: int = c.coord.y * VoxelChunk.SIZE_Z + VoxelChunk.SIZE_Z / 2
+		# So o plateau da fixture (chao em y=50), pelo motivo escrito no palco do cavar: a
+		# recusa de um ponto nunca pode virar "o lote ficou curto por acaso do relevo".
+		if _world.surface_height(x, z) != 50:
+			continue
+		# STONE sobre o chao com `record = false`: e o chunk mais CARO que existe aqui (o
+		# §2.2.2 mede tudo-pedra 82 ms contra tudo-ar 8,5 ms), entao o teto e exigido contra
+		# o pior caso; pedra nao cai, o que deixa a fila de gravidade da perna 17 fora da
+		# conta; e o andaime nao e construcao do jogador, nao entra no disco.
+		if _world.set_block(Vector3i(x, 51, z), BlockDefs.Block.STONE, false):
+			pos.append(Vector3i(x, 51, z))
+	var meshes_antes := _world.meshes_built()
+	var fila_antes := _world.pending_meshes()
+	var cost_antes: Dictionary = _world.edit_mesh_cost()
+	_world.process(budget)
+	var fila_um_frame := _world.pending_meshes()
+	var frame_ms: float = _world.last_mesh_ms()
+	var fechados := _world.meshes_built() - meshes_antes
+	# No PRIMEIRO frame do lote nenhum chunk pode fechar: um chunk inteiro custa de 45,04 ms
+	# para cima (as 128 amostras do §2.2.2) e o teto mais uma fatia e 10,4 ms. Por isso a
+	# metade `fechados == 0` nao e cerimonia -- e ela que diz que o frame parou por tempo, nao
+	# porque a fila tinha uma cauda pronta.
+	_check(pos.size() == 3 and int(sobra["left"]) == 0 and teto_us > 0
+			and frame_ms <= teto_frame_ms and fechados == 0
+			and fila_um_frame > 0 and fila_um_frame == fila_antes,
+			"malha_orca_tempo_e_nao_itens: um frame de malharia para pelo relogio, nao pela contagem de itens",
+			"lote=%d fila=%d->%d budget_itens=%d teto_us=%d teto_frame_ms=%.2f frame_ms=%.2f chunks_no_frame=%d" % [
+			pos.size(), fila_antes, fila_um_frame, budget, teto_us, teto_frame_ms,
+			frame_ms, fechados])
+	# O resto do lote, frame a frame, pelo caminho do produto, e o mundo volta ao que era pela
+	# mesma rota sem reclamar disco: o teste que roda antes do save nao pode deixar edicao no
+	# `world.edits` nem carimbo aberto no instrumento do §2.3.1.
+	var cost_meio: Dictionary = _world.edit_mesh_cost()
+	var dreno := _mesh_frames()
+	var cost_fim: Dictionary = _world.edit_mesh_cost()
+	for p in pos:
+		_world.set_block(p, BlockDefs.Block.AIR, false)
+	var restaura := _mesh_frames()
+	# A media do LOTE, nao a do padario: `edit_mesh_cost()` so expoe agregados, entao o total
+	# de cada instante volta de mean*count e a diferenca divide pelos carimbos fechados no
+	# lote. Sem isso o numero conteria edicoes de outros testes.
+	var n_lote := int(cost_fim["count"]) - int(cost_meio["count"])
+	var total_lote := (float(cost_fim["mean_us"]) * float(cost_fim["count"])) \
+			- (float(cost_meio["mean_us"]) * float(cost_meio["count"]))
+	var mean_lote := (total_lote / float(n_lote)) if n_lote > 0 else 0.0
+	print(("OBSERVACAO malha_orca lote=%d frames_dreno=%d/%d worst_frame_ms=%.2f "
+			+ "teto_frame_ms=%.2f carimbos_lote=%d mean_lote_us=%.1f fila_final=%d") % [
+			pos.size(), int(dreno["frames"]), int(dreno["teto"]), float(dreno["worst_ms"]),
+			teto_frame_ms, n_lote, mean_lote, int(restaura["left"])])
+	# (3) Nome e origem: o teto e constante da classe do loop (§3.1), com sufixo de tempo e nao
+	# de contagem, lido de la por quem testa, e o valor tem de caber na janela que a propria
+	# pagina usa para chamar um frame de travada (33,3 ms, §5.2). `MESH_BUDGET` de itens nao
+	# mora aqui (§3.4).
+	_check(constes.has("MESH_FRAME_BUDGET_US") and not constes.has("MESH_BUDGET")
+			and teto_us > 0 and teto_us <= 33300
+			and String(_world.get_script().resource_path)
+					.ends_with("src/world/voxel_world.gd")
+			and int(restaura["left"]) == 0 and int(cost_fim["pending"]) == 0,
+			"orcamento_de_malha_tem_nome_e_origem: o teto mora na classe do loop, com sufixo de tempo e nao de contagem",
+			"MESH_FRAME_BUDGET_US=%d em_VoxelWorld=%s MESH_BUDGET_em_VoxelWorld=%s script=%s budget_itens_em_main=%d janela_hitch_us=33300" % [
+			teto_us, constes.has("MESH_FRAME_BUDGET_US"), constes.has("MESH_BUDGET"),
+			String(_world.get_script().resource_path).get_file(), budget])
 	return true
 
 

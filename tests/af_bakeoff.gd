@@ -53,9 +53,16 @@ const SETTLE_FRAMES := 20
 # Teto do dreno: se a fila nao esvazia em 64 frames de 2 chunks, algo esta sujando mais
 # do que o lote e o numero impresso seria de uma corrida incompleta.
 const MAX_DRAIN_FRAMES := 64
-## 9 checagens do lote + a do proprio censo. Contar checagem e o que pega o SCRIPT ERROR
+## 10 checagens do lote + a do proprio censo. Contar checagem e o que pega o SCRIPT ERROR
 ## que derruba um passo em silencio (mandato 1).
-const EXPECTED_CHECKS := 11
+##
+## A decima do lote e `corte_nao_cobra_latencia_maior_que_o_pico` (dossie 24 §5.1 gate 2) e
+## ela mora AQUI, nao no runner de reacoes, por um motivo lido e nao de gosto: as tres
+## grandezas que a composta precisa — `mesh_ms` do diagnostico, `mean_us` do censo de
+## edicao e o teto de frames do dreno — so existem juntas numa sessao que fez o lote de 30
+## edicoes. O runner de reacoes mede um frame de malharia isolado; nao tem lote, nao tem
+## latencia media.
+const EXPECTED_CHECKS := 12
 
 var _checks: int = 0
 var _failures: int = 0
@@ -165,6 +172,18 @@ func _run() -> void:
 	_check(int(cost["worst_us"]) > 0 and float(cost["mean_us"]) > 0.0,
 			"instrumento vivo (worst e mean > 0)", "worst_us=%d mean_us=%.1f" % [
 			cost["worst_us"], cost["mean_us"]])
+	# Checagem 2 do gate do dossie 24 §5.1, no unico lugar onde os dois numeros dela existem
+	# na mesma sessao: a composta `mesh_ms + 52*mean_us` que o dossie 07:72 definiu como regua
+	# de mesher. O teto e a base medida nesta arvore (10 285,48 ms, media de tres corridas de
+	# §2.2.1) vezes a tolerancia de 10 % que o dossie 07:101 ja usa para trocar de mesher: um
+	# corte de frame que mover a composta para cima nao cortou nada, trocou de victima --
+	# comprou quadro devolvendo fila, que e a unica maneira de o §3.3.1 errado acontecer.
+	var composta := float(diag["mesh_ms"]) + (52.0 * float(cost["mean_us"]) / 1000.0)
+	_check(composta <= 11313.03 and _wait_frames_max <= MAX_DRAIN_FRAMES,
+			"corte_nao_cobra_latencia_maior_que_o_pico",
+			"composta=%.2f teto=11313.03 mesh_ms=%.2f mean_us=%.1f esper_max_frames=%d/%d" % [
+			composta, float(diag["mesh_ms"]), float(cost["mean_us"]),
+			_wait_frames_max, MAX_DRAIN_FRAMES])
 	var sha := _body_sha(_main.world)
 	_check(sha == REF_BODY_SHA, "corpo do mundo == SHA de referencia", sha.left(32))
 	print(("OBSERVACAO edits_aceitas=%d remeshes=%d fila_inicial=%d esper_max_frames=%d "
