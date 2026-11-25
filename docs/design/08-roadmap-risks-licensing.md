@@ -47,8 +47,8 @@ inclui versões, seed real, tick, dimensões, edições ordenadas, identidades/i
 dos lobos vivos e todos os bytes Float32 do Éter; exclui jogador, corpos, RNG, episódios,
 relações, timers e comandos. O contrato completo está em [AGENTS.md](../../AGENTS.md).
 A CLI `-- --tick-journal=path` ativa a gravação após o incremento do tick, dentro do
-cronômetro ([main.gd:340-344](../../src/main.gd#L340-L344), cronometrado em [:294-297](../../src/main.gd#L299-L302),
-[:1248-1256](../../src/main.gd#L1253-L1261)). Isso não é hash completo, replay nem prova de
+cronômetro ([main.gd:366-370](../../src/main.gd#L366-L370), cronometrado em [:294-297](../../src/main.gd#L325-L328),
+[:1248-1256](../../src/main.gd#L1287-L1295)). Isso não é hash completo, replay nem prova de
 determinismo da simulação: **hash estável em 3 execuções continua sem gate fechado**.
 
 ### P0 — Fundação `[gate mais importante do projeto]`

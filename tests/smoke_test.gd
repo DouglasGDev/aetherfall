@@ -1119,9 +1119,10 @@ func _check_opaque_surface() -> void:
 			sem_fonte, _ch_contar_gdshader(), _ch_pilha])
 
 	# R=G=B e a aritmetica do `bright` intacta (§3.10b, a clausula que autoriza o A como
-	# portador); o A e o canal que passou a variar. Hoje a malharia escreve `1.0` em
-	# todos os vertices opacos (voxel_world.gd:689) e `a_min` sai 1,000 — o vermelho com
-	# nome, nao um crash.
+	# portador); o A e o canal que passou a variar. Na base a malharia escrevia `1.0` em
+	# todos os vertices opacos (eb218fe:src/world/voxel_world.gd:689) e `a_min` sai 1,000
+	# — o vermelho com nome, nao um crash. Hoje o `a` da exposicao entra pela mesma
+	# escrita (src/world/voxel_world.gd:773).
 	_check("opaco_preserva_rgb_da_face",
 		oi >= 0 and int(_ch_op["verts"]) > 0 and int(_ch_op["rgb"]) == int(_ch_op["verts"])
 				and float(_ch_op["a_min"]) < 0.01 and float(_ch_op["a_max"]) > 0.99,

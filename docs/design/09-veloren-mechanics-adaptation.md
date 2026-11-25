@@ -101,7 +101,7 @@ bloco, sem ferramenta e sem XP:
   [documento 11](11-inventory-crafting.md).
 
 Cada bloco lavrado injeta **0,42 no canal de trabalho** do Éter e cada colocação `0,20`
-[main.gd:925-930](../../src/main.gd#L925-L930) — nada disso existe no Veloren; é a nossa trilha
+[main.gd:951-956](../../src/main.gd#L951-L956) — nada disso existe no Veloren; é a nossa trilha
 auditável (§8).
 
 ## 5. Respiração e afogamento
@@ -236,7 +236,7 @@ Nada aqui está em código — menos as linhas que o
 | Arcos, lanças arremessadas, cetros e magia de projétil | `[TARGET]` P6; magia existe como **Tecelagem** editando o Éter (§02), não como cast bar |
 | 6 espécies, personagens, opção *hardcore* | fora de escopo — solo humano + mentes locais (premissa 3 do README) |
 | Multiplayer | `[TARGET]` P5 |
-| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1205-1215](../../src/main.gd#L1205-L1215). `[TARGET]` P7 |
+| Ciclo dia/noite e clima | **não existe no código**: a luz é uma `DirectionalLight3D` estática [main.gd:1231-1249](../../src/main.gd#L1231-L1249). `[TARGET]` P7 |
 | Agricultura/plantação | **não existe no código**: só `_plant_tree` no gerador. `[TARGET]` P7 |
 
 O que **não** existe no Veloren e é o centro daqui: o Éter como substrato físico de

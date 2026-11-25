@@ -1,0 +1,71 @@
+$ AETHER_ROOT=<arvore de trabalho> python C:/Aetherfall/.tools/verify_plan_cites.py AGENTS.md README.md docs/melhorias-status.md docs/planos/*.md
+## os 60 arquivos inexistentes sao a lista declarada das paginas 02/06/07/15/20/22
+## (pecas que elas compram) mais os logs gitignored de .tools/. Controle na base
+## eb218fe, mesmo corpus: 2 664 / 60 / 0, exit 0. A re-corrida de timing nao mexe
+## aqui: os nove ponteiros novos sao de log, sem numero de linha.
+
+citacoes com numero de linha conferidas: 2718
+arquivos citados que nao existem: 60
+   FALTA AGENTS.md -> .tools/shot_gallery.tscn
+   FALTA AGENTS.md -> .tools/suite_fix1.log
+   FALTA README.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/melhorias-status.md -> .tools/_evid07c_main_suite.log
+   FALTA docs/melhorias-status.md -> .tools/_head_agents.md
+   FALTA docs/melhorias-status.md -> .tools/_head_readme.md
+   FALTA docs/melhorias-status.md -> .tools/_head_status.md
+   FALTA docs/melhorias-status.md -> .tools/_reg07c_main_suite.log
+   FALTA docs/melhorias-status.md -> .tools/_reg07c_suite.log
+   FALTA docs/melhorias-status.md -> .tools/af-clean-suite.log
+   FALTA docs/melhorias-status.md -> .tools/af-clean-suite2.log
+   FALTA docs/melhorias-status.md -> .tools/armD.log
+   FALTA docs/melhorias-status.md -> .tools/armE.log
+   FALTA docs/melhorias-status.md -> .tools/gallery25.log
+   FALTA docs/melhorias-status.md -> .tools/hitch_probe.gd
+   FALTA docs/melhorias-status.md -> .tools/ins1.log
+   FALTA docs/melhorias-status.md -> .tools/ins10.log
+   FALTA docs/melhorias-status.md -> .tools/main-merge-docs-suite.log
+   FALTA docs/melhorias-status.md -> .tools/mira1.log
+   FALTA docs/melhorias-status.md -> .tools/mira6.log
+   FALTA docs/melhorias-status.md -> .tools/probeA.log
+   FALTA docs/melhorias-status.md -> .tools/probeB.log
+   FALTA docs/melhorias-status.md -> .tools/pub-import.log
+   FALTA docs/melhorias-status.md -> .tools/pub-suite.log
+   FALTA docs/melhorias-status.md -> .tools/red1.log
+   FALTA docs/melhorias-status.md -> .tools/red4.log
+   FALTA docs/melhorias-status.md -> .tools/rtest.log
+   FALTA docs/melhorias-status.md -> .tools/shot_gallery.tscn
+   FALTA docs/melhorias-status.md -> .tools/suite_final4.log
+   FALTA docs/melhorias-status.md -> .tools/suite_fix1.log
+   FALTA docs/melhorias-status.md -> .tools/suite_flake1.log
+   FALTA docs/melhorias-status.md -> .tools/suite_status1.log
+   FALTA docs/melhorias-status.md -> src/ai/llm_server_host.gd
+   FALTA docs/melhorias-status.md -> src/ai/reach.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/entity_store.gd
+   FALTA docs/melhorias-status.md -> src/core/sim/tick_clock.gd
+   FALTA docs/melhorias-status.md -> src/entities/falling_block.gd
+   FALTA docs/melhorias-status.md -> tests/llm_server_boot_probe.gd
+   FALTA docs/melhorias-status.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/melhorias-status.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/01-estado-inicial-e-ordem-autoritativa.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/02-censo-multi-semente.md -> tests/wolf_multiseed_census_test.gd
+   FALTA docs/planos/06-decompor-main-gd.md -> src/ai/llm_server_host.gd
+   FALTA docs/planos/06-decompor-main-gd.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> .tools/af-clean-suite.log
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> .tools/af-clean-suite2.log
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> .tools/clean_suite.log
+   FALTA docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/09-bioma-cor-de-pelo-e-ether.md -> .tools/shot_gallery.tscn
+   FALTA docs/planos/15-oraculo-embutido-no-boot.md -> src/ai/llm_server_host.gd
+   FALTA docs/planos/15-oraculo-embutido-no-boot.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md -> src/ai/reach.gd
+   FALTA docs/planos/22-oraculo-nativo-gdextension.md -> .tools/extension_api_4.7.2.json
+   FALTA docs/planos/22-oraculo-nativo-gdextension.md -> .tools/probe_af_mind.gd
+   FALTA docs/planos/README.md -> .tools/pauta20-suite.log
+   FALTA docs/planos/README.md -> src/ai/llm_server_host.gd
+   FALTA docs/planos/README.md -> src/ai/reach.gd
+   FALTA docs/planos/README.md -> src/core/sim/tick_clock.gd
+   FALTA docs/planos/README.md -> tests/llm_server_boot_probe.tscn
+   FALTA docs/planos/README.md -> tests/wolf_multiseed_census_test.gd
+numeros de linha fora do arquivo: 0
+
+exit=0

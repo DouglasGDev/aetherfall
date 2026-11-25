@@ -58,17 +58,17 @@ mexer em byte de bloco muda o hash de revisões antigas e reabre o dossiê 01.
   três tabelas por canal são constantes
   ([:9-17](../../src/world/aether_field.gd#L9-L17)). Os imprints existentes passam valor fixo por
   evento: `WORK 0,42`/`0,20` no jogador
-  ([main.gd:934-939](../../src/main.gd#L934-L939)), `FEAR 0,4` no spawn
-  ([:344](../../src/main.gd#L349)), `BLOOD 1,3` + `FEAR 1,0` no cadáver
-  ([:973-974](../../src/main.gd#L978-L979)). Uma coluna de gelo e uma de savana imprimem o mesmo
+  ([main.gd:960-965](../../src/main.gd#L960-L965)), `FEAR 0,4` no spawn
+  ([:344](../../src/main.gd#L375)), `BLOOD 1,3` + `FEAR 1,0` no cadáver
+  ([:973-974](../../src/main.gd#L1004-L1005)). Uma coluna de gelo e uma de savana imprimem o mesmo
   número.
 - **Onde o bioma seria lido:** `setup` do lobo recebe `p_spawn` e sorteia `_rng` com a semente
   do mundo ([wolf.gd:299-318](../../src/entities/wolf.gd#L299-L318), `:311`) — o ponto natural de
   perguntar "que bioma é este?" uma vez por lobo, sem cadência. A sessão já sorteia o
-  `home` por lobo em [`_spawn_wolves`](../../src/main.gd#L356-L398), que chama
-  [`_spawn_home_point`](../../src/main.gd#L756). *(leitura desta ponta: na ponta do dossiê o
+  `home` por lobo em [`_spawn_wolves`](../../src/main.gd#L382-L424), que chama
+  [`_spawn_home_point`](../../src/main.gd#L782). *(leitura desta ponta: na ponta do dossiê o
   sorteio era `_random_ground_point(16.0, 46.0)` num anel fixo em torno do **centro** do mundo; a
-  perna 14 trocou o anel único pelas [`SPAWN_BANDS`](../../src/main.gd#L518) medidas a partir do
+  perna 14 trocou o anel único pelas [`SPAWN_BANDS`](../../src/main.gd#L544) medidas a partir do
   jogador, e a pergunta do bioma foi respondida — `home_biome` é lido uma vez por lobo em
   [:309](../../src/entities/wolf.gd#L309) e o viés saiu do `aether.imprint` por
   [`imprint_bias`](../../src/world/world_gen.gd#L156-L158).)*

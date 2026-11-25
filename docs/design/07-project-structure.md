@@ -22,7 +22,7 @@ simples) e separa por convenção de nome o que é código, dado, arte e nativo.
 
 | Arquivo existente | Responsabilidade neste bloco |
 |---|---|
-| [src/main.gd](../../src/main.gd) (1004 linhas) | dona da instância do journal; grava após incrementar o tick, dentro do cronômetro ([:316-322](../../src/main.gd#L321-L327)); expõe diagnóstico ([:1168-1179](../../src/main.gd#L1173-L1184)) e `state_hash()` ([:1253-1256](../../src/main.gd#L1258-L1261)) |
+| [src/main.gd](../../src/main.gd) (1004 linhas) | dona da instância do journal; grava após incrementar o tick, dentro do cronômetro ([:316-322](../../src/main.gd#L347-L353)); expõe diagnóstico ([:1168-1179](../../src/main.gd#L1199-L1210)) e `state_hash()` ([:1253-1256](../../src/main.gd#L1292-L1295)) |
 | [src/persistence/tick_journal.gd](../../src/persistence/tick_journal.gd) | `TickJournal`: SHA256 da projeção mínima e JSONL `[tick,hash]` sob demanda, em arquivo novo por corrida; não é replay |
 | [src/world/aether_field.gd](../../src/world/aether_field.gd) (234 linhas) | `state_bytes()` copia todos os bytes de `_cur` Float32, sem o corte usado no save ([232-234](../../src/world/aether_field.gd#L232-L234)) |
 

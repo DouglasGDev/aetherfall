@@ -54,10 +54,10 @@ const SOURCE: String = """shader_type spatial;
 // `ALPHA`) e o `cull_back` e o do material velho.
 render_mode diffuse_burley, specular_schlick_ggx;
 
-// NEAREST_WITH_MIPMAPS e o filtro do material velho (`voxel_world.gd:94`), e e o que
-// mantem o tile de 16 px em quadros: linear no atlas faria a parede de pedra virar
-// massa. Sem `source_color` na amostra — o `voxel_atlas.gd:36` devolve a imagem ja em
-// linear, e o `hint_albedo` acrescentaria a conversao de novo.
+// NEAREST_WITH_MIPMAPS e o filtro do material velho (`eb218fe:src/world/voxel_world.gd:94`,
+// a arvore da base), e e o que mantem o tile de 16 px em quadros: linear no atlas faria a
+// parede de pedra virar massa. Sem `source_color` na amostra — o `voxel_atlas.gd:35` devolve
+// a imagem ja em linear, e o `hint_albedo` acrescentaria a conversao de novo.
 uniform sampler2D atlas : filter_nearest_mipmap, repeat_disable;
 uniform vec4 wet_tint = vec4(0.62, 0.66, 0.72, 1.0);
 uniform float dry_roughness = 0.92;

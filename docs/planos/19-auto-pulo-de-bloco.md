@@ -30,7 +30,7 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 
 **O grid tem célula de 1 unidade de mundo**, e nada no mundo tem altura intermediária: o teste de
 colisão percorre as células cobertas pela caixa com `floori` em cada eixo
-([voxel_world.gd:362-373](../../src/world/voxel_world.gd#L362-L373)), e a conversão contínua→bloco é
+([voxel_world.gd:386-397](../../src/world/voxel_world.gd#L386-L397)), e a conversão contínua→bloco é
 o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então "subir um bloco" é
 **subir 1,00 m**, e essa é a régua contra a qual os três números abaixo falham.
 
@@ -115,7 +115,7 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
    linha, não de propriedade — e a propriedade perde.
 5. **Altura de célula é 1 unidade, e isso é premissa, não constante nomeada.** O predicado usa
    `+1,0` porque o grid é de 1 — `aabb_hits_solid` percorre células por `floori`
-   ([`voxel_world.gd:362-373`](../../src/world/voxel_world.gd#L362-L373)). Se um dia
+   ([`voxel_world.gd:386-397`](../../src/world/voxel_world.gd#L386-L397)). Se um dia
    existir `SLAB` de meia altura — o id 18 já está reservado no registro de blocos — o número vira
    pergunta do `BlockDefs`, e é aí, no segundo comprador, que ele sobe de degrau.
 
@@ -181,7 +181,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
   melhor e com intenção, e o auto-pulo tem de ser indiferente ao input manual, nunca somar os dois
   impulsos no mesmo frame.
 - **Não** mexer no riacho de `_rng` do lobo nem no `_population_rng` da sessão
-  ([`main.gd:71`](../../src/main.gd#L71)): o conserto é regra geométrica, não sorteio novo, e um
+  ([`main.gd:81`](../../src/main.gd#L81)): o conserto é regra geométrica, não sorteio novo, e um
   riacho novo derrubaria `tests/simulation_rng_test.gd` sem consertar nada.
 - **Não** tocar em `FORMAT_VERSION`, `Channel.COUNT` nem na projeção do `TickJournal`: nenhum bloco
   se move por esta perna, e o `state_hash` continua função do que já era.

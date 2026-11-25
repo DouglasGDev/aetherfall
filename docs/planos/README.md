@@ -50,7 +50,7 @@ páginas novas fecha escopo: elas registram a pauta, e o registro vem antes do c
 | 05 | [Difusão do Éter fora do tick](05-difusao-fora-do-tick.md) | P1 `:447`, Falta 6 `:336-338` | hoje a difusão é síncrona e o lobo vê o resultado por isso | primeiro a colheita (nenhum µs de `diffuse_and_decay` existe); o corte só com o hash por semente **inalterado** |
 | 06 | [Decompor `main.gd` pelo eixo do dono](06-decompor-main-gd.md) | Falta 7 `:339-341` | ônibus não é dono: um bloco vira dono quando já tem comprador fora de `main.gd` | K1 bancadas → K2 fila/cadáveres → K3 matilha; K4 (persistência) fica `[OPEN]` até aparecer o segundo consumidor |
 | 07 | [`af-bench`, bake-off de voxel e o doc do `SimClock`](07-af-bench-bake-off-voxel-e-doc-do-simclock.md) | P0 `:437`, `:438-439`, `:440` | três premissas, uma por peça; hash é função do passo, fps é função da máquina | ordem interna: doc → runner de `dt` fixo → 3 execuções de 12 000 ticks → bake-off com ≥ 2 braços tabelados |
-| 08 | [`MindStore` e `MindsInspector`](08-mindstore-e-mindsinspector.md) | P1 `:448-449`, `:450-451` | `MindStore` muda **posse**, `MindsInspector` mostra **composição** — nenhuma das duas decide | recomendação lida: F3 estendido (reaproveita `src/main.gd:1173-1179` e `src/ui/hud.gd:273-280`) antes de qualquer `.tscn` novo |
+| 08 | [`MindStore` e `MindsInspector`](08-mindstore-e-mindsinspector.md) | P1 `:448-449`, `:450-451` | `MindStore` muda **posse**, `MindsInspector` mostra **composição** — nenhuma das duas decide | recomendação lida: F3 estendido (reaproveita `src/main.gd:1199-1205` e `src/ui/hud.gd:273-280`) antes de qualquer `.tscn` novo |
 | 09 | [Bioma, cor do pelo e fundo de Éter por bioma](09-bioma-cor-de-pelo-e-ether.md) | Falta 8 `:342-356` | bioma só existe se decidir algo observável: cor do pelo e viés de imprint; derivar **não** pode alterar terreno nem hash | `bioma_deterministico`, `bioma_nao_altera_terreno` (a que fecha o lote), `cor_do_pelo_vem_do_bioma`, `imprint_bioma_tem_mesma_ordem` |
 | 10 | [Rotinas de alcateia](10-alcateia-rutinas.md) | Falta 9 `:357-363` | a intenção de um lobo muda quando outro está por perto — 1 lobo vs 4 lobos no mesmo cenário tem de **divergir** | `contraste_de_alcateia`, `cercar_calcula_assentos`, `ataque_escalonado`, `medo_contagia` / `amigo_amortece`, `alcateia_nao_consome_rng_da_sessao` |
 | 11 | [Acasalamento, filhote que cresce e censo variável](11-acasalamento-filhote-e-censo.md) | Falta 10 `:364-371` | um save gravado com 7 lobos carrega 7 lobos — e crescer é função do `clock.tick`, não de parede | `acasalar_aumenta_censo`, `cooldown_segunda_copula`, `filhote_cresce_por_tick`, `filhote_nao_morde`, `load_leva_todo_o_censo` (nasceu **vermelha**, verde depois do load que pareia por identidade), `censo_respeita_teto`, `journal_hash_inalterado_sem_escolha` — **pousada**: `main` `5b519f8`, runner **225 / 0**, suíte **252 / 0** |
@@ -199,7 +199,7 @@ não cabe num fecho de perna: transladá-la aqui mexeria em números que outras 
 registro de leitura, que é o que a regra desta casa proíbe. O item 10 da fila do status já se
 declara "concluído nesta ponta (dossiê 11)", com o código lido ao lado; a numeração da fila é
 mantida de propósito — o status diz isso na linha do item 1
-([`docs/melhorias-status.md:496`](../melhorias-status.md#L496)).
+([`docs/melhorias-status.md:528`](../melhorias-status.md#L496)).
 
 **Medida desta rodada (o dossiê 16 escrito antes da branch; `main` em `e0450a3` mais a página nova,
 esta página índice e as quatro prosas de pauta):** **1 200 citações conferidas nos dezenove dossiês, 0 números
@@ -315,11 +315,11 @@ registro anterior escrevia, e as três são `#L` dentro de logs de evidência �
 da 16 e da perna 11, nenhuma desta pauta. O instrumento de âncoras
 ([`tools/check_doc_anchors.py`](../../tools/check_doc_anchors.py)) confere nesta ponta **2 662** ponteiros,
 **179** rótulos e **2 666** links relativos em **37** arquivos e devolve **um** caso objetivo: o ponteiro
-`../.tools/_chk_labels.py` em `docs/melhorias-status.md:3231`, o mesmo que o registro do pouso aponta na
+`../.tools/_chk_labels.py` em `docs/melhorias-status.md:3296`, o mesmo que o registro do pouso aponta na
 linha **3138** — os **84** de diferença são as linhas que este lote acrescentou acima dela no mesmo
 arquivo, e o registro ficou com o número da corrida que sustenta. Duas coisas do instrumento valem escritas
 aqui: ele deriva a raiz do **próprio arquivo**, não do diretório atual, então medir uma árvore exige rodar a
-cópia daquela árvore; e o registro do passe de docs do status (`docs/melhorias-status.md:2431`) nomeia
+cópia daquela árvore; e o registro do passe de docs do status (`docs/melhorias-status.md:2496`) nomeia
 `docs/planos/README.md:15, :90` — a linha 15 continua na linha, e o **:90** é re-derivação desta ponta:
 lido pelo conteúdo, o registro da base (`bb13752:docs/melhorias-status.md:2338`) escrevia **80** numa árvore
 onde a frase já estava em **75**, a linha nova da tabela de branches (a da 20) com o parágrafo acima
@@ -530,7 +530,7 @@ escreveram, não ponteiros vivos**: hoje `src/entities/player.gd` tem `_mine_tar
 `:667`/`:693`; o `_on_acted` que
 imprime WORK saiu de `main.gd:333-338` para `:337-342` quando o viés de imprint entrou; o teto do load
 que pareia por índice é `main.gd:484`, não `:470`; as três promessas da lavra estão em
-`tests/smoke_test.gd:894-902`, não `:812-822`; e a conta do "objeto deus" passa a estar pinada na
+`tests/smoke_test.gd:1473-1481`, não `:854-864`; e a conta do "objeto deus" passa a estar pinada na
 revisão medida — **510 linhas em `src/main.gd` na `main` em `eb6ec8d`** — porque a perna 10 em curso vai
 mover esse número, e um número sem pino é exatamente o que estes furos cobram. Nada disso muda
 mandato: é deriva de linha.
