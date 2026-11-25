@@ -67,12 +67,23 @@ var weather: Weather = null
 ## anel ao WaterFx por `Callable`. Nenhum dos tres no conhece o tipo do outro além do que o
 ## `main.gd` liga aqui.
 var rain_fx: RainFx = null
+## A queda de bloco (dossie 17 §3): a fila e o UNICO leitor de `world.block_changed` e o
+## spawner e o dono dos graos em voo. Nenhum dos dois varre o mundo -- o numero que prova e
+## `reads == 0` em 1.000 ticks sem edicao, na checagem `queda_sem_varredura_de_mundo`.
+var block_updates: BlockUpdateQueue = null
+var block_spawner: FallingBlockSpawner = null
 var wolves: Array = []
 var elapsed: float = 0.0
 var stats := {"mined": 0, "placed": 0, "wolves_felled": 0, "deaths": 0}
 
 var _terrain: Node3D = null
 var _entities: Node3D = null
+## Onde os graos em voo moram na arvore. Nem no `_terrain` nem no `_entities`: bloco em queda e
+## estado do mundo, mas o numero de filhos do Terrain e a testemunha de malha da suíte
+## (`sem no de malha sobrando` == 64 chunks) e grao em voo nao e chunk -- medido no primeiro
+## smoke desta arvore, que devolveu 65 com a fila pendurada ali. O stage e irmao dos dois, como
+## `WaterFx`, `Weather` e `RainFx` já são (dossie 17 §3.3).
+var _block_stage: Node3D = null
 ## Direcao para o sol deste boot, escrita por `_build_environment` e lida pela agua
 ## (dossie 23 §2): "caustica quando o sol esta alto" e uma pergunta sobre o no, nao
 ## sobre o material, entao o numero mora num lugar so.
@@ -155,6 +166,13 @@ func _ready() -> void:
 	world.generate_meshes_all()
 	_mesh_ms = float(Time.get_ticks_usec() - t0) / 1000.0
 
+	# Dossie 17 §3.5: a fila escuta o mundo, e escuta DEPOIS da geracao. `generate` escreve os
+	# voxels pelo `gen.generate_chunk`, sem emitir sinal, entao anexar aqui nao e conserto de
+	# um defeito medido -- e a recusa de apostar que todo caminho futuro de geracao vai querer
+	# participar da gravidade. A primeira leitura de `block_changed` numa pilha gerada seria o
+	# boot movendo o mundo.
+	setup_block_physics(self)
+
 	aether = AetherField.new()
 	aether.setup(world)
 	clock = SimClock.new()
@@ -191,6 +209,7 @@ func _ready() -> void:
 	hud.clock = clock
 	hud.stats_provider = Callable(self, "stats_line")
 	hud.wolf_provider = Callable(self, "targets_under_crosshair")
+	hud.block_provider = Callable(self, "block_stats")
 	add_child(hud)
 	hud.build_hotbar()
 	hud.show_message("vale reconstruido  seed %d" % SEED, 3.4)
@@ -317,6 +336,12 @@ func _physics_process(delta: float) -> void:
 func _sim_tick() -> void:
 	var dt := clock.step_duration()
 	elapsed += dt
+	# Dossie 17 §3.5: a fila roda ANTES das mentes e das entidades, dentro do cronometro do
+	# passo -- e o que o `begin_step`/`end_step` mede e o que o hash le. Um grao convertido
+	# aqui so integra no tick seguinte (o `fresh` do corpo recusa o primeiro passo), senao a
+	# conversao e a queda cairiam no mesmo `worst_step_ms` e a atribuicao do budget sumiria.
+	block_updates.flush(clock.tick)
+	block_spawner.step(dt)
 	_aether_cd -= dt
 	if _aether_cd <= 0.0:
 		aether.diffuse_and_decay(AETHER_PERIOD)
@@ -1059,6 +1084,12 @@ func _toggle_ether() -> void:
 # ------------------------------------------------------------------ persistencia
 
 func save_game() -> void:
+	# Dossie 17 §3.7: o estado de queda NAO vai para o disco e isso e decisao escrita, nao
+	# esquecimento -- nao existe chave para entidade em voo, e criar uma seria mexer no schema
+	# por uma janela de ~1 s de vida media. O lote resolve por quiesce: o save roda a fila e
+	# integra os graos ate todos pousarem antes de serializar, para o disco nunca ver um bloco
+	# "nem la nem la".
+	settle_block_updates()
 	var edit_list := {}
 	for k in world.edits:
 		edit_list[Coords.block_key(k)] = int(world.edits[k])
@@ -1124,6 +1155,12 @@ func load_game() -> void:
 	for k in d.get("edits", {}):
 		edit_list[String(k)] = int(d["edits"][k])
 	world.apply_edits(edit_list)
+	# O disco e um mundo ja em repouso (o quiesce do save garante), entao o que existia de
+	# queda na sessao anterior e lixo desta: corpo em voo sobre um grid restaurado escreveria
+	# a celula de um bloco que nao existia no save. `apply_edits` nao emite `block_changed`
+	# (voxel_world.gd:214-224 escreve por `_write_raw`), entao a fila nao se encheu sozinha.
+	block_updates.clear()
+	block_spawner.clear()
 	var p: Dictionary = d.get("player", {})
 	player.feet_to_spawn(Vector3(float(p["feet"][0]), float(p["feet"][1]), float(p["feet"][2])))
 	player.yaw = float(p.get("yaw", 0.0))
@@ -1228,6 +1265,48 @@ func stats_line() -> String:
 		targets_under_crosshair().size(), wolves.size(), _respawn_queue.size()]
 
 
+## Monta a queda de blocos sobre o `world` ja existente. Existe como metodo, e nao como linhas
+## dentro do `_ready`, porque quem monta uma sessao escrevendo os campos na mão -- o harness do
+## runner de reacoes e o gate da própria perna -- nunca passa pelo `_ready`: medido na primeira
+## corrida da suíte de reacoes nesta arvore, `_sim_tick` chamava `flush` num Nil **11.693**
+## vezes e o passo morria na linha antes da difusao, da matilha e das mentes. Uma funcao e o
+## unico lugar onde a ordem (depois do mundo, antes das mentes) mora.
+func setup_block_physics(stage: Node3D) -> void:
+	_block_stage = Node3D.new()
+	_block_stage.name = "FallingBlocks"
+	stage.add_child(_block_stage)
+	block_spawner = FallingBlockSpawner.new()
+	block_spawner.setup(world, _block_stage)
+	block_updates = BlockUpdateQueue.new()
+	block_updates.attach(world, block_spawner)
+
+
+## Os numeros da queda de bloco, num lugar so: o F3, o `diagnostics()` e a suíte (dossie 17
+## §3.6) leem a mesma tabela. `reads` e `events` sao os dois lados da promessa de que a fila
+## nao varre -- sem eles "a fila e barata" seria adjetivo.
+func block_stats() -> Dictionary:
+	var s: Dictionary = block_updates.stats()
+	var sp: Dictionary = block_spawner.stats()
+	for k: String in sp:
+		s[k] = sp[k]
+	return s
+
+
+## Quiesce do save (dossie 17 §3.7). O `clock.tick` NAO avanca aqui: o journal exige
+## `tick == last + 1` e o save nao e passo de simulacao -- por isso a fila usa o proprio
+## contador interno para adiar o re-teste, e nao o tick que ganha como diagnostico.
+func settle_block_updates(max_steps: int = 400) -> Dictionary:
+	var steps: int = 0
+	while steps < max_steps:
+		if int(block_updates.stats()["queued"]) == 0 and block_spawner.falling.is_empty():
+			break
+		block_updates.flush(clock.tick)
+		block_spawner.step(clock.step_duration())
+		steps += 1
+	return {"steps": steps, "quiet": int(block_updates.stats()["queued"]) == 0
+			and block_spawner.falling.is_empty()}
+
+
 func diagnostics() -> Dictionary:
 	return {
 		"gen_ms": _gen_ms, "mesh_ms": _mesh_ms,
@@ -1255,6 +1334,9 @@ func diagnostics() -> Dictionary:
 		"births": _births,
 		"tick": clock.tick, "worst_sim_ms": clock.worst_step_ms,
 		"dropped_ticks": clock.dropped_ticks, "hp": player.hp,
+		# Dossie 17 §3.6: ao lado de `dropped_ticks` porque e a mesma categoria -- quantos
+		# passos o orcamento nao absorbheu. Estourar o teto da fila adia grao, nao perde.
+		"block_updates": block_stats(),
 		"on_ground": player.body.on_ground, "feet": player.body.feet_pos,
 		"journal": tick_journal.diagnostics(),
 		# Dossie 23 §3.6: o teto do FX e aritmética dos `amount` declarados e os

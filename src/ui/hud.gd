@@ -18,6 +18,10 @@ var player: Player = null
 var world: VoxelWorld = null
 var aether: AetherField = null
 var clock: SimClock = null
+## Fila de queda de bloco (dossie 17 §3.6): estourar o teto da fila adia grao em vez de
+## perder, e isso tem de aparecer no F3 e nao num log que ninguem abre. Provider, nao referencia:
+## o HUD nao e dono do estado do mundo.
+var block_provider: Callable = Callable()
 var stats_provider: Callable = Callable()
 var wolf_provider: Callable = Callable()
 var narration_provider: Callable = Callable()
@@ -256,6 +260,11 @@ func _refresh_state() -> void:
 	if clock != null:
 		lines.append("tick %d  sim %.2f ms  pior %.2f ms  perdidos %d" % [
 			clock.tick, clock.last_step_ms, clock.worst_step_ms, clock.dropped_ticks])
+	if block_provider.is_valid():
+		var bq: Dictionary = block_provider.call()
+		lines.append("blocos  fila %d  em voo %d  eventos %d  leituras %d  overflow %d" % [
+			int(bq.get("queued", 0)), int(bq.get("falling", 0)), int(bq.get("events", 0)),
+			int(bq.get("reads", 0)), int(bq.get("overflow", 0))])
 	if aether != null:
 		var t: Array = aether.channel_totals()
 		lines.append("eter  trabalho %.2f  sangue %.2f  medo %.2f" % [t[0], t[1], t[2]])

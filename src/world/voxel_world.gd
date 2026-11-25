@@ -313,6 +313,25 @@ func set_block(p: Vector3i, b: int, record: bool = true) -> bool:
 	return true
 
 
+## A celula p tem chao? O suporte e sempre a celula de baixo lida por get_block_xyz,
+## que ja devolve STONE fora do mapa (parede invisivel e piso do mundo, :274-282) -- por
+## isso a queda nunca precisa de tratamento de borda, e nunca de varredura: quem pergunta
+## e o evento que escreveu no grid, nao um laco sobre as 1.048.576 celulas.
+func is_supported(p: Vector3i) -> bool:
+	return BlockDefs.is_solid(get_block_xyz(p.x, p.y - 1, p.z))
+
+
+## Pouso de bloco com gravidade: escreve a celula so onde ela e livre ou liquida, que e
+## o unico caso em que o grao desloca o que ja estava la sem destruir construcao. Rocha,
+## madeira e bancada devolvem false e quem caiu vira outra decisao (empilhar ao lado),
+## nunca reescrita silenciosa de obra alheia.
+func place_falling_block(cell: Vector3i, b: int) -> bool:
+	var cur: int = get_block(cell)
+	if cur != BlockDefs.Block.AIR and BlockDefs.draw_of(cur) != BlockDefs.Draw.LIQUID:
+		return false
+	return set_block(cell, b)
+
+
 func _touch_chunks_of(p: Vector3i, force: bool) -> void:
 	var key := Coords.chunk_of(p)
 	_mark(key)

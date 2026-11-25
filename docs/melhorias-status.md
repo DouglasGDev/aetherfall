@@ -800,8 +800,11 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
     devolve diferente: `hardness` é **duração**, não permissão, então `STONE 0,95` cai em 0,95 s de mão
     nua e o que limita a pata é **lista de material** ([`:663-664`](../src/entities/player.gd#L663-L664),
     [`:685`](../src/entities/player.gd#L685)); `block_changed` **não tem consumidor**
-    ([voxel_world.gd:6](../src/world/voxel_world.gd#L6), [`:336`](../src/world/voxel_world.gd#L336)),
-    então o gate observa `get_block` + `world.edits` e quem assina o sinal continua sendo a 17; e o
+    ([voxel_world.gd:6](../src/world/voxel_world.gd#L6), [`:312`](../src/world/voxel_world.gd#L312)),
+    então o gate observa `get_block` + `world.edits` e quem assina o sinal continua sendo a 17 — **o que
+    deixou de ser verdade com o pouso da 17**: a assinatura existe em
+    [`block_update_queue.gd:35`](../src/world/block_update_queue.gd#L35) e é hoje a única conexão do sinal
+    em `src/` (`grep -rn block_changed src`); e o
     desemperto ganhou o segundo ramo da 19
     ([wolf.gd:1239-1254](../src/entities/wolf.gd#L1239-L1254)), então cavar é o **terceiro** ramo do mesmo
     `if`, não uma folha nova na `Selector`. A re-escrita abre os furos **#22** (bancada removida por
@@ -962,11 +965,18 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
   diferença. É o mesmo formato de débito do gate do oráculo: caminho feliz existe, mas não é
   reproduzível sem o hardware de quem executa.
 
-- **O smoke usa o slot real `alpha` e não o preserva**
-  ([smoke_test.gd:3173-3195](../tests/smoke_test.gd#L3173-L3195)). Nesta validação, os
-  smokes finais rodaram em cópia com `user://` isolado por override; o runner de contrato
-  cria/remove apenas sua pasta exclusiva e não salva o mundo. Falta incorporar isolamento
-  ao próprio smoke, sem depender do cuidado de quem executa.
+- **~~O smoke usa o slot real `alpha` e não o preserva~~ — fechado pela perna 25, com a bandeira
+  medida e não com adjetivo.** O débito apontava o override de `user://` como rota honesta, e a
+  leitura do binário do contrato devolveu que **esse override não existe para o script**: o `--help`
+  do 4.7.2-stable não lista `--user-data-dir`, e passando a flag de um processo filho nas duas formas
+  (`--user-data-dir X` e `--user-data-dir=X`) o filho continua resolvendo `OS.get_user_data_dir()` em
+  `app_userdata/Aetherfall` ([`tests/smoke_test.gd:125-137`](../tests/smoke_test.gd#L125-L137)). O que
+  entrou é então o "não deixar rastro": o slot é lido cru na primeira linha do `_ready`
+  (`_preservar_slot_do_dono()` [`:139`](../tests/smoke_test.gd#L139)) e devolvido byte a byte no fim,
+  com a checagem `slot do dono devolvido byte a byte` ([`:177`](../tests/smoke_test.gd#L177)) — que hoje
+  está na corrida: `slot preservado: C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/saves/world_alpha.json  9334 B  existia`
+  e o censo da suíte foi de **277 para 278** com ela
+  ([evidence/fisica-de-blocos-17/merge_suite.log](evidence/fisica-de-blocos-17/merge_suite.log)).
 - **O journal mínimo não é transacional nem multiwriter.** `flush` por linha não promete
   recuperação de linha parcial após falha de disco/processo. A recusa de arquivo existente
   supõe um único escritor: não há lock exclusivo entre o teste de existência e o open.
@@ -995,18 +1005,13 @@ Por dependência, não por preferência (cada item aberto tem um dossiê de leit
   quatro checagens somem e a contagem cai de 220 para 216 sem nenhum vermelho. A contagem
   publicada por revisão é o que pega isso hoje; o certo é o passo falhar quando a premissa
   que ele mesmo pediu não existe.
-- **Dois scripts de áudio não têm o `.uid` no índice.** `src/` + `tests/` somam **39** `.gd` e o
-  índice rastreia **37** `.uid` (contados hoje com `git ls-files`, não herdadas da rodada do áudio,
-  que media 37 / 35); faltam exatamente `tests/audio_test.gd.uid` e
-  `tests/audio_live_probe.gd.uid`, que na rodada do áudio **nem existiam** e hoje existem na árvore
-  de trabalho como não-rastreados — o que falta é stagear os dois, nada os cria de volta. No clone limpo o
-  `--import` os cria e o `git status` os mostra como não-rastreados
-  (linha `clone_sidecars` da [conferência](evidence/third-person-carry/readback.log)). Nada
-  quebra: nenhum `.tscn` de `tests/` referencia script por `uid://` —
-  `audio_live_probe.tscn` usa `path="res://tests/audio_live_probe.gd"` — e o `--script` resolve
-  por caminho. Não entraram neste commit porque o manifesto pinado descreve **79 arquivos** e
-  re-pinar sem corrida nova em cima do conjunto re-pinado é o que a regra 6 proíbe; a correção
-  pertence ao próximo bloco que já tiver de re-medir por outro motivo.
+- **~~Dois scripts de áudio não têm o `.uid` no índice~~ — fechado em `a620352`, pela perna 25,
+  que era o bloco que já tinha de re-medir.** O débito pedia exatamente isso: stagear os dois, nada
+  os cria de volta. Conferido nesta árvore depois do merge da `main`: `git ls-files tests | grep -c uid`
+  devolve **9** e os dois arquivos estão no índice (`tests/audio_live_probe.gd.uid`,
+  `tests/audio_test.gd.uid`); a importação desta worktree os regenerou **byte a byte** iguais aos da
+  `main` (`diff` vazio nos dois, e nos quatro `.png.import` do furo #45 também), o que quer dizer que o
+  `--import` de um clone limpo não volta a imprimir `??` para eles. Nada de jogo mudou com isso.
 - **O gate do oráculo depende de um servidor local de fora**: `live_oracle_probe.tscn` exige o
   `llama-server` de pé; a degradação é testada sem rede ([smoke_test.gd:3074-3079](../tests/smoke_test.gd#L3074-L3079),
   sonda apontada para a porta 1), o caminho feliz não é testável em CI.
@@ -9590,3 +9595,132 @@ Evidência em [`docs/evidence/oraculo-nativo-fase3-22/`](evidence/oraculo-nativo
 do `Mind` — o save da mente ganha as duas aditivamente, pela checagem ida+volta. Nenhum gate de fase
 fecha; **Fase 4** (dona do furo #46 e do consumidor da quarentena no inspector) e **Fase 5** seguem
 pauta, cada uma com gate próprio. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+
+## Rodada 2026-11-25 (13) — a queda de blocos deixa de ser pauta: a fila ouve `block_changed`, o grão cai pelo apoio e o gate fecha 16/16 (branch `feat/fisica-de-blocos-que-caem-17`, base `8bddcab`, vermelho `f338c91`, pontas de código `df8714a`, `2ba726a`, `9ce4963`, `67215ca`, merge da `main` `0a061ea`, evidência `361582a`)
+
+Quatro dias depois de o dono autorizar a pauta (2026-11-21, o prompt "Física de Blocos + Mundo
+Reativo", item A), ela tem código. O débito que a perna carregava era um só e estava escrito em três
+lugares deste arquivo: **`block_changed` tinha declaração e emit e nenhum `.connect(`** — a promessa do
+doc 10 §10 de "mundo reativo" não tinha ouvido. Hoje o diretório tem exatamente uma conexão, em
+[`src/world/block_update_queue.gd:35`](../src/world/block_update_queue.gd#L35)
+(`grep -rn block_changed src` devolve a declaração em
+[`voxel_world.gd:6`](../src/world/voxel_world.gd#L6), o emit em
+[`voxel_world.gd:312`](../src/world/voxel_world.gd#L312), três comentários de
+[`main.gd`](../src/main.gd#L70) e aquela linha). O gate imprime o par
+`conexoes=2  consumidores_antes_da_perna=1` na árvore com o código
+([`merge_gate.log:15`](evidence/fisica-de-blocos-17/merge_gate.log#L15)) contra
+`consumidores_antes_da_perna=0` no vermelho de abertura.
+
+**O corte de design é um número, não um adjetivo.** A alternativa natural — percorrer o mundo a cada
+tick procurando coluna sem apoio — foi medida antes de ser descartada: o mapa é 128 × 64 × 128 =
+**1.048.576** células, e `get_block` em cada uma, 20×/s, são **20.971.520 leituras por segundo**. A fila
+custa duas leituras por evento e duas por resolução, e a checagem `queda_sem_varredura_de_mundo`
+decide isso em execução: mil ticks sem edição devolvem **`leituras=0`**, e a coluna de prova inteira
+devolve `eventos=19 leituras=64 resolucoes=17 conversions=6 queued_final=0`. A cláusula "a fila não
+varre o mundo" é falsificável por essa linha.
+
+**As seis peças, com o tamanho de cada uma.** [`block_update_queue.gd`](../src/world/block_update_queue.gd)
+(129 linhas) é o ouvido e a fila — `MAX_PER_TICK = 256`, `MAX_QUEUED = 8192`, re-cheagem em
+`RECHECK_DELAY = 1`, resolução em **Y decrescente / X crescente / Z crescente**;
+[`falling_block.gd`](../src/entities/falling_block.gd) (109) é o grão em voo, com `SIZE = 0,98`,
+`MAX_FALL_TICKS = 400` e `step_up = 0.0`;
+[`falling_block_spawner.gd`](../src/entities/falling_block_spawner.gd) (77) troca o grão de bloco a
+corpo e de corpo a bloco no pouso; [`block_defs.gd`](../src/world/block_defs.gd) ganha o bit
+`_gravity` por bloco (`SAND = 1`, `STONE = 0`, `has_gravity()`);
+[`voxel_world.gd`](../src/world/voxel_world.gd) ganha `is_supported()` e `place_falling_block()`;
+e [`main.gd`](../src/main.gd) (+82) é o dono — `setup_block_physics()`
+([:1274](../src/main.gd#L1274)), o flush no `_sim_tick`, o `settle_block_updates()` no save, o
+`clear()` no load, `block_stats()` no `diagnostics()` e a linha do F3 em
+[`hud.gd:265`](../src/ui/hud.gd#L265). `main.gd` passa a **1453** linhas (`wc -l`), e o débito de
+objeto-deus continua registrado — a perna não o agrava por escolha: o estado é do mundo, e o dono do
+mundo é o `Main`.
+
+**Três vermelhos foram pagos, cada um com a linha que o abriu.** (1) O gate nasceu vermelho contra a
+árvore sem código — `15 checagens 8 falhas 1/8 testes concluidos` com as oito assinaturas de ausência
+(`has_gravity=sim block_update_queue=sim ...` virando `=nao`), commit `f338c91`. (2) O vermelho do
+meio: `queda_move_a_celula` deu **`N=7 N+k=15 (k=8)`** quando a premissa dizia `k=7`
+([`gate_vermelho_parcial_run1.log`](evidence/fisica-de-blocos-17/gate_vermelho_parcial_run1.log),
+rodapé **`15 checagens 4 falhas 5/8 testes concluidos 22.949 s`**) e se resolveu lendo a célula de
+pouso pelo **apoio**, não pela altura do corpo. Disso saíram duas premissas que a pauta tinha chutado:
+o `step_up` do grão é **0,0** (um grão em queda não sobe degrau — o corpo não tem perna), e o
+`on_ground` do `VoxelBody` **não pode ser a testemunha do pouso**: o integrador com `SUBSTEP = 0,35`,
+gravidade 24 e `dt = 0,05` deixa o pé **0,100 m** acima do apoio quando o probe de solo é
+**0,060 m** — `folga_pe_sobre_apoio=0.100 m probe_do_corpo=0.060 m`, lido na linha verde. (3) O
+vermelho do harness: **11.693 + 23 = 11.716** linhas de `SCRIPT ERROR`
+(`Invalid call. Nonexistent function 'flush' in base 'Nil'` e `'stats'`) e o rodapé
+**`355 checagens 47 falhas 57.720 s`**
+([`reacoes_vermelho_nil_flush.extrato.log`](evidence/fisica-de-blocos-17/reacoes_vermelho_nil_flush.extrato.log)).
+A causa é uma só e é estrutural: o runner de reações monta a sessão campo a campo e **o `_ready()`
+nunca roda nele** — nada ali era nulo por descuido da queda, era nulo porque o construtor nunca foi
+chamado. O conserto é o método de setup explícito, chamado nos três sítios do harness
+([`tests/aether_reactions_test.gd:330`](../tests/aether_reactions_test.gd#L330), `:1921`, `:3284`), e
+**não** um guarda-de-nulo dentro de `_sim_tick`: o guarda transformaria o caminho inexistente em
+caminho silencioso, que é o fallback que o mandato 1 recusa. Verde depois:
+**`355 checagens 0 falhas 55.444 s`**, zero `SCRIPT ERROR`. Um quarto vermelho foi meu e tem nome:
+com o stage dos grãos pendurado no `Terrain`, a checagem `sem no de malha sobrando`
+([`tests/smoke_test.gd:3569`](../tests/smoke_test.gd#L3569)) deu **`nos=65`** contra os 64 chunks que
+ela conta — `== 277 checagens 1 falhas 68.6 s de teste ==`. O stage virou irmão do `Terrain`, filho do
+`Main`, **grosso modo como `WaterFx`, `Weather` e `RainFx` já são**, e a checagem da outra perna
+continua valendo sem ter sido tocada.
+
+**As cinco corridas na árvore mergida** (`0a061ea`, com a `main` de `114bcd2` dentro), todas com zero
+`SCRIPT ERROR`: o gate da perna **`16 checagens 0 falhas 9/9 testes concluidos 24.392 s`**, a suíte
+**`== 278 checagens  0 falhas  65.6 s de teste ==`**, o runner de reações
+**`364 checagens 0 falhas 58.801 s`**, RNG **`27 checagens 0 falhas 2.865 s`**, journal
+**`128 checagens 0 falhas 7/7 testes concluidos 6.384 s`**. Os dois censo a mais **não são desta
+perna** e cada um tem dono lido no log: a 278ª checagem do smoke é `slot do dono devolvido byte a
+byte`, da perna 25 (o diff desta perna em `tests/smoke_test.gd` é **zero linhas** — conferido com
+`git diff 114bcd2...HEAD -- tests/smoke_test.gd`), e os nove do runner são o bandit da Fase 3 da perna
+22. O que a queda muda no smoke é o tamanho do overlay: `debug mostra o relogio` foi de
+**`linhas=27`** a **`linhas=28`** — a linha `blocos fila %d em voo %d eventos %d leituras %d overflow %d`
+— e as duas checagens que contam linhas são de presença, não de igualdade, e seguem verdes.
+
+**A régua de timing, com a janela escrita** (emenda de hoje no AGENTS.md: número de passo sai com a
+janela). O par A/B do gate separa o custo da queda do custo do passo: **`A sem areia: worst=14.71 ms`**
+contra **`B cascata no tick 500: worst=14.24 ms`**, `max_queued=1`, `perdidos=0`, `overflow=0`, contra
+o teto de 25 ms dos 50 ms do budget; na árvore mergida, `15.15 ms` / `15.55 ms`, e o
+`espalhamento_nao_estoura_o_passo` do smoke **`pior passo=15.40 ms (regua 25)`**. Sete amostradores
+([`carga_gate_1..4.log`](evidence/fisica-de-blocos-17/), `carga_reacoes.log`, `carga_smoke.log`,
+`carga_merge.log`) rodaram pareados com as corridas, e todos mostram o mesmo par de PIDs estranho — que
+é o **furo #55** abaixo, e é por isso que estes números saem com a janela e não como prova de melhoria.
+
+**Furo #55 — novo, desta passada, dono: quem escreve pipeline de corrida.** Um tool call cujo
+pipeline fecha a stdout no meio de uma corrida Godot — `godot --headless ... tests/smoke_test.tscn 2>&1 |
+head -3` — mata o `head` depois de três linhas, o `bash` pai morra esperando, e **deixa um par Godot
+vivo dentro do projeto queimando núcleo indefinidamente**. Medido nas 90 de 90 amostras da janela do
+merge: `pid=13172 cpu=0% ram=7MB pid=23400 cpu=11% ram=96MB`, com o segundo entre **11% e 27% de um
+núcleo**, processo criado às **12:48** do mesmo dia por uma cadeia de sonda da perna 25. A linha
+literal está em [`carga_merge.log`](evidence/fisica-de-blocos-17/carga_merge.log):
+
+```
+AMOSTRA t=17:59:14 load=7% ram_livre=19139/32687 MB pid=13172 cpu=0% ram=7MB pid=23400 cpu=11% ram=96MB alheias= [QuantumEngine:14228=74%] [Qoder#4:17116=17%] [NisSrv:8444=11%]
+```
+
+**Por que isto não é cosmético:** é exatamente o concorrente que o **furo #31** procurava quando dizia
+que um vermelho de 25 ms podia ser o vizinho de CPU, e a emenda de hoje ("quem publicar um número de
+`worst_sim_ms` publica a janela com ele") só funciona se a janela for **limpa** — um instrumento que
+vaza um processo por corrida torna a régua de timing irresolúvel do lado de fora, e o amostrador
+versionado em `tools/` já existia para ver isso. **A regra que entra:** corrida Godot redireciona para
+**arquivo** e o corte se lê do arquivo (`tail -3 arquivo.log`), nunca por pipe no comando de corrida —
+e todo log arquivado desta perna é `> arquivo 2>&1`, sem `head` no caminho. **Dono:** a arrumação dos
+dois processos é do dono do repositório (eles pertencem à ponta `test/isolamento-user-smoke-25`, e esta
+perna **não** os encerrou — matar processo de outra perna é fora do recorte); a mudança de hábito é de
+quem escreve o comando, e a testemunha é o `alheias=` do amostrador. O **#31** continua aberto: a
+atribuição do vermelho de 25 ms ainda espera o par vermelha↔verde da **mesma** árvore com o CPU do
+Godot nos dois lados.
+
+**O que a perna deixa aberto, escrito assim.** (1) Na sessão real do smoke,
+`diagnostics()["block_updates"]` devolve **`{"events":38,"reads":56,"conversions":0,"queued":0,
+"overflow":0,"resolutions":0}`**: a fila ouve e conta, e **nenhum grão caiu** — nenhum caminho da
+suíte tira apoio de uma areia **gerada**. A areia existe no mundo
+([`world_gen.gd:168`](../src/world/world_gen.gd#L168)), a mecânica tem comprador, mas a testemunha de
+"cavei embaixo da praia e desceu" continua sendo o palco do gate (`conversions=6` na pilha de 6), não
+uma coluna do relevo. É débito com número, não defeito: a checagem que fecha isso é da **perna 18**,
+segunda compradora da fila. (2) Nenhum `SLAB` (id 18) e nenhum `breaks_a_fall` — o destino `SHATTER` do
+doc 10 §10.5 segue sem comprador, como o dossiê §6 decide. (3) Gate de fase: **nenhum** se fecha aqui
+(mandato 4), e a fila P0/P1 — budget HOT sem medição, alocação do caminho quente sem colheita, censo
+multi-semente sem corrida, bake-off de AF — continua exatamente onde estava.
+`Channel.COUNT` (3), `FORMAT_VERSION` (1), `GEN_VERSION` e a projeção do `TickJournal` não foram
+tocados por nenhuma linha desta perna: o que se move é o **mundo** que entra na projeção, e uma corrida
+com areia caindo não reproduz os hashes publicados pelo mesmo motivo declarado em 2026-11-21 para as
+pernas 17 e 18. A fila serializada passa a **18 → 20 → 13** com o pouso abaixo.

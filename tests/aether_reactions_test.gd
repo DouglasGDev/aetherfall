@@ -324,6 +324,10 @@ func _spawn_session(n: int, mating: bool = false) -> void:
 	s.player = _player
 	s._entities = Node3D.new()
 	_stage.add_child(s._entities)
+	# Dossie 17: a sessao de reacoes e montada campo a campo, sem `_ready`, entao os donos da
+	# queda de bloco tem de ser montados aqui tambem -- sem esta linha o `_sim_tick` chama
+	# `flush` num Nil e o passo morre antes da difusao, da matilha e das mentes.
+	s.setup_block_physics(s._entities)
 	s._spawn_wolves(n)
 	if not mating:
 		s._mate_cd = INF
@@ -1913,6 +1917,8 @@ func _pack_session(n: int, mating: bool = false) -> void:
 	s.player = _player
 	s._entities = Node3D.new()
 	_stage.add_child(s._entities)
+	# sem `_ready`, a fila e o spawner nascem aqui (dossie 17)
+	s.setup_block_physics(s._entities)
 	s._spawn_wolves(n)
 	if not mating:
 		s._mate_cd = INF
@@ -3274,6 +3280,8 @@ func _boot_session(n: int, mating: bool = false) -> void:
 	s.player = _player
 	s._entities = Node3D.new()
 	_stage.add_child(s._entities)
+	# sem `_ready`, a fila e o spawner nascem aqui (dossie 17)
+	s.setup_block_physics(s._entities)
 	s.hud = Hud.new()
 	_stage.add_child(s.hud)
 	s.hud.player = _player
