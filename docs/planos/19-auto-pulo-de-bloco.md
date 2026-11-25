@@ -22,7 +22,7 @@ Os dois sentidos que o ciclo de trabalho (item 3) exige:
 - **braço vermelho de origem**: com o código de hoje, o mesmo cenário não sobe. Isso é aritmética
   do código, não opinião — ver §2;
 - **braço de indiferença**: com a parede de 6 blocos do cenário que já existe
-  ([`aether_reactions_test.gd:1146`](../../tests/aether_reactions_test.gd#L1146)), o corpo **não**
+  ([`aether_reactions_test.gd:1169`](../../tests/aether_reactions_test.gd#L1169)), o corpo **não**
   é lançado para cima, e ainda assim re-arma o desvio. Sem esse lado, a checagem verde estaria
   afirmando apenas que atiramos o corpo para o alto sempre que ele encosta em alguma coisa.
 
@@ -46,14 +46,14 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
   implementação, não promessa de design.
 - **O lobo salta baixo demais para o degrau.** Quando o integrador chama bloqueio horizontal e o
   desvio expirou, o passo sorteia um novo desvio **e** dá um impulso vertical de **5,2 m/s** se
-  estava apoiado ([wolf.gd:840-844](../../src/entities/wolf.gd#L840-L844) — o literal está em
+  estava apoiado ([wolf.gd:844-848](../../src/entities/wolf.gd#L844-848) — o literal está em
   `:844`). A gravidade é a default do integrador, 24,0
   ([voxel_body.gd:17](../../src/entities/voxel_body.gd#L17)), e os dois corpos a usam com fator 1
   fora d'água ([player.gd:516](../../src/entities/player.gd#L516),
-  [wolf.gd:958](../../src/entities/wolf.gd#L958)). O ápice de um lançamento vertical é
+  [wolf.gd:970](../../src/entities/wolf.gd#L970)). O ápice de um lançamento vertical é
   `v² / (2g)`: **5,2² / 48 = 0,563 m** — 44 % de um bloco. O corpo sobe, torna a descer, e com
   `blocked_horizontal` persistindo re-arma a cada 0,35–0,8 s
-  ([`:987`](../../src/entities/wolf.gd#L987)): o "ficam bugados" que o dono vê é este loop, e ele é
+  ([`:987`](../../src/entities/wolf.gd#L999)): o "ficam bugados" que o dono vê é este loop, e ele é
   visível de fora como um lobo pulsando encostado num talude de um bloco.
 - **O jogador só sobe se apertar espaço.** O impulso manual existe e é suficiente —
   `JUMP_SPEED 8,2` ([player.gd:38](../../src/entities/player.gd#L38)), ápice **8,2²/48 = 1,401 m**,
@@ -73,11 +73,11 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
   do lobo é o segundo comprador da regra, não abstração no primeiro.
 - **Os dois cenários que a suíte já tem apontam para direções opostas.** No corredor liso o contrato
   é **nenhum** lançamento: `horizontais == 0 and rearms == 0 and lancamentos == 0`
-  ([aether_reactions_test.gd:1055](../../tests/aether_reactions_test.gd#L1055)) — e ele continuaria
+  ([aether_reactions_test.gd:1078](../../tests/aether_reactions_test.gd#L1078)) — e ele continuaria
   verde com o conserto, porque sem bloqueio horizontal nenhum dos dois caminhos é pego. Na parede de
   6 blocos o contrato era **tem lançamento**: `rearms > 0 and lancamentos > 0`, na linha `:1035` da
   leitura desta página. Essa asserção **muda de lado** com este dossiê — hoje é `rearms > 0 and
-  lancamentos == 0` ([`:1109`](../../tests/aether_reactions_test.gd#L1146)) —: contra um muro de seis
+  lancamentos == 0` ([`:1109`](../../tests/aether_reactions_test.gd#L1169)) —: contra um muro de seis
   blocos, saltar é desperdício, e é ela que o braço de indiferença do §1 vira de cabeça para baixo.
   Registrar isso antes do código é o ponto: o verde antigo não era errado, era a melhor afirmação
   possível antes de existir o predicado que distingue os dois casos.
@@ -98,7 +98,7 @@ o mesmo `floori` ([coords.gd:21-22](../../src/world/coords.gd#L21-L22)). Então 
    caso, e só quando já houve bloqueio.
 2. **O salto do lobo limpa o degrau, e só limpa degrau.** Trocar o literal `5,2` por constante
    nomeada com o ápice escrito ao lado, e exigir o predicado antes de gastar o impulso. Os sorteios
-   de `_rng` de `src/entities/wolf.gd:987-988` **continuam na mesma ordem e na mesma quantidade**: a regra nova decide
+   de `_rng` de `src/entities/wolf.gd:999-1000` **continuam na mesma ordem e na mesma quantidade**: a regra nova decide
    apenas se a velocidade vertical é escrita. mover o sorteio para dentro de um `if` mudaria o
    riacho e o cenário `simulation_rng_test` deixaria de medir a mesma coisa que mede hoje.
 3. **Auto-pulo do jogador, com as recusas escritas.** Depois de `move_and_collide`, quando
@@ -156,7 +156,7 @@ medido nesta perna, um `timeout 300` matou um boot de jogo que não estava testa
    nasce vermelha.
 3. **`penhasico_nao_gasta_salto`** — o braço de indiferença: a parede de 6 blocos do cenário que já
    existe, agora com `lancamentos == 0` e `rearms > 0`. É a asserção que esta página lia em `:1035`
-   — re-derivada hoje em [`aether_reactions_test.gd:1146`](../../tests/aether_reactions_test.gd#L1146),
+   — re-derivada hoje em [`aether_reactions_test.gd:1169`](../../tests/aether_reactions_test.gd#L1169),
    lida do outro lado — e é por isso que ela é re-derivada neste lote em vez de apagada.
 4. **`agachado_nao_e_arremessado`** — o mesmo degrau com `crouching` true: corpo continua do lado de
    cá, `Δy == 0`. A checagem que dá dente à recusa do §3.3.

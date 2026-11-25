@@ -9487,3 +9487,106 @@ consumidor em `src/` — débito da perna 17. O **#45** fecha fora desta branch,
 árvore deste reparo; a árvore pousada abaixo é os dois juntos. `Channel.COUNT`, `FORMAT_VERSION`,
 `GEN_VERSION` e a projeção do `TickJournal` não são tocados por nenhum dos dois commits, e a fila
 serializada continua **22 → 17 → 18 → 20 → 13**.
+
+## Rodada 2026-11-25 (12) — Fase 3 do dossiê 22: a curva de resultado por tática chega ao `Mind`, o bônus UCB1 entra depois do veto, e o portão mede a espécie subindo de 1 para 8 vitórias por janela (branch `feat/oraculo-nativo-fase3-22`, base `8bddcab`, vermelho `dde32e5`, pontas de código `f803243`, `cd906e7`, `2389955`, evidência `e4818a3`)
+
+A perna foi retomada de um agente delegado que chegou ao teto de turnos com a implementação
+coerente e o gate vermelho já arquivado. Dele são o baseline
+([`fase3_baseline_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_baseline_runner.log) e os três
+irmãos no mesmo diretório: suíte **277/0/60,6 s**, runner **355/0/55,335 s**, RNG **27/0/2,724 s**,
+journal **128/0/6,115 s**) e o (a) vermelho (`dde32e5`): nove checagens novas no runner
+(censo 355 → **364**), o duelo de três braços (dois desligados idênticos, um ligado) rodando o fio
+real de [`main.gd`](../src/main.gd) — mordida → dano → morte → `on_kill` → renascimento — com o
+rodapé **`364 checagens 8 falhas 51.601 s`** e o número decisivo **off1=1 off2=1 on=1
+espalhamento=0 delta=0** ("0 > 0 falso"). O único controle que passava sem a curva era o dos braços
+idênticos (`OK ... dois bracos identicos desligados conservam a contagem | off1=1 off2=1
+espalhamento=0`) — o que prova que o instrumento media, e que ninguém unia a vitória à tática
+([`fase3_vermelho_bandit_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_vermelho_bandit_runner.log)
+**3938–3946**).
+
+**`f803243` — a curva no `Mind`.** O §8 item 3 do dossiê nomeia a falta ("nada guarda vitorias,
+tentativas, variância por tática") e o termo de exploração `sqrt(2 ln N / n_i)` precisa de N e de
+n_i por par arquétipo × tática. O dono é o [`Mind`](../src/ai/mind.gd) — dono do estado de quem
+aprende, como já é de `personality`, `episodic` e `beliefs` — e não o escorredor, que só lê.
+Entram `bandit_abrir` (a **troca** de tática abre a tentativa), `bandit_vitoria` (o crédito na
+tática em pé, contando múltiplas vitórias na mesma tentativa), `bandit_bonus` (UCB1: média +
+`sqrt(2 ln N / n)`, escalado por `BANDIT_GAIN = 0.12`, teto 2.0) e o estilo EWMA de seleção
+(`ESTILO_ALPHA = 0.25`), as duas no `to_dict`/`from_dict` (ida+volta `iguais=true`). Duas cláusulas
+nasceram com número na mesa. **`BANDIT_MIN_N` saiu de 2 para 1**: uma vitória já é média real, e
+exigir duas tentativas congelaria a curva exatamente no momento que importa — a primeira mordida,
+quando o braço vencedor tem n=1 e é o UCB1 que decide se hunt volta a disputar; o braço **sem
+vitória nenhuma** continua com bônus zero (média ≤ 0 não puxa exploração para braço perdedor — a
+cláusula que impede o bandit de reforçar fuga). E a variância é **exata**, não aproximada: `soma2
++= 2·v_atual + 1` por vitória devolve Σv² sobre as tentativas (v_atual reseta em `abrir` e volta no
+`from_dict`); a versão que somava 1 por vitória mediu **`variancia=-0.898`** (n=7 soma=11.0
+soma2=11.0 — E[x²] quebrado quando várias vitórias caem na mesma tentativa,
+[`fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log`](evidence/oraculo-nativo-fase3-22/fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log)
+**3968**) antes do conserto, que mediu **7.959** com o mesmo estado.
+
+**`cd906e7` — o bônus entra depois do veto.** A superfície é a que o §8 aponta: o
+[`utility_scorer.gd`](../src/ai/utility_scorer.gd). `scored()` lê `ctx["bandit"]` e soma o UCB1 da
+tática ao score de cada opção **só onde o veto deixou** (`not vetoed`), escrevendo o próprio bônus
+no rastro da opção ("bandit"). A checagem 9 paga a cláusula com número: **`OK bandit_une_numero: a
+opcao vetada recebe contribuicao zero do bandit | vetoed=true bandit=0.0000`** — vetos continuam
+sendo portão, não componente. Contexto sem "bandit" é bônus zero: quem monta escorredor à mão (os
+testes do scorer) não ganha comportamento novo por decreto, e o caminho desligado é a árvore de
+antes da Fase 3 — o braço desligado aplica **`bonus_off=0.0000`** com a curva cheia
+([`fase3_verde_bandit_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_verde_bandit_runner.log)
+**3966**).
+
+**`2389955` — o instrumento fica decidível, e o rastro nomeou o defeito antes do conserto.** O
+`_gate_janela` ganhou rótulo por braço e rastro (a cada 300 ticks: intent, distância ao
+jogador, vitorias; a linha final com a curva e o estilo) — e o rastro do duelo **original** devolveu
+a causa do delta=0, que não era a curva: o jogador renascia a `(83, 51.001, 83)`, **32,6 m** do
+local da mordida, FORA do alcance de vista de 30 m, e com memória de vista de 6 s o hunt ficava
+vetado para sempre. O braço ligado rodou `intent=flee` nos 2400 ticks seguintes à mordida,
+`dist_jog=40.9 → 81.0 m`, vitorias presas em 1 com a curva hunt `{n:1, wins:1}`
+([`fase3_duelo_original_portao_indecidivel_rastro.log`](evidence/oraculo-nativo-fase3-22/fase3_duelo_original_portao_indecidivel_rastro.log)
+**3938–3946**) — o portão era **indecidível por construção, para qualquer ganho**. O renascimento
+sai para `(68.0, 51.001, 68.0)`, ~11 m dentro de vista, e flee/hunt voltam a disputar a vez entre
+golpes — exatamente o intervalo onde o bandit decide. Nenhuma premissa e nenhum teto se moveram; o
+critério (`delta > espalhamento`, dois braços desligados idênticos como par anti-farsa) continua o
+que nasceu no (a).
+
+O portão fechando verde, as nove linhas
+([`fase3_verde_bandit_runner.log`](evidence/oraculo-nativo-fase3-22/fase3_verde_bandit_runner.log)
+**3965–3973**): a rota existe (`bandit_bonus=true`), o desligado aplica zero
+(`bonus_off=0.0000`), o ligado imprime número maior que zero (**`bonus_on=0.2400`** = 0.12 ×
+clamp(1.0 + 1.177, 0, 2)), a variância é rastreada (**`variancia=7.959`** com n=7 soma=11.0
+soma2=73.0), o estilo soma 1 e olha para a campeã (`hunt=1.000`), o `to_dict`/`from_dict` conserva
+as duas (`iguais=true`), o controle de braços idênticos passa (`off1=1 off2=1 espalhamento=0`), o
+braço ligado move a taxa **mais que o espalhamento** (**`off1=1 off2=1 on=8 espalhamento=0
+delta=7`**) e o vetado recebe zero. O rastro do braço ligado no duelo recalibrado conta o mesmo em
+comportamento: `intent=hunt` desde t=300, `dist_jog=0.5 m`, vitorias 1→8
+([`fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log`](evidence/oraculo-nativo-fase3-22/fase3_duelo_recalibrado_portao_verde_variancia_vermelha.log)
+**3956–3963**). Censo fecha **364/364** e **76/76** — o portão da paridade teste↔checagem não foi
+levantado.
+
+O par marginal do guard fica arquivado inteiro, com a regra de reprodução decidindo: uma corrida
+devolveu **`FALHA budget_do_oraculo ... trips_antes=0 trips_depois=1 narradas=5`** e rodapé
+**`364 checagens 1 falhas 58.924 s`**
+([`fase3_vermelho_budget_par.log`](evidence/oraculo-nativo-fase3-22/fase3_vermelho_budget_par.log)
+**3918, 3980**); re-corrida com código idêntico devolve **trips 0→0** e rodapé
+**`364 checagens 0 falhas 57.476 s`** (pin **3918, 3980**). Vermelho não-reprodutível = sensibilidade
+do instrumento — o decode em voo (`worst_decode_us=744806`) caindo dentro da janela de 400 µs do
+`SubtreeGuard` num único tick — não defeito de árvore; nada silenciado, nenhum teto movido, e a
+janela de 400 µs contra um decode de ~745 µs continua exatamente o material que a **Fase 5** vai
+re-ler.
+
+As quatro corridas da ponta, todas com zero `SCRIPT ERROR`: runner **364/0/57.476 s** (pin, exit 0),
+suíte **277/0/68.0 s** com pior passo **15.83 ms** na régua de 25
+([`fase3_final_suite.log`](evidence/oraculo-nativo-fase3-22/fase3_final_suite.log) **365–366, 412**)
+— e o par de vazamento do quit segue sem dono, observado com o número **4** —, RNG
+**27/0/2.979 s**, journal **128/0/7.974 s** com **7/7 testes concluidos**.
+
+Evidência em [`docs/evidence/oraculo-nativo-fase3-22/`](evidence/oraculo-nativo-fase3-22/) — os
+**treze** logs (cinco do baseline e de provisionamento, o vermelho do (a), os quatro das pontas
+(b)–(d), o par do guard e as três corridas de contrato da ponta) mais o manifesto. `Channel.COUNT`
+([`aether_field.gd:9`](../src/world/aether_field.gd#L9)), `FORMAT_VERSION`
+([`tick_journal.gd:4`](../src/persistence/tick_journal.gd#L4)) e `GEN_VERSION`
+([`world_gen.gd:6`](../src/world/world_gen.gd#L6)) não são tocados, e a projeção do
+`TickJournal` também não: ela lê `identity`, `kind`, `intent` e as beliefs ordenadas
+([`tick_journal.gd:27-35`](../src/persistence/tick_journal.gd#L27-L35)) e não lê as tabelas novas
+do `Mind` — o save da mente ganha as duas aditivamente, pela checagem ida+volta. Nenhum gate de fase
+fecha; **Fase 4** (dona do furo #46 e do consumidor da quarentena no inspector) e **Fase 5** seguem
+pauta, cada uma com gate próprio. A fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
