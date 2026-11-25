@@ -3124,6 +3124,21 @@ func _check_llm_gate_closed() -> void:
 	# Sentido oposto no mesmo par de passos (regra 3 do ciclo): sem o portao aberto
 	# o pedido ate sai, entao o zero acima nao e o oraculo quebrado.
 	_gate_host.state = _gate_host.READY
+	# As metricas de trabalho do §2.4 (dossie 22) na linha do F3: fila, pior
+	# decode e taxa de cache. Nesta suite a ponte nao tem pack (o modelo e de
+	# 2,7 GB e headless nao carrega), entao os numeros honestos sao -1 — numero
+	# ausente NOMEADO, nunca um 0 que parece leitura (§7.2).
+	var linha_f3 := _gate_host.status_line()
+	_check("F3 de pronto traz fila, decode e cache", linha_f3.contains("fila")
+			and linha_f3.contains("decode") and linha_f3.contains("cache"),
+			"linha='%s'" % linha_f3)
+	var d_f3: Dictionary = _gate_host.diagnostics()
+	_check("diagnostics expoe as chaves da ponte", d_f3.has("queue_depth")
+			and d_f3.has("worst_decode_us") and d_f3.has("cache_hits")
+			and d_f3.has("cache_misses"),
+			"fila=%d decode_us=%d cache=%s/%s" % [
+				int(d_f3.get("queue_depth", 0)), int(d_f3.get("worst_decode_us", 0)),
+				str(d_f3.get("cache_hits", "?")), str(d_f3.get("cache_misses", "?"))])
 
 
 func _check_llm_gate_open() -> void:

@@ -84,13 +84,13 @@ não descreve mais o estado daquele dia.
   5–22 m do `home` (com [`_dry_ground`](../../src/entities/wolf.gd#L717) e
   [`_shore_point`](../../src/entities/wolf.gd#L725) como portas). O `home` vinha de
   `_random_ground_point(16.0, 46.0)` — leitura da ponta deste dossiê —, sorteado um por lobo em
-  [`_spawn_wolves`](../../src/main.gd#L382-L405): cinco lares espalhados, **nenhum território
+  [`_spawn_wolves`](../../src/main.gd#L356-L379): cinco lares espalhados, **nenhum território
   compartilhado**, e a mensagem de respawn dizia "uma nova matilha entrou no vale"
   (`main.gd:263` naquela ponta) sem que nada no código chame aquilo de matilha.
   *(Relida nesta ponta: a perna 14 trocou o sorteio único por
-  [`_spawn_home_point`](../../src/main.gd#L782), chamado por
-  [`_place_request`](../../src/main.gd#L698) a partir de
-  [:362](../../src/main.gd#L393) sobre as [`SPAWN_BANDS`](../../src/main.gd#L544), e removeu o
+  [`_spawn_home_point`](../../src/main.gd#L757), chamado por
+  [`_place_request`](../../src/main.gd#L673) a partir de
+  [`:368`](../../src/main.gd#L368) sobre as [`SPAWN_BANDS`](../../src/main.gd#L519), e removeu o
   letreiro — o dossiê 14 §1.3 manda nenhum aviso de criatura na tela. A área e a coordenação são
   desta perna: a folha conta o censo em
   [:653](../../src/entities/wolf.gd#L653), corta o círculo em
@@ -123,7 +123,7 @@ não descreve mais o estado daquele dia.
   mesmos de antes, porque a perna não tocou o alcance nem o cooldown.)*
 - **O precedente de como se injeta visão de fora, sem acoplar:** o jogador recebe um
   `entity_provider: Callable` ([player.gd:91](../../src/entities/player.gd#L91)), montado pela
-  sessão ([main.gd:170](../../src/main.gd#L170)) e lido na mira
+  sessão ([main.gd:160](../../src/main.gd#L160)) e lido na mira
   ([player.gd:619-631](../../src/entities/player.gd#L619-L631)). A matilha entra pelo mesmo
   caminho — `pack_provider`, não um singleton novo.
 - **Memória: por ator, não por matilha.** `Mind` guarda `episodic` (cap 24), `beliefs`,
@@ -145,8 +145,8 @@ não descreve mais o estado daquele dia.
 2. **Rondar com território**: o `home` vira **centro compartilhado** com raio próprio, e o
    `_leaf_wander` escolhe setor por `identity` (o assento angular §3.4) em vez de sortear qualquer
    ponto. O RNG por lobo ([:311](../../src/entities/wolf.gd#L311)) continua sendo o sorteio; o
-   `_population_rng` da sessão ([main.gd:81](../../src/main.gd#L81), sorteado em
-   [:773-774](../../src/main.gd#L804-L805)) não pode ser consumido por decisão de lobo — é o que o
+   `_population_rng` da sessão ([main.gd:71](../../src/main.gd#L71), sorteado em
+   [:773-774](../../src/main.gd#L778-L779)) não pode ser consumido por decisão de lobo — é o que o
    dossiê de RNG isolou.
 3. **Procurar com o rastro dos outros.** Na leitura da abertura, quando a inspeção
    ([`_leaf_investigate`](../../src/entities/wolf.gd#L567-L605), RUNNING por `INSPECT_SECONDS`)
@@ -167,7 +167,7 @@ não descreve mais o estado daquele dia.
    dos `:734-735`, aplicada a ângulo). O `BITE_RANGE` de 1,95 m
    ([:23](../../src/entities/wolf.gd#L23)) é o que decide o raio do anel: o assento tem de parar a
    alcance de mordida, não em cima do corpo — era isso que punha cinco corpos no mesmo voxel, o
-   mesmo problema que a nota de `_volume_clear` ([main.gd:855-857](../../src/main.gd#L855-L857))
+   mesmo problema que a nota de `_volume_clear` ([main.gd:829-831](../../src/main.gd#L829-L831))
    registrou no spawn.
    *(Escrito nesta ponta: o assento saiu por **posto de identidade**
    ([`_hunt_pack_rank`](../../src/entities/wolf.gd#L536-L541), contados em
@@ -190,7 +190,7 @@ não descreve mais o estado daquele dia.
    ([mind_oracle.gd:47](../../src/ai/mind_oracle.gd#L47), lida em
    [:96-97](../../src/ai/mind_oracle.gd#L96-L97) e entregue ao HUD).
    *(Escrita nesta ponta: a outra metade é o `trust` publicado pelo vizinho em
-   [`_pack_put`](../../src/main.gd#L916-L931) ([:899](../../src/main.gd#L930)), somado em
+   [`_pack_put`](../../src/main.gd#L890-L905) ([:899](../../src/main.gd#L904)), somado em
    [:934-939](../../src/entities/wolf.gd#L934-L939) e amortecendo o `_courage` em
    [:946](../../src/entities/wolf.gd#L946); a testemunha numérica é o cenário
    `_test_amortece_confianca` ([aether_reactions_test.gd:27](../../tests/aether_reactions_test.gd#L27)).
@@ -199,11 +199,11 @@ não descreve mais o estado daquele dia.
 ## 4. Custo — as quatro perguntas
 
 - **Roda por frame, por tick ou às vezes?** Tick de 20 Hz, dentro de `sim_step`, portanto dentro do
-  cronômetro `begin_step`/`end_step` ([main.gd:306-308](../../src/main.gd#L306-L308),
+  cronômetro `begin_step`/`end_step` ([main.gd:280-282](../../src/main.gd#L280-L282),
   [sim_clock.gd:32-39](../../src/core/sim_clock.gd#L32-L39)) e dos 50 ms divididos com a difusão e a
   recolha. A lista de vizinhos é construída **uma vez por passo** na sessão, não cinco.
 - **Quantas entidades são alcançadas?** `n(n-1)/2` = 10 comparações por passo com 5 lobos; hoje o
-  `for w in wolves` já roda 5 ([main.gd:319-320](../../src/main.gd#L319-L320)). Com o censo do
+  `for w in wolves` já roda 5 ([main.gd:293-294](../../src/main.gd#L293-L294)). Com o censo do
   dossiê 11 (até ~12), vira 66 — ainda uma fração do `sim_step`, mas o número tem de sair no
   rodapé, não na conversa.
 - **Aloco no caminho quente?** Era o débito registrado: o dicionário de blackboard por lobo por
@@ -211,9 +211,9 @@ não descreve mais o estado daquele dia.
   somar qualquer alocação nova, o lote **reaproveitou** um buffer por sessão (o mesmo array,
   reescrito a cada passo) — se a solução fosse alocar cinco arrays por tick, ela não entrava.
   *(Escrito nesta ponta: [`_read_pack`](../../src/entities/wolf.gd#L869-L870) só troca a referência
-  pelo [`pack_of`](../../src/main.gd#L876-L878) da sessão, e [`_pack_put`](../../src/main.gd#L916-L931)
+  pelo [`pack_of`](../../src/main.gd#L850-L852) da sessão, e [`_pack_put`](../../src/main.gd#L890-L905)
   reescreve a entrada no lugar, com o buffer cortado por `resize` em
-  [:873-874](../../src/main.gd#L904-L905); o dicionário do blackboard continua o mesmo débito do
+  [:873-874](../../src/main.gd#L878-L879); o dicionário do blackboard continua o mesmo débito do
   contrato, sem medição de alocação própria.)*
 - **Como sei que ficou melhor?** Pelo budget que já é código: `SubtreeGuard` de 400 µs por mente
   ([:448-449](../../src/entities/wolf.gd#L448-L449)) com `trips` colhido no runner
@@ -257,8 +257,8 @@ leitura desta página — hoje 56):
 ## 6. O que NÃO fazer
 
 - **Não criar `PackState`, `Alcateia` nem autoload novo.** O dono da matilha é `main.gd` hoje
-  ([`_spawn_wolves`](../../src/main.gd#L382-L405), [`wolves`](../../src/main.gd#L70),
-  [`_reap_corpses`](../../src/main.gd#L934-L946)); mover posse é o dossiê 06 (K3), e ele só abre
+  ([`_spawn_wolves`](../../src/main.gd#L356-L379), [`wolves`](../../src/main.gd#L60),
+  [`_reap_corpses`](../../src/main.gd#L908-L920)); mover posse é o dossiê 06 (K3), e ele só abre
   com comprador fora de `main.gd`.
 - **Não pôr a coordenação no oráculo** (mandato 2). Uma "estratégia de matilha" sugerida por LLM
   entra como crença em quarentena, nunca como intenção escrita no corpo.

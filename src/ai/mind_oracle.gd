@@ -14,6 +14,18 @@ extends Node
 ## O decode roda em thread do proprio processo; este wrapper polla `wait(id, 0)`
 ## por frame — timeout zero e consulta nao bloqueante, status 1 preserva o slot
 ## (contrato do mind_prompt.h) — e nenhum `await` pendura os 50 ms do tick.
+##
+## Passo 5 do dossie 22 (§6.5): a cache do oraculo, opt-in via CLI
+## `--oracle-cache=` (padrao da casa do `--tick-journal=`), e lida ANTES de
+## inferir — com o prompt do lobo ja gravado no arquivo separado do save, a
+## frase volta sem tocar a fila, e o replay de CI roda com o modelo ate fora do
+## processo. Sem a flag `_cache` e null e o custo por frame e zero.
+##
+## Passo 5 do dossie 22 (§6.4/§7.1): o PORTAO da Camada 5. "A mente propoe, as
+## regras dispoe" deixa de ser ausencia de caminho — com o modelo no MESMO heap
+## esse argumento e fraco — e vira o verificador nomeado (`BeliefVerifier`) na
+## unica rota de escrita: a saida que cita um id que nao existe na alcateia nao
+## produz narrativa, crenca nem intencao, e a recusa nomeia o id forjado.
 
 signal narration_ready(wolf_id: int, text: String)
 
@@ -34,6 +46,11 @@ const KEY_FILE := "user://mind_key.txt"
 ## de uma sonda publica (`--alias`): um dono so para a string, pedido e servidor
 ## tem de dizer o mesmo nome.
 const MODEL_ALIAS := "mind-small"
+## Params de geracao do prompt narrativo: entram no pedido e na chave da cache
+## (§6.5 — prompt ⊕ pack ⊕ params), entao sao constantes nomeadas, nao literais
+## soltos repetidos em dois lugares.
+const PROMPT_MAX_TOKENS := 64
+const PROMPT_TEMPERATURE := 0.7
 
 ## Portao de prontidao (dossie 15 §4.4): quando existe um dono de pack, ele diz
 ## quando o modelo esta no estado de fila. Sem portao — o caso da suite e o de
@@ -54,6 +71,19 @@ var _pending_id := -1
 var _ext_id := -1
 var _narrations := {}
 var _cooldowns := {}
+## Cache do oraculo (§6.5), opt-in via CLI `--oracle-cache=`: null = desligada e
+## o caminho do decode segue byte a byte o que era. O arquivo e SEPARADO do save
+## — cache nao e memoria, e determinismo de CI, nunca um segundo ledger.
+var _cache: OracleCache = null
+## Acertos de cache nesta sessao — o numero que o gate do replay imprime: com a
+## resposta gravada, a segunda semente NAO emite pedido (`requests_issued` fica).
+var cache_hits := 0
+## Prompt do pedido em voo: e a chave de conteudo quando a resposta chega — a
+## frase se grava sob a chave do prompt que PRODUZIU o texto, nunca de outro.
+var _ultimo_prompt := ""
+## O verificador nomeado da fronteira da Camada 5 (§6.4): criado no `_ready`, e
+## ele que decide se uma saida do oraculo pode entrar no mundo.
+var _verificador: BeliefVerifier = null
 
 ## Numeros do caminho, para a checagem nomear a premissa em vez de adjetivar:
 ## quantos pedidos sairam para a fila, qual foi o ultimo status do `wait`
@@ -66,6 +96,7 @@ var last_reason := ""
 func _ready() -> void:
 	if ClassDB.class_exists(&"AfMindOracle"):
 		_ext = ClassDB.instantiate(&"AfMindOracle")
+	_verificador = BeliefVerifier.new()
 
 
 ## A ponte nativa que este oraculo usa. O AfMindRuntime (dossie 22 §6.3) dirige
@@ -82,6 +113,19 @@ func _process(delta: float) -> void:
 	if _busy:
 		_poll()
 		return
+	# A cache (§6.5) e lida ANTES de inferir e antes dos portoes: com o prompt ja
+	# gravado, a frase volta do arquivo sem tocar a fila — o modelo pode nem
+	# estar no processo (replay de CI com "modelo desligado"). Guarda por
+	# `_cache != null`, entao sem a flag de CLI este bloco nao existe em custo.
+	if _cache != null and roster_provider.is_valid():
+		var roster_c: Array = roster_provider.call()
+		for i in roster_c.size():
+			var wc = roster_c[(_cursor + i) % roster_c.size()]
+			if wc != null and is_instance_valid(wc) and wc.alive \
+					and float(_cooldowns.get(wc.identity, 0.0)) <= 0.0 \
+					and _cache_hit(wc):
+				_cursor = (_cursor + i + 1) % roster_c.size()
+				return
 	if _server_cd > 0.0 or not roster_provider.is_valid():
 		return
 	# O portao vem antes de qualquer pedido: com o dono do pack carregando o
@@ -107,6 +151,64 @@ func narration_of(wolf_id: int) -> String:
 	return String(_narrations.get(wolf_id, ""))
 
 
+## O PORTAO da Camada 5 (§6.4/§7.1): a UNICA rota pela qual uma saida do oraculo
+## entra no mundo — narrativa gravada, crenca, intencao. A saida que nomeia um
+## `entity_id` que nao existe na alcateia NAO passa: sem narrativa, sem crenca,
+## sem intencao, e a recusa NOMEIA o id forjado (o numero que decide). Com o
+## modelo no MESMO heap, ausencia de caminho nao e prova — o portao checado e.
+## Roster invalido ou vazio e fail closed: qualquer citacao e forjada.
+func aceitar_saida(wolf_id: int, texto: String) -> bool:
+	var ids: Array = []
+	if roster_provider.is_valid():
+		for w in roster_provider.call():
+			if w != null and is_instance_valid(w):
+				ids.append(int(w.identity))
+	if not _verificador.aceitar(texto, ids):
+		last_reason = _verificador.ultimo_motivo
+		_cooldowns[wolf_id] = RETRY_COOLDOWN
+		return false
+	_narrations[wolf_id] = texto
+	_cooldowns[wolf_id] = RETRY_COOLDOWN
+	narration_ready.emit(wolf_id, texto)
+	return true
+
+
+## Liga a cache (§6.5) no arquivo dado — CLI `--oracle-cache=`, padrao da casa
+## do `--tick-journal=`. Sem chamada `_cache` permanece null e o custo por frame
+## e zero: cache e opt-in, o jogo normal narra com decode a cada recuo.
+func set_cache_path(caminho: String) -> bool:
+	_cache = OracleCache.new(caminho)
+	return _cache != null
+
+
+## Leitura ANTES de inferir: se o prompt do lobo ja tem resposta gravada, a
+## frase volta do arquivo sem tocar a fila. Arma o MESMO recuo por lobo do
+## decode (a frase servida e resposta completa — nao reemite todo frame) e
+## conta o acerto, que e o numero que o gate do replay imprime.
+func _cache_hit(w) -> bool:
+	var key := OracleCache.chave(_prompt_narracao(w), MODEL_ALIAS,
+			PROMPT_MAX_TOKENS, PROMPT_TEMPERATURE)
+	if not _cache.tem(key):
+		return false
+	var text := _cache.le(key)
+	_narrations[int(w.identity)] = text
+	_cooldowns[int(w.identity)] = RETRY_COOLDOWN
+	cache_hits += 1
+	narration_ready.emit(int(w.identity), text)
+	return true
+
+
+## Gravacao apos o wrapper ACEITAR a saida (status 0, texto nao vazio): o que a
+## cache devolve tem de ser o que o wrapper aceitou — narrativa recusada nunca
+## se torna cache. Falha de gravacao nao derruba o decode: nomeia o motivo em
+## `ultimo_erro` da cache e segue.
+func _cache_grava(prompt: String, text: String) -> void:
+	if _cache == null:
+		return
+	_cache.grava(OracleCache.chave(prompt, MODEL_ALIAS,
+			PROMPT_MAX_TOKENS, PROMPT_TEMPERATURE), text)
+
+
 ## Enfileira o pedido na ponte e devolve a palavra ao frame. A fila pode recusar
 ## (-1 sem contexto, -2 campo, -3 fila cheia, -4 papel): cada recusa imprime o
 ## motivo NOMEADO que a propria ponte escreveu, nunca um numero solto.
@@ -118,11 +220,12 @@ func _request(w) -> void:
 	_busy = true
 	requests_issued += 1
 	_pending_id = int(w.identity)
+	_ultimo_prompt = _prompt_narracao(w)
 	var id := int(_ext.enqueue({
 		"role": "user",
-		"prompt": _prompt_narracao(w),
-		"max_tokens": 64,
-		"temperature": 0.7,
+		"prompt": _ultimo_prompt,
+		"max_tokens": PROMPT_MAX_TOKENS,
+		"temperature": PROMPT_TEMPERATURE,
 	}))
 	if id < 0:
 		_busy = false
@@ -145,9 +248,14 @@ func _poll() -> void:
 	var text := _clean(String(out.get("text", "")))
 	if status == 0 and text != "":
 		last_reason = ""
-		_narrations[_pending_id] = text
-		_cooldowns[_pending_id] = RETRY_COOLDOWN
-		narration_ready.emit(_pending_id, text)
+		# O portao da Camada 5 decide ANTES de qualquer escrita (§6.4): narrativa,
+		# cache e sinal so existem com a saida aceita — a saida que nomeia um id
+		# que nao existe na alcateia nao produz nada, e a recusa nomeia o id
+		# forjado. Recusada tambem nao vira cache: o que a cache devolve e o que
+		# o wrapper ACEITOU.
+		if not aceitar_saida(_pending_id, text):
+			return
+		_cache_grava(_ultimo_prompt, text)
 		return
 	# Decode concluido sem texto ou slot perdido: recuo cheio com o motivo que a
 	# ponte escreveu — impresso, nao anonimizado (dossie 15 §9).

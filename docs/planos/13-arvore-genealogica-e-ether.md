@@ -261,9 +261,9 @@ pin [README.md:192](../../README.md#L192)) sobem com o lote e são **re-medidos*
   mão pela suíte — exatamente o que o contrato proíbe.
 - **Nenhum canal novo por conveniência** (preço no §3.3, exige `FORMAT_VERSION` e linha no status).
 - **Nenhum oráculo/LLM sugerindo ascendência** (mandato 2): a única saída de `MindOracle` é
-  `_narrations` ([mind_oracle.gd:47](../../src/ai/mind_oracle.gd#L47), gravada em
-  [:176](../../src/ai/mind_oracle.gd#L176)), lida por
-  [`narration_of`](../../src/ai/mind_oracle.gd#L106-L112) e entregue só ao HUD.
+  `_narrations` ([mind_oracle.gd:72](../../src/ai/mind_oracle.gd#L72), gravada em
+  [:170](../../src/ai/mind_oracle.gd#L170)), lida por
+  [`narration_of`](../../src/ai/mind_oracle.gd#L150-L159) e entregue só ao HUD.
 - **Nenhum NPC inventado para preencher a escada**; degrau vazio fica `[TARGET]`.
 - **Não re-herdar o adquirido**, não apagar `cor_do_pelo_vem_do_bioma` de fundador, não contar geração
   por `Time.get_ticks_*` nem por frame, e não pôr a proveniência dentro do hash sem dizer que isso

@@ -84,8 +84,16 @@ func status_line() -> String:
 			# recuo anonimo no F3, entao as duas pontas aparecem juntas (dossie 15 §9).
 			if oracle != null and not oracle.last_reason.is_empty():
 				tail = "  oraculo: %s" % oracle.last_reason
-			return "llm: %s  ctx %d  load %.0f ms  vram %.1f GB%s" % [
-				state, ctx_size, af_load_ms, _vram_gb(), tail]
+			# As metricas de TRABALHO do modelo que o §2.4 cobrou (dossie 22): a
+			# profundidade da fila, o pior decode que a ponte mediu e a taxa de
+			# cache — o retrato que o dicionario do processo antigo nunca teve.
+			# Sem ponte, -1 e o numero ausente NOMEADO, nao um 0 que parece
+			# leitura (§7.2 do dossie 22).
+			var ext_f := _ponte()
+			return "llm: %s  ctx %d  load %.0f ms  vram %.1f GB  fila %d  decode %d us  cache %d/%d%s" % [
+				state, ctx_size, af_load_ms, _vram_gb(),
+				_int_de(ext_f, "queue_depth"), _int_de(ext_f, "worst_decode_us"),
+				_int_de(ext_f, "cache_hits"), _int_de(ext_f, "cache_misses"), tail]
 	return "llm: %s  %s" % [state, detail]
 
 

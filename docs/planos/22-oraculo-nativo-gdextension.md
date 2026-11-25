@@ -209,7 +209,12 @@ e que a sonda não cobre (a sonda não abre janela, não cria swapchain). É o g
 
 ## 2. Estado real do código do oráculo, lido linha a linha
 
-Nada disso é hipótese; os números abaixo são `grep -rn` desta árvore em `HEAD`.
+Nada disso é hipótese — e **este §2 é registro da Fase 0, não retrato da ponta atual**: os
+números de `mind_oracle.gd` e de `llm_server_host.gd` foram lidos na `main` do pouso da 16,
+`bb13752` (264 linhas, o transporte em quatro lugares), e os de `main.gd` nos §§2.3–2.4 foram
+re-derivados na ponta do Passo 4, `5138549`. O Passo 4 aposentou este estado — o transporte
+saiu, `grep -rn HTTPRequest src` devolve **vazio**, e o hospedeiro de processo saiu com ele —;
+o que existe hoje é o que os §§5.3–5.4, o §18 e o §19 pagaram com gate.
 
 ### 2.1 `src/ai/mind_oracle.gd` — 264 linhas, e o transporte está em quatro lugares
 
@@ -217,7 +222,7 @@ Nada disso é hipótese; os números abaixo são `grep -rn` desta árvore em `HE
 |---|---|
 | o nó de transporte | `mind_oracle.gd:42` `var _http: HTTPRequest = null`, criado em `mind_oracle.gd:62`, timeout em `mind_oracle.gd:64`, conectado em `mind_oracle.gd:66` |
 | a chamada | [`:122`](../../src/ai/mind_oracle.gd#L122) `_http.request(server_url + "/v1/chat/completions", auth_headers(), HTTPClient.METHOD_POST, JSON.stringify(payload))` |
-| a resposta | [`:151`](../../src/ai/mind_oracle.gd#L151) `_on_response`, com o `_clean` de 140 caracteres em [`:199`](../../src/ai/mind_oracle.gd#L199) |
+| a resposta | `bb13752:src/ai/mind_oracle.gd:151` `_on_response`, com o `_clean` de 140 caracteres em `bb13752:src/ai/mind_oracle.gd:199` |
 | o que **não** é transporte | o agendamento (`_process` [`:71`](../../src/ai/mind_oracle.gd#L71)), o roster round-robin ([`:85-91`](../../src/ai/mind_oracle.gd#L85-L91)), o recuo (`RETRY_COOLDOWN` [`:13`](../../src/ai/mind_oracle.gd#L13), `LOADING_COOLDOWN` [`:28`](../../src/ai/mind_oracle.gd#L28)), a chave do servidor ([`:19-20`](../../src/ai/mind_oracle.gd#L19-L20), [`:219`](../../src/ai/mind_oracle.gd#L219)), o prompt ([`:131`](../../src/ai/mind_oracle.gd#L131)), a narrativa pública ([`:96`](../../src/ai/mind_oracle.gd#L96)) e o `narration_ready` ([`:9`](../../src/ai/mind_oracle.gd#L9)) |
 
 É esta separação que o §6.2 explora: **a ponte é ~60 linhas; os outros ~200 são a mente do
@@ -233,7 +238,7 @@ de uma leitura anterior, quando o hospedeiro de processo ainda guardava parte do
 
 1. `src/ai/mind_oracle.gd` — sete linhas, todas do oráculo (§2.1): [`:42`](../../src/ai/mind_oracle.gd#L42)
    (`var _http: HTTPRequest = null`), [`:49`](../../src/ai/mind_oracle.gd#L49) e
-   [`:182`](../../src/ai/mind_oracle.gd#L182)/[` :184`](../../src/ai/mind_oracle.gd#L184) (comentários que
+   `bb13752:src/ai/mind_oracle.gd:182`/`bb13752:src/ai/mind_oracle.gd:184` (comentários que
    nomeiam a enum `HTTPRequest.Result`, lida do registro da classe em
    [`:67`](../../src/ai/mind_oracle.gd#L67)), [`:62`](../../src/ai/mind_oracle.gd#L62) (cria o nó),
    [`:189`](../../src/ai/mind_oracle.gd#L189) (`RESULT_SUCCESS` no `_reason_of`).
@@ -1782,7 +1787,7 @@ launcher.
 preserva o slot (contrato do `mind_prompt.h`), e nenhum `await` pendura os 50 ms do tick. O que
 fica do §2.1: agendamento por frame, round-robin pela matilha, prompt dobrado numa mensagem só,
 recusas nomeadas, recuo cheio de 30 s ([`RETRY_COOLDOWN` :24](../../src/ai/mind_oracle.gd#L24)) e a
-chave externa `KEY_ENV`/`KEY_FILE` ([:31](../../src/ai/mind_oracle.gd#L31)) — quem sobe um
+chave externa `KEY_ENV`/`KEY_FILE` (`5138549:src/ai/mind_oracle.gd:31`) — quem sobe um
 `llama-server` na mão lê as mesmas duas fontes. O que morre: o `LOADING_COOLDOWN` do `503`, porque a
 espera pelo modelo deixa de ser transporte e passa a ser o portão `ready_provider`, ligado ao
 `AfMindRuntime.ready()` ([af_mind_runtime.gd:68](../../src/ai/af_mind_runtime.gd#L68)) em
@@ -1840,7 +1845,253 @@ journal **128 / 0 / 5,843 s**, "7/7 testes concluidos"
 - **Furo #46** — a travada do frame que executa o `load_pack` síncrono — fica aberto, dono Passo 5.
 - **Nenhum gate de fase** (mandato 4); os furos **#38, #39, #20, #31, #41, #44 e #45** seguem onde
   estavam.
+## 19. O Passo 5: a cache de conteúdo, o portão do verificador, e a régua do budget que mediu antes de cortar
+
+### 19.1 Os gates nascem vermelhos, e o vermelho já traz a régua do budget
+
+Commit **e7e2d59** nasce com as duas checagens de abertura do §5.5 vermelhas na mesma corrida:
+a cache não existe (`FALHA af_cache_determina_replay: a cache ficou em arquivo separado do save |
+caminho=user://oracle_cache_passo5.json existe=false` em
+[:576](../evidence/oraculo-nativo-passo5-22/passo5_runner_vermelho.log#L576)) e a segunda corrida paga o
+decode de novo (`pedidos_b=1` em
+[:577](../evidence/oraculo-nativo-passo5-22/passo5_runner_vermelho.log#L577) — o sampler greedy já
+devolve a mesma frase; o que a cache §6.5 compra é o replay **sem modelo**), e o verificador nomeado
+não está em `src/ai` (`existe=false` em
+[:578](../evidence/oraculo-nativo-passo5-22/passo5_runner_vermelho.log#L578)). Runner **331 checagens 3
+falhas 49,079 s**; suíte 264/0/52,7 s. A régua do budget mede **no vermelho**, antes de qualquer
+corte — a disciplina do §5.5: `worst_sim_ms=12.75 ms pico_do_passo=12 750 µs media=2 389,1 µs/passo`
+com o decode em voo dentro da malha de 1 400 passos
+([:589](../evidence/oraculo-nativo-passo5-22/passo5_runner_vermelho.log#L589)).
+
+### 19.2 A cache: chave de conteúdo, arquivo separado do save, opt-in por CLI
+
+Commit **5b06f51** fecha `af_cache_determina_replay` **verde** (runner 332/1 — a falha restante é a
+do verificador, que fecha no commit seguinte): a chave é `prompt|pack|max_tokens|temperature` com as
+constantes nomeadas (`PROMPT_MAX_TOKENS`/`PROMPT_TEMPERATURE`) e é **estável entre as corridas**
+(`prompt_a=315 chars prompt_b=315 chars iguais=true`); a corrida A alimenta o arquivo separado do
+save (`frase_a=143 chars pedidos=1 status=0`); uma instância **fresca** lê a frase do arquivo pela
+chave reconstruída de fora (`chave=4b4158c18aef447d lida=143 chars entradas=1`); a segunda semente
+devolve a mesma frase **sem consultar a fila** (`pedidos_b=0 acertos_cache=1`) — o vermelho imprimiu
+`pedidos_b=1` e o verde zero, que é exatamente a diferença entre "o modelo responde igual" e "a
+cache responde sem modelo" (§7.3). O arquivo JSON carrega número de versão e recusa nomeada — o
+cuidado do `FORMAT_VERSION` em escala de cache — e narrativa recusada ou vazia nunca entra. Cache é
+**opt-in** via `--oracle-cache=` no padrão da casa do `--tick-journal=`: sem a flag, `_cache` é null
+e o custo por frame é zero.
+
+### 19.3 O portão do verificador: "a mente propõe" deixa de ser ausência de caminho
+
+Commit **824445e** fecha `verifier_recusa_id_forjado` **verde**: o verificador nomeado existe na
+fronteira da Camada 5 (`res://src/ai/belief_verifier.gd existe=true`) e o **portão único**
+(`MindOracle.aceitar_saida` — a única rota de escrita que o `_poll` passa a usar) recusa a saída que
+cita id que não existe na alcateia, com o motivo nomeado (`verificador recusou a saida: id 999
+citado nao existe na alcateia`); o controle, que só cita id do roster, entra pelo mesmo portão com
+narrativa e sinal. Fail closed com roster vazio. A Fase 2 (§5.6) expande o **mesmo portão** para os
+ids do ledger sem mudar quem chama. No mesmo lote, a régua do budget re-mede verde com o portão no
+caminho (`worst_sim_ms=13.09 ms pico=13 094 µs trips=0→0`).
+
+### 19.4 As métricas do §2.4 no F3 e o fecho
+
+Commit **1b5ff5f**: a linha de pronto do F3 ganha `fila %d  decode %d us  cache %d/%d` lidos da
+ponte (`_ponte()` + `_int_de()`, com `-1` como número ausente **nomeado** sem ponte — nunca um 0 que
+parece leitura, §7.2), e `diagnostics()` expõe `queue_depth`/`worst_decode_us`/`cache_hits`/
+`cache_misses`. As quatro corridas na ponta: suíte **266/0/52,7 s** (264 + as duas checagens novas do
+F3), runner **336/0/47,970 s**, RNG **27/0/2,708 s**, journal **128/0/5,766 s**; zero `SCRIPT ERROR`
+nas quatro. Os três gates do passo no runner: as sete de `af_cache_determina_replay`
+([:572-578](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L572-L578)), as cinco de
+`verifier_recusa_id_forjado`
+([:579-583](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L579-L583)) e as quatro de
+`budget_do_oraculo_nao_estoura_a_arvore`
+([:592-595](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L592-L595)), com o veredito
+`worst_sim_ms=12.87 ms pico_do_passo=12 873 µs trips_antes=0 trips_depois=0`.
+
+### 19.5 O que este passo não fecha
+
+O **furo #46** (o `load_pack` síncrono trava o frame do load) foi avaliado neste passo e fica em
+pé com motivo nomeado: o conserto pede carga assíncrona do lado da extensão — uma segunda fila de
+trabalho dentro da ponte com progresso legível — e o ganho dele é só no boot (o load acontece uma
+vez por processo, e o passo 2 (b) mediu o custo inteiro na mesa); a fila do oráculo já entrega
+decode não-bloqueante no tick, que era o caminho quente real. O trabalho de ponte entra na Fase 4
+(LOD e orçamento), onde o governor precisa de carga assíncrona de qualquer forma. Nenhum gate de
+fase fecha aqui; `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal`
+não foram tocados por nenhum commit deste passo.
 
 
+## 20. A pauta da Fase 2 — memória de qualidade, registrada antes da primeira linha de código
 
+Esta seção é a pauta da Fase 2 do §5.6, escrita em branch só de documentos (`docs/pauta-fase2-22`)
+e registrada **antes** de qualquer linha de código (mandato 4). Nenhum arquivo de `src/`, `tests/`
+ou `native/` foi tocado para produzi-la — a régua da fase de código será
+`git diff --name-only 8b781ac...HEAD -- src tests native` devolvendo **vazio**. Tudo abaixo foi
+re-derivado contra a árvore de hoje lendo os arquivos de novo, no estilo do §8: decisão com braço
+rejeitado e o número que reabre o braço, premissas nascendo vermelhas nomeadas antes do código, e
+o que a fase **não** fecha. O que não tem comprador nomeado aqui não entra na fase.
 
+### 20.1 O contrato de referência
+
+A Fase 1 está fechada na main: merge **1d3f36c** (pais `eb218fe` × `d14c066`) e registro
+**8b781ac**, com os números do fecho valendo para a árvore de hoje: suíte **266/0/52,8 s**, runner
+**336/0/48,797 s**, RNG **27/0/2,712 s**, journal **128/0/5,903 s**; clone limpo runner
+**336/0/56,279 s**, suíte **266/0/53,9 s**, `build.dll` **184 320 B**. A fase herda do Passo 5 as
+peças vivas com os três gates no runner
+([`passo5_runner_f3.log`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log)): as sete de
+`af_cache_determina_replay`
+([`:572-578`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L572-L578)), as cinco de
+`verifier_recusa_id_forjado`
+([`:579-583`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L579-L583)) e as quatro de
+`budget_do_oraculo_nao_estoura_a_arvore`
+([`:592-595`](../evidence/oraculo-nativo-passo5-22/passo5_runner_f3.log#L592-L595)). A branch de
+código da fase nasce desta ponta e se chama **`feat/oraculo-nativo-fase2-22`**; as três réguas do
+§11 correm dela antes do push, com os logs arquivados em `docs/evidence/fase2-pauta-22/`.
+
+### 20.2 O que o §5.6 pede e a árvore devolve diferente
+
+| O §5.6 pede para a Fase 2 | O que a árvore de hoje tem |
+|---|---|
+| relevância por **recência** | crença nenhuma carimba tempo — o `decay` **apaga** abaixo de `CONFIDENCE_MIN` ([`src/ai/mind.gd:116`](../../src/ai/mind.gd#L116)), não carimba |
+| **frequência** | não existe contador por crença — o `reinforce` soma no confidence ([`src/ai/mind.gd:86`](../../src/ai/mind.gd#L86)) e só |
+| **peso emocional** | parcial e já dentro do código: `hurt` +0,22 contra `saw_player` +0,15 na consolidação ([`src/ai/mind.gd:61-68`](../../src/ai/mind.gd#L61-L68)) |
+| **centralidade no grafo** | não existe grafo — `relations` é ator→confiança, uma aresta por ator ([`src/ai/mind.gd:20`](../../src/ai/mind.gd#L20)) |
+| **embeddings locais** | zero no repositório — e o §9 já decidiu: sem métrica de recall antes, sem embedding |
+| **consolidação no sono** | não existe ciclo de sono no mundo; o que existe é consolidação por overflow (§20.4.2) |
+| **verifier grounded por ids do ledger** | o portão guarda ids do **roster** ([`src/ai/belief_verifier.gd:24`](../../src/ai/belief_verifier.gd#L24), [`src/ai/mind_oracle.gd:160-173`](../../src/ai/mind_oracle.gd#L160-L173)); id de ledger nenhum passa por ele |
+
+### 20.3 O estado real da memória, linha a linha
+
+Quatro donos na mesa, e só um deles é memória de qualidade:
+
+- **`Mind` é o dono da memória de qualidade.** `beliefs` é `String -> {confidence, source}`
+  ([`src/ai/mind.gd:19`](../../src/ai/mind.gd#L19)) — sem timestamp, sem contador, sem grafo. As
+  três leituras que existem são por **chave exata**: `believes` com soleira 0,35
+  ([`src/ai/mind.gd:104`](../../src/ai/mind.gd#L104)), `last_atom`
+  ([`src/ai/mind.gd:71`](../../src/ai/mind.gd#L71)) e `count_kind`
+  ([`src/ai/mind.gd:78`](../../src/ai/mind.gd#L78)). O `remember` apenda o átomo e consolida **no
+  estouro** do cap 24 ([`src/ai/mind.gd:7`](../../src/ai/mind.gd#L7),
+  [`src/ai/mind.gd:44-46`](../../src/ai/mind.gd#L44-L46)); a consolidação
+  ([`src/ai/mind.gd:61-68`](../../src/ai/mind.gd#L61-L68)) é síncrona, amortizada, dentro do
+  `remember` do próprio tick. O decaimento é exponencial com fator 0,14/min
+  ([`src/ai/mind.gd:8`](../../src/ai/mind.gd#L8), [`src/ai/mind.gd:108`](../../src/ai/mind.gd#L108))
+  e apaga abaixo de 0,02 ([`src/ai/mind.gd:9`](../../src/ai/mind.gd#L9),
+  [`src/ai/mind.gd:116`](../../src/ai/mind.gd#L116)). Persiste pelo `to_dict`
+  ([`src/ai/mind.gd:134`](../../src/ai/mind.gd#L134)) e volta pelo `from_dict` com `source`
+  "loaded" ([`src/ai/mind.gd:152`](../../src/ai/mind.gd#L152)).
+- **O corpo tem caches próprios, e não são memória.** `_checked_scents` é a dedupe espacial do
+  lobo ([`src/entities/wolf.gd:242`](../../src/entities/wolf.gd#L242)) com TTL 30 s, cap 32 e
+  renovação 0,06 ([`src/entities/wolf.gd:32-34`](../../src/entities/wolf.gd#L32-L34)); escreve com
+  evicção no cap ([`src/entities/wolf.gd:647-648`](../../src/entities/wolf.gd#L647-L648)), lê com
+  expiração e renovação ([`src/entities/wolf.gd:962-964`](../../src/entities/wolf.gd#L962-L964),
+  [`src/entities/wolf.gd:987`](../../src/entities/wolf.gd#L987)) e é zerado no load
+  ([`src/entities/wolf.gd:1408`](../../src/entities/wolf.gd#L1408)) — morre com o corpo, não entra
+  no save ([`src/entities/wolf.gd:1372`](../../src/entities/wolf.gd#L1372)), não entra no journal.
+- **A projeção do journal lê só três campos.** O `state_hash` ordena as beliefs por chave e projeta
+  `[key, confidence, source]` ([`src/persistence/tick_journal.gd:29-34`](../../src/persistence/tick_journal.gd#L29-L34)).
+  Consequência nomeada para a fase: **qualquer campo novo dentro de uma belief é invisível à
+  projeção**, e uma **chave nova** de belief entra nela sem mudar uma linha do journal.
+- **O prompt do oráculo imprime todas as beliefs, na ordem do dicionário.** O `_prompt_for` usa
+  `w.mind.to_dict()` e itera as beliefs sem janela e sem ordem de qualidade
+  ([`src/ai/mind_oracle.gd:277-294`](../../src/ai/mind_oracle.gd#L277-L294), laço em
+  [`src/ai/mind_oracle.gd:284-285`](../../src/ai/mind_oracle.gd#L284-L285)). E o prompt é **parte
+  da chave de cache** — sha256 de `prompt|pack|max_tokens|temperature`
+  ([`src/ai/oracle_cache.gd:55-56`](../../src/ai/oracle_cache.gd#L55-L56)) — logo **mudar a seleção
+  de beliefs muda a chave de cache**: a seleção tem de ser pura no estado da mente, senão a cache
+  fixa memória velha.
+
+### 20.4 As três decisões de corte
+
+#### 20.4.1 Embeddings: `[OPEN]` atrás de duas premissas — e nenhum entra "para preparar"
+
+**Decisão: nenhum embedding entra na Fase 2.** Braço rejeitado: "entrar agora para a Fase 5 já
+encontrar pronto" — rejeitado com dois furos nomeados: **(a) não existe consumidor** — toda leitura
+de memória hoje é por chave exata (§20.3), e a regra da casa é generalizar no segundo chamador, não
+no primeiro; **(b) não existe métrica de recall** — o §9 já decidiu que embedding sem recall
+medida não entra, e o gate da Fase 5 (`inspector_ve_a_mesma_leitura_do_journal`, linha 454) é uma
+**leitura**, não um recall: passa idêntico com ou sem embedding, logo não paga nada. O braço fica
+**[OPEN]** e reabre quando as duas premissas tiverem dono nomeado: um **segundo consumidor** de
+memória por similaridade e uma **métrica de recall** com par de consultas rotulado, instrumentada
+headless antes.
+
+#### 20.4.2 Consolidação no sono: o que existe é o overflow, e ele fica
+
+**Decisão: nada novo de consolidação na Fase 2.** O mundo não tem ciclo de sono para pendurar
+nada; o que existe é a consolidação por overflow — síncrona, amortizada, dentro do `remember` do
+próprio tick ([`src/ai/mind.gd:44-46`](../../src/ai/mind.gd#L44-L46),
+[`src/ai/mind.gd:61-68`](../../src/ai/mind.gd#L61-L68)) — determinística por construção. Braço
+rejeitado: **cadência periódica de compactação no tick** — subsystem novo no hospedeiro
+(single-writer), custo novo dentro do orçamento de 50 ms, e nenhum comprador medido pedindo.
+Reabre com: a **pressão de consolidação medida** (átomos consolidados por sessão e tamanho da
+tabela de beliefs) ou um comprador da Fase 4 (LOD e orçamento).
+
+#### 20.4.3 Cache do corpo não é memória: nem generalizar, nem substituir
+
+**Decisão: os dois donos ficam, cada um no seu lugar.** `_checked_scents` é a dedupe espacial do
+corpo (§20.3): morre com o corpo, não tem hash, não persiste, não projeta. A memória de qualidade
+é o `Mind`: persiste no save e volta no load
+([`src/entities/wolf.gd:1372`](../../src/entities/wolf.gd#L1372),
+[`src/entities/wolf.gd:1406`](../../src/entities/wolf.gd#L1406)) e projeta no journal
+([`src/persistence/tick_journal.gd:29-34`](../../src/persistence/tick_journal.gd#L29-L34)). Braço
+rejeitado 1: **generalizar a cache do corpo para dentro do `Mind`** — cria um segundo ledger (o
+crime do §6.5) e escreve no ledger o que o dono proibiu; braço rejeitado 2: **substituir
+`_checked_scents` por `Mind`** — a dedupe é por posição e TTL, não por confiança que decai; trocar
+o dono é trocar semântica por economia de linha. Reabre com o **segundo comprador** de uma
+política de cap/TTL/evicção (dossiê 20).
+
+#### 20.4.4 Centralidade no grafo: rejeitada como termo de score
+
+Com o mesmo critério das três acima: não existe grafo para o score ler (§20.2) — `relations` é uma
+aresta por ator, não um grafo. Reabre quando uma perna pousar um grafo real (13 parentesco, 20
+facções) e o comprador do score nomear o caminho.
+
+### 20.5 O que a fase entrega de fato: qualidade por crença, consumida pelo prompt
+
+A entrega honesta da Fase 2 é **metadata de qualidade por crença dentro do `Mind`** — `visto_em`
+(último tick que confirmou a crença) e `vezes` (contagem de `reinforce`) — dentro do dicionário de
+cada belief, fluindo pelo `to_dict`/`from_dict` existentes. Duas premissas nascem vermelhas,
+nomeadas antes do código:
+
+1. **`selecao_de_beliefs_e_pura_no_estado_da_mente`** — o mesmo estado da mente seleciona o mesmo
+   conjunto, provado por sonda headless com dois estados idênticos. Não é pura se lê relógio,
+   aleatoriedade ou identidade de fora do estado.
+2. **`qualidade_nao_aparece_na_projecao_do_journal`** — os campos novos não mudam nenhum
+   `state_hash` para conjunto `(key, confidence, source)` igual, porque a projeção lê só os três
+   campos ([`src/persistence/tick_journal.gd:33-34`](../../src/persistence/tick_journal.gd#L33-L34)).
+
+O consumidor nomeado é o **prompt do oráculo**: a janela de beliefs passa de "todas, na ordem do
+dicionário" ([`src/ai/mind_oracle.gd:284-285`](../../src/ai/mind_oracle.gd#L284-L285)) para
+**top-k determinístico** — ordenação estável, desempate pela chave. O acoplamento de §20.3 vale
+dobrado aqui: a seleção muda o prompt, o prompt muda a chave de cache
+([`src/ai/oracle_cache.gd:55-56`](../../src/ai/oracle_cache.gd#L55-L56)) — pura no estado, ou a
+cache vira máquina do tempo de memória velha.
+
+### 20.6 O gate da fase: `crenca_falsa_nao_vira_fato` nasce vermelho
+
+- **Premissa:** expandir o portão ([`src/ai/mind_oracle.gd:160-173`](../../src/ai/mind_oracle.gd#L160-L173))
+  para ids do ledger exige que a rota que ele guarda **exista** — e hoje não existe nenhum
+  escritor de belief com origem no oráculo: a narração sai só para o HUD
+  ([`src/main.gd:193`](../../src/main.gd#L193) →
+  [`src/ui/hud.gd:276-279`](../../src/ui/hud.gd#L276-L279)). O gate nasce **vermelho** porque o
+  portão de ids de ledger e o escritor de quarentena não existem ainda.
+- **Cenário:** saída do oráculo afirmando fato que o ledger contradiz. O id forjado já é recusado
+  pelo regex do Passo 5 ([`src/ai/belief_verifier.gd:24`](../../src/ai/belief_verifier.gd#L24)); a
+  Fase 2 expande a fronteira para **ids do ledger além do roster** (incluindo o jogador,
+  `ACTOR_PLAYER = 1` ([`src/entities/wolf.gd:18`](../../src/entities/wolf.gd#L18))) e para **fatos
+  afirmados sobre ids válidos**.
+- **Par anti-farsa:** braço A — saída forjada/falsa pelo mesmo portão da Fase 2 → recusa com id e
+  motivo nomeados e leitura de `Mind.beliefs` antes/depois mostrando **zero escritas**; braço B —
+  controle que só cita ids reais passa idêntico antes e depois. Os dois medidos na mesma corrida
+  do runner, e o gate entra no censo do `EXPECTED_CHECKS` **nascendo vermelho** — nunca escrito
+  verde à mão.
+- **Gancho do mandato 2:** quando o oráculo começar a sugerir, a sugestão entra como **crença em
+  quarentena**, nunca como intenção já escrita no corpo — o que o AGENTS.md já registra como
+  "fica faltando" do mandato 2, e é exatamente o escritor que este gate guarda.
+
+### 20.7 O que a Fase 2 não fecha
+
+- **`Channel.COUNT`** ([`src/world/aether_field.gd:9`](../../src/world/aether_field.gd#L9)),
+  **`FORMAT_VERSION`** ([`src/persistence/tick_journal.gd:4`](../../src/persistence/tick_journal.gd#L4))
+  e **`GEN_VERSION`** ([`src/world/world_gen.gd:6`](../../src/world/world_gen.gd#L6)) não são
+  tocados por nenhum commit da fase.
+- **A projeção do `TickJournal` não muda** — as chaves novas de belief entram nela por serem lidas
+  do dicionário (§20.3); nenhuma linha do journal é editada.
+- **Nenhum embedding, nenhum subsistema de sono, nenhuma centralidade** — com os números que
+  reabrem cada braço no §20.4.
+- **A Fase 5 continua sem recall paga** — o gate dela continua sendo leitura; a métrica de recall
+  segue devendo dono e instrumento.
