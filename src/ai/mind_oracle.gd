@@ -62,6 +62,15 @@ const JANELA_CRENCAS: int = 8
 ## quem sobe o servidor na mao — o ciclo de pedido segue como sempre.
 var ready_provider: Callable = Callable()
 var roster_provider: Callable = Callable()
+## O LEDGER da Fase 2 (§20.6): a verdade de mundo que o portao da Camada 5 le —
+## `entity_id -> vivo (bool)`, com o jogador (ACTOR_PLAYER) incluido. Sem o
+## provider o portao degrada ao comportamento do Passo 5 (ids contra o roster),
+## e a degradacao fica nomeada em `ultimo_portao` — nunca silenciosa.
+var ledger_provider: Callable = Callable()
+## O portao ativo na ultima chamada de `aceitar_saida`: "ledger" com o provider
+## valido, "roster" na degradacao do Passo 5. Observabilidade do gate — quem le
+## o log sabe contra QUE verdade a saida foi conferida.
+var ultimo_portao := ""
 
 ## A ponte nativa, criada no `_ready` quando a ClassDB tem a classe. Num clone
 ## sem o dll (gitignored) ela fica null e cada pedido nomeia a ausencia — o
@@ -156,26 +165,58 @@ func narration_of(wolf_id: int) -> String:
 	return String(_narrations.get(wolf_id, ""))
 
 
-## O PORTAO da Camada 5 (§6.4/§7.1): a UNICA rota pela qual uma saida do oraculo
-## entra no mundo — narrativa gravada, crenca, intencao. A saida que nomeia um
-## `entity_id` que nao existe na alcateia NAO passa: sem narrativa, sem crenca,
-## sem intencao, e a recusa NOMEIA o id forjado (o numero que decide). Com o
-## modelo no MESMO heap, ausencia de caminho nao e prova — o portao checado e.
-## Roster invalido ou vazio e fail closed: qualquer citacao e forjada.
+## O PORTAO da Camada 5 (§6.4/§7.1, expandido na Fase 2 §20.6): a UNICA rota
+## pela qual uma saida do oraculo entra no mundo — narrativa gravada, crenca,
+## intencao. Com o ledger ligado, a conferencia e contra a verdade de mundo
+## (ids alem do roster — o jogador entre eles — e FATO declarado contra o
+## ledger); sem ledger, degrada ao roster do Passo 5, nomeado em
+## `ultimo_portao`. Recusa = sem narrativa, sem crenca, sem intencao, com o id
+## e o motivo NOMEADOS; fato confirmado (morte de cadaver) entra no Mind do
+## narrador como QUARENTENA — nunca como intencao escrita no corpo (mandato 2).
 func aceitar_saida(wolf_id: int, texto: String) -> bool:
-	var ids: Array = []
-	if roster_provider.is_valid():
-		for w in roster_provider.call():
-			if w != null and is_instance_valid(w):
-				ids.append(int(w.identity))
-	if not _verificador.aceitar(texto, ids):
+	var fatos: Array = []
+	var aceito := false
+	if ledger_provider.is_valid():
+		ultimo_portao = "ledger"
+		aceito = _verificador.aceitar_ledger(texto, ledger_provider.call())
+		if aceito:
+			fatos = _verificador.fatos_confirmados.duplicate()
+	else:
+		ultimo_portao = "roster"
+		var ids: Array = []
+		if roster_provider.is_valid():
+			for w in roster_provider.call():
+				if w != null and is_instance_valid(w):
+					ids.append(int(w.identity))
+		aceito = _verificador.aceitar(texto, ids)
+	if not aceito:
 		last_reason = _verificador.ultimo_motivo
 		_cooldowns[wolf_id] = RETRY_COOLDOWN
 		return false
 	_narrations[wolf_id] = texto
 	_cooldowns[wolf_id] = RETRY_COOLDOWN
+	_quarentena(wolf_id, fatos)
 	narration_ready.emit(wolf_id, texto)
 	return true
+
+
+## Escreve a quarentena dos fatos que o LEDGER confirmou no Mind do narrador
+## (Fase 2 §20.6): a morte declarada e validada contra o ledger vira crenca
+## rebaixada com a fonte "oracle" — o oraculo sugere, a arvore dispoe. Le o
+## `mind` por `w.get("mind")` de proposito: o roster pode conter corpo de prova
+## sem mente (o `_LoboProva` do Passo 5) e `get` devolve null onde o acesso
+## direto derrubaria o gate — lobo sem mente nao escreve nada, e o narrador
+## sem lobo no roster tambem nao (a quarentena e do NARRADOR do fato).
+func _quarentena(wolf_id: int, fatos: Array) -> void:
+	if fatos.is_empty() or not roster_provider.is_valid():
+		return
+	for w in roster_provider.call():
+		if w != null and is_instance_valid(w) and int(w.identity) == wolf_id:
+			var m = w.get("mind")
+			if m != null and m.has_method("quarentena"):
+				for id in fatos:
+					m.quarentena("oracle_caiu_%d" % int(id))
+			return
 
 
 ## Liga a cache (§6.5) no arquivo dado — CLI `--oracle-cache=`, padrao da casa

@@ -189,6 +189,11 @@ func _ready() -> void:
 	oracle = MindOracle.new()
 	oracle.name = "MindOracle"
 	oracle.roster_provider = Callable(self, "wolves_roster")
+	# O LEDGER da Fase 2 (§20.6): a verdade de mundo que o portao da Camada 5 le
+	# alem do roster — o jogador (ACTOR_PLAYER = 1) incluido. Sem esta linha o
+	# portao degrada ao roster do Passo 5, e a degradacao fica nomeada no
+	# `ultimo_portao` do wrapper.
+	oracle.ledger_provider = Callable(self, "ledger_do_mundo")
 	add_child(oracle)
 	hud.narration_provider = Callable(oracle, "narration_of")
 	# O hospedeiro pode ser anterior ao oraculo (boot normal) e o hud posterior a
@@ -842,6 +847,25 @@ func targets_under_crosshair() -> Array:
 
 func wolves_roster() -> Array:
 	return wolves
+
+
+## O ledger do portao da Camada 5 (Fase 2 §20.6): `entity_id -> vivo (bool)` —
+## os lobos (vivos e cadaveres ate a recolha) e o JOGADOR. O id 1 e
+## COMPARTILHADO (ACTOR_PLAYER = 1 em wolf.gd:18 e o mesmo numero de um lobo):
+## o slot fica vivo se qualquer um dos dois o ocupa. A escolha e conservadora
+## porque o custo e assimetrico — um falso positivo (ledger diz vivo e nao e)
+## custa uma narrativa recusada com o id e o motivo impressos; um falso
+## negativo (ledger diz morto e o lobo respira) e exatamente o que esta
+## fronteira existe para nao deixar passar.
+func ledger_do_mundo() -> Dictionary:
+	var l := {}
+	for w: Wolf in wolves:
+		l[w.identity] = w.alive
+	if l.has(Wolf.ACTOR_PLAYER):
+		l[Wolf.ACTOR_PLAYER] = bool(l[Wolf.ACTOR_PLAYER]) or player.alive
+	else:
+		l[Wolf.ACTOR_PLAYER] = player.alive
+	return l
 
 
 ## A matilha do lobo, no formato do dossie 10 §3.1: os vivos a menos do raio de

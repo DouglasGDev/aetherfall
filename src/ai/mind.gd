@@ -7,6 +7,12 @@ class_name Mind
 const EPISODIC_CAP: int = 24
 const BELIEF_DECAY_PER_MIN: float = 0.14
 const CONFIDENCE_MIN: float = 0.02
+## Quarentena (Fase 2 §20.6): o que o ORACULO sugere entra como crenca
+## rebaixada, com a fonte nomeada, e fica abaixo da soleira de `believes` — o
+## oraculo propoe, a arvore continua sem aceitar (mandato 2). Nunca intencao
+## escrita no corpo.
+const QUARENTENA_CONFIDENCE := 0.10
+const QUARENTENA_SOURCE := "oracle"
 
 var kind: String = "wolf"
 var identity: int = 0
@@ -112,6 +118,16 @@ func belief(p_id: String) -> float:
 ## conta como crenga utilizavel pelo MemoryGate da arvore.
 func believes(p_id: String) -> bool:
 	return belief(p_id) >= 0.35
+
+
+## Sugestao do ORACULO em quarentena (Fase 2 §20.6): a crenca entra (ou sobe
+## ate) `QUARENTENA_CONFIDENCE` com a fonte `QUARENTENA_SOURCE` — rebaixada
+## abaixo da soleira de `believes`, contando toque e carimbando o tick como
+## qualquer reinforce. Delega ao `reinforce` porque a quarentena E um toque de
+## reinforce com fonte e teto proprios, nao um caminho de escrita paralelo.
+func quarentena(p_id: String, p_tick: int = -1) -> void:
+	var alvo := maxf(belief(p_id), QUARENTENA_CONFIDENCE)
+	reinforce(p_id, alvo - belief(p_id), QUARENTENA_SOURCE, p_tick)
 
 
 func decay(elapsed_minutes: float) -> void:
