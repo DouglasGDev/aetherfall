@@ -9283,3 +9283,97 @@ fica onde a 23 o deixou; o **#45** é arrumação do dono. A atribuição do par
 **#25** e o **#45** seguem uncommitted por decisão registrada. `Channel.COUNT`,
 `FORMAT_VERSION`, `GEN_VERSION` e a projeção do `TickJournal` não foram tocados por este pouso. A
 fila serializada não muda: **22 → 17 → 18 → 20 → 13**.
+
+## A integração das duas Fase 2 na `main` — a leg chuva pousada por documentos, o par vermelho→verde do guard arquivado e as quatro corridas medidas na árvore integrada (2026-11-25, `feat/elevacao-visual-chuva-23f2` ponta `955dc47`, merge `aea325a`)
+
+### O que os dois merges tocam, com a árvore em cada um
+
+Dois merges fecham a Fase 2 nas duas pernas da vez. O primeiro, `3919bbb`, trouxe a `origin/main`
+(o código da chuva, pousado pelo PR #1 `e0a558c`, e a re-derivação `2f46368`) para dentro da linha
+da Fase 2 do oráculo — o `src` e o `tests` resultantes são a **combinação dos dois pousos de
+código**, uma árvore que nenhum dos pais tinha. O segundo, `aea325a`, trouxe a ponta final da
+branch da leg chuva (`955dc47`), e ela é **docs+evidências apenas** sobre essa árvore:
+`git diff --cached` contra os dois pais em `src tests` devolve vazio nos dois sentidos, e
+`git rev-parse <sha>:src`/`:tests` imprime a mesma dupla nos três commits —
+**`9b5dc8ec7847a24f7e77db4518b9cf90aa055ef2`** e **`d534212a0061b368ee41b4dd8c222886ef0915fe`**.
+Consequência registrada como regra e não como esperança: os números abaixo, medidos na árvore de
+`aea325a`, valem para `3919bbb` por identidade de árvore — e **não** valem para `4ceb1a5` nem para
+`e0a558c`, cujas árvores são outras (`2f2f2157…`/`d2af7ae3…` e `81608c2f…`/`b3349a19…`).
+
+Os 30 conflitos de documentação foram resolvidos ficando com a re-derivação conferida linha a linha
+no conteúdo (a desta linha); a varredura mecânica da leg chuva entra como contribuição documentada,
+não como alvo: o **Furo #52** dela (572 dos 659 ponteiros envelhecidos invisíveis à régua) está
+portado verbatim na seção acima, os três re-ancoramentos de
+[`docs/audio-provenance.md`](../docs/audio-provenance.md) do commit `e4c5b31` foram conferidos e
+**dois estavam errados nesta árvore** — o que entrou são dois consertos de fora-por-um da linha de
+cá, `on_wolf_registered` apontando a chamada real
+([`src/main.gd:445-446`](../src/main.gd#L445-L446), ao `444-445`) e `clear_transient()` em
+[`src/main.gd:1145`](../src/main.gd#L1145), ao `1144` — e o automerge de
+[`docs/planos/06-decompor-main-gd.md`](../docs/planos/06-decompor-main-gd.md) re-marca dois alvos
+que conferem nesta árvore (`docs/melhorias-status.md:728-730` é o item 7 de "Falta";
+`:1052-1053` é a regra do apodrecimento). As evidências da leg chuva entram inteiras
+(`elevacao-visual-chuva-23`, `clone-limpo-23f2-pin`, `rederivacao-23f2-merge2`).
+
+### As quatro corridas da árvore integrada, com a máquina livre — e o par vermelho→verde do guard
+
+Corridas serial na árvore de `aea325a`, sem outra carga, dll de `native/af_mind/bin/` presente,
+evidência em [`docs/evidence/registro-integracao-fase2-22-23/`](evidence/registro-integracao-fase2-22-23/)
+com manifesto `artifacts.sha256`:
+
+- Suíte: [`suite.log`](evidence/registro-integracao-fase2-22-23/suite.log) linha **412**
+  `== 277 checagens  0 falhas  60.2 s de teste ==` — o censo **266** medido no pouso da Fase 2-22
+  (`4ceb1a5`) mais as **11** checagens que a leg chuva acrescentou —, exit 0, zero `SCRIPT ERROR`.
+  O fecho imprime `ERROR: 4 resources still in use at exit` (`object.cpp:2536`): o par de vazamento
+  do quit segue sem dono, e o número observado nesta árvore é **4**.
+- Runner, primeira corrida:
+  [`runner_vermelho.log`](evidence/registro-integracao-fase2-22-23/runner_vermelho.log) linha **3918**
+  `FALHA budget_do_oraculo: o SubtreeGuard de 400 us nao estoura com o decode em voo |
+  trips_antes=0 trips_depois=1 narradas=5`, rodapé `355 checagens 1 falhas 48.913 s`. Re-corrida em
+  seguida, árvore idêntica, nada mudado:
+  [`runner_verde.log`](evidence/registro-integracao-fase2-22-23/runner_verde.log) linha **3918**
+  `OK budget_do_oraculo: o SubtreeGuard de 400 us nao estoura com o decode em voo |
+  trips_antes=0 trips_depois=0 narradas=5`, rodapé **3944** `355 checagens 0 falhas 49.089 s`,
+  exit 0. **O par fica arquivado como está e nada foi silenciado**: o trip é marginal de tempo — o
+  decode (`worst_decode_us` ≈ **780–787**, linha **3917** em ambas) caindo dentro da janela de
+  400 µs do guard num único tick — e não reproduz com o código idêntico; a regra de reprodução
+  (mandato do ciclo, item 3) fecha o vermelho como sensibilidade do instrumento, não como defeito
+  de árvore, e nenhuma linha é escrita por causa dele.
+- RNG: [`rng.log`](evidence/registro-integracao-fase2-22-23/rng.log) linha **78**
+  (`27/27`, `27 checagens 0 falhas 2.704 s`).
+- Journal: [`journal.log`](evidence/registro-integracao-fase2-22-23/journal.log) linha **143**
+  (`128/128`, `128 checagens 0 falhas 7/7 testes concluidos 6.079 s`).
+
+O número pineado para `aea325a` — e, por identidade de árvore, para `3919bbb` — é: suíte
+**277/0/60,2 s**, runner **355/0/49,089 s** com o par do guard arquivado acima, RNG **27/0/2,704 s**
+e journal **128/0/6,079 s**. As cinco `extensao_carrega_classe` saem verde em
+[`runner_verde.log`](evidence/registro-integracao-fase2-22-23/runner_verde.log) **535–539** (o
+descritor no disco, `is_library_open=true`, `class_exists(AfMindOracle)=true`,
+`instantiate_valido=true`), os três números do §5.2 em **2596** e a régua do budget em **3917**
+(`worst_sim_ms=14.04 ms`, média **2 496,3 µs/passo**, ambos abaixo do teto de 50 ms do passo) — a
+mesma régua que fechou o pouso da Fase 2-22, agora na árvore que tem as duas pernas. O censo estreito
+imprime **10 568** passos (`sim_step total=2 360 099 µs`, pico **5 134 µs**) e a matilha **1 341**
+(`sim_tick total=3 300 436 µs`, pico **14 294 µs**, `trips=0`).
+
+As três réguas rodaram na árvore composta (os docs combinados + a seção acima): a de âncoras dá
+**40 arquivos · 3 280 ponteiros · 212 rótulos · 3 779 links** com **casos objetivos: 0**; a de
+citações dá **1 191 conferidas · 0 fora do arquivo** no corpus de cinco páginas, exit 0; a de
+identificadores, exit 0.
+
+O scan de credencial no tip sai limpo (`git grep` pela chave do oráculo não encontra nada) e a
+publicação é conferida por `git ls-remote --heads origin`:
+`refs/heads/main = aea325ae15e3aa39ec68c09b868cbf8a92776d0b`. A branch remota da leg chuva fica
+(`refs/heads/feat/elevacao-visual-chuva-23f2 = 955dc47…`) — é o registro do ajuste.
+
+### O que a integração deixa aberto
+
+Nenhum gate de fase fecha (mandato 4). O vermelho não-reprodutível do guard fica **registrado como
+sensibilidade medida do instrumento**, com o par arquivado — e a janela de 400 µs contra um decode de
+~780 µs é exatamente o material que a **Fase 5** (LOD e orçamento da perna 22) vai re-ler quando
+escrever o `inspector_ve_a_mesma_leitura_do_journal`. Seguem as fases autorizadas como pauta, cada
+uma com gate próprio e nenhuma linha antes de a anterior fechar o dela: **Fase 3** (adaptação por
+bandit, gate `bandit_une_numero_observavel`), **Fase 4** (dona do **furo #46** e do consumidor da
+quarentena no inspector) e **Fase 5**. Dos furos, **#38**, **#39**, **#20**, **#31**, **#41**,
+**#44** e **#45** seguem como estão registrados; o par de vazamento do quit segue sem dono, agora
+observado também nesta árvore com o número **4**. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e
+a projeção do `TickJournal` não foram tocados por nenhum dos dois merges. A fila serializada não
+muda: **22 → 17 → 18 → 20 → 13**.
