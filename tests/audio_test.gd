@@ -348,6 +348,7 @@ func _test_cadence() -> bool:
 	st["in_water"] = false
 	var steps0 := _count_steps(a)
 	var walked := 0.0
+	var grounded := 0
 	Input.action_press("move_forward")
 	for i in WALK_FRAMES:
 		# `before` ANTES de `update_local`: quem move o corpo e o jogador, e o audio
@@ -355,12 +356,21 @@ func _test_cadence() -> bool:
 		var before := p.body.feet_pos
 		p.update_local(1.0 / 60.0)
 		a.update_audio(1.0 / 60.0)
+		grounded += int(p.body.on_ground)
 		walked += Vector3(p.body.feet_pos.x - before.x, 0.0, p.body.feet_pos.z - before.z).length()
 	Input.action_release("move_forward")
 	var steps := _count_steps(a) - steps0
 	var surface := a._surface_block(p.body.feet_pos)
 	var expect_family := String(a.STEP_FAMILY.get(surface, ""))
-	_check(steps > 0 and p.body.on_ground, "andar no chao produz passo", "passos=%d no_chao=%s" % [steps, p.body.on_ground])
+	# A premissa e "andou apoiado", nao "no ultimo frame do lote o corpo estava
+	# apoiado": desde o auto-pulo do degrau (dossie 19) caminhar do spawn para frente
+	# salta uma celula no meio do caminho, e a amostra de um frame so media paridade
+	# de frame -- na base desta branch ela dava `no_chao=false` com quatro passos
+	# tocados (docs/evidence/audio/cadence-red-on-base-7d44230.log). Medido na
+	# corrida que qutou o verde: 112 de 120 quadros com o corpo apoiado
+	# (docs/evidence/audio/cadence-green-on-fix.log).
+	_check(steps > 0 and grounded > WALK_FRAMES / 2, "andar no chao produz passo",
+			"passos=%d no_chao=%d/%d" % [steps, grounded, WALK_FRAMES])
 	_check(absf(float(steps) - walked / AudioDirector.STRIDE_METERS) <= 1.0,
 			"cadencia do passo == distancia / passo", "passos=%d metros=%.2f esperado=%.2f" % [
 			steps, walked, walked / AudioDirector.STRIDE_METERS])
