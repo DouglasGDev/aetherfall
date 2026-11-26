@@ -1,0 +1,38 @@
+﻿MED_RUN inicio=20:07:43 exe=C:\Aetherfall\.tools\Godot_v4.7.2-stable_win64.exe timeout_s=240
+MED_RUN args=--headless --path C:\Aetherfall --script res://tests/af_bakeoff.gd -- --arm=C
+MED_RUN pid=29120
+MED_RUN fim=20:07:55 decorrido_s=11.8 exit=0 timeout_morto=False
+----- STDOUT -----
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK braco nomeado na CLI                       pedido=C aceitos=A,C
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+OK boot real malhou todos os chunks           chunks=64 meshes=64 gen_ms=1012.2 mesh_ms=5494.7
+OK motor sem processo automatico              main=true
+OK triangles do boot == referencia            214448/214448
+OBSERVACAO braco=C cenario=voxel_bakeoff gen_ms=1012.153 mesh_ms=5494.716 chunks=64 meshes=64 triangles=214448
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+OK o lote editou o mundo inteiro              aceitas=30/esperadas=30 edits_dic=25
+OK fila de malharia drena                     pendentes=0 carimbos_abertos=0
+OK custo de edicao == chunks remalhados       count=52 remeshes=52 fila_ini=0
+OK instrumento vivo (worst e mean > 0)        worst_us=251679 mean_us=120593.6
+OK corte_nao_cobra_latencia_maior_que_o_pico  composta=8659.30 teto=11313.03 mesh_ms=5494.72 mean_build_us=60857.4 span_us=120593.6 esper_max_frames=22/64
+OK corpo do mundo == SHA de referencia        619e891c95dc5b44e2ebafabdf069bff
+OBSERVACAO edits_aceitas=30 remeshes=52 fila_inicial=0 esper_max_frames=22 worst_sim_ms=14.160 dropped_ticks=0 tick=396
+OBSERVACAO edit_cost count=52 worst_us=251679 mean_us=120593.6 pending=0
+OBSERVACAO corpo_sha256=619e891c95dc5b44e2ebafabdf069bff16c9213beb47108a8f3cae43bb7a32cf
+escopo: custo de edicao e do carimbo posto em `_mark` ao fim de `build_chunk_mesh` (src/world/voxel_world.gd), aggregate da SESSAO; load/regenerar fecha os carimbos abertos sem cobra-los
+NAO fecha: gate de fase nenhum (mandato 4), nenhum FPS, nenhuma troca de mesher — a troca e do §6 do dossie e pede > 10% em mesh_ms somado ao custo de edicao
+GATE braco=C gen_ms=1012.153 mesh_ms=5494.716 triangles_boot=214448 edit_count=52 edit_worst_us=251679 edit_mean_us=120593.6 triangles_lote=214484 corpo=619e891c95dc5b44
+OK runner chegou ao fim do lote               run=true
+OK censo de checagens                         12/12
+12 checagens 0 falhas 10.853 s
+

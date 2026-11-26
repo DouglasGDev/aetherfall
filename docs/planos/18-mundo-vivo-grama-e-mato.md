@@ -30,7 +30,7 @@ a regra pedida.
 **B. O mato é visto, pisado e colhido, e não é um cubo.** Falsificável: `PLANT` colocado sobre
 `GRASS` por geração **e** por espalhamento, `is_solid` falso (corpo atravessa), `line_of_sight`
 atravessa (o ray só para em sólido,
-[voxel_world.gd:450](../../src/world/voxel_world.gd#L450), [`:478`](../../src/world/voxel_world.gd#L478)),
+[voxel_world.gd:756](../../src/world/voxel_world.gd#L756), [`:774`](../../src/world/voxel_world.gd#L774)),
 dureza de mão nua, e um drop não-zero. A parte visual tem uma premissa própria e incômoda: o
 atlas é gerado em runtime por uma função por tile
 ([voxel_atlas.gd:10-31](../../src/world/voxel_atlas.gd#L10-L31)), então "tem forma de mato" só é
@@ -42,7 +42,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
   ([player.gd:685](../../src/entities/player.gd#L685) quebra,
   [`:711`](../../src/entities/player.gd#L711) coloca). O mundo é estático depois da geração:
   `world_gen.gd` escreve as colunas uma vez (em [`generate_chunk`](../../src/world/world_gen.gd#L174)
-  e companhia) e o [`apply_edits`](../../src/world/voxel_world.gd#L214) só reaplica o que o
+  e companhia) e o [`apply_edits`](../../src/world/voxel_world.gd#L262) só reaplica o que o
   jogador já tinha feito.
 - **Grama é só um bloco com drop de terra.** `GRASS` = id 1, tile 0/1, dureza 0,38, e o drop é
   `DIRT` ([`_drop[Block.GRASS] = Block.DIRT`](../../src/world/block_defs.gd#L142), com a razão
@@ -58,7 +58,7 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
   dossiê 09 (bioma como código) já entregue é pré-condição, não vizinhança.
 - **`DIRT` exposto é uma pergunta de duas leituras**: `get_block(p + Y) == AIR` e o vizinho.
   O que **não** se faz para responder é chamar
-  [`surface_height(x, z)`](../../src/world/voxel_world.gd#L487-L493): ela sobe a coluna do topo
+  [`surface_height(x, z)`](../../src/world/voxel_world.gd#L811-L817): ela sobe a coluna do topo
   (`CHUNK_SIZE_Y - 1 = 63`) até achar sólido — 64 `is_solid` por coluna, por candidato. Um
   candidato por tick custa 2 + 4 leituras; uma varredura de superfície do mapa inteiro custaria
   128 × 128 × ~64 = **~1 048 576** leituras por passada. O número é aritmética sobre
@@ -84,11 +84,11 @@ checável por captura — e captura é janela, o que este lote **não** roda sem
   dossiê: o mato cai como 1 `PLANT`, e plantar de novo é **colocar o bloco**, não item de
   agricultura.
 - **O que uma célula que muda custa.** Cada conversão é um `set_block` → `edits[p] = b`
-  ([voxel_world.gd:310](../../src/world/voxel_world.gd#L310)) + chunk sujo
-  ([`:316-327`](../../src/world/voxel_world.gd#L316-L327)) remalhado a **2 chunks por frame**
-  ([main.gd:28](../../src/main.gd#L28), [`:363`](../../src/main.gd#L363)) ≈ 67 ms de
+  ([voxel_world.gd:593](../../src/world/voxel_world.gd#L593)) + chunk sujo
+  ([`:618-629`](../../src/world/voxel_world.gd#L618-L629)) remalhado a **2 chunks por frame**
+  ([main.gd:28](../../src/main.gd#L28), [`:388`](../../src/main.gd#L388)) ≈ 67 ms de
   boot por chunk nas medidas do contrato ([README.md:148-149](../../README.md#L148-L149)).
-  O `edits` **não tem teto** ([`:48`](../../src/world/voxel_world.gd#L48) é um `Dictionary`
+  O `edits` **não tem teto** ([`:62`](../../src/world/voxel_world.gd#L62) é um `Dictionary`
   puro, serializado inteiro em [main.gd:1062](../../src/main.gd#L1062)); hoje cresce
   1 chave por ação do jogador, e um ecossistema que cresce sozinho o faria crescer por tempo de
   sessão, não por trabalho do jogador. Isso é o débito real desta linha, declarado antes.

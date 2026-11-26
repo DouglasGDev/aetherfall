@@ -157,7 +157,7 @@ O vidro é sólido para pisar e **não** é opaco para o vizinho. A tentação e
 e um painel de vidro viraria um cubo leitoso. Então a face ganhou uma pergunta própria,
 `draw_of` ∈ {OPAQUE, ALPHA, LIQUID} ([block_defs.gd:31-35](../../src/world/block_defs.gd)),
 e a malharia decide a face por ela
-([voxel_world.gd:538-571](../../src/world/voxel_world.gd)):
+([voxel_world.gd:420, 432-459](../../src/world/voxel_world.gd)):
 
 - vizinho do mesmo bloco não tem face entre si: dois panos de vidro colados não desenham
   a face interna (a suíte mede 20 tri no par, não 24);
@@ -165,7 +165,7 @@ e a malharia decide a face por ela
   e ela só aparece contra ar ou água;
 - a malharia passou a emitir uma terceira superfície com `_mat_glass`
   (`TRANSPARENCY_ALPHA`, rugosidade 0,25, `NEAREST_WITH_MIPMAPS` —
-  [voxel_world.gd:101-107](../../src/world/voxel_world.gd), aplicada em `:555`).
+  [voxel_world.gd:158-164](../../src/world/voxel_world.gd), aplicada em `:485`).
   `LINEAR` borrava o tile, que é quase puro alfa;
 - o documento 10 pediu `opaco = 0` para folha em `Draw.OPAQUE`: as duas coisas continuam
   separadas. O tile do vidro escreve alfa por pixel — 0,85 na borda, 0,30 no anel

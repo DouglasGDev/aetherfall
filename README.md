@@ -437,7 +437,7 @@ de rastros e journal continuaram na árvore de trabalho. Falta a aprovação vis
 Tirar o apoio de um grão faz o grão descer — e só ele. A única porta para a gravidade
 de bloco é o sinal `block_changed` do mundo
 ([`voxel_world.gd:6`](src/world/voxel_world.gd#L6), emitido em
-[`voxel_world.gd:312`](src/world/voxel_world.gd#L312)), e a fila de gravidade
+[`voxel_world.gd:595`](src/world/voxel_world.gd#L595)), e a fila de gravidade
 ([`block_update_queue.gd`](src/world/block_update_queue.gd)) é hoje o **único** inscrito em
 `src/`. Por isso a regra "atualize a física só nos vizinhos, nunca varra o mundo" é um número
 e não uma promessa: cada evento custa **2 leituras** do grid (a célula de cima, que perdeu o

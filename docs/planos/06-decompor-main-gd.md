@@ -1,6 +1,6 @@
 # 06 — Decompor `src/main.gd` pelo eixo do dono
 
-Plano derivado de leitura; nada foi rodado por mim. Cobre o item 7 de "Falta" (`docs/melhorias-status.md:728-730`) e a linha do prompt "reduza o acoplamento de `main.gd`/`wolf.gd`/memória" (`:53`), cujo veredito publicado é "medir por linhas é proxy, o que importa é o dono único". Regras da casa aplicáveis: anti-bloat e as quatro perguntas (`AGENTS.md`, "Disciplina de otimização") e "generalize no segundo chamador, não no primeiro". O alvo arquitetural nomeia um relógio de simulação em `src/core/sim/` (`docs/design/06-godot-architecture.md:33`), `MindServer` autoload (`:112`), `MindsInspector` e `af-bench` (`:197-199`): nenhuma dessas peças existe em `src/` — `[TARGET]`, legenda em `docs/design/README.md:12`. As faixas abaixo foram re-lidas contra `src/main.gd` de **1242 linhas** e `src/entities/wolf.gd` de **1218** (`wc -l` na árvore onde a perna 16 pousou as tocas). A versão original descrevia a revisão de 501 linhas (`4dac943`) e a primeira re-leitura, os 662 de `3fccbb2`; nenhuma linha deste plano foi executada.
+Plano derivado de leitura; nada foi rodado por mim. Cobre o item 7 de "Falta" (`docs/melhorias-status.md:748-750`) e a linha do prompt "reduza o acoplamento de `main.gd`/`wolf.gd`/memória" (`:53`), cujo veredito publicado é "medir por linhas é proxy, o que importa é o dono único". Regras da casa aplicáveis: anti-bloat e as quatro perguntas (`AGENTS.md`, "Disciplina de otimização") e "generalize no segundo chamador, não no primeiro". O alvo arquitetural nomeia um relógio de simulação em `src/core/sim/` (`docs/design/06-godot-architecture.md:33`), `MindServer` autoload (`:112`), `MindsInspector` e `af-bench` (`:197-199`): nenhuma dessas peças existe em `src/` — `[TARGET]`, legenda em `docs/design/README.md:12`. As faixas abaixo foram re-lidas contra `src/main.gd` de **1242 linhas** e `src/entities/wolf.gd` de **1218** (`wc -l` na árvore onde a perna 16 pousou as tocas). A versão original descrevia a revisão de 501 linhas (`4dac943`) e a primeira re-leitura, os 662 de `3fccbb2`; nenhuma linha deste plano foi executada.
 
 ## Premissa nomeada: ônibus não é dono
 
@@ -67,7 +67,7 @@ godot --headless --path . --script tests/simulation_rng_test.gd
 Critérios: a última linha do smoke (`tests/smoke_test.gd:265`) continua no censo publicado da
 revisão — nesta ponta **255 checagens / 0 falhas / 48,0 s**
 (`docs/evidence/tocas-alcateia-16/head_suite.log:357`, nota em
-`docs/melhorias-status.md:4485-4487`) — e `dropped_ticks=0`, com `tick=403` (idem `:377`). A
+`docs/melhorias-status.md:4530-4532`) — e `dropped_ticks=0`, com `tick=403` (idem `:377`). A
 pontagem anterior desta página (`237 / 0 / 35,5 s`, `tick=359`) era o censo da ponta do bioma
 (`docs/evidence/bioma-cor-de-pelo/clone-44c9d94-suite.log:312`, `:309`) e continua válida **só**
 para aquele SHA.
@@ -83,9 +83,9 @@ vermelho para corridas que não perderam um tick sequer (`dropped_ticks=0` nas s
 lugar: nenhuma mudança de K1/K2/K3 pode perder tick, e a comparação de passo exige **banda medida
 em N execuções da mesma árvore antes e depois**, não um pico solitário. Atribuição por ablação da
 varredura de corte não foi rodada e fica debitada
-(`docs/melhorias-status.md:2067-2068`).
+(`docs/melhorias-status.md:2112-2112`).
 
-O contrato do journal trava **128 checagens** (`tests/tick_journal_test.gd:13`) e as 6 linhas de `[tick,hash]` do caminho dirigido por `_sim_tick()` (`:401-412`, `MAIN_STEPS = 6` em `:7`) têm de bater entre antes e depois do commit: a checagem de repetibilidade **não existe hoje** (grep de `repetib` em `tests/` e no status devolve zero), então o primeiro passo de K3 roda a suíte duas vezes e publica as sequências; se divergirem na própria árvore antes da mudança, o critério de hash é retirado do gate e fica só censo + `dropped_ticks` + passo. Áudio: **73 checagens** (`tests/audio_test.gd:25`); reações: **240** (`tests/aether_reactions_test.gd:65`), já medidas duas vezes nesta ponta com o mesmo censo (`docs/melhorias-status.md:4485-4487`); RNG: **27** (`tests/simulation_rng_test.gd:9`). Contagem conferida **antes** do lote (`AGENTS.md`, "Nada simulado"): um `SCRIPT ERROR` derruba passos em silêncio.
+O contrato do journal trava **128 checagens** (`tests/tick_journal_test.gd:13`) e as 6 linhas de `[tick,hash]` do caminho dirigido por `_sim_tick()` (`:401-412`, `MAIN_STEPS = 6` em `:7`) têm de bater entre antes e depois do commit: a checagem de repetibilidade **não existe hoje** (grep de `repetib` em `tests/` e no status devolve zero), então o primeiro passo de K3 roda a suíte duas vezes e publica as sequências; se divergirem na própria árvore antes da mudança, o critério de hash é retirado do gate e fica só censo + `dropped_ticks` + passo. Áudio: **73 checagens** (`tests/audio_test.gd:25`); reações: **240** (`tests/aether_reactions_test.gd:65`), já medidas duas vezes nesta ponta com o mesmo censo (`docs/melhorias-status.md:4530-4532`); RNG: **27** (`tests/simulation_rng_test.gd:9`). Contagem conferida **antes** do lote (`AGENTS.md`, "Nada simulado"): um `SCRIPT ERROR` derruba passos em silêncio.
 
 ## O que NÃO fazer
 

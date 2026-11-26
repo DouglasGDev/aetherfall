@@ -1,0 +1,12 @@
+﻿MED_RUN inicio=20:06:29 exe=C:\Aetherfall\.tools\Godot_v4.7.2-stable_win64.exe timeout_s=240
+MED_RUN args=--headless --path . --script tests/af_bakeoff.gd
+MED_RUN pid=29804
+MED_RUN fim=20:06:30 decorrido_s=0.8 exit=1 timeout_morto=False
+----- STDOUT -----
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FALHA braco nomeado na CLI                       pedido= aceitos=A,C
+OK runner chegou ao fim do lote               run=true
+FALHA censo de checagens                         3/12
+3 checagens 2 falhas 0.001 s
+

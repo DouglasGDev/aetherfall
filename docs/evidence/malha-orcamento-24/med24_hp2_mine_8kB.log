@@ -1,0 +1,47 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+== hitch_probe_v2 config=mine main=true walk=true mine=true viz=false f3=false llm=false segundos=40 warmup=20 user_args=["--config=mine", "--seconds=40"] ==
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+amostra_aberta  porque=boot da sessao (geracao + 64 chunks do mesher)  ms_do_boot=5746
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+CONFIG mine  amostras=6379  janela=40.0 s  hz_efetivo=160.3
+PERIODO_MS p50=6.05 p90=8.12 p95=9.83 p99=15.34 p999=18.54 max=22.40 media=6.24
+TRAVADAS >=2xp50=147 (2.30%)  >=3xp50=10  >=5xp50=0  >=33,3ms=0 (0.00%)  >=100ms=0
+HIST_P50 <2x=6232 2-3x=137 3-5x=10 5-8x=0 8-15x=0 >15x=0  (limite 2x=12.1 ms)
+QUADRO_US max process=40396 physics=32201 step=12245 mesh=10410
+QUADRO max draw_calls=373 primitivos=576916  vram_med=208 MB  compilacoes_pipeline=48
+CONTA ticks=802 (0.1/quadro) chunks_remalhados=43 quadros_com_mesh=327 mesh_total_ms=2615.0 mined=13 pend_final=0 dropped=0
+MS_POR_CHUNK_DIVISAO_DO_LOTE=60.81  (mesh_total_ms / chunks_remalhados; a medida de um chunk sozinho esta em mesh_cost_probe)  quadros_malha=327
+PREMISSA_MINE quadros_alvo_valido=4180 de 6379  quadros_botao_press=4270  progresso_max=0.96  pitch=-0.60  terceira_pessoa=false  mouse_mode=2  edits_finais=27
+ORACULO pedidos=0 narracoes=0 estado_final=ocioso
+CLIMA chuva=0.0 molhado=0.0  water_fx={ "pool": 24, "salpicos": 0, "anis": 0, "bolhas": 0, "teto_particulas": 364, "salpicos_disparados": 1, "salpicos_jogador": 0, "picos": 1, "jogador_vy": 0.0, "jogador_col": (-1, -1), "jogador_plano": -1.0, "jogador_blocos": 0, "anis_chuva": 0, "anis_recusados": 0, "anis_no_zero": 0, "anis_vivos_chuva": 0, "anis_vivos_corpo": 0, "col_ultima": (-9, -9), "plano_ultima": -99.0, "quadros": 2408, "us_total": 39017, "us_por_quadro": 16.203073089701, "us_pico": 327 }  rain_fx={ "emissores": 2, "teto_particulas": 748, "ligado": false, "chuva": 0.0, "lotes": 0, "colunas_sorteadas": 0, "anis_aceitos": 0, "anis_recusados": 0, "quadros": 2408, "us_total": 1293, "us_por_quadro": 0.53696013289037, "us_pico": 2 }
+CRUZAMENTO travadas=147 | com_remalha=2 com_compilacao=0 com_tick=142 sem_origem=3 | remalharam_sem_travar=41
+PIORES_QUADROS idx periodo process physics resto step mesh pend built ticks req pipe drawcalls
+  # 2913   22.40   10.82    8.79    2.79   12.24    8.39    1   0    1  0   0    265
+  # 2682   19.59    6.61    9.66    3.32    8.24    9.93    1   0    1  0   0    263
+  # 4857   19.05   10.31    9.42   -0.69    9.19    8.05    2   0    1  0   0    257
+  # 5624   18.92   10.84   10.57   -2.49    9.36    8.06    1   0    1  0   0    315
+  # 1229   18.81    6.44    9.78    2.59    7.91    9.28    1   0    1  0   0    310
+  # 4438   18.81    9.98   12.02   -3.19    8.88    8.55    1   0    1  0   0    264
+  #  452   18.56   10.19    8.50   -0.13    9.14    8.03    1   0    1  0   0    257
+  # 2101   18.54    6.42   10.58    1.54    8.51    8.36    1   0    1  0   0    341
+  # 3352   18.30    6.37    8.95    2.99   10.15    0.00    0   0    1  0   0    287
+  #  128   18.27   10.89    9.70   -2.32    7.27    8.99    1   0    1  0   0    260
+PIORES_SEM_MESH (ate 5)
+  # 2913   22.40   10.82    8.79    2.79   12.24    8.39    1   0    1  0   0    265
+  # 2682   19.59    6.61    9.66    3.32    8.24    9.93    1   0    1  0   0    263
+  # 4857   19.05   10.31    9.42   -0.69    9.19    8.05    2   0    1  0   0    257
+  # 5624   18.92   10.84   10.57   -2.49    9.36    8.06    1   0    1  0   0    315
+  # 1229   18.81    6.44    9.78    2.59    7.91    9.28    1   0    1  0   0    310
+FORA: a sonda nao separa o custo do composer do Windows nem de outro app; roda em janela 1280x720 (o padrao do projeto) com o vsync do motor -- tela cheia do dono tem outro custo de draw; nada aqui mede alocacoes.
+OBSERVACAO llm_estado_final=ocioso requests=0 af_load_ms=-1
+HITCH_PROBE fim config=mine codigo=0

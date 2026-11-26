@@ -1,6 +1,6 @@
 # 08 — `MindStore` e `MindsInspector`
 
-Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:732-735), decididas pelas linhas docs/melhorias-status.md:47-47 e :48 da tabela do prompt master. Nada aqui roda engine; nenhum número de desempenho é publicado.
+Duas linhas não marcadas do checklist P1 (docs/melhorias-status.md:752-755), decididas pelas linhas docs/melhorias-status.md:47-47 e :48 da tabela do prompt master. Nada aqui roda engine; nenhum número de desempenho é publicado.
 
 ## 1. Premissa nomeada por peça
 
