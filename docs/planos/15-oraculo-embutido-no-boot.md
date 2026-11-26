@@ -129,13 +129,17 @@ primeira é a que faz o `--api-key` entrar no desenho (§4.2): se `/health` é p
   não é literal: o valor vem das duas fontes do §4.2, e o script recusa sem nenhuma delas.
 - **O caminho de 1 clique não menciona llama.** [`Rodar.bat:5`](../../Rodar.bat#L5) chama
   `tools\run_game.ps1`; o launcher resolve o motor pinado
-  ([`:60-64`](../../tools/run_game.ps1#L60-L64)), roda `--import` quando falta o cache de classes
-  ([`:413-421`](../../tools/run_game.ps1#L413-L421), argv em `:357`), recusa a segunda janela do
-  mesmo save com exit 2 ([`:400-405`](../../tools/run_game.ps1#L400-L405), ecoado em
+  ([`:84-88`](../../tools/run_game.ps1#L84-L88)), roda `--import` quando o cache está velho —
+  faltando, sem produtos, vindo de outro motor, ou com algum arquivo importável mais novo que o
+  último import ([`:528-547`](../../tools/run_game.ps1#L528-L547), o veredito em
+  [`:349-391`](../../tools/run_game.ps1#L349-L391), argv em [`:470`](../../tools/run_game.ps1#L470);
+  a regra era "falta o cache?" até a perna do launcher, ver Rodada 2026-11-25 (16) do status), recusa
+  a segunda janela do mesmo save com exit 2
+  ([`:514-520`](../../tools/run_game.ps1#L514-L520), ecoado em
   [`Rodar.bat:7-13`](../../Rodar.bat#L7-L13)), tem os modos `-CheckOnly/-Editor/-Tests`
-  ([`:28-33`](../../tools/run_game.ps1#L28-L33)) e abre o motor por `Start-Process` com verificação
-  de 6 s ([`:313-320`](../../tools/run_game.ps1#L313-L320), usado em
-  [`:431-434`](../../tools/run_game.ps1#L431-L434)). **`grep -ni llama` neste arquivo devolve zero
+  ([`:31-37`](../../tools/run_game.ps1#L31-L37)) e abre o motor por `Start-Process` com verificação
+  de 6 s ([`:406-417`](../../tools/run_game.ps1#L406-L417), usado em
+  [`:560-570`](../../tools/run_game.ps1#L560-L570)). **`grep -ni llama` neste arquivo devolve zero
   ocorrências**: o botão que o dono aperta hoje abre o jogo **sem** oráculo. É isto que "embutido"
   quer dizer, em termos de arquivo.
 - **Os packs ficam fora do repositório, e é decisão de licença, não de conforto.**
@@ -290,7 +294,7 @@ não em popup.
 | **Porta ocupada por terceiro** (`401`, ou 200 sem o alias `mind-small`, ou um não-llama) | a sonda de `GET /v1/models` com a nossa chave | **nada**: não mata, não reusa, não muda de porta; estado `estrangeiro` | `llm: porta 8741 ocupada por outro servidor  oraculo desligado` | 4: o listener **continua vivo** depois do run, e nenhum `OS.kill` foi chamado com pid alheio |
 | **Servidor morre no meio da sessão** (crash, OOM, usuário no Task Manager) | `OS.is_process_running(pid)` na cadência do host; código por `get_process_exit_code` | **uma** retentativa; segunda morte = sessão sem oráculo, sem novo retry | `llm: caiu (codigo N)  retentativa 1/1` e depois `llm: desligado` | 5: transições impressas, contagem de retentativas == 1 (não 2, não infinito) |
 | **Janela fechada** (fecha normal, `quit()`, ou morte do processo do jogo) | `_exit_tree` roda nos dois primeiros; no terceiro, não | `OS.kill` no pid **que ele criou**; pid de reuso não é tocado | nada na tela — o filho some, e a porta recusa conexão no próximo boot | 6: após o término, a porta está fechada; se estava aberta, o teste dá vermelho com o pid impresso (órfão) |
-| **Duas janelas do mesmo save** (o launcher recusa exit 2 — [`run_game.ps1:400-405`](../../tools/run_game.ps1#L400-L405) — mas `-Force` e o editor existem) | a segunda janela sonda a porta antes de criar | a segunda **reusa** (estado `reusado`, pid `-1`) | `llm: reuso do servidor existente` | 3: dois boots, um processo; a janela que reusou não mata nada ao fechar |
+| **Duas janelas do mesmo save** (o launcher recusa exit 2 — [`run_game.ps1:514-520`](../../tools/run_game.ps1#L514-L520) — mas `-Force` e o editor existem) | a segunda janela sonda a porta antes de criar | a segunda **reusa** (estado `reusado`, pid `-1`) | `llm: reuso do servidor existente` | 3: dois boots, um processo; a janela que reusou não mata nada ao fechar |
 
 O último caso é o único com degradação conhecida e aceita: se a janela **dona** do processo fecha
 primeiro, a outra perde o oráculo no meio da partida e cai no caminho já checado pela suíte
