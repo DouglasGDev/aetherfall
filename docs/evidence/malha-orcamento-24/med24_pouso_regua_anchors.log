@@ -1,0 +1,76 @@
+corpus na arvore de trabalho  arquivos: 41  ponteiros conferidos: 3548  rotulos conferidos: 215  links relativos conferidos: 4240
+AGENTS.md:230  src/main.gd:1259-1259  BRANCO
+AGENTS.md:457  src/main.gd:794-794  BRANCO
+AGENTS.md:592  src/main.gd:1041-1041  BRANCO
+docs/engine/simclock.md:108  src/main.gd:334-334  BRANCO
+docs/engine/simclock.md:109  src/main.gd:362-368  ROTULO FORA DO CORPO [_process] em 387-395
+docs/engine/simclock.md:142  src/main.gd:362-363  ROTULO FORA DO CORPO [_process] em 387-395
+docs/engine/simclock.md:183  src/main.gd:308-314  ROTULO FORA DO CORPO [_physics_process] em 327-335
+docs/engine/simclock.md:183  src/main.gd:334-334  BRANCO
+docs/engine/simclock.md:84  src/main.gd:335-335  BRANCO
+docs/melhorias-status.md:1383  src/main.gd:897-897  BRANCO
+docs/melhorias-status.md:3416  src/main.gd:559-559  ROTULO FORA DO CORPO [PACK_LEASH] em 584-590
+docs/melhorias-status.md:3804  src/ui/hud.gd:605-605  BRANCO
+docs/melhorias-status.md:3815  src/main.gd:539-543  ROTULO FORA DO CORPO [_home_columns] em 564-574
+docs/melhorias-status.md:3815  src/main.gd:550-550  ROTULO FORA DO CORPO [SPAWN_BANDS] em 575-575
+docs/melhorias-status.md:3816  src/main.gd:559-559  ROTULO FORA DO CORPO [PACK_LEASH] em 584-590
+docs/melhorias-status.md:3816  src/main.gd:762-767  ROTULO FORA DO CORPO [_spawn_point_ok] em 787-797
+docs/melhorias-status.md:3819  src/main.gd:607-618  ROTULO FORA DO CORPO [_den_counts] em 632-643
+docs/melhorias-status.md:3820  src/main.gd:619-636  ROTULO FORA DO CORPO [_emptiest_den] em 644-661
+docs/melhorias-status.md:3820  src/main.gd:637-649  ROTULO FORA DO CORPO [_den_gate_ok] em 662-674
+docs/melhorias-status.md:3821  src/main.gd:650-671  ROTULO FORA DO CORPO [den_min_dist] em 675-696
+docs/melhorias-status.md:3822  src/main.gd:566-573  ROTULO FORA DO CORPO [DEN_COUNT] em 591-598
+docs/melhorias-status.md:3822  src/main.gd:574-584  ROTULO FORA DO CORPO [DEN_MIN_DIST] em 599-609
+docs/melhorias-status.md:4107  src/main.gd:550-550  ROTULO FORA DO CORPO [SPAWN_BANDS] em 575-575
+docs/melhorias-status.md:4108  src/main.gd:762-767  ROTULO FORA DO CORPO [_spawn_point_ok] em 787-797
+docs/melhorias-status.md:4110  src/main.gd:559-559  ROTULO FORA DO CORPO [PACK_LEASH] em 584-590
+docs/melhorias-status.md:4734  src/world/block_defs.gd:166-166  BRANCO
+docs/melhorias-status.md:4896  src/main.gd:902-902  BRANCO
+docs/melhorias-status.md:5303  src/main.gd:1231-1278  ROTULO FORA DO CORPO [diagnostics] em 1310-1360
+docs/melhorias-status.md:84  src/main.gd:334-334  BRANCO
+docs/melhorias-status.md:904  src/main.gd:1046-1046  BRANCO
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:63  src/main.gd:1028-1029  BRANCO
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:68  src/main.gd:388-388  ROTULO FORA DO CORPO [_spawn_wolves] em 413-452
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:69  src/main.gd:788-788  ROTULO FORA DO CORPO [_spawn_home_point] em 813-885
+docs/planos/09-bioma-cor-de-pelo-e-ether.md:71  src/main.gd:550-550  ROTULO FORA DO CORPO [SPAWN_BANDS] em 575-575
+docs/planos/10-alcateia-rutinas.md:193  src/main.gd:940-955  ROTULO FORA DO CORPO [_pack_put] em 966-983
+docs/planos/10-alcateia-rutinas.md:214  src/main.gd:900-902  ROTULO FORA DO CORPO [pack_of] em 926-934
+docs/planos/10-alcateia-rutinas.md:214  src/main.gd:940-955  ROTULO FORA DO CORPO [_pack_put] em 966-983
+docs/planos/10-alcateia-rutinas.md:260  src/main.gd:387-410  ROTULO FORA DO CORPO [_spawn_wolves] em 413-452
+docs/planos/10-alcateia-rutinas.md:260  src/main.gd:70-70  ROTULO FORA DO CORPO [wolves] em 75-75
+docs/planos/10-alcateia-rutinas.md:261  src/main.gd:958-970  ROTULO FORA DO CORPO [_reap_corpses] em 984-1004
+docs/planos/10-alcateia-rutinas.md:87  src/main.gd:387-410  ROTULO FORA DO CORPO [_spawn_wolves] em 413-452
+docs/planos/10-alcateia-rutinas.md:91  src/main.gd:788-788  ROTULO FORA DO CORPO [_spawn_home_point] em 813-885
+docs/planos/10-alcateia-rutinas.md:92  src/main.gd:704-704  ROTULO FORA DO CORPO [_place_request] em 729-765
+docs/planos/10-alcateia-rutinas.md:93  src/main.gd:550-550  ROTULO FORA DO CORPO [SPAWN_BANDS] em 575-575
+docs/planos/11-acasalamento-filhote-e-censo.md:50  src/main.gd:958-978  ROTULO FORA DO CORPO [_reap_corpses] em 984-1004
+docs/planos/12-bicho-cavando-voxel.md:113  src/world/block_defs.gd:171-171  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:246  src/main.gd:1260-1260  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:295  src/world/block_defs.gd:166-166  BRANCO
+docs/planos/12-bicho-cavando-voxel.md:295  src/world/block_defs.gd:166-166  ROTULO FORA DO CORPO [drop_of] em 184-188
+docs/planos/13-arvore-genealogica-e-ether.md:103  src/main.gd:874-875  ROTULO FORA DO CORPO [wolves_roster] em 899-910
+docs/planos/13-arvore-genealogica-e-ether.md:256  src/main.gd:70-70  ROTULO FORA DO CORPO [wolves] em 75-75
+docs/planos/13-arvore-genealogica-e-ether.md:324  src/main.gd:1316-1317  ROTULO FORA DO CORPO [state_hash] em 1399-1402
+docs/planos/13-arvore-genealogica-e-ether.md:46  src/main.gd:80-80  ROTULO FORA DO CORPO [_next_identity] em 91-91
+docs/planos/13-arvore-genealogica-e-ether.md:97  src/main.gd:428-451  ROTULO FORA DO CORPO [_make_wolf] em 453-477
+docs/planos/13-arvore-genealogica-e-ether.md:98  src/main.gd:388-411  ROTULO FORA DO CORPO [_spawn_wolves] em 413-452
+docs/planos/14-convivio-da-alcateia.md:27  src/main.gd:1040-1045  ROTULO FORA DO CORPO [_on_wolf_died] em 1066-1073
+docs/planos/14-convivio-da-alcateia.md:34  src/main.gd:550-550  ROTULO FORA DO CORPO [SPAWN_BANDS] em 575-575
+docs/planos/14-convivio-da-alcateia.md:35  src/main.gd:762-767  ROTULO FORA DO CORPO [_spawn_point_ok] em 787-797
+docs/planos/14-convivio-da-alcateia.md:64  src/main.gd:860-862  ROTULO FORA DO CORPO [_volume_clear] em 886-890
+docs/planos/14-convivio-da-alcateia.md:71  src/ui/hud.gd:154-157  ROTULO FORA DO CORPO [show_message] em 158-163
+docs/planos/14-convivio-da-alcateia.md:74  src/main.gd:1009-1010  ROTULO FORA DO CORPO [_on_notice] em 1035-1038
+docs/planos/14-convivio-da-alcateia.md:76  src/ui/hud.gd:605-605  BRANCO
+docs/planos/14-convivio-da-alcateia.md:84  src/main.gd:958-978  ROTULO FORA DO CORPO [_reap_corpses] em 984-1004
+docs/planos/15-oraculo-embutido-no-boot.md:526  src/main.gd:1259-1259  BRANCO
+docs/planos/16-tocas-da-alcateia.md:163  src/main.gd:793-793  BRANCO
+docs/planos/16-tocas-da-alcateia.md:226  src/main.gd:600-600  BRANCO
+docs/planos/16-tocas-da-alcateia.md:386  src/main.gd:793-793  BRANCO
+docs/planos/16-tocas-da-alcateia.md:67  src/main.gd:793-793  BRANCO
+docs/planos/16-tocas-da-alcateia.md:76  src/main.gd:793-793  BRANCO
+docs/planos/18-mundo-vivo-grama-e-mato.md:78  src/world/block_defs.gd:161-161  BRANCO
+docs/planos/18-mundo-vivo-grama-e-mato.md:79  src/world/block_defs.gd:166-166  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:35  src/main.gd:1041-1041  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:458  src/main.gd:1041-1041  BRANCO
+docs/planos/20-mente-autonoma-de-mobs-e-ecossistema.md:556  src/main.gd:1041-1041  BRANCO
+casos objetivos: 74

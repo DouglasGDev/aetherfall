@@ -1,0 +1,816 @@
+citacoes em faixa: 2509 (alegacao colhida para 1387)
+suspeitas: 814
+  world_gen.gd               09-bioma-cor-de-pelo     56-56   alega=GRASS|SAND|SNOW          real: var _moist := FastNoiseLite.new()
+  world_gen.gd               09-bioma-cor-de-pelo     68-68   alega=GRASS|SAND|SNOW          real:  _noise(_moist, p_seed + 3, 0.0045, FastNoiseLite.FRACTAL_NONE, 1)
+  wolf.gd                    09-bioma-cor-de-pelo   1452-1452 alega=StandardMaterial3D       real:   _visual.rotation.z = 0.0
+  wolf.gd                    09-bioma-cor-de-pelo   1462-1463 alega=FUR_COLORS|temperate     real: # ----------------------------------------------------------------
+  aether_field.gd            09-bioma-cor-de-pelo      9-17   alega=setup                    real: enum Channel { WORK = 0, BLOOD = 1, FEAR = 2, COUNT = 3 }  const C
+  main.gd                    09-bioma-cor-de-pelo    388-388  alega=home                     real:  world.process(MESH_BUDGET)
+  main.gd                    09-bioma-cor-de-pelo    788-788  alega=home                     real:  var seg := SAFE_SPAWN_DIST * SAFE_SPAWN_DIST
+  wolf.gd                    09-bioma-cor-de-pelo    309-309  alega=home_biome|SPAWN_BANDS   real:  identity = p_identity
+  world_gen.gd               09-bioma-cor-de-pelo    156-158  alega=home_biome               real: func imprint_bias(x: int, z: int, h: int, ch: int) -> float:  var 
+  world_gen.gd               09-bioma-cor-de-pelo     71-85   alega=surface_height           real:  _cave.seed = p_seed + 5  _cave.noise_type = FastNoiseLite.TYPE_SI
+  wolf.gd                    09-bioma-cor-de-pelo   1406-1406 alega=setup|home|generate_chun real:  # ja novo, e nao contra o corpo sorteado desta sessao.
+  aether_field.gd            09-bioma-cor-de-pelo     87-87   alega=biome_of                 real: func imprint(world_pos: Vector3, ch: int, amount: float) -> void:
+  wolf.gd                    09-bioma-cor-de-pelo   1396-1396 alega=surface_block            real:  home_biome = world.gen.biome_at(int(home.x), int(home.z))
+  aether_reactions_test.gd   09-bioma-cor-de-pelo    332-348  alega=sim_step                 real:  _pack_release()  var s = Session.new()  s.world = _world  s.aethe
+  aether_field.gd            09-bioma-cor-de-pelo     17-17   alega=imprint_bioma_tem_mesma_ real: const MAX_VALUE: float = 4.0
+  aether_reactions_test.gd   09-bioma-cor-de-pelo     64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  wolf.gd                    09-bioma-cor-de-pelo    299-299  alega=setup                    real: var _legs: Array = []
+  wolf.gd                    10-alcateia-rutinas.    426-426  alega=patrol|sniff|hunt        real: func _build_tree() -> void:
+  wolf.gd                    10-alcateia-rutinas.    529-529  alega=intent                   real: func _hunt_pack_size() -> int:
+  wolf.gd                    10-alcateia-rutinas.    656-656  alega=intent                   real: func _leaf_wander(_ctx: Dictionary) -> bool:
+  wolf.gd                    10-alcateia-rutinas.    916-953  alega=Array                    real:  else:   _swim_time = 0.0  _read_pack()  _sense()  _think(elapsed)
+  wolf.gd                    10-alcateia-rutinas.    927-928  alega=SCENT_PERIOD             real:  func _sense() -> void:
+  wolf.gd                    10-alcateia-rutinas.    940-941  alega=SCENT_PERIOD             real:   _find_scent()  # Contagio (dossie 10 §3.6): a fuga e a confianca
+  wolf.gd                    10-alcateia-rutinas.    950-952  alega=saw_player               real:   if t >= PACK_TRUST_GATE:    _pack_trust = maxf(_pack_trust, t)  
+  wolf.gd                    10-alcateia-rutinas.    932-939  alega=saw_player               real:  _dist_player = me.distance_to(pp)  # LOS e a unica leitura cara d
+  wolf.gd                    10-alcateia-rutinas.    940-941  alega=trust|intent             real:   _find_scent()  # Contagio (dossie 10 §3.6): a fuga e a confianca
+  wolf.gd                    10-alcateia-rutinas.    946-946  alega=trust|intent             real:  for e: Dictionary in _pack:
+  wolf.gd                    10-alcateia-rutinas.    851-852  alega=investigate              real:  sniff.add("curiosidade", func(_c: Dictionary) -> float: return mi
+  wolf.gd                    10-alcateia-rutinas.    856-858  alega=patrol|investigate       real:    SCENT_MIN, SCENT_MIN + 0.02, ResponseCurve.Type.LINEAR, 1.0, 0.
+  wolf.gd                    10-alcateia-rutinas.    803-804  alega=patrol                   real:  # ---------------------------------------------------------------
+  wolf.gd                    10-alcateia-rutinas.    721-721  alega=home                     real: func _dry_ground(p: Vector3) -> bool:
+  wolf.gd                    10-alcateia-rutinas.    729-729  alega=home                     real: func _shore_point() -> Vector3:
+  main.gd                    10-alcateia-rutinas.    387-410  alega=home                     real: func _process(delta: float) -> void:  world.process(MESH_BUDGET)  
+  wolf.gd                    10-alcateia-rutinas.    653-653  alega=SPAWN_BANDS              real:    _checked_scents[c] = Vector2(strength, _scent_clock + SCENT_MEM
+  wolf.gd                    10-alcateia-rutinas.    878-878  alega=sim_step|BITE_RANGE      real: ## A leitura da matilha e uma chamada por tick de 20 Hz, nunca por
+  wolf.gd                    10-alcateia-rutinas.    781-781  alega=sim_step|BITE_RANGE      real:   return false
+  mind.gd                    10-alcateia-rutinas.     24-26   alega=relations|beliefs|episod real: const BANDIT_MIN_N: int = 1 ## Alpha do EWMA do estilo (StyleFinge
+  mind.gd                    10-alcateia-rutinas.    154-159  alega=relations|beliefs|episod real: ## Sugestao do ORACULO em quarentena (Fase 2 §20.6): a crenca entr
+  mind.gd                    10-alcateia-rutinas.    119-120  alega=believes|relations       real:    n += 1  return n
+  wolf.gd                    10-alcateia-rutinas.   1376-1376 alega=main                     real: func state_dict() -> Dictionary:
+  wolf.gd                    10-alcateia-rutinas.   1392-1392 alega=state_dict|main          real: func load_state(d: Dictionary) -> void:
+  wolf.gd                    10-alcateia-rutinas.    862-862  alega=sim_step                 real:    0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 1.0, false)
+  wolf.gd                    10-alcateia-rutinas.    311-311  alega=identity|home            real:  # Uma pergunta por lobo, sem cadencia: o bioma de onde o lobo nas
+  main.gd                    10-alcateia-rutinas.     81-81   alega=identity                 real: ## Onde os graos em voo moram na arvore. Nem no `_terrain` nem no 
+  wolf.gd                    10-alcateia-rutinas.   1332-1332 alega=feed                     real:  _imprint(me, AetherField.Channel.FEAR, 0.55)
+  wolf.gd                    10-alcateia-rutinas.   1326-1326 alega=on_kill|feed             real:   return
+  mind_oracle.gd             10-alcateia-rutinas.     47-47   alega=intent                   real: ## tem de dizer o mesmo nome.
+  main.gd                    10-alcateia-rutinas.    940-955  alega=trust                    real:  for i in wolves.size():   var a: Wolf = wolves[i]   if not a.aliv
+  main.gd                    10-alcateia-rutinas.    954-954  alega=trust                    real:  for w: Wolf in wolves:
+  main.gd                    10-alcateia-rutinas.    311-313  alega=end_step|begin_step|sim_ real:   ## Checagem 8 do gate: a suíte precisa de uma forma de afirmar q
+  main.gd                    10-alcateia-rutinas.    940-955  alega=pack_of                  real:  for i in wolves.size():   var a: Wolf = wolves[i]   if not a.aliv
+  wolf.gd                    10-alcateia-rutinas.    448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  aether_reactions_test.gd   10-alcateia-rutinas.    345-353  alega=trips|SubtreeGuard       real:  if not mating:   s._mate_cd = INF  _session = s   func _initializ
+  aether_reactions_test.gd   10-alcateia-rutinas.   1886-1898 alega=trips                    real:  for bi: int in [WorldGen.Biome.FROZEN, WorldGen.Biome.ARID,    Wo
+  mind.gd                    10-alcateia-rutinas.    119-120  alega=believes|intent|amigo_am real:    n += 1  return n
+  aether_reactions_test.gd   10-alcateia-rutinas.     64-64   alega=EXPECTED_CHECKS|alcateia real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  main.gd                    10-alcateia-rutinas.    387-410  alega=Alcateia|PackState       real: func _process(delta: float) -> void:  world.process(MESH_BUDGET)  
+  main.gd                    10-alcateia-rutinas.     70-70   alega=Alcateia|PackState       real: ## A queda de bloco (dossie 17 §3): a fila e o UNICO leitor de `wo
+  main.gd                    10-alcateia-rutinas.    958-970  alega=wolves|Alcateia|PackStat real: func _pack_slot(identity: int) -> Array:  if not _pack_buffers.has
+  main.gd                    11-acasalamento-filh    387-423  alega=load                     real: func _process(delta: float) -> void:  world.process(MESH_BUDGET)  
+  main.gd                    11-acasalamento-filh    244-244  alega=WOLF_COUNT               real:  water_fx.wolves_provider = Callable(self, "wolves_roster")
+  main.gd                    11-acasalamento-filh    352-358  alega=SimClock                 real:  _corpse_cd -= dt  if _corpse_cd <= 0.0:   _corpse_cd = CORPSE_CHE
+  world_gen.gd               11-acasalamento-filh      6-6    alega=gen_version              real: const GEN_VERSION: int = 4
+  main.gd                    11-acasalamento-filh    387-410  alega=home                     real: func _process(delta: float) -> void:  world.process(MESH_BUDGET)  
+  main.gd                    11-acasalamento-filh    958-978  alega=home                     real: func _pack_slot(identity: int) -> Array:  if not _pack_buffers.has
+  main.gd                    11-acasalamento-filh     18-18   alega=CORPSE_CHECK_PERIOD      real: const CENSUS_CAP := 12
+  wolf.gd                    11-acasalamento-filh     96-96   alega=setup                    real: const DIMS := Vector3(0.75, 0.95, 1.35)
+  wolf.gd                    11-acasalamento-filh     19-19   alega=setup                    real: const MAX_HP: float = 42.0
+  wolf.gd                    11-acasalamento-filh     89-89   alega=set_phase|age_ticks      real: const PHASE_SCALE: Array[float] = [0.45, 0.72, 1.0]
+  wolf.gd                    11-acasalamento-filh   1372-1372 alega=mate_cd|age_ticks|phase  real: func tree_stats() -> String:
+  wolf.gd                    11-acasalamento-filh   1390-1392 alega=hp|set_phase|hp          real:   func load_state(d: Dictionary) -> void:
+  wolf.gd                    11-acasalamento-filh   1406-1406 alega=age_ticks|ADULT          real:  # ja novo, e nao contra o corpo sorteado desta sessao.
+  wolf.gd                    11-acasalamento-filh   1398-1398 alega=mate_cd|age_ticks|ADULT  real:   _fur.albedo_color = FUR_COLORS[home_biome]
+  wolf.gd                    11-acasalamento-filh    875-875  alega=age_ticks                real:   _tatica_anterior = intent
+  main.gd                    11-acasalamento-filh    324-325  alega=age_ticks                real:  # ---------------------------------------------------------------
+  wolf.gd                    11-acasalamento-filh    918-918  alega=MAX_HP|hp|hunger         real:  _read_pack()
+  main.gd                    11-acasalamento-filh   1095-1095 alega=gen_version|ADULT|load_s real:   edit_list[Coords.block_key(k)] = int(world.edits[k])
+  wolf.gd                    11-acasalamento-filh   1406-1406 alega=JUVENILE_STEPS|age_ticks real:  # ja novo, e nao contra o corpo sorteado desta sessao.
+  wolf.gd                    11-acasalamento-filh   1203-1259 alega=sim_step                 real:  # isso" -- nao seria observada por nada.  world.set_block(_dig_po
+  main.gd                    11-acasalamento-filh    874-874  alega=wolves_roster            real:  # -- que e a promessa da recusa impressa e contada -- nunca foi c
+  main.gd                    11-acasalamento-filh    324-329  alega=Array                    real:  # ---------------------------------------------------------------
+  aether_reactions_test.gd   11-acasalamento-filh    332-348  alega=sim_step                 real:  _pack_release()  var s = Session.new()  s.world = _world  s.aethe
+  aether_reactions_test.gd   11-acasalamento-filh   1183-1184 alega=sim_step                 real:  func _test_locomotion_wall() -> bool:
+  aether_reactions_test.gd   11-acasalamento-filh     64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  tick_journal.gd            11-acasalamento-filh     47-62   alega=debug_line               real: func start(file_path: String) -> Error:  if active():   return ERR
+  main.gd                    12-bicho-cavando-vox     70-70   alega=connect                  real: ## A queda de bloco (dossie 17 §3): a fila e o UNICO leitor de `wo
+  aether_reactions_test.gd   12-bicho-cavando-vox     60-60   alega=fa94cb5                  real: # 320 = os 283 da perna 12 mais as cinco de `extensao_carrega_clas
+  wolf.gd                    12-bicho-cavando-vox    448-449  alega=degrau                   real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  wolf.gd                    12-bicho-cavando-vox   1197-1197 alega=Player|acted             real:   return
+  main.gd                    12-bicho-cavando-vox    987-987  alega=break                    real:   if w.finished():
+  wolf.gd                    12-bicho-cavando-vox     89-89   alega=sim_step                 real: const PHASE_SCALE: Array[float] = [0.45, 0.72, 1.0]
+  main.gd                    12-bicho-cavando-vox    182-183  alega=Player                   real:  add_child(viz) 
+  main.gd                    12-bicho-cavando-vox   1018-1027 alega=Player                   real: func _on_block_broken(pos: Vector3i, block: int) -> void:  stats["
+  main.gd                    12-bicho-cavando-vox   1242-1246 alega=bench_positions          real:  # com a mesma identidade quebrariam o pareamento do proximo load 
+  main.gd                    12-bicho-cavando-vox   1169-1169 alega=bench_positions          real:  player.deaths = int(p.get("deaths", 0))
+  player.gd                  12-bicho-cavando-vox    644-648  alega=break_block              real: func _progress_of(v: Vector3i) -> float:  if v != _mining_voxel:  
+  voxel_world.gd             12-bicho-cavando-vox    271-271  alega=edits                    real:   _write_raw(pos, b)
+  voxel_world.gd             12-bicho-cavando-vox    585-585  alega=edits                    real: func set_block(p: Vector3i, b: int, record: bool = true) -> bool:
+  wolf.gd                    12-bicho-cavando-vox   1192-1192 alega=edits                    real:  elif _dig_cell(_dig_pos) != _dig_pos:
+  aether_reactions_test.gd   12-bicho-cavando-vox    407-407  alega=Player|acted             real:     _world.set_block(Vector3i(x, y, z), BlockDefs.Block.AIR)
+  block_defs.gd              12-bicho-cavando-vox    171-171  alega=hardness                 real: 
+  voxel_world.gd             12-bicho-cavando-vox    309-359  alega=set_block                real: func process(p_frame_budget: int) -> void:  if _dirty.is_empty(): 
+  main.gd                    12-bicho-cavando-vox     28-28   alega=set_block                real: const MESH_BUDGET := 2             # chunks por frame
+  voxel_world.gd             12-bicho-cavando-vox    530-530  alega=pending_meshes           real: func meshes_built() -> int:
+  wolf.gd                    12-bicho-cavando-vox   1239-1254 alega=meshes_built|pending_mes real:   if _unstick > 0.0:    dir = dir.rotated(Vector3.UP, _detour)    
+  wolf.gd                    12-bicho-cavando-vox    582-584  alega=INSPECT_SECONDS          real:   _reaction = "seguindo sangue" if _scent_channel == AetherField.C
+  smoke_test.gd              12-bicho-cavando-vox    513-513  alega=false                    real: # ----------------------------------------------------------------
+  wolf.gd                    12-bicho-cavando-vox    878-886  alega=sim_step                 real: ## A leitura da matilha e uma chamada por tick de 20 Hz, nunca por
+  wolf.gd                    12-bicho-cavando-vox   1090-1095 alega=reach|get_block          real: ## unico trocaria de celula a cada deriva do pe -- e nunca abriria
+  voxel_body.gd              12-bicho-cavando-vox    162-163  alega=can_step_over            real: func step_reach() -> float:  return maxf(dims.x, dims.z) * 0.5 + 0
+  main.gd                    12-bicho-cavando-vox   1242-1246 alega=bench_positions          real:  # com a mesma identidade quebrariam o pareamento do proximo load 
+  wolf.gd                    12-bicho-cavando-vox    129-129  alega=elif                     real: const DIG_STEPS_BEFORE: int = 8
+  wolf.gd                    12-bicho-cavando-vox     89-89   alega=dims                     real: const PHASE_SCALE: Array[float] = [0.45, 0.72, 1.0]
+  main.gd                    12-bicho-cavando-vox   1087-1089 alega=edits                    real:  # Dossie 17 §3.7: o estado de queda NAO vai para o disco e isso e
+  main.gd                    12-bicho-cavando-vox   1106-1106 alega=edits                    real:   "schema": SaveManager.SCHEMA,
+  main.gd                    12-bicho-cavando-vox   1148-1151 alega=edits                    real:  if saved.size() > CENSUS_CAP:   print("load RECUSADO: censo %d ac
+  main.gd                    12-bicho-cavando-vox   1260-1260 alega=diagnostics              real: 
+  wolf.gd                    12-bicho-cavando-vox    448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  aether_reactions_test.gd   12-bicho-cavando-vox    514-514  alega=intent                   real:    "episodios=%d" % _wolf.mind.count_kind("saw_player"))
+  block_defs.gd              12-bicho-cavando-vox    166-166  alega=inv                      real: 
+  block_defs.gd              12-bicho-cavando-vox     69-69   alega=drop_of                  real: static var _drop: PackedByteArray = PackedByteArray()
+  main.gd                    12-bicho-cavando-vox    337-339  alega=sim_step                 real:  var dt := clock.step_duration()  elapsed += dt  # Dossie 17 §3.5:
+  sim_clock.gd               12-bicho-cavando-vox     32-39   alega=sim_step                 real: func begin_step() -> void:  _t_step = float(Time.get_ticks_usec())
+  wolf.gd                    12-bicho-cavando-vox   1015-1015 alega=get_block                real: ## O primeiro solido descendo pela coluna do centro da celula de E
+  voxel_world.gd             12-bicho-cavando-vox    593-593  alega=int|Vector3i|float       real:   edits[p] = b
+  aether_reactions_test.gd   12-bicho-cavando-vox    342-358  alega=meshes_built             real:  # `flush` num Nil e o passo morre antes da difusao, da matilha e 
+  wolf.gd                    12-bicho-cavando-vox    979-981  alega=investigate|work_de_bich real:  var best_cell := c0  var channel: int = AetherField.Channel.WORK 
+  wolf.gd                    12-bicho-cavando-vox    992-992  alega=investigate              real:     var work := aether.sample_cell(c, AetherField.Channel.WORK) * 
+  main.gd                    12-bicho-cavando-vox   1148-1151 alega=apply_edits|AIR|get_bloc real:  if saved.size() > CENSUS_CAP:   print("load RECUSADO: censo %d ac
+  simulation_rng_test.gd     12-bicho-cavando-vox    226-226  alega=cavar_nao_consome_rng_da real:  _check(base["global_untouched"], "desvio nao consome RNG global",
+  wolf.gd                    12-bicho-cavando-vox   1240-1241 alega=randf_range              real:    dir = dir.rotated(Vector3.UP, _detour)    _unstick -= delta
+  aether_reactions_test.gd   12-bicho-cavando-vox     64-64   alega=EXPECTED_CHECKS|randi    real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  smoke_test.gd              12-bicho-cavando-vox   2454-2462 alega=intent                   real:  _aim(p, -1.4)  _place_voxel = p.place_voxel  _place0 = int(main.s
+  aether_field.gd            13-arvore-genealogic     87-89   alega=setup                    real: func imprint(world_pos: Vector3, ch: int, amount: float) -> void: 
+  wolf.gd                    13-arvore-genealogic    171-171  alega=cubo|em                  real: var identity: int = 0
+  main.gd                    13-arvore-genealogic     80-80   alega=cubo|em                  real: var _entities: Node3D = null
+  main.gd                    13-arvore-genealogic    388-428  alega=cubo                     real:  world.process(MESH_BUDGET)  if viz.showing():   _viz_cd -= delta 
+  wolf.gd                    13-arvore-genealogic    309-309  alega=home|FUR_COLORS          real:  identity = p_identity
+  wolf.gd                    13-arvore-genealogic   1380-1382 alega=home                     real:   "hp": hp, "alive": alive, "hunger": hunger, "kills": kills,   # 
+  main.gd                    13-arvore-genealogic   1163-1168 alega=inv|load_state|state_dic real:  block_spawner.clear()  var p: Dictionary = d.get("player", {})  p
+  save_manager.gd            13-arvore-genealogic      8-8    alega=inv|load_state           real: const SCHEMA: int = 1
+  save_manager.gd            13-arvore-genealogic     69-71   alega=inv                      real:  if int(d.get("schema", 0)) > SCHEMA:   out["error"] = "schema %d 
+  aether_field.gd            13-arvore-genealogic     49-50   alega=PackedFloat32Array       real:  _cur.resize(int(Channel.COUNT) * _per_channel)  _nxt.resize(int(C
+  aether_field.gd            13-arvore-genealogic    130-142  alega=PackedFloat32Array       real:   for i in hot:    var v: float = _cur[base + i]    _neighbours(i)
+  hud.gd                     13-arvore-genealogic    260-261  alega=aether_energy            real:  if clock != null:   lines.append("tick %d  sim %.2f ms  pior %.2f
+  main.gd                    13-arvore-genealogic    180-180  alega=entity_provider          real:  viz = AetherViz.new()
+  aether_field.gd            13-arvore-genealogic     45-50   alega=state_bytes              real:  size_x = int(ceilf(float(VoxelConfig.world_size_x()) / float(cell
+  voxel_config.gd            13-arvore-genealogic      5-16   alega=state_bytes              real: const CHUNK_SIZE_X: int = 16 const CHUNK_SIZE_Y: int = 64 const CH
+  aether_reactions_test.gd   13-arvore-genealogic     69-78   alega=BIAS_MEDIDA|IMPRINT_BIAS real: # DE REFERENCIA montado dentro do proprio gate, contra um llama-se
+  aether_viz.gd              13-arvore-genealogic     12-16   alega=BIAS_MEDIDA              real: const CHANNEL_COLOR: Array = [  Color(1.00, 0.72, 0.22),   # traba
+  mind.gd                    13-arvore-genealogic    164-178  alega=FORMAT_VERSION           real: func decay(elapsed_minutes: float) -> void:  if elapsed_minutes <=
+  mind.gd                    13-arvore-genealogic      9-9    alega=decay                    real: const CONFIDENCE_MIN: float = 0.02
+  mind.gd                    13-arvore-genealogic      8-8    alega=decay                    real: const BELIEF_DECAY_PER_MIN: float = 0.14
+  aether_field.gd            13-arvore-genealogic    232-234  alega=Dictionary|identity      real: # O save corta valores <= 0,01; a assinatura precisa dos bits de t
+  aether_field.gd            13-arvore-genealogic    220-229  alega=to_dict                  real: func from_dict(d: Dictionary) -> bool:  if int(d.get("cell", -1)) 
+  wolf.gd                    13-arvore-genealogic    960-1000 alega=SCHEMA|from_dict         real:   mind.reinforce("player_visible_recent", -0.02, "perception")   m
+  mind.gd                    13-arvore-genealogic    190-190  alega=from_dict|genome|persona real:  relations[str(p_actor)] = clampf(trust(p_actor) + p_delta, -1.0, 
+  wolf.gd                    13-arvore-genealogic     30-30   alega=load_state               real: const SCENT_PERIOD: float = 0.25
+  wolf.gd                    13-arvore-genealogic    927-928  alega=load_state               real:  func _sense() -> void:
+  aether_field.gd            13-arvore-genealogic     37-39   alega=setup                    real: # Scratch de _neighbours(): realocar por cada celula activa seria 
+  mind.gd                    13-arvore-genealogic    129-135  alega=Dictionary               real: func reinforce(p_id: String, p_delta: float, p_source: String, p_t
+  wolf.gd                    13-arvore-genealogic    911-911  alega=reinforce|Dictionary     real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  wolf.gd                    13-arvore-genealogic    448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  wolf.gd                    13-arvore-genealogic   1300-1300 alega=heranca_nao_repete_deriv real: func take_damage(amount: float, from_actor: int, hit_from: Vector3
+  mind.gd                    13-arvore-genealogic     87-95   alega=take_damage|heranca_nao_ real: func _drift(p_kind: String, p_magnitude: float) -> void:  match p_
+  mind.gd                    13-arvore-genealogic    119-120  alega=eter_devolve_quem_sangro real:    n += 1  return n
+  aether_reactions_test.gd   13-arvore-genealogic   1624-1630 alega=free|ascendencia_e_int_n real:  func _test_scent_cave_layer() -> bool:  # O leitor varria uma cam
+  aether_reactions_test.gd   13-arvore-genealogic   1677-1678 alega=free                     real:  return true 
+  aether_reactions_test.gd   13-arvore-genealogic     64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  wolf.gd                    13-arvore-genealogic   1362-1367 alega=MindsInspector           real: func debug_line() -> String:  var fmt := "lobo%d %-9s %-12s hp %3.
+  mind.gd                    13-arvore-genealogic     19-23   alega=personality|return|biome real: const BANDIT_GAIN: float = 0.12 ## Uma vitoria ja e media real — o
+  mind.gd                    13-arvore-genealogic     56-56   alega=personality|return       real: ## e leitura (prompt/debug), nunca autoridade: o bônus mora na cur
+  main.gd                    13-arvore-genealogic    984-1004 alega=load_game|save_game      real: func _reap_corpses() -> void:  for i in range(wolves.size() - 1, -
+  wolf.gd                    13-arvore-genealogic    875-904  alega=Dictionary               real:   _tatica_anterior = intent   ## A leitura da matilha e uma chamad
+  wolf.gd                    13-arvore-genealogic    960-1000 alega=sim_step|Dictionary      real:   mind.reinforce("player_visible_recent", -0.02, "perception")   m
+  wolf.gd                    13-arvore-genealogic   1346-1351 alega=debug_line               real:   func feed(p_pos: Vector3) -> void:  hunger = maxf(hunger - 0.45,
+  wolf.gd                    13-arvore-genealogic   1448-1477 alega=debug_line               real:  # o mundo em volta mudou, entao ele so pode valer de novo se for 
+  main.gd                    13-arvore-genealogic   1316-1317 alega=load_state               real:   "pack_pairs": _pack_pairs,   # Dossie 16 §7d: a toca sai como lu
+  main.gd                    14-convivio-da-alcat    788-860  alega=eb6ec8d                  real:  var seg := SAFE_SPAWN_DIST * SAFE_SPAWN_DIST  if feet.distance_sq
+  main.gd                    14-convivio-da-alcat    550-550  alega=eb6ec8d                  real:  wolves.append(w)
+  main.gd                    14-convivio-da-alcat    762-767  alega=SPAWN_BANDS              real: ## os seis portoes contra o JOGADOR continuam os mesmos da perna 1
+  wolf.gd                    14-convivio-da-alcat    717-721  alega=continue                 real:  return rank   ## Terra seca neste ponto: sem agua acima do leito 
+  wolf.gd                    14-convivio-da-alcat    725-735  alega=continue                 real:  return not world.is_water_xyz(b.x, world.surface_height(b.x, b.z)
+  wolf.gd                    14-convivio-da-alcat   1230-1230 alega=SWIM_SPEED_FACTOR        real:  var want := _move_target - body.feet_pos
+  wolf.gd                    14-convivio-da-alcat   1255-1257 alega=home|SWIM_SPEED_FACTOR   real:   # velocidade vertical e escrita, e mover um randf() para dentro 
+  main.gd                    14-convivio-da-alcat    299-302  alega=spawn_point|home         real: ## funcao roda duas vezes e so escreve onde a peca ja existe. func
+  main.gd                    14-convivio-da-alcat    169-169  alega=spawn_point              real:  # Dossie 17 §3.5: a fila escuta o mundo, e escuta DEPOIS da gerac
+  main.gd                    14-convivio-da-alcat    382-382  alega=spawn_point              real:    tick_journal.close()
+  main.gd                    14-convivio-da-alcat   1136-1136 alega=load                     real:  if int(d.get("gen_version", -1)) != WorldGen.GEN_VERSION:
+  voxel_world.gd             14-convivio-da-alcat    802-808  alega=load                     real: func line_of_sight(from: Vector3, to: Vector3) -> bool:  var dir :
+  wolf.gd                    14-convivio-da-alcat    922-922  alega=line_of_sight            real:   _inspect_left = 0.0
+  main.gd                    14-convivio-da-alcat    329-329  alega=show_message             real:  var steps := clock.advance(delta)
+  wolf.gd                    14-convivio-da-alcat   1324-1335 alega=HOWL_COOLDOWN|BARK_RANGE real: func die() -> void:  if not alive:   return  alive = false  intent
+  wolf.gd                    14-convivio-da-alcat     40-40   alega=die                      real: const CORPSE_SECONDS: float = 6.0
+  main.gd                    14-convivio-da-alcat    958-978  alega=die                      real: func _pack_slot(identity: int) -> Array:  if not _pack_buffers.has
+  wolf.gd                    14-convivio-da-alcat    911-911  alega=Dictionary               real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  utility_scorer.gd          14-convivio-da-alcat     76-76   alega=Dictionary               real:    if c.veto:
+  aether_reactions_test.gd   14-convivio-da-alcat     64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  aether_reactions_test.gd   14-convivio-da-alcat      8-29   alega=EXPECTED_CHECKS          real: const RNG_PIN: int = 7301 const SPAWN := Vector3(58.0, 51.001, 62.
+  wolf.gd                    14-convivio-da-alcat    803-804  alega=min_interval|min_lead    real:  # ---------------------------------------------------------------
+  wolf.gd                    14-convivio-da-alcat    999-1000 alega=pack_provider            real:     if _checked_scents.has(c) and v < _checked_scents[c].x + SCENT
+  voxel_config.gd            14-convivio-da-alcat     16-16   alega=identity                 real: const AETHER_CELL: int = 4
+  main.gd                    14-convivio-da-alcat    311-313  alega=end_step|begin_step      real:   ## Checagem 8 do gate: a suíte precisa de uma forma de afirmar q
+  wolf.gd                    14-convivio-da-alcat    448-449  alega=SubtreeGuard|end_step|be real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  main.gd                    14-convivio-da-alcat     30-30   alega=last_us|sim_step         real: const RESPAWN_DELAY := 45.0
+  aether_reactions_test.gd   14-convivio-da-alcat   3162-3163 alega=sim_step|convivio_nao_es real:  var por_tick := {}  var ticks: Array = []
+  mind_oracle.gd             15-oraculo-embutido-    110-111  alega=narration_of             real: func _ready() -> void:  if ClassDB.class_exists(&"AfMindOracle"):
+  main.gd                    15-oraculo-embutido-    208-208  alega=narration_of             real:  hud.aether = aether
+  hud.gd                     15-oraculo-embutido-    276-279  alega=narration_of             real:   var pb := Coords.to_block(player.position3())   var mira := "-" 
+  mind_oracle.gd             15-oraculo-embutido-     11-11   alega=SERVER_URL               real: ## o §2.1 lista de nao-transporte — agendamento por frame, round-r
+  mind_oracle.gd             15-oraculo-embutido-     12-13   alega=RETRY_COOLDOWN|REQUEST_T real: ## chave do servidor externo, prompt, `narration_of` e o `narratio
+  mind_oracle.gd             15-oraculo-embutido-     32-32   alega=var|server_url|RETRY_COO real: ## Recuo cheio: conexao caida, fila recusada por motivo que nao se
+  mind_oracle.gd             15-oraculo-embutido-     75-80   alega=HTTPRequest              real: ## A ponte nativa, criada no `_ready` quando a ClassDB tem a class
+  mind_oracle.gd             15-oraculo-embutido-    136-138  alega=request|HTTPRequest      real:   for i in roster_c.size():    var wc = roster_c[(_cursor + i) % r
+  mind_oracle.gd             15-oraculo-embutido-     89-90   alega=auth_headers             real: ## o caminho do decode segue byte a byte o que era. O arquivo e SE
+  main.gd                    15-oraculo-embutido-    199-211  alega=MindOracle               real:  player.request_load.connect(load_game)  player.notice.connect(_on
+  mind_oracle.gd             15-oraculo-embutido-     19-20   alega=resolve_api_key          real: ## `--oracle-cache=` (padrao da casa do `--tick-journal=`), e lida
+  mind_oracle.gd             15-oraculo-embutido-    265-287  alega=KEY_FILE|KEY_ENV|resolve real:   return  _busy = true  requests_issued += 1  _pending_id = int(w.
+  mind_oracle.gd             15-oraculo-embutido-     32-32   alega=server_url|auth_headers  real: ## Recuo cheio: conexao caida, fila recusada por motivo que nao se
+  mind_oracle.gd             15-oraculo-embutido-     11-11   alega=server_url               real: ## o §2.1 lista de nao-transporte — agendamento por frame, round-r
+  hud.gd                     15-oraculo-embutido-    276-279  alega=narration_of             real:   var pb := Coords.to_block(player.position3())   var mira := "-" 
+  mind_oracle.gd             15-oraculo-embutido-     85-105  alega=HTTPRequest              real: var _ext_id := -1 var _narrations := {} var _cooldowns := {} ## Ca
+  main.gd                    15-oraculo-embutido-   1316-1317 alega=state_hash|HTTPRequest   real:   "pack_pairs": _pack_pairs,   # Dossie 16 §7d: a toca sai como lu
+  main.gd                    15-oraculo-embutido-    307-313  alega=carregando|boot_nao_bloq real:   # engoliria a meia-minuta seguinte (dossie 15 §4.4, semantica do
+  live_oracle_probe.gd       15-oraculo-embutido-     10-10   alega=narrativa_chega_sem_pass real: const NEEDED := 2
+  aether_reactions_test.gd   15-oraculo-embutido-     65-65   alega=EXPECTED_CHECKS          real: # gguf no processo, leitura conferida contra a meta do proprio mod
+  mind_oracle.gd             15-oraculo-embutido-     11-11   alega=ModelPackFetcher         real: ## o §2.1 lista de nao-transporte — agendamento por frame, round-r
+  mind_oracle.gd             15-oraculo-embutido-     32-32   alega=server_url               real: ## Recuo cheio: conexao caida, fila recusada por motivo que nao se
+  main.gd                    15-oraculo-embutido-   1231-1274 alega=diagnostics              real:   _load_created += 1  # A ordem do array e so a ordem de criacao; 
+  main.gd                    15-oraculo-embutido-   1259-1259 alega=diagnostics              real: 
+  main.gd                    15-oraculo-embutido-   1321-1328 alega=state_hash               real:   "dens": _dens.size(), "den_min_dist": den_min_dist(),   "den_com
+  main.gd                    15-oraculo-embutido-   1370-1371 alega=state_hash               real:  # A luz direcional viaja pelo -Z do no, entao o +Z e a direcao PA
+  main.gd                    16-tocas-da-alcateia    299-302  alega=spawn_point              real: ## funcao roda duas vezes e so escreve onde a peca ja existe. func
+  main.gd                    16-tocas-da-alcateia    169-169  alega=spawn_point              real:  # Dossie 17 §3.5: a fila escuta o mundo, e escuta DEPOIS da gerac
+  main.gd                    16-tocas-da-alcateia    793-793  alega=near                     real: 
+  main.gd                    16-tocas-da-alcateia    558-558  alega=near                     real:  print("nascimento: filhote %d dos adultos %d+%d na toca %d, %.1f 
+  main.gd                    16-tocas-da-alcateia    970-970  alega=respawn                  real:  if n < buf.size():
+  wolf.gd                    16-tocas-da-alcateia    587-605  alega=RESPAWN_DELAY            real:  _speed = 0.0  _reaction = "farejando"  if _inspect_left <= 0.0:  
+  main.gd                    16-tocas-da-alcateia    923-923  alega=pack_pairs               real: ## coesao, cada um como `{identity, pos, intent, hp_ratio, trust}`
+  main.gd                    16-tocas-da-alcateia    924-924  alega=pack_pairs               real: ## buffer da sessao, nunca uma copia -- e o que permite a leitura 
+  aether_reactions_test.gd   16-tocas-da-alcateia   2107-2110 alega=home                     real:  for w: Wolf in ws:   completa = completa and w._pack.size() == 3 
+  wolf.gd                    16-tocas-da-alcateia   1111-1124 alega=load_state|state_dict    real:  var x1: int = floori(p.x + dims.x * 0.5)  var z0: int = floori(p.
+  wolf.gd                    16-tocas-da-alcateia   1127-1158 alega=load_state|state_dict    real: ## Compromete a celula do empurrao (dossie 12 §3.2 (a)), chamada p
+  wolf.gd                    16-tocas-da-alcateia   1142-1150 alega=mate_cd                  real: ## (`SCENT_RENEWAL`) -- na cena da checagem 6 e o WORK da propria 
+  main.gd                    16-tocas-da-alcateia    503-507  alega=DEN_COUNT                real:   if not _breedable(a):    continue   for j in range(i + 1, wolves
+  main.gd                    16-tocas-da-alcateia    814-833  alega=SAFE_SPAWN_DIST|DEN_MIN_ real:   gate: Array = []) -> Dictionary:  var c := player.position3()  v
+  main.gd                    16-tocas-da-alcateia    789-789  alega=randf                    real:  if feet.distance_squared_to(player.position3()) < seg:
+  wolf.gd                    16-tocas-da-alcateia    613-613  alega=PACK_COHESION_RADIUS     real: ## CENTRO da celula, entao N lobos sobre o mesmo rastro recebem ex
+  main.gd                    16-tocas-da-alcateia    330-343  alega=DEN_COUNT                real:  for i in steps:   clock.begin_step()   _sim_tick()   clock.end_st
+  main.gd                    16-tocas-da-alcateia   1243-1243 alega=pending_respawns         real:  # (que ordena minds por identidade) deixaria de ser uma funcao do
+  main.gd                    16-tocas-da-alcateia    500-533  alega=pending_respawns         real: func _scan_breeding() -> void:  for i in wolves.size():   var a: W
+  aether_reactions_test.gd   16-tocas-da-alcateia   2107-2110 alega=DEN_RANGE                real:  for w: Wolf in ws:   completa = completa and w._pack.size() == 3 
+  main.gd                    16-tocas-da-alcateia   1230-1274 alega=diagnostics              real:   wolves.append(w)   _load_created += 1  # A ordem do array e so a
+  hud.gd                     16-tocas-da-alcateia    258-258  alega=diagnostics|den_min_dist real:    world.chunks.size(), world.meshes_built(), world.pending_meshes
+  main.gd                    16-tocas-da-alcateia    874-874  alega=diagnostics|den_min_dist real:  # -- que e a promessa da recusa impressa e contada -- nunca foi c
+  main.gd                    16-tocas-da-alcateia   1224-1227 alega=stats_line               real:    continue   var feet := Vector3(     float(e["feet"][0]), float(
+  main.gd                    16-tocas-da-alcateia    814-826  alega=cada_toca_e_um_lugar_val real:   gate: Array = []) -> Dictionary:  var c := player.position3()  v
+  aether_reactions_test.gd   16-tocas-da-alcateia   3241-3248 alega=reposicao_volta_para_a_t real: func _pack_lists_ids(pack: Array) -> Array:  var out: Array = []  
+  main.gd                    16-tocas-da-alcateia    797-797  alega=motivos                  real: ## isso e impresso como motivo, nao disfarçado de sucesso.
+  aether_reactions_test.gd   16-tocas-da-alcateia   2829-2831 alega=motivos                  real: ## Fixture da checagem 8 (dossie 16 §5): marca TODAS as colunas da
+  wolf.gd                    16-tocas-da-alcateia   1136-1150 alega=mate_cd|den              real:   ## Fim de obra (ou de compromisso): os dois alvos e o acumulo vo
+  aether_reactions_test.gd   16-tocas-da-alcateia     39-39   alega=EXPECTED_CHECKS|simulati real:  &"_test_reposicao_volta_para_a_toca_perdida",
+  aether_reactions_test.gd   16-tocas-da-alcateia   3156-3156 alega=EXPECTED_CHECKS          real:  var tick_entrada: int = _clock.tick
+  smoke_test.gd              16-tocas-da-alcateia    265-265  alega=simulation_rng_test      real:  # ainda assim volta aos bytes guardados. `_devolver_slot_do_dono`
+  main.gd                    16-tocas-da-alcateia    923-923  alega=pack_pairs               real: ## coesao, cada um como `{identity, pos, intent, hp_ratio, trust}`
+  smoke_test.gd              16-tocas-da-alcateia    358-358  alega=pack_pairs               real:  _check("64 chunks gerados", int(d["chunks"]) == 64, "chunks=%d" %
+  main.gd                    16-tocas-da-alcateia    761-766  alega=SAFE_SPAWN_DIST          real: ## A mordaca em torno do centro da toca `den` (dossie 16 §3.2.3): 
+  voxel_config.gd            17-fisica-de-blocos-     26-26   alega=set_block                real: static func in_world_bounds(p: Vector3i) -> bool:
+  voxel_world.gd             17-fisica-de-blocos-    575-582  alega=false                    real: func _write_raw(p: Vector3i, b: int) -> void:  var c := chunk_at(p
+  voxel_world.gd             17-fisica-de-blocos-    618-629  alega=true|record              real: func _touch_chunks_of(p: Vector3i, force: bool) -> void:  var key 
+  player.gd                  17-fisica-de-blocos-    685-685  alega=true                     real:  if world.set_block(target_voxel, BlockDefs.Block.AIR):
+  player.gd                  17-fisica-de-blocos-    711-711  alega=AIR                      real:  if world.set_block(place_voxel, b):
+  block_defs.gd              17-fisica-de-blocos-     37-37   alega=is_solid|SAND            real: const COUNT: int = 23
+  block_defs.gd              17-fisica-de-blocos-      5-8    alega=is_solid|SAND            real: ## 9..18 continuam RESERVADOS para as camadas verticais e a fisica
+  voxel_body.gd              17-fisica-de-blocos-     17-17   alega=apply_gravity|aabb|feet_ real: var gravity: float = 24.0
+  voxel_body.gd              17-fisica-de-blocos-      6-6    alega=apply_gravity|aabb       real: const TERMINAL_VELOCITY: float = 42.0
+  voxel_body.gd              17-fisica-de-blocos-      7-7    alega=move_and_collide         real: const SUBSTEP: float = 0.35
+  voxel_body.gd              17-fisica-de-blocos-     19-19   alega=move_and_collide         real: var step_up: float = 0.62
+  voxel_world.gd             17-fisica-de-blocos-    559-572  alega=BEDROCK|step_up          real: func get_block_xyz(x: int, y: int, z: int) -> int:  if y < 0:   re
+  voxel_world.gd             17-fisica-de-blocos-    309-359  alega=set_block                real: func process(p_frame_budget: int) -> void:  if _dirty.is_empty(): 
+  main.gd                    17-fisica-de-blocos-     28-28   alega=set_block                real: const MESH_BUDGET := 2             # chunks por frame
+  main.gd                    17-fisica-de-blocos-   1086-1129 alega=MESH_BUDGET              real: func save_game() -> void:  # Dossie 17 §3.7: o estado de queda NAO
+  main.gd                    17-fisica-de-blocos-   1130-1253 alega=save_game|MESH_BUDGET    real: func load_game() -> void:  var res := SaveManager.read_slot(SLOT) 
+  tick_journal.gd            17-fisica-de-blocos-     16-44   alega=diagnostics|load_game    real: static func state_hash(tick: int, world: VoxelWorld, field: Aether
+  block_defs.gd              17-fisica-de-blocos-     77-79   alega=for|PackedByteArray|resi real: static var _names: PackedStringArray = PackedStringArray()  
+  main.gd                    17-fisica-de-blocos-    336-336  alega=sim_step                 real: func _sim_tick() -> void:
+  voxel_world.gd             17-fisica-de-blocos-    567-567  alega=Array|flush              real:   return _flat[(y * _sz + z) * _sx + x]
+  sim_clock.gd               17-fisica-de-blocos-     37-39   alega=worst_sim_ms             real:  var t := Time.get_ticks_usec()  last_step_ms = float(t - _t_step)
+  aether_reactions_test.gd   17-fisica-de-blocos-    149-149  alega=EXPECTED_CHECKS|edits    real: # o parse recusa chamada direta a rota que ainda nao existe.
+  smoke_test.gd              17-fisica-de-blocos-    350-350  alega=EXPECTED_CHECKS          real:  print("\n== %d checagens  %d falhas  %.1f s de teste ==" % [_chec
+  block_defs.gd              17-fisica-de-blocos-      5-8    alega=quebra_queda             real: ## 9..18 continuam RESERVADOS para as camadas verticais e a fisica
+  main.gd                    17-fisica-de-blocos-    343-343  alega=setup_block_physics      real:  block_updates.flush(clock.tick)
+  main.gd                    17-fisica-de-blocos-   1298-1298 alega=setup_block_physics      real: func settle_block_updates(max_steps: int = 400) -> Dictionary:
+  block_defs.gd              17-fisica-de-blocos-     75-75   alega=place_falling_block|is_s real: static var _gravity: PackedByteArray = PackedByteArray()
+  block_defs.gd              17-fisica-de-blocos-    156-156  alega=place_falling_block|is_s real:  _gravity[Block.SAND] = 1
+  hud.gd                     17-fisica-de-blocos-    265-265  alega=has_gravity              real:   lines.append("blocos  fila %d  em voo %d  eventos %d  leituras %
+  voxel_world.gd             18-mundo-vivo-grama-    756-756  alega=line_of_sight|is_solid|G real: func ray_voxel(origin: Vector3, direction: Vector3, max_dist: floa
+  voxel_world.gd             18-mundo-vivo-grama-    262-262  alega=generate_chunk           real: func apply_edits(source: Dictionary) -> void:
+  world_gen.gd               18-mundo-vivo-grama-    165-171  alega=DIRT                     real: func surface_block(x: int, z: int, h: int) -> int:  var biome: int
+  voxel_world.gd             18-mundo-vivo-grama-    811-817  alega=DIRT                     real: func surface_height(x: int, z: int) -> int:  var y := CHUNK_SIZE_Y
+  block_defs.gd              18-mundo-vivo-grama-     10-22   alega=PLANT                    real: enum Block {  AIR = 0,  GRASS = 1,  DIRT = 2,  STONE = 3,  SAND = 
+  block_defs.gd              18-mundo-vivo-grama-      5-8    alega=PLANT                    real: ## 9..18 continuam RESERVADOS para as camadas verticais e a fisica
+  block_defs.gd              18-mundo-vivo-grama-     37-37   alega=is_solid                 real: const COUNT: int = 23
+  block_defs.gd              18-mundo-vivo-grama-     86-92   alega=init_tables|leria        real:  _solid.resize(COUNT)  _opaque.resize(COUNT)  _draw.resize(COUNT) 
+  block_defs.gd              18-mundo-vivo-grama-    218-219  alega=tile_for|init_tables     real:     return TILE_WOOD_TOP    return TILE_WOOD_SIDE
+  block_defs.gd              18-mundo-vivo-grama-    161-161  alega=stack_max                real: 
+  block_defs.gd              18-mundo-vivo-grama-    166-166  alega=drop_of|stack_max        real: 
+  voxel_world.gd             18-mundo-vivo-grama-    618-629  alega=set_block                real: func _touch_chunks_of(p: Vector3i, force: bool) -> void:  var key 
+  main.gd                    18-mundo-vivo-grama-   1062-1062 alega=Dictionary|edits         real:  if not player.alive:
+  voxel_atlas.gd             18-mundo-vivo-grama-      5-6    alega=Image|build_texture      real: const TILE: int = 16 const GRID: int = 8
+  voxel_atlas.gd             18-mundo-vivo-grama-      7-7    alega=RandomNumberGenerator|Im real: const ATLAS_SEED: int = 20260116
+  voxel_atlas.gd             18-mundo-vivo-grama-     14-14   alega=RandomNumberGenerator    real:  rng.seed = ATLAS_SEED
+  voxel_atlas.gd             18-mundo-vivo-grama-     29-29   alega=com                      real:  _bench(img, BlockDefs.TILE_BENCH, rng)
+  player.gd                  18-mundo-vivo-grama-    677-690  alega=PLANT                    real: func _mine_target() -> void:  var b := world.get_block(target_voxe
+  main.gd                    18-mundo-vivo-grama-   1230-1273 alega=diagnostics              real:   wolves.append(w)   _load_created += 1  # A ordem do array e so a
+  main.gd                    18-mundo-vivo-grama-    363-363  alega=GROW_PERIOD              real:    # mentia alem de tudo: `_spawn_wolves(1)` pode recusar o ponto 
+  block_defs.gd              18-mundo-vivo-grama-    218-219  alega=TILE_STONE|tile_for|hard real:     return TILE_WOOD_TOP    return TILE_WOOD_SIDE
+  aether_reactions_test.gd   18-mundo-vivo-grama-     39-39   alega=EXPECTED_CHECKS          real:  &"_test_reposicao_volta_para_a_toca_perdida",
+  smoke_test.gd              18-mundo-vivo-grama-    265-265  alega=EXPECTED_CHECKS          real:  # ainda assim volta aos bytes guardados. `_devolver_slot_do_dono`
+  wolf.gd                    19-auto-pulo-de-bloc    999-999  alega=blocked_horizontal       real:     if _checked_scents.has(c) and v < _checked_scents[c].x + SCENT
+  player.gd                  19-auto-pulo-de-bloc     25-25   alega=can_stand_at             real: const DIMS_STAND := Vector3(0.62, 1.80, 0.62)
+  sim_clock.gd               19-auto-pulo-de-bloc     37-39   alega=worst_sim_ms             real:  var t := Time.get_ticks_usec()  last_step_ms = float(t - _t_step)
+  aether_reactions_test.gd   19-auto-pulo-de-bloc     39-39   alega=EXPECTED_CHECKS|dropped_ real:  &"_test_reposicao_volta_para_a_toca_perdida",
+  wolf.gd                    20-mente-autonoma-de   1312-1312 alega=die                      real:  _imprint(me, AetherField.Channel.BLOOD, amount * 0.05)
+  wolf.gd                    20-mente-autonoma-de   1319-1320 alega=die                      real:   acted.emit("blood", me)  else:
+  main.gd                    20-mente-autonoma-de    441-441  alega=died                     real: ## sinais ligados e o registro no diretor de audio.
+  main.gd                    20-mente-autonoma-de   1041-1041 alega=died                     real: 
+  voxel_body.gd              20-mente-autonoma-de     17-17   alega=STEP_JUMP|step_up        real: var gravity: float = 24.0
+  mind.gd                    20-mente-autonoma-de     26-26   alega=relations|beliefs|episod real: ## mais recente. 0.25 = a mistura das ultimas ~4 trocas domina a l
+  wolf.gd                    20-mente-autonoma-de    636-636  alega=scent_work|scent_blood|r real:  return _scent_pos + Vector3(cos(a) * folga, 0.0, sin(a) * folga)
+  wolf.gd                    20-mente-autonoma-de    782-782  alega=hit_land|scent_work|scen real:  _bite_cd = BITE_COOLDOWN
+  wolf.gd                    20-mente-autonoma-de    952-952  alega=saw_player|hit_land|scen real:  _fear_level = clampf(_fear_here * 0.85 + _threat * 0.9 + _blood_h
+  wolf.gd                    20-mente-autonoma-de   1302-1302 alega=hurt|saw_player|hit_land real:   return
+  wolf.gd                    20-mente-autonoma-de   1329-1329 alega=win|hurt|saw_player      real:  _speed = 0.0
+  wolf.gd                    20-mente-autonoma-de   1334-1334 alega=fed|win|hurt             real:  died.emit(self, me)
+  mind.gd                    20-mente-autonoma-de     17-17   alega=species|archetype|SPECIE real: ## bônus no score do escorredor. O §8 item 3 aponta o `breakdown()
+  wolf.gd                    20-mente-autonoma-de    806-806  alega=flee                     real: func _build_scorer() -> void:
+  wolf.gd                    20-mente-autonoma-de    818-818  alega=hunt|flee                real:    0.0, 1.0, ResponseCurve.Type.SATURATING, 3.0, 0.0, 1.2, false)
+  wolf.gd                    20-mente-autonoma-de    856-856  alega=patrol|investigate|hunt  real:    SCENT_MIN, SCENT_MIN + 0.02, ResponseCurve.Type.LINEAR, 1.0, 0.
+  wolf.gd                    20-mente-autonoma-de    448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  coords.gd                  20-mente-autonoma-de      4-4    alega=NavigationAgent          real: ## nascer fora daqui — rede, pathfinding e streaming vão depender 
+  main.gd                    20-mente-autonoma-de    549-549  alega=SPAWN_BANDS              real:  _next_identity += 1
+  main.gd                    20-mente-autonoma-de    761-761  alega=SPAWN_BANDS              real: ## A mordaca em torno do centro da toca `den` (dossie 16 §3.2.3): 
+  main.gd                    20-mente-autonoma-de     24-24   alega=SPAWN_BANDS              real: const SAFE_SPAWN_DIST := 32.0
+  main.gd                    20-mente-autonoma-de    671-671  alega=den_components           real: ## Separacao minima entre CENTROS de toca, no chao: o mesmo eixo d
+  main.gd                    20-mente-autonoma-de   1242-1242 alega=den_components           real:  # com a mesma identidade quebrariam o pareamento do proximo load 
+  main.gd                    20-mente-autonoma-de    558-558  alega=PACK_LEASH|den_component real:  print("nascimento: filhote %d dos adultos %d+%d na toca %d, %.1f 
+  aether_field.gd            20-mente-autonoma-de      9-9    alega=PLANT                    real: enum Channel { WORK = 0, BLOOD = 1, FEAR = 2, COUNT = 3 }
+  mind.gd                    20-mente-autonoma-de     19-23   alega=personality              real: const BANDIT_GAIN: float = 0.12 ## Uma vitoria ja e media real — o
+  mind.gd                    20-mente-autonoma-de     36-38   alega=personality              real: var episodic: Array = []          # {tick, kind, actor, pos(Vector
+  mind.gd                    20-mente-autonoma-de     25-25   alega=source|confidence        real: ## Alpha do EWMA do estilo (StyleFingerprint por arquétipo): peso 
+  wolf.gd                    20-mente-autonoma-de    806-806  alega=Selector                 real: func _build_scorer() -> void:
+  wolf.gd                    20-mente-autonoma-de    818-818  alega=Selector                 real:    0.0, 1.0, ResponseCurve.Type.SATURATING, 3.0, 0.0, 1.2, false)
+  wolf.gd                    20-mente-autonoma-de    844-844  alega=Selector                 real:  hunt.add("filhote nao caa", func(_c: Dictionary) -> float:
+  block_defs.gd              20-mente-autonoma-de    123-137  alega=SpeciesDef|intent        real:  # fonte, e o 0,4 default acima cobre os ids que ainda nao tem mat
+  recipes.gd                 20-mente-autonoma-de     31-43   alega=SpeciesDef               real: static func _build() -> void:  _list = [   # abrir uma tora em pra
+  voxel_body.gd              20-mente-autonoma-de     17-17   alega=STEP_JUMP|DIMS|apice     real: var gravity: float = 24.0
+  voxel_body.gd              20-mente-autonoma-de    163-163  alega=reach|reach|STEP_JUMP    real:  return maxf(dims.x, dims.z) * 0.5 + 0.6
+  mind.gd                    20-mente-autonoma-de     19-23   alega=personality|cautela|trie real: const BANDIT_GAIN: float = 0.12 ## Uma vitoria ja e media real — o
+  wolf.gd                    20-mente-autonoma-de   1216-1217 alega=foge_de_humano|pousa|nad real:  if not alive:   _corpse_timer -= delta
+  wolf.gd                    20-mente-autonoma-de    911-911  alega=Dictionary|arvore_por_ar real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  block_defs.gd              20-mente-autonoma-de     18-18   alega=VoxelBody                real:  LEAVES = 7,
+  player.gd                  20-mente-autonoma-de    303-303  alega=space_for                real: ## Fechar com pilha na mao so quando ela tem para onde voltar: sem
+  inventory.gd               20-mente-autonoma-de    130-130  alega=space_for                real: ## que nao coube voltava para o mundo como entidade de item; sem e
+  main.gd                    20-mente-autonoma-de     81-81   alega=FEATHER_COLOR|FEATHER|FE real: ## Onde os graos em voo moram na arvore. Nem no `_terrain` nem no 
+  main.gd                    20-mente-autonoma-de   1231-1231 alega=diagnostics|BIRD_CAP     real:   _load_created += 1
+  wolf.gd                    20-mente-autonoma-de   1319-1320 alega=animals                  real:   acted.emit("blood", me)  else:
+  main.gd                    20-mente-autonoma-de     18-18   alega=WOLF_COUNT               real: const CENSUS_CAP := 12
+  main.gd                    20-mente-autonoma-de     10-17   alega=worst_sim_ms|worst_sim_m real: ## Teto de censo (dossie 11 §4, resposta 2): ate onde a populacao 
+  wolf.gd                    20-mente-autonoma-de    911-911  alega=Dictionary|arvore_por_ar real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  mind.gd                    20-mente-autonoma-de     25-25   alega=source|confidence|desist real: ## Alpha do EWMA do estilo (StyleFingerprint por arquétipo): peso 
+  wolf.gd                    20-mente-autonoma-de    911-911  alega=Dictionary|arvore_por_ar real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  wolf.gd                    20-mente-autonoma-de    922-922  alega=passaro_foge_na_aproxima real:   _inspect_left = 0.0
+  main.gd                    20-mente-autonoma-de   1041-1041 alega=lobo_morto_dropa_carne   real: 
+  player.gd                  20-mente-autonoma-de    711-711  alega=trofeu_e_colocavel_e_nao real:  if world.set_block(place_voxel, b):
+  main.gd                    20-mente-autonoma-de     81-81   alega=drop_nao_consome_rng_da_ real: ## Onde os graos em voo moram na arvore. Nem no `_terrain` nem no 
+  main.gd                    20-mente-autonoma-de   1231-1231 alega=diagnostics|CENSUS_CAP|W real:   _load_created += 1
+  aether_reactions_test.gd   20-mente-autonoma-de     64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  aether_field.gd            20-mente-autonoma-de      9-9    alega=GEN_VERSION|FORMAT_VERSI real: enum Channel { WORK = 0, BLOOD = 1, FEAR = 2, COUNT = 3 }
+  wolf.gd                    20-mente-autonoma-de    448-449  alega=SubtreeGuard|MESH_BUDGET real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  wolf.gd                    20-mente-autonoma-de   1246-1247 alega=main                     real:   _heading = atan2(-body.velocity.x, -body.velocity.z)  else:
+  main.gd                    20-mente-autonoma-de   1041-1041 alega=died                     real: 
+  wolf.gd                    20-mente-autonoma-de   1319-1320 alega=EchoLedger               real:   acted.emit("blood", me)  else:
+  wolf.gd                    20-mente-autonoma-de    448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  main.gd                    20-mente-autonoma-de     10-17   alega=SubtreeGuard             real: ## Teto de censo (dossie 11 §4, resposta 2): ate onde a populacao 
+  mind_oracle.gd             22-oraculo-nativo-gd     13-13   alega=RETRY_COOLDOWN           real: ## nodo de requisicao HTTP vira a ponte nativa (`AfMindOracle.enqu
+  mind_oracle.gd             22-oraculo-nativo-gd     28-28   alega=RETRY_COOLDOWN           real: ## produz narrativa, crenca nem intencao, e a recusa nomeia o id f
+  mind_oracle.gd             22-oraculo-nativo-gd     19-20   alega=RETRY_COOLDOWN           real: ## `--oracle-cache=` (padrao da casa do `--tick-journal=`), e lida
+  mind_oracle.gd             22-oraculo-nativo-gd    219-219  alega=RETRY_COOLDOWN           real:    return
+  mind_oracle.gd             22-oraculo-nativo-gd      9-9    alega=narration_ready          real: ##
+  mind_oracle.gd             22-oraculo-nativo-gd     42-42   alega=main                     real: ## 32 hex e grava la.
+  mind_oracle.gd             22-oraculo-nativo-gd     49-49   alega=main                     real: ## Params de geracao do prompt narrativo: entram no pedido e na ch
+  hud.gd                     22-oraculo-nativo-gd    276-277  alega=narration_provider       real:   var pb := Coords.to_block(player.position3())   var mira := "-"
+  mind_oracle.gd             22-oraculo-nativo-gd      9-9    alega=narration_ready|narratio real: ##
+  mind_oracle.gd             22-oraculo-nativo-gd     40-40   alega=roster_provider          real: ## e a suite confere a derivacao entre as linguagens. Ela nao mora
+  main.gd                    22-oraculo-nativo-gd    216-216  alega=roster_provider          real:  hud.preview_binds(7.0)
+  main.gd                    22-oraculo-nativo-gd    288-288  alega=ready_provider|ready_pro real:   # e dobrariam a VRAM.
+  main.gd                    22-oraculo-nativo-gd   1272-1272 alega=diagnostics              real: ## vezes e o passo morria na linha antes da difusao, da matilha e 
+  wolf.gd                    22-oraculo-nativo-gd    448-449  alega=SubtreeGuard|worst_sim_m real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  aether_reactions_test.gd   22-oraculo-nativo-gd   3811-3811 alega=journal_hash_inalterado_ real:   if w != filhote:
+  wolf.gd                    22-oraculo-nativo-gd    216-216  alega=intent                   real: var _scorer: UtilityScorer = UtilityScorer.new()
+  wolf.gd                    22-oraculo-nativo-gd    218-218  alega=intent                   real: var _guard: BtTree.SubtreeGuard = null
+  mind.gd                    22-oraculo-nativo-gd     45-45   alega=min_lead                 real: ## tatica abre uma tentativa com resultado 0; a PRIMEIRA vitoria d
+  mind.gd                    22-oraculo-nativo-gd     41-41   alega=temperament|source|confi real: ## desligado nao apaga o que foi observado — ver `bandit_abrir`); 
+  mind.gd                    22-oraculo-nativo-gd    133-133  alega=decay|temperament        real:   beliefs[p_id] = b
+  mind.gd                    22-oraculo-nativo-gd    119-119  alega=believes|decay|temperame real:    n += 1
+  aether_reactions_test.gd   22-oraculo-nativo-gd     74-74   alega=EXPECTED_CHECKS          real: # a frase do dono feita checagem: a varredura recursiva de `res://
+  mind_oracle.gd             22-oraculo-nativo-gd    135-135  alega=enqueue                  real:   var roster_c: Array = roster_provider.call()
+  af_mind_runtime.gd         22-oraculo-nativo-gd     68-68   alega=ready_provider           real: func ready() -> bool:
+  main.gd                    22-oraculo-nativo-gd    288-288  alega=ready_provider           real:   # e dobrariam a VRAM.
+  main.gd                    22-oraculo-nativo-gd   1272-1272 alega=diagnostics|AfMindRuntim real: ## vezes e o passo morria na linha antes da difusao, da matilha e 
+  main.gd                    22-oraculo-nativo-gd    290-290  alega=llm_status_provider|diag real:   remove_child(retiro)
+  af_mind_runtime.gd         22-oraculo-nativo-gd    163-163  alega=open_ms|load_pack        real:    print("af_mind_runtime  %s  %s" % [state, detail])
+  mind.gd                    22-oraculo-nativo-gd    144-144  alega=CONFIDENCE_MIN|decay     real:   return 0.0
+  mind.gd                    22-oraculo-nativo-gd     98-98   alega=reinforce|CONFIDENCE_MIN real: func _consolidate(atom: Dictionary) -> void:
+  mind.gd                    22-oraculo-nativo-gd     67-74   alega=saw_player|hurt|reinforc real:   personality["aggression"] = clampf(rng.randf_range(0.35, 0.85), 
+  mind.gd                    22-oraculo-nativo-gd     26-26   alega=relations|saw_player     real: ## mais recente. 0.25 = a mistura das ultimas ~4 trocas domina a l
+  mind.gd                    22-oraculo-nativo-gd    119-119  alega=believes                 real:    n += 1
+  mind.gd                    22-oraculo-nativo-gd     77-77   alega=last_atom|believes       real:  episodic.append({
+  mind.gd                    22-oraculo-nativo-gd      7-7    alega=remember|count_kind      real: const EPISODIC_CAP: int = 24
+  mind.gd                    22-oraculo-nativo-gd     50-52   alega=remember|count_kind      real: ## distingue o braco e `wins`. Para x em {0,1}, x² = x: `soma2` e 
+  mind.gd                    22-oraculo-nativo-gd     67-74   alega=remember                 real:   personality["aggression"] = clampf(rng.randf_range(0.35, 0.85), 
+  mind.gd                    22-oraculo-nativo-gd      8-8    alega=remember                 real: const BELIEF_DECAY_PER_MIN: float = 0.14
+  mind.gd                    22-oraculo-nativo-gd    133-133  alega=remember                 real:   beliefs[p_id] = b
+  wolf.gd                    22-oraculo-nativo-gd    242-242  alega=source|from_dict         real: var _checked_scents: Dictionary = {}
+  tick_journal.gd            22-oraculo-nativo-gd     29-34   alega=state_hash               real:   var keys: Array = wolf.mind.beliefs.keys()   keys.sort()   var b
+  mind.gd                    22-oraculo-nativo-gd     50-52   alega=remember                 real: ## distingue o braco e `wins`. Para x em {0,1}, x² = x: `soma2` e 
+  mind.gd                    22-oraculo-nativo-gd     67-74   alega=remember                 real:   personality["aggression"] = clampf(rng.randf_range(0.35, 0.85), 
+  wolf.gd                    22-oraculo-nativo-gd   1372-1372 alega=Mind                     real: func tree_stats() -> String:
+  wolf.gd                    22-oraculo-nativo-gd   1406-1406 alega=Mind                     real:  # ja novo, e nao contra o corpo sorteado desta sessao.
+  tick_journal.gd            22-oraculo-nativo-gd     29-34   alega=Mind                     real:   var keys: Array = wolf.mind.beliefs.keys()   keys.sort()   var b
+  tick_journal.gd            22-oraculo-nativo-gd     33-34   alega=state_hash               real:    var belief: Dictionary = wolf.mind.beliefs[key]    beliefs.appe
+  mind_oracle.gd             22-oraculo-nativo-gd    176-200  alega=crenca_falsa_nao_vira_fa real: func aceitar_saida(wolf_id: int, texto: String) -> bool:  var fato
+  aether_reactions_test.gd   22-oraculo-nativo-gd     54-56   alega=EXPECTED_CHECKS          real:  &"_test_budget_do_oraculo_nao_estoura_a_arvore",  &"_test_selecao
+  aether_reactions_test.gd   22-oraculo-nativo-gd   6586-6586 alega=EXPECTED_CHECKS          real:   o2._process(0.05)
+  aether_reactions_test.gd   22-oraculo-nativo-gd   6691-6691 alega=EXPECTED_CHECKS          real:  o._ready()
+  mind.gd                    22-oraculo-nativo-gd    133-147  alega=decay                    real:   beliefs[p_id] = b  b["confidence"] = clampf(float(b["confidence"
+  mind.gd                    22-oraculo-nativo-gd    172-179  alega=source|from_dict|to_dict real:  for id in beliefs:   var b = beliefs[id]   b["confidence"] = floa
+  mind.gd                    22-oraculo-nativo-gd    200-219  alega=source                   real:  var h: Dictionary = _bandit.get(p_tatica,    {"n": 0, "wins": 0, 
+  belief_verifier.gd         22-oraculo-nativo-gd     71-92   alega=f9c5cbe                  real: func aceitar_ledger(texto: String, ledger: Dictionary) -> bool:  u
+  main.gd                    22-oraculo-nativo-gd    206-206  alega=mind|believes            real:  hud.player = player
+  main.gd                    22-oraculo-nativo-gd    886-902  alega=mind|believes            real: func _volume_clear(feet: Vector3, dims: Vector3) -> bool:  var box
+  voxel_world.gd             23-elevacao-visual-a    153-153  alega=StandardMaterial3D       real:  _mat_opaque = OpaqueSurface.build_material(_atlas)
+  block_defs.gd              23-elevacao-visual-a    100-100  alega=is_opaque|AIR            real:   _gravity[i] = 0
+  voxel_world.gd             23-elevacao-visual-a    963-968  alega=COLOR                    real:  for k in 4:   var corner: Vector3i = corners[k]   var py: float =
+  voxel_world.gd             23-elevacao-visual-a    449-449  alega=ao                       real:       PackedFloat32Array([1.0, 1.0, 1.0, 1.0]), FACE_TINT[f],
+  voxel_world.gd             23-elevacao-visual-a    979-983  alega=COLOR                    real:    cols.append(Color(     water_flags.x if corner.y == 1 else 0.0,
+  player.gd                  23-elevacao-visual-a    486-486  alega=box_in_water             real:  if body.in_water:
+  main.gd                    23-elevacao-visual-a    227-227  alega=wolves_provider|body     real:  hud.narration_provider = Callable(oracle, "narration_of")
+  main.gd                    23-elevacao-visual-a   1278-1314 alega=fog_enabled|TONE_MAPPER_ real:  block_spawner = FallingBlockSpawner.new()  block_spawner.setup(wo
+  water_surface.gd           23-elevacao-visual-a    258-258  alega=sun_dir                  real:  var out := PackedStringArray()
+  smoke_test.gd              23-elevacao-visual-a    481-489  alega=triangle_count           real:  wf._stagger = 0.0  wf._unstick = 0.0  wf._speed = Wolf.SPEED_WALK
+  main.gd                    23-elevacao-visual-a   1365-1369 alega=fog_enabled              real:  sun.light_energy = 1.60  sun.light_color = Color(1.0, 0.96, 0.88)
+  voxel_world.gd             23-elevacao-visual-a    456-456  alega=COLOR|StandardMaterial3D real:      var jitter: float = float(_hash3(gx, y, gz) % 5) * 0.012
+  voxel_world.gd             23-elevacao-visual-a    825-831  alega=Weather                  real: func water_surface_y(x: int, z: int) -> float:  var y := CHUNK_SIZ
+  main.gd                    23-elevacao-visual-a    290-290  alega=llm_status_provider      real:   remove_child(retiro)
+  voxel_world.gd             23-elevacao-visual-a    878-878  alega=surface_height|PackedInt real: func _scan_col_tops(c: VoxelChunk) -> void:
+  voxel_atlas.gd             23-elevacao-visual-a     36-36   alega=filter_nearest_mipmap    real:  img.generate_mipmaps(false)
+  main.gd                    23-elevacao-visual-a   1284-1284 alega=DirectionalLight3D|sourc real: ## Os numeros da queda de bloco, num lugar so: o F3, o `diagnostic
+  main.gd                    23-elevacao-visual-a   1291-1309 alega=ProceduralSkyMaterial|sk real:   s[k] = sp[k]  return s   ## Quiesce do save (dossie 17 §3.7). O 
+  main.gd                    23-elevacao-visual-a    158-165  alega=ShaderMaterial|Array     real:   var t0 := Time.get_ticks_usec()  world = VoxelWorld.new()  world
+  voxel_atlas.gd             23-elevacao-visual-a     35-35   alega=StandardMaterial3D|SPECU real:  img.srgb_to_linear()
+  voxel_atlas.gd             23-elevacao-visual-a     58-58   alega=TILE_GRASS_TOP           real:  _noise_fill(img, tile, Color(0.34, 0.55, 0.26), 0.055, rng)
+  main.gd                    23-elevacao-visual-a   1230-1273 alega=diagnostics|diagnostics  real:   wolves.append(w)   _load_created += 1  # A ordem do array e so a
+  main.gd                    24-malha-orcamento-d    388-388  alega=build_chunk_mesh         real:  world.process(MESH_BUDGET)
+  main.gd                    24-malha-orcamento-d     28-28   alega=build_chunk_mesh         real: const MESH_BUDGET := 2             # chunks por frame
+  voxel_config.gd            24-malha-orcamento-d      5-7    alega=frame_us|commit_us|scan_ real: const CHUNK_SIZE_X: int = 16 const CHUNK_SIZE_Y: int = 64 const CH
+  voxel_world.gd             24-malha-orcamento-d    408-465  alega=build_chunk_mesh         real: func _mesh_level(st: _MeshSlice) -> void:  var c: VoxelChunk = st.
+  voxel_world.gd             24-malha-orcamento-d    322-322  alega=while                    real:    if antes - t0 >= MESH_FRAME_BUDGET_US:
+  block_update_queue.gd      24-malha-orcamento-d     13-13   alega=attach|block_changed     real: const MAX_PER_TICK: int = 256      # teto de resolucoes por tick d
+  block_update_queue.gd      24-malha-orcamento-d     15-15   alega=attach                   real: const RECHECK_DELAY: int = 1       # tick; e o que faz a cascada d
+  voxel_world.gd             24-malha-orcamento-d    618-629  alega=set_block|place_falling_ real: func _touch_chunks_of(p: Vector3i, force: bool) -> void:  var key 
+  voxel_world.gd             24-malha-orcamento-d    379-379  alega=worst|count|total        real:   _record_edit_cost(c)
+  voxel_world.gd             24-malha-orcamento-d    401-401  alega=worst|count              real:  _record_edit_cost(c)
+  voxel_world.gd             24-malha-orcamento-d    373-375  alega=build_chunk_mesh         real:   # O carimbo FICA aberto: a segunda rodada vai somar trabalho nel
+  aether_reactions_test.gd   24-malha-orcamento-d   5643-5643 alega=malha_orca_tempo_e_nao_i real:  var worst_dreno := float(dreno["worst_ms"])
+  aether_reactions_test.gd   24-malha-orcamento-d   5657-5657 alega=orcamento_de_malha_tem_n real:  # pagina usa para chamar um frame de travada (33,3 ms, §5.2). `ME
+  af_bakeoff.gd              24-malha-orcamento-d    202-202  alega=orcamento_de_malha_tem_n real:    "corte_nao_cobra_latencia_maior_que_o_pico",
+  voxel_world.gd             24-malha-orcamento-d    660-671  alega=main|build_chunk_mesh    real: func _record_edit_cost(c: VoxelChunk) -> void:  if not _edit_stamp
+  af_bakeoff.gd              24-malha-orcamento-d    170-170  alega=mean_us                  real:    "custo de edicao == chunks remalhados", "count=%d remeshes=%d f
+  voxel_world.gd             24-malha-orcamento-d    557-574  alega=build_chunk_mesh|main    real: ## Fora dos limites: x/z e y<0 sao solidos (parede invisivel e pis
+  af_bakeoff.gd              24-malha-orcamento-d    170-170  alega=triangles                real:    "custo de edicao == chunks remalhados", "count=%d remeshes=%d f
+  aether_reactions_test.gd   24-malha-orcamento-d   5652-5660 alega=orcamento_de_malha_tem_n real:    float(pecas_dreno["level_us"]) / 1000.0,    float(pecas_dreno["
+  aether_reactions_test.gd   24-malha-orcamento-d    162-162  alega=a537117                  real: const EXPECTED_CHECKS: int = 367
+  aether_field.gd            24-malha-orcamento-d      9-9    alega=worst_sim_ms             real: enum Channel { WORK = 0, BLOOD = 1, FEAR = 2, COUNT = 3 }
+  main.gd                    07-project-structure   1316-1319 alega=state_hash               real:   "pack_pairs": _pack_pairs,   # Dossie 16 §7d: a toca sai como lu
+  aether_reactions_test.gd   08-roadmap-risks-lic   1609-1610 alega=trips|sim_step           real:  return true 
+  player.gd                  09-veloren-mechanics     32-32   alega=Shift                    real: const WALK_SPEED: float = 4.3
+  player.gd                  09-veloren-mechanics     25-25   alega=Shift                    real: const DIMS_STAND := Vector3(0.62, 1.80, 0.62)
+  player.gd                  09-veloren-mechanics     33-33   alega=Shift                    real: const SPRINT_SPEED: float = 6.9
+  player.gd                  09-veloren-mechanics     48-48   alega=Shift                    real: const SPRINT_DRAIN: float = 8.0
+  player.gd                  09-veloren-mechanics     34-34   alega=Ctrl                     real: const CROUCH_SPEED: float = 2.1
+  player.gd                  09-veloren-mechanics     26-26   alega=Ctrl                     real: const DIMS_CROUCH := Vector3(0.62, 1.15, 0.62)
+  player.gd                  09-veloren-mechanics     38-38   alega=Space                    real: const JUMP_SPEED: float = 8.2
+  player.gd                  09-veloren-mechanics     40-40   alega=Space                    real: const COYOTE_TIME: float = 0.12
+  player.gd                  09-veloren-mechanics     41-41   alega=Space                    real: const JUMP_BUFFER: float = 0.15
+  player.gd                  09-veloren-mechanics     39-39   alega=Space                    real: const SWIM_UP_SPEED: float = 3.6
+  player.gd                  09-veloren-mechanics    497-499  alega=Ctrl|Space|Ctrl          real:  gliding = (not body.on_ground) and not panel_open \    and Input.
+  player.gd                  09-veloren-mechanics     66-66   alega=Ctrl|Space|Ctrl          real: const GLIDE_GRAVITY: float = 0.16
+  wolf.gd                    09-veloren-mechanics    806-861  alega=UtilityScorer            real: func _build_scorer() -> void:  _scorer.min_lead = 0.05  _scorer.mi
+  mind.gd                    09-veloren-mechanics    150-151  alega=danger_from_actor_1      real: func believes(p_id: String) -> bool:  return belief(p_id) >= 0.35
+  wolf.gd                    09-veloren-mechanics    812-815  alega=danger_from_actor_1      real:    0.0, 1.0, ResponseCurve.Type.SIGMOID, 9.0, 0.42, 1.7, false)  f
+  wolf.gd                    09-veloren-mechanics   1005-1006 alega=stagger                  real:  if best_cell != _scent_cell or best <= SCENT_MIN:   _inspect_left
+  wolf.gd                    09-veloren-mechanics   1215-1271 alega=sim_step                 real: func _physics_process(delta: float) -> void:  if not alive:   _cor
+  main.gd                    09-veloren-mechanics   1289-1307 alega=DirectionalLight3D       real:  var sp: Dictionary = block_spawner.stats()  for k: String in sp: 
+  aether_reactions_test.gd   09-veloren-mechanics    355-371  alega=trips|sim_step           real:  # devolve o controle ao laco de frames enquanto o servidor sobe e
+  aether_reactions_test.gd   09-veloren-mechanics   1206-1207 alega=trips|sim_step           real:  _field.imprint(Vector3(66.0, 50.6, 54.0), AetherField.Channel.WOR
+  voxel_body.gd              10-world-layers-and-      6-15   alega=has_gravity              real: const TERMINAL_VELOCITY: float = 42.0 const SUBSTEP: float = 0.35 
+  voxel_world.gd             10-world-layers-and-    710-720  alega=quebra_queda             real: func aabb_hits_solid(box: AABB) -> bool:  var lo := Vector3i(   fl
+  wolf.gd                    10-world-layers-and-    309-310  alega=body_aabb                real:  identity = p_identity  home = p_spawn
+  main.gd                    11-inventory-craftin   1233-1236 alega=block_broken|block_place real:  # conjunto de identidades, entao ordenar por identidade nao muda 
+  main.gd                    11-inventory-craftin    192-192  alega=panel_changed|Player     real:  player.acted.connect(_on_acted)
+  sim_clock.gd               simclock.md              10-10   alega=tick                     real: var _accumulator: float = 0.0
+  sim_clock.gd               simclock.md              11-11   alega=tick                     real: var _t_step: float = 0.0
+  main.gd                    simclock.md             352-352  alega=tick|dropped_ticks       real:  _corpse_cd -= dt
+  sim_clock.gd               simclock.md               6-6    alega=step_duration            real: const STEP: float = 1.0 / HZ
+  main.gd                    simclock.md             343-343  alega=dt|step_duration         real:  block_updates.flush(clock.tick)
+  sim_clock.gd               simclock.md              22-22   alega=delta                    real:  while _accumulator >= STEP:
+  sim_clock.gd               simclock.md              17-18   alega=delta                    real: ## Quantos passos devem rodar neste frame; estourar o cap conta co
+  main.gd                    simclock.md            1290-1290 alega=diagnostics              real:  for k: String in sp:
+  smoke_test.gd              simclock.md            2401-2403 alega=dropped_ticks|diagnostic real:  ev.position = ev.global_position  Input.parse_input_event(ev) 
+  main.gd                    simclock.md             335-335  alega=advance                  real: 
+  sim_clock.gd               simclock.md              11-11   alega=begin_step|end_step|begi real: var _t_step: float = 0.0
+  sim_clock.gd               simclock.md              46-47   alega=float                    real: func reset_worst() -> void:  worst_step_ms = 0.0
+  main.gd                    simclock.md             334-334  alega=end_step|begin_step      real: 
+  main.gd                    simclock.md             362-368  alega=end_step|begin_step      real:    # matilha pelos rastros, não por um letreiro. A frase que morav
+  main.gd                    simclock.md             378-384  alega=flush                    real:  clock.tick += 1  if tick_journal.active():   var err := tick_jour
+  hud.gd                     simclock.md             248-251  alega=fisica|processo|fps      real:  func _refresh_state() -> void:  if not _debug_on:   return
+  hud.gd                     simclock.md             256-258  alega=perdidos|pior|sim        real:  if world != null:   lines.append("chunks %d  malhas %d  fila %d  
+  hud.gd                     simclock.md             258-258  alega=last_step_ms|perdidos|pi real:    world.chunks.size(), world.meshes_built(), world.pending_meshes
+  main.gd                    simclock.md            1289-1289 alega=diagnostics|worst_sim_ms real:  var sp: Dictionary = block_spawner.stats()
+  smoke_test.gd              simclock.md             345-346  alega=diagnostics|worst_sim_ms real:  # `_finish` e o ponto que a suíte sempre alcanca (um SCRIPT ERROR
+  aether_reactions_test.gd   simclock.md            1406-1411 alega=dt                       real: func _test_agachado_nao_e_arremessado() -> bool:  var d := _walk_p
+  aether_reactions_test.gd   simclock.md            1443-1443 alega=dt                       real:  return b
+  main.gd                    simclock.md             347-347  alega=dt|fps                   real:   aether.diffuse_and_decay(AETHER_PERIOD)
+  main.gd                    simclock.md               9-9    alega=wolves                   real: const WOLF_COUNT := 5
+  main.gd                    simclock.md              18-18   alega=wolves                   real: const CENSUS_CAP := 12
+  main.gd                    simclock.md            1261-1261 alega=diagnostics|wolves       real: func stats_line() -> String:
+  main.gd                    simclock.md            1001-1004 alega=sim_step                 real: ## O vies de bioma e do chamador, nao do campo: `AetherField.impri
+  main.gd                    simclock.md             334-334  alega=advance                  real: 
+  main.gd                    simclock.md             308-314  alega=advance                  real:   oracle.ready_provider = Callable(llm_host, "ready")  if hud != n
+  player.gd                  simclock.md             685-685  alega=delta                    real:  if world.set_block(target_voxel, BlockDefs.Block.AIR):
+  player.gd                  simclock.md             711-711  alega=delta                    real:  if world.set_block(place_voxel, b):
+  main.gd                    simclock.md            1048-1055 alega=update_local|acted       real: func _on_damaged(_amount: float, _from: Vector3) -> void:  _imprin
+  wolf.gd                    simclock.md            1238-1238 alega=move_and_collide         real:   var dir := want.normalized()
+  wolf.gd                    simclock.md            1205-1205 alega=move_and_collide         real:  # O centro do voxel, o mesmo offset do `acted.emit` do jogador
+  aether_reactions_test.gd   simclock.md            1443-1443 alega=update_local             real:  return b
+  input_actions.gd           melhorias-status.md      33-33   alega=worst_step_ms            real:  _key_action("toggle_debug", [KEY_F3])
+  wolf.gd                    melhorias-status.md     448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  main.gd                    melhorias-status.md    1230-1273 alega=diagnostics              real:   wolves.append(w)   _load_created += 1  # A ordem do array e so a
+  main.gd                    melhorias-status.md     208-208  alega=narration_of             real:  hud.aether = aether
+  hud.gd                     melhorias-status.md     276-277  alega=narration_of             real:   var pb := Coords.to_block(player.position3())   var mira := "-"
+  main.gd                    melhorias-status.md     337-339  alega=dropped_ticks|worst_step real:  var dt := clock.step_duration()  elapsed += dt  # Dossie 17 §3.5:
+  hud.gd                     melhorias-status.md     248-251  alega=TIME_PHYSICS_PROCESS|TIM real:  func _refresh_state() -> void:  if not _debug_on:   return
+  wolf.gd                    melhorias-status.md     911-911  alega=Dictionary               real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  wolf.gd                    melhorias-status.md     962-962  alega=keys|PackedInt32Array    real:  elif _saw_cd <= 0.0:
+  wolf.gd                    melhorias-status.md     648-648  alega=keys                     real:    var strength := aether.sample_cell(c, AetherField.Channel.BLOOD
+  smoke_test.gd              melhorias-status.md    3482-3484 alega=perdidos                 real:  w.set_block(after_extra, BlockDefs.Block.SNOW)  p.take_damage(20.
+  main.gd                    melhorias-status.md    1232-1232 alega=diagnostics|worst_sim_ms real:  # A ordem do array e so a ordem de criacao; o que a checagem conf
+  main.gd                    melhorias-status.md    1256-1256 alega=diagnostics|worst_sim_ms real:  for k in world.edits:
+  main.gd                    melhorias-status.md     435-435  alega=gate                     real:   _next_identity += 1
+  wolf.gd                    melhorias-status.md    1372-1372 alega=den|dens                 real: func tree_stats() -> String:
+  main.gd                    melhorias-status.md    1149-1155 alega=den                      real:   print("load RECUSADO: censo %d acima do teto %d" % [saved.size()
+  main.gd                    melhorias-status.md     654-661  alega=den_min_dist|dens        real:   ## Portao novo da fundacao (§3.2.2): o centro de uma toca fica a
+  main.gd                    melhorias-status.md    1242-1243 alega=diagnostics|den_componen real:  # com a mesma identidade quebrariam o pareamento do proximo load 
+  main.gd                    melhorias-status.md     534-537  alega=MATE_COOLDOWN            real:  # A cria herda a toca do adulto de identidade MENOR (dossie 16 §3
+  aether_reactions_test.gd   melhorias-status.md      64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  aether_reactions_test.gd   melhorias-status.md    1352-1352 alega=can_stand_at             real:  var lancamentos := 0
+  wolf.gd                    melhorias-status.md     101-101  alega=false                    real: const STEP_JUMP: float = 7.6
+  aether_reactions_test.gd   melhorias-status.md      64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  aether_reactions_test.gd   melhorias-status.md    3167-3167 alega=EXPECTED_CHECKS          real:  var n_cheio := true
+  wolf.gd                    melhorias-status.md     717-724  alega=sim_step                 real:  return rank   ## Terra seca neste ponto: sem agua acima do leito 
+  wolf.gd                    melhorias-status.md     901-901  alega=SHORE_AFTER|SCENT_PERIOD real:  # grava e o mesmo que decide a fase, senao o bicho envelheceria c
+  main.gd                    melhorias-status.md     580-580  alega=SPAWN_BANDS              real: ## lerem. 18 m dos 24 deixa 6 m de folga para o corpo andar sem pe
+  main.gd                    melhorias-status.md     875-877  alega=vazia|encaixado|molhado  real:  # ninguem. A string continua (e ela que aparece no log); a chave 
+  smoke_test.gd              melhorias-status.md     399-404  alega=maior_matilha_lida       real:  _check("ao menos um lobo se moveu na janela real", live_moved >= 
+  main.gd                    melhorias-status.md     940-960  alega=PACK_COHESION_RADIUS     real:  for i in wolves.size():   var a: Wolf = wolves[i]   if not a.aliv
+  wolf.gd                    melhorias-status.md     869-870  alega=pack_of                  real:  # Fase 3 §5.6: a curva de resultado se alimenta da TROCA de tatic
+  wolf.gd                    melhorias-status.md     906-906  alega=pack_of                  real:  if body.in_water:
+  wolf.gd                    melhorias-status.md     793-797  alega=ENCIRCLE_RING            real: ## ticks e o periodo e no maximo n, entao dois assentos nunca cheg
+  wolf.gd                    melhorias-status.md     778-778  alega=ENCIRCLE_RING            real:  if not _bite_turn():
+  wolf.gd                    melhorias-status.md     932-941  alega=flee                     real:  _dist_player = me.distance_to(pp)  # LOS e a unica leitura cara d
+  wolf.gd                    melhorias-status.md     937-946  alega=hunt|PACK_PANIC_FEAR     real:  _work_here = aether.sample(me, AetherField.Channel.WORK)  trust_t
+  wolf.gd                    melhorias-status.md    1380-1380 alega=load_state|setup|home    real:   "hp": hp, "alive": alive, "hunger": hunger, "kills": kills,
+  wolf.gd                    melhorias-status.md     415-417  alega=IMPRINT_BIAS             real: ## sem saber que existe voxel, e e a fronteira que mantem a difusa
+  main.gd                    melhorias-status.md    1005-1007 alega=IMPRINT_BIAS             real: func _imprint(pos: Vector3, ch: int, amount: float) -> void:  var 
+  player.gd                  melhorias-status.md     403-403  alega=Inventory                real:  avatar.block_id = selected_block()
+  player.gd                  melhorias-status.md     187-188  alega=Inventory                real:  viewmodel.set_atlas(p_world.atlas_texture())  avatar.set_atlas(p_
+  audio_director.gd          melhorias-status.md     158-162  alega=setup                    real: func on_wolf_registered(w: Wolf) -> void:  w.bit_player.connect(_o
+  main.gd                    melhorias-status.md     470-471  alega=setup                    real:  if audio != null:   audio.on_wolf_registered(w)
+  main.gd                    melhorias-status.md      91-91   alega=randi_range|randi|randf  real: var _next_identity: int = 0
+  main.gd                    melhorias-status.md     419-420  alega=randi_range|randi|randf  real:   # vivos, entao criar cinco de uma vez e criar cinco um a um cons
+  fp_viewmodel.gd            melhorias-status.md     232-240  alega=render_priority|no_depth real: func _atlas_mat(alpha: bool) -> StandardMaterial3D:  # Sem depth t
+  smoke_test.gd              melhorias-status.md    3422-3429 alega=close_panel|respawn_at   real:  var wolf0: Wolf = _wolf_vivo(0)  if wolf0 == null:   _check("ha u
+  smoke_test.gd              melhorias-status.md    3436-3450 alega=close_panel|respawn_at   real:    censo_antes, main.wolves.size(), main.WOLF_COUNT])  # (20,20) d
+  wolf.gd                    melhorias-status.md     186-186  alega=den_components           real: var den: int = -1
+  aether_viz.gd              melhorias-status.md      12-16   alega=AetherField              real: const CHANNEL_COLOR: Array = [  Color(1.00, 0.72, 0.22),   # traba
+  wolf.gd                    melhorias-status.md     160-160  alega=home|e7e30e6             real: const FUR_COLORS: Array[Color] = [
+  wolf.gd                    melhorias-status.md    1453-1453 alega=home|e7e30e6             real:  if not alive:
+  wolf.gd                    melhorias-status.md     869-870  alega=pack_provider            real:  # Fase 3 §5.6: a curva de resultado se alimenta da TROCA de tatic
+  wolf.gd                    melhorias-status.md     906-906  alega=pack_provider            real:  if body.in_water:
+  wolf.gd                    melhorias-status.md     694-694  alega=home                     real: ## Centro compartilhado da ronda (dossie 10 §3.2): o baricentro da
+  wolf.gd                    melhorias-status.md     708-708  alega=home                     real: ## Qual fatia do circulo este lobo patrulha: quantos vizinhos tem 
+  player.gd                  melhorias-status.md     677-690  alega=break_block              real: func _mine_target() -> void:  var b := world.get_block(target_voxe
+  wolf.gd                    melhorias-status.md    1192-1192 alega=set_block                real:  elif _dig_cell(_dig_pos) != _dig_pos:
+  wolf.gd                    melhorias-status.md    1197-1197 alega=set_block                real:   return
+  player.gd                  melhorias-status.md     685-685  alega=hardness                 real:  if world.set_block(target_voxel, BlockDefs.Block.AIR):
+  block_update_queue.gd      melhorias-status.md      35-35   alega=get_block                real:  p_world.block_changed.connect(_on_block)
+  wolf.gd                    melhorias-status.md     309-309  alega=home_biome               real:  identity = p_identity
+  wolf.gd                    melhorias-status.md    1380-1380 alega=home_biome               real:   "hp": hp, "alive": alive, "hunger": hunger, "kills": kills,
+  wolf.gd                    melhorias-status.md    1360-1365 alega=state_dict|home_biome    real: ## `hp` do adulto ao lado pareceria um adulto gravemente ferido, e
+  wolf.gd                    melhorias-status.md    1319-1320 alega=die                      real:   acted.emit("blood", me)  else:
+  main.gd                    melhorias-status.md    1046-1046 alega=died                     real: 
+  voxel_body.gd              melhorias-status.md      17-17   alega=STEP_JUMP                real: var gravity: float = 24.0
+  mind.gd                    melhorias-status.md      17-17   alega=species|archetype|SPECIE real: ## bônus no score do escorredor. O §8 item 3 aponta o `breakdown()
+  inventory.gd               melhorias-status.md      29-29   alega=species|archetype|SPECIE real: var _ids := PackedInt32Array()
+  block_defs.gd              melhorias-status.md     123-137  alega=SpeciesDef|Blackboard|Se real:  # fonte, e o 0,4 default acima cobre os ids que ainda nao tem mat
+  voxel_world.gd             melhorias-status.md     456-456  alega=COLOR                    real:      var jitter: float = float(_hash3(gx, y, gz) % 5) * 0.012
+  main.gd                    melhorias-status.md    1365-1369 alega=fog_enabled              real:  sun.light_energy = 1.60  sun.light_color = Color(1.0, 0.96, 0.88)
+  wolf.gd                    melhorias-status.md     911-911  alega=TIME_PHYSICS_PROCESS|TIM real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  aether_field.gd            melhorias-status.md     122-122  alega=keys                     real:   var hot := PackedInt32Array()
+  voxel_world.gd             melhorias-status.md     351-351  alega=commit|scan              real:    _mesh_worst_level_us = maxi(_mesh_worst_level_us, nivel_us)
+  main.gd                    melhorias-status.md     910-915  alega=targets_under_crosshair  real: ## fronteira existe para nao deixar passar. func ledger_do_mundo()
+  wolf.gd                    melhorias-status.md    1313-1314 alega=die                      real:  _imprint(me, AetherField.Channel.FEAR, amount * 0.035)  mind.reme
+  smoke_test.gd              melhorias-status.md     400-400  alega=maior_matilha_lida       real:   "%d/%d se moveram em %.2f s de logica  nasceram_depois=%d" % [
+  aether_reactions_test.gd   melhorias-status.md    2849-2885 alega=esgotamento_de_lares_for real:  _pack_session(4)  for i: int in 4:   _pack_place(i, FAREJAR_SPOTS
+  main.gd                    melhorias-status.md     897-897  alega=motivos                  real: 
+  wolf.gd                    melhorias-status.md     448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  main.gd                    melhorias-status.md    1281-1281 alega=diagnostics|pack_of      real:  block_updates.attach(world, block_spawner)
+  smoke_test.gd              melhorias-status.md     400-400  alega=den_min_dist|dens        real:   "%d/%d se moveram em %.2f s de logica  nasceram_depois=%d" % [
+  aether_reactions_test.gd   melhorias-status.md    4073-4076 alega=nenhum_lobo_le_de_outra_ real:     return [i, j]  return []  
+  main.gd                    melhorias-status.md     182-183  alega=Player                   real:  add_child(viz) 
+  main.gd                    melhorias-status.md    1018-1027 alega=Player                   real: func _on_block_broken(pos: Vector3i, block: int) -> void:  stats["
+  voxel_world.gd             melhorias-status.md     575-582  alega=bench_positions          real: func _write_raw(p: Vector3i, b: int) -> void:  var c := chunk_at(p
+  voxel_world.gd             melhorias-status.md     585-596  alega=bench_positions          real: func set_block(p: Vector3i, b: int, record: bool = true) -> bool: 
+  main.gd                    melhorias-status.md    1242-1246 alega=edits|set_block          real:  # com a mesma identidade quebrariam o pareamento do proximo load 
+  main.gd                    melhorias-status.md    1169-1169 alega=edits                    real:  player.deaths = int(p.get("deaths", 0))
+  wolf.gd                    melhorias-status.md     911-911  alega=Dictionary|blackboard    real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  wolf.gd                    melhorias-status.md     299-299  alega=setup|Dictionary         real: var _legs: Array = []
+  wolf.gd                    melhorias-status.md     426-426  alega=setup                    real: func _build_tree() -> void:
+  main.gd                    melhorias-status.md      10-17   alega=SpeciesDef               real: ## Teto de censo (dossie 11 §4, resposta 2): ate onde a populacao 
+  wolf.gd                    melhorias-status.md     980-988  alega=surface_height           real:  var channel: int = AetherField.Channel.WORK  _fear_away = Vector3
+  wolf.gd                    melhorias-status.md     571-585  alega=keys                     real: func _leaf_investigate(ctx: Dictionary) -> int:  if _stagger > 0.0
+  wolf.gd                    melhorias-status.md     701-774  alega=keys                     real:  var sum := center()  for e: Dictionary in _pack:   var pos: Vecto
+  audio_director.gd          melhorias-status.md     146-155  alega=worst_sim_ms             real: func setup(p_world: VoxelWorld, p_player: Player) -> void:  world 
+  audio_director.gd          melhorias-status.md      21-23   alega=ui_click                 real: ## A cama ambiental mora abaixo da acao: os tres beds medidos vao 
+  audio_director.gd          melhorias-status.md      25-26   alega=AudioStreamPlayer3D|play real: const VOICES := 12 const MAX_DISTANCE := 64.0
+  smoke_test.gd              melhorias-status.md    2754-2758 alega=pitch|yaw                real:  var d := _run_arm(w, spot, half, 35000.0, ARM_REMEMBER)   _check(
+  mind.gd                    melhorias-status.md      36-38   alega=randf_range|randi|randf  real: var episodic: Array = []          # {tick, kind, actor, pos(Vector
+  fp_viewmodel.gd            melhorias-status.md     232-240  alega=no_depth_test            real: func _atlas_mat(alpha: bool) -> StandardMaterial3D:  # Sem depth t
+  aether_field.gd            melhorias-status.md     145-153  alega=setup                    real:  pass_cut.fill(0.0)  for ch in Channel.COUNT:   var cut := 0.0   v
+  wolf.gd                    melhorias-status.md     715-719  alega=blocked_this_frame       real:   if int(e["identity"]) < identity:    rank += 1  return rank  
+  aether_reactions_test.gd   melhorias-status.md      64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  smoke_test.gd              melhorias-status.md     345-345  alega=worst_sim_ms|cbaaef5     real:  # `_finish` e o ponto que a suíte sempre alcanca (um SCRIPT ERROR
+  aether_reactions_test.gd   melhorias-status.md      19-19   alega=EXPECTED_CHECKS          real:  &"_test_locomotion_flat", &"_test_locomotion_wall",
+  wolf.gd                    melhorias-status.md     453-453  alega=f89041b                  real:   BtTree.Selector.new().with([flee, hunt, sniff, patrol]), 400)
+  smoke_test.gd              melhorias-status.md     346-346  alega=worst_sim_ms             real:  # impede os seguintes) e `_exit_tree` e a rede final — e o retorn
+  smoke_test.gd              melhorias-status.md    3467-3467 alega=worst_sim_ms             real:  _check("save guarda o diario, nao os voxels",
+  wolf.gd                    melhorias-status.md     155-155  alega=FUR_COLORS|e7e30e6       real: # 1 arid, 2 temperate, 3 wetland): o indice da tabela e o id do bi
+  wolf.gd                    melhorias-status.md    1378-1382 alega=load_state|setup|home_bi real:   "identity": identity, "home": [home.x, home.y, home.z],   "feet"
+  wolf.gd                    melhorias-status.md     415-417  alega=imprint_bias|IMPRINT_BIA real: ## sem saber que existe voxel, e e a fronteira que mantem a difusa
+  main.gd                    melhorias-status.md     943-945  alega=imprint_bias             real:    continue   var ca: Vector3 = a.center()   for j in range(i + 1,
+  main.gd                    melhorias-status.md     994-999  alega=eb6ec8d                  real:    # A vaga nasce com a toca do morto (dossie 16 §3.3): e aqui, e 
+  main.gd                    melhorias-status.md    1166-1208 alega=eb6ec8d                  real:  player.yaw = float(p.get("yaw", 0.0))  player.pitch = float(p.get
+  main.gd                    melhorias-status.md     940-960  alega=pack_provider            real:  for i in wolves.size():   var a: Wolf = wolves[i]   if not a.aliv
+  wolf.gd                    melhorias-status.md     694-701  alega=NO_PACK                  real: ## Centro compartilhado da ronda (dossie 10 §3.2): o baricentro da
+  wolf.gd                    melhorias-status.md     793-797  alega=ENCIRCLE_RING            real: ## ticks e o periodo e no maximo n, entao dois assentos nunca cheg
+  wolf.gd                    melhorias-status.md     778-778  alega=ENCIRCLE_RING            real:  if not _bite_turn():
+  wolf.gd                    melhorias-status.md     862-862  alega=trust                    real:    0.0, 1.0, ResponseCurve.Type.LINEAR, 1.0, 0.0, 1.0, false)
+  wolf.gd                    melhorias-status.md     932-941  alega=flee                     real:  _dist_player = me.distance_to(pp)  # LOS e a unica leitura cara d
+  wolf.gd                    melhorias-status.md     937-946  alega=hunt|c42250c             real:  _work_here = aether.sample(me, AetherField.Channel.WORK)  trust_t
+  mind.gd                    melhorias-status.md     119-120  alega=take_damage              real:    n += 1  return n
+  aether_reactions_test.gd   melhorias-status.md      64-64   alega=EXPECTED_CHECKS|tests|sr real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  mind.gd                    melhorias-status.md      26-26   alega=MindsInspector           real: ## mais recente. 0.25 = a mistura das ultimas ~4 trocas domina a l
+  hud.gd                     melhorias-status.md     603-603  alega=show_message             real:  return Recipes.visible(player.bench_near())
+  main.gd                    melhorias-status.md     559-559  alega=SPAWN_BANDS              real:    w.identity, a.identity, b.identity, d, w.home.distance_to(ancor
+  main.gd                    melhorias-status.md     762-767  alega=PACK_LEASH|SPAWN_BANDS   real: ## os seis portoes contra o JOGADOR continuam os mesmos da perna 1
+  main.gd                    melhorias-status.md     566-573  alega=den_components|den_min_d real:  for w: Wolf in wolves:   taken[Vector2i(int(w.home.x), int(w.home
+  main.gd                    melhorias-status.md     574-584  alega=DEN_COUNT|den_components real: ## quatro vezes um caminho que roda cinco vezes no boot e uma a ca
+  world_gen.gd               melhorias-status.md      57-57   alega=cb09015                  real: var _temp := FastNoiseLite.new()
+  wolf.gd                    melhorias-status.md    1300-1300 alega=load_state               real: func take_damage(amount: float, from_actor: int, hit_from: Vector3
+  mind_oracle.gd             melhorias-status.md      19-20   alega=AETHERFALL_MIND_KEY      real: ## `--oracle-cache=` (padrao da casa do `--tick-journal=`), e lida
+  wolf.gd                    melhorias-status.md     743-754  alega=SubtreeGuard             real: ## esta de pe e dentro da janela de `SCENT_PERIOD`, reusa -- o ane
+  wolf.gd                    melhorias-status.md     901-901  alega=SHORE_AFTER              real:  # grava e o mesmo que decide a fase, senao o bicho envelheceria c
+  main.gd                    melhorias-status.md     788-860  alega=SHORE_AFTER              real:  var seg := SAFE_SPAWN_DIST * SAFE_SPAWN_DIST  if feet.distance_sq
+  main.gd                    melhorias-status.md     550-550  alega=SHORE_AFTER              real:  wolves.append(w)
+  main.gd                    melhorias-status.md     762-767  alega=SPAWN_BANDS              real: ## os seis portoes contra o JOGADOR continuam os mesmos da perna 1
+  main.gd                    melhorias-status.md     846-846  alega=SAFE_SPAWN_DIST          real:     motivos["molhado"] += 1
+  aether_reactions_test.gd   melhorias-status.md      28-32   alega=EXPECTED_CHECKS          real:  &"_test_lobo_escolhe_trilha_seca", &"_test_nadar_so_sem_saida_sec
+  player.gd                  melhorias-status.md     702-703  alega=substituivel|grama_preci real:  var cur := world.get_block(place_voxel)  if cur != BlockDefs.Bloc
+  aether_reactions_test.gd   melhorias-status.md      64-64   alega=EXPECTED_CHECKS          real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  aether_reactions_test.gd   melhorias-status.md    3167-3167 alega=f843fa6|c0659fd|c313544  real:  var n_cheio := true
+  main.gd                    melhorias-status.md     584-584  alega=pack_of                  real: const PACK_LEASH := 18.0
+  main.gd                    melhorias-status.md     819-819  alega=pack_of                  real:   tries.append([near, 4.0, PACK_LEASH, "mordaca"])
+  smoke_test.gd              melhorias-status.md     399-404  alega=GEN_VERSION|FORMAT_VERSI real:  _check("ao menos um lobo se moveu na janela real", live_moved >= 
+  aether_reactions_test.gd   melhorias-status.md     342-358  alega=record                   real:  # `flush` num Nil e o passo morre antes da difusao, da matilha e 
+  block_defs.gd              melhorias-status.md     166-166  alega=drop_of                  real: 
+  wolf.gd                    melhorias-status.md     186-186  alega=DEN_COUNT                real: var den: int = -1
+  main.gd                    melhorias-status.md     734-763  alega=DEN_COUNT                real:    if bool(fundacao["ok"]):     var idx: int = _dens.size()     va
+  main.gd                    melhorias-status.md     667-673  alega=DEN_MIN_DIST|DEN_COUNT   real:    return false  return true   ## Separacao minima entre CENTROS d
+  main.gd                    melhorias-status.md     743-752  alega=DEN_MIN_DIST             real:      sep = minf(sep, Vector2(outro.x, outro.z).distance_to(       
+  main.gd                    melhorias-status.md     818-902  alega=DEN_MIN_DIST             real:  if near is Vector3:   tries.append([near, 4.0, PACK_LEASH, "morda
+  main.gd                    melhorias-status.md     837-837  alega=vazia                    real:    var p := Vector3(at.x + cos(a) * r, 0.0, at.z + sin(a) * r)
+  main.gd                    melhorias-status.md     847-847  alega=coluna|vazia             real:     continue
+  main.gd                    melhorias-status.md     851-851  alega=molhado|coluna|vazia     real:     continue
+  main.gd                    melhorias-status.md     829-829  alega=encaixado|molhado|coluna real:   if rmax <= rmin:
+  main.gd                    melhorias-status.md     861-861  alega=perto|encaixado|molhado  real:     # Oitavo portao, e so a fundacao o ve: o lugar existe, esta lo
+  main.gd                    melhorias-status.md     863-863  alega=visivel|perto|encaixado  real:     # fundada -- que e justamente o circulo unico esta perna veio 
+  main.gd                    melhorias-status.md     869-869  alega=perto_de_toca|visivel|pe real:    return {"ok": true, "feet": feet, "banda": t + 1, "motivo": ""}
+  main.gd                    melhorias-status.md     902-902  alega=perto_de_toca|visivel|pe real: 
+  aether_reactions_test.gd   melhorias-status.md    2849-2885 alega=esgotamento_de_lares_for real:  _pack_session(4)  for i: int in 4:   _pack_place(i, FAREJAR_SPOTS
+  main.gd                    melhorias-status.md    1281-1281 alega=den_components           real:  block_updates.attach(world, block_spawner)
+  smoke_test.gd              melhorias-status.md     400-400  alega=den_components           real:   "%d/%d se moveram em %.2f s de logica  nasceram_depois=%d" % [
+  main.gd                    melhorias-status.md    1242-1242 alega=diagnostics|den_componen real:  # com a mesma identidade quebrariam o pareamento do proximo load 
+  smoke_test.gd              melhorias-status.md     400-400  alega=diagnostics              real:   "%d/%d se moveram em %.2f s de logica  nasceram_depois=%d" % [
+  main.gd                    melhorias-status.md    1231-1278 alega=edit_mesh|edit_mesh_cost real:   _load_created += 1  # A ordem do array e so a ordem de criacao; 
+  wolf.gd                    melhorias-status.md     599-600  alega=if                       real:  # nenhuma string nova de `intent` (o journal hashia `intent`, nao
+  wolf.gd                    melhorias-status.md    1077-1078 alega=want                     real: func _dig_ok(p: Vector3i) -> bool:  return DIG_MATERIALS.has(world
+  wolf.gd                    melhorias-status.md    1144-1148 alega=tree_stats               real: func _dig_reset() -> void:  _dig_pos = DIG_NONE  _dig_scent = DIG_
+  mind_oracle.gd             melhorias-status.md      42-42   alega=HTTPRequest              real: ## 32 hex e grava la.
+  mind_oracle.gd             melhorias-status.md      76-76   alega=HTTPRequest              real: ## sem o dll (gitignored) ela fica null e cada pedido nomeia a aus
+  mind_oracle.gd             melhorias-status.md      81-81   alega=HTTPRequest              real: var _server_cd := 0.0
+  mind_oracle.gd             melhorias-status.md     235-235  alega=HTTPRequest              real:  var key := OracleCache.chave(_prompt_narracao(w), MODEL_ALIAS,
+  aether_reactions_test.gd   melhorias-status.md      64-64   alega=EXPECTED_CHECKS|ERROR    real: # pack dentro do processo: runtime por caminho absoluto, pack vazi
+  main.gd                    melhorias-status.md      28-28   alega=process|get_block_xyz    real: const MESH_BUDGET := 2             # chunks por frame
+  aether_reactions_test.gd   melhorias-status.md    5556-5556 alega=AfMindOracle|take_damage real: ## envelhecer no dia em que o teto mudar.
+  mind_oracle.gd             melhorias-status.md     262-265  alega=intent                   real:  if _ext == null:   last_reason = "extensao ausente: AfMindOracle 
+  water_surface.gd           melhorias-status.md     190-190  alega=FACE_TINT|COLOR          real:  vec2 refr_uv = clamp(SCREEN_UV + N.xy * refract_strength * (1.0 -
+  water_surface.gd           melhorias-status.md     193-193  alega=FACE_TINT                real:  // A parede nao ve o leito atras de si: ve o proprio corpo.
+  water_surface.gd           melhorias-status.md     210-212  alega=por                      real:   // Espuma de margem: lenol fino atras deste pixel. Na lateral, a
+  smoke_test.gd              melhorias-status.md    3468-3484 alega=espalhamento_nao_estoura real:   int(data["edits"].size()) == before["edits"], "edicoes=%d" % dat
+  main.gd                    melhorias-status.md     392-393  alega=end_step|worst_sim_ms    real:    _viz_cd = VIZ_PERIOD    viz.refresh()
+  af_mind_runtime.gd         melhorias-status.md      68-68   alega=ready_provider|await     real: func ready() -> bool:
+  main.gd                    melhorias-status.md     289-289  alega=ready_provider           real:   var retiro: AfMindRuntime = llm_host
+  mind_oracle.gd             melhorias-status.md      36-36   alega=ready_provider           real: const RETRY_COOLDOWN: float = 30.0
+  mind_oracle.gd             melhorias-status.md     196-196  alega=KEY_FILE|KEY_ENV         real:  _narrations[wolf_id] = texto
+  main.gd                    melhorias-status.md    1273-1273 alega=diagnostics|AfMindRuntim real: ## unico lugar onde a ordem (depois do mundo, antes das mentes) mo
+  main.gd                    melhorias-status.md     291-291  alega=llm_status_provider      real:   retiro.queue_free()
+  weather.gd                 melhorias-status.md      62-62   alega=molhado|chuva            real: func _physics_process(delta: float) -> void:
+  weather.gd                 melhorias-status.md      16-16   alega=molhado|chuva            real: const WEATHER_SEED := 20261123
+  voxel_world.gd             melhorias-status.md     878-878  alega=ring_sink                real: func _scan_col_tops(c: VoxelChunk) -> void:
+  voxel_world.gd             melhorias-status.md      41-41   alega=ring_sink                real: const EXPOSURE_FALL: int = 4
+  main.gd                    melhorias-status.md     231-246  alega=ring_at                  real:   # Ultimo a entrar e o primeiro a ser ouvido: so consome os sinai
+  main.gd                    melhorias-status.md    1265-1265 alega=diagnostics              real:   targets_under_crosshair().size(), wolves.size(), _respawn_queue.
+  main.gd                    melhorias-status.md    1268-1268 alega=diagnostics              real: ## Monta a queda de blocos sobre o `world` ja existente. Existe co
+  opaque_surface.gd          melhorias-status.md      53-53   alega=grep                     real: // furo #50). Nenhum outro `render_mode`: o passe continua opaco (
+  water_surface.gd           melhorias-status.md     103-103  alega=grep                     real: // vezes na suíte e silencioso em qualquer documento — furo #50 co
+  smoke_test.gd              melhorias-status.md    1121-1125 alega=srgb_to_linear           real: ## Census do grupo opaco de um surface. `so_pilha` limita aos vért
+  voxel_world.gd             melhorias-status.md     993-996  alega=srgb_to_linear           real:    var a := 1.0    if topo >= 0:     a = clampf(1.0 - float(topo -
+  voxel_world.gd             melhorias-status.md     184-184  alega=set_weather              real: func opaque_material() -> ShaderMaterial:
+  weather.gd                 melhorias-status.md      53-53   alega=opaque_material          real: func pedir_chuva(alvo: float) -> void:
+  weather.gd                 melhorias-status.md      91-91   alega=opaque_material          real: func apply_sink(sink: Callable) -> void:
+  main.gd                    melhorias-status.md    1351-1353 alega=apply_sink               real:   "rain_fx": rain_fx.diagnostics() if rain_fx != null else {},   "
+  main.gd                    melhorias-status.md     445-446  alega=on_wolf_registered|e4c5b real: ## construtor era privativo do sorteio, as outras duas teriam de e
+  main.gd                    melhorias-status.md    1145-1145 alega=clear_transient|on_wolf_ real:  # fallback que finja sucesso). A conta e so `size()`: nenhuma cha
+  hud.gd                     melhorias-status.md     265-265  alega=diagnostics|block_stats| real:   lines.append("blocos  fila %d  em voo %d  eventos %d  leituras %
+  falling_block.gd           melhorias-status.md      12-12   alega=stats                    real: const SIZE: float = 0.98
+  main.gd                    melhorias-status.md    1339-1339 alega=clear                    real:   "block_updates": block_stats(),
+  block_defs.gd              melhorias-status.md      75-75   alega=get_block_xyz            real: static var _gravity: PackedByteArray = PackedByteArray()
+  hud.gd                     melhorias-status.md     265-265  alega=block_provider           real:   lines.append("blocos  fila %d  em voo %d  eventos %d  leituras %
+  voxel_world.gd             melhorias-status.md     595-595  alega=eb218fe|fa94cb5          real:  block_changed.emit(p, prev, b)
+  voxel_world.gd             melhorias-status.md      55-55   alega=e                        real: const MESH_FRAME_BUDGET_US: int = 8000
+  main.gd                    AGENTS.md               208-208  alega=narration_of             real:  hud.aether = aether
+  hud.gd                     AGENTS.md               276-277  alega=narration_of             real:   var pb := Coords.to_block(player.position3())   var mira := "-"
+  main.gd                    AGENTS.md               291-291  alega=llm_status_provider|last real:   retiro.queue_free()
+  aether_field.gd            AGENTS.md               232-234  alega=var_to_bytes             real: # O save corta valores <= 0,01; a assinatura precisa dos bits de t
+  main.gd                    AGENTS.md              1130-1131 alega=GEN_VERSION|dt           real: func load_game() -> void:  var res := SaveManager.read_slot(SLOT)
+  player.gd                  AGENTS.md               685-685  alega=update_local             real:  if world.set_block(target_voxel, BlockDefs.Block.AIR):
+  player.gd                  AGENTS.md               711-711  alega=update_local             real:  if world.set_block(place_voxel, b):
+  main.gd                    AGENTS.md              1010-1015 alega=update_local             real: func _on_acted(kind: String, pos: Vector3) -> void:  match kind:  
+  main.gd                    AGENTS.md               337-339  alega=end_step|begin_step      real:  var dt := clock.step_duration()  elapsed += dt  # Dossie 17 §3.5:
+  main.gd                    AGENTS.md              1107-1109 alega=active                   real:   "gen_version": WorldGen.GEN_VERSION,   "seed": SEED,   "tick": c
+  main.gd                    AGENTS.md              1371-1371 alega=active                   real:  # dela e o seno da elevacao, e e isso que a agua pergunta (dossie
+  sim_clock.gd               AGENTS.md                 5-7    alega=dropped_ticks            real: const HZ: int = 20 const STEP: float = 1.0 / HZ const MAX_STEPS_PE
+  wolf.gd                    AGENTS.md               448-449  alega=SubtreeGuard             real:   BtTree.Condition.new().init("ha rastro", _cond_scent),   BtTree.
+  main.gd                    AGENTS.md                28-28   alega=mesh_ms                  real: const MESH_BUDGET := 2             # chunks por frame
+  main.gd                    AGENTS.md                27-27   alega=process                  real: const AETHER_PERIOD := 0.25        # 4 passadas de difusao por seg
+  main.gd                    AGENTS.md               322-322  alega=process                  real:  return Vector3(float(x) + 0.5, float(world.surface_height(x, z) +
+  wolf.gd                    AGENTS.md               911-911  alega=Dictionary               real:   # fim do passo por `_resolve_dry_target()` (dossie 14 §3.1) -- e
+  hud.gd                     AGENTS.md               248-251  alega=TIME_PHYSICS_PROCESS|TIM real:  func _refresh_state() -> void:  if not _debug_on:   return
+  wolf.gd                    AGENTS.md               962-964  alega=keys                     real:  elif _saw_cd <= 0.0:   _saw_cd = 2.0   mind.remember(_sim_clock.t
+  wolf.gd                    AGENTS.md               647-648  alega=keys                     real:     continue    var strength := aether.sample_cell(c, AetherField.
+  main.gd                    AGENTS.md              1259-1259 alega=total_us|worst_us|last_u real: 
+  smoke_test.gd              AGENTS.md              2454-2462 alega=hardness                 real:  _aim(p, -1.4)  _place_voxel = p.place_voxel  _place0 = int(main.s
+  wolf.gd                    AGENTS.md               901-901  alega=SHORE_AFTER|SCENT_PERIOD real:  # grava e o mesmo que decide a fase, senao o bicho envelheceria c
+  main.gd                    AGENTS.md               761-766  alega=SAFE_SPAWN_DIST          real: ## A mordaca em torno do centro da toca `den` (dossie 16 §3.2.3): 
+  main.gd                    AGENTS.md               550-550  alega=SPAWN_BANDS              real:  wolves.append(w)
+  main.gd                    AGENTS.md               559-559  alega=PACK_LEASH               real:    w.identity, a.identity, b.identity, d, w.home.distance_to(ancor
+  main.gd                    AGENTS.md               741-744  alega=PACK_LEASH               real:      # No chao, como o portao: a linha impressa tem de ser o mesmo
+  main.gd                    AGENTS.md               924-924  alega=pack_pairs               real: ## buffer da sessao, nunca uma copia -- e o que permite a leitura 
+  main.gd                    AGENTS.md               925-925  alega=pack_pairs               real: ## alocar.
+  voxel_world.gd             AGENTS.md                62-62   alega=get_block                real: var edits: Dictionary = {}           # Vector3i -> int (edicoes pe
+  block_update_queue.gd      AGENTS.md                35-35   alega=queda_move_a_celula      real:  p_world.block_changed.connect(_on_block)
+  aether_field.gd            AGENTS.md               174-176  alega=cavar_nao_toca_construca real:   var mid := Vector3i((x + nx) * cell, (y + ny) * cell, (z + nz) *
+  wolf.gd                    AGENTS.md              1025-1029 alega=que                      real:  var bz := int(cell_pos.z)  var top := c.y * aether.cell + aether.
+  voxel_world.gd             AGENTS.md                62-62   alega=get_block                real: var edits: Dictionary = {}           # Vector3i -> int (edicoes pe
+  block_defs.gd              AGENTS.md                10-24   alega=PLANT|SLAB               real: enum Block {  AIR = 0,  GRASS = 1,  DIRT = 2,  STONE = 3,  SAND = 
+  block_defs.gd              AGENTS.md                37-37   alega=PLANT|SLAB               real: const COUNT: int = 23
+  main.gd                    AGENTS.md               441-441  alega=died                     real: ## sinais ligados e o registro no diretor de audio.
+  main.gd                    AGENTS.md               672-672  alega=den_components           real: ## fundou, para que o numero publicado e o numero cobrado sejam a 
+  main.gd                    AGENTS.md              1243-1243 alega=diagnostics|den_componen real:  # (que ordena minds por identidade) deixaria de ser uma funcao do
+  wolf.gd                    AGENTS.md               186-186  alega=diagnostics|den_componen real: var den: int = -1
+  wolf.gd                    AGENTS.md              1372-1372 alega=den|diagnostics          real: func tree_stats() -> String:
+  wolf.gd                    AGENTS.md              1405-1405 alega=den|diagnostics          real:  # a vida pela proporcao, entao o `hp` do disco tem de ser lido co
+  bt_tree.gd                 AGENTS.md                 3-3    alega=Blackboard               real: ## estado vive no ctx/blackboard. Regras do projeto (docs/design/0
+  wolf.gd                    AGENTS.md               923-923  alega=Dictionary               real:  _tree.tick({"wolf": self, "elapsed": elapsed, "tick": _sim_clock.
+  main.gd                    AGENTS.md              1278-1314 alega=fog_density              real:  block_spawner = FallingBlockSpawner.new()  block_spawner.setup(wo
+  main.gd                    AGENTS.md              1289-1289 alega=basis                    real:  var sp: Dictionary = block_spawner.stats()
+  main.gd                    AGENTS.md               151-151  alega=basis                    real:  _terrain = Node3D.new()
+  voxel_world.gd             AGENTS.md               660-671  alega=build_chunk_mesh         real: func _record_edit_cost(c: VoxelChunk) -> void:  if not _edit_stamp
+  voxel_world.gd             AGENTS.md                55-55   alega=process                  real: const MESH_FRAME_BUDGET_US: int = 8000
+  voxel_world.gd             AGENTS.md               632-650  alega=process                  real: func _mark(key: Vector2i) -> void:  var c = chunks.get(key)  if c 
+  block_defs.gd              README.md               169-169  alega=overflow                 real: static func has_gravity(b: int) -> bool:
+  main.gd                    README.md              1162-1162 alega=settle_block_updates     real:  block_updates.clear()
