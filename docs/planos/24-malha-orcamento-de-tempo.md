@@ -1,16 +1,16 @@
-# 24 — Malha: o orçamento é de **contagem**, e um frame paga dois chunks de 50–80 ms
+# 24 — Malha: o orçamento era de **contagem**, e um frame pagava dois chunks de 50–80 ms
 
 Dossiê de **leitura de código**, escrito a pedido do dono em 2026-11-25, na própria conversa, como
 fecho do que ele mesmo chamou de última coisa que faltava: *"orquestrar o agente responsavel o pq das
 travadas qeu esta dando, so falta isso por favor, otimizacao... microtravadas."* O registro vem
 **antes** de qualquer linha de `src/`, como exige o mandato 4 de
-[`AGENTS.md`](../../AGENTS.md). Números de `arquivo:linha` desta página são da `main` em **`95d519a`**
-(o pouso da perna 17), conferidos nesta árvore, não copiados da rodada que mediu.
+[`AGENTS.md`](../../AGENTS.md). Até o §9 os números de `arquivo:linha` desta página são da `main` em
+**`95d519a`** re-derivados contra `a537117` e `99bbbde` (o mapa das dezesseis ponteiros está no §9); os do §10 são da `main` mergida **`7b8924f`**.
 
 A causa já tem nome e número desde a Rodada 2026-11-24 (6) de
-[`docs/melhorias-status.md`](../melhorias-status.md#L7405-L7589): é o **furo #41**. O que nunca existiu
-é o corte. Esta página entrega a forma do corte, os braços que a medição decide, e o gate que nasce
-vermelho.
+[`docs/melhorias-status.md`](../melhorias-status.md#L7405-L7589): é o **furo #41**. O que não existia
+era o corte — ele **existe**, em `a537117` + `99bbbde`, com o **#61** pago em `94a4a12` e o pouso em
+`7b8924f` (§10). Esta página entrega a forma do corte, os braços que a medição decide, e o gate que nasceu vermelho.
 
 ## 1. Premissa nomeada
 
@@ -908,9 +908,8 @@ publicação se conferem com `git ls-remote --heads origin`.
   e bake-off **12 / 0 / 10,813 s**, com as três portas deste gate **verdes dentro do clone**. O `94a4a12`
   (20:08:26) é o único dos quatro sem pin próprio — ele não toca `src/`, por isso o mesher do pin de `99bbbde`
   é o mesmo julgado pelas duas corridas novas (**367 / 0 / 57,651 s** e **367 / 0 / 57,966 s**, suíte
-  **278 / 0 / 63,9 s**), e ele passa a ter corrida vinculada no clone limpo do pouso, que é a passada
-  seguinte. O clone
-  limpo do pin existe e está vermelho **de outra perna**; são os dois últimos bullets desta seção.
+  **278 / 0 / 63,9 s**); a corrida vinculada dele é o clone limpo do **pouso**, no §10 abaixo. O clone
+  limpo do pin existia e estava vermelho **de outra perna**; são os dois últimos bullets desta seção.
 - **O palco do gate é mais caro que o mundo medido, e os dois números têm de ser lidos juntos.** Na
   fixture do runner, um chunk do plateau com STONE em `y=51` fechou o lote com conta de **302 ms por
   chunk** (`mean_lote_us=302246.0`, `carimbos_lote=1`), e o bake-off mede `worst_us=232339` no lote dele; o
@@ -1094,12 +1093,112 @@ publicação se conferem com `git ls-remote --heads origin`.
   tinha se movido, **45** foram reescritos por identidade de fragmento e conferidos no par, **13** foram
   lidos à mão — **8** conferidos e **5** falsos, e os cinco eram **erro desta passada**: re-ancoraram
   somando o delta do diff. Isso é o **furo #63**, e a regra que ele cobra já estava escrita no item 7 do
-  ciclo: número publicado é número **re-lido no alvo**. As réguas, na árvore final: âncoras **3 528**
+  ciclo: número publicado é número **re-lido no alvo**. As réguas, na árvore de `01faed6`: âncoras **3 528**
   ponteiros · **215** rótulos · **4 179** links com **74** casos objetivos e **zero** sobre linha
   desta passada (controle `--ref HEAD`: **3 420 · 215 · 4 081 · 109**, ou seja **35** casos fechados pelo
   lote); citações **3 388** conferidas · **45** arquivos inexistentes · **0** números fora do arquivo;
   identificadores desta página **102** com **18** ausentes, todos da classe "peça que a própria página
   declara comprar"; régua de conteúdo **2 498** em faixa, alegação colhida para **1 387**, **811**
-  suspeitas, **45** sobre `voxel_world.gd`. Nada disso foi commitado por esta leitura: a propagação está
-  na árvore de trabalho, e o índice de furos no topo da folha de status continua sem a linha do **#63**
-  pelo motivo do próprio **#63** — inserir ali desloca as ~9 600 linhas abaixo, com os 93 ponteiros.
+  suspeitas, **45** sobre `voxel_world.gd`. **A frase antiga deste ponto estava errada e é corrigida com a
+  mesa na frente**: ela dizia "nada disso foi commitado por esta leitura — a propagação está na árvore de
+  trabalho", e a propagação **foi** commitada, na passada seguinte, em `01faed6` (20:31:12, com o par de
+  `STAMP` `med24_pouso_stamp_main_*` e as três réguas re-corridas na árvore dos documentos). O índice de
+  furos no topo da folha de status continua sem a linha do **#63** pelo motivo do próprio **#63** — inserir
+  ali desloca as ~9 600 linhas abaixo, com os 93 ponteiros — e isso é débito da passada que reancorar o
+  status por inteiro, não desta. O pouso, com as sete corridas da mergida, o clone limpo de `7b8924f` e o
+  que ele fecha, está no **§10** abaixo.
+
+## 10. O pouso na `main` — o teto de tempo mora na `main`, e o **#41** fecha em unidades dele
+
+A perna era a da vez, foi aberta da `main` no ponto atual (`36e842c`) e pousou sobre o que a `main` tinha
+entretanto — o `Rodar.bat` de `26c7f33`, que andou por outra mão e nunca por esta: `git merge --no-ff
+perf/malha-orcamento-de-tempo-24` → **`7b8924f3e007cab34936a66bf54bc0de78aa54f9`**, pais `26c7f33` e
+`01faed6`, **85 arquivos, +52 975/−473**, com o código em [`../../src/world/voxel_world.gd`](../../src/world/voxel_world.gd)
+**+313/−109** (**1 055** linhas), [`../../tests/aether_reactions_test.gd`](../../tests/aether_reactions_test.gd)
+**+186/−8** e [`../../tests/af_bakeoff.gd`](../../tests/af_bakeoff.gd) **+41/−2**. A autorização é a nomeada
+das pernas anteriores — merge `--no-ff` na `main` e `push` do pouso — e o gate de fase continua do dono
+(mandato 4): nenhum gate se fecha aqui.
+
+**A árvore do merge é a árvore medida, por diff e por hash.** `git diff --name-only 01faed6 7b8924f -- src
+tests docs` devolve **vazio**, e as árvores do merge são `git rev-parse 7b8924f:src` = `c0716d48bed2…` e
+`:tests` = `3c85830feaf3…`. Nada foi re-rodado "por garantia": as sete corridas abaixo são da árvore
+mergada, e o pin é do merge, não da ponta da branch — que era o débito que o §9 nomeava.
+
+**As sete corridas na árvore mergida** (`.tools/med24_main_*.log`, arquivados em
+[`../evidence/malha-orcamento-24/`](../evidence/malha-orcamento-24/), todos com `MED_RUN`, pid e exit):
+suíte **278 checagens / 0 falhas / 66,3 s** exit 0 (`pid=27448`, `20:44:12→20:45:19`, `pior passo=14.36 ms`
+com `perdidos=0`, `mesh_ms=5654.827`, `triangles=214512`); runner de reações **367 / 0 / 60,192 s**
+(`pid=24532`, `OK censo de checagens | 367/367`); bake-off **A 12 / 0 / 11,303 s** com `composta=9019.05`
+(`mesh_ms=5589.88  mean_build_us=65945.6  span_us=134281.5`, `esper 27/64`) e **C 12 / 0 / 11,153 s** com
+`composta=8863.46` (`esper 24/64`), os dois contra o teto herdado **11 313,03** e ambos com
+`corpo do mundo == SHA de referencia 619e891c95dc5b44…` e `triangles do boot == referencia 214448/214448`;
+RNG **27 / 0 / 2,817 s**; journal **128 / 0 / 6,902 s** (`7/7 testes`); queda **16 / 0 / 24,375 s**
+(`9/9 testes`). Zero `SCRIPT ERROR` nos **33** logs da passada — os `med24_main_*` e `med24_pouso_*`.
+
+As três checagens do §5.1, com a linha literal da mergida:
+
+```
+OK malha_orca_tempo_e_nao_itens | lote=3 fila=3->3 budget_itens=2 teto_us=8000 nivel=8.53 teto_frame_ms=16.53 frame_ms=10.00 chunks_no_frame=0
+OBSERVACAO malha_orca lote=3 frames_dreno=35/256 worst_frame_ms=15.76 teto_dreno_ms=25.33 carimbos_lote=3 mean_lote_us=207425.0 fila_final=0
+OK dreno_nao_passa_do_teto_com_as_pecas_atomicas | worst_frame_ms=15.76 teto_dreno_ms=25.33 budget=8.00 nivel=12.36 scan=3.95 commit=1.01 frames=35/256 janela_hitch=33.30
+OK orcamento_de_malha_tem_nome_e_origem | MESH_FRAME_BUDGET_US=8000 em_VoxelWorld=true MESH_BUDGET_em_VoxelWorld=false script=voxel_world.gd budget_itens_em_main=2 janela_hitch_us=33300
+```
+
+**O `frame_ms` do lote é o número do furo #41**: `144,35` no vermelho `c86f1a0` → **`10,00`** na mergida e
+**`8,05`** no clone limpo, contra o piso do instrumento de **6,06 ms** e a janela de travada de **33,30 ms**.
+O dreno do lote inteiro fica em **15,76 ms** (mergida) e **15,70 ms** (clone) — abaixo da janela com folga.
+
+**A janela tem testemunha, e é a primeira da perna.** O amostrador consertado em `456dad9` (o **#56**) roda
+pareado a cada corrida de gate: `med24_main_carga_suite.log` traz **70** das 81 amostras com o `pid` do
+próprio `MED_RUN` (`pid=27448`) e `med24_main_carga_runner.log` **57** de 76 (`pid=24532`) — o par
+corrida↔janela que o **#31** cobra e que nenhuma corrida desta perna tinha tido até o re-rome `5467c33`.
+O par de `STAMP` (`med24_pouso_stamp_main_antes.log` / `_depois.log`) dá o mesher, o runner e o bake-off com
+md5, bytes e mtime **iguais** dos dois lados de cada corrida, que é o vínculo que o **#60** exigia.
+
+**O pin é do merge**: clone limpo de `7b8924f` (`C:/tmp/aetherfall-pin-24main`) com `--import` frio
+(**15,5 s**, exit 0) → suíte **278 / 2 / 64,8 s**, runner **330 / 9 / 42,301 s** com
+`FALHA censo de checagens | 330/367`, bake-off **A 12 / 0 / 11,323 s** (`composta=8874.77`) e **C 12 / 0 /
+10,778 s** (`8526.98`), RNG **27 / 0**, journal **128 / 0**, queda **16 / 0**. As **nove** falhas do runner
+e as **duas** da suíte são o **furo #38** com o nome na linha (`AfMindOracle nao esta na ClassDB nesta
+arvore`, porque `native/af_mind/bin/` está no `.gitignore`), e **nenhuma** delas é deste gate:
+`grep -c "^FALHA.*(malha_orca|dreno|orcamento_de_malha)"` dá **0** no log do pin, e as três portas saem
+**verdes dentro do mesmo clone** — `frame_ms=8.05 chunks_no_frame=0`, `worst_frame_ms=15.70
+teto_dreno_ms=23.12 nivel=11.20`, `MESH_FRAME_BUDGET_US=8000 em_VoxelWorld=true`.
+
+**O que o pouso fecha.** **#41** — a malharia deixa de ser cortada só por contagem: `MESH_FRAME_BUDGET_US`
+`= 8000` µs em [`../../src/world/voxel_world.gd:55`](../../src/world/voxel_world.gd#L55), perguntado em
+**duas** unidades do laço ([`:322`](../../src/world/voxel_world.gd#L322) antes de deixar um chunk entrar,
+[` :336`](../../src/world/voxel_world.gd#L336) antes de cada nível), com o chunk fatiado pela `_MeshSlice` e
+devolvido à fila; `MESH_BUDGET := 2` continua em itens e as duas grandezas não se traduzem.
+**#60** — pago pelo vínculo de revisão, não pelo critério: a folga de 1,00 ms entre o literal do código e o
+teto da página nunca decidiu nada, e agora nenhuma corrida do gate entra sem `STAMP` e amostrador.
+**#61** — pago em `94a4a12` com a checagem renomeada `dreno_nao_passa_do_teto_com_as_pecas_atomicas`: as
+três peças do teto são lidas **depois** do dreno, como `scan` e `commit` já eram.
+
+**O que fica aberto, com dono.** **#62** — a régua composta mudou de grandeza (a base somava
+`mesh_ms + 52·span`; o corte soma `52·mean_build_us`) e o teto herdado **11 313,03** continua sendo o
+`10 285,48 × 1,1` da definição **antiga**: o que se sustenta é que o corte fica **25 % abaixo** do teto
+herdado, **não** que ficou abaixo da base sob a definição nova. **#59** — `sem_origem ≤ 1` por janela
+continua a régua honesta enquanto a causa-2 (cadência de tela a ~165 Hz) não tiver nome. **§5.2** — a sonda
+com janela continua sem pin: o verde de `med24_hp2_mine_8kB.log` (33 frames ≥33,3 ms na base contra **0**
+com o corte) é da árvore de **um só** corte, e a árvore das duas guardas nunca foi re-sondada em janela. O
+preço do corte, publicado com ele: `esper_max_frames` sai de **2/64** na base para **24–27/64**, porque o
+teto de tempo compra quadro movendo fila — e é por isso que a composta é cobrada junto.
+
+**As quatro réguas da casa, na árvore final destes documentos** (`med24_pouso_regua_anchors.log`,
+`_cites.log`, `_content.log`, `_ids.log`, no manifesto de **81** entradas que `sha256sum -c` confere com
+**81** `OK`): âncoras **41** arquivos · **3 548** ponteiros · **215** rótulos · **4 240** links · **74** casos
+objetivos, cinco a menos que os **79** do clone limpo de `7b8924f` porque lá os cinco `../.tools/...`
+gitignored estão quebrados — e **zero** caso novo das folhas desta passada; citações **3 402 / 45 / 0**
+no corpus de **40** documentos; conteúdo **2 509** em faixa (**1 387** com alegação lida) e **814** suspeitas,
+**46** sobre o mesher (o **#28**, com `main.gd` a **209** e `wolf.gd` a **177** na frente); `verify_plan_ids.py`
+nesta página: **107** identificadores, **19** ausentes e todos declarados inexistentes pela própria página.
+
+**A fila, a versão e a publicação.** A serializada passa a **22 → 18 → 20 → 13**: a 24 sai da frente e o elo
+seguinte é `feat/oraculo-nativo-*` (Fase 4 em voo, `feat/mobs-autonomos-e-ecossistema-20` depois da 18). A
+**18** chega na árvore do teto e **re-rome o gate** nela (item 5 de "Branches"): o teto de tempo dela passa
+a ser a régua contra a qual o crescimento é drenado. `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` e a
+projeção do `TickJournal` não foram tocados — `git diff --name-only 26c7f33 7b8924f -- src/persistence
+src/world/aether_field.gd` devolve **vazio** — e mudar **quando** a geometria aparece não muda **o que** o
+mundo contém. Publicação: `git ls-remote --heads origin`, única prova, com `refs/heads/main` =
+`7b8924f…`.
