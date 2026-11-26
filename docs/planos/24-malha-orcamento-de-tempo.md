@@ -48,8 +48,9 @@ braço B já mudou o alvo — hoje o `process()` está em
 [`src/world/voxel_world.gd:309-359`](../../src/world/voxel_world.gd#L309-L359) e o relógio é perguntado
 **dentro** do laço, **duas** vezes: [`:322`](../../src/world/voxel_world.gd#L322) antes de o chunk
 **entrar** e [`:336`](../../src/world/voxel_world.gd#L336) antes de cada nível `y` — corte commitado em
-`a537117` (16:11:57) e **corrigido** em `99bbbde` (16:28:51). O HEAD da branch é hoje `94a4a12` (20:08:26), que
-**não** toca `src/`, então cada ponteiro deste parágrafo vale igual nos dois commits.
+`a537117` (16:11:57) e **corrigido** em `99bbbde` (16:28:51). O HEAD da branch é hoje `5467c33` (20:23:48, o merge da
+`main` `26c7f33` — re-rome do item 5 de "Branches") e `git diff --name-only 99bbbde HEAD -- src` está **vazio**, com o mesher
+no mesmo md5 (`d985624f…`), então cada ponteiro deste parágrafo vale nos três commits e não só nos dois do corte.
 
 **De onde vêm os números de `voxel_world.gd` desta página, a partir daqui.** O corte existe em commit, são
 dois, e a árvore de referência dos `arquivo:linha` do mesher é **`99bbbde`** (*"o teto corta o QUADRO, nao so o

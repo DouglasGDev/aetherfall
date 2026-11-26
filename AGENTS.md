@@ -1131,9 +1131,12 @@ das duas guardas, o que faltava antes. O que sobe dela é o **#59**: `sem_origem
 perna**: o `EXPECTED_CHECKS` do runner mudou
 de 367 para 366 **entre** duas leituras `git diff` desta conversa (15:30:5x e 15:31:12), `tests/af_bakeoff.gd`
 mudou às 15:32:52 e `voxel_world.gd` às 15:39:58 e de novo às 15:40:54. O item 6 de "Branches" está violado
-por observação, não por decisão; **fechado às 16:33 desta passada**: a árvore primária está em
-`perf/malha-orcamento-de-tempo-24` / `94a4a12`, com `git status --porcelain -- src tests` devolvendo **vazio**
-e os **23** arquivos de documento sujos à espera do commit desta rodada, e o trabalho da 22 Fase 4
+por observação, não por decisão; **reaberto às 20:2x desta passada**: a árvore primária está hoje em
+`perf/malha-orcamento-de-tempo-24` / `5467c33` (o merge de `main` `26c7f33`, 20:23:48), os **23** arquivos de
+documento entraram no commit `0fdd811` (20:21:22) e `git status --porcelain -- src tests` continua vazio, mas
+as quatro folhas deste bloco foram escritas por duas mãos na mesma janela — mtimes 20:17:40 (esta folha),
+20:19:14 e 20:19:44, com o status ainda tocado às 20:23:23 e o merge fechando em cima —, e o item 6 segue
+sem ordem decidida; e o trabalho da 22 Fase 4
 vive em worktree próprio (`feat/oraculo-nativo-fase4-22`, +389/−28 em sete arquivos, +173/−1 no mesmo
 runner), então o choque entre as duas é de **merge**, não de árvore de trabalho. o dossiê 24 §9 guarda a testemunha, e as âncoras de `voxel_world.gd` da página foram
 re-derivadas **contra `git show a537117:`** (dezesseis ponteiros: `process()` `:228-236`→`:295-329`,

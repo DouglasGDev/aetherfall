@@ -10521,9 +10521,64 @@ remota (`update by push`) — que é o motivo pelo qual o clone local pôde cheg
 **#61** pago, uma linha de `tests/`) tem corridas na árvore primária com `MED_RUN` impresso — runner
 **367 / 0 / 57,651 s** (`.tools/med24_f61_runner.log`, 20:03:45) e **367 / 0 / 57,966 s**
 (`.tools/med24_f61_runner2.log`, 20:05:04), suíte **278 / 0 / 63,9 s**
-(`.tools/med24_f61_suite.log`, 20:06:19) — e nenhum clone limpo corrido dele:
-`git rev-list --count origin/perf/malha-orcamento-de-tempo-24..HEAD` dá **1**, e é esse commit que ainda
-falta enviar e pinear.
+(`.tools/med24_f61_suite.log`, 20:06:19) — e nenhum clone limpo corrido dele. Desde essa leitura a ponta
+andou mais duas vezes, por outra mão: `0fdd811` (20:21:22, as 23 páginas re-derivadas e os **40** logs da
+perna versionados em `docs/evidence/malha-orcamento-24/` — **42** arquivos rastreados contando `.gdignore`
+e `artifacts.sha256`; com os **17** `med24_pouso_*` desta passada são **57** logs e **59** arquivos, e o
+`artifacts.sha256` foi refeito para os 57) e o merge `5467c33` (20:23:48, `main` `26c7f33` para dentro da
+branch, que é o re-rome do item 5 de "Branches" e a árvore de hoje).
+`git rev-list --count origin/perf/malha-orcamento-de-tempo-24..HEAD` dá **9**, nenhum enviado — mas o pin da
+ponta existe, e é o bloco abaixo. Na árvore mergida a suíte deu **278 checagens /
+0 falhas / 66,1 s**, exit 0, com vínculo impresso (`.tools/med24_pouso_suite.log`, `MED_RUN inicio=20:24:37
+pid=30080`) e com o primeiro amostrador da perna que enxerga o próprio processo:
+`.tools/med24_pouso_carga_suite.log` abre `AMOSTRA t=00:24:37 ... pid=30080 cpu=104%` — hora UTC, o
+**#58** — no mesmo `pid` do `MED_RUN`: **34** das 101 amostras daquela janela trazem `pid=30080` com
+`cpu=` à vista (as outras são o rabinho do amostrador, já sem processo do projeto). O runner de
+reações foi re-corrido nela em seguida e deu **367 checagens / 0 falhas / 58,041 s** com
+`OK censo de checagens | 367/367` (`.tools/med24_pouso_runner.log`, `MED_RUN inicio=20:27:46 pid=26068`,
+exit 0), com a própria janela amostrada ao lado — `.tools/med24_pouso_carga_runner.log` traz **33** das 91
+amostras em `pid=26068` — e o bake-off fechou os dois braços em **12 / 0** (`med24_pouso_bakeoff_A.log` 11,049 s;
+`med24_pouso_bakeoff_C.log` 11,926 s com `mesh_ms=5467.622` e `corpo=619e891c95dc5b44`). O par de
+`STAMP` (`med24_pouso_stamp_pouso_antes.log` 20:24:31 e `_depois.log` 20:31:12) é o vínculo que faltava:
+mesmo `HEAD=5467c33`, mesmo `src_tree=c0716d48…` e `tests_tree=3c85830f…` nos dois lados,
+`porcelain_src_tests=0` e o mesher no mesmo md5 do clone pineado (`d985624f…`) — ou seja, o **#60**
+está pago na árvore do re-rome, com o **#31** tendo agora a sua primeira janela com CPU do Godot.
+
+**O pin de `5467c33`** — clone limpo `C:/tmp/aetherfall-pin-24p`, `git rev-parse HEAD` =
+`5467c33ba8d252e401161ff43f1d89cba3a5db36`, `--import` frio 15,1 s / exit 0
+(`med24_pouso_pin_import.log`, `MED_RUN inicio=20:32:29 pid=18256`), e os dois hashes de árvore do clone
+(`src_tree=c0716d48…`, `tests_tree=3c85830f…`) **iguais** aos da árvore de trabalho, o que é a única forma
+de o par de `STAMP` acima valer como vínculo e não como coincidência de md5. Rodadas nele: suíte **278
+checagens / 2 falhas / 64,2 s**, e as duas são o **#38** na cara — `portao aberto volta a pedir` e
+`recusa da fila nomeia o motivo`, ambas com `motivo=extensao ausente: AfMindOracle nao esta na ClassDB
+nesta arvore`, porque `native/` não entra no clone; runner **#1 330 / 10 / 42,877 s** e **#2 330 / 9 /
+43,562 s**, com `FALHA censo de checagens | 330/367` nos dois e as mesmas oito de sempre
+(`extensao_carrega_classe` ×4, `extensao_pack_no_processo`, `contrato_igal_ao_http`,
+`af_cache_determina_replay`, `budget_do_oraculo`); a décima do primeiro run é
+`FALHA nenhum estouro de subtree no budget | trips_solo=1 trips_matilha=0` com `pico=408` µs contra o teto
+de 400 do `SubtreeGuard`, e o **segundo** run da **mesma** árvore devolve `trips_solo=0 trips_matilha=0` com
+`pico=293` — é o **#20** (o guard cronometra relógio de parede, então `trips == 0` é régua de velocidade de
+máquina, não de código), e esta perna não tem como ser a causa: o corpo dela é `src/world/voxel_world.gd` e
+dois arquivos de teste, `git diff --name-only 94a4a12 5467c33 -- src` devolve **vazio** e nada em `src/ai/`
+ou `src/entities/` foi tocado pela branch inteira. As **três** checagens do gate do §5.1 estão **verdes
+dentro do clone limpo**, com as linhas literais:
+
+```
+OK malha_orca_tempo_e_nao_itens | lote=3 fila=3->3 budget_itens=2 teto_us=8000 nivel=8.19 teto_frame_ms=16.19 frame_ms=9.03 chunks_no_frame=0
+OK dreno_nao_passa_do_teto_com_as_pecas_atomicas | worst_frame_ms=13.13 teto_dreno_ms=21.76 budget=8.00 nivel=8.74 scan=3.99 commit=1.02 frames=26/256 janela_hitch=33.30
+OK orcamento_de_malha_tem_nome_e_origem | MESH_FRAME_BUDGET_US=8000 em_VoxelWorld=true MESH_BUDGET_em_VoxelWorld=false script=voxel_world.gd budget_itens_em_main=2 janela_hitch_us=33300
+```
+
+e o segundo run, na mesma árvore, `frame_ms=9.26` / `worst_frame_ms=12.65` com `nivel=12.85` — o **#61**
+está pago exatamente aqui, porque as três peças (`nivel`, `scan`, `commit`) são lidas depois do dreno — e o
+`chunks_no_frame=0` das duas corridas é o que a contagem sozinha nunca mostrou. O bake-off fechou os dois braços **12 / 0** (`A` 10,548 s com
+`composta=8354.72 teto=11313.03 mesh_ms=5109.009 mean_build_us=62417.5 span_us=126409.5 esper_max_frames=26/64`;
+`C` 10,664 s com `composta=8456.44` e `mesh_ms=5211.806 span_us=124082.2 esper_max_frames=22/64`), com
+`corpo do mundo == SHA de referencia 619e891c95dc5b44e2ebafabdf069bff` **nos dois** — a geometria do corte
+é a geometria da base, que é a cláusula do §5.1 que não ganhou checagem nova. Ficam verdes também o RNG
+(**27 / 0 / 2,676 s**) e o journal (**128 / 0 / 6,844 s**, `7/7 testes concluidos`). O que este pin **não**
+cobra: a sonda com janela do §5.2 (o "parou de travar" segue sem pin na árvore das duas guardas), o **#62**
+e o **#63**, e qualquer afirmação de FPS.
 
 Duas coisas ficam deste bloco e não se descrevem sozinhas. **(1) O clone já tinha sido corrido antes do
 pin**, e a frase contrária estava escrita nesta folha e no dossiê: `med24_pin_import.log` (16:12:44) e
@@ -10534,13 +10589,15 @@ pin**, e a frase contrária estava escrita nesta folha e no dossiê: `med24_pin_
 `teto_frame_ms=10.39` (`:534`) e `worst_frame_ms=15.39` (`:535`): é `8,00 + 2,39`, o teto **antes** da
 porta do dreno, e portanto testemunha do **#61** na árvore de uma guarda só — não do corte pineado. O que
 o bullet velho dizia de certo era só o vínculo: aquelas quatro corridas não pinam `99bbbde` porque
-antecedem o commit dele em quinze minutos e meio. **(2) Nenhuma corrida deste pin tem amostrador de
+antecedem o commit dele em quinze minutos e meio. **(2) Nenhuma corrida do pin de `99bbbde` tem amostrador de
 janela**: `grep` de `cpu=` nos cinco logs pineados, no controle e em `med24_B4`–`B8` devolve zero linhas,
-e o último amostrador arquivado (`med24_sampl_base.log`) para às 16:03. O **#31** continua, portanto, sem
-o par vermelha↔verde com CPU do Godot nos dois lados, e o **#60** continua sem stamp: `grep -l MED_RUN
-.tools/med24_*.log` devolve **zero arquivos** — quinze logs da perna, nenhum com vínculo de revisão
-impresso, e é por isso que o elo aqui é reflog + mtime + md5 (`d985624f…` no clone e na árvore de
-trabalho, conferidos nesta passada).
+e o amostrador arquivado mais antigo (`med24_sampl_base.log`) para às 16:03. O **#31** continua, portanto, sem
+o par vermelha↔verde com CPU do Godot nos dois lados **nessa revisão** — e deixou de valer para a branch
+inteira: `grep -l MED_RUN .tools/med24_*.log` devolve hoje **7 arquivos em 53** (os seis `med24_f61_*` e o
+`med24_pouso_suite.log` da árvore mergida), então o **#60** está pago para `94a4a12` e `5467c33` e continua
+sem stamp exatamente onde estava: nos cinco logs de `99bbbde`, cujo elo segue sendo reflog + mtime + md5
+(`d985624f…` no clone e na árvore de trabalho, conferidos nesta passada e reconfirmados pelo `STAMP` do
+re-rome).
 
 ### Furo #61 — a porta do dreno monta o teto com o nível lido **antes** do dreno
 
@@ -10680,7 +10737,7 @@ mesmo bloco:
 
 | onde | a passada escreveu | o que a frase alega | para onde foi, lido hoje |
 | --- | --- | --- | --- |
-| [`planos/24:11`](../docs/planos/24-malha-orcamento-de-tempo.md#L11) e [`:108`](../docs/planos/24-malha-orcamento-de-tempo.md#L108) | `#L7358-L7523` e `7358-7523`, sem nome de arquivo na frente | a Rodada (6) que atribuiu o **#41**, com as dez corridas | status L7405-L7589 — as duas linhas-limite existem verbo a verbo em 7405 e 7589; o **miolo** foi reescrito no lugar por esta passada (os ponteiros velhos L251-260, L256-259 e L260 de `voxel_world.gd` viraram L228-236 em `95d519a`, a nota do #28 e L357-359, mais uma citação de bloco), então fragmento idêntico não existe e é a mão que decide, decidindo pelos limites |
+| [`planos/24:11`](../docs/planos/24-malha-orcamento-de-tempo.md#L11) e [`:110`](../docs/planos/24-malha-orcamento-de-tempo.md#L110) | `#L7358-L7523` e `7358-7523`, sem nome de arquivo na frente | a Rodada (6) que atribuiu o **#41**, com as dez corridas | status L7405-L7589 — as duas linhas-limite existem verbo a verbo em 7405 e 7589; o **miolo** foi reescrito no lugar por esta passada (os ponteiros velhos L251-260, L256-259 e L260 de `voxel_world.gd` viraram L228-236 em `95d519a`, a nota do #28 e L357-359, mais uma citação de bloco), então fragmento idêntico não existe e é a mão que decide, decidindo pelos limites. O `:108` desta linha estava em **branco** na régua de antes (`f61_ruler_anchors.log:11`) e a página 24 cresceu uma linha acima dele às 20:2x, com o re-rome; a frase `[MEASURED]` que o ponteiro nomeia está hoje em `:110` |
 | [`planos/02:32`](../docs/planos/02-censo-multi-semente.md#L32) | `800-807` | "Alocação total medida: **não medida** (débito em …)" | status L1007-L1014 — o bullet de "Débitos" que fecha em "**alocação** não tem medição" e nomeia o blackboard por tick, as listas do scorer, `keys()` e o array por canal; oito linhas, a mesma largura do cite velho. Em L800-L807 de hoje está a re-escrita da pauta da 12 |
 | [`planos/03:28`](../docs/planos/03-canais-morte-som-fogo.md#L28) | `1756` | "`state_bytes()` confirma 196.608 B nos 3 canais, **medida em** …" | status L2183 — "Contrato na árvore / no candidato … 196.608 bytes de Éter **conferidos**", com `contract1.log` e `candidate-contract.log`. L1693 diz a mesma grandeza como **cálculo do layout** e não serve de testemunha a um "medida em"; L1756 de hoje é o manifesto de fontes da 23 |
 | [`planos/07:165`](../docs/planos/07-af-bench-bake-off-voxel-e-doc-do-simclock.md#L165) | `1929` | "4,64–4,89 s nas **quatro corridas**" | status L83 — a linha da tabela que escreve "malharia 4.640-4.886 ms com a janela congelada" e nomeia `suite_fix1.log … suite_fix4.log`. L1929 é a conferência do journal (205 linhas, 220 PASS), onde não há nenhum número de malharia |
@@ -10697,13 +10754,18 @@ As três réguas da casa, na árvore destes documentos, com o controle do própr
 de `HEAD`:
 
 - `python tools/check_doc_anchors.py` → `corpus na arvore de trabalho  arquivos: 41  ponteiros conferidos:
-  3528  rotulos conferidos: 215  links relativos conferidos: 4179` com **`casos objetivos: 74`**; o
-  controle `python tools/check_doc_anchors.py --ref HEAD` (documentos de antes, alvos no disco) devolve
-  `ponteiros conferidos: 3420  rotulos: 215  links: 4081` com **`casos objetivos: 109`**. A diferença é
-  **35 casos fechados por este bloco** — 29 em `src/world/voxel_world.gd`, 3 em
-  `tests/aether_reactions_test.gd`, 3 em `docs/melhorias-status.md` — e **zero abertos**: cruzando
-  `git diff -U0 HEAD` com a linha citadora de cada um dos 74 (`.tools/_case_blame.py`), **nenhum** cai
-  sobre linha que esta passada escreveu. Dos 74, **65** são âncoras de `src/main.gd` de outras pernas
+  3532  rotulos conferidos: 215  links relativos conferidos: 4210` com **`casos objetivos: 74`**; o
+  controle `python tools/check_doc_anchors.py --ref HEAD` (documentos de antes, alvos no disco) devolve hoje
+  os **mesmos** `rotulos: 215  links: 4210` e **`casos objetivos: 74`**, com `ponteiros: 3530`. A leitura
+  anterior — `3 420 · 4 081 · 109`, com **35 casos fechados por este bloco** — deixou de existir como
+  diferença: os **23** documentos entraram no commit `0fdd811` (20:21:22) e o `--ref HEAD` passou a ler a
+  árvore já re-derivada, então o que separa os dois lados hoje são **2** ponteiros, os que esta passada
+  escreveu (a re-âncora `:108 → :110` da página 24 e o link correspondente). E **zero casos abertos** por
+  este bloco — mas isso não é a mesma afirmação de antes: cruzando `git diff -U0 HEAD` com a linha citadora
+  dos 74 (`.tools/_case_blame.py`) nenhum cai sobre linha que esta passada escreveu, porém o `:108` que a
+  régua parou de marcar **era branco** na leitura de antes (`.tools/f61_ruler_anchors.log:11`) e a página 24
+  cresceu uma linha acima dele; a varredura numérica aprovou o ponteiro velho porque o alvo virou título de
+  seção, que é o **#28** exatamente como ele foi descrito. Dos 74, **65** são âncoras de `src/main.gd` de outras pernas
   (`main.gd` tem 1 453 linhas hoje e o número citado é de 1 287 na época do comentário), que ficam como
   débito com o parágrafo acima como dono. A primeira versão desta régua deu **83** casos: os 9 novos eram
   leitura falsa **desta subseção**, não defeito de ponteiro — escrever `:7358-7523` numa coluna de tabela
@@ -10712,29 +10774,31 @@ de `HEAD`:
   sem dois-pontos. É a mesma limitação do **furo #63**, vista do outro lado: o instrumento não distingue
   "número de linha citado" de "número que a prosa comenta";
 - `python tools/verify_plan_cites.py <os 41 documentos rastreados, sem `docs/evidence/`>` →
-  **3 388 citações com número conferidas · 45 arquivos citados que não existem · 0 números fora do
+  **3 392 citações com número conferidas · 45 arquivos citados que não existem · 0 números fora do
   arquivo**;
 - `python tools/verify_plan_ids.py docs/planos/24-malha-orcamento-de-tempo.md` → **102 identificadores
   citados em backticks, 18 ausentes**, todos da classe "peça que a própria página declara comprar" ou SHA
   de commit;
 - e a régua de conteúdo, que é lista de leitura e não gate:
-  `python .tools/verify_cite_content.py <corpus>` → **2 498 citações em faixa, alegação colhida para
-  1 387, 811 suspeitas**, das quais **45** caem sobre `voxel_world.gd`. As quatro que nomeiam símbolo e
+  `python .tools/verify_cite_content.py <corpus>` → **2 500 citações em faixa, alegação colhida para
+  1 386, 813 suspeitas**, das quais **45** caem sobre `voxel_world.gd`. As quatro que nomeiam símbolo e
   corpo foram abertas e bateram (`:55` é o teto `MESH_FRAME_BUDGET_US`, `:309-359` é o `process()` com o
   corte, `:632-650`/`:660-671`/`:681-695` são `_mark`/`_record_edit_cost`/`edit_mesh_cost`); o resto é
   ruído do heurístico, que pega o último backtick da frase e não o nome alegado.
 
 ### O que esta rodada **não** fecha
 
-Nenhum gate de fase (mandato 4), nenhum merge nem push **desta perna** — a `main` andou depois da leitura
-de abertura, mas por outra mão (`26c7f33`, o pouso do `Rodar.bat`), e o elo da 24 na `main` é a passada
-seguinte —, nenhuma linha movida em `MESH_BUDGET`
+Nenhum gate de fase (mandato 4) e nenhum push **desta perna** — a `main` andou depois da leitura de abertura,
+por outra mão (`26c7f33`, o pouso do `Rodar.bat`), e o merge que existe é o inverso: `5467c33` (20:23:48) tomou
+a `main` para dentro da branch, que é o re-rome do item 5 de "Branches" e não o pouso —, nenhuma linha movida em `MESH_BUDGET`
 ([`main.gd:28`](../src/main.gd#L28)) e nada tocado em `Channel.COUNT`, `FORMAT_VERSION`, `GEN_VERSION` ou
 na projeção do `TickJournal`. Quatro débitos ficam escritos com dono, depois de o **#61** ter sido pago
-dentro da própria perna (`94a4a12`, uma linha de `tests/`): **(b)** o **#62**, que é instrumento antes de ser comparação; **(c)** a sonda em janela do §5.2 —
-o "parou de travar" de `med24_hp2_mine_8kB.log` (15:55:34: 33 frames ≥33,3 ms na base contra **0** com o
-corte) é da árvore do **primeiro** corte e não foi re-corrida na das duas guardas, então ela **não** faz
-parte das cinco corridas do pin de `99bbbde` — o pin é headless e a sonda é a única com janela; **(d)** o
+dentro da própria perna (`94a4a12`, uma linha de `tests/`): **(b)** o **#62**, que é instrumento antes de ser comparação; **(c)** a sonda em janela do §5.2,
+que tinha um lado mal nomeado e hoje tem os dois: os **33** frames ≥33,3 ms da base são `.tools/med51_hp2_mine.log` (15:04:27, `com_remalha=33`, `sem_origem=0`,
+árvore `95d519a`, `MED_RUN` impresso) e o controle desta branch, mesma config, é `.tools/med24_hp2_mine_base_fixattr.log` (16:01:45, **21**); o corte dá **0** em
+`med24_hp2_mine_8kB.log` (15:55:34, árvore de **uma** guarda) **e** em `.tools/med24_hp3_mine_guard.log` (16:29:53, `99bbbde`, duas guardas) — a re-corrida que este
+parágrafo negava existe, e o que sobe dela é o **#59**: `sem_origem=4` contra o critério `≤ 1`, com a causa do quadro ainda sem nome. O pin de `99bbbde` continua
+headless e a sonda segue sendo a única corrida com janela, então nenhuma das suas cinco corridas prova o "parou de travar"; **(d)** o
 par vermelha↔verde da **mesma** árvore com CPU do Godot nos dois lados (**#31**), que nenhuma corrida
 desta rodada substitui — o **#58** continua impedindo vínculo por horário de amostra; **(e)** o **#63**,
 que é arrumação e não código: o índice de furos no topo desta folha — a lista que nomeia **#61** e **#62** —
