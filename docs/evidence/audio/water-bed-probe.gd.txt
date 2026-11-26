@@ -1,0 +1,93 @@
+extends SceneTree
+## Sonda da cama ambiental: a que distancia da agua ela liga/desliga no mundo
+## gerado de verdade, e o que o corpo esta fazendo em cada ponto.
+
+const Main = preload("res://src/main.gd")
+const MAIN_SCENE: PackedScene = preload("res://src/main.tscn")
+const OFFSETS := [-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 16.0]
+
+var _main: Main = null
+var _frames := 0
+
+
+func _initialize() -> void:
+	_main = MAIN_SCENE.instantiate() as Main
+	root.add_child(_main)
+
+
+func _process(_d: float) -> bool:
+	_frames += 1
+	if _frames < 40:
+		return false
+	_run()
+	return false
+
+
+func _patch(w: VoxelWorld, cx: int, cy: int, cz: int) -> Array:
+	var water := 0
+	var snow := 0
+	for dx in range(-AudioDirector.AMBIENCE_SCAN_RADIUS, AudioDirector.AMBIENCE_SCAN_RADIUS + 1):
+		for dz in range(-AudioDirector.AMBIENCE_SCAN_RADIUS, AudioDirector.AMBIENCE_SCAN_RADIUS + 1):
+			var b := w.get_block_xyz(cx + dx, cy, cz + dz)
+			if b == BlockDefs.Block.WATER:
+				water += 1
+			elif b == BlockDefs.Block.SNOW:
+				snow += 1
+	return [water, snow]
+
+
+func _run() -> void:
+	var p := _main.player
+	var w := _main.world
+	var a := _main.audio
+	var y := VoxelConfig.SEA_LEVEL
+	var half: int = int(VoxelConfig.world_size_x() * 0.5)
+	var found := {}
+	for radius in range(2, half - 16):
+		for dx in range(-radius, radius + 1):
+			for dz in range(-radius, radius + 1):
+				if absi(dx) != radius and absi(dz) != radius:
+					continue
+				var x := half + dx
+				var z := half + dz
+				if w.get_block_xyz(x, y, z) != BlockDefs.Block.WATER:
+					continue
+				if _patch(w, x, y, z)[0] < AudioDirector.AMBIENCE_WATER_BLOCKS:
+					continue
+				found = {"x": x, "y": y, "z": z}
+				break
+			if not found.is_empty():
+				break
+		if not found.is_empty():
+			break
+	if found.is_empty():
+		print("SEM AGUA NO MAPA")
+		quit(1)
+		return
+	print("coluna alagada = (%d, %d, %d)  SEA_LEVEL=%d  surface_ali=%d" % [
+		int(found["x"]), int(found["y"]), int(found["z"]), y, int(w.surface_height(int(found["x"]), int(found["z"])) if w.has_method("surface_height") else -1)])
+	for off in OFFSETS:
+		var pos := Vector3(float(found["x"]) + off, float(found["y"]) + 1.4, float(found["z"]))
+		p.feet_to_spawn(pos)
+		for i in 30:
+			p.update_local(1.0 / 60.0)
+		var feet := p.body.feet_pos
+		var in_water := p.body.in_water
+		var counts := _patch(w, int(floorf(feet.x)), int(floorf(feet.y)), int(floorf(feet.z)))
+		var counts_below := _patch(w, int(floorf(feet.x)), int(floorf(feet.y)) - 1, int(floorf(feet.z)))
+		a._pick_ambience()
+		for i in 14:
+			a.update_audio(0.1)
+		print("off=%s  feet=%s  na_agua=%s  agua_camada=%s agua_debaixo=%s  cama=%s" % [
+			String.num(off, 1), str(feet), str(in_water), str(counts[0]), str(counts_below[0]),
+			str(a.diagnostics()["bed"])])
+	# e dentro da agua, de fato?
+	p.feet_to_spawn(Vector3(float(found["x"]), float(found["y"]) + 0.2, float(found["z"])))
+	for i in 60:
+		p.update_local(1.0 / 60.0)
+	a._pick_ambience()
+	for i in 14:
+		a.update_audio(0.1)
+	print("dentro_do_rio feet=%s na_agua=%s cama=%s" % [str(p.body.feet_pos), str(p.body.in_water), str(a.diagnostics()["bed"])])
+	quit(0)
+	return

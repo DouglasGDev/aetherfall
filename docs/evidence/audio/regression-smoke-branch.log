@@ -1,0 +1,415 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+== dados desta corrida: C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall
+   slot preservado: C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/saves/world_alpha.json  9334 B  existia=true
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+== aetherfall smoke test  seed 20261116 ==
+
+--- boot do mundo ---
+  [PASS] 64 chunks gerados                      chunks=64
+  [PASS] 64 chunks malhados                     meshes=64
+  [PASS] mundo com triangulos                   triangulos=214448
+  [PASS] censo do boot fecha com a fila         lobos=5 fila=0 teto=5
+  [PASS] spawn em terra firme                   y=31
+  [PASS] jogador apoiado no chao                feet=(64.5, 31.0, 64.5)
+  [PASS] suite nao levanta modelo               display=headless  llm={  }
+       geracao 993.0 ms   malharia 5964.2 ms
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+
+--- relogio real ---
+  [PASS] tick de simulacao avanca               tick=50 em 2.50 s de logica
+  [PASS] ritmo de 20 Hz sustentado              tick=50  esperado=49
+  [PASS] nenhum tick perdido                    perdidos=0  pior passo=11.86 ms
+  [PASS] jogador segue no chao                  feet=(64.5, 31.0, 64.5)
+  [PASS] ao menos um lobo se moveu na janela real 5/5 se moveram em 2.50 s de logica  nasceram_depois=1
+  [PASS] nenhum lobo com o corpo dentro do terreno encaixados=0
+  [PASS] steering e colisao movem o lobo        lobo0 reach=8.18 m em 200 passos desde (64.5, 31.0, 64.5)  agora em (64.57786, 32.02, 72.56324)
+  [PASS] intento sempre valido                  patrol patrol patrol patrol patrol patrol
+  [PASS] provedor de matilha montado pela sessao real lobo0(2 viz) lobo1(1 viz) lobo2(0 viz) lobo3(2 viz) lobo4(1 viz) lobo5(2 viz)
+  [PASS] alcateia existe na sessao real         pares_testados=15  esperado=15  maior_matilha_lida=2  grupos=3  separacao_tocas=55.9 m  lobos_vivos=6  vizinhos=[lobo0(2 viz) lobo1(1 viz) lobo2(0 viz) lobo3(2 viz) lobo4(1 viz) lobo5(2 viz)]
+
+--- malha e face-culling ---
+  [PASS] geracao deterministica (16 colunas)    ms=7532.2
+  [PASS] malha identica entre mundos            espelho=214448  sessao=214448
+  [PASS] agua nao muda a malha                  base=214448  espelho=214448  sessao=214448
+  [PASS] bioma_nao_altera_terreno               divergentes=0/4  voxels=1048576  full=75fb058ed409  rel16=f1fca48dc6d1  hist=1=491 3=6 4=145 5=313 7=69
+  [PASS] regiao do cubo estava em ar            voxel=(20,55,20)
+  [PASS] face-culling exato (cubo 3x3x3)        delta=108  esperado=108  sem culling=324
+  [PASS] regiao do vidro estava em ar           voxel=(26,55,20)
+  [PASS] pano de vidro sozinho tem 6 faces      triangulos=12  esperado=12
+  [PASS] vidro colado nao desenha a face de contato par=20  esperado=20  sem culling alfa=24
+  [PASS] todo surface de chunk tem material     surfaces=80  sem material=0
+  [PASS] o pano de vidro usa o material de vidro chunk=(1,1)
+  [PASS] culling dentro de um chunk             voxel solido=9084  malha=1742  sem culling=109008  (1.6%)
+  [PASS] winding = face frontal do Godot        triangulos contra=0
+
+--- agua: material, mascara e malha ---
+  [PASS] material_da_agua_e_shader              shader=true  surface=1  declarados=17  gravados=15  sem_fonte=0
+  [PASS] mascara_de_onda_do_bloco_isolado       verts=24  tri=12  mascarados=12  fora_do_plano=0  verticais=16  g_max=0.000
+  [PASS] coluna_de_agua_ondula_so_no_topo       verts=40  tri=20  mascarados=12  fora_do_plano=0  g_max=0.247 (1 bloco embaixo = 0,25)
+
+--- agua: fx — corpo seco ---
+  seco: coluna=(64,64) yaw=0  colunas_a_frente=8 secas=true
+
+--- agua: fx — indiferenca na terra ---
+  [PASS] corpo_seco_nao_dispara                 salpicos_jogador=0->0  molhado_na_janela=false  andado=9.36 m
+
+--- agua: fx — queda na coluna ---
+  [PASS] coluna_de_queda_funda                  coluna=(100,52)  blocos=12  plano=26.880
+
+--- agua: fx — salpico e teto ---
+  [PASS] orcamento_de_particulas                emissores=12  anis=12  soma=364  teto=364  vivas=41  picos=1
+  [PASS] queda_na_agua_dispara_salpico          disparados=0->1  jogador=0->1  vy=-12.40  col=(100, 52)  plano_fx=26.880 plano_mundo=26.880  blocos=6
+  [PASS] fx_nao_escreve_o_mundo                 assinatura_ok=true  edits_globais=0->0  eter_seco=0.000000  eter_salpico=0.000000  canais=3  fx_sem_eter=true
+  custo do FX: quadros=295  us_total=5388  media=18.26 us/quadro  pico=295 us
+
+--- corpo encaixado se solta ---
+  [PASS] regiao do corpo encaixado estava em ar voxel=(40,59,40)
+  [PASS] corpo encaixado sobe para fora do solido encaixado=true  agora em y=60.00
+  [PASS] o resgate e curto e nao teleporta o corpo subiu=1.00 m  teto=1,20
+
+--- edicoes no mundo ---
+  [PASS] alvo dentro dos limites                voxel=(6, 41, 6)
+  [PASS] fora dos limites recusado              
+  [PASS] parede invisivel solida                bloco=3
+  [PASS] acima do topo e ar                     
+  [PASS] set_block grava edicao                 voxel=(6, 41, 6)
+  [PASS] diario de edicoes cresceu              0 -> 1
+  [PASS] chunk sujo entrou na fila              fila=2
+  [PASS] rebuild sob demanda                    fila apos process=2
+  [PASS] leitura igual ao escrito               
+  [PASS] repetir o mesmo valor e no-op          
+  [PASS] no-op nao polui o diario               1
+
+--- sistema de coordenadas ---
+  [PASS] to_block e piso com negativo           to_block=(-1, 3, 127)
+  [PASS] chunk na borda 15/16                   chunk(15,y,z16)=(0, 1)  chunk(16,y,z15)=(1, 0)
+  [PASS] origem + local devolve o bloco         bordas, origem e canto oposto
+  [PASS] chave de save ida e volta              chave=-3,27,129
+  [PASS] celula do eter e piso por 4            cell(17,3,5)=(4, 0, 1)  cell(-1,0,0)=(-1, 0, 0)
+  [PASS] origem da celula devolve o canto       cell_origin=(16, 0, 4)
+
+--- campo de eter ---
+  [PASS] celula comecou limpa                   valor=0.0000
+  [PASS] imprint lido de volta                  amostra=2.500
+  [PASS] energia total subiu                    0.000 -> 2.500
+  [PASS] difusao passou para a vizinha          0.0000 -> 0.1616 em 2 s
+  [PASS] meia-vida reduziu a energia            2.500 -> 2.296
+  [PASS] nenhuma passada cria massa             pior ganho=0.00000000 acima do decaimento em 8 passadas x 3 canais
+  [PASS] saldo fecha com o corte de MIN_VALUE   pior erro=0.00000046 corte=0.176129
+  [PASS] o corte da fronteira explica a perda alem da meia-vida fear 2.500000 -> 2.296008; so meia-vida daria 2.471285; cadeia com corte da 2.296008 (corte 0.176129)
+  [PASS] teto de valor aplicado                 teto=4.0
+  [PASS] teto nao injeta o excedente no campo   canal 2.296008 -> 5.170020 por imprint de 900.0 (teto 4.0)
+  [PASS] ledger com 3 canais                    work=0.00 blood=0.00 fear=5.17
+
+--- relogio de simulacao ---
+  [PASS] 60 Hz vira 20 Hz                       200 passos em 10 s de logica
+  [PASS] cap de 5 passos por frame              passos=5  perdidos=1
+  [PASS] duracao do passo                       step=0.050
+  [PASS] cronometro do passo preenche o pico    ultimo=0.002 ms  pior=0.002 ms
+
+--- minerar e colocar ---
+       mira: olho=(64.5, 32.62, 64.5)  dir=(-0.000, -0.783, -0.622)  dda=2.07 m em (64, 30, 63)
+  [PASS] mira encontrou um bloco                voxel=(64, 30, 63)  dureza=0.38  name=
+  [PASS] segurar break minerou                  23 atualizacoes
+  [PASS] tempo de mineracao == dureza           dureza=0.380  medido=0.383
+  [PASS] voxel virou ar                         voxel=(64, 30, 63)
+  [PASS] lavra entrou no inventario como drop   bloco=1  drop=2  pilha=32->33
+  [PASS] corpo do jogador tem malhas            caixas=24
+  [PASS] silhueta fecha em ~1,8 m               altura=1.85
+  [PASS] nenhuma malha abaixo dos pes           base=-0.01
+  [PASS] avatar cola nos pes                    desvio=0.00000
+  [PASS] avatar gira com o yaw                  corpo=35.52deg  esperado=35.52deg
+  [PASS] corpo inteiro em cena na 3a pessoa     visiveis=24 de 24
+  [PASS] view model fora de cena na 3a pessoa   malhas vm=0
+  [PASS] corpo de 3a pessoa sai inteiro na 1a   malhas visiveis=0
+  [PASS] braco de 1a pessoa em cena             malhas vm=10
+  [PASS] projecao da suite bate com a do motor  desvio=0.00048 px no quadro 64x64
+  [PASS] bloco na mao == slot selecionado       vm=1  mao=1
+  [PASS] cubo na mao dentro do quadro           quadro=1280x720  cubo=[752..938 x 360..549]
+  [PASS] cubo no quadrante inferior direito, mira livre cubo=[752..938 x 360..549]  mira=(640,360)
+  [PASS] membro inteiro desenhado sobre o mundo sem depth test=10 de 10
+  [PASS] golpe mexe o ombro                     ombro repouso=-0.27  -0.41..0.04 rad
+  [PASS] cubo do golpe sempre no quadro         ticks fora=0 de 24
+  [PASS] lavra mexe o ombro                     ombro -0.35..0.25 rad
+  [PASS] cubo da lavra sempre no quadro         ticks fora=0 de 60
+  [PASS] sem bloco = mao vazia                  bloco=0
+  [PASS] cubo na mao do avatar == slot selecionado avatar=3  slot=3  name=pedra
+  [PASS] cubo do rig amostra o atlas do mundo no tamanho da orbita atlas=true  lado=0.240 (esperado 0.24, 1a pessoa usa 0.16)
+  [PASS] cubo na lateral direita, a frente do tronco pedra=(0.70,0.71,-0.25)  folha=(0.53,1.13,-0.55)
+  [PASS] cubo acima do joelho e abaixo da cabeca pedra y=0.71  folha y=1.13
+  [PASS] bloco na mao passa para fora do braco no quadro da orbita livre pedra=0.45  folha=0.30
+  [PASS] peso do bloco muda a pose do braco     ombro pedra=0.10 folha=0.37  cotovelo pedra=0.28 folha=1.25  cubo y 0.71->1.13
+  [PASS] ciclo de lavra do rig mexe o ombro     periodo=47 frames  amplitude=0.84 rad
+  [PASS] pedra lavra mais funda e mais lenta que folha periodo folha=47 pedra=82  amplitude folha=0.84 pedra=1.22
+  [PASS] pilha zerada = mao vazia no rig        bloco=0  visivel=false  pilha=8->0
+  [PASS] mao vazia devolve o braco ao repouso   cotovelo vazio=0.20  folha=1.25  pedra=0.28
+  [PASS] golpe com pedra vai mais fundo que sem carga ombro pedra=2.72 folha=2.55 vazio=2.26 rad
+  [PASS] vidro na mao do rig usa o material alpha tecla=7  bloco=21  transparency=1  classe=1
+       alvo do place: valid=true  voxel=(64, 30, 62)  place=(64, 30, 63)  pos=(64.5, 31.0, 64.5)  bloco=1  pilha=32
+  [PASS] tecla 1 comeca no capim com 32         bloco=1  qtd=32  slots=36
+  [PASS] hotbar tem 10 teclas pinadas nos slots pino9=9  pino0=0
+  [PASS] pilha maxima vem do registro           grama=64  bancada=16
+  [PASS] raycast DDA acerta o chao              dist=1.62  voxel=(64, 30, 64)
+  [PASS] raycast DDA em raio inclinado          dist=2.70  voxel=(64, 30, 62)
+  [PASS] linha de visada curta e limpa          
+
+--- colocar com clique ---
+  [PASS] clique do mouse virou acao no jogador  frame=309  alvo=(64, 30, 62)  place=(64, 30, 63)  no_corpo=false  cooldown=0.000
+  [PASS] place_block colocou                    voxel=(64, 30, 63)  bloco=1  achado=1  colocados=0->1
+  [PASS] bloco certo no voxel certo             esperado=1  achado=1
+  [PASS] colocar gastou um da pilha             pilha=32->31  bloco=1
+
+--- soltar o botao ---
+  [PASS] soltar o botao limpou a acao           frame=334  presa=false
+       mira nos pes: place=(64, 31, 64)  pos=(64.5, 31.0, 64.5)  cooldown=0.000  giros=0
+
+--- guarda de colocacao ---
+  [PASS] clique da guarda chegou ao jogador     frame=335  alvo=(64, 30, 64)  place=(64, 31, 64)  no_corpo=true  cooldown=0.000
+  [PASS] colocar no proprio corpo recusado      voxel=(64, 31, 64)  la em cima=0  dentro do corpo=true  colocados=1
+
+--- tecla 3 no hotbar ---
+  [PASS] tecla 3 troca o pino                   slot=2  acao lida=false  bloco=3
+  [PASS] tecla 3 mostra o bloco do slot 2       pino2=2  selected=3  qtd=16
+
+--- construir enquanto lava ---
+       lavar=(64, 30, 63)  place=(64, 31, 63)  dureza=0.95  progresso=0.33  bloco=3  colocados=1
+
+--- lavra + clique direito ---
+  [PASS] clique direito chegou durante a lavra  frame=359  alvo=(64, 30, 63)  place=(64, 31, 63)  no_corpo=false  cooldown=0.000
+  [PASS] construiu com o ESQ segurado           voxel=(64, 31, 63)  bloco=3  achado=3  colocados=1->2
+  [PASS] a lavra ainda nao tinha comido o alvo  voxel=(64, 30, 63)  achado=3  progresso=0.63
+
+--- inventario, pilhas e receitas ---
+  [PASS] kit = hotbar antiga com quantidade     grama=32  madeira=8  tabua=0  bancada=0
+  [PASS] bancada tem teto menor que bloco comun maior pilha=16  total=100  sobra=0
+  [PASS] 400 de terra viram 64 em cada slot     maior pilha=64  total=432
+  [PASS] cheio devolve a sobra e nao cria pilha fora do teto total=1920  esperado=1920  kit=16  sobrou=98096  espaco=0  acima do teto=0
+  [PASS] bloco sem pilha nenhuma nao entra em lugar nenhum espaco p/ vidro=0
+  [PASS] enche a pilha parcial ate o teto antes da vazia slot3=64  slot7=4:46
+  [PASS] tirar esvazia de tras para frente      slot3=60  slot7=0
+  [PASS] partir da metade inteira para a mao    mao=16  slot0=16
+  [PASS] mao ocupada nao parte outra pilha      
+  [PASS] guardar a mao devolve para a mesma pilha slot0=32  mao=0
+  [PASS] pilha de 1 nao parte                   slot0=1
+  [PASS] pegar sobe a pilha inteira             mao=32  slot0=0
+  [PASS] soltar em buraco desce tudo            slot0=32
+  [PASS] mesmo bloco mescla ate o teto e o resto fica na mao slot0=64  mao=8
+  [PASS] bloco diferente troca                  slot1=1  mao=2:32
+  [PASS] guardar antes de fechar o painel devolve a mao slot0=64
+  [PASS] pino aponta para outro slot sem mover pilha slot=6  bloco=7  qtd=8  areia slot3=16
+  [PASS] tecla depois da decima da a volta na hotbar sel=2
+  [PASS] sem bancada a lista so mostra as de mao mao=2  com bancada=4  total=4
+  [PASS] 1 madeira -> 4 tabuas, com o preco cobrado tabua=4  madeira=7
+  [PASS] a cadeia ate a bancada fecha           bancada=1  tabua=0
+  [PASS] receita sem insumo nao abre            bruta=0
+  [PASS] sobra 4 de bruta e entope o resto      bruta=4  espaco p/ pedra=0
+  [PASS] craft recusado nao toca em nada        bruta=4  pedra=0
+  [PASS] aberto um buraco o mesmo craft passa   pedra=1  bruta=0
+  [PASS] vidro na bancada come 2 de areia       areia=14  vidro=1
+
+--- memoria muda comportamento ---
+  [PASS] achou posicao com linha de visada      lobo=3
+  [PASS] A sem memoria: caca non vetada         intencao=hunt  caca=0.643
+  [PASS] B com memoria: caca vetada             intencao=patrol  caca=0.000
+  [PASS] B nao persegue o agressor              intencao=patrol
+  [PASS] C ablar a crencia reabre a caca        intencao=hunt  caca=0.648
+  [PASS] D regravar a crencia veto de novo      intencao=patrol  caca=0.000
+  [PASS] rumo do lobo seguiu a memoria          A=true B=false C=true D=false
+  [PASS] confianca da crencia acima da soleira  confianca=0.60  episodios=6
+  [PASS] desconfianca do jogador registrada     confianca=-0.70  cautela=0.48
+       quatro bracos com hp=21.0 dist=10.1: so a memoria mudou
+
+--- lobo na agua ---
+  [PASS] lago fundo no mapa                     profundidade=12  vizinhos=4  em (100,52)
+  [PASS] patrulha so sorteia terra seca         200/200 alvos secos
+
+--- lobo nada e busca margem ---
+  [PASS] lobo boiou sem afundar ao leito        y minimo=15.00  leito=14.00
+  [PASS] lobo rema na agua                      pata max=0.38 rad
+  [PASS] lobo preso busca a margem              override de margem disparou
+  [PASS] lobo sai da agua ou avanca nadando     seco=false  deslocamento=9.1 m
+       nado: 9.1 m desde a queda, pata max 0.38 rad, y min 15.00
+
+--- golpe no lobo: dano e empurrada ---
+  [PASS] mira travada no lobo do passo          alvo=true na_lista=true d_alvo=2.98  rival_mais_proximo=8.02 m
+  [PASS] golpe acertou o lobo                   hp 42 -> 28.0 em 1 ticks  chegada[vivo=true painel=false cad=0.00]  alvo=true  olho_a_alvo=2.98 m
+  [PASS] dano do golpe e o ataque fixo          hp=28.00
+  [PASS] golpe atordoa o lobo                   stagger=0.45 s
+  [PASS] golpe empurra o corpo                  velocidade=5.55 m/s
+
+--- rolamento e invencibilidade ---
+  [PASS] acao rolar no botao do meio            
+  [PASS] acao planar no CTRL                    
+  [PASS] rolamento disparou e custou vigor      vigor=86.0  janela=0.35 s
+  [PASS] impulso do rolamento no corpo          velocidade=10.28 m/s
+  [PASS] janela de invencibilidade segura o golpe hp=100.0  iframes=0.45
+  [PASS] fora da janela o golpe entra           hp=90.0
+spawn mordaca (4-18 m de toca): lar aceito a 33.4 m do jogador
+nascimento: filhote 6 dos adultos 1+2 na toca 1, 11.1 m do centro da toca 1
+
+--- vigor: dreno, recupero e trava ---
+  [PASS] correr drena o vigor                   vigor=72.9 apos 4 s de corrida
+  [PASS] parado recupera o vigor                72.9 -> 96.9 em 2 s
+  [PASS] vigor zerado trava a corrida           vigor=8.07  trava=true
+  [PASS] vigor recuperado libera a corrida      vigor=34.0  trava=false
+
+--- planar e queda ---
+  [PASS] planou segurando CTRL no ar            
+  [PASS] planar limita a queda                  vy minimo=-6.12  cap do mergulho=6.12
+  [PASS] mergulhar ganha velocidade             hs maxima=9.90 m/s
+  [PASS] planar aterra sem dano de queda        hp=100.0  no chao=true
+  [PASS] queda livre machuca                    hp=65.0 (esperado ~65.0  gravidade=24)
+
+--- respiracao e afogamento ---
+  [PASS] submerso consome ar                    ar=12.00 s apos 2 s submerso
+  [PASS] sem ar o afogamento machuca            hp=79.0 apos 4 s sem ar
+  [PASS] fora da agua o ar enche                ar=14.00 s
+
+--- regeneracao fora de combate ---
+  [PASS] regenera fora de combate               hp 79.0 -> 81.4 em 2 s
+  [PASS] combate recente trava a regeneracao    hp 81.4 -> 81.4 apos 2 s
+
+--- oraculo: sonda em porta fechada ---
+
+--- oraculo degrada sem servidor ---
+  [PASS] narrativa vazia sem servidor           narr=''
+  [PASS] recuo global apos falha                recuo=28.6 s
+  [PASS] mente segue decidindo sem narrador     intento=flee
+
+--- hospedeiro: portao fechado ---
+af_mind_runtime  ausente (runtime)  sem runtime do llama em res://.tools/sem-runtime-22
+
+--- portao fechado nao pede nada ---
+  [PASS] runtime sem pack nao emite chamada na ponte estado=ausente (runtime)  chamadas=0
+  [PASS] portao fechado: oraculo nao emite pedido pedidos=0  recuo=0.0 s
+  [PASS] F3 de pronto traz fila, decode e cache linha='llm: pronto  ctx 4096  load -1 ms  vram -1.0 GB  fila -1  decode -1 us  cache -1/-1'
+  [PASS] diagnostics expoe as chaves da ponte   fila=-1 decode_us=-1 cache=-1/-1
+
+--- portao aberto volta a pedir ---
+  [PASS] portao aberto volta a pedir            pedidos=1  motivo=fila recusou o pedido: enqueue: sem contexto no processo (a rota do pack nao chegou ao passo 4)
+
+--- recuo nomeia a porta fechada ---
+  [PASS] recusa da fila nomeia o motivo         motivo=fila recusou o pedido: enqueue: sem contexto no processo (a rota do pack nao chegou ao passo 4)  status=-1
+  [PASS] recusa da fila arma o recuo cheio      recuo=28.2 s  teto=30 s
+
+--- chave do servidor e a do oraculo ---
+  [PASS] chave do servidor bate com a do oraculo fontes_lidas=true  pasta=Aetherfall  origem=arquivo
+
+--- hud, morte e renascer ---
+  [PASS] hotbar com 10 pinos no hud             slots=10
+  [PASS] painel com 36 celulas                  celulas=36
+  [PASS] abrir o inventario mostra o painel     
+  [PASS] cabecalho mostra a contagem real       'INVENTARIO   127 itens em 36 slots   sem bancada por perto (so as de mao)'
+  [PASS] quantidade aparece na celula do slot   celula0='31'  slot0=31
+  [PASS] sem bancada so mostra as receitas de mao visiveis=2 de 4
+  [PASS] fechar o inventario esconde o painel   
+  [PASS] overlay de morte comecou escondido     
+  [PASS] previsa de binds abre o painel         visivel=true  cd=0.50
+  [PASS] previsa de binds fecha sozinha         
+  [PASS] F3 via sinal liga o debug              
+  [PASS] debug mostra a decisao de IA           28 linhas
+  [PASS] debug mostra o relogio                 linhas=28
+  [PASS] F3 via sinal desliga o debug           
+  [PASS] F2 abre o painel de binds              
+  [PASS] F2 pinha o painel contra a previsa     cd=0.00
+  [PASS] dano letal mata                        hp=0.0
+  [PASS] overlay de morte apareceu              
+  [PASS] contador de mortes                     mortes=1
+  [PASS] morte imprinta sangue no eter          2.207 -> 3.727
+  [PASS] renascer devolve a vida                hp=100.0
+  [PASS] overlay some ao renascer               
+  [PASS] renascer no ponto de spawn             feet=(64.5, 31.0, 64.5)
+
+--- salvar e carregar ---
+spawn mordaca (4-18 m de toca): lar aceito a 69.3 m do jogador
+  [PASS] a porta de povoamento da sessao abre um bicho novo censo 7 -> 8  WOLF_COUNT=5 (o teto de censo e outro numero)
+  [PASS] slot escrito                           caminho=user://saves/world_alpha.json  dados=C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall  guardados=9334 B
+  [PASS] sem .tmp sobrando                      
+  [PASS] leitura do slot                        5.2 ms
+  [PASS] schema e gen_version gravados          schema=1  gen=4
+  [PASS] save com corpo                         24302 bytes
+  [PASS] save guarda o diario, nao os voxels    edicoes=16
+  [PASS] save guarda as pilhas e os pinos       slots=7  pins=10
+  [PASS] segunda escrita sobrescreve atomicamente 24302 bytes
+  [PASS] mundo foi mutado de proposito          edicoes=17  hp lobo=18.0
+  [PASS] inventario foi mutado de proposito     assinatura mudou
+  [PASS] diario de edicoes restaurado           16 -> 16
+  [PASS] edicao pos-save desfeita               voxel=(30, 53, 30)
+  [PASS] edicao pre-save mantida                voxel=(20, 47, 20)
+  [PASS] relevo identico apos carregar          16 colunas
+  [PASS] jogador no lugar de antes              feet=(64.5, 31.0, 64.5)
+  [PASS] camera restaurada                      pitch=0.00
+  [PASS] vida do jogador restaurada             hp=100.0
+  [PASS] tick restaurado                        tick=297
+  [PASS] memoria do lobo voltou                 episodios=1  confianca=-0.35
+  [PASS] hp do lobo voltou                      hp=28.0
+  [PASS] inventario restaurado pilha por pilha  itens=127->127
+
+--- cadaver no chao ---
+  [PASS] morte contabilizada                    abatidos=1
+  [PASS] ainda na matilha (tempo de cadaver)    cadaver=6.0 s
+  [PASS] lobo morto nao decide                  intencao=morto
+  [PASS] morte imprinta sangue e medo no eter   blood=4.80  fear=6.52
+
+--- recolhimento e reposicao ---
+  [PASS] cadaver recolhido da matilha           8 -> 7 lobos
+  [PASS] reposicao enfileirada                  na fila=1  vivos=7
+  [PASS] sem no de malha sobrando               nos=64
+  [PASS] nenhum tick perdido no teste inteiro   perdidos=0  pior passo=16.60 ms  tick=450
+  [PASS] espalhamento_nao_estoura_o_passo       perdidos=0  pior passo=16.60 ms (regua 25)  dens=3 componentes=2 separacao=55.9 m  tick=450
+  [PASS] lobos seguem vivos e decidindo         vivos=7  triangulos=214512
+       diagnostico final: {"aether_energy":13.3805025913753,"births":2,"block_updates":{"conversions":0,"events":38,"falling":0,"max_falling":0,"overflow":0,"placed":0,"queued":0,"reads":56,"resolutions":0,"step":450,"stranded":0,"tick":449},"census_cap":12,"census_refusals":0,"chunks":64,"den_components":2,"den_min_dist":55.8567733764648,"dens":3,"dropped_ticks":0,"edit_mesh":{"count":17,"mean_build_us":81716.4705882353,"mean_us":236939.823529412,"pending":0,"worst_build_us":137694,"worst_us":494997},"edits":20,"exposure":{"chunks_lidos":154,"col_lidas":39424,"faces_opacas":241115,"fall":4},"feet":"(64.5, 31.0, 64.5)","gen_ms":992.961,"hp":0.0,"journal":{"active":false,"last_hash":"","last_tick":-1,"last_us":0,"path":"","records":0,"total_us":0,"worst_us":0},"llm":{},"load_created":0,"load_retired":0,"mesh_ms":5964.205,"meshes":154,"on_ground":true,"pack_pairs":21,"pending_respawns":1,"rain_fx":{"anis_aceitos":0,"anis_recusados":0,"chuva":0.0,"colunas_sorteadas":0,"emissores":2,"ligado":false,"lotes":0,"quadros":1352,"teto_particulas":748,"us_pico":7,"us_por_quadro":0.457840236686391,"us_total":619},"tick":450,"triangles":214512,"water_fx":{"anis":0,"anis_chuva":0,"anis_no_zero":0,"anis_recusados":0,"anis_vivos_chuva":0,"anis_vivos_corpo":0,"bolhas":0,"col_ultima":"(-9, -9)","jogador_blocos":6,"jogador_col":"(100, 52)","jogador_plano":26.88,"jogador_vy":-12.3999967575073,"picos":1,"plano_ultima":-99.0,"pool":24,"quadros":1352,"salpicos":0,"salpicos_disparados":1,"salpicos_jogador":1,"teto_particulas":364,"us_pico":295,"us_por_quadro":18.5332840236686,"us_total":25057},"weather":{"chuva":0.0,"decay":0.145,"frames_integrados":1352,"molhado":0.0,"pedidos_aplicados":1,"rise":0.6,"snap":0.0005},"wolves":7,"wolves_alive":7,"worst_sim_ms":16.604}
+
+--- censo do disco ---
+  [PASS] o save carrega fase e idade como chaves aditivas bichos_no_disco=8 chaves=age_ticks,alive,den,feet,home,hp,hunger,identity,kills,mate_cd,mind,phase,  ids=[0 1 2 3 4 5 6 7]
+  [PASS] censo do disco carrega inteiro (load_leva_todo_o_censo) disco=8 antes=7 depois=8  disco_ids=[0 1 2 3 4 5 6 7] vivo_ids=[0 1 2 3 4 5 6 7]
+  [PASS] cada identidade do disco confere com a mente carregada antes=[1 2 3 4 5 6 7] agora=[0 1 2 3 4 5 6 7] mentes=[0<-0 1<-1 2<-2 3<-3 4<-4 5<-5 6<-6 7<-7]
+  [PASS] fase e idade do disco voltam para o bicho certo vivos=[0:adulto/5097 1:adulto/5097 2:adulto/5097 3:adulto/5257 4:adulto/5097 5:filhote/296 6:filhote/76 7:adulto/4800]
+  [PASS] a fila de reposicao nao inventa bicho fora do censo gravado fila=0  disco=8  vivos=8
+  [PASS] tocas e pertenca sobrevivem ao save (toca_sobrevive_ao_save) dens disco=3 carregadas=3  maior_derivacao=0.000000 m  separacao=55.9 m  centros=[(20.4,59.3) (58.3,100.3) (74.0,6.0)]  pertencas=[lobo0(toca=0 do disco=0) lobo1(toca=1 do disco=1) lobo2(toca=2 do disco=2) lobo3(toca=0 do disco=0) lobo4(toca=1 do disco=1) lobo5(toca=0 do disco=0) lobo6(toca=1 do disco=1) lobo7(toca=2 do disco=2)]
+  [PASS] default derivado: disco sem a chave nao toca nem inventa dens=0  todos_em_sem_toca=true  disco=8 carregados=8  ids=[0 1 2 3 4 5 6 7]  escrita=ok
+       disco restaurado no formato atual: ok 25252 bytes  C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/saves/world_alpha.json
+
+--- chuva: material opaco e fiel ---
+  [PASS] material_opaco_e_shader                shader=true  surface=0  declarados=5  gravados=5  sem_fonte=0  gdshader_em_src_tests=0  pilha=(8, 50, 8)
+  [PASS] opaco_preserva_rgb_da_face             verts=4284  rgb_iguais=4284  a_min=0.000  a_max=1.000  surface=0
+
+--- chuva: exposicao de ceu por coluna ---
+  [PASS] exposicao_de_ceu_por_coluna            EXPOSURE_FALL=4.0  topo=1.000/1.000  abaixo=0.749/0.750  fundo=0.000/0.000  y_na_pilha=104  dispersos=0
+  [PASS] exposicao_nao_e_varredura_por_face     chunks_lidos=283  col_lidas=72448  esperado=72448  cols_por_chunk=256  faces_opacas=451770  faces_por_coluna=6.24
+
+--- chuva: dono do clima ---
+  [PASS] clima_e_dono_visual                    no=true  chuva=float=true  molhado=float=true  world_refs=0  eter_refs=0  player_refs=0
+
+--- chuva: rampa — subir ---
+  rampa: no=true  pedir_chuva(1.0) chamado=true  molhado_0=0.000  chuva=1.000
+
+--- chuva: rampa — descer ---
+  rampa: topo_atingido=1.000 em 150 frames  pedir_chuva(0.0) chamado=true
+
+--- chuva: rampa — desce e chega no material ---
+  [PASS] molhado_sobe_e_desce                   molhado 0.000->1.000 em 150 frames  desceu=0.855 em 60 frames  esperado=0.855  material=0.855  rise=0.600  decay=0.145  secs=1.000
+
+--- chuva: rng da sessao ---
+  [PASS] chuva_nao_consome_rng_da_sessao        pino_antes=2762692978  pino_depois=2762692978  global_preservado=true  colunas_iguais=true  n=8  script=true  rng_do_clima=true  rng_da_populacao=true
+
+--- chuva: janela molhada — armar ---
+  janela molhada: chuva=1.0 no=true  anis_chuva_0=9  recusados_0=63  edits=16  sig=7 chars
+
+--- chuva: anel, orcamento e nao-escrita ---
+  [PASS] anel_de_chuva_so_na_agua               anis_chuva=9->15  recusados=63->105  col_ultima=(80, 73)  na_agua=true  plano_fx=26.880  plano_mundo=26.880  vivo_chuva=4  vivo_corpo=0  pool=12  no_zero=0
+  [PASS] agua_le_a_chuva                        chuva_no=1.000  uniforme_agua=1.000  declarados=17  gravados=15
+  [PASS] orcamento_de_particulas_da_chuva       emissores=2  soma=748  teto=748  near=520*0.9=468<=468  far=200*1.4=280<=280  fiel_near=true  fiel_far=true
+  [PASS] chuva_nao_escreve_o_mundo              assinatura_ok=true  edits_na_janela=1  banda_val=false  edits_globais=16->17  eter_seco=0.000000  eter_chuva=0.369156  canais=3  fx_sem_eter=true  rain_sem_eter=true  weather_sem_eter=true
+  [PASS] slot do dono devolvido byte a byte     dados=C:/Users/dougl/AppData/Roaming/Godot/app_userdata/Aetherfall/saves/world_alpha.json  guardado=9334 B  devolvido=9334 B  primeiro_diferente=-1
+
+== 278 checagens  0 falhas  68.7 s de teste ==

@@ -1,0 +1,67 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.359 - Forward+ - Using Device #0: AMD - AMD Radeon RX 9060 XT
+
+driver: WASAPI
+buses: 0:Master 1:SFX 2:Ambience 3:UI 
+amostras: 45
+=== matriz depois do perfil (pico dBFS no barramento SFX) ===
+driver=WASAPI  campo proximo = 0.88 x unit_size  reta novo = 40 dB/decada  reta legado = 20  piso de audibilidade = -60.0 dBFS
+piso do instrumento sem tocar nada: -200.0 dBFS
+plato 2d step_dirt    2.6       plato do braco novo: -14.8
+plato 2d wolf_roar    -9.2      plato do braco novo: -14.7
+plato 2d dig_stone    0.0       plato do braco novo: -5.2
+plato 2d wolf_bark    -2.1      plato do braco novo: -6.9
+plato 2d wolf_howl    -6.5      plato do braco novo: -8.6
+2d/step_dirt                   med=2.6      unit=1.62   corte=-      tail=-200.0   tocando=false
+novo/step_dirt d=0.00          med=-17.4    pred=-14.8    delta=-2.6    unit=1.62   corte=34.0   tail=-200.0   tocando=true
+novo/step_dirt d=1.43          med=-14.8    pred=-14.8    delta=0.0     unit=1.62   corte=34.0   tail=-200.0   tocando=true
+novo/step_dirt d=2.85          med=-25.6    pred=-26.8    delta=1.2     unit=1.62   corte=34.0   tail=-200.0   tocando=true
+novo/step_dirt d=5.70          med=-38.3    pred=-38.9    delta=0.6     unit=1.62   corte=34.0   tail=-200.0   tocando=true
+novo/step_dirt d=20.40         med=-67.0    pred=-61.0    delta=-6.0    unit=1.62   corte=34.0   tail=-200.0   tocando=true
+novo/step_dirt d=34.00         med=-200.0   pred=-69.9    delta=-130.1  unit=1.62   corte=34.0   tail=-200.0   tocando=true
+novo/step_dirt d=40.00         med=-200.0   pred=-200.0   delta=0.0     unit=1.62   corte=34.0   tail=-200.0   tocando=true
+2d/wolf_roar                   med=-9.2     unit=1.95   corte=-      tail=-200.0   tocando=false
+novo/wolf_roar d=0.00          med=-16.9    pred=-14.7    delta=-2.3    unit=1.95   corte=41.0   tail=-200.0   tocando=true
+novo/wolf_roar d=1.72          med=-14.7    pred=-14.7    delta=0.0     unit=1.95   corte=41.0   tail=-200.0   tocando=true
+novo/wolf_roar d=3.43          med=-26.4    pred=-26.7    delta=0.4     unit=1.95   corte=41.0   tail=-200.0   tocando=true
+novo/wolf_roar d=6.86          med=-39.3    pred=-38.8    delta=-0.5    unit=1.95   corte=41.0   tail=-200.0   tocando=true
+novo/wolf_roar d=24.60         med=-67.8    pred=-60.9    delta=-6.9    unit=1.95   corte=41.0   tail=-200.0   tocando=true
+novo/wolf_roar d=41.00         med=-200.0   pred=-69.8    delta=-130.2  unit=1.95   corte=41.0   tail=-200.0   tocando=true
+novo/wolf_roar d=47.00         med=-200.0   pred=-200.0   delta=0.0     unit=1.95   corte=41.0   tail=-200.0   tocando=true
+2d/dig_stone                   med=0.0      unit=5.5    corte=-      tail=-200.0   tocando=false
+novo/dig_stone d=0.00          med=-7.3     pred=-5.2     delta=-2.1    unit=5.5    corte=114.0  tail=-200.0   tocando=true
+novo/dig_stone d=4.84          med=-5.2     pred=-5.2     delta=0.0     unit=5.5    corte=114.0  tail=-200.0   tocando=true
+novo/dig_stone d=9.68          med=-17.3    pred=-17.2    delta=-0.1    unit=5.5    corte=114.0  tail=-200.0   tocando=true
+novo/dig_stone d=19.36         med=-30.2    pred=-29.3    delta=-1.0    unit=5.5    corte=114.0  tail=-200.0   tocando=true
+novo/dig_stone d=68.40         med=-58.6    pred=-51.2    delta=-7.4    unit=5.5    corte=114.0  tail=-200.0   tocando=true
+novo/dig_stone d=114.00        med=-200.0   pred=-60.1    delta=-139.9  unit=5.5    corte=114.0  tail=-200.0   tocando=true
+novo/dig_stone d=120.00        med=-200.0   pred=-200.0   delta=0.0     unit=5.5    corte=114.0  tail=-200.0   tocando=true
+2d/wolf_bark                   med=-2.1     unit=1.69   corte=-      tail=-200.0   tocando=false
+novo/wolf_bark d=0.00          med=-6.9     pred=-6.9     delta=-0.1    unit=1.69   corte=35.0   tail=-200.0   tocando=true
+novo/wolf_bark d=1.49          med=-6.9     pred=-6.9     delta=0.0     unit=1.69   corte=35.0   tail=-200.0   tocando=true
+novo/wolf_bark d=2.98          med=-19.0    pred=-18.9    delta=-0.1    unit=1.69   corte=35.0   tail=-200.0   tocando=true
+novo/wolf_bark d=5.97          med=-32.2    pred=-30.9    delta=-1.3    unit=1.69   corte=35.0   tail=-200.0   tocando=true
+novo/wolf_bark d=21.00         med=-60.5    pred=-52.8    delta=-7.7    unit=1.69   corte=35.0   tail=-200.0   tocando=true
+novo/wolf_bark d=35.00         med=-200.0   pred=-61.7    delta=-138.3  unit=1.69   corte=35.0   tail=-200.0   tocando=true
+novo/wolf_bark d=41.00         med=-200.0   pred=-200.0   delta=0.0     unit=1.69   corte=35.0   tail=-200.0   tocando=true
+2d/wolf_howl                   med=-6.5     unit=8.47   corte=-      tail=-200.0   tocando=false
+novo/wolf_howl d=0.00          med=-8.6     pred=-8.6     delta=0.0     unit=8.47   corte=175.0  tail=-200.0   tocando=true
+novo/wolf_howl d=7.46          med=-11.2    pred=-8.6     delta=-2.6    unit=8.47   corte=175.0  tail=-200.0   tocando=true
+novo/wolf_howl d=14.92         med=-23.3    pred=-20.6    delta=-2.7    unit=8.47   corte=175.0  tail=-200.0   tocando=true
+novo/wolf_howl d=29.83         med=-36.1    pred=-32.7    delta=-3.5    unit=8.47   corte=175.0  tail=-200.0   tocando=true
+novo/wolf_howl d=105.00        med=-64.3    pred=-54.5    delta=-9.8    unit=8.47   corte=175.0  tail=-200.0   tocando=true
+novo/wolf_howl d=175.00        med=-200.0   pred=-63.4    delta=-136.6  unit=8.47   corte=175.0  tail=-200.0   tocando=true
+novo/wolf_howl d=181.00        med=-200.0   pred=-200.0   delta=0.0     unit=8.47   corte=175.0  tail=-200.0   tocando=true
+legado/step_dirt d=8.0         med=-15.6    pred=-15.6    delta=0.0     unit=10.0   corte=64.0   tail=-200.0   tocando=true
+legado/step_dirt d=20.0        med=-23.5    pred=-22.7    delta=-0.8    unit=10.0   corte=64.0   tail=-200.0   tocando=true
+legado/step_dirt d=40.0        med=-35.3    pred=-28.7    delta=-6.6    unit=10.0   corte=64.0   tail=-200.0   tocando=true
+legado/step_dirt d=64.0        med=-200.0   pred=-32.8    delta=-167.2  unit=10.0   corte=64.0   tail=-200.0   tocando=true
+legado/step_dirt d=70.0        med=-200.0   pred=-200.0   delta=0.0     unit=10.0   corte=64.0   tail=-200.0   tocando=true
+audivel ate  step_dirt    medido ~19.9 m  tabela: alcance 13.4 m corte 34 m  legado ~685.8 m
+audivel ate  wolf_roar    medido ~22.7 m  tabela: alcance 16.1 m corte 41 m  legado ~0.0 m
+audivel ate  dig_stone    medido ~74.3 m  tabela: alcance 45.4 m corte 114 m  legado ~0.0 m
+audivel ate  wolf_bark    medido ~29.6 m  tabela: alcance 14.0 m corte 35 m  legado ~0.0 m
+audivel ate  wolf_howl    medido ~117.9 m  tabela: alcance 70.0 m corte 175 m  legado ~0.0 m
+linhas fora da curva (mais de 6 dB do predito, ou nan): 11 de 45
+eventos tocados pelo diretor: 35
+=== fim ===

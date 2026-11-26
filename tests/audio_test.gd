@@ -17,12 +17,12 @@ const WALK_FRAMES: int = 120
 const DIG_SECONDS: float = 1.2
 const TESTS: Array[StringName] = [
 	&"_test_data", &"_test_tables", &"_test_mix", &"_test_pick",
-	&"_test_consumers", &"_test_cadence",
+	&"_test_consumers", &"_test_cadence", &"_test_distance",
 ]
-# 16 dados + 13 tabelas + 15 mix + 5 sorteio + 10 consumidores + 14 cadencia,
-# contados na corrida que passou (a primeira mediu 69 porque o ramo de agua era
-# condicional e nao existe lago na premissa que eu tinha escrito).
-const EXPECTED_CHECKS: int = 73
+# 16 dados + 13 tabelas + 15 mix + 5 sorteio + 10 consumidores + 14 cadencia
+# + 11 distancia, contados na corrida que passou (a primeira mediu 69 porque o ramo
+# de agua era condicional e nao existe lago na premissa que eu tinha escrito).
+const EXPECTED_CHECKS: int = 84
 
 var _checks: int = 0
 var _failures: int = 0
@@ -367,7 +367,7 @@ func _test_cadence() -> bool:
 	# salta uma celula no meio do caminho, e a amostra de um frame so media paridade
 	# de frame -- na base desta branch ela dava `no_chao=false` com quatro passos
 	# tocados (docs/evidence/audio/cadence-red-on-base-7d44230.log). Medido na
-	# corrida que qutou o verde: 112 de 120 quadros com o corpo apoiado
+	# corrida que quitou o verde: 112 de 120 quadros com o corpo apoiado
 	# (docs/evidence/audio/cadence-green-on-fix.log).
 	_check(steps > 0 and grounded > WALK_FRAMES / 2, "andar no chao produz passo",
 			"passos=%d no_chao=%d/%d" % [steps, grounded, WALK_FRAMES])
@@ -441,6 +441,190 @@ func _test_cadence() -> bool:
 	a.clear_transient()
 	_check(a._body_state.is_empty(), "clear_transient limpa o transitorio no load",
 			"chaves=%d" % a._body_state.size())
+	return true
+
+
+# ------------------------------------------------------------------ distancia de escuta
+
+## O que se ouve, e ate onde. Decibel nao se mede aqui: no headless o driver e Dummy
+## e o alto-falante nao existe, e quem prova a audibilidade e a sonda em janela
+## (tests/audio_live_probe.gd e docs/evidence/audio/). O que esta pasada prende e o
+## que nenhuma janela conserta depois: a cobertura da tabela, o fato de o corte sair
+## da curva medida e nao de um numero digitado familia a familia, a ordem dos
+## alcances e a porta da cama de agua.
+func _test_distance() -> bool:
+	var a := _main.audio
+	var positional: Array = []
+	for f in a.referenced_families():
+		var s := String(f)
+		if s.begins_with("amb") or s == String(AudioDirector.EVENTS["ui"]):
+			continue
+		if not positional.has(s):
+			positional.append(s)
+	positional.sort()
+	var profiled: Array = a.DISTANCE.keys()
+	profiled.sort()
+	var sem: Array = []
+	var sobra: Array = []
+	for f in positional:
+		if not a.DISTANCE.has(f):
+			sem.append(f)
+	for f in profiled:
+		if not positional.has(f):
+			sobra.append(f)
+	if not _check(sem.is_empty() and sobra.is_empty(),
+			"o perfil cobre exatamente as familias posicionais",
+			"posicionais=%d sem=%s sobrando=%s" % [positional.size(), str(sem), str(sobra)]):
+		return false
+	var mudas: Array = []
+	for f in a.referenced_families():
+		var s := String(f)
+		if (s.begins_with("amb") or s == String(AudioDirector.EVENTS["ui"])) \
+				and a.DISTANCE.has(s):
+			mudas.append(s)
+	_check(mudas.is_empty(), "nenhuma voz sem posicao (cama e clique) entrou no perfil",
+			"entraram=" + str(mudas))
+
+	# O corte nao pode cair dentro do campo proximo, senao vira cliff: o plato medido
+	# vai ate 0,88 x `unit_size` e `max_distance` 0 no engine quer dizer infinito.
+	# Nem antes do alcance audivel. Hoje as duas coisas saem das constantes, entao o
+	# que esta clausula morde e a derivacao quebrar -- e ela tem testemunha real: a
+	# configuracao desta perna antes do conserto era `unit 10` para todas as familias
+	# com corte unico em 64 m, e 64 < 10 x 8,26 = 82,6, ou seja, cortava o passo
+	# ainda no meio da reta (distance-calibration.log: -39,6 dBFS aos 64 m).
+	var torto: Array = []
+	for f in profiled:
+		var p: Array = a.profile_of(f)
+		var u := float(p[0])
+		var cut := float(p[1])
+		if u <= 0.0 or cut <= 0.0 or cut <= u * 0.88 \
+				or cut < u * AudioDirector.AUDIBLE_METERS_PER_UNIT:
+			torto.append("%s unit=%.2f corte=%.1f alcance=%.1f" % [
+					f, u, cut, u * AudioDirector.AUDIBLE_METERS_PER_UNIT])
+	_check(torto.is_empty(), "toda linha corta depois do seu alcance audivel", str(torto))
+
+	# O perfil chega ao engine, nao fica na constante: cada toque real e conferido na
+	# voz que o diretor escolheu, identificada pela posicao unica deste laco.
+	var divergem: Array = []
+	for i in profiled.size():
+		var f := String(profiled[i])
+		var at := Vector3(float(i) + 0.25, 0.0, 0.0)
+		a._sfx(f, at)
+		var v: AudioStreamPlayer3D = null
+		for cand in a._voices:
+			if cand.global_position == at:
+				v = cand
+		var p: Array = a.profile_of(f)
+		if v == null:
+			divergem.append("%s sem voz" % f)
+			continue
+		# O engine guarda `unit_size` em precisao simples: escrever 1,62 devolve
+		# 1,62000000476837 (medido nesta revisao, `.tools` da rodada). Cobra-se o
+		# valor chegar na voz, a menos de um decimo de milimetro, nao os bits.
+		var du := absf(v.unit_size - float(p[0]))
+		var dm := absf(v.max_distance - float(p[1]))
+		if du > 0.0001 or dm > 0.0001 \
+				or v.attenuation_model != AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE:
+			divergem.append("%s unit=%.6f(%.7f) corte=%.1f(%.7f) modelo=%d" % [
+					f, v.unit_size, du, v.max_distance, dm, v.attenuation_model])
+	_check(divergem.is_empty(), "a voz tocada sai com o perfil da tabela", str(divergem))
+
+	# A mesa normaliza todo arquivo no mesmo alvo, entao o plato e uma constante so e
+	# o que muda o alcance e a regua. Se um arquivo posicional caisse no clamp de
+	# ganho, o plato dele seria outro e 8,26 m por unidade nao valeria para a linha.
+	var clampados: Array = []
+	var fams := a.families()
+	for f in profiled:
+		for path in (fams[f] as Array):
+			if absf(a.gain_db(String(path))) >= AudioDirector.GAIN_CLAMP_DB:
+				clampados.append(String(path).trim_prefix(AudioDirector.ROOT))
+	_check(clampados.is_empty(), "nenhum arquivo posicional bate no clamp de ganho",
+			"no clamp=" + str(clampados))
+
+	# Duas grandezas por linha: o alcance audivel (onde a curva medida devolve -60 dBFS)
+	# e o corte de `max_distance` (onde o engine corta a voz). A reclacao do dono e de
+	# alcance, entao e o alcance que se compara ao vale e ao spawn, nao o corte.
+	var raio := {}
+	var corte := {}
+	for f in profiled:
+		var prof: Array = a.profile_of(f)
+		raio[f] = float(prof[0]) * AudioDirector.AUDIBLE_METERS_PER_UNIT
+		corte[f] = float(prof[1])
+	var passo := float(raio["step_grass"])
+	var mundo := int(VoxelConfig.world_size_x())
+	# A ancora nao e adjetivo: `SAFE_SPAWN_DIST` e a distancia minima em que uma criatura
+	# pode nascer longe dos olhos do jogador (dossie 14). Se um passo de outro corpo
+	# alcancar la, a coisa que eu ainda nao vi soa antes de poder ser vista -- e era isso
+	# que a configuracao antiga fazia: 35 dB de passo ainda no ar aos 40 m.
+	_check(passo < float(Main.SAFE_SPAWN_DIST) and passo * 8.0 <= float(mundo),
+			"o alcance de um passo e fracao do vale, nao o vale inteiro",
+			"passo=%.1f m  spawn_min=%.0f m  mundo=%d m  passos por lado=%.1f" % [
+			passo, float(Main.SAFE_SPAWN_DIST), mundo, float(mundo) / passo])
+	_check(passo < float(raio["dig_stone"]) and float(raio["wolf_hurt"]) < float(raio["wolf_howl"]),
+			"o alcance crece com o corpo que emite: passo < mao, mordida < uivo",
+			"passo=%.1f mao=%.1f mordida=%.1f uivo=%.1f" % [
+			passo, float(raio["dig_stone"]), float(raio["wolf_hurt"]), float(raio["wolf_howl"])])
+	var curto := ""
+	var longo := ""
+	var menor := INF
+	var maior := -INF
+	for f in raio:
+		if float(raio[f]) < menor:
+			menor = float(raio[f])
+			curto = String(f)
+		if float(raio[f]) > maior:
+			maior = float(raio[f])
+			longo = String(f)
+	_check(menor == passo and longo == "wolf_howl",
+			"nenhum posicional alcanca menos que um passo e nenhum mais que o uivo",
+			"passo=%.1f m  curto=%s %.1f m  longo=%s %.1f m  fams=%d" % [
+			passo, curto, menor, longo, maior, raio.size()])
+	_check(absf(passo - ceil(Player.EYE_STAND * AudioDirector.AUDIBLE_METERS_PER_UNIT)) <= 1.0
+			and absf(float(raio["wolf_hurt"])
+					- ceil(Wolf.BITE_RANGE * AudioDirector.AUDIBLE_METERS_PER_UNIT)) <= 1.0,
+			"passo e mordida alcancam o que a propria geometria do corpo da",
+			"passo=%.1f (EYE_STAND %.2f) mordida=%.1f (BITE_RANGE %.2f)" % [
+			passo, Player.EYE_STAND, float(raio["wolf_hurt"]), Wolf.BITE_RANGE])
+	# O que a tabela promete sobre os dois chamados e uma derivacao, nao um adjetivo:
+	# a unidade do latido e do uivo sai dos alcances nomeados no codigo, entao o
+	# alcance audivel dos dois cai exatamente neles, e o do uivo cai na banda externa
+	# do spawn (`SPAWN_BANDS[1][1]` em main.gd) -- a distancia em que um lobo pode
+	# nascer sem ser visto. A sonda em janela e quem diz onde cada um morre de fato
+	# (docs/evidence/audio/distance-after.log): o fim audivel de uma linha esta na
+	# banda 8,26 x unit (arquivo no alvo da mesa) ate 20,6 x unit (o mais alto
+	# medido), e o corte fica no topo da banda justamente para nenhum som morrer
+	# antes de sumir.
+	_check(absf(float(raio["wolf_bark"]) - AudioDirector.BARK_RANGE) <= 1.0
+			and absf(float(raio["wolf_howl"]) - AudioDirector.HOWL_RANGE) <= 1.0
+			and absf(float(raio["wolf_howl"]) - float(Main.SPAWN_BANDS[1][1])) <= 1.0
+			and float(corte["wolf_bark"]) > float(raio["wolf_bark"]) \
+			and float(corte["wolf_howl"]) > float(raio["wolf_howl"]),
+			"os dois chamados morrem na distancia que o codigo nomeia, com corte depois",
+			"latido alc=%.1f (BARK_RANGE %.0f) corte=%.0f  uivo alc=%.1f (HOWL_RANGE %.0f, banda 2 %.0f) corte=%.0f" % [
+			float(raio["wolf_bark"]), AudioDirector.BARK_RANGE, float(corte["wolf_bark"]),
+			float(raio["wolf_howl"]), AudioDirector.HOWL_RANGE,
+			float(Main.SPAWN_BANDS[1][1]), float(corte["wolf_howl"])])
+
+	# O rio nao e um som posicional: e a cama, e ela tem de ficar muda ate o corpo
+	# estar na agua. O par desta linha e a checagem da cadencia, que liga a cama
+	# dentro da coluna -- aqui o corpo volta para o spawn pelo caminho real.
+	var p := _main.player
+	p.feet_to_spawn(_main.spawn_point())
+	for i in 90:
+		p.update_local(1.0 / 60.0)
+		a.update_audio(1.0 / 60.0)
+	a._pick_ambience()
+	for i in 60:
+		a.update_audio(1.0 / 60.0)
+	var feet := p.body.feet_pos
+	var cx := int(floorf(feet.x))
+	var cy := int(floorf(feet.y))
+	var cz := int(floorf(feet.z))
+	var bed := String(a.diagnostics()["bed"])
+	_check(bed != "amb_water", "fora da agua a cama do rio fica calada",
+			"bed=%s pes=%s agua_na_camada=%d agua_debaixo=%d" % [
+			bed, str(feet), _water_patch(_main.world, cx, cy, cz),
+			_water_patch(_main.world, cx, cy - 1, cz)])
 	return true
 
 
