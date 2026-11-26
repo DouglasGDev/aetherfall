@@ -1,0 +1,100 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK diretor fora da sessao tambem carrega sozinho ready=true
+OK levels.json e um objeto JSON tipo=27
+OK 51 arquivos medidos no set entradas=51
+OK todo caminho medido existe em res:// faltando=[]
+OK todo arquivo do set carrega ruim=[]
+OK familia derivada de sfx/step_grass_2.ogg esperado=step_grass obtido=step_grass
+OK familia derivada de sfx/ui_click.ogg esperado=ui_click obtido=ui_click
+OK familia derivada de amb/amb_birds.ogg esperado=amb_birds obtido=amb_birds
+OK familia derivada de sfx/wolf_bark_1.ogg esperado=wolf_bark obtido=wolf_bark
+OK familia derivada de sfx/place_1.ogg esperado=place obtido=place
+OK familia derivada de sfx/hit_flesh_3.ogg esperado=hit_flesh obtido=hit_flesh
+OK familia derivada de sfx/swing_2.wav esperado=swing obtido=swing
+OK familia derivada de sfx/dig_soft_1.ogg esperado=dig_soft obtido=dig_soft
+OK 27 familias derivadas do medido familias=27
+OK as familias somam os 51 arquivos sem sobrepor somatorio=51
+OK diagnostico expoe censo e pool { "driver": "Dummy", "levels": 51, "families": 27, "voices": 12, "events_played": 0, "families_played": 0, "last_event": "", "bed": "" }
+OK nenhuma familia medida fica sem uso ociosa=[]
+OK nenhuma tabela aponta familia sem arquivo sem arquivo=[]
+OK step_grass tem 3 variantes 3
+OK step_stone tem 3 variantes 3
+OK dig_soft tem 2 variantes 2
+OK break_glass tem 2 variantes 2
+OK hit_flesh tem 3 variantes 3
+OK swing tem 2 variantes 2
+OK amb_birds tem 1 variantes 1
+OK wolf_howl tem 1 variantes 1
+OK todo bloco solido tem classe de lavra sem classe=[]
+OK todo bloco solido tem familia de passo sem passo=[]
+OK agua fica fora das tabelas de bloco: quem responde e o splash 
+OK ganho == alvo - nivel medio medido no arquivo divergindo=[]
+OK o teto de ganho so alcanca quem foi medido abaixo do corte no teto=["sfx/ui_click.ogg"] abaixo de -34.0=["sfx/ui_click.ogg"]
+OK nenhum arquivo e cortado por estar alto demais no chao=[]
+OK todo arquivo tem duracao positiva no motor zerada=[]
+OK bus Master existe no layout names=["Master", "SFX", "Ambience", "UI"]
+OK bus SFX existe no layout names=["Master", "SFX", "Ambience", "UI"]
+OK bus Ambience existe no layout names=["Master", "SFX", "Ambience", "UI"]
+OK bus UI existe no layout names=["Master", "SFX", "Ambience", "UI"]
+OK SFX envia ao Master send=Master
+OK Ambience envia ao Master send=Master
+OK UI envia ao Master send=Master
+OK bed amb_birds importa em loop loop=true dur=30.688
+OK bed amb_wind importa em loop loop=true dur=5.959
+OK bed amb_water importa em loop loop=true dur=7.014
+OK nenhum sfx importa em loop em loop=[]
+OK a semente de audio reproduz a sequencia de variantes iguais=true
+OK sorteio so devolve arquivo da propria familia fora=0
+OK 12 sorteios entre 3 variantes mostram as tres distintas=3
+OK o caminho sorteado tem nivel medido sem nivel=[]
+OK o ganho depende so do arquivo 9.900
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+OK sessao real traz diretor ligado a mundo, jogador e matilha audio=Audio:<Node#192065571331> lobos=5
+OK os seis sinais do jogador ja chegam ao diretor sem conexao=0
+OK cada lobo do spawn entrega seus tres sinais ao diretor ligados=5/5
+OK os nove eventos tem toque proprio antes=0 depois=9
+OK audio nao move o hash autoritativo do tick 98313688c61a -> 98313688c61a
+OK audio nao consome a RNG de nenhum lobo lobos=5
+OK audio nao consome a RNG da populacao 
+OK o consumidor nao escreve vida, voxel nem contador de lavra hp=100.0 edits=0 mined=0
+OK cada familia chamada pelo evento apareceu no registro muda=[]
+OK quebrar no audio nao criou edicao no mundo voxel=1
+OK andar no chao produz passo passos=4 no_chao=112/120
+OK cadencia do passo == distancia / passo passos=4 metros=7.95 esperado=4.18
+OK o passo sorteado vem do bloco sob os pes bloco=1 familia=step_grass
+OK parar de andar calca os passos novos=0
+OK mira travada num bloco para a lavra voxel=(58, 31, 57) dureza=0.38
+OK lavrando produz tick de lavra na cadencia, nao por frame ticks=3 em 1.20 s (dig_soft)
+OK o intervalo de 0,3 s nao encolhe sozinho ticks=3 teto=5
+OK o mapa gerado tem lago para o teste de splash { "x": 73, "y": 26, "z": 55 }
+OK corpo dentro da coluna fica em agua feet=(73.5, 26.002, 55.5)
+OK entrar na agua toca splash splash=1
+OK a cama troca para agua perto de agua bed=amb_water contagem=[28, 0]
+OK crossfade deixa as duas camas vivas durante a troca tocando=2
+OK um registro de corpo por lobo da lista mais o jogador registros=6 lobos=5
+OK clear_transient limpa o transitorio no load chaves=0
+OK o perfil cobre exatamente as familias posicionais posicionais=23 sem=[] sobrando=[]
+OK nenhuma voz sem posicao (cama e clique) entrou no perfil entraram=[]
+OK toda linha corta depois do seu alcance audivel []
+OK a voz tocada sai com o perfil da tabela []
+OK nenhum arquivo posicional bate no clamp de ganho no clamp=[]
+OK o alcance de um passo e fracao do vale, nao o vale inteiro passo=13.4 m  spawn_min=32 m  mundo=128 m  passos por lado=9.6
+OK o alcance crece com o corpo que emite: passo < mao, mordida < uivo passo=13.4 mao=45.4 mordida=16.1 uivo=70.0
+OK nenhum posicional alcanca menos que um passo e nenhum mais que o uivo passo=13.4 m  curto=player_die 13.4 m  longo=wolf_howl 70.0 m  fams=23
+OK passo e mordida alcancam o que a propria geometria do corpo da passo=13.4 (EYE_STAND 1.62) mordida=16.1 (BITE_RANGE 1.95)
+OK os dois chamados morrem na distancia que o codigo nomeia, com corte depois latido alc=14.0 (BARK_RANGE 14) corte=35  uivo alc=70.0 (HOWL_RANGE 70, banda 2 70) corte=175
+OK fora da agua a cama do rio fica calada bed=amb_birds pes=(64.5, 31.0, 64.5) agua_na_camada=0 agua_debaixo=0
+== testes completos 7/7 ==
+84 checagens  0 falhas  7.542 s
+WARNING: 12 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 6 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

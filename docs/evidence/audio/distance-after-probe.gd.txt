@@ -1,0 +1,296 @@
+extends Node
+## Sonda do estado DEPOIS do perfil de distancia, em janela.
+##
+## Ela roda o caminho real do jogo -- `AudioDirector._sfx()` -- e mede o pico do
+## barramento SFX para cada familia em seis distancias do ouvinte, mais um braco
+## legado que reproduz a configuracao anterior (o padrao do motor: `unit_size` 10,0,
+## modelo Inverse, `max_distance` 64,0) com o MESMO arquivo. O par e a resposta da
+## queixa: "passo audivel do outro lado do vale" vira numero nos dois lados.
+##
+## No headless isso nao existe: o driver e Dummy e o que o motor mistura e silencio
+## (medido em tests/audio_live_probe.gd). Aqui o driver e WASAPI.
+##
+## A previsao impressa nao e supuesto: ela sai do plato MEDIDO do proprio braco, na
+## propria corrida (o maior pico entre as linhas com d <= 0,88 x `unit_size`) mais a
+## decada do modelo -- 40 dB por decada no InvSq, 20 no Inverse legado, os dois medidos
+## em docs/evidence/audio/distance-calibration.log. O que se confere aqui e a FORMA da curva
+## e o ponto em que ela morre; o nivel absoluto de cada familia vem do braco `2d/`, que
+## e o mesmo arquivo sem nenhuma conta de distancia. Piso de audibilidade -60 dBFS, o
+## mesmo limiar de tests/audio_live_probe.gd.
+##
+## Uso: godot --path . .tools/audio_after_probe.tscn
+
+const SILENCE_WAIT := 0.45
+const TAIL_WAIT := 0.35
+const MAX_WINDOW := 3.0
+const SAMPLES_PER_FLOOR := 30
+## Calibros da curva, medidos em .tools/audio_distance_probe.gd sobre o asset
+## `sfx/step_stone_1.ogg` (nivel medio -20,9, ganho +0,9, alvo da mesa -20,0).
+## NAO ha deslocamento absoluto entre 2D e 3D nesta sonda: o plato de cada braco e
+## lido do proprio braco (o maior pico entre as linhas com d <= campo proximo), e o
+## que se confere aqui e a FORMA -- reta por decada e morte antes do corte.
+const NEAR_FACTOR := 0.88
+const SLOPE_INVSQ_DB := 40.0
+const SLOPE_INVERSE_DB := 20.0
+const FLOOR_DB := -60.0
+## Chao do instrumento: o que o medidor devolve quando o barramento nao recebeu
+## nada. Vale -200 no Godot; a linha de piso na saida e a testemunha.
+const PLATEAU_FALLBACK := -21.1
+## O braco legado e o codigo antes desta perna: `MAX_DISTANCE := 64,0` com o modelo
+## e a regua padrao do motor.
+const LEGACY_UNIT := 10.0
+const LEGACY_MAX := 64.0
+const LEGACY_MODEL := 0
+
+const FAMILIES := ["step_dirt", "wolf_roar", "dig_stone", "wolf_bark", "wolf_howl"]
+const LEGACY_DISTANCES := [8.0, 20.0, 40.0, 64.0, 70.0]
+
+var _audio: AudioDirector = null
+var _camera: Camera3D = null
+var _legacy: AudioStreamPlayer3D = null
+var _ref2d: AudioStreamPlayer = null
+var _sfx_bus := -1
+## Familia -> plato medido no caminho 2D, de onde a previsao das linhas dela sai.
+var _plateau := {}
+var _prog := []
+var _i := 0
+var _stage := 0
+var _t0 := 0.0
+var _peak := -200.0
+var _window := 0.2
+var _log := []
+var _floor := -200.0
+var _floor_left := 0
+
+
+func _ready() -> void:
+	_sfx_bus = AudioServer.get_bus_index("SFX")
+	_camera = Camera3D.new()
+	add_child(_camera)
+	_camera.current = true
+	_audio = AudioDirector.new()
+	add_child(_audio)
+	_ref2d = AudioStreamPlayer.new()
+	_ref2d.bus = "SFX"
+	add_child(_ref2d)
+	_legacy = AudioStreamPlayer3D.new()
+	_legacy.bus = "SFX"
+	_legacy.unit_size = LEGACY_UNIT
+	_legacy.max_distance = LEGACY_MAX
+	_legacy.attenuation_model = LEGACY_MODEL
+	add_child(_legacy)
+	print("driver: ", AudioServer.get_driver_name())
+	print("buses: ", _bus_names())
+	_floor_left = SAMPLES_PER_FLOOR
+	_build_program()
+	print("amostras: ", _prog.size())
+	_stage = 1
+	_t0 = _now()
+
+
+## Linha: [rotulo, tipo, familia, distancia, unit, corte, slope, tocando]
+func _build_program() -> void:
+	for f in FAMILIES:
+		var prof: Array = _audio.profile_of(String(f))
+		var unit: float = float(prof[0])
+		var near: float = unit * NEAR_FACTOR
+		var cut: float = float(prof[1])
+		_prog.append(["2d/%s" % f, "2d", f, 0.0, unit, 0.0, 0.0, false])
+		for d in [0.0, near, near * 2.0, near * 4.0, cut * 0.6, cut, cut + 6.0]:
+			_prog.append(["novo/%s d=%.2f" % [f, d], "novo", f, d, unit, cut,
+					SLOPE_INVSQ_DB, false])
+	for d in LEGACY_DISTANCES:
+		_prog.append(["legado/step_dirt d=%.1f" % d, "legado", "step_dirt", d,
+				LEGACY_UNIT, LEGACY_MAX, SLOPE_INVERSE_DB, false])
+
+
+func _bus_names() -> String:
+	var out := ""
+	for i in AudioServer.get_bus_count():
+		out += "%d:%s " % [i, AudioServer.get_bus_name(i)]
+	return out
+
+
+func _now() -> float:
+	return float(Time.get_ticks_msec()) / 1000.0
+
+
+func _meter() -> float:
+	return maxf(AudioServer.get_bus_peak_volume_left_db(_sfx_bus, 0),
+			AudioServer.get_bus_peak_volume_right_db(_sfx_bus, 0))
+
+
+func _stop_all() -> void:
+	_legacy.stop()
+	_ref2d.stop()
+	for v in _audio._voices:
+		v.stop()
+
+
+## O `AudioDirector._sfx()` escolhe a voz livre do pool; aqui todas estavam paradas,
+## entao a unica tocando e a que o diretor acabou de usar.
+func _sounding_voice() -> AudioStreamPlayer3D:
+	for v in _audio._voices:
+		if v.playing:
+			return v
+	return null
+
+
+func _item() -> Array:
+	return _prog[_i]
+
+
+func _start_sample() -> void:
+	var it: Array = _item()
+	var kind := String(it[1])
+	var family := String(it[2])
+	var path := _audio.choose(family)
+	if kind == "2d":
+		_ref2d.stream = load(path)
+		_ref2d.volume_db = _audio.gain_db(path)
+		_ref2d.play()
+		_window = minf(float(_ref2d.stream.get_length()) + 0.15, MAX_WINDOW)
+	elif kind == "novo":
+		_audio._sfx(family, Vector3(float(it[3]), 0.0, 0.0))
+		var used := _sounding_voice()
+		it[7] = used != null
+		var s: AudioStream = load(_audio.last_asset)
+		_window = minf(float(s.get_length()) + 0.15, MAX_WINDOW)
+	else:
+		_legacy.stream = load(path)
+		_legacy.volume_db = _audio.gain_db(path)
+		_legacy.global_position = Vector3(float(it[3]), 0.0, 0.0)
+		_legacy.play()
+		it[7] = _legacy.playing
+		_window = minf(float(_legacy.stream.get_length()) + 0.15, MAX_WINDOW)
+
+
+## Plato de cada braco: o maior pico medido nas linhas dele com d <= campo proximo.
+## Sai da propria corrida, nao de um numero trazido de outra arvore.
+func _arm_plateaus() -> Dictionary:
+	var out := {}
+	for e in _log:
+		var it: Array = e["it"]
+		var kind := String(it[1])
+		if kind == "2d":
+			continue
+		if float(it[3]) > float(it[4]) * NEAR_FACTOR:
+			continue
+		var key := kind + "/" + String(it[2])
+		var v := float(e["play"])
+		if not out.has(key) or v > float(out[key]):
+			out[key] = v
+	return out
+
+
+## Previsao da curva para a linha: plato medido do proprio braco, a reta da decada do
+## modelo e silencio depois do corte.
+func _pred(it: Array, plateaus: Dictionary) -> float:
+	var kind := String(it[1])
+	var d := float(it[3])
+	if kind == "2d":
+		return float(_plateau.get(String(it[2]), PLATEAU_FALLBACK))
+	var base := float(plateaus.get(kind + "/" + String(it[2]), PLATEAU_FALLBACK))
+	var cut := float(it[5])
+	if cut > 0.0 and d > cut:
+		return -200.0
+	var near := float(it[4]) * NEAR_FACTOR
+	return base - float(it[6]) * log(maxf(d, near) / near) / log(10.0)
+
+
+func _slope(kind: String) -> float:
+	return SLOPE_INVSQ_DB if kind == "novo" else SLOPE_INVERSE_DB
+
+
+## Onde a reta medida cruza o piso de audibilidade: o ultimo sample ainda audivel,
+## extrapolado pela decada do proprio braco.
+func _crossing(kind: String, family: String, plateaus: Dictionary) -> float:
+	var best_d := 0.0
+	var best_lvl := FLOOR_DB
+	for e in _log:
+		var it: Array = e["it"]
+		if String(it[1]) != kind or String(it[2]) != family:
+			continue
+		var lvl := float(e["play"])
+		if is_finite(lvl) and lvl > FLOOR_DB and float(it[3]) >= best_d:
+			best_d = float(it[3])
+			best_lvl = lvl
+	if best_d <= 0.0:
+		return 0.0
+	return best_d * pow(10.0, (best_lvl - FLOOR_DB) / _slope(kind))
+
+
+func _process(_d: float) -> void:
+	if _floor_left > 0:
+		_floor = maxf(_floor, _meter())
+		_floor_left -= 1
+	match _stage:
+		1:
+			if _now() - _t0 >= SILENCE_WAIT:
+				_peak = -200.0
+				_start_sample()
+				_t0 = _now()
+				_stage = 2
+		2:
+			_peak = maxf(_peak, _meter())
+			if _now() - _t0 >= _window:
+				var it: Array = _item()
+				if String(it[1]) == "2d":
+					_plateau[String(it[2])] = _peak
+				_log.append({"label": String(it[0]), "it": it, "play": _peak})
+				_t0 = _now()
+				_stage = 3
+		3:
+			if _now() - _t0 >= TAIL_WAIT:
+				_log.back()["tail"] = _meter()
+				_i += 1
+				_stage = 0 if _i < _prog.size() else 4
+		0:
+			_stop_all()
+			_t0 = _now()
+			_stage = 1
+		4:
+			_report()
+
+
+func _report() -> void:
+	_stop_all()
+	var plateaus := _arm_plateaus()
+	print("=== matriz depois do perfil (pico dBFS no barramento SFX) ===")
+	print("driver=%s  campo proximo = %.2f x unit_size  reta novo = %.0f dB/decada  " % [
+			AudioServer.get_driver_name(), NEAR_FACTOR, SLOPE_INVSQ_DB]
+			+ "reta legado = %.0f  piso de audibilidade = %.1f dBFS" % [
+			SLOPE_INVERSE_DB, FLOOR_DB])
+	print("piso do instrumento sem tocar nada: %.1f dBFS" % _floor)
+	for f in _plateau:
+		print("plato 2d %-12s %-7.1f   plato do braco novo: %.1f" % [String(f),
+				float(_plateau[f]), float(plateaus.get("novo/" + String(f), -200.0))])
+	var off := 0
+	for e in _log:
+		var it: Array = e["it"]
+		var measured := float(e["play"])
+		var pred := _pred(it, plateaus)
+		if String(it[1]) == "2d":
+			print("%-30s med=%-8s unit=%-6s corte=%-6s tail=%-8s tocando=%s" % [
+					String(e["label"]), String.num(measured, 1),
+					String.num(float(it[4]), 2), "-",
+					String.num(float(e.get("tail", -200.0)), 1), str(bool(it[7]))])
+			continue
+		if not is_finite(measured) or absf(measured - pred) > 6.0:
+			off += 1
+		print("%-30s med=%-8s pred=%-8s delta=%-7s unit=%-6s corte=%-6s tail=%-8s tocando=%s" % [
+				String(e["label"]),
+				"nan" if not is_finite(measured) else String.num(measured, 1),
+				String.num(pred, 1), String.num(measured - pred, 1),
+				String.num(float(it[4]), 2), String.num(float(it[5]), 1),
+				String.num(float(e.get("tail", -200.0)), 1), str(bool(it[7]))])
+	for f in FAMILIES:
+		var prof: Array = _audio.profile_of(String(f))
+		print("audivel ate  %-12s medido ~%.1f m  tabela: alcance %.1f m corte %d m  legado ~%.1f m" % [
+				String(f), _crossing("novo", String(f), plateaus),
+				float(prof[0]) * AudioDirector.AUDIBLE_METERS_PER_UNIT, int(prof[1]),
+				_crossing("legado", String(f), plateaus)])
+	print("linhas fora da curva (mais de 6 dB do predito, ou nan): %d de %d" % [off, _log.size()])
+	print("eventos tocados pelo diretor: %d" % _audio.events_played)
+	print("=== fim ===")
+	get_tree().quit(0)

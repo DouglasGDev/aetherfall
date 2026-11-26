@@ -23,7 +23,6 @@ const GAIN_CLAMP_DB := 14.0
 const AMBIENCE_TRIM_DB := -12.0
 
 const VOICES := 12
-const MAX_DISTANCE := 64.0
 ## Mesmo limiar de velocidade que o bob da camera usa (`_update_camera`): abaixo
 ## disso o corpo esta parado ou arrastando um pe.
 const MIN_STEP_SPEED := 0.4
@@ -99,6 +98,65 @@ const AMBIENCE := {
 	"water": "amb_water",
 	"snow": "amb_wind",
 	"open": "amb_birds",
+}
+
+## Curva do caminho 3D medida no engine (docs/evidence/audio/distance-calibration.log
+## e distance-after.log, driver WASAPI, medidor do barramento SFX): com
+## `ATTENUATION_INVERSE_SQUARE_DISTANCE` o nivel fica no plato ate 0,88 x `unit_size`
+## e cai 40 dB por decada depois -- 12 dB por dobro de distancia. Na matriz de
+## calibracao, o mesmo asset com o modelo padrao do motor (Inverse, unit 10) marca
+## -21,1 dBFS ate os 4 m, -21,2 aos 8 m e ainda -39,6 aos 64 m: um passo atravessava
+## o vale inteiro e morria de uma vez no corte. Da reta saem as duas reguas abaixo,
+## e nenhuma das duas e digitada familia a familia.
+## Um arquivo no alvo da mesa (-20,0 dB de medio, -21,1 de pico) cruza o piso de
+## -60 dBFS a 8,26 x `unit_size` metros: 0,88 x 10^((60-21,1)/40). Medido na sonda de
+## janela (distance-after.log): o `step_dirt` (unit 1,62) sai de -14,8 no plato para
+## -38,3 aos 5,70 m e -67,0 aos 20,40 m -- mudo antes dos 20 m.
+const AUDIBLE_METERS_PER_UNIT := 8.26
+## O mesmo calculo para o posicional MAIS alto dos cinco amostrados em janela: o
+## plato 3D vai de -14,8 (`step_dirt`) a -5,2 (`dig_stone`), e com -5,2 de plato a
+## cruza do piso fica em 0,88 x 10^((60-5,2)/40) = 20,6 x `unit_size`. O corte usa
+## esta regua, e nao a de cima, porque `max_distance` e teto de pior caso: cortando
+## em 8,26 x unit, o uivo pararia aos 70 m com a reta dele ainda acima do piso --
+## medido -36,1 dBFS aos 29,8 m e -64,3 aos 105 m, cruza o -60 por volta dos 118 m.
+## Assim quem cala o som e a reta; o corte so limita o custo.
+const CUT_METERS_PER_UNIT := 20.6
+## Alcance do uivo: a banda externa do spawn (`SPAWN_BANDS` em main.gd, 46-70 m).
+## E o que o uivo tem que alcancar sem virar ruido de mapa inteiro.
+const HOWL_RANGE := 70.0
+## Familia posicional -> `unit_size` em metros, a distancia na qual o som ainda
+## chega ao ouvido em nivel pleno. As ancoras sao do proprio codigo, nao de gosto:
+## os pes a `Player.EYE_STAND` 1,62 m do ouvido (passo, splash, a propria morte), a
+## boca a `Wolf.BITE_RANGE` 1,95 m, a mao a `Player.REACH` 5,5 m e o latido a
+## `BARK_RANGE` 14 m. Os dois chamados entram divididos por
+## `AUDIBLE_METERS_PER_UNIT` porque neles o codigo nomeia o alcance, nao a
+## geometria do corpo -- o raio audivel deles e a distancia nomeada, e so.
+## O que nao esta aqui e de proposito: as camas ambientais e o clique de UI dao num
+## `AudioStreamPlayer` sem posicao, e atenuacao de 3D nao se aplica a elas.
+const DISTANCE := {
+	"step_grass": Player.EYE_STAND,
+	"step_dirt": Player.EYE_STAND,
+	"step_stone": Player.EYE_STAND,
+	"step_snow": Player.EYE_STAND,
+	"step_wood": Player.EYE_STAND,
+	"splash": Player.EYE_STAND,
+	"player_die": Player.EYE_STAND,
+	"hit_flesh": Wolf.BITE_RANGE,
+	"wolf_roar": Wolf.BITE_RANGE,
+	"wolf_hurt": Wolf.BITE_RANGE,
+	"wolf_die": Wolf.BITE_RANGE,
+	"dig_soft": Player.REACH,
+	"dig_stone": Player.REACH,
+	"dig_wood": Player.REACH,
+	"dig_glass": Player.REACH,
+	"break_soft": Player.REACH,
+	"break_stone": Player.REACH,
+	"break_wood": Player.REACH,
+	"break_glass": Player.REACH,
+	"place": Player.REACH,
+	"swing": Player.REACH,
+	"wolf_bark": BARK_RANGE / AUDIBLE_METERS_PER_UNIT,
+	"wolf_howl": HOWL_RANGE / AUDIBLE_METERS_PER_UNIT,
 }
 
 var world: VoxelWorld = null
@@ -311,7 +369,6 @@ func _build_voices() -> void:
 	for i in VOICES:
 		var v := AudioStreamPlayer3D.new()
 		v.bus = "SFX"
-		v.max_distance = MAX_DISTANCE
 		add_child(v)
 		_voices.append(v)
 		_busy.append(0.0)
@@ -344,15 +401,37 @@ func _voice_index() -> int:
 	return best
 
 
+## O perfil de uma familia: [unit_size, max_distance] em metros. Uma linha so,
+## usada por `_sfx()` e lida pelo teste e pela sonda -- o corte nao existe em dois
+## lugares, entao mudar `DISTANCE` muda a voz e a previsao juntos.
+func profile_of(family: String) -> Array:
+	if not DISTANCE.has(family):
+		return []
+	var u := float(DISTANCE[family])
+	return [u, ceil(u * CUT_METERS_PER_UNIT)]
+
+
+## O perfil mora na voz, nao no arquivo: o pool e compartilhado entre familias,
+## entao cada toque reconfigura atenuacao antes de tocar. Sem estas linhas a voz
+## herda o padrao do motor -- `unit_size` 10,0 m de campo proximo e
+## `max_distance` 0 (= infinito), que e exatamente o que fazia um passo ser
+## audivel do outro lado do vale.
 func _sfx(family: String, pos: Vector3) -> void:
 	var path := choose(family)
 	if path == "":
+		return
+	var profile := profile_of(family)
+	if profile.is_empty():
+		push_error("audio: familia %s sem perfil em DISTANCE" % family)
 		return
 	var i := _voice_index()
 	var v := _voices[i]
 	var stream: AudioStream = load(path)
 	v.stream = stream
 	v.volume_db = gain_db(path)
+	v.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE
+	v.unit_size = float(profile[0])
+	v.max_distance = float(profile[1])
 	v.global_position = pos
 	v.play()
 	_busy[i] = Time.get_ticks_msec() / 1000.0 + stream.get_length()

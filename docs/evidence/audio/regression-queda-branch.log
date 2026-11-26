@@ -1,0 +1,29 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+OK runner sem --tick-journal externo args=[]
+OK instanciar unica main.tscn real 
+spawn banda 1 (16-46 m de jogador): lar aceito a 48.3 m do jogador
+toca 0 fundada: centro a 48.3 m do jogador, separacao minima nova (e a primeira)
+spawn banda 1 (16-46 m de jogador): lar aceito a 43.0 m do jogador
+toca 1 fundada: centro a 43.0 m do jogador, separacao minima 55.9 m
+spawn banda 2 (46-70 m de jogador): lar aceito a 63.2 m do jogador
+toca 2 fundada: centro a 63.2 m do jogador, separacao minima 75.5 m
+spawn mordaca (4-18 m de toca): lar aceito a 52.4 m do jogador
+spawn mordaca (4-18 m de toca): lar aceito a 48.3 m do jogador
+OK boot real concluiu lobos=5 fila=0 tick=0
+OK tres mundos de prova da mesma semente gen sem malha  seed=20261116  fila_no_controle=true  fila_na_prova=true
+OK block_changed declarado e lido por este runner conexoes=2  consumidores_antes_da_perna=1
+spawn mordaca (4-18 m de toca): lar aceito a 58.6 m do jogador
+nascimento: filhote 5 dos adultos 0+3 na toca 0, 14.5 m do centro da toca 0
+OK queda_sem_varredura_de_mundo puro: ticks=1000 leituras=0 queued=0 | mapa=1048576 celulas, varredura teria lido 20971520 por segundo | coluna: eventos=19 leituras=64 resolucoes=17 teto=72 ticks=13 conversions=6 queued_final=0 | sessao: eventos=0 leituras=0 resolucoes=0 teto=0 | SAND=true STONE=false
+OK queda_move_a_celula N=7 N+k=14 (k=7) origem=(20,45,20)->0 destino=(20,44,20)->4 edits=0->2 queued_no_gatilho=1 drenagem=1 queued_final=0 em_voo=0 leituras=8
+OK queda_cascade_em_passos pilha=6: ticks_de_conversao=6 um_grao_por_tick=true ticks_totais=13 | flutuantes: insercao_B=52>56>60 insercao_C=60>56>52 resolvido_B=60>56>52 resolvido_C=60>56>52 ordem_Y_decrescente=true par_igual=true ordem_diferente_da_insercao=true
+OK bloco_em_queda_nao_sobe amostras_do_pe=6 ticks_ate_o_pouso=7 step_up=0.000 pe_monotono=true pousou_por_apoio=true placed=1->2 stranded=0 folga_pe_sobre_apoio=0.100 m probe_do_corpo=0.060 m | pouso=(20,45,20)=4 origem=0 acima_da_pilha=0 parede=(3,3) topo_livre=0 feet_y=46.0>45.94>45.82>45.64>45.4>45.1
+OK queda_pousa_antes_do_save em_voo_no_gatilho=5 areias: durante=2 depois_do_quiesce=6 apos_load=6 no_disco=6 fantasma_no_disco=0 | flutuantes: depois=0 apos_load=0 | edits=10->10 slot_ok=true quiesce=sim tick=28->28 (no save: 28) at_rest=true
+OK queda_nao_custou_tempo_de_ninguem A sem areia: ticks=1000 worst=14.87 ms perdidos=0 queued_final=0 | B cascata no tick 500: ticks=1000 worst=15.30 ms max_queued=1 perdidos=0 queued_final=0 overflow=0 | teto do passo=25.0 ms dos 50 ms do budget
+OK f3_e_diagnostics_mostram_a_fila diagnostics: block_updates=true dropped_ticks=true queued=1/1 leituras=176/176 | F3: linha=true rotulos=5/5 fila=1 em_voo=1 eventos=55 leituras=176 overflow=0 | ticks_ate_a_janela=1 em_voo_no_gatilho=true
+OK journal_hash_muda_so_com_movimento sem_movimento: 40 ticks hash_A=073b75af406990c96fd27eec682df9e475644b8d020dea0b2518744d52cd7e8b hash_B=073b75af406990c96fd27eec682df9e475644b8d020dea0b2518744d52cd7e8b iguais=true | com_cascata: celulas=41 ticks=8 hash_A=02fe6d9267c181b63efa975e0d7b0961dac754793725c1e76ead74f21dd245b5 hash_B=10502e0a689f5fa7a5c1d7fe84a2c8a0cc2d0312a31def5021e16f195171c5c0 divergiu=true | chaves_novas_do_diario=2 ((50, 41, 50):A=-/B=0, (50, 40, 50):A=-/B=4) queued_final=0 em_voo=0
+OK limpeza somente dos nos deste runner palco_livre=true
+OK todos os testes devolveram true 9/9
+OK censo de checagens 16/16
+16 checagens 0 falhas 9/9 testes concluidos 26.412 s

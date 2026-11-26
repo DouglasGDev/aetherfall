@@ -1,0 +1,158 @@
+extends Node
+## Sonda de distancia do som posicional, com calibracao do instrumento.
+##
+## Roda EM JANELA: no headless o driver e Dummy e o que o motor mistura e silencio
+## (medido em tests/audio_live_probe.gd). Aqui o que se le e o medidor de pico do
+## bus, por frame, com controles:
+##   C1 AudioStreamPlayer 2D no SFX  -> o nivel sem nenhuma conta de distancia
+##   C2 AudioStreamPlayer3D por modelo (inclusive Disabled) -> o caminho 3D puro
+##   C3 o modelo padrao do motor em cada distancia          -> o que a distancia faz
+##   U  varrendo unit_size                                  -> o que a regua faz
+## Sem C1 o numero de dB nao tem origem: ele diz o que e ganho do arquivo e o que
+## e atenuacao.
+
+const SILENCE_WAIT := 0.45
+const PLAY_WINDOW := 0.35
+const TAIL_WAIT := 0.60
+const ASSET := "res://assets/audio/sfx/step_stone_1.ogg"
+const DISTANCES := [0.5, 1.0, 2.0, 4.0, 8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 80.0]
+const MODELS := {0: "Inverse", 1: "InvSq", 2: "Log", 3: "Disabled"}
+const UNIT_SIZES := [1.0, 3.0, 10.0]
+
+var _audio: AudioDirector = null
+var _camera: Camera3D = null
+var _v2d: AudioStreamPlayer = null
+var _v3d: AudioStreamPlayer3D = null
+var _sfx_bus := -1
+var _stream: AudioStream = null
+var _gain := 0.0
+var _log := []
+var _stage := 0
+var _t0 := 0.0
+var _peak := -200.0
+var _prog := []
+var _i := 0
+
+
+func _ready() -> void:
+	print("driver: ", AudioServer.get_driver_name())
+	print("buses: ", _bus_names())
+	_camera = Camera3D.new()
+	add_child(_camera)
+	_camera.current = true
+	_audio = AudioDirector.new()
+	add_child(_audio)
+	_sfx_bus = AudioServer.get_bus_index("SFX")
+	print("index SFX = ", _sfx_bus, "  master_db = ", AudioServer.get_bus_volume_db(0),
+			"  sfx_db = ", AudioServer.get_bus_volume_db(_sfx_bus))
+	_stream = load(ASSET)
+	_gain = _audio.gain_db(ASSET)
+	print("asset= ", ASSET.get_file(), " dur=", String.num(_stream.get_length(), 3),
+			" medido_dB=", str(_audio._levels.get(ASSET, 0.0)), " gain_db=", String.num(_gain, 2))
+	_v2d = AudioStreamPlayer.new()
+	_v2d.bus = "SFX"
+	add_child(_v2d)
+	_v3d = AudioStreamPlayer3D.new()
+	_v3d.bus = "SFX"
+	add_child(_v3d)
+	_build_program()
+	_stage = 0
+	_t0 = _now()
+
+
+func _bus_names() -> String:
+	var out := ""
+	for i in AudioServer.get_bus_count():
+		out += "%d:%s " % [i, AudioServer.get_bus_name(i)]
+	return out
+
+
+func _build_program() -> void:
+	_prog.append(["C1-2d", "2d", 0.0])
+	for d in DISTANCES:
+		_prog.append(["C3-default d=%s" % String.num(d, 1), "plain", d])
+	for m in MODELS:
+		for d in [0.5, 4.0, 16.0, 48.0]:
+			_prog.append(["C2-modelo %s d=%s" % [MODELS[m], String.num(d, 1)], "model", d, m])
+	for u in UNIT_SIZES:
+		for d in [0.5, 4.0, 16.0, 48.0]:
+			_prog.append(["U-unit_size %s d=%s" % [String.num(u, 1), String.num(d, 1)], "unit", d, u])
+
+
+func _now() -> float:
+	return float(Time.get_ticks_msec()) / 1000.0
+
+
+func _meter() -> float:
+	return maxf(AudioServer.get_bus_peak_volume_left_db(_sfx_bus, 0),
+			AudioServer.get_bus_peak_volume_right_db(_sfx_bus, 0))
+
+
+func _stop_all() -> void:
+	_v2d.stop()
+	_v3d.stop()
+	for v in _audio._voices:
+		v.stop()
+
+
+func _start_sample() -> void:
+	var item: Array = _prog[_i]
+	var kind := String(item[1])
+	var d := float(item[2])
+	_v3d.global_position = Vector3(d, 0.0, 0.0)
+	_v2d.stream = _stream
+	_v2d.volume_db = _gain
+	_v3d.stream = _stream
+	_v3d.volume_db = _gain
+	_v3d.max_distance = 0.0
+	_v3d.unit_size = 10.0
+	_v3d.attenuation_model = 0
+	match kind:
+		"2d":
+			_v2d.play()
+		"plain":
+			_v3d.play()
+		"model":
+			_v3d.attenuation_model = int(item[3])
+			_v3d.play()
+		"unit":
+			_v3d.unit_size = float(item[3])
+			_v3d.play()
+
+
+func _process(_d: float) -> void:
+	match _stage:
+		0:
+			_stop_all()
+			_t0 = _now()
+			_stage = 1
+		1:
+			if _now() - _t0 >= SILENCE_WAIT:
+				_peak = -200.0
+				_start_sample()
+				_t0 = _now()
+				_stage = 2
+		2:
+			_peak = maxf(_peak, _meter())
+			if _now() - _t0 >= PLAY_WINDOW:
+				var item: Array = _prog[_i]
+				_log.append({"label": String(item[0]), "play": _peak})
+				_t0 = _now()
+				_stage = 3
+		3:
+			if _now() - _t0 >= TAIL_WAIT:
+				var e: Dictionary = _log.back()
+				e["tail"] = _meter()
+				_i += 1
+				_stage = 5 if _i >= _prog.size() else 0
+	if _stage == 5:
+		_report()
+
+
+func _report() -> void:
+	print("=== calibracao e matriz (dBFS no barramento SFX) ===")
+	for e in _log:
+		print("%-30s play=%-8s tail=%s" % [String(e["label"]),
+				String.num(float(e["play"]), 1), String.num(float(e.get("tail", -200.0)), 1)])
+	print("=== fim ===")
+	get_tree().quit(0)
