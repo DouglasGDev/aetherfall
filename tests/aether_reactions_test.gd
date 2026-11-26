@@ -5632,7 +5632,13 @@ func _test_malha_orca_tempo_e_nao_itens() -> bool:
 	# composto tem de caber na janela de travada da pagina (33,30 ms, §5.2), senao o corte
 	# apenas trocou de vitima.
 	var pecas_dreno: Dictionary = _world.mesh_frame_worst()
-	var teto_dreno := teto_frame_ms \
+	# As tres pecas do teto do dreno sao as de DEPOIS dele, nao as da leitura da checagem (1):
+	# `mesh_frame_worst()` e maximo corrente, entao o `nivel_ms` de `:5596` e o pior nivel ate o
+	# PRIMEIRO frame e pode ser mais barato que o nivel do frame que esta checagem julga. Medido:
+	# `nivel=2.39` de antes contra `worst_frame_ms=16.49` do lote, com o teto encolhendo por
+	# construcao -- o furo #61, e a asimetria era da regua, nao do corte.
+	var teto_dreno := (float(teto_us) / 1000.0) \
+			+ float(pecas_dreno["level_us"]) / 1000.0 \
 			+ float(pecas_dreno["scan_us"]) / 1000.0 + float(pecas_dreno["commit_us"]) / 1000.0
 	var worst_dreno := float(dreno["worst_ms"])
 	print(("OBSERVACAO malha_orca lote=%d frames_dreno=%d/%d worst_frame_ms=%.2f "
@@ -5642,7 +5648,8 @@ func _test_malha_orca_tempo_e_nao_itens() -> bool:
 	_check(worst_dreno <= teto_dreno and teto_dreno <= 33.30,
 			"dreno_nao_passa_do_teto_com_as_pecas_atomicas: o pior frame do lote cabe no teto mais a varredura e o comitimento, e o teto cabe na janela de travada",
 			("worst_frame_ms=%.2f teto_dreno_ms=%.2f budget=%.2f nivel=%.2f scan=%.2f commit=%.2f frames=%d/%d janela_hitch=33.30") % [
-			worst_dreno, teto_dreno, float(teto_us) / 1000.0, nivel_ms,
+			worst_dreno, teto_dreno, float(teto_us) / 1000.0,
+			float(pecas_dreno["level_us"]) / 1000.0,
 			float(pecas_dreno["scan_us"]) / 1000.0, float(pecas_dreno["commit_us"]) / 1000.0,
 			int(dreno["frames"]), int(dreno["teto"])])
 	# (3) Nome e origem: o teto e constante da classe do loop (§3.1), com sufixo de tempo e nao
