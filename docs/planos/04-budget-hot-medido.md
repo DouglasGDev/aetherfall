@@ -1,10 +1,10 @@
 # 04 — Budget HOT medido: a colheita para aqui, o corte depois
 
-Plano derivado de leitura. Nada foi rodado por mim: nem engine, nem suíte, nem script. Cobre o item 5 de "Falta" (`docs/melhorias-status.md:583-587`) e o débito de colheita declarado (`docs/melhorias-status.md:820-827`). Medição de tempo é serial (`AGENTS.md`, seção "Comandos de medição"): uma corrida por número, máquina livre, e o plano não publica número nenhum porque não tem corrida.
+Plano derivado de leitura. Nada foi rodado por mim: nem engine, nem suíte, nem script. Cobre o item 5 de "Falta" (`docs/melhorias-status.md:583-587`) e o débito de colheita declarado (`docs/melhorias-status.md:840-847`). Medição de tempo é serial (`AGENTS.md`, seção "Comandos de medição"): uma corrida por número, máquina livre, e o plano não publica número nenhum porque não tem corrida.
 
 ## Premissa nomeada
 
-O gate diz "budget HOT ≤ `[TARGET]` 2,5 ms medido" (`docs/design/08-roadmap-risks-licensing.md:71-74`; a legenda que marca o alvo como alvo está em `docs/design/README.md:12-16`, `:18-21`). A premissa embutida nessa linha é dupla e nenhuma metade está medida: **(a)** as cinco mentes decidem dentro do mesmo tick e **(b)** o que compõe o HOT é o segmento de decisão da mente (percepção + utilidade + árvore), não só a árvore. Hoje a colheita existe com **um lobo por cenário** (`tests/aether_reactions_test.gd:347-352`, soma em `:345`, rodapé rotulado "CENARIO ESTREITO, NAO GATE P1" em `:3155-3156`) e o que ela soma é `SubtreeGuard.last_us`, que cronometra apenas `child.tick` (`src/ai/behavior/bt_tree.gd:130-137`). A checagem nova nomeia a premissa (a): se nenhum tick teve as cinco mentes vivas, o agregado não existe e a checagem dá vermelho em vez de imprimir zero — o precedente é o furo das quatro checagens que somem sem nenhum vermelho (`docs/melhorias-status.md:836-840`).
+O gate diz "budget HOT ≤ `[TARGET]` 2,5 ms medido" (`docs/design/08-roadmap-risks-licensing.md:71-74`; a legenda que marca o alvo como alvo está em `docs/design/README.md:12-16`, `:18-21`). A premissa embutida nessa linha é dupla e nenhuma metade está medida: **(a)** as cinco mentes decidem dentro do mesmo tick e **(b)** o que compõe o HOT é o segmento de decisão da mente (percepção + utilidade + árvore), não só a árvore. Hoje a colheita existe com **um lobo por cenário** (`tests/aether_reactions_test.gd:347-352`, soma em `:345`, rodapé rotulado "CENARIO ESTREITO, NAO GATE P1" em `:3155-3156`) e o que ela soma é `SubtreeGuard.last_us`, que cronometra apenas `child.tick` (`src/ai/behavior/bt_tree.gd:130-137`). A checagem nova nomeia a premissa (a): se nenhum tick teve as cinco mentes vivas, o agregado não existe e a checagem dá vermelho em vez de imprimir zero — o precedente é o furo das quatro checagens que somem sem nenhum vermelho (`docs/melhorias-status.md:856-860`).
 
 ## O que é HOT em código: as três cadências
 
@@ -24,14 +24,14 @@ Orçamento por árvore: 400 µs configurado no lobo (`src/entities/wolf.gd:452-4
 
 ## Gate do bloco (não o gate da fase)
 
-Comandos já existentes: `godot --headless --path . tests/smoke_test.tscn` e `godot --headless --path . --script tests/aether_reactions_test.gd` (`docs/melhorias-status.md:1671-1676`). Critérios, todos capazes de falhar:
+Comandos já existentes: `godot --headless --path . tests/smoke_test.tscn` e `godot --headless --path . --script tests/aether_reactions_test.gd` (`docs/melhorias-status.md:1716-1721`). Critérios, todos capazes de falhar:
 
 - **P (premissa)**: `pico_mente == 5` ao menos uma vez na corrida. Vermelho aqui significa que a matilha nunca esteve inteira no mesmo tick — o agregado impresso seria amostra de 4, não de 5 (`docs/evidence/third-person-carry/clone-suite.log:305` fecha com 4 vivos).
 - **T (fail-visible)**: `trips` somado = 0 na corrida. Vermelho = a árvore foi cortada por orçamento e o lobo decidiu outra coisa (`src/ai/behavior/bt_tree.gd:134-136`): é defeito de comportamento, não nota de rodapé.
 - **B (orçamento)**: `pico_hot_bt_us ≤ 2500` **e** `pico_decisao_us ≤ 2500`, com `dropped_ticks == 0` (`src/main.gd:1290`, já checado em `tests/smoke_test.gd:345-346`). Vermelho = o alvo de P1 já está estourado por medição real: o número vai para `docs/design/08-roadmap-risks-licensing.md:74` como medido e o gate de P1 continua aberto; ninguém corta a checagem para o verde aparecer.
-- **C (censo)**: `EXPECTED_CHECKS` (`tests/aether_reactions_test.gd:64`, travado em 150 nesta ponta) e a última linha da suíte (`tests/smoke_test.gd:307`; estado atual 236 checagens / 0 falhas / 35,1 s em `docs/evidence/rastro-duas-camadas/clone-ff347d2-suite.log:311`) sobem exatamente com as checagens novas, conferidos numa corrida antes do lote (`docs/melhorias-status.md:836-840`).
+- **C (censo)**: `EXPECTED_CHECKS` (`tests/aether_reactions_test.gd:64`, travado em 150 nesta ponta) e a última linha da suíte (`tests/smoke_test.gd:307`; estado atual 236 checagens / 0 falhas / 35,1 s em `docs/evidence/rastro-duas-camadas/clone-ff347d2-suite.log:311`) sobem exatamente com as checagens novas, conferidos numa corrida antes do lote (`docs/melhorias-status.md:856-860`).
 
-O vermelho **não** fecha nem abre gate de fase: fecha o dono do repositório, com clone limpo reimportado (`godot --headless --path . --import`) e SHA pino (`AGENTS.md`, ciclo de trabalho, itens 6 e 8). O 2,5 ms continua `[TARGET]` até que a linha 74 do §08 receba um número com log; a aritmética 5 × 400 µs = 2 ms é conta de orçamento, não medição, e o status já veta somar picos de instantes distintos para declarar fechamento (`docs/melhorias-status.md:850-853`).
+O vermelho **não** fecha nem abre gate de fase: fecha o dono do repositório, com clone limpo reimportado (`godot --headless --path . --import`) e SHA pino (`AGENTS.md`, ciclo de trabalho, itens 6 e 8). O 2,5 ms continua `[TARGET]` até que a linha 74 do §08 receba um número com log; a aritmética 5 × 400 µs = 2 ms é conta de orçamento, não medição, e o status já veta somar picos de instantes distintos para declarar fechamento (`docs/melhorias-status.md:870-873`).
 
 ## Custo, em número (as quatro perguntas)
 

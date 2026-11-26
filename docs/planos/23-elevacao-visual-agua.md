@@ -50,43 +50,46 @@ nada de tempo, nada de normal, nada de cena. O tile é 16×16 com **faixa fixa p
 ([voxel_atlas.gd:162-171](../../src/world/voxel_atlas.gd#L162-L171)). Isso é o que o prompt chama
 de "bloco transparente simples", e é exato. **O que a perna pôs no lugar:** `_mat_water` agora vem de
 `WaterSurface.build_material(_atlas, _water_sun)`
-([voxel_world.gd:131](../../src/world/voxel_world.gd#L131)); `StandardMaterial3D` sobrou só para o
+([voxel_world.gd:154](../../src/world/voxel_world.gd#L154) no HEAD de hoje, com o acessor
+`water_material()` em [`:177-178`](../../src/world/voxel_world.gd#L177-L178); o ponteiro desta linha
+dizia `:131`, que na árvore do próprio pouso (`05e8917`) era `_flat_ready = false` dentro de `generate()`
+— face do furo #28: em-range não é correto); `StandardMaterial3D` sobrou só para o
 opaco (`eb218fe:src/world/voxel_world.gd:91-96`, a árvore desta leitura) e para o vidro
 (`eb218fe:src/world/voxel_world.gd:101-107`), e `voxel_atlas.gd` não foi tocado. **O parágrafo
 anterior é o estado de abertura da Fase 2 também**: o que restou de `StandardMaterial3D` é justamente o
 que a Fase 2 troca por shader — o opaco passou a `OpaqueSurface.build_material(_atlas)`
-([:113](../../src/world/voxel_world.gd#L113)) e o vidro continua `StandardMaterial3D`, hoje em
-[:118-124](../../src/world/voxel_world.gd#L118-L124) —, e o `COLOR` do grupo opaco, que a água
+([:153](../../src/world/voxel_world.gd#L153)) e o vidro continua `StandardMaterial3D`, hoje em
+[:158-164](../../src/world/voxel_world.gd#L158-L164) —, e o `COLOR` do grupo opaco, que a água
 aprendeu a ler, continua tendo um
 canal que ninguém lê — a leitura com número está no §3.10b.
 
 **Quem desenha a água é o mesmo culling dos demais blocos, e ele só cede face contra AR.** Na
 malharia, `Draw.LIQUID` descarta a face quando o vizinho **não é** `AIR`
-([voxel_world.gd:602-605](../../src/world/voxel_world.gd#L602-L605)); o vizinho sólido **do outro
+([voxel_world.gd:432-434](../../src/world/voxel_world.gd#L432-L434)); o vizinho sólido **do outro
 lado** desenha a face contra a água, porque a água não é opaca
 (`is_opaque` 0 — [block_defs.gd:100](../../src/world/block_defs.gd#L100), teste em
-[voxel_world.gd:611](../../src/world/voxel_world.gd#L611)). Consequência que o plano aproveita: a
+[voxel_world.gd:438](../../src/world/voxel_world.gd#L438)). Consequência que o plano aproveita: a
 geometria de água visível é **a superfície mais as faces laterais expostas ao ar** — o leito já é
 desenhado pelo material opaco, então refração tem o que refratar. O topo afunda
 `WATER_TOP_DROP = 0,12` ([`:34`](../../src/world/voxel_world.gd#L34), aplicado na chamada da água em
-[`:619-621`](../../src/world/voxel_world.gd#L619-L621) e no vértice de topo dentro de
-[`_emit_face:827-828`](../../src/world/voxel_world.gd#L827-L828)).
+[`:448-450`](../../src/world/voxel_world.gd#L448-L450) e no vértice de topo dentro de
+[`_emit_face:966-967`](../../src/world/voxel_world.gd#L966-L967)).
 
 **Cada face é um quad de quatro vértices próprios, e o `COLOR` do surface de água estava livre.**
-`_emit_face` acrescenta 4 vértices por face ([`:667-689`](../../src/world/voxel_world.gd#L667-L689))
+`_emit_face` acrescenta 4 vértices por face ([`:963-968`](../../src/world/voxel_world.gd#L963-L968))
 e o vertex color da água **não era lido por ninguém**: `_mat_water` não ligava
 `vertex_color_use_as_albedo` (o ligador era só o do opaco `b0ed929:src/world/voxel_world.gd:88` e o do
-vidro, hoje [`:138`](../../src/world/voxel_world.gd#L138)), e a água entrava com o `ao` forçado em
-`[1,1,1,1]` ([`:620`](../../src/world/voxel_world.gd#L620) na chamada de hoje,
+vidro, hoje [`:161`](../../src/world/voxel_world.gd#L161)), e a água entrava com o `ao` forçado em
+`[1,1,1,1]` ([`:449`](../../src/world/voxel_world.gd#L449) na chamada de hoje,
 `b0ed929:529-530` na leitura de abertura). É o canal que a malharia já escrevia e o jogo já
 descartava — §3.3. E é um achado, não uma conveniência: a face escreve
 `bright = clampf(tint * ao[k], 0.05, 1.2)` com o `tint` sendo o `FACE_TINT[f]` da face
-([`:750`](../../src/world/voxel_world.gd#L750); `b0ed929:627-628` onde esta leitura o achou) — as
+([`:973`](../../src/world/voxel_world.gd#L973); `b0ed929:627-628` onde esta leitura o achou) — as
 laterais 0,88/0,82 e o fundo 0,60 — e na árvore de abertura ninguém lia o resultado, então a água era
 desenhada com a **mesma** cor em topo, lado e fundo, e o
 trabalho de calcular a sombra de face ia embora. Isso é o **furo #43**, dono esta perna, e o conserto é
 exatamente o canal virar lido: hoje o `COLOR` dos quatro cantos da face de água é a máscara que o
-shader lê ([`:751-760`](../../src/world/voxel_world.gd#L751-L760)).
+shader lê ([`:979-983`](../../src/world/voxel_world.gd#L979-L983)).
 
 **Não há shader nenhum no repositório, e o atlas é gerado em runtime de propósito.** A regra está
 escrita no cabeçalho do próprio atlas: "sem binarios no repositorio, deterministico"
@@ -101,7 +104,7 @@ como código (§3.6, §4).
 **Quem sabe que um corpo está na água é o próprio corpo, a cada frame de física.**
 `VoxelBody.move_and_collide` grava `in_water = world.box_in_water(aabb())`
 ([voxel_body.gd:55](../../src/entities/voxel_body.gd#L55)), e `box_in_water` varre as células cobertas
-pela caixa ([voxel_world.gd:423-432](../../src/world/voxel_world.gd#L423-L432)). O jogador lê o campo
+pela caixa ([voxel_world.gd:723-732](../../src/world/voxel_world.gd#L723-L732)). O jogador lê o campo
 para nadar e para a respiração ([player.gd:486](../../src/entities/player.gd#L486),
 [:537](../../src/entities/player.gd#L537), [:593](../../src/entities/player.gd#L593)) e o lobo para
 empuxo, velocidade e o cronômetro de nado ([wolf.gd:1223-1224](../../src/entities/wolf.gd#L1223-L1224),
@@ -126,7 +129,7 @@ quando o sol está alto" (§ Fase 1) é hoje uma **constante**, não uma variáv
 fixa em ~48°. Registrar isso é o que impõe §3.9. **O que a perna mudou aqui:** a direção parada
 deixou de ser invisível ao material — `world.set_water_sun_direction(_sun_dir)` no boot
 ([`main.gd:151`](../../src/main.gd#L151)) grava o vetor no uniform `sun_dir`
-([`voxel_world.gd:172-174`](../../src/world/voxel_world.gd#L172-L174)), e o shader decide o ganho de
+([`voxel_world.gd:188-190`](../../src/world/voxel_world.gd#L188-L190)), e o shader decide o ganho de
 caústica por ele ([`water_surface.gd:258`](../../src/world/water_surface.gd#L258)). O que continua
 parado é o sol, não o canal — e é isso que deixa a Fase 2 como pauta.
 
@@ -204,7 +207,7 @@ momento da face:
 
 **Braço rejeitado (a):** atributo custom do `ArrayMesh` (`ARRAY_DATA`). Não há precedente nenhum no
 repositório e a suíte teria de aprender um caminho de leitura novo; o `COLOR` já é enviado por
-`_surface_arrays` ([voxel_world.gd:797-807](../../src/world/voxel_world.gd#L797-L807)) para os três
+`_surface_arrays` ([voxel_world.gd:936-946](../../src/world/voxel_world.gd#L936-L946)) para os três
 grupos.
 **Braço rejeitado (b):** deduzir tudo no shader a partir de `NORMAL` e da posição. Isso **não**
 distingue o canto de topo da face lateral do canto de baixo — e é justamente a costura que abre.
@@ -265,7 +268,7 @@ não pool dinâmico.
 dispara na **transição** `fora → dentro` com `velocity.y` negativo acima de um limiar; a posição do
 salpico é o plano de topo da coluna de água sob o corpo, obtido por uma consulta nova ao mundo
 (`water_surface_y(x, z)` — a mesma família de `surface_height`,
-[voxel_world.gd:511-517](../../src/world/voxel_world.gd#L511-L517)).
+[voxel_world.gd:811-817](../../src/world/voxel_world.gd#L811-L817)).
 
 **Braço rejeitado:** um sinal `entered_water` no `VoxelBody`. Seria o **primeiro** chamador de um
 mecanismo de transição que o áudio já resolve por leitura (`audio_director.gd:439`), e a regra da
@@ -291,7 +294,7 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
   um segundo comprador para o anel — passou a ter dono, canal e custo lido.
 - **Fase 3 — vegetação viva.** Vento em folhas/grama é deslocamento de vértice com a mesma forma do
   §3.2, e aqui a malharia **não** distingue a face: grama e folha entram no mesmo surface opaco, com
-  um `ao` real ([`:574-577`](../../src/world/voxel_world.gd#L574-L577)) — então o que a fase precisa
+  um `ao` real ([`:455`](../../src/world/voxel_world.gd#L455)) — então o que a fase precisa
   decidir primeiro é **qual canal do `COLOR` opaco** fica livre, e isso é conversa com o face-culling
   que a suíte trava hoje. **A Fase 2 gasta o último canal livre daquele grupo (§3.10c)** e a Fase 3
   herda a consequência escrita lá: o portador dela é o atributo custom do §3.3, cujo número que
@@ -305,7 +308,7 @@ Estas linhas entram na fila da perna, **sem nenhuma linha escrita agora**:
   material por id; o atlas é 8×8 de 16 px gerado com `seed` fixa
   ([voxel_atlas.gd:5-14](../../src/world/voxel_atlas.gd#L5-L14)) e **um** `StandardMaterial3D` serve
   os 23 ids. O corte é: variação por material único (canal já existe — o `COLOR` opaco com jitter
-  `0,012` em [`:628`](../../src/world/voxel_world.gd#L628)) antes de qualquer atlas novo.
+  `0,012` em [`:456`](../../src/world/voxel_world.gd#L456)) antes de qualquer atlas novo.
 
 ### 3.10 Fase 2 — chuva e superfícies molhadas: decisão, braço rejeitado, número
 
@@ -313,7 +316,7 @@ A pauta do §3.9 dizia que a Fase 2 "reabre a discussão do §3.1 com número na
 cláusula do próprio §3.1, ela **não** reabre, e o motivo é o número (c) abaixo. O resto do corte é o que
 estava escrito lá: `Weather` como dono de um estado lido pelo FX **e** pelo material, e o plano de
 superfície da água como gancho honesto — a mesma consulta que decide a espuma decide onde a gota cria
-anel ([`water_surface_y`](../../src/world/voxel_world.gd#L501-L507)).
+anel ([`water_surface_y`](../../src/world/voxel_world.gd#L825-L831)).
 
 **(a) Dono do estado: um nó visual novo, com RNG própria.**
 
@@ -340,7 +343,7 @@ ser de determinismo, não de pixel. Isso é pauta da 20 e da 18, não desta pern
 **Decisão:** a malharia escreve no alfa dos vértices do grupo opaco
 `a = clampf(1.0 - float(topo - int(py)) / float(EXPOSURE_FALL), 0.0, 1.0)` — o `topo` é o topo da
 coluna —, com `EXPOSURE_FALL = 4` nomeado no mundo
-([voxel_world.gd:772](../../src/world/voxel_world.gd#L772), [:41](../../src/world/voxel_world.gd#L41)).
+([voxel_world.gd:995](../../src/world/voxel_world.gd#L995), [:41](../../src/world/voxel_world.gd#L41)).
 O canal está livre **por leitura, não por intuição**:
 `eb218fe:src/world/voxel_world.gd:689` (a árvore desta leitura) escreve `Color(bright, bright, bright, 1.0)`
 — alfa constante — e o consumidor da base era um `StandardMaterial3D` com
@@ -349,7 +352,7 @@ ligada, então o alfa do vértice não chega a lugar nenhum. É o achado do furo
 mesma mesa: lá, um canal escrito e lido por ninguém virou o portador da onda; aqui, o portador é o alfa
 que ninguém lê. O `topo` vem de uma varredura de coluna feita **uma vez por rebuild de chunk**
 (um `PackedInt32Array` de 16×16, a mesma família de `surface_height`
-[voxel_world.gd:487-493](../../src/world/voxel_world.gd#L487-L493)), com contador lido e impresso.
+[voxel_world.gd:878](../../src/world/voxel_world.gd#L878)), com contador lido e impresso.
 
 **Braço rejeitado (a):** re-malhar quando o molhamento muda. Ele muda a cada quadro de chuva, e a
 malharia é o furo #41 (52–177 ms no pior quadro, orçamento de 2 chunks por frame).
@@ -365,7 +368,7 @@ no `fragment()`, e a fração da caixa "abrigo" que muda com a chuva.
 
 **Consequência para a Fase 3, escrita agora porque é desta linha que ela nasce:** o `COLOR` do grupo
 opaco passa a ter R, G e B amarrados ao mesmo `bright`
-([:750](../../src/world/voxel_world.gd#L750)) e o A gasto. O §3.3 dava como número que reabria o seu
+([:996](../../src/world/voxel_world.gd#L996)) e o A gasto. O §3.3 dava como número que reabria o seu
 braço (a) — *"se um quarto canal for necessário, o `COLOR` fica cheio e aí o atributo custom tem
 comprador real"* — e a Fase 2 é exatamente esse quarto canal. O portador do vento na Fase 3 deixa de
 ser o `COLOR` e passa a ser o `ARRAY_DATA`, com a leitura de custo re-escrita lá.
@@ -456,7 +459,7 @@ não tem comprador de molhamento nesta fase.
    (`_physics_process`), com o mesmo custo de leitura do `box_in_water` que o corpo já faz — ele não
    adiciona varredura de mundo: lê `body.in_water` que já foi calculado. A colocação de anel e o
    disparo de salpico são **por evento** (transição), e a busca do plano de topo percorre **uma
-   coluna**: `water_surface_y` ([voxel_world.gd:525-531](../../src/world/voxel_world.gd#L525-L531))
+   coluna**: `water_surface_y` ([voxel_world.gd:825-831](../../src/world/voxel_world.gd#L825-L831))
    desce de `CHUNK_SIZE_Y - 1` e **sai no primeiro voxel de água** — que já é o topo da coluna, por
    construção — então são no máximo 64 leituras e a coluna seca paga as 64 inteiras para devolver
    `-1,0`. Não é varredura de mapa.
@@ -608,7 +611,7 @@ em `suite23-merged.log`.
 ### 5.3 headless da Fase 2 (mesma suíte, passos novos no `_steps`)
 
 Os números da terceira coluna são **derivados à mão** das constantes nomeadas em §3.10 e do `bright` de
-[voxel_world.gd:750](../../src/world/voxel_world.gd#L750), do mesmo modo que a tabela de §5.1 foi
+[voxel_world.gd:973](../../src/world/voxel_world.gd#L973), do mesmo modo que a tabela de §5.1 foi
 derivada de `FACE_CORNERS` e do culling `LIQUID`; foram escritos assim para o vermelho nascer
 conferível. A quarta coluna é o que a corrida imprimiu, na ponta de código `1a676fa` lida do clone
 limpo do pin ([`pin-suite.log:385-414`](../evidence/elevacao-visual-chuva-23/pin-suite.log)), e **cinco
@@ -693,7 +696,7 @@ perguntas, na ordem:
   **Decisão publicada: o shader fica como está — sem `source_color`, §3.10c de propósito — e o
   desvio de +5/255 em R e +5/255 em G no relevo exposto é a diferença entre um material que decodifica
   uma vez e o resto do mundo que decodifica duas.** Isso abre o **furo #48**: `_mat_glass`
-  ([`voxel_world.gd:118-124`](../../src/world/voxel_world.gd#L118-L124)) continua
+  ([`voxel_world.gd:158-164`](../../src/world/voxel_world.gd#L158-L164)) continua
   `StandardMaterial3D` com `albedo_texture = _atlas` e, portanto, continua com o decode duplo; vidro e
   pedra vizinhos estão hoje a um decode de distância, e o número que paga isso é uma caixa sobre uma
   parede de vidro ao lado de uma de pedra no mesmo quadro — consequência **derivada do código, ainda
@@ -792,7 +795,7 @@ antes da primeira linha de `src/` (mandato 4):
   passo**: a pasta nova de evidência leva um `.gdignore` — mecanismo que **já tem número nesta casa**,
   porque o `build.bat` da perna 22 escreve `bin/.gdignore` e o `--import` que antes devolvia 464 B de
   stderr passou a devolver **exit 0 com 0 bytes**
-  ([`docs/melhorias-status.md:6679-6682`](../melhorias-status.md#L6679-L6682)) — e é o conserto local do
+  ([`docs/melhorias-status.md:6801-6804`](../melhorias-status.md#L6801-L6804)) — e é o conserto local do
   #45 demonstrado em uma pasta, e **não** fecha o #45 — os quatro `caixa-*.png` continuam gerando sidecar
   em todo clone, e a arrumação neles continua sendo do dono do repositório, não desta perna.
 - **Arquivos que a Fase 2 escreve:** `src/rendering/weather.gd` **novo**, `src/rendering/rain_fx.gd`

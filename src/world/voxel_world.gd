@@ -40,6 +40,20 @@ const MAX_DDA_STEPS: int = 512
 # maior e morro inteiro escurecendo junto, que e o braco (c) rejeitado.
 const EXPOSURE_FALL: int = 4
 
+# Teto de tempo de UM frame de malharia, em microsegundos (dossie 24 §3.3, braco B).
+# Derivado da medicao desta perna, nao chutado: um chunk sozinho custa 45,04-152,74 ms
+# (128 amostras, §2.2.2) e o `process()` de antes li o relogio FORA do laco, entao um
+# quadro pagava dois de uma vez e o periodo ia a 152-192 ms.
+# Este teto manda nos NIVEIS: a varredura de topo de coluna e o comitimento sao atomicos,
+# nao ha onde cortar no meio deles, e por isso o pior frame e budget + um nivel + esses
+# dois — os quatro numeros saem de `mesh_frame_worst()`, impressos no gate 1 do §5.1.
+# Contra a janela de travada de 33,3 ms (§5.2) a soma cabe, e o overshoot de cada piece
+# e limitado a UMA unidade porque o relogio e perguntado antes de cada nivel e antes de
+# abrir chunk novo.
+# O nome tem sufixo de tempo e mora na classe do laco: `MESH_BUDGET` de `main.gd:28`
+# continua sendo ITENS por frame (§3.4) e as duas grandezas nao se traduzem entre si.
+const MESH_FRAME_BUDGET_US: int = 8000
+
 const CHUNK_SIZE_X: int = VoxelChunk.SIZE_X
 const CHUNK_SIZE_Y: int = VoxelChunk.SIZE_Y
 const CHUNK_SIZE_Z: int = VoxelChunk.SIZE_Z
@@ -65,6 +79,11 @@ var _mat_glass: StandardMaterial3D = null
 # visual, nunca o comportamento do mundo.
 var _water_sun: Vector3 = Vector3.UP
 var _dirty: Array = []
+# A fatia em voo (dossie 24 §3.3): o chunk da cabeca da fila que ja comecou a ser malhado,
+# com o cursor de nivel `y` e os quinze arrays que ele ja encheu. So existe UMA por vez, do
+# mesmo jeito que so existia um chunk em trabalho antes do corte -- o que mudou e que ele
+# agora atravessa frames. `pending_meshes()` o conta porque a fila nao o descartou.
+var _slice: _MeshSlice = null
 var _last_mesh_ms: float = 0.0
 var _meshes_built: int = 0
 # Custo de edicao local (dossie 07 §4): `last_mesh_ms()` times o lote inteiro do
@@ -76,6 +95,27 @@ var _edit_stamp: Dictionary = {}    # Vector2i (coord) -> usec do carimbo aberto
 var _edit_us_total: int = 0
 var _edit_us_worst: int = 0
 var _edit_us_count: int = 0
+# Os MICROSEGUNDOS DE TRABALHO do mesher naquele chunk, somados entre o carimbo abrir e
+# fechar (dossie 24 §5.1 gate 2). Moram separados do span porque com fatia as duas
+# grandezas se separam: o span de um chunk cortado a 8 000 µs sao ~11 frames de relogio
+# wall, e 10 deles nao tem malharia nenhuma — medido, span 95 351 -> 128 663 (+34,9 %)
+# enquanto o trabalho caia 4,7 %. Sem este nome o gate 2 acusaria de "troca de vitima" o
+# proprio desenho do braco B, que e a classe do furo #44: uma testemunha que passa a
+# medir outra coisa sem dizer.
+var _edit_build_us: Dictionary = {}  # Vector2i (coord) -> usec de malha ja gastos
+var _edit_build_total: int = 0
+var _edit_build_worst: int = 0
+# Os tres custos que o teto NAO corta, além dos niveis que ele fatia: o nivel mais caro
+# (o overshoot de um frame e exatamente um, e media de chunk nao serve — 2,39 ms = 152,74 ÷
+# 64 e MEDIA e estourou o teto publicado), a varredura de topo de coluna
+# (`_scan_col_tops`, uma por chunk) e o comitimento (o `ArrayMesh` + upload + no, um por
+# chunk fechado). Nenhum dos tres e fatiavel, entao o pior frame e budget + esses tres.
+# Quem publica um numero de frame publica a composicao (dossie 24 §5.1 gate 1), nao um
+# adjetivo de folga.
+var _mesh_worst_level_us: int = 0
+var _mesh_worst_scan_us: int = 0
+var _mesh_worst_commit_us: int = 0
+var _mesh_worst_frame_us: int = 0
 # Cache de topo de coluna do chunk sendo malhado agora (dossie 23 §3.10b): um `int` por
 # coluna, e a unica fonte do `expos` que vai ao `COLOR.a` do grupo opaco. Varre **uma vez
 # por rebuild**, nao por face nem por voxel — o braco (b) rejeitado custaria ate 6 faces
@@ -197,14 +237,22 @@ func _release_mesh_nodes() -> void:
 		c.mesh_instance = null
 		c.dirty = true
 	_dirty.clear()
+	# A fatia em voo morre com o mundo antigo: os arrays dela sao de chunks que acabaram
+	# de ter o nó liberado, e comita-los depois penduraria uma malha no lugar errado.
+	_slice = null
 	# Carimbos abertos do mundo antigo morrem com ele: o chunk nao vai ser malhado
 	# nunca mais. O AGGREGADO, nao -- azera-lo aqui faria o `worst` mentir depois de
 	# um load e o `count` zerado na ultima linha do diagnostico seria lido como
 	# instrumento morto, que e justamente o erro que o mandato 1 nao deixa passar.
 	_edit_stamp.clear()
+	_edit_build_us.clear()
 
 
 func generate_meshes_all() -> void:
+	# Malha o mundo inteiro de uma vez, entao nao pode haver fatia pela metade: o cache de
+	# topo de coluna (`_ct_top`) e do chunk sendo malhado AGORA, e dois construtores
+	# escrevendo nele ao mesmo tempo daria ao chunk em voo o relevo de outro.
+	_slice = null
 	for key in chunks:
 		var c: VoxelChunk = chunks[key]
 		if c.dirty:
@@ -224,16 +272,235 @@ func apply_edits(source: Dictionary) -> void:
 		_touch_chunks_of(pos, true)
 
 
+## O estado de um chunk em voo (dossie 24 §3.3, braco B): o cursor do nivel `y` e os
+## quinze arrays que o andador ja encheu, que sao exatamente os que `build_chunk_mesh`
+## declarava como locais -- agora vivem o tempo de uma cascata de fatias em vez do tempo
+## de uma chamada. So um existe por vez (§3.3.1.3): o pico de arrays nao cresce, o que
+## cresce e o tempo que eles ficam vivos. `stale` e a edicao que caiu no meio das fatias.
+class _MeshSlice:
+	var c: VoxelChunk = null
+	var y: int = 0
+	var stale: bool = false
+	# Microsegundos de mesher gastos NESTE chunk ate aqui, acumulados entre frames e entre
+	# rodadas quando uma edicao o devolve para o fim da fila. E o par do span (§5.1 gate 2).
+	var us: int = 0
+	var v := PackedVector3Array()
+	var nr := PackedVector3Array()
+	var uv := PackedVector2Array()
+	var cl := PackedColorArray()
+	var ix := PackedInt32Array()
+	var wv := PackedVector3Array()
+	var wn := PackedVector3Array()
+	var wuv := PackedVector2Array()
+	var wc := PackedColorArray()
+	var wi := PackedInt32Array()
+	var gv := PackedVector3Array()
+	var gn := PackedVector3Array()
+	var guv := PackedVector2Array()
+	var gc := PackedColorArray()
+	var gi := PackedInt32Array()
+
+
 ## Chunks ainda nao malhados ganham mesh sob demanda; ja malhados so sujos.
+## O corte tem DUAS unidades e e assim de proposito (dossie 24 §3.4): `p_frame_budget` e
+## quantos chunks o frame pode **comecar**, `MESH_FRAME_BUDGET_US` e quanto tempo ele pode
+## gastar. Quem manda numa cascata e o relogio -- um chunk fatiado nao cabe em 8 ms -- e o
+## teto de itens so mordia antes, quando a unidade de trabalho era o chunk inteiro.
 func process(p_frame_budget: int) -> void:
 	if _dirty.is_empty():
 		return
 	var t0 := Time.get_ticks_usec()
-	var count: int = mini(p_frame_budget, _dirty.size())
-	for i in count:
-		var c: VoxelChunk = _dirty.pop_front()
-		build_chunk_mesh(c)
-	_last_mesh_ms = float(Time.get_ticks_usec() - t0) / 1000.0
+	var iniciados: int = 0
+	var antes := Time.get_ticks_usec()
+	while iniciados < p_frame_budget and not _dirty.is_empty():
+		if _slice == null:
+			# O teto manda em QUEM entra, nao so em quanto se anda. Sem esta linha o
+			# frame fechava um chunk (commit), abria o proximo (varredura de topo) e
+			# andava mais niveis por cima do budget — medido 15,39 ms no dreno da propia
+			# suite contra um teto de 8 000 us, que e o furo #41 em miniatura: um corte
+			# que so corta no meio do chunk nao corta o quadro.
+			if antes - t0 >= MESH_FRAME_BUDGET_US:
+				break
+			_slice = _MeshSlice.new()
+			_slice.c = _dirty.front()
+			_scan_col_tops(_slice.c)
+			var apos := Time.get_ticks_usec()
+			_mesh_worst_scan_us = maxi(_mesh_worst_scan_us, apos - antes)
+			_slice.us = apos - antes
+			antes = apos
+			iniciados += 1
+		while _slice.y < CHUNK_SIZE_Y:
+			# O relogio DENTRO do laco e a linha desta perna. Lido so no fim do frame, como
+			# era antes, ele nao podia cortar nada: era assim que um quadro pagava dois
+			# chunks de ~87 ms (furo #41; 144-198 ms medidos no MESMO frame desta suíte).
+			if antes - t0 >= MESH_FRAME_BUDGET_US:
+				break
+			_mesh_level(_slice)
+			_slice.y += 1
+			# A mesma leitura serve as duas contas: ela e o "agora" do teto no proximo giro
+			# e o fim do nivel que acabou de rodar. Por isso o custo de trabalho do chunk
+			# nao custa um relogio a mais no caminho quente (§3.3.1.3 cobra as arrays vivas,
+			# nao a colheita).
+			var depois := Time.get_ticks_usec()
+			var nivel_us := depois - antes
+			_slice.us += nivel_us
+			# O overshoot do frame e UM nivel, e o que vale e o nivel mais CARO, nao a media
+			# do chunk (2,39 ms = 152,74 ÷ 64 e uma MEDIA, e foi ela que estourou o teto
+			# publicado no dreno: medido 16,49 ms contra 15,63 ms). Medido aqui, no mesmo
+			# relogio que ja existia, entao o custo de trabalho nao paga uma leitura extra.
+			_mesh_worst_level_us = maxi(_mesh_worst_level_us, nivel_us)
+			antes = depois
+		if _slice.y < CHUNK_SIZE_Y:
+			break
+		_finish_slice()
+		antes = Time.get_ticks_usec()
+	var gasto := Time.get_ticks_usec() - t0
+	_mesh_worst_frame_us = maxi(_mesh_worst_frame_us, gasto)
+	_last_mesh_ms = float(gasto) / 1000.0
+
+
+## Fecha a fatia completa: comita a malha, tira o chunk da fila e, se uma edicao caiu no
+## meio das fatias, devolve o chunk para o fim da fila com o `dirty` que o comitimento
+## acabou de apagar. Sem esta ultima linha o mundo desenhado pararia de ser o mundo que
+## existe, que e a unica propriedade que o §3.3 usou para escolher o braco.
+func _finish_slice() -> void:
+	var c: VoxelChunk = _slice.c
+	var caduca: bool = _slice.stale
+	_commit_slice(_slice)
+	_slice = null
+	_dirty.pop_front()
+	if caduca:
+		# O carimbo FICA aberto: a segunda rodada vai somar trabalho nele, e fechar agora
+		# contaria um chunk que o jogador ainda nao ve pronto — a mesma classe do erro que
+		# o §3.3.1.2 temia ao fechar o carimbo numa fatia do meio.
+		c.dirty = true
+		_dirty.append(c)
+	else:
+		_record_edit_cost(c)
+
+
+## O chunk inteiro, de uma vez, sem perguntar ao relogio: o caminho do boot e de
+## `generate_meshes_all()`, onde nao ha quadro para proteger -- e por isso que a malha do
+## boot nao muda de byte com esta perna, e o SHA do bake-off continua sendo a testemunha.
+func build_chunk_mesh(c: VoxelChunk) -> void:
+	var st := _MeshSlice.new()
+	st.c = c
+	var t0 := Time.get_ticks_usec()
+	_scan_col_tops(c)
+	# Os dois custos atomicos vao para o MESMO instrumento do caminho fatiado: o pior frame
+	# honesto e budget + nivel + varredura + commit, e se a varredura e o comitimento só
+	# fossem medidos no boot, a composicao publicada viria de outro caminho que nao o do
+	# jogador editando (mandato 3: o numero vem do que corre).
+	var apos := Time.get_ticks_usec()
+	_mesh_worst_scan_us = maxi(_mesh_worst_scan_us, apos - t0)
+	while st.y < CHUNK_SIZE_Y:
+		_mesh_level(st)
+		st.y += 1
+	st.us = Time.get_ticks_usec() - t0
+	_commit_slice(st)
+	_record_edit_cost(c)
+
+
+## Um nivel `y` do chunk dentro do estado da fatia: o corpo exato do laco que era interno a
+## `build_chunk_mesh`, com arrays, origem e nivel lidos do estado. Compartilhar o corpo com
+## o caminho inteiro e o que faz a borda de fatia (dossie 24 §3.3.1.1) sair do mesmo mesher
+## que o boot usa -- se a regra de emissao mudar, muda nos dois juntos.
+func _mesh_level(st: _MeshSlice) -> void:
+	var c: VoxelChunk = st.c
+	var ox: int = c.coord.x * CHUNK_SIZE_X
+	var oz: int = c.coord.y * CHUNK_SIZE_Z
+	var y: int = st.y
+	for z in CHUNK_SIZE_Z:
+		var gz: int = oz + z
+		for x in CHUNK_SIZE_X:
+			var b: int = c.get_block(x, y, z)
+			if b == BlockDefs.Block.AIR:
+				continue
+			var gx: int = ox + x
+			var dr: int = BlockDefs.draw_of(b)
+			# O que o shader precisa saber antes de existir pixel (§3.3): se este
+			# bloco e o topo de uma coluna (vizinho de cima AIR) e quantos blocos
+			# de agua ha embaixo dele, em quartos de 1, saturado em 4. Le-se uma
+			# unica vez por bloco, e so quando a primeira face dele sai: no
+			# interior do oceano todo vizinho e agua, nenhuma face e emitida, e
+			# ler a coluna la seria pagar cinco consultas por voxel para alimentar
+			# triangulo nenhum. O -1 e o "ainda nao lido", nao um valor de canal.
+			var water_flags := Vector2(-1.0, -1.0)
+			for f in 6:
+				var n: Vector3i = FACE_NORMALS[f]
+				var nb: int = get_block_xyz(gx + n.x, y + n.y, gz + n.z)
+				if dr == BlockDefs.Draw.LIQUID:
+					if nb != BlockDefs.Block.AIR:
+						continue
+				elif dr == BlockDefs.Draw.ALPHA:
+					# panos contra panos nao tem face: a emenda de dois vidros
+					# identicos e uma superficie so na janela do jogador
+					if nb == b or BlockDefs.is_opaque(nb):
+						continue
+				elif BlockDefs.is_opaque(nb):
+					continue
+				var tile: int = BlockDefs.tile_for(b, FACE_TILE[f])
+				if dr == BlockDefs.Draw.LIQUID:
+					if water_flags.x < 0.0:
+						water_flags = Vector2(
+							1.0 if get_block_xyz(gx, y + 1, gz) == BlockDefs.Block.AIR else 0.0,
+							float(_water_blocks_below(gx, y, gz)) / 4.0)
+					_emit_face(st.wv, st.wn, st.wuv, st.wc, st.wi, gx, y, gz, f, tile,
+						PackedFloat32Array([1.0, 1.0, 1.0, 1.0]), FACE_TINT[f],
+						WATER_TOP_DROP, water_flags)
+				elif dr == BlockDefs.Draw.ALPHA:
+					_emit_face(st.gv, st.gn, st.guv, st.gc, st.gi, gx, y, gz, f, tile,
+						_corner_ao_array(gx, y, gz, f), FACE_TINT[f], 0.0)
+				else:
+					var ao := _corner_ao_array(gx, y, gz, f)
+					var jitter: float = float(_hash3(gx, y, gz) % 5) * 0.012
+					_exposure_faces += 1
+					_emit_face(st.v, st.nr, st.uv, st.cl, st.ix, gx, y, gz, f, tile, ao,
+						FACE_TINT[f] + jitter, 0.0, Vector2.ZERO,
+						_ct_top[z * CHUNK_SIZE_X + x])
+
+
+## O ponto de comitimento: so aqui o chunk ganha malha, `dirty` vira falso, o contador
+## sobe e o carimbo de latencia fecha. Fechar o carimbo numa fatia do meio faria o
+## `mean_us` do instrumento medir outra coisa sem dizer, que e a classe do furo #44/#56
+## (a testemunha virar constante) e e o preco que o §3.3.1.2 do dossie 24 cobra do B.
+func _commit_slice(st: _MeshSlice) -> void:
+	var tc := Time.get_ticks_usec()
+	var c: VoxelChunk = st.c
+	var mesh := ArrayMesh.new()
+	# O indice do surface e o que era antes de acrescentar: um chunk de vidro sem
+	# agua tem dois surfaces e o hardcoded 2 caia fora deles, e o pano ficava sem
+	# material nenhum (o erro do engine passavaquieto na suíte de triangulos).
+	var s := 0
+	if not st.v.is_empty():
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(st.v, st.nr, st.uv, st.cl, st.ix))
+		mesh.surface_set_material(s, _mat_opaque)
+		s += 1
+	if not st.wv.is_empty():
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(st.wv, st.wn, st.wuv, st.wc, st.wi))
+		mesh.surface_set_material(s, _mat_water)
+		s += 1
+	if not st.gv.is_empty():
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(st.gv, st.gn, st.guv, st.gc, st.gi))
+		mesh.surface_set_material(s, _mat_glass)
+		s += 1
+
+	if c.mesh_instance == null:
+		c.mesh_instance = MeshInstance3D.new()
+		c.mesh_instance.name = "chunk_%d_%d" % [c.coord.x, c.coord.y]
+		nodes_root.add_child(c.mesh_instance)
+	c.mesh_instance.mesh = mesh
+	c.dirty = false
+	_meshes_built += 1
+	# O commit (o `ArrayMesh`, o upload das superficies e o no que nasce) e trabalho DESTE
+	# chunk, nao do proximo que herdar o relogio do frame: por isso ele entra em `st.us`
+	# aqui. A conta nao fecha neste ponto — quem fecha e dono da decisao de reabrir ou nao
+	# a fila (`_finish_slice`), e um chunk editado no meio das fatias soma a segunda rodada.
+	var commit_us := Time.get_ticks_usec() - tc
+	st.us += commit_us
+	_mesh_worst_commit_us = maxi(_mesh_worst_commit_us, commit_us)
+	if _edit_stamp.has(c.coord):
+		_edit_build_us[c.coord] = int(_edit_build_us.get(c.coord, 0)) + st.us
 
 
 func pending_meshes() -> int:
@@ -242,6 +509,22 @@ func pending_meshes() -> int:
 
 func last_mesh_ms() -> float:
 	return _last_mesh_ms
+
+
+## A composicao do pior frame de malharia, em usec, do caminho que o jogador usa
+## (`process()`): o teto que corta niveis + o nivel mais caro que o frame pode herdade +
+## a varredura de topo + o comitimento, cada um medido onde ele acontece. `frame_us` e o
+## maximo do total de um `process()` e por isso nunca inclui o boot — la nao ha quadro para
+## proteger (§3.3), e um numero do boot publicado como teto de frame seria a testemunha
+## errada. Quem escreve um teto de frame publica esta linha, nao a soma dos adjetivos.
+func mesh_frame_worst() -> Dictionary:
+	return {
+		"budget_us": MESH_FRAME_BUDGET_US,
+		"level_us": _mesh_worst_level_us,
+		"scan_us": _mesh_worst_scan_us,
+		"commit_us": _mesh_worst_commit_us,
+		"frame_us": _mesh_worst_frame_us,
+	}
 
 
 func meshes_built() -> int:
@@ -351,6 +634,12 @@ func _mark(key: Vector2i) -> void:
 	if c == null:
 		return
 	c.dirty = true
+	# A edicao caiu no chunk que esta em fatia agora? Entao os niveis ja andados dela nao a
+	# viram, e o round que esta comitando vai devolver o chunk para o fim da fila
+	# (`_finish_slice`). Sem esta linha o `not _dirty.has(c)` de baixo engoliria a segunda
+	# passada e o mundo desenhado ficaria mais velho que o mundo que existe.
+	if _slice != null and _slice.c == c:
+		_slice.stale = true
 	# So chunk ja malhado tem "custo de edicao": a primeira malharia do boot e o
 	# lote inteiro, que ja tem coluna propria no `mesh_ms`. Varios edits no mesmo
 	# chunk antes do mesh guardam o PRIMEIRO carimbo porque o que se quer medir e
@@ -361,29 +650,45 @@ func _mark(key: Vector2i) -> void:
 		_dirty.append(c)
 
 
-## Fecha a conta de um chunk carimbado: usec entre a edicao que o sujou e o mesh
-## pronto. Roda no fim de `build_chunk_mesh` para o numero cobrir exatamente o
-## trabalho que o jogador esperou, inclusive a espera pelo orcamento de frame.
+## Fecha a conta de um chunk carimbado com as DUAS grandezas que o dossie 24 §5.1 separa:
+## o SPAN (`us`: usec entre a edicao que sujou o chunk e o mesh pronto, inclusive a espera
+## pelo orcamento de frame) e o TRABALHO (`build_us`: os microsegundos que o mesher de fato
+## gastou nele). Ate o braco B os dois eram o mesmo numero porque um chunk fechava num frame
+## so; com fatia eles se separam por construcao — medido, span 95 351 -> 128 663 (+34,9 %)
+## com trabalho 5 327 -> 5 078 (-4,7 %) — e uma regua que soma o span passaria a acusar o
+## corte de trocar de victima pelo motivo errado, que e a classe do furo #44.
 func _record_edit_cost(c: VoxelChunk) -> void:
 	if not _edit_stamp.has(c.coord):
 		return
 	var us: int = int(Time.get_ticks_usec()) - int(_edit_stamp[c.coord])
+	var build: int = int(_edit_build_us.get(c.coord, 0))
 	_edit_stamp.erase(c.coord)
+	_edit_build_us.erase(c.coord)
 	_edit_us_total += us
 	_edit_us_count += 1
 	_edit_us_worst = maxi(_edit_us_worst, us)
+	_edit_build_total += build
+	_edit_build_worst = maxi(_edit_build_worst, build)
 
 
 ## Aggregate do custo de edicao local, no estilo das outras colunas de medida.
 ## `count` zero significa "ninguem editou ainda", nao "e barato"; `pending` sao os
 ## carimbos abertos cujo mesh ainda nao rodou -- sair com pending > 0 descarta
 ## latencia real e o readback precisa dizer isso com o numero na mesa.
+## As duas medias sao grandezas diferentes e uma regua precisa dizer qual usa:
+## `mean_us` e o span (edicao ate mesh pronto, com a espera do orcamento dentro)
+## e `mean_build_us` e o trabalho (so os usec que o mesher gastou no chunk).
 func edit_mesh_cost() -> Dictionary:
 	return {
 		"count": _edit_us_count,
 		"worst_us": _edit_us_worst,
 		"mean_us": (
 			float(_edit_us_total) / float(_edit_us_count)
+			if _edit_us_count > 0 else 0.0
+		),
+		"worst_build_us": _edit_build_worst,
+		"mean_build_us": (
+			float(_edit_build_total) / float(_edit_us_count)
 			if _edit_us_count > 0 else 0.0
 		),
 		"pending": _edit_stamp.size(),
@@ -547,107 +852,6 @@ static func _ensure_tables() -> void:
 			per_corner.append([n + u1, n + u2, n + u1 + u2])
 		_ao_offsets.append(per_corner)
 	_tables_ready = true
-
-
-func build_chunk_mesh(c: VoxelChunk) -> void:
-	var ox: int = c.coord.x * CHUNK_SIZE_X
-	var oz: int = c.coord.y * CHUNK_SIZE_Z
-	_scan_col_tops(c)
-
-	var v := PackedVector3Array()
-	var nr := PackedVector3Array()
-	var uv := PackedVector2Array()
-	var cl := PackedColorArray()
-	var ix := PackedInt32Array()
-
-	var wv := PackedVector3Array()
-	var wn := PackedVector3Array()
-	var wuv := PackedVector2Array()
-	var wc := PackedColorArray()
-	var wi := PackedInt32Array()
-
-	var gv := PackedVector3Array()
-	var gn := PackedVector3Array()
-	var guv := PackedVector2Array()
-	var gc := PackedColorArray()
-	var gi := PackedInt32Array()
-
-	for y in CHUNK_SIZE_Y:
-		for z in CHUNK_SIZE_Z:
-			var gz: int = oz + z
-			for x in CHUNK_SIZE_X:
-				var b: int = c.get_block(x, y, z)
-				if b == BlockDefs.Block.AIR:
-					continue
-				var gx: int = ox + x
-				var dr: int = BlockDefs.draw_of(b)
-				# O que o shader precisa saber antes de existir pixel (§3.3): se este
-				# bloco e o topo de uma coluna (vizinho de cima AIR) e quantos blocos
-				# de agua ha embaixo dele, em quartos de 1, saturado em 4. Le-se uma
-				# unica vez por bloco, e so quando a primeira face dele sai: no
-				# interior do oceano todo vizinho e agua, nenhuma face e emitida, e
-				# ler a coluna la seria pagar cinco consultas por voxel para alimentar
-				# triangulo nenhum. O -1 e o "ainda nao lido", nao um valor de canal.
-				var water_flags := Vector2(-1.0, -1.0)
-				for f in 6:
-					var n: Vector3i = FACE_NORMALS[f]
-					var nb: int = get_block_xyz(gx + n.x, y + n.y, gz + n.z)
-					if dr == BlockDefs.Draw.LIQUID:
-						if nb != BlockDefs.Block.AIR:
-							continue
-					elif dr == BlockDefs.Draw.ALPHA:
-						# panos contra panos nao tem face: a emenda de dois vidros
-						# identicos e uma superficie so na janela do jogador
-						if nb == b or BlockDefs.is_opaque(nb):
-							continue
-					elif BlockDefs.is_opaque(nb):
-						continue
-					var tile: int = BlockDefs.tile_for(b, FACE_TILE[f])
-					if dr == BlockDefs.Draw.LIQUID:
-						if water_flags.x < 0.0:
-							water_flags = Vector2(
-								1.0 if get_block_xyz(gx, y + 1, gz) == BlockDefs.Block.AIR else 0.0,
-								float(_water_blocks_below(gx, y, gz)) / 4.0)
-						_emit_face(wv, wn, wuv, wc, wi, gx, y, gz, f, tile,
-							PackedFloat32Array([1.0, 1.0, 1.0, 1.0]), FACE_TINT[f],
-							WATER_TOP_DROP, water_flags)
-					elif dr == BlockDefs.Draw.ALPHA:
-						_emit_face(gv, gn, guv, gc, gi, gx, y, gz, f, tile,
-							_corner_ao_array(gx, y, gz, f), FACE_TINT[f], 0.0)
-					else:
-						var ao := _corner_ao_array(gx, y, gz, f)
-						var jitter: float = float(_hash3(gx, y, gz) % 5) * 0.012
-						_exposure_faces += 1
-						_emit_face(v, nr, uv, cl, ix, gx, y, gz, f, tile, ao,
-							FACE_TINT[f] + jitter, 0.0, Vector2.ZERO,
-							_ct_top[z * CHUNK_SIZE_X + x])
-
-	var mesh := ArrayMesh.new()
-	# O indice do surface e o que era antes de acrescentar: um chunk de vidro sem
-	# agua tem dois surfaces e o hardcoded 2 caia fora deles, e o pano ficava sem
-	# material nenhum (o erro do engine passavaquieto na suíte de triangulos).
-	var s := 0
-	if not v.is_empty():
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(v, nr, uv, cl, ix))
-		mesh.surface_set_material(s, _mat_opaque)
-		s += 1
-	if not wv.is_empty():
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(wv, wn, wuv, wc, wi))
-		mesh.surface_set_material(s, _mat_water)
-		s += 1
-	if not gv.is_empty():
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(gv, gn, guv, gc, gi))
-		mesh.surface_set_material(s, _mat_glass)
-		s += 1
-
-	if c.mesh_instance == null:
-		c.mesh_instance = MeshInstance3D.new()
-		c.mesh_instance.name = "chunk_%d_%d" % [c.coord.x, c.coord.y]
-		nodes_root.add_child(c.mesh_instance)
-	c.mesh_instance.mesh = mesh
-	c.dirty = false
-	_meshes_built += 1
-	_record_edit_cost(c)
 
 
 ## Quantos blocos de agua contiguos existem embaixo deste (dossie 23 §3.3, canal G).

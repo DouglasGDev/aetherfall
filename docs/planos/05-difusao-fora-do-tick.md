@@ -1,6 +1,6 @@
 # 05 — Difusão do Éter fora do tick de decisão
 
-Plano derivado de leitura; nada foi rodado por mim. Cobre o item 6 de "Falta" (`docs/melhorias-status.md:588-590`) e a linha não marcada do P1 (`docs/melhorias-status.md:771`), que `docs/design/08-roadmap-risks-licensing.md:68` lista como entrega de P1 e `:36` registra que nenhum gate está fechado. Marcas: `[MEASURED]` lido em log, `[TARGET]` peça que não existe em `src/`.
+Plano derivado de leitura; nada foi rodado por mim. Cobre o item 6 de "Falta" (`docs/melhorias-status.md:588-590`) e a linha não marcada do P1 (`docs/melhorias-status.md:791`), que `docs/design/08-roadmap-risks-licensing.md:68` lista como entrega de P1 e `:36` registra que nenhum gate está fechado. Marcas: `[MEASURED]` lido em log, `[TARGET]` peça que não existe em `src/`.
 
 ## Premissa nomeada: visibilidade síncrona
 
@@ -20,7 +20,7 @@ Hoje a difusão é a única escrita em massa do Éter dentro do passo, e o lobo 
 | Custo da lista `hot` | 6 vizinhos por célula ativa, com `world.is_solid` no meio do laço | `src/world/aether_field.gd:130-142`, `:161-176` |
 | µs de difusão, HOT agregado | **não medido** | — (o runner só cronometra `sim_step` e BT, `tests/aether_reactions_test.gd:365-377`) |
 
-Âncora `[MEASURED]` de campo real: WORK 4,0 por 12 s deu **48 passadas**, energia 4,000000 → 2,021455, **19 células ativas** (`docs/melhorias-status.md:1781-1782`). Âncora `[MEASURED]` de passo: `worst_sim_ms=6,779`, `tick=359`, `dropped_ticks=0`, `chunks=64`, `aether_energy=9,67776` (`docs/evidence/third-person-carry/clone-suite.log:305`), com **232 checagens / 0 falhas / 33,7 s** (`docs/evidence/third-person-carry/clone-suite.log:307`). O teto do passo é 50 ms com 5 passos por frame (`src/core/sim_clock.gd:5-7`, `:19-29`) e o cronômetro inclui o journal (`src/main.gd:337-339`, `:357-363`).
+Âncora `[MEASURED]` de campo real: WORK 4,0 por 12 s deu **48 passadas**, energia 4,000000 → 2,021455, **19 células ativas** (`docs/melhorias-status.md:1826-1827`). Âncora `[MEASURED]` de passo: `worst_sim_ms=6,779`, `tick=359`, `dropped_ticks=0`, `chunks=64`, `aether_energy=9,67776` (`docs/evidence/third-person-carry/clone-suite.log:305`), com **232 checagens / 0 falhas / 33,7 s** (`docs/evidence/third-person-carry/clone-suite.log:307`). O teto do passo é 50 ms com 5 passos por frame (`src/core/sim_clock.gd:5-7`, `:19-29`) e o cronômetro inclui o journal (`src/main.gd:337-339`, `:357-363`).
 
 ## Opções reais
 
@@ -42,7 +42,7 @@ godot --headless --path . tests/smoke_test.tscn -- --tick-journal=CAMINHO-NOVO.j
 ```
 
 1. **Colheita antes do corte** (pré-gate de A/B/C): o runner imprime por cenário `diffuse_us_media`, `diffuse_us_pico`, `passes`, `hot_max_por_canal`, medidos com `Time.get_ticks_usec()` em volta de `diffuse_and_decay` (padrão já usado em `tests/aether_reactions_test.gd:215-219`) — código de produção intocado. Sem esse número, A/B/C são hipótese.
-2. **`difusao_hash_inalterado_por_semente`** (checagem nova, em `tests/aether_reactions_test.gd`, que já controla as cadências): monta o campo, imprint WORK 4,0, N passadas fixas, e compara `Journal.state_hash()` contra um **literal gravado na base**, antes e depois da mudança, junto da âncora lida 4,000000 → 2,021455 e 19 células ativas (`docs/melhorias-status.md:1781-1782`). Imprime `passes=N hash_antes=... hash_depois=... energia=...`. Em A a igualdade é obrigatória; em B/C a checagem existe para mostrar **onde** o hash mudou, com o novo literal e o commit que o declara. Nota honesta: comparar journal entre duas corridas ao vivo não serve — a simulação ao vivo não é determinística (`AGENTS.md`, mandato 3), e a suíte roda sem journal (`docs/evidence/third-person-carry/clone-suite.log:305`: `journal.records=0`).
+2. **`difusao_hash_inalterado_por_semente`** (checagem nova, em `tests/aether_reactions_test.gd`, que já controla as cadências): monta o campo, imprint WORK 4,0, N passadas fixas, e compara `Journal.state_hash()` contra um **literal gravado na base**, antes e depois da mudança, junto da âncora lida 4,000000 → 2,021455 e 19 células ativas (`docs/melhorias-status.md:1826-1827`). Imprime `passes=N hash_antes=... hash_depois=... energia=...`. Em A a igualdade é obrigatória; em B/C a checagem existe para mostrar **onde** o hash mudou, com o novo literal e o commit que o declara. Nota honesta: comparar journal entre duas corridas ao vivo não serve — a simulação ao vivo não é determinística (`AGENTS.md`, mandato 3), e a suíte roda sem journal (`docs/evidence/third-person-carry/clone-suite.log:305`: `journal.records=0`).
 3. **Custo sem regressão**: `dropped_ticks=0` e `worst_sim_ms` contra 6,779 ms `[MEASURED]` (`docs/evidence/third-person-carry/clone-suite.log:305`), com a contagem de checagens conferida **antes** do lote (`AGENTS.md`: um `SCRIPT ERROR` dentro de um passo derruba checagens em silêncio).
 4. Gate de fase não se fecha aqui: P1 segue aberto (`docs/design/08-roadmap-risks-licensing.md:72-74`, `:85`), e quem fecha é o dono do repositório.
 

@@ -24,8 +24,8 @@ este item (h), não pelo script de re-derivação.
 | O texto antigo afirmava | O que a leitura de hoje diz |
 | --- | --- |
 | "Última da série serializada 09 → 10 → 11 → **12**" | Oitava de onze: depois dela vêm 17, 18 e 13, e antes entraram a 19 (defeito em execução) e a pauta da 16 |
-| O gate observava `block_changed` "dispara" | O sinal **não tem nenhum consumidor** no repositório: existem só a declaração ([voxel_world.gd:6](../../src/world/voxel_world.gd#L6)) e o emit ([`:336`](../../src/world/voxel_world.gd#L336)) — o grep de `block_changed` em `src/` e `tests/` devolve essas duas linhas. O dossiê 17 é quem o assina; o gate deste observa estado de mundo lido: `get_block` + `world.edits` |
-| `EXPECTED_CHECKS` "**109** na leitura" | **283** nesta árvore ([aether_reactions_test.gd:64](../../tests/aether_reactions_test.gd#L64)). A leitura de 2026-11-22 dizia 225 porque a 16 ainda não havia pousado; na base deste lote (`dcbcbe8`) o valor era **240**, e daqui para cá o lote escreveu **+43** — 247 (a) → 261 (b) → 267 (c) → 271 (d) → 275 (e) → 279 (f) → 283 (g) |
+| O gate observava `block_changed` "dispara" | **Tinha zero consumidores quando esta página foi lida (2026-11-22); hoje tem um.** A leitura de agora: declaração ([voxel_world.gd:6](../../src/world/voxel_world.gd#L6)), emit ([`:595`](../../src/world/voxel_world.gd#L595)) e o `connect` de `BlockUpdateQueue.attach` ([block_update_queue.gd:35](../../src/world/block_update_queue.gd#L35)) — "a fila e o UNICO leitor de `world.block_changed`", como escreve o comentário de [main.gd:70](../../src/main.gd#L70) desde o pouso da 17 (`95d519a`). O gate deste lote continua lendo estado de mundo: `get_block` + `world.edits` |
+| `EXPECTED_CHECKS` "**109** na leitura" | **367** nesta árvore ([aether_reactions_test.gd:162](../../tests/aether_reactions_test.gd#L162)). A leitura de 2026-11-22 dizia 225 porque a 16 ainda não havia pousado; na base deste lote (`dcbcbe8`) o valor era **240**, e daqui para cá o lote escreveu **+43** — 247 (a) → 261 (b) → 267 (c) → 271 (d) → 275 (e) → 279 (f) → 283 (g) — e **283** é o número pineado do pouso `fa94cb5`. Entre ele e a abertura da perna 24 (`36e842c`, **364**) outras pernas escreveram checks por cima — o comentário de [`:60`](../../tests/aether_reactions_test.gd#L60) conta cada lote, parágrafo por parágrafo |
 | A suíte "hoje **236**" | Contrato publicado: **255 checagens / 0 falhas**, no pin `9b2c65a` da perna 16 (clone limpo, `--import` frio). Nesta árvore a suíte re-rodou **255 / 0 / 47,9 s** — o lote não toca o `smoke_test.gd`, e é por isso que o número não sobe |
 | (o runner de RNG não existia) | Hoje existe [tests/simulation_rng_test.gd](../../tests/simulation_rng_test.gd), **27** checagens (`:9`), e uma delas é que o desvio do lobo **não consome a RNG global** ([`:226`](../../tests/simulation_rng_test.gd#L226)) — é o que amarra o §5.9 |
 | "`STONE 0,95`, `WOOD 0,55`, `COBBLESTONE 0,85` ficam **fora** do alcance com a mesma régua do jogador" | **Falso, lido hoje**: `hardness` é **duração**, não permissão. O jogador soma `_mining_accum += delta` e compara a `target_hardness` sem nenhum teto de bloco ([player.gd:663-664](../../src/entities/player.gd#L663-L664)), e `_mine_target` escreve `AIR` no alvo seja ele qual for ([`:685`](../../src/entities/player.gd#L685)). A pedra cai em 0,95 s de mão nua. O que limita o bicho é **lista de material**, não a dureza |
@@ -76,18 +76,18 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   [:275](../../src/world/world_gen.gd#L275), [:293](../../src/world/world_gen.gd#L293),
   [:309](../../src/world/world_gen.gd#L309)), e é exatamente por isso que o relevo não deixa rastro
   em `edits`. Do lado do mundo, quem escreve no chunk é `_write_raw`
-  ([voxel_world.gd:321](../../src/world/voxel_world.gd#L321)).
+  ([voxel_world.gd:271](../../src/world/voxel_world.gd#L271)).
 - **A API já é a certa e já é pública**:
-  [`set_block(p, b, record := true) -> bool`](../../src/world/voxel_world.gd#L326-L339) — recusa
+  [`set_block(p, b, record := true) -> bool`](../../src/world/voxel_world.gd#L585) — recusa
   fora dos limites, recusa escrever o que já está lá, grava em
-  [`_write_raw`](../../src/world/voxel_world.gd#L292-L301) (chunk **e** índice linear `_flat`),
-  guarda a edição em [`edits[p]`](../../src/world/voxel_world.gd#L54), marca chunks sujos em
-  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L316-L329) e emite
+  [`_write_raw`](../../src/world/voxel_world.gd#L575-L582) (chunk **e** índice linear `_flat`),
+  guarda a edição em [`edits[p]`](../../src/world/voxel_world.gd#L593), marca chunks sujos em
+  [`_touch_chunks_of`](../../src/world/voxel_world.gd#L618-L629) e emite
   `block_changed(pos, prev, now)` **para ninguém**. O lobo já segura `world` e `aether` desde o
   [`setup`](../../src/entities/wolf.gd#L299-L318).
 - **`edits` é a proveniência que faltava, e ela já existe.** `record` é o que separa "o mundo gerou
   isto" de "alguém construiu isto": a geração **não** escreve em `edits`, a colocação do jogador
-  escreve ([`:333-334`](../../src/world/voxel_world.gd#L333-L334)) e o buraco da pata também, porque
+  escreve ([`:592-593`](../../src/world/voxel_world.gd#L592-L593)) e o buraco da pata também, porque
   o item (f) passou `record = true` ([wolf.gd:1192](../../src/entities/wolf.gd#L1192)). Então
   `not world.edits.has(pos)` é a cláusula que diz "cavar não desmonta a obra de outro" sem perguntar a
   ninguém de quem é o bloco — é o fechamento do furo #22 (§3.2), custa uma comparação e está escrita
@@ -114,22 +114,24 @@ mineracao == dureza", "lavra entrou no inventario como drop"). **Mexer nisso é 
   **vidro é mais mole que neve**, e a bancada é mais mole que pedra. Lista de material, não ordenação
   por dureza, é o que decide o que uma pata cave.
 - **O custo de cada voxel removido é a malharia, medida:** `set_block` → `_touch_chunks_of` → fila
-  `_dirty`, consumida por [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L228-L236) com
+  `_dirty`, consumida por [`process(p_frame_budget)`](../../src/world/voxel_world.gd#L309-L359) com
   `MESH_BUDGET := 2` chunks por frame ([main.gd:28](../../src/main.gd#L28), chamada em
-  [main.gd:387-388](../../src/main.gd#L387-L388)). As duas leituras que o contrato publica: **64 chunks
+  [main.gd:387-388](../../src/main.gd#L387-L388)) — e desde o dossiê 24 o mesmo loop para também pelo
+  relógio (`MESH_FRAME_BUDGET_US`, [`voxel_world.gd:55`](../../src/world/voxel_world.gd#L55)), então o
+  buraco da pata drena em mais frames com pior quadro menor. As duas leituras que o contrato publica: **64 chunks
   em ~4,3 s no boot** ([README.md:642-643](../../README.md#L642-L643); 4.640–4.886 ms nas cinco
   corridas históricas, [docs/melhorias-status.md:83](../../docs/melhorias-status.md#L83)) ≈ 67
   ms/chunk, e o tempo do último lote no F3 ([`ultimo %.2f ms`](../../src/ui/hud.gd#L253-L255), lido de
-  [`last_mesh_ms()`](../../src/world/voxel_world.gd#L243)). Os dois números convivem porque o boot
+  [`last_mesh_ms()`](../../src/world/voxel_world.gd#L510)). Os dois números convivem porque o boot
   congela a janela, mas **a medição de um chunk sujo isolado já existe** desde o dossiê 07c: o carimbo
-  posto em [`_mark`](../../src/world/voxel_world.gd#L330-L343) fecha em
-  [`_record_edit_cost`](../../src/world/voxel_world.gd#L348-L356) e sai por
-  [`edit_mesh_cost()`](../../src/world/voxel_world.gd#L362-L372) no `diagnostics()["edit_mesh"]` — o
+  posto em [`_mark`](../../src/world/voxel_world.gd#L632-L650) fecha em
+  [`_record_edit_cost`](../../src/world/voxel_world.gd#L660-L671) e sai por
+  [`edit_mesh_cost()`](../../src/world/voxel_world.gd#L681-L695) no `diagnostics()["edit_mesh"]` — o
   bake-off mediu 52 chunks remalhados por 30 edições com média de 77,6 ms e pico de 162,8 ms no braço A
   ([readback §4](../evidence/af-bakeoff-voxel/readback.md)). O cavar consome esse preço, não o do lote
   de boot. Instrumento que já existia e continua útil como testemunha da fila:
-  [`pending_meshes()`](../../src/world/voxel_world.gd#L239) e
-  [`meshes_built()`](../../src/world/voxel_world.gd#L247).
+  [`pending_meshes()`](../../src/world/voxel_world.gd#L506) e
+  [`meshes_built()`](../../src/world/voxel_world.gd#L530).
 - **O desemperto tem dois braços hoje, e o segundo define o terceiro.** Em
   [wolf.gd:1239-1254](../../src/entities/wolf.gd#L1239-L1254): contato horizontal persistente arma o
   desvio (`_unstick` + `_detour`) e, **dentro do mesmo `if`**, `body.on_ground and
@@ -309,8 +311,8 @@ um **único** comprador hoje, o do jogador; dar ao bicho o segundo comprador é 
   da célula-alvo e, no (b), a coluna que `_scent_ground_y` já percorre
   ([`:1015`](../../src/entities/wolf.gd#L1015), no máximo 8 passos).
 - **Aloco no caminho quente?** Não no acumulador (`float` + uma `Vector3i` + um `int`). O que aloca é a
-  consequência: `edits[p] = b` ([voxel_world.gd:334](../../src/world/voxel_world.gd#L334)) e a fila
-  `_dirty` (`Array` de chunk, já existente, [`:365-366`](../../src/world/voxel_world.gd#L365-L366)).
+  consequência: `edits[p] = b` ([voxel_world.gd:593](../../src/world/voxel_world.gd#L593)) e a fila
+  `_dirty` (`Array` de chunk, já existente, [`:81`](../../src/world/voxel_world.gd#L81)).
   Nada de `Array` novo por tick — que é, aliás, a única linha desta página que encosta no débito
   declarado no contrato ("Alocação no caminho quente existe e não é medida").
 - **Como sei que ficou melhor / quanto custa?** Medindo, antes de celebrar: o lote **primeiro** publica

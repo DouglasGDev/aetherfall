@@ -1,0 +1,13 @@
+STAMP tag=pouso fase=antes hora=25/11/2026 20:24:31
+HEAD=5467c33ba8d252e401161ff43f1d89cba3a5db36
+branch=perf/malha-orcamento-de-tempo-24
+src_tree=c0716d48bed2d82c498a21ec000a824ba4cc4bed tests_tree=3c85830feaf3932e66c501588c5f66513134d356
+porcelain_src_tests=0
+porcelain_todos=0
+d985624f284947d0cfbe860e690fd39f 42739 2026-11-25 16:20:15 src/world/voxel_world.gd
+a3c6f70192ec912c6e8bf4ef19953479 63147 2026-11-25 14:13:18 src/main.gd
+d06db7d1c26242742dec07f8fa8ba367 67505 2026-11-25 12:49:24 src/entities/wolf.gd
+14a75dd88fc0ca783b77ab64903fcb6a 14129 2026-11-25 16:00:29 tests/af_bakeoff.gd
+2d98601db2ea404d7b6cd3af633328fc 371121 2026-11-25 20:00:32 tests/aether_reactions_test.gd
+e757209d0804d0a5e7a8ffa34db5ae5d 167943 2026-11-25 13:13:17 tests/smoke_test.gd
+3419885dd9f72bc000721d002dd1fec6 23655 2026-11-25 20:21:31 tools/run_game.ps1

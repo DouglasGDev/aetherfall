@@ -83,8 +83,8 @@ Repositório: <https://github.com/DouglasGDev/aetherfall>.
    `MindsInspector` não existe. O custo de BT sai no F3 (`tree_stats()`,
    [wolf.gd:1372-1373](src/entities/wolf.gd#L1372-L1373)); agora há também colheita headless
    estreita de `sim_step` integral e `_guard.last_us`/`trips`, um lobo por cenário
-   ([aether_reactions_test.gd:405-407](tests/aether_reactions_test.gd#L405-L407),
-   [:1949-1950](tests/aether_reactions_test.gd#L1949-L1950)). O guard mede só BT, sem
+   ([aether_reactions_test.gd:437-447](tests/aether_reactions_test.gd#L437-L447),
+   [:1983-1993](tests/aether_reactions_test.gd#L1983-L1993)). O guard mede só BT, sem
    percepção/utilidade ([wolf.gd:448-450](src/entities/wolf.gd#L448-L450)); isso não mede
    o HOT agregado dos cinco lobos nem fecha P1.
 6. **Mudanças pequenas e atômicas.** Um assunto por commit e suíte verde entre eles, com a
@@ -152,7 +152,7 @@ explícita estiver ativa; não é journal de comandos nem mecanismo de replay.
 | --- | --- | --- |
 | Passo de simulação | 50 ms (20 Hz), teto de 5 passos por frame; o que estourar vira `dropped_ticks` à vista | [sim_clock.gd:5-7](src/core/sim_clock.gd#L5-L7), [:19-29](src/core/sim_clock.gd#L19-L29) |
 | Árvore de decisão, por lobo | 400 µs no `SubtreeGuard` (a default da classe é 250 µs); só BT, não percepção/utilidade | [bt_tree.gd:117-137](src/ai/behavior/bt_tree.gd#L117-L137), [wolf.gd:448-449](src/entities/wolf.gd#L448-L449) |
-| Malha | 2 chunks por frame — **contagem, não tempo**: medido 52–177 ms no pior quadro, contra um piso de instrumento de 6,0 ms; é o furo #41 | [main.gd:28](src/main.gd#L28), usado em [:363](src/main.gd#L363), [voxel_world.gd:227-236](src/world/voxel_world.gd#L227-L236) |
+| Malha | na `main`: 2 chunks por frame — **contagem, não tempo** (é o furo #41; o `192,20 ms` de pior quadro e o `52–78 ms` por chunk são `[MEASURED]` de `8a53b56`). Na branch da perna 24, desde `a537117` + `99bbbde`: **tempo também** — `MESH_FRAME_BUDGET_US = 8000` µs perguntado em **duas unidades** do laço (antes de um chunk entrar **e** antes de cada nível), com o chunk fatiado e devolvido à fila. Re-medido em `95d519a`: chunk único com fila vazia custa **45,04 – 152,74 ms** (p50 87,2 / 87,8 ms, 128 de 128 acima da janela de 33,3 ms) contra o mesmo piso de instrumento de **6,06 ms**; com a guarda de topo, o pior frame do dreno do lote sai **10,06 – 13,38 ms** nas cinco corridas da árvore de `99bbbde`; depois do **#61** pago (`94a4a12`, o teto de dreno montado com as peças lidas **depois** do lote), as duas corridas novas dão **10,66** e **16,42 ms** contra teto de dreno **21,90** e **25,67 ms**, com a janela de travada de **33,30 ms** intacta) | [main.gd:28](src/main.gd#L28), usado em [:388](src/main.gd#L388); na branch, o teto em [voxel_world.gd:55](src/world/voxel_world.gd#L55) e as duas guardas em [:322](src/world/voxel_world.gd#L322) e [:336](src/world/voxel_world.gd#L336), corpo do `process()` em [:309-359](src/world/voxel_world.gd#L309-L359) |
 | Difusão do Éter | 4 passadas por segundo, não 20 | [main.gd:27](src/main.gd#L27), [:322](src/main.gd#L322) |
 | Recolha de cadáver, visão do Éter | 1 s e 0,25 s | [main.gd:31](src/main.gd#L31), [:29](src/main.gd#L29) |
 
@@ -482,9 +482,13 @@ não permissão**: o jogador soma `_mining_accum += delta` contra `target_hardne
 ([:685](src/entities/player.gd#L685)), então `STONE 0,95` **cai** — o que limita a pata é lista de
 material, não a régua. (2) **`block_changed` não tem um único consumidor** no repositório: existem só a
 declaração ([src/world/voxel_world.gd:6](src/world/voxel_world.gd#L6)) e o emit
-([:336](src/world/voxel_world.gd#L336)), então o gate desta perna observa estado de mundo lido
-(`get_block` + [`world.edits`](src/world/voxel_world.gd#L54)) e quem assina o sinal continua sendo a 17 —
+(`voxel_world.gd:336` naquela árvore; no HEAD da branch é [:595](src/world/voxel_world.gd#L595)), então o
+gate desta perna observa estado de mundo lido
+(`get_block` + [`world.edits`](src/world/voxel_world.gd#L62)) e quem assina o sinal continua sendo a 17 —
 que é exatamente o motivo pelo qual a checagem `queda_move_a_celula` daquela página nasce vermelha.
+**Aquela frase é a leitura de 2026-11-22 e hoje está superada:** a 17 pousou (`95d519a`) e o sinal tem um
+consumidor — [`block_update_queue.gd:35`](src/world/block_update_queue.gd#L35), inscrito no bloco da
+fila de [`main.gd:70`](src/main.gd#L70), e o único de `src/`.
 (3) **O desemperto já tem dois ramos**, e o segundo é da 19 ([src/entities/wolf.gd:1239-1254](src/entities/wolf.gd#L1239-L1254)),
 então cavar entra como **terceiro** ramo do mesmo `if` (fork A), e a alternativa de folha nova na
 `Selector` (fork B) só se abre com o A vermelho porque `intent` é hashiado pelo journal. (4) **Quem cava
@@ -535,7 +539,7 @@ gitignored). A fila serializada passa a **12 → 17 → 18 → 20 → 13**: a 16
 `feat/bicho-cavando-12` — que **abriu depois, da `main` de `dcbcbe8`**, e pousou em `fa94cb5` no registro
 abaixo — e depois dele 17, 18, 20 e 13. O motivo que esta frase dava para o vermelho estava errado, e a própria página 12 o
 tinha corrigido dois registros antes: o gate do cavar observa `get_block` +
-[`world.edits`](src/world/voxel_world.gd#L54), não o sinal, então a branch nasce vermelha porque nenhuma
+[`world.edits`](src/world/voxel_world.gd#L62), não o sinal, então a branch nasce vermelha porque nenhuma
 linha do cavar existia ainda, não porque `block_changed` continua sem consumidor nenhum — esse continua
 sendo débito da 17 assinar. **A fila P0/P1 continua aberta**: budget HOT sem medição, censo multi-semente
 sem corrida e bake-off de AF sem número são exatamente os elos que a 16 não toca, e nada desta rodada
@@ -752,7 +756,10 @@ por isso, não por descrever peça inexistente. (3) "Refração" já tinha onde 
 a face lateral da água com o tint descartado — e a página escolheu esse canal como portador da máscara
 (§3.3). Hoje o shader lê esse canal — [`water_surface.gd:190`](src/world/water_surface.gd#L190) e
 [`:210-212`](src/world/water_surface.gd#L210-L212) — e o material que o carrega nasce em
-[`voxel_world.gd:131`](src/world/voxel_world.gd#L131), com a asserção de que ele é lido na própria
+[`voxel_world.gd:154`](src/world/voxel_world.gd#L154) (o acessor público `water_material()` é
+[:177-178](src/world/voxel_world.gd#L177-L178); o ponteiro antigo dizia `:131`, linha que nunca foi
+nenhuma das duas na árvore do pouso da 23 — classe do #28), com a asserção
+de que ele é lido na própria
 suíte (§5.1). (4) "Caústicas quando o sol está alto" não tem variável: `_build_environment` escreve um sol
 **parado** em `rotation_degrees (-42, 55, 0)` com elevação fixa de ~48° e uma `fog_density` de `0,006`
 ([main.gd:1278-1314](src/main.gd#L1278-L1314)); não existe clima no projeto, e isso é o que segura a
@@ -1011,30 +1018,50 @@ página quer reusar — além de `src/tools/` e `tests/load_pack_fase4_test.gd` 
 Duas leituras desta passada mudam a forma do gate, e nenhuma é cosmética. (1) **A medição publicada é de
 outra árvore.** `8a53b56` → `95d519a` são **+182/−18** em `src/world/voxel_world.gd` e **+232/−25** em
 `src/main.gd` (`git diff --numstat`), e boa parte do mesher é a água da perna 23 pôr leitura de coluna por voxel dentro do mesher
-([voxel_world.gd:591](src/world/voxel_world.gd#L591), o `water_flags`). O `52–78 ms` por chunk e o
-`192,20 ms` de pior quadro são `[MEASURED]` de `8a53b56` e **hipótese** nesta revisão até a corrida nova
-existir — item 6 do ciclo de trabalho. (2) **Um teto de tempo compra quadro às custas de fila, e a casa já
-tem instrumento para cobrar isso.** `_mark()` carimba o chunk na primeira edição
-([:349-361](src/world/voxel_world.gd#L349-L361), com o comentário "o atraso ate o jogador ver o bloco
+(`95d519a:src/world/voxel_world.gd:591` na base medida — no HEAD da branch a mesma leitura
+declarada está em [:428](src/world/voxel_world.gd#L428) e consumida em
+[:444-447](src/world/voxel_world.gd#L444-L447), o `water_flags`). O `52–78 ms` por chunk e o
+`192,20 ms` de pior quadro eram `[MEASURED]` de `8a53b56` e **deixaram de ser hipótese**: a re-medição
+existiu, rodou em `95d519a` às 14:46–15:05 desta passada e está arquivada em `.tools/med51_*` com vínculo
+de revisão antes/depois — chunk único **45,04 – 152,74 ms** (128 amostras, e o *mínimo* já é 7,4 quadros
+de piso), piso do quadro 6,06 ms com **0** travadas, composta da mesa **10 285,48 ms** contra os
+`8 333,32 ms` de `8a53b56`. Item 6 do ciclo de trabalho cumprido, e a régua nova do §4 do dossiê 07 passa a
+comparar contra 10 285,48, não contra o número velho. (2) **Um teto de tempo compra quadro às custas de
+fila, e a casa já tem instrumento para cobrar isso.** `_mark()` carimba o chunk na primeira edição
+(`95d519a:src/world/voxel_world.gd:349-361`, hoje em
+[:632-650](src/world/voxel_world.gd#L632-L650), com o comentário "o atraso ate o jogador ver o bloco
 trocado"), `_record_edit_cost()` fecha a conta no fim de `build_chunk_mesh`
-([:367-374](src/world/voxel_world.gd#L367-L374)) e `edit_mesh_cost()` publica `count`/`worst_us`/`mean_us`/
-`pending` ([`:381-390`](src/world/voxel_world.gd#L381-L390), no `diagnostics()` em
+(`95d519a:...:367-374`, hoje em [:660-671](src/world/voxel_world.gd#L660-L671)) e `edit_mesh_cost()`
+publica `count`/`worst_us`/`mean_us`/
+`pending` (`95d519a:...:381-390`, hoje em [`:681-695`](src/world/voxel_world.gd#L681-L695), e desde
+`99bbbde` também `mean_build_us`, o trabalho, além do span; no `diagnostics()` em
 [main.gd:1327](src/main.gd#L1327)). Somado à métrica composta do dossiê 07 — `mesh_ms + 52·mean_us`, com a
 referência A da mesa em **8 333,32 ms** — isso significa que o corte **não pode** ser aceito por um número
 só: baixar o pior quadro movendo a composta para cima é trocar de vítima, não otimizar. A página escreve o
 gate com três checagens (`malha_orca_tempo_e_nao_itens`, `corte_nao_cobra_latencia_maior_que_o_pico`,
 `orcamento_de_malha_tem_nome_e_origem`) e diz que a **saída idêntica do mesher não ganha checagem nova**
 porque o bake-off já confere `corpo do mundo == SHA de referencia` e os triângulos
-([tests/af_bakeoff.gd:169](tests/af_bakeoff.gd#L169)) — checagem que não pode falhar é remoção de código
+(`95d519a:tests/af_bakeoff.gd:169` na base; no HEAD da branch é
+[:208](tests/af_bakeoff.gd#L208)) — checagem que não pode falhar é remoção de código
 adiada.
 
-O fork está registrado com o número que reabre cada braço, não com adjetivo: **A** = teto de tempo no
-`process()` de [voxel_world.gd:228-236](src/world/voxel_world.gd#L228-L236), escolhido primeiro; **B** = A
-mais fatia reatável de um chunk, entra **só** se a medição de hoje der chunk único ≥ 33,3 ms, e custa um
-artefato visual novo (o chunk incompleto entre frames); **C** = geração fora da thread main, último,
-porque é o único que toca o contrato de concorrência (o chunk lido pode ser escrito no meio do read) e as
-15 linhas de `Packed*Array` por chunk que o §4 da página contabiliza por código e **nenhuma corrida
-mede**. O que esta perna **não** autoriza, escrito antes do código: a **causa 2** da rodada de ontem (passo
+O fork estava registrado com o número que reabre cada braço, não com adjetivo — e a medição de hoje
+**exercitou** a cláusula, o que é o ponto desta regra: **A** = teto de tempo no `process()` de
+`95d519a:src/world/voxel_world.gd:228-236` (o `process()` do HEAD com o corte é
+[:309-359](src/world/voxel_world.gd#L309-L359)), **rejeitado sozinho** pela corrida — o
+`break` sem fatia apenas impede pagar duas vezes, e nenhum chunk deste mundo cabe em 10,4 ms quando o
+**mais barato** das 128 amostras custa 45,04 ms; **B** = A mais fatia reatável de um chunk, **o braço que a
+cláusula escolheu**, porque ela pedia "chunk único ≥ 33,3 ms" e a medição devolveu 128 de 128 acima disso.
+Custa um artefato visual novo (o chunk incompleto entre frames) e é por isso que a página recusa dar-lhe
+checagem de geometria nova: o bake-off já confere o corpo e os triângulos. **C** = geração fora da thread
+main, continua último **e a medição de hoje o enfraqueceu**: `sobra_laco` é 95 – 99 % de uma chamada de
+44 – 109 ms, `upload_arrays` 0,1 – 0,3 ms e `scan_col_tops` 0,5 – 3,2 ms, então thread **relocaliza** o
+custo em vez de reduzi-lo; as 15 linhas de `Packed*Array` por chunk que o §4 da página contabiliza por
+código seguem sem medição própria. O valor decidido do teto é `MESH_FRAME_BUDGET_US := 8000` **µs**
+(dossiê 24 §3.2: piso de 6,06 ms + 8 ms de trabalho = 14,06 ms, folga de 2,4× contra os 33,3 ms da janela
+de travada), com nome de tempo morando na classe do laço — `MESH_BUDGET := 2` de
+[main.gd:28](src/main.gd#L28) continua em itens e as duas grandezas não se traduzem. O que esta perna
+**não** autoriza, escrito antes do código: a **causa 2** da rodada de ontem (passo
 de 9,2–11,4 ms caindo num quadro de piso 6,0 ms a ~165 Hz, com `dropped_ticks = 0` — cadência de tela, que
 a própria rodada diz não ser defeito novo nem conserto pedido), o **boot** (4 225–4 977 ms de malharia com
 a janela congelada; o `WARMUP_FRAMES := 20` da sonda existe para não culpar o tick pelo boot), subir
@@ -1043,6 +1070,121 @@ a janela congelada; o `WARMUP_FRAMES := 20` da sonda existe para não culpar o t
 agora: mudar **quando** a geometria aparece não muda **o que** o mundo contém, então a projeção do
 `TickJournal` não se move com este corte — e um hash que se mover com ele é defeito da perna, não
 consequência de versão. O **#41** deixa de estar oferecido a quem chega e passa a ter dono nomeado.
+
+O que mudou **depois** daquele registro, lido às 15:41 desta mesma rodada, escrito aqui porque um registro
+de ordem que envelhece sem testemunha vira ficção: a pauta foi mergeada (`7435159`), a branch
+`perf/malha-orcamento-de-tempo-24` foi **criada e checkoutada na árvore primária** (`git reflog` dá
+`Created from HEAD` sobre `36e842c`, sem commit ainda), o gate das três checagens do §5.1 **já correu
+vermelho com log arquivado** — `.tools/med24_red.log` fecha `367 checagens 3 falhas 57,874 s` às 15:28 com
+`teto_us=0  frame_ms=144.35  chunks_no_frame=2` e `MESH_FRAME_BUDGET_US=0 em_VoxelWorld=false`, e
+`.tools/med24_red_bakeoff.log` dá `12 checagens 0 falhas 9,397 s` às 15:35 com a composta em **9 942,32**
+abaixo do teto **11 314,03** (10 285,48 × 1,1; o código commitado carrega `11 313,03` por escorregão de
+transcrição — 1,00 ms, nenhum veredito muda, e só o dono do arquivo reescreve o literal), a guarda, que é
+verde na base por construção — e o corte, que às 15:41 estava **sendo escrito**, **é commit às 16:11:57**:
+`a537117` (*"Codigo do dossie 24 braco B..."*) carrega `src/world/voxel_world.gd` **+258/−108** — o número
+que esta passada tinha lido como "sem commit" às 16:06:46 é exatamente o que entrou, com
+`MESH_FRAME_BUDGET_US: int = 8000` na classe (`a537117:src/world/voxel_world.gd:52`), a classe
+`_MeshSlice` (`a537117:src/world/voxel_world.gd:266-287`) e o `if antes - t0 >= MESH_FRAME_BUDGET_US`
+**dentro** do laço de nível (`a537117:src/world/voxel_world.gd:314`, corpo `:295-329`) — mais
+`tests/af_bakeoff.gd` **+30/−10**. A `main` era `36e842c` naquela leitura — hoje é `26c7f33`, que andou por
+outra perna (o pouso do `Rodar.bat`), nunca por merge da 24 —, então o teto mora na branch e a tabela de
+orçamentos lá em cima ainda descreve a `main`. Às 15:52 o **vermelho do gate foi commitado pela outra mão**
+(`c86f1a0`, e só `tests`: runner +155, bake-off +23/−10); entre as duas pontas o mesher voltou a mover
+**durante** a régua de âncoras desta passada — +198/−105 com mtime `15:51:12`, **+208/−105** às 16:02:47,
+**+258/−108** às 16:06:46 (esses três são o commit) — e **depois** do commit voltou a mover outra vez:
+`+50/−6` às 16:17:29 (o teto agora em **duas unidades** na árvore de trabalho: `:319` antes de deixar um
+chunk entrar, `:333` no laço de nível — no commit que isso virou, `99bbbde`, as duas são
+[voxel_world.gd:322](src/world/voxel_world.gd#L322) e [:336](src/world/voxel_world.gd#L336))
+e `tests/aether_reactions_test.gd` `+36/−11` às 16:18:09, com `EXPECTED_CHECKS` de novo
+em **367** contra os **366** de `a537117` — 367 → 366 → 367 no mesmo dia. O vínculo das corridas é de
+**mtime**, não de `MED_RUN`, e ele agora tem duas metades. As réguas da árvore do primeiro corte são logs
+escritos entre 16:07 e 16:11:28, **antes** do commit `a537117` (16:11:57); as cinco corridas com as **duas**
+guardas (`B5` 16:22:38, `B6` 16:24:28, `B7` 16:25:47, `B8` 16:26:46, suíte 16:28:34) **antecedem** o commit
+`99bbbde` (16:28:51) — e valem porque a árvore de trabalho bate com esse HEAD: `git status --porcelain -- src
+tests` devolve vazio e o md5 do mesher no clone limpo (`d985624f…`, 1 055 linhas) é o mesmo do arquivo de
+trabalho. O **pin em SHA existe**: clone limpo de `99bbbde` (`C:/tmp/aetherfall-pin-24`, `git rev-parse HEAD`
+= `99bbbde71911194d7a74574bc0435db62f04318b`, `--import` frio 16:30:16) devolve runner **330 / 9 / 41,987 s**,
+suíte **278 / 2 / 65,1 s** e bake-off **12 / 0 / 10,813 s**. As **nove** falhas do runner e as **duas** da
+suíte são todas a mesma causa — o **furo #38**: `extensao_carrega_classe` ×4, `extensao_pack_no_processo`,
+`contrato_igal_ao_http`, `af_cache_determina_replay`, `budget_do_oraculo` e `FALHA censo de checagens |
+330/367`, com `motivo=extensao ausente: AfMindOracle nao esta na ClassDB nesta arvore` — porque o `.dll`
+mora em `native/af_mind/bin/`, coberto pelo `bin/` do `.gitignore:13`; `native/af_mind` em si entra (14
+arquivos rastreados, descritor incluso), e descritor sem biblioteca é exatamente a linha
+`GDExtension dynamic library not found` do import. As **três** checagens deste gate estão **verdes dentro do clone limpo**, com as linhas
+literais `worst_frame_ms=12.57 teto_dreno_ms=22.95 budget=8.00 nivel=9.99 scan=4.01 commit=0.95
+frames=27/256`, `frame_ms=8.87 chunks_no_frame=0` e `MESH_FRAME_BUDGET_US=8000 em_VoxelWorld=true`. Ou seja:
+o corte está pineado **e a branch está publicada** — `git ls-remote --heads origin` dá `refs/heads/perf/malha-orcamento-de-tempo-24`
+= `99bbbde71911194d7a74574bc0435db62f04318b` — mas **nada pousou**: o vermelho do pin é o de sempre (o **furo
+#38**), não desta perna. O **#61** caiu depois do pin: `94a4a12` (20:08:26, uma linha de `tests/`, o teto do
+dreno montado com as três peças lidas **depois** do `_mesh_frames()`) deu runner **367 / 0 / 57,651 s** com
+`worst_frame_ms=16.42 teto_dreno_ms=25.67 nivel=12.40` e **367 / 0 / 57,966 s** com `10.66 / 21.90 / 8.75`,
+mais suíte **278 / 0 / 63,9 s** — e o pin de `99bbbde` continua a descrever o mesher julgado por essas duas
+corridas porque o commit não toca `src/`. A `main` é hoje `26c7f33` — andou por outra perna (o pouso do
+`Rodar.bat`), nunca por merge da 24, e o elo da 24 na `main` é a passada seguinte. O verde da sonda em janela (§5.2, o "parou de travar")
+tem os dois lados nomeados: a base com o remalha-dentro-do-frame é `.tools/med51_hp2_mine.log` (15:04:27,
+`>=33,3ms=33`, `com_remalha=33`, `sem_origem=0`, `MED_RUN` impresso) e o controle deste portador é o
+`.tools/med24_hp2_mine_base_fixattr.log` da mesma config (16:01:45, `>=33,3ms=21`); o corte dá
+`>=33,3ms=0` em `med24_hp2_mine_8kB.log` (15:55:34, árvore de **uma** guarda) **e** em
+`.tools/med24_hp3_mine_guard.log` (16:29:53, `99bbbde`, `travadas=147`) — a sonda foi re-corrida na árvore
+das duas guardas, o que faltava antes. O que sobe dela é o **#59**: `sem_origem=4` contra o critério
+`≤ 1`, com a causa do quadro ainda sem nome. E houve **dois escritores na árvore primária durante esta
+perna**: o `EXPECTED_CHECKS` do runner mudou
+de 367 para 366 **entre** duas leituras `git diff` desta conversa (15:30:5x e 15:31:12), `tests/af_bakeoff.gd`
+mudou às 15:32:52 e `voxel_world.gd` às 15:39:58 e de novo às 15:40:54. O item 6 de "Branches" está violado
+por observação, não por decisão; **reaberto às 20:2x desta passada**: a árvore primária está hoje em
+`perf/malha-orcamento-de-tempo-24` / `5467c33` (o merge de `main` `26c7f33`, 20:23:48), os **23** arquivos de
+documento entraram no commit `0fdd811` (20:21:22) e `git status --porcelain -- src tests` continua vazio, mas
+as quatro folhas deste bloco foram escritas por duas mãos na mesma janela — mtimes 20:17:40 (esta folha),
+20:19:14 e 20:19:44, com o status ainda tocado às 20:23:23 e o merge fechando em cima —, e o item 6 segue
+sem ordem decidida; e o trabalho da 22 Fase 4
+vive em worktree próprio (`feat/oraculo-nativo-fase4-22`, +389/−28 em sete arquivos, +173/−1 no mesmo
+runner), então o choque entre as duas é de **merge**, não de árvore de trabalho. o dossiê 24 §9 guarda a testemunha, e as âncoras de `voxel_world.gd` da página foram
+re-derivadas **contra `git show a537117:`** (dezesseis ponteiros: `process()` `:228-236`→`:295-329`,
+`_mark` `:349-361`→`:578-596`, `_record_edit_cost` `:367-374`→`:606-617`, `edit_mesh_cost`
+`:381-390`→`:627-641`, `build_chunk_mesh` `:552`→`:355` com o laço em `_mesh_level` `:372-430`, arrays
+`:557-574`→`:273-287`, `generate_meshes_all` `:207`→`:237`, `pending_meshes()` `:239`→`:468`,
+`last_mesh_ms()` `:243`→`:472`, `_dirty` `:67`→`:78`, `CHUNK_SIZE_X/Y/Z` `:43-45`→`:54-56`, `set_block`
+`:328`→`:531`, `_touch_chunks_of` `:335`→`:564`, `place_falling_block` → `:557-561`, carimbo
+`:359`→`:594`, relógio `:370`→`:609`), porque o alvo deixou de estar em escrita no momento do commit — e
+o §2.1 da página declara que estes números são os do commit, não os da árvore, que já é outra. Eles
+**voltaram a envelhecer** com o terceiro commit: contra o HEAD `99bbbde`, `process()` está em
+[:309-359](src/world/voxel_world.gd#L309-L359), o teto em [:55](src/world/voxel_world.gd#L55),
+`_mark` em [:632-650](src/world/voxel_world.gd#L632-L650), `_record_edit_cost` em
+[:660-671](src/world/voxel_world.gd#L660-L671) e `edit_mesh_cost` em
+[:681-695](src/world/voxel_world.gd#L681-L695), e o mapa dos dezesseis ponteiros re-derivados outra vez
+está no §9 da página. Foi contra esse HEAD — não contra a árvore em escrita — que esta passada re-derivou
+os ponteiros vivos de `voxel_world.gd` em **todos** os documentos do corpus — as páginas 12, 14, 17, 18, 19,
+23 e 24, `docs/design/10` e `docs/design/11`, o `README.md`, o status, o índice de planos e esta folha:
+**158** links vivos dentro de `docs/` (a varredura `.tools/_audit_vw.py`, que imprime o conteúdo do alvo em
+HEAD para cada um) mais **25** desta folha e do `README.md`, todos conferidos alvo a alvo contra esse HEAD.
+Cinco furos de instrumento abrem desta passada: **#58** — `.tools/med_run.ps1` grava hora local e `tools/carga_por_janela.ps1:19` grava UTC,
+então a mesma corrida aparece `inicio=15:01:15` no log e `t=19:01:15` no amostrador, quatro horas
+defasados, e nenhum número desta perna é vinculado por horário de amostra, só por `pid` e arquivo;
+**#59** — um frame em **24 902 amostrados nas quatro armas** (e **1 dos 98 frames ≥33,3 ms**) escapa
+das três testemunhas do cruzamento (`sem_origem=1` na base,
+`com_remalha=24 com_compilacao=0 com_tick=120 sem_origem=1 | travadas=145`), então o critério honesto é
+`sem_origem ≤ 1` por janela **enquanto** a causa não tiver nome, e exigir 0 seria fechar gate com a régua
+errada; e **#60** — a checagem 2 do gate compara a composta a um teto de **11 314,03 ms** (a base
+**10 285,48** × 1,1) que tem **1,00 ms** de folga contra o literal escrito no código (`11 313,03`), mas as
+três corridas da **mesma base** sem vínculo de revisão dão `10 829,70`, `11 319,49` e `12 040,11 ms` — duas
+acima do teto — com o amostrador dessas janelas imprimindo `sem-godot-no-projeto` contra
+`pid=5788 cpu=103%` nas três vinculadas. A dispersão entre janelas é maior que a folga do critério, então a
+checagem não decide sozinha: vale o par (corrida, janela amostrada) medido dos dois lados, e esta passada
+**não** moveu o teto por causa disso — a mesma pena do **#31**; e **#61** — a segunda checagem do gate monta
+o teto do dreno com o `level_us` lido **antes** do dreno (`tests/aether_reactions_test.gd:5596`) e compara
+contra o `worst_frame_ms` medido **depois** dele (`:5634-5637`): quando o nível amostrado sai barato o teto
+encolhe e um frame do próprio lote o passa. Medido: `worst_frame_ms=16.49 teto_dreno_ms=15.63 nivel=2.39`
+vermelho às 16:19:36, e as cinco corridas com `nivel` entre **8,87** e **13,38** verde com folga de 8 a 15 ms
+— inclusive dentro do clone limpo do pin. O `scan`/`commit` já vêm da leitura de depois, então a régua é
+assimétrica por construção, não por ruído. Dono: perna 24, e o conserto é uma linha no runner (reler
+`mesh_frame_worst()` depois do dreno para as três peças) — um commit de `tests/`, que esta passada **não**
+faz; e **#62** — a régua composta mudou de grandeza e o teto herdado não: a base somava `mesh_ms + 52·span`
+(`composta=9942,32`, `mean_us=95351,5`) e o corte soma `52·mean_build_us` (`composta=8613,10`,
+`span_us=122145,3`), enquanto o teto `11 313,03` continua sendo o `10 285,48 × 1,1` da definição **antiga**
+— os dois números não são comparáveis, e o que se sustenta é que o corte fica 25 % abaixo do teto herdado,
+**não** que ficou abaixo da base sob a definição nova. Fecha com o braço base do bake-off correndo contra a
+árvore que tem `_record_edit_cost` separado; o **#60** fica ao lado porque é a mesma régua lida em janela
+diferente. Dono: perna 24.
 
 ## Ciclo de trabalho
 

@@ -479,13 +479,18 @@ limpo (`:386`), o segundo em linha branca (`:2479`), e a linha branca é o únic
 de `tools/check_doc_anchors.py` vê. Re-leram-se pela frase uma terceira vez na passada do pouso da
 23 (2026-11-24), uma quarta na abertura da Fase 2 do mesmo dossiê (2026-11-25) — editar o
 "Em andamento" e o item 15 do "Falta" empurrou o número oito posições abaixo — e uma quinta no
-pouso dessa fase, quando o merge da `main` na branch escreveu nas duas pontas do arquivo; hoje são
+pouso dessa fase, quando o merge da `main` na branch escreveu nas duas pontas do arquivo — e uma
+sexta na rodada do corte da malha (2026-11-25), que escreveu as seções "Em andamento", "Débitos" e
+Rodada (15) **abaixo** da linha 598 e por isso moveu só o segundo ponteiro; hoje são
 [`:585`](../../docs/melhorias-status.md#L585) e
-[`:3234`](../../docs/melhorias-status.md#L3234); a ordem então vigente está treze linhas abaixo da
+[`:3284`](../../docs/melhorias-status.md#L3284); a ordem então vigente está treze linhas abaixo da
 primeira, em [`:598-599`](../../docs/melhorias-status.md#L598-L599). Naquela re-leitura o `:534` da
 linha de cima já não descrevia o alvo — a gateira deu **BRANCO** no `:3059` e **nada** no `:502`,
 porque o número que ela substituiu caiu em prosa de outra exceção, e é exatamente essa face que o
-furo #28 registra. Cada um dos dois
+furo #28 registra. A sexta leitura achou mais que o deslocamento desta passada: contra `git show
+HEAD:docs/melhorias-status.md` a linha da frase é **`:3239`**, não `:3234` — o ponteiro estava cinco
+posições curto **antes** de esta rodada existir, e os cinquenta agora são quarenta e cinco meus mais
+cinco de quem veio antes. Cada um dos dois
 conserva a ordem da época que registrou, em vez de ser reescrito: o mandato 4
 registrava a exceção antes do código, e o
 passe de status era o mesmo commit que a fecha. Editar o meio do status empurra cada linha
@@ -525,9 +530,9 @@ delas muda mandato: é deriva de linha e nome de API.
   [`:2701-2728`](../../tests/smoke_test.gd#L2701-L2728) com a porta 1 armada em
   [`:2708`](../../tests/smoke_test.gd#L2708), e os dois passos em
   [`:136-137`](../../tests/smoke_test.gd#L136-L137). Dos dois ponteiros para o status, o [`:70`](../../docs/melhorias-status.md#L70)
-  continua na linha (a tabela de prompts) e já cita `smoke_test.gd:2123-2128`; o `:522-523` era o
+  continua na linha (a tabela de prompts) e já cita `smoke_test.gd:3119-3122`; o `:522-523` era o
   item de débito do gate do oráculo, que hoje está em
-  [`:918-920`](../../docs/melhorias-status.md#L918-L920) e com o alvo da degradação já corrigido.
+  [`:1035-1037`](../../docs/melhorias-status.md#L1035-L1037) e com o alvo da degradação já corrigido.
 - `llama-server.exe` **não é** o programa inteiro: 9.728 B de stub com a lógica em DLLs ao lado
   (§0.2). Qualquer texto futuro que proponha "copiar o `.exe`" está errado.
 - O `--timeout` do servidor não é ociosidade, e `--watch-file` não existe no b12499 (§0.1) — as
